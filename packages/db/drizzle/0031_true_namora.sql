@@ -1,0 +1,1 @@
+ALTER TABLE "cover_art_studio_batches" ADD COLUMN "reference_selection" jsonb;

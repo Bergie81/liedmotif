@@ -1,0 +1,1 @@
+ALTER TABLE "playlists" ADD COLUMN "shared_at" timestamp with time zone;

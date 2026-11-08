@@ -1,0 +1,1 @@
+ALTER TABLE "activity_sessions" ADD COLUMN "generation_status_scope" text;

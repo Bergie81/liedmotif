@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    // The estimator worker_threads entry imports `./estimator.ts` WITH its
+    // extension so Node 24 can type-strip and run the source directly in
+    // dev/tests (extensionless relative specifiers don't resolve there).
+    // Safe because this package never emits via tsc (tsup/esbuild builds it).
+    "allowImportingTsExtensions": true
+  },
+  "include": ["src/**/*.ts", "scripts/**/*.ts", "tests/**/*.ts", "tsup.config.ts"]
+}

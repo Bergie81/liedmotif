@@ -1,0 +1,2 @@
+CREATE UNIQUE INDEX "track_audio_assets_track_id_asset_type_unique" ON "track_audio_assets" USING btree ("track_id","asset_type");--> statement-breakpoint
+CREATE UNIQUE INDEX "queue_items_session_track_unique" ON "activity_session_queue_items" USING btree ("activity_session_id","track_id") WHERE "activity_session_queue_items"."track_id" is not null;

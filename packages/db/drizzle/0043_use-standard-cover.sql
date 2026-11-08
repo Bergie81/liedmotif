@@ -1,0 +1,1 @@
+ALTER TABLE "activity_sessions" ADD COLUMN "use_standard_cover" boolean DEFAULT false NOT NULL;

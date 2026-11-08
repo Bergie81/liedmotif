@@ -1,0 +1,1 @@
+ALTER TABLE "cover_art_studio_candidates" ADD COLUMN "byte_size" integer;

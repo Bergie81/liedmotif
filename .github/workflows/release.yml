@@ -1,0 +1,369 @@
+# Release: a pushed `v*` tag publishes the web, worker and backup images to
+# GHCR for linux/amd64 and linux/arm64, then publishes the GitHub release.
+# Nothing else publishes an image; `main` pushes only run ci.yml.
+#
+#   ffmpeg-source         publish FFmpeg's corresponding source for the pinned
+#                         ffmpeg as its own prerelease, once per pin, before
+#                         any worker image is pushed
+#   build (amd64, arm64)  one native runner per arch, no QEMU: build the three
+#                         images, push each by digest only (untagged), smoke
+#                         the pushed worker's ffmpeg
+#   manifest              merge each image's two digests under the version tag
+#   smoke (amd64, arm64)  one fresh native runner per arch: the real installer
+#                         installs that version, then runs again as an update
+#   publish               move `latest`, publish the GitHub release with the
+#                         installer attached
+#
+# A default install follows the latest GitHub release, and `latest` moves in
+# the same job, so every check that must pass before a release reaches people
+# belongs in publish's `needs`. A tag with a hyphen (`v1.2.0-rc.1`) publishes a
+# prerelease and leaves `latest` where it is.
+#
+# The tag must be `v` + the root package.json version. The images are tagged
+# with that version without the `v` (`v1.2.0` -> `1.2.0`), the same string
+# `LIEDMOTIF_VERSION` holds and Diagnostics reports (`APP_VERSION` is baked into
+# the image at build time).
+#
+# Actions are pinned to reviewed commit SHAs, as in ci.yml.
+
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+env:
+  # docker-compose.yml names the same images (`<prefix>-web` etc.); change both
+  # together. GHCR image names must be lowercase.
+  IMAGE_PREFIX: ghcr.io/bergie81/liedmotif
+
+jobs:
+  # The worker image carries Debian's GPL ffmpeg build, so that build's exact
+  # source goes public before any worker image is pushed, even one whose
+  # release later fails its smoke (NOTICE.md). A prerelease can never become
+  # GitHub's latest release, which the installer's
+  # `releases/latest/download/install.sh` URL follows. Git tags cannot hold
+  # the `:` in a Debian version, so the tag spells everything but letters,
+  # digits, `.`, `-` and `_` as `_`.
+  ffmpeg-source:
+    name: Publish FFmpeg's corresponding source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Look for the source release of this ffmpeg pin
+        id: release
+        run: |
+          tag="ffmpeg-source-$(sed 's/[^A-Za-z0-9._-]/_/g' docker/ci/ffmpeg-pin.txt)"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if [ "$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null)" = false ]; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      # The smoke in each build leg holds both arches' ffmpeg to
+      # `ffmpeg-pin.txt`, and apt verifies every file against Debian's signed
+      # index.
+      - name: Download FFmpeg's corresponding source
+        if: steps.release.outputs.published != 'true'
+        run: |
+          base="$(awk '$1 == "FROM" && $4 == "base" { print $2; exit }' Dockerfile)"
+          ffmpeg_version="$(cat docker/ci/ffmpeg-pin.txt)"
+          mkdir -p "$RUNNER_TEMP/ffmpeg-source"
+          docker run --rm -v "$RUNNER_TEMP/ffmpeg-source:/src" -w /src "$base" sh -ec "
+            sed -i 's/^Types: deb\$/Types: deb deb-src/' /etc/apt/sources.list.d/debian.sources
+            apt-get update -qq
+            apt-get source --download-only 'ffmpeg=$ffmpeg_version'"
+          ls -l "$RUNNER_TEMP/ffmpeg-source"
+
+      - name: Publish the source release
+        if: steps.release.outputs.published != 'true'
+        run: |
+          pin="$(cat docker/ci/ffmpeg-pin.txt)"
+          gh release create "$TAG" --target "$GITHUB_SHA" --prerelease --latest=false \
+            --title "FFmpeg $pin corresponding source" \
+            --notes "The exact source of Debian's ffmpeg $pin, the build in Liedmotif's worker image (NOTICE.md). Not a Liedmotif release." \
+            "$RUNNER_TEMP"/ffmpeg-source/*
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+
+  build:
+    name: Build (${{ matrix.arch }})
+    needs: ffmpeg-source
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      PLATFORM: linux/${{ matrix.arch }}
+      # ci.yml's worker-image job writes the amd64 scope from `main`; nothing
+      # writes the arm64 scope, so that leg builds cold. A cache written from a
+      # tag is visible only to that same tag, so this workflow reads and never
+      # writes. The scope carries every stage (`mode=max`), including the
+      # `build` stage the web image copies from.
+      CACHE_FROM: type=gha,scope=worker-${{ matrix.arch }}
+      LABELS: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check the tag matches the root package.json version
+        run: |
+          expected="v$(jq -r .version package.json)"
+          if [ "$GITHUB_REF_NAME" != "$expected" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match the root package.json version ($expected). Bump the version in package.json, commit, then tag that commit."
+            exit 1
+          fi
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Log in to GHCR
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # The smoke runs the pushed digest itself, so the image that passed is
+      # byte-for-byte the image that ships. A digest pushed untagged is
+      # unreachable to any install until the manifest job tags it, and that
+      # job needs every build leg, smoke included, to pass.
+      - name: Build and push the worker image
+        id: worker
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          target: worker
+          platforms: ${{ env.PLATFORM }}
+          labels: ${{ env.LABELS }}
+          cache-from: ${{ env.CACHE_FROM }}
+          outputs: type=image,name=${{ env.IMAGE_PREFIX }}-worker,push-by-digest=true,name-canonical=true,push=true
+
+      # The same in-container smoke as ci.yml's worker-image job, on this arch.
+      - name: Smoke the worker image's ffmpeg
+        run: >-
+          docker run --rm -v "$PWD/docker/ci:/ci:ro"
+          -v "$PWD/apps/worker/src/audio/fixtures:/fixtures:ro"
+          --entrypoint node "$IMAGE_PREFIX-worker@$WORKER_DIGEST" /ci/ffmpeg-smoke.mjs
+        env:
+          WORKER_DIGEST: ${{ steps.worker.outputs.digest }}
+
+      - name: Build and push the web image
+        id: web
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          target: web
+          platforms: ${{ env.PLATFORM }}
+          labels: ${{ env.LABELS }}
+          cache-from: ${{ env.CACHE_FROM }}
+          outputs: type=image,name=${{ env.IMAGE_PREFIX }}-web,push-by-digest=true,name-canonical=true,push=true
+
+      # Compose holds the one Postgres pin the backup sidecar must match.
+      - name: Read the backup image's Postgres base from Compose
+        id: postgres
+        run: |
+          image="$(docker compose config --format json | jq -er '.services.backup.build.args.POSTGRES_IMAGE')"
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push the backup image
+        id: backup
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: docker/backup.Dockerfile
+          build-args: POSTGRES_IMAGE=${{ steps.postgres.outputs.image }}
+          platforms: ${{ env.PLATFORM }}
+          labels: ${{ env.LABELS }}
+          outputs: type=image,name=${{ env.IMAGE_PREFIX }}-backup,push-by-digest=true,name-canonical=true,push=true
+
+      - name: Record the digests
+        run: |
+          mkdir -p "$RUNNER_TEMP/digests"
+          echo "$WEB" > "$RUNNER_TEMP/digests/web-${{ matrix.arch }}"
+          echo "$WORKER" > "$RUNNER_TEMP/digests/worker-${{ matrix.arch }}"
+          echo "$BACKUP" > "$RUNNER_TEMP/digests/backup-${{ matrix.arch }}"
+        env:
+          WEB: ${{ steps.web.outputs.digest }}
+          WORKER: ${{ steps.worker.outputs.digest }}
+          BACKUP: ${{ steps.backup.outputs.digest }}
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: digests-${{ matrix.arch }}
+          path: ${{ runner.temp }}/digests
+          if-no-files-found: error
+          retention-days: 1
+
+  manifest:
+    name: Tag the multi-arch images
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: digests-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/digests
+
+      - name: Log in to GHCR
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # The source annotation on the index, like the label inside each image,
+      # links the package to this repository on GHCR.
+      - name: Merge each image's arch builds under the version tag
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          for image in web worker backup; do
+            ref="$IMAGE_PREFIX-$image"
+            docker buildx imagetools create \
+              --annotation "index:org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+              --tag "$ref:$version" \
+              "$ref@$(cat "$image-amd64")" \
+              "$ref@$(cat "$image-arm64")"
+            docker buildx imagetools inspect "$ref:$version"
+          done
+
+  # A broken installer or a broken arch image stops here: the version tags exist
+  # on GHCR, but nothing a default install follows points at them yet.
+  # `--domain localhost` gets Caddy's internal certificate, so no DNS or open
+  # port is needed. The job holds no provider key, so no paid provider can be
+  # called. The Tailscale certificate path needs a tailnet and stays a manual
+  # check.
+  smoke:
+    name: Smoke the installer (${{ matrix.arch }})
+    needs: manifest
+    strategy:
+      # Both legs finish, so a failure on one arch reads as one.
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
+
+    env:
+      # The installer's default `--dir`.
+      INSTALL_DIR: /opt/liedmotif
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Needed while the packages are still private (the first release). A
+      # person's install pulls them anonymously.
+      - name: Log in to GHCR
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # This tag's own `docker/install.sh`, fed on stdin as `curl … | bash -s --`
+      # feeds it. `--version`, because the installer's default follows the
+      # latest published release, and this one is not published yet.
+      - name: Install
+        run: bash -s -- --domain localhost --version "$GITHUB_REF_NAME" < docker/install.sh
+
+      # Mock keeps any paid provider call impossible on the runner. An operator
+      # edits `.env` after the install the same way; the second run below must
+      # keep the edit.
+      - name: Switch the music provider to mock
+        working-directory: ${{ env.INSTALL_DIR }}
+        run: |
+          sed -i 's/^MUSIC_PROVIDER=.*/MUSIC_PROVIDER=mock/' .env
+          grep -qx 'MUSIC_PROVIDER=mock' .env
+          docker compose up -d --no-build
+
+      - name: Check the installed stack
+        working-directory: ${{ env.INSTALL_DIR }}
+        run: bash "$GITHUB_WORKSPACE/docker/ci/release-smoke-check.sh"
+
+      - name: Run the installer again (the update path)
+        run: |
+          cp "$INSTALL_DIR/.env" "$RUNNER_TEMP/env-before"
+          bash -s -- --domain localhost --version "$GITHUB_REF_NAME" < docker/install.sh
+
+      - name: Check .env is unchanged
+        run: |
+          if ! diff "$RUNNER_TEMP/env-before" "$INSTALL_DIR/.env" > "$RUNNER_TEMP/env.diff"; then
+            # Values hidden: they are this install's secrets.
+            sed -E 's/^([<>] [A-Za-z_][A-Za-z0-9_]*=).*/\1(hidden)/' "$RUNNER_TEMP/env.diff"
+            echo "::error::The second installer run changed .env."
+            exit 1
+          fi
+
+      - name: Check the updated stack
+        working-directory: ${{ env.INSTALL_DIR }}
+        run: bash "$GITHUB_WORKSPACE/docker/ci/release-smoke-check.sh"
+
+  publish:
+    name: Publish the release
+    needs: [ffmpeg-source, manifest, smoke]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      packages: write
+
+    env:
+      PRERELEASE: ${{ contains(github.ref_name, '-') }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Log in to GHCR
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Move latest to this version
+        if: env.PRERELEASE == 'false'
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          for image in web worker backup; do
+            docker buildx imagetools create \
+              --tag "$IMAGE_PREFIX-$image:latest" "$IMAGE_PREFIX-$image:$version"
+          done
+
+      # The installer is served as `releases/latest/download/install.sh`, the
+      # URL the docs and its own rerun hint print, so the asset keeps that name.
+      - name: Publish the GitHub release
+        run: |
+          source_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$FFMPEG_SOURCE_TAG"
+          flags=(--verify-tag --generate-notes --title "Liedmotif $GITHUB_REF_NAME"
+            --notes "FFmpeg's corresponding source for the worker image: $source_url")
+          if [ "$PRERELEASE" = true ]; then flags+=(--prerelease); fi
+          gh release create "$GITHUB_REF_NAME" "${flags[@]}" docker/install.sh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FFMPEG_SOURCE_TAG: ${{ needs.ffmpeg-source.outputs.tag }}

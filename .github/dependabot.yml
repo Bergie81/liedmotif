@@ -1,0 +1,75 @@
+# Scheduled version updates for the pinned infrastructure: the workflow action
+# SHAs and the container image digests. These are pin refreshes rather than code
+# changes, so they arrive green and merge in one click.
+#
+# npm packages are deliberately absent. A weekly npm sweep mostly stood red or
+# went stale before review, and it is not the security net:
+# `.github/workflows/dependency-audit.yml` runs the production `npm audit` gate
+# and scans both shipped images every Monday, and a red run notifies the owner.
+# npm upgrades are taken by hand when there is a reason to.
+
+version: 2
+
+updates:
+  # Keeps the commit-SHA action pins in `.github/workflows/` from rotting: a pin
+  # is only as good as the process that refreshes it.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns:
+          - '*'
+
+  # The root Dockerfile's digest-pinned base image — where the runtime images
+  # pick up distro security updates.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      docker:
+        patterns:
+          - '*'
+    ignore:
+      # The base image's major IS the runtime the whole app runs on, so moving
+      # it means moving `engines`, the CI `node-version` and the Dockerfile
+      # together — and only onto an Active LTS line. Left open, the sweep
+      # offers whatever is newest: it proposed `node:25`, an odd release that
+      # never reaches LTS and was already end-of-life. Digest refreshes and
+      # minor/patch bumps are untouched, and those carry the distro CVE fixes.
+      # A comment command cannot express this — the PR is grouped, and grouped
+      # PRs ignore `@dependabot ignore`.
+      - dependency-name: node
+        update-types:
+          - version-update:semver-major
+
+  # The digest-pinned compose images (edge proxy, database).
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      docker-compose:
+        patterns:
+          - '*'
+    ignore:
+      # Every Postgres service shares ONE pin through the `x-postgres-image`
+      # YAML anchor, so `pg_dump` can never drift from the server it dumps.
+      # Dependabot rewrites an `image:` line textually and aborts the whole run
+      # on the alias it finds instead ("Expected content to change!"), and a
+      # database major is a data-directory migration no bot should open anyway.
+      # The anchor's digest is refreshed by hand — see `docker-compose.yml`.
+      - dependency-name: postgres

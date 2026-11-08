@@ -1,0 +1,53 @@
+{
+  "name": "@liedmotif/providers",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "author": "Thomas Bergmann",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./music": {
+      "types": "./src/music/index.ts",
+      "import": "./src/music/index.ts",
+      "default": "./src/music/index.ts"
+    },
+    "./llm": {
+      "types": "./src/llm/index.ts",
+      "import": "./src/llm/index.ts",
+      "default": "./src/llm/index.ts"
+    },
+    "./images": {
+      "types": "./src/images/index.ts",
+      "import": "./src/images/index.ts",
+      "default": "./src/images/index.ts"
+    },
+    "./email": {
+      "types": "./src/email/index.ts",
+      "import": "./src/email/index.ts",
+      "default": "./src/email/index.ts"
+    },
+    "./testing": {
+      "types": "./src/testing.ts",
+      "import": "./src/testing.ts",
+      "default": "./src/testing.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "smoke:suno": "tsx scripts/suno-smoke.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/openai-compatible": "^3.0.78",
+    "@liedmotif/shared": "*",
+    "ai": "^7.0.153",
+    "nodemailer": "^10.2.1",
+    "undici": "^8.10.2",
+    "zod": "^4.6.2"
+  }
+}

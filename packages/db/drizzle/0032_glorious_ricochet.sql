@@ -1,0 +1,1 @@
+ALTER TABLE "generation_requests" ADD COLUMN "early_track_title" text;

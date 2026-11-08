@@ -1,0 +1,14 @@
+# LF everywhere, on every platform. Shell scripts, the Dockerfiles, the
+# Caddyfile and the SQL are copied into Linux containers, where a CRLF checkout
+# (Windows with `core.autocrlf=true`) breaks them: `/bin/sh^M`, `$'\r': command
+# not found`. Prettier formats to LF too, so a CRLF tree fails `format:check`.
+* text=auto eol=lf
+
+# Binary: never converted or diffed as text.
+*.flac binary
+*.ico binary
+*.mp3 binary
+*.npy binary
+*.png binary
+*.ttf binary
+*.webp binary

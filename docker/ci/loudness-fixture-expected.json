@@ -1,0 +1,5 @@
+{
+  "comment": "Expected loudnorm measure of the synthesized smoke fixture (997 Hz sine, amplitude 0.25, 5 s mono 44.1 kHz 16-bit WAV) under the pinned ffmpeg build. Analytic values: -3.01 + 20*log10(0.25) = -15.05 LUFS integrated; 20*log10(0.25) = -12.04 dBTP. Tolerance in the smoke: +/-0.5.",
+  "input_i": -15.05,
+  "input_tp": -12.04
+}

@@ -1,0 +1,2 @@
+CREATE UNIQUE INDEX "admin_profile_single_admin" ON "admin_profile" USING btree ("role") WHERE "admin_profile"."role" = 'admin';--> statement-breakpoint
+CREATE UNIQUE INDEX "provider_credentials_instance_provider_unique" ON "provider_credentials" USING btree ("provider_type","provider_key") WHERE "provider_credentials"."owner_user_id" is null;

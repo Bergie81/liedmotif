@@ -1,0 +1,1 @@
+ALTER TABLE "activity_sessions" ADD COLUMN "audio_folder_segment" text;

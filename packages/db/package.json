@@ -1,0 +1,61 @@
+{
+  "name": "@liedmotif/db",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "author": "Thomas Bergmann",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./migrate": {
+      "types": "./src/migrate.ts",
+      "import": "./src/migrate.ts",
+      "default": "./src/migrate.ts"
+    },
+    "./seed": {
+      "types": "./src/seed.ts",
+      "import": "./src/seed.ts",
+      "default": "./src/seed.ts"
+    },
+    "./admin": {
+      "types": "./src/admin/reset-password.ts",
+      "import": "./src/admin/reset-password.ts",
+      "default": "./src/admin/reset-password.ts"
+    },
+    "./auth": {
+      "types": "./src/auth/index.ts",
+      "import": "./src/auth/index.ts",
+      "default": "./src/auth/index.ts"
+    },
+    "./testing": {
+      "types": "./src/testing.ts",
+      "import": "./src/testing.ts",
+      "default": "./src/testing.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx src/seed.ts",
+    "db:studio": "drizzle-kit studio",
+    "auth:generate": "npx -y @better-auth/cli@1.4.22 generate --config ./auth.config.ts --output ./src/schema/auth.ts --yes && prettier --write ./src/schema/auth.ts"
+  },
+  "dependencies": {
+    "@liedmotif/shared": "*",
+    "@liedmotif/storage": "*",
+    "better-auth": "^1.7.4",
+    "drizzle-orm": "^0.45.4",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1",
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.23.15"
+  }
+}

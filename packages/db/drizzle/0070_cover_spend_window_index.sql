@@ -1,0 +1,1 @@
+CREATE INDEX "session_cover_generations_spend_window_idx" ON "session_cover_generations" USING btree (coalesce("submitted_at", "created_at"),"owner_user_id");

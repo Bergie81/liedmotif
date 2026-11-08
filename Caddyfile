@@ -1,0 +1,121 @@
+# Caddy reverse proxy for Liedmotif.
+#
+# APP_DOMAIN defaults to `localhost`, for which Caddy serves HTTPS using its own
+# internal CA — enough to get a trusted secure context on the host. For phone
+# access, set APP_DOMAIN to a Tailscale/Cloudflare hostname, a real domain, or
+# the host's static LAN IP with the root cert installed on clients, and set
+# CADDY_HTTP_PORT=80 and CADDY_HTTPS_PORT=443 so other devices can reach it (see
+# https://liedmotif.com/docs/install/phone-access/ for the documented paths).
+
+{
+	# The admin API listens on localhost:2019 INSIDE the container and is
+	# unpublished, so this only removes container-compromise surface — at the
+	# cost of nothing: no config reload here goes through it.
+	admin off
+
+	# Clients connecting by IP address send no SNI, and behind Docker's port
+	# NAT the connection's destination IP inside the container is the
+	# container's own address — Caddy would find no matching certificate and
+	# abort the handshake. Assume the configured site when SNI is absent.
+	default_sni {$APP_DOMAIN:localhost}
+
+	# No HTTP/3: QUIC runs over Docker's UDP port NAT, whose conntrack entries
+	# go stale across container restarts — clients that cached the Alt-Svc h3
+	# hint then stall on a blackholed UDP flow before falling back to TCP.
+	# h1/h2 keeps every connection on TCP, which survives restarts cleanly.
+	servers {
+		protocols h1 h2
+
+		# Only needed when something else fronts Caddy (a cloud load balancer).
+		# Name ITS address range here so Caddy keeps the client hop that range
+		# forwarded instead of treating it as caller-supplied, and set
+		# TRUSTED_PROXY_HOPS to the number of proxies in the chain — 2 for
+		# client -> LB -> Caddy. Both halves must agree or every client keys as
+		# the load balancer and one bad-password run locks out everyone.
+		# As shipped, Caddy IS the edge and nothing here is trusted.
+		#trusted_proxies static 10.0.0.0/8
+	}
+}
+
+{$APP_DOMAIN:localhost} {
+	# Defense-in-depth response headers, mirrored in `apps/web/next.config.mjs`
+	# so a `npm run dev` origin behaves like this one — edit both together.
+	# Every CSP relaxation is load-bearing against a shipped feature (theme
+	# bootstrap + inline RSC payloads, React/Radix inline styles, blob: crop
+	# previews, the voice-setup WAV preview and offline audio and covers, the
+	# same-origin service worker), and `microphone=(self)` must
+	# stay `self` or voice recording and voice input stop working. The policy
+	# ships enforcing plus a Report-Only twin — the slot a tightening soaks in
+	# before it replaces the enforced copy — and both report to the app's
+	# `/api/csp-report` route, which logs what fired.
+	# HSTS is inert on a bare-IP origin but required once a hostname is served.
+	header {
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob:; media-src 'self' blob:; connect-src 'self'; worker-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; report-uri /api/csp-report"
+		Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob:; media-src 'self' blob:; connect-src 'self'; worker-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; report-uri /api/csp-report"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options DENY
+		Permissions-Policy "microphone=(self), camera=(), geolocation=()"
+		Strict-Transport-Security "max-age=31536000"
+	}
+	# The authoritative request-body ceiling. The app prechecks `Content-Length`
+	# too, but that is a hint a chunked or lying body simply omits — this is what
+	# actually stops one from being buffered into the web process's heap. Sized
+	# for the 32 MB voice-recording cap plus multipart framing; audio is served
+	# as RESPONSES, which this does not bound.
+	request_body {
+		max_size 40MB
+	}
+	# The matcher pins the compressible set explicitly so audio, archives, and
+	# webp covers stay excluded even if the floating caddy:2-alpine tag ever
+	# changes its encode defaults.
+	encode zstd gzip {
+		match {
+			header Content-Type text/*
+			header Content-Type application/json*
+			header Content-Type application/javascript*
+			header Content-Type image/svg+xml*
+		}
+	}
+	# The only record of who reached what, when, and how slowly — an incident is
+	# the wrong moment to discover there is none. JSON on the `caddy-data`
+	# volume, rotated by size and age so it cannot grow into the disk the
+	# library lives on. Caddy drops `Cookie` and `Authorization` itself
+	# (`log_credentials` is off by default), but it logs every other header, so
+	# the instance-alert and setup tokens are deleted below. The credentials left
+	# arrive in the URL and so land in a plain access log: the invite/reset/confirm
+	# token as a PATH segment, and the setup token as `/setup?token=`. The app clears
+	# the former from the address bar after this request, but this request is the
+	# one being written — hence the redaction, which anything fronting Caddy needs
+	# a copy of.
+	log {
+		output file /data/logs/access.log {
+			roll_size 10MiB
+			roll_keep 10
+			roll_keep_for 720h
+		}
+		# Anchored at the site root, so the `/api/join/*` submits stay
+		# distinguishable in the log; only the page paths carry a token, in their
+		# first segment or, on `/setup`, as the `token` query parameter.
+		format filter {
+			wrap json
+			fields {
+				request>uri regexp "^/(?:(join|reset|confirm)(/)[^/?]+|(setup\?(?:.*&)?token=)[^&]*)" "/$1$2${3}redacted"
+				request>headers>Referer regexp "^(https?://[^/]+)/(?:(join|reset|confirm)(/)[^/?]+|(setup\?(?:.*&)?token=)[^&]*)" "$1/$2$3${4}redacted"
+				request>headers>X-Alert-Token delete
+				request>headers>X-Setup-Token delete
+			}
+		}
+	}
+	# `/api/health` stays reachable, deliberately: it returns only
+	# {status, database, time} — no versions, paths, or stats — and an external
+	# uptime monitor needs it. The compose healthcheck hits Next directly, so
+	# blocking it here costs the app nothing; uncomment to take that trade.
+	#handle /api/health {
+	#	respond 404
+	#}
+	# If cold-start TTFB through the proxy is ever observed on the stream
+	# path, the documented remedy is `flush_interval -1` scoped to a
+	# `path /api/audio/*` handle — not applied by default.
+	reverse_proxy web:3000
+}

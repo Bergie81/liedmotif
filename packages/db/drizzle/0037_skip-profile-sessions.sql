@@ -1,0 +1,1 @@
+ALTER TABLE "activity_sessions" ADD COLUMN "skip_profile" boolean DEFAULT false NOT NULL;

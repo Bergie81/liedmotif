@@ -1,0 +1,15 @@
+# Build outputs and dependencies
+**/node_modules/**
+**/dist/**
+**/.next/**
+**/coverage/**
+**/playwright-report/**
+**/test-results/**
+package-lock.json
+
+# Generated Drizzle migrations + metadata (drizzle-kit owns their formatting)
+packages/db/drizzle/**
+
+# Pre-existing prose and static assets we do not want reformatted
+**/*.md
+data/**

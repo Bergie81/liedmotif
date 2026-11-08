@@ -1,0 +1,77 @@
+# Scheduled supply-chain watch. `ci.yml` runs only on push/pull_request, so an
+# advisory published while the repository is quiet trips nothing — this workflow
+# re-runs the production audit gate and scans both shipped container images on a
+# weekly cron. A red run IS the alert: GitHub notifies the repository owner when
+# a scheduled workflow fails, and the failure stays visible in the Actions tab.
+#
+# GitHub suspends cron triggers on a repository with 60 days of no activity; if
+# the schedule goes silent, re-enable it from the Actions tab.
+#
+# Actions are pinned to reviewed commit SHAs — the trailing comment names the
+# release the SHA belongs to, and `.github/dependabot.yml` keeps both current.
+
+name: Dependency audit
+
+on:
+  schedule:
+    # Mondays 05:17 UTC. Off the hour because GitHub delays crons that land on a
+    # popular minute.
+    - cron: '17 5 * * 1'
+  # On demand, for when an advisory lands mid-week.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  npm-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # The same release gate CI runs: no high or critical advisory in the
+      # shipped (production) tree.
+      - run: npm run audit:prod
+
+  image-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Both targets share the `deps`/`build` stages, so the second build lands
+      # on the first one's layers.
+      - run: docker build --target web -t liedmotif-web:scan .
+
+      - run: docker build --target worker -t liedmotif-worker:scan .
+
+      # HIGH/CRITICAL with a fix available — the container mirror of
+      # `audit:prod`'s `--audit-level=high`. A distro package with no upstream
+      # fix cannot be actioned by a rebuild, and failing on it would only train
+      # the schedule to be ignored.
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: liedmotif-web:scan
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+
+      # Runs even after the web image failed, so one bad image never hides the
+      # other's result.
+      - if: ${{ !cancelled() }}
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: liedmotif-worker:scan
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-labelledby="title">
+  <title id="title">Liedmotif</title>
+  <style>
+    .calm { fill: #34e0c4; }
+    .focused { fill: #ffd166; }
+    .hyped { fill: #ff5d52; }
+    @media (prefers-color-scheme: light) {
+      .calm { fill: #0e9280; }
+      .focused { fill: #b8760c; }
+      .hyped { fill: #cf4436; }
+    }
+  </style>
+  <rect class="calm" x="3" y="11.5" width="4" height="11" rx="2" />
+  <rect class="focused" x="10" y="1.5" width="4" height="21" rx="2" />
+  <rect class="hyped" x="17" y="7.5" width="4" height="15" rx="2" />
+</svg>

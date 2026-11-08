@@ -1,0 +1,524 @@
+@import 'tailwindcss';
+
+:root {
+  --night: #0f0d16;
+  --chassis: #14111f;
+  --panel: #1b1727;
+  --panel-2: #221d33;
+  --line: rgba(240, 234, 222, 0.09);
+  --line-2: rgba(240, 234, 222, 0.18);
+  --paper: #f0eade;
+  --muted: #9a92ad;
+  --dim: #6d6580;
+  --lamp: #ffb25c;
+  --lamp-deep: #e88f2f;
+  --lamp-fill: var(--lamp);
+  --chart-2: #8f86d9;
+  --lamp-glow: rgba(255, 178, 92, 0.28);
+  --on-lamp: #1c1206;
+  --signal: #8fd9a8;
+  --signal-dim: rgba(143, 217, 168, 0.14);
+  --warn: #e07a6a;
+  --mark-1: #34e0c4;
+  --mark-2: #ffd166;
+  --mark-3: #ff5d52;
+  --scroll-thumb: rgba(240, 234, 222, 0.08);
+  --scroll-thumb-hover: rgba(240, 234, 222, 0.16);
+  --overlay: rgba(6, 5, 10, 0.65);
+  --nav-bg: rgba(15, 13, 22, 0.88);
+  --field-bg: rgba(0, 0, 0, 0.3);
+  --control-bg: rgba(240, 234, 222, 0.03);
+  --control-bg-hover: rgba(240, 234, 222, 0.07);
+  --segment-bg: rgba(0, 0, 0, 0.25);
+  --segment-active-bg: var(--panel-2);
+  --switch-bg: rgba(240, 234, 222, 0.12);
+  --switch-thumb: var(--paper);
+  --switch-checked-bg: var(--lamp);
+  --switch-checked-thumb: var(--on-lamp);
+  --stepper-hover: rgba(255, 178, 92, 0.07);
+  --meter-track: rgba(240, 234, 222, 0.1);
+  --gradient-card: linear-gradient(180deg, var(--panel), var(--chassis));
+  --gradient-float: linear-gradient(180deg, var(--panel-2), var(--chassis));
+  --gradient-primary: linear-gradient(180deg, var(--lamp), var(--lamp-deep));
+  --gradient-meter: linear-gradient(90deg, var(--lamp-deep), var(--lamp));
+  --gradient-warning-meter: linear-gradient(90deg, #b3453a, var(--warn));
+  --gradient-mini: linear-gradient(180deg, var(--panel-2), var(--panel));
+  --shadow-card: none;
+  --shadow-control: none;
+  --shadow-field: none;
+  --shadow-float: 0 18px 50px rgba(0, 0, 0, 0.55);
+  --shadow-tooltip: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-meter: 0 0 10px var(--lamp-glow);
+  --shadow-warning-meter: 0 0 10px rgba(224, 122, 106, 0.4);
+  --shadow-mini: 0 12px 40px rgba(0, 0, 0, 0.55);
+  --shadow-segment: inset 0 0 0 1px rgba(255, 178, 92, 0.35), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-primary: 0 6px 24px -6px var(--lamp-glow), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  --card-radius: 16px;
+  --card-radius-sm: 10px;
+  --tab-h: 62px;
+  --mini-h: 58px;
+  --rail: 0px;
+  /* The shell's content column below `desk`, which the mini player tracks so it
+     never outgrows the page it belongs to. */
+  --shell-col: 520px;
+
+  --color-bg: var(--night);
+  --color-surface: var(--panel);
+  --color-surface-raised: var(--panel-2);
+  --color-border: var(--line);
+  --color-text: var(--paper);
+  --color-muted: var(--muted);
+  --color-accent: var(--lamp);
+}
+
+/* Daylight: white surfaces on a cool, evenly lit page. Elevation comes from
+   layered shadows, never from tinted fills or vertical gradients. Amber is
+   split: `--lamp-fill` paints what you press; `--lamp` is the deep ink for
+   amber text and icons (5.6:1 on white). */
+html.light {
+  --night: #eef1f5;
+  --chassis: #e3e7ed;
+  --panel: #ffffff;
+  --panel-2: #f6f7f9;
+  --line: rgba(16, 22, 34, 0.09);
+  --line-2: rgba(16, 22, 34, 0.17);
+  --paper: #12151c;
+  --muted: #4a5162;
+  --dim: #6b7282;
+  --lamp: #9a5800;
+  --lamp-deep: #e5850a;
+  --lamp-fill: #f59612;
+  --chart-2: #4a5bc4;
+  --lamp-glow: rgba(245, 150, 18, 0.24);
+  --on-lamp: #241400;
+  --signal: #127a4b;
+  --signal-dim: rgba(18, 122, 75, 0.1);
+  --warn: #b23a2a;
+  --mark-1: #0e9280;
+  --mark-2: #e08a00;
+  --mark-3: #d8412f;
+  --scroll-thumb: rgba(16, 22, 34, 0.18);
+  --scroll-thumb-hover: rgba(16, 22, 34, 0.32);
+  --overlay: rgba(20, 24, 33, 0.3);
+  --nav-bg: rgba(255, 255, 255, 0.9);
+  --field-bg: #f6f7f9;
+  --control-bg: #ffffff;
+  --control-bg-hover: rgba(16, 22, 34, 0.06);
+  --segment-bg: rgba(16, 22, 34, 0.06);
+  --segment-active-bg: #ffffff;
+  --switch-bg: rgba(16, 22, 34, 0.18);
+  --switch-thumb: #ffffff;
+  --switch-checked-bg: var(--lamp-fill);
+  --switch-checked-thumb: #ffffff;
+  --stepper-hover: rgba(154, 88, 0, 0.07);
+  --meter-track: rgba(16, 22, 34, 0.08);
+  --gradient-card: #ffffff;
+  --gradient-float: #ffffff;
+  --gradient-mini: #ffffff;
+  --gradient-primary: linear-gradient(180deg, #ffb03a, var(--lamp-fill));
+  --gradient-meter: linear-gradient(90deg, var(--lamp-fill), #ffb03a);
+  --gradient-warning-meter: linear-gradient(90deg, #c4472f, #e2634b);
+  /* One light source, straight overhead: a tight contact shadow plus a soft
+     ambient one. Larger surfaces only lengthen the ambient layer. */
+  --shadow-card: 0 1px 2px rgba(16, 22, 34, 0.05), 0 3px 10px -2px rgba(16, 22, 34, 0.06);
+  --shadow-control: 0 1px 2px rgba(16, 22, 34, 0.07);
+  --shadow-field: inset 0 1px 2px rgba(16, 22, 34, 0.06);
+  --shadow-float:
+    0 1px 2px rgba(16, 22, 34, 0.06), 0 10px 24px -6px rgba(16, 22, 34, 0.12),
+    0 28px 60px -18px rgba(16, 22, 34, 0.22);
+  --shadow-tooltip: 0 1px 2px rgba(16, 22, 34, 0.08), 0 6px 16px -4px rgba(16, 22, 34, 0.18);
+  --shadow-mini: 0 1px 2px rgba(16, 22, 34, 0.06), 0 12px 30px -10px rgba(16, 22, 34, 0.24);
+  --shadow-meter: none;
+  --shadow-warning-meter: none;
+  --shadow-segment: 0 1px 2px rgba(16, 22, 34, 0.1), 0 0 0 1px rgba(16, 22, 34, 0.06);
+  /* The primary key reads as backlit hardware: a lit top edge, a pressed-in
+     bottom lip, and an amber spill on the page beneath it. */
+  --shadow-primary:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -2px 0 rgba(150, 80, 0, 0.18),
+    0 1px 2px rgba(120, 60, 0, 0.22), 0 8px 22px -8px rgba(245, 150, 18, 0.6);
+}
+
+@media (min-width: 920px) {
+  :root {
+    --rail: 96px;
+  }
+
+  html.rail-expanded {
+    --rail: 208px;
+  }
+}
+
+@theme inline {
+  --color-night: var(--night);
+  --color-chassis: var(--chassis);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-paper: var(--paper);
+  --color-muted: var(--muted);
+  --color-dim: var(--dim);
+  --color-lamp: var(--lamp);
+  --color-lamp-deep: var(--lamp-deep);
+  --color-lamp-fill: var(--lamp-fill);
+  --color-lamp-glow: var(--lamp-glow);
+  --color-signal: var(--signal);
+  --color-signal-dim: var(--signal-dim);
+  --color-warn: var(--warn);
+  --color-mark-1: var(--mark-1);
+  --color-mark-2: var(--mark-2);
+  --color-mark-3: var(--mark-3);
+  --font-display: var(--font-display-face), 'Avenir Next', system-ui, sans-serif;
+  --font-body: var(--font-body-face), system-ui, sans-serif;
+  --font-mono: var(--font-mono-face), ui-monospace, monospace;
+  --radius-card: var(--card-radius);
+  --radius-card-sm: var(--card-radius-sm);
+}
+
+@theme {
+  --breakpoint-desk: 920px;
+  --breakpoint-wide: 1280px;
+  /* A content area wide enough for a main column beside a 400px side column
+     (`@split:`): main ≥ 520px + the 40px gap. Measured on the content, not the
+     viewport, so it holds whatever width the nav rail takes. */
+  --container-split: 960px;
+  /* A content area wide enough for two equal columns of ~300px (`@pair:`). */
+  --container-pair: 640px;
+  --animate-dot-live: liedmotif-pulse 2.2s ease-in-out infinite;
+  --animate-dot-gen: liedmotif-pulse 1.4s ease-in-out infinite;
+  --animate-gen-breathe: liedmotif-gen-breathe 1.8s ease-in-out infinite;
+  --animate-ready-flash: liedmotif-ready-flash 1.5s ease-out;
+  --animate-section-loop-ghost: liedmotif-section-loop-ghost 2.8s ease-in-out infinite;
+  --animate-pop-in: liedmotif-pop-in 0.14s cubic-bezier(0.2, 0.9, 0.3, 1);
+  --animate-dialog-in: liedmotif-dialog-in 0.22s cubic-bezier(0.2, 0.9, 0.3, 1);
+  --animate-sheet-up: liedmotif-sheet-up 0.22s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+@custom-variant light (&:where(html.light, html.light *));
+@custom-variant rail-exp (&:where(html.rail-expanded, html.rail-expanded *));
+@custom-variant rail-expanded (&:where(html.rail-expanded, html.rail-expanded *));
+@custom-variant rail-player (&:where(html.rail-player, html.rail-player *));
+@custom-variant rail-anim (&:where(html.rail-anim, html.rail-anim *));
+@custom-variant no-rail-exp (&:where(html:not(.rail-expanded), html:not(.rail-expanded) *));
+@custom-variant no-rail-player (&:where(html:not(.rail-player), html:not(.rail-player) *));
+/* Too short for the rail's mini player at 80% cover size. The rail's other
+   rows (brand, nav, mini text and controls, account) take ~608px collapsed
+   (plus 80% of a 76px cover) and ~516px expanded (plus 80% of a 183px cover);
+   one threshold covers both. */
+@custom-variant rail-short (@media (max-height: 670px));
+
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    scrollbar-gutter: stable;
+  }
+
+  html.light {
+    color-scheme: light;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    /* Never a sideways page scroll — e.g. the neighbor covers waiting beside
+       a swiped player cover. `clip`, not `hidden`, so sticky still works. */
+    overflow-x: clip;
+    background-color: var(--night);
+    background-image:
+      radial-gradient(1200px 500px at 50% -10%, rgba(255, 178, 92, 0.05), transparent 60%),
+      radial-gradient(900px 600px at 90% 110%, rgba(120, 90, 200, 0.06), transparent 60%);
+    background-attachment: fixed;
+    color: var(--paper);
+    font-family: var(--font-body-face), system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  html.light body {
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.65), transparent 420px);
+  }
+
+  @media (min-width: 920px) {
+    body {
+      font-size: 15.5px;
+    }
+  }
+
+  /* Radix overlays (sheets, popovers, dialogs) lock scroll via
+     react-remove-scroll, which compensates for the vanished scrollbar by
+     adding the gap as body margin/padding — but the root gutter above is
+     reserved permanently (`scrollbar-gutter: stable` holds even while the
+     lock's `overflow: hidden` is active), so that compensation IS the
+     layout shift. Outrank its `body[data-scroll-locked] … !important`
+     rules and zero it: opening any overlay must never move the page. */
+  html body[data-scroll-locked] {
+    margin-right: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  ::selection {
+    background: var(--lamp);
+    color: var(--night);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--lamp);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']) {
+    cursor: pointer;
+  }
+
+  svg {
+    display: block;
+  }
+}
+
+* {
+  scrollbar-color: var(--scroll-thumb) transparent;
+  scrollbar-width: thin;
+}
+
+.hide-scrollbar {
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes liedmotif-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes liedmotif-gen-breathe {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+    border-color: rgba(255, 178, 92, 0.5);
+  }
+}
+
+/* New Tracks landed: the slider's Track total lights in the lamp colour, then
+   settles back into its own colour (no closing keyframe). Colour and glow only,
+   so the readout never shifts. */
+@keyframes liedmotif-ready-flash {
+  0%,
+  40% {
+    color: var(--lamp);
+    text-shadow: 0 0 8px var(--lamp-glow);
+  }
+}
+
+/* The Loop a Part hint: a selection dragged open across the waveform, held long
+   enough to read, then gone before the next pass. */
+@keyframes liedmotif-section-loop-ghost {
+  0%,
+  8% {
+    width: 0;
+    opacity: 0;
+  }
+  16% {
+    width: 0;
+    opacity: 1;
+  }
+  60%,
+  82% {
+    width: 36%;
+    opacity: 1;
+  }
+  100% {
+    width: 36%;
+    opacity: 0;
+  }
+}
+
+@keyframes liedmotif-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* Centering lives on the element's `translate` property (Tailwind v4
+   utilities); the keyframes must stay off it — a `transform: translate(...)`
+   here would stack on top and shove the dialog toward the top-left for the
+   duration of the animation. */
+@keyframes liedmotif-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes liedmotif-sheet-up {
+  from {
+    opacity: 0.4;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes liedmotif-progress-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.15;
+  }
+}
+
+.animate-progress-pulse {
+  animation: liedmotif-progress-pulse 1.1s ease-in-out infinite;
+}
+
+.liedmotif-loading-dots span {
+  animation: liedmotif-dot-blink 1.2s ease-in-out infinite;
+}
+
+.liedmotif-loading-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.liedmotif-loading-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes liedmotif-dot-blink {
+  0%,
+  80%,
+  100% {
+    opacity: 0.2;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+/* The loading mark: the brand equalizer, playing. */
+@keyframes liedmotif-equalize {
+  0%,
+  100% {
+    transform: scaleY(0.48);
+  }
+  28% {
+    transform: scaleY(1);
+  }
+  58% {
+    transform: scaleY(0.7);
+  }
+  78% {
+    transform: scaleY(0.88);
+  }
+}
+
+/* Bars grow from the floor they share — `transform-box: fill-box` is what makes
+   `transform-origin` resolve against each rect instead of the SVG viewport, and
+   without it the bars slide rather than bounce. Per-bar delays come from
+   `presentLoader`. */
+.liedmotif-loader-bar {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: liedmotif-equalize 1.05s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+/* Surfaces painted with the brand take the mark in their own ink — its amber
+   bar is invisible against them. Outranks the per-bar `text-mark-*` tone. */
+.liedmotif-ink-loader .liedmotif-loader-bar {
+  color: currentColor;
+}
+
+/* A halo, not a blur: at full opacity the shadow swallows the bar's own edge
+   and the mark reads as out of focus. */
+.liedmotif-loader-glow .liedmotif-loader-bar {
+  filter: drop-shadow(0 0 5px color-mix(in srgb, currentColor 40%, transparent));
+}
+
+/* Light theme's mark colours are dark and saturated — they carry themselves on
+   a pale surface, and any halo below them only muddies the edge. */
+html.light .liedmotif-loader-glow .liedmotif-loader-bar {
+  filter: none;
+}
+
+/* Route-level loaders fade in late enough that a navigation resolving quickly
+   never flashes one. */
+@keyframes liedmotif-loader-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.liedmotif-loader-in {
+  animation: liedmotif-loader-in 0.12s ease-out 0.06s both;
+}
+
+/* An online-only region while offline (components/ui/online-only.tsx): every
+   control inside greys out alike, whatever its own disabled style. Unlayered,
+   so it outranks the utilities. */
+.online-only:disabled :is(button, input, select, textarea) {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* The iOS half of the portrait lock (the manifest covers Android). The height
+   bound keeps tablet and desktop installs — which carry no portrait
+   expectation — out of it, so only a phone-sized installed app can match. */
+.portrait-guard {
+  display: none;
+}
+
+@media (display-mode: standalone) and (orientation: landscape) and (max-height: 520px) {
+  .portrait-guard {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 8px;
+    padding: 24px;
+    text-align: center;
+    background: var(--color-bg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  /* The blanket rule above only clamps duration and iteration count, which
+     would settle the bars on the last keyframe — a squashed mark. Stopping the
+     animation outright rests them on the logo's own geometry instead. */
+  .liedmotif-loader-bar {
+    animation-name: none;
+  }
+}

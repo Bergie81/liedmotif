@@ -1,0 +1,2 @@
+ALTER TABLE "surprise_proposals" ADD COLUMN "started_session_id" uuid;--> statement-breakpoint
+ALTER TABLE "surprise_proposals" ADD CONSTRAINT "surprise_proposals_started_session_id_activity_sessions_id_fk" FOREIGN KEY ("started_session_id") REFERENCES "public"."activity_sessions"("id") ON DELETE cascade ON UPDATE no action;

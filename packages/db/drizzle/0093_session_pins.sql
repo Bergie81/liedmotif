@@ -1,0 +1,1 @@
+ALTER TABLE "activity_sessions" ADD COLUMN "pinned_at" timestamp with time zone;

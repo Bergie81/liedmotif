@@ -1,0 +1,2 @@
+ALTER TABLE "activity_sessions" ADD COLUMN "delete_requested_at" timestamp with time zone;--> statement-breakpoint
+CREATE INDEX "activity_sessions_delete_requested_idx" ON "activity_sessions" USING btree ("delete_requested_at") WHERE "activity_sessions"."delete_requested_at" is not null;

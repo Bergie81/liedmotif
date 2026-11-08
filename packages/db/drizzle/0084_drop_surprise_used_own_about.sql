@@ -1,0 +1,1 @@
+ALTER TABLE "surprise_proposals" DROP COLUMN "used_own_about";

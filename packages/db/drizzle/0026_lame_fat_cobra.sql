@@ -1,0 +1,1 @@
+ALTER TABLE "profile_cover_references" ADD COLUMN "is_owner_reference" boolean DEFAULT false NOT NULL;

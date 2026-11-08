@@ -1,0 +1,214 @@
+# CI gates: typecheck, lint, and the full Vitest suite —
+# INCLUDING the DB-gated repo/integration tests and the migrate-from-clean suite,
+# which only run when `TEST_DATABASE_URL` is set. Running them here keeps
+# database-bound invariants (e.g. the LLM singleton migration) enforced outside
+# local checkouts. The database name must contain "test" — the suites refuse to
+# run against anything else (`assertSafeTestDatabase`).
+#
+# Frontend Playwright coverage is paused during the UI migration. CI retains the
+# design-independent browser audio harness below.
+#
+# Actions are pinned to reviewed commit SHAs — the trailing comment names the
+# release the SHA belongs to, and `.github/dependabot.yml` keeps both current.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # A push webhook that GitHub drops (throttled during an Actions incident) is
+  # never replayed, which leaves a commit permanently untested. This is the way
+  # back: re-run the gate against a ref by hand.
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        # Match docker-compose.yml's `postgres-test` service.
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: liedmotif
+          POSTGRES_PASSWORD: liedmotif
+          POSTGRES_DB: liedmotif_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U liedmotif -d liedmotif_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      TEST_DATABASE_URL: postgres://liedmotif:liedmotif@localhost:5432/liedmotif_test
+      TEST_S3_ENDPOINT: http://127.0.0.1:9400
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Match docker-compose.yml's `s3-test` service: the S3 storage-adapter
+      # contract leg gates on TEST_S3_ENDPOINT and needs a real S3 API. Started
+      # as a step (not a GitHub service) because service containers cannot pass
+      # the command-line flags the gateway is configured with.
+      - run: >-
+          docker run -d --name s3-test -p 9400:7070
+          versity/versitygw
+          --access liedmotif-test --secret liedmotif-test-secret
+          --health /health posix /tmp
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          # Match the workspace engines field (`node >= 24`).
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run typecheck
+
+      - run: npm run lint
+
+      # Release gate: the shipped (production) tree must carry no high or
+      # critical advisory. Low/moderate are not failed here — the surviving low
+      # `@ai-sdk/provider-utils` family needs the breaking `ai@7` major upgrade,
+      # which is scheduled separately with provider integration tests.
+      - run: npm run audit:prod
+
+      - run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:9400/health; then exit 0; fi
+            sleep 1
+          done
+          echo "The S3 test server did not become healthy" >&2
+          exit 1
+
+      - run: npm test
+
+  # Upgrade-path guard. Stands up the schema from before blend identity, seeds
+  # pre-migration + pre/post-Change-Vibe rows, applies the blend migrations, and
+  # asserts legacy-null blend identity and analysis-provenance defaults. The suite also
+  # runs inside `test` above; this named job keeps the upgrade gate visible (and
+  # failable) on its own.
+  migration-upgrade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: liedmotif
+          POSTGRES_PASSWORD: liedmotif
+          POSTGRES_DB: liedmotif_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U liedmotif -d liedmotif_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      TEST_DATABASE_URL: postgres://liedmotif:liedmotif@localhost:5432/liedmotif_test
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx vitest run packages/db/src/migrate-upgrade.test.ts
+
+  # The Playwright Chromium
+  # playback-harness job. Runs the design-independent OfflineAudioContext DSP
+  # harness: oversampled true peak, output gap, loudness delta, click detection,
+  # and MP3 decode-offset parity. Also runs the offline-store check on real
+  # browser storage (IndexedDB) and the Offline Library behind the service
+  # worker with the network cut.
+  playback-harness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # The shipped worker decoder's measured parity anchor feeds the DIRECT
+    # Chrome-vs-image decoder comparison in the parity spec.
+    needs: worker-image
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+        working-directory: apps/web
+
+      # The MP3 decode-parity spec compares decodeAudioData against a host
+      # ffmpeg DIRECTLY (one result, no shared-constant tolerance games).
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+
+      # The SHIPPED worker decoder's anchor (exported by the worker-image job):
+      # the parity spec compares Chrome against it decoder-to-decoder.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: worker-image-decode-parity
+          path: smoke-out
+
+      - run: npx playwright test tests/e2e/blend-dsp-harness.spec.ts tests/e2e/offline-store-harness.spec.ts
+        working-directory: apps/web
+        env:
+          WORKER_IMAGE_PARITY_FILE: ${{ github.workspace }}/smoke-out/decode-parity-measured.json
+
+  # Build the worker image and
+  # smoke its ffmpeg in-container — exact package pin, build configuration,
+  # retained copyright file, one loudnorm fixture measure against the
+  # checked-in expectation (±0.5 LU), and the MP3 decode-offset parity
+  # constant against THIS image's decoder. See docker/ci/ffmpeg-smoke.mjs.
+  worker-image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      # This build's layer cache is the release workflow's amd64 cache: a
+      # release tag can restore caches written from `main` but never from
+      # another tag, so only `main` writes. Pull requests read it.
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          target: worker
+          tags: liedmotif-worker:ci
+          load: true
+          cache-from: type=gha,scope=worker-amd64
+          cache-to: ${{ github.ref == 'refs/heads/main' && 'type=gha,mode=max,scope=worker-amd64' || '' }}
+
+      # World-writable because the image runs as the unprivileged `node` user,
+      # whose uid does not match the runner's — the smoke must stay under that
+      # user to prove ffmpeg works there.
+      - run: mkdir -p smoke-out && chmod 777 smoke-out
+
+      - run: >-
+          docker run --rm -v "$PWD/docker/ci:/ci:ro"
+          -v "$PWD/apps/worker/src/audio/fixtures:/fixtures:ro"
+          -v "$PWD/smoke-out:/out"
+          --entrypoint node liedmotif-worker:ci /ci/ffmpeg-smoke.mjs
+
+      # The SHIPPED decoder's measured anchor, consumed by playback-harness for
+      # the direct Chrome-vs-worker-image decoder comparison.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: worker-image-decode-parity
+          path: smoke-out/decode-parity-measured.json

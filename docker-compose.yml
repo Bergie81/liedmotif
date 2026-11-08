@@ -1,0 +1,427 @@
+name: liedmotif
+
+# One compose file (no dev/prod split yet — add profiles only when behavior
+# actually diverges). Services: postgres, web, worker, caddy. App config is read
+# from `.env`; critical infrastructure variables also carry safe inline defaults
+# so the stack boots even with a sparse `.env`.
+#
+# Images: `web`, `worker`, `migrate` (the worker image) and `backup` name the
+# images each release publishes, next to the `build:` that makes them.
+# `LIEDMOTIF_VERSION` picks the tag. Its default, `local`, is never published,
+# so `docker compose up -d --build` (`npm run docker:up`) builds it from this
+# checkout. Set to a release version such as `1.2.0` (git tag `v1.2.0`),
+# `docker compose pull` fetches that release's images and
+# `docker compose up -d --no-build` starts them without building.
+#
+# Resource ceilings: `memswap_limit` reads the same variable as `mem_limit` on
+# every service, because left unset it defaults to twice the limit and a
+# swapping container drags the host down just as surely as an unbounded one.
+# `pids_limit` counts threads, not processes, so the worker's budget covers
+# ffmpeg's decode threads and the libvips pool alongside the processes. Every
+# ceiling is `.env`-tunable; `.env.example` lists the knobs. The `test`-profile
+# containers below are development fixtures and stay unhardened.
+#
+# Filesystem posture: `web` and `worker` run with a read-only root filesystem
+# and every capability dropped, on top of the unprivileged `node` user they
+# already are — so a compromised process cannot rewrite its own code, leave a
+# payload that survives a restart, or regain a privilege. Their writable paths
+# are exactly the `/data` volume and the `tmpfs` mounts each service declares
+# below, and each of those carries the write path that earns it.
+#
+# Base images are pinned to digests (the tag stays for readability) so a rebuild
+# cannot silently change the runtime — an upgrade is a reviewed commit, not a
+# side effect of `docker compose pull`. Refresh them deliberately:
+# `docker pull postgres:17-alpine && docker image inspect postgres:17-alpine
+# --format '{{index .RepoDigests 0}}'`. `s3-test` and `mailpit-test` stay
+# floating: they are test fixtures, never deployed.
+
+# One digest for every service that runs Postgres — the database, the test
+# fixture, and the backup sidecar's base — so an upgrade cannot move `pg_dump`
+# away from the server version it dumps. Dependabot cannot rewrite through the
+# alias and is told to skip `postgres` in `.github/dependabot.yml`; this pin
+# moves by hand, together with whatever data-directory migration the major
+# needs.
+x-postgres-image: &postgres-image postgres:17-alpine@sha256:dc17045ccfd343b49600570ea734b9c4991cf1c3f3302e67df51e3b402dd55c4
+
+services:
+  postgres:
+    image: *postgres-image
+    restart: unless-stopped
+    # No mem_limit: capping the database only converts a host-level OOM into a
+    # database-level one. Bounding the app containers is what keeps Postgres
+    # alive, and that is where the limits below sit.
+    security_opt: [no-new-privileges:true]
+    pids_limit: ${POSTGRES_PIDS_LIMIT:-512}
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-liedmotif}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-liedmotif}
+      POSTGRES_DB: ${POSTGRES_DB:-liedmotif}
+    volumes:
+      - liedmotif-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-liedmotif} -d ${POSTGRES_DB:-liedmotif}']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks: [internal]
+
+  # Scheduled backups, running from `docker compose up` with no operator action:
+  # a durable volume is not a recovered one, and a deleted volume or a mistyped
+  # `down -v` otherwise takes every Session and Track with it. `docker/backup.sh`
+  # holds the scheduling, encryption, rotation and health logic; the Admin sets
+  # the schedule in Settings → Backups, and docker/README.md documents the
+  # restore drill this exists for.
+  backup:
+    image: ghcr.io/bergie81/liedmotif-backup:${LIEDMOTIF_VERSION:-local}
+    build:
+      context: .
+      dockerfile: docker/backup.Dockerfile
+      args:
+        POSTGRES_IMAGE: *postgres-image
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    mem_limit: ${BACKUP_MEM_LIMIT:-256m}
+    memswap_limit: ${BACKUP_MEM_LIMIT:-256m}
+    pids_limit: ${BACKUP_PIDS_LIMIT:-128}
+    # Deliberately no `env_file`: the backup needs the database credentials and
+    # its own knobs, and nothing else in `.env` belongs in this container.
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:-liedmotif}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-liedmotif}
+      PGDATABASE: ${POSTGRES_DB:-liedmotif}
+      BACKUP_RETRY_SECONDS: ${BACKUP_RETRY_SECONDS:-300}
+      BACKUP_MIN_FREE_BYTES: ${BACKUP_MIN_FREE_BYTES:-2147483648}
+      BACKUP_ENCRYPTION_PASSPHRASE: ${BACKUP_ENCRYPTION_PASSPHRASE:-}
+      # With object storage there is no `/data` to snapshot.
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
+      # Retired: forwarded only so the sidecar can say they are ignored.
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-}
+      BACKUP_KEEP: ${BACKUP_KEEP:-}
+      BACKUP_INCLUDE_MEDIA: ${BACKUP_INCLUDE_MEDIA:-}
+    volumes:
+      - liedmotif-backups:/backups
+      # Read-only: a backup must never be able to change the library it copies.
+      - liedmotif-data:/data:ro
+    # The Postgres base image declares `VOLUME` on its data directory, which
+    # this sidecar never uses. Without a mount over that path, Docker creates an
+    # anonymous volume on every container create and `docker compose down`
+    # leaves it behind. The path must match the pinned image's `VOLUME`
+    # (`docker image inspect <image> --format '{{json .Config.Volumes}}'`).
+    tmpfs:
+      - /var/lib/postgresql/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      # The due query reads app_settings; before the first migration it fails
+      # and a fresh install would open on a "failing" backup.
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      # Unhealthy once the once-a-minute check stops (the loop is wedged) or the
+      # last success falls more than one scheduled slot behind: a backup nobody
+      # notices stopped is the failure mode this whole service exists to avoid.
+      test: ['CMD', '/bin/sh', '/usr/local/bin/liedmotif-backup', '--healthcheck']
+      interval: 300s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks: [internal]
+
+  # Dedicated, isolated Postgres for integration tests (the migrate-from-clean
+  # suite). Only started with the `test` profile (`npm run db:test:up`), so the
+  # default `docker compose up` never touches it. Published on the host so
+  # host-run Vitest can reach it via TEST_DATABASE_URL.
+  postgres-test:
+    image: *postgres-image
+    profiles: [test]
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-liedmotif}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-liedmotif}
+      POSTGRES_DB: ${TEST_POSTGRES_DB:-liedmotif_test}
+    volumes:
+      - liedmotif-pg-test:/var/lib/postgresql/data
+    ports:
+      - '127.0.0.1:${TEST_DB_PORT:-5433}:5432'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER:-liedmotif} -d ${TEST_POSTGRES_DB:-liedmotif_test}',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    networks: [internal]
+
+  # Dedicated S3 server (Versity S3 Gateway over a plain directory) for the S3
+  # storage-adapter contract tests (the bucket sibling of postgres-test). Only
+  # started with the `test` profile (`npm run s3:test:up`); published on the
+  # host so host-run Vitest can reach it via TEST_S3_ENDPOINT. Production
+  # compose deliberately has no object store — the S3 adapter targets external
+  # object storage an operator runs themselves.
+  s3-test:
+    image: versity/versitygw:latest
+    profiles: [test]
+    restart: unless-stopped
+    # No named volume: test objects need no durability, and per-run key
+    # prefixes would otherwise accumulate forever.
+    command:
+      - --access
+      - ${TEST_S3_ACCESS_KEY_ID:-liedmotif-test}
+      - --secret
+      - ${TEST_S3_SECRET_ACCESS_KEY:-liedmotif-test-secret}
+      - --health
+      - /health
+      - posix
+      - /tmp
+    ports:
+      - '127.0.0.1:${TEST_S3_PORT:-9400}:7070'
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://127.0.0.1:7070/health']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    networks: [internal]
+
+  # Local mail catcher for account email (the SMTP sibling of s3-test): the
+  # development `.env` points SMTP_URL at it, so placeholder addresses work and
+  # no mail leaves the machine, and the SMTP adapter's contract leg reads its
+  # mails back through the HTTP API. Only started with the `test` profile
+  # (`npm run mail:test:up`); web inbox at http://127.0.0.1:8025. Production
+  # compose deliberately has no Mailpit — an instance sends through the
+  # operator's own mail account.
+  mailpit-test:
+    image: axllent/mailpit:latest
+    profiles: [test]
+    restart: unless-stopped
+    # No named volume: caught mail needs no durability.
+    ports:
+      - '127.0.0.1:${TEST_SMTP_PORT:-1025}:1025'
+      - '127.0.0.1:${TEST_MAILPIT_PORT:-8025}:8025'
+    networks: [internal]
+
+  # One-shot database migration: applies the
+  # committed Drizzle app migrations, then the graphile_worker schema, and exits.
+  # web/worker gate their start on it completing successfully, so a fresh volume
+  # (or an upgraded image) can never boot the app against an unmigrated database.
+  # Idempotent — re-runs are no-ops on a current schema.
+  migrate:
+    image: ghcr.io/bergie81/liedmotif-worker:${LIEDMOTIF_VERSION:-local}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+    restart: 'no'
+    command: ['node', 'dist/migrate-stack.js']
+    security_opt: [no-new-privileges:true]
+    mem_limit: ${MIGRATE_MEM_LIMIT:-512m}
+    memswap_limit: ${MIGRATE_MEM_LIMIT:-512m}
+    pids_limit: ${MIGRATE_PIDS_LIMIT:-128}
+    environment:
+      NODE_ENV: production
+      # Deliberately NOT ${DATABASE_URL}: that variable belongs to host-side dev
+      # (`npm run dev` against a host-published Postgres) and would point the
+      # containers at a database they cannot reach. Override the in-cluster
+      # default with DOCKER_DATABASE_URL when using an external Postgres.
+      DATABASE_URL: ${DOCKER_DATABASE_URL:-postgres://liedmotif:liedmotif@postgres:5432/liedmotif}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [internal]
+
+  web:
+    image: ghcr.io/bergie81/liedmotif-web:${LIEDMOTIF_VERSION:-local}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: web
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+    # `/tmp` is `os.tmpdir()`. Image work streams through libvips without
+    # spilling to it — even a ceiling-sized 200 MP decode writes nothing here —
+    # so this is headroom for a dependency that falls back to a temp file, not
+    # a path the app uses. Small on purpose: anything written here is memory,
+    # charged against `mem_limit`.
+    tmpfs:
+      - /tmp:size=${WEB_TMPFS_SIZE:-64m}
+    # A memory ceiling is what keeps an oversized upload from taking the host —
+    # and Postgres — down with it. It bounds a runaway; it is NOT sized to let
+    # every legal request through, because the image-decode ceiling times the
+    # upload semaphore's width exceeds any sane default. A burst of
+    # maximum-resolution concurrent uploads is meant to be killed here, and the
+    # container restarts. Raise `WEB_MEM_LIMIT` if ordinary work is dying.
+    mem_limit: ${WEB_MEM_LIMIT:-2g}
+    memswap_limit: ${WEB_MEM_LIMIT:-2g}
+    pids_limit: ${WEB_PIDS_LIMIT:-256}
+    # On SIGTERM the web process drains in-flight responses (audio streams, zip
+    # downloads) for WEB_SHUTDOWN_GRACE_MS (default 15s) before closing the pool
+    # and exiting. This grace must exceed that window plus pool-close headroom;
+    # raise both together if WEB_SHUTDOWN_GRACE_MS is raised.
+    stop_grace_period: ${WEB_STOP_GRACE_PERIOD:-25s}
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: production
+      PORT: '3000'
+      HOSTNAME: 0.0.0.0
+      # See the migrate service for why this is not ${DATABASE_URL}. DATA_DIR is
+      # fixed: the data volume is always mounted at /data in the containers (a
+      # host-side DATA_DIR in .env must not leak in — env_file would otherwise
+      # inject it, and `environment` wins).
+      DATABASE_URL: ${DOCKER_DATABASE_URL:-postgres://liedmotif:liedmotif@postgres:5432/liedmotif}
+      DATA_DIR: /data
+      # Settings → Backups reads the sidecar's status and manifests here.
+      BACKUP_DIR: /backups
+      # Downloads are encrypted with the sidecar's passphrase, interpolated the
+      # same way as the backup service's so both containers see one value.
+      BACKUP_ENCRYPTION_PASSPHRASE: ${BACKUP_ENCRYPTION_PASSPHRASE:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Mirrors the caddy service so the boot posture check can warn when
+      # APP_PUBLIC_URL doesn't match the domain Caddy actually serves,
+      # or when that domain is published on this machine alone.
+      APP_DOMAIN: ${APP_DOMAIN:-localhost}
+      CADDY_HTTP_PORT: ${CADDY_HTTP_PORT:-}
+      CADDY_HTTPS_PORT: ${CADDY_HTTPS_PORT:-}
+      TAILSCALE_IP: ${TAILSCALE_IP:-}
+    # Host-only direct access (matches WEB_PORT / docker README). Bound to
+    # 127.0.0.1 so the LAN/Android path still goes only through Caddy HTTPS and the
+    # TLS posture isn't undermined.
+    ports:
+      - '127.0.0.1:${WEB_PORT:-2206}:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - liedmotif-data:/data
+      # Read-only: only the backup sidecar writes backups.
+      - liedmotif-backups:/backups:ro
+    healthcheck:
+      # curl: the check runs forever at steady state, and a Node cold-start
+      # per interval costs far more than the ~2 MB curl adds to the image.
+      test: ['CMD', 'curl', '-fsS', '-o', '/dev/null', 'http://127.0.0.1:3000/api/health']
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    networks: [internal]
+    # Docker Desktop defines this name for the host machine; Linux needs it mapped.
+    # It is how a same-machine Ollama is reached (docker/README.md).
+    extra_hosts: ['host.docker.internal:host-gateway']
+
+  worker:
+    image: ghcr.io/bergie81/liedmotif-worker:${LIEDMOTIF_VERSION:-local}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+    # PID-1 init reaper: the analysis pipeline spawns bounded ffmpeg child
+    # processes (SIGKILL on timeout); Node reaps its own children, but the init
+    # shim is belt-and-braces against orphaned grandchildren.
+    init: true
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+    # `/tmp` carries the heartbeat file and the analysis staging copy (inputs
+    # capped at 200 MB, refused below a further 64 MB of headroom). Sized
+    # rather than left at Docker's half-of-host-RAM default, because tmpfs
+    # pages are charged to `mem_limit`: an honest `statfs` turns an oversized
+    # stage into the retryable resource error the analyzer already classifies,
+    # instead of an OOM kill of the whole worker.
+    tmpfs:
+      - /tmp:size=${WORKER_TMPFS_SIZE:-512m}
+    mem_limit: ${WORKER_MEM_LIMIT:-2g}
+    memswap_limit: ${WORKER_MEM_LIMIT:-2g}
+    pids_limit: ${WORKER_PIDS_LIMIT:-512}
+    # The graceful `runner.stop()` path waits for in-flight jobs, and those run
+    # far past compose's 10s default: downloads are bounded at 120s, and a cover
+    # job SIGKILLed after its paid image call re-pays on retry. The worker bounds
+    # its own stop at the 150s analysis deadline plus a 10s pool close, so this
+    # must stay above 160s — SIGKILL then only ever lands on a process that
+    # ignored its own deadline.
+    stop_grace_period: 180s
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: production
+      # See the migrate service / web for why these are fixed or DOCKER_-prefixed.
+      DATABASE_URL: ${DOCKER_DATABASE_URL:-postgres://liedmotif:liedmotif@postgres:5432/liedmotif}
+      DATA_DIR: /data
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - liedmotif-data:/data
+    healthcheck:
+      # Shell-only heartbeat check (no Node cold-start): fresh within the 60 s
+      # window (`-mmin -1`) AND `state` is `ready` — a fresh heartbeat in
+      # `starting`/`degraded` is alive but cannot run jobs, so it stays
+      # unhealthy. The token matches `heartbeatPayload`'s JSON.stringify output.
+      test:
+        - CMD-SHELL
+        - >-
+          f="$${WORKER_HEARTBEAT_PATH:-/tmp/liedmotif-worker-heartbeat}";
+          test -n "$$(find "$$f" -mmin -1 2>/dev/null)" && grep -q '"state":"ready"' "$$f"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      # Healthy requires READY (DB reachable + runner started), and the DB
+      # wait alone may retry for up to a minute on a cold stack.
+      start_period: 90s
+    networks: [internal]
+    extra_hosts: ['host.docker.internal:host-gateway']
+
+  caddy:
+    image: caddy:2-alpine@sha256:5f5c8640aae01df9654968d946d8f1a56c497f1dd5c5cda4cf95ab7c14d58648
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    mem_limit: ${CADDY_MEM_LIMIT:-512m}
+    memswap_limit: ${CADDY_MEM_LIMIT:-512m}
+    pids_limit: ${CADDY_PIDS_LIMIT:-256}
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:-localhost}
+    # This machine only when unset, because whoever reaches `/setup` first becomes
+    # the Admin: a laptop on shared Wi-Fi stays closed until someone chooses
+    # otherwise. A plain port publishes on every interface, IPv4 and IPv6; a value
+    # such as 127.0.0.1:8080 moves the port and keeps it private.
+    ports:
+      - '${CADDY_HTTP_PORT:-127.0.0.1:80}:80'
+      # TCP only: HTTP/3 is disabled in the Caddyfile (`protocols h1 h2`)
+      # because QUIC over Docker's UDP NAT blackholes after container
+      # restarts, so no 443/udp mapping exists to receive it.
+      - '${CADDY_HTTPS_PORT:-127.0.0.1:443}:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on: [web]
+    networks: [internal]
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  liedmotif-pg:
+  liedmotif-pg-test:
+  liedmotif-data:
+  # Deliberately a separate volume from the data it protects: losing `/data` or
+  # the database volume must not take the backups with it.
+  liedmotif-backups:
+  caddy-data:
+  caddy-config:

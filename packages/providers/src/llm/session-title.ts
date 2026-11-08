@@ -1,0 +1,98 @@
+// Session-title derivation. Creative when available, deterministic otherwise: a
+// snapshot may carry an LLM-proposed `title` (from the free-text expansion or
+// `createSessionMetadata`), which wins; without one, a free-text session is named
+// from the user's own prompt and a structured/seeded session composes a name from
+// its Style Snapshot's mood, activity, and genres. Total and never an LLM call
+// itself, so naming never blocks creation (the text LLM stays optional).
+
+import {
+  clampAtWord,
+  derivePromptSessionName,
+  MAX_COVER_CONCEPT_LENGTH,
+  MAX_SESSION_TITLE_LENGTH,
+  sanitizeCoverConcept,
+} from '@liedmotif/shared';
+
+export { MAX_SESSION_TITLE_LENGTH };
+
+export { MAX_COVER_CONCEPT_LENGTH };
+
+export function clampCoverConcept(value: string): string {
+  return sanitizeCoverConcept(value)
+    .replace(
+      /\b(?:marvel|dc comics?|disney|pixar|ghibli|star wars|pokemon|nike|adidas)\b/gi,
+      'generic visual language',
+    )
+    .replace(
+      /\b(?:in the style of|by|like)\s+[A-Z][\p{L}'’-]+(?:\s+[A-Z][\p{L}'’-]+){0,3}/gu,
+      'using generic medium and composition language',
+    )
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Creative naming a text LLM proposes for a session (all cosmetic; empty when
+ *  the model omits them — consumers fall back to deterministic derivation). */
+export interface SessionNamingMetadata {
+  /** Proposed session Name, or '' when unavailable. */
+  title: string;
+  /** Proposed pool of creative track titles, one per track ordinal (refilled as a Session plays). */
+  trackTitles: string[];
+  /** Request-led compact lyric notes organized from related listener-profile details.
+   *  CONTRACT: non-empty ONLY for a vocal session WITH a listener profile — every
+   *  implementation enforces this on its output, so consumers merge it into the
+   *  snapshot without re-checking. */
+  lyricContext: string;
+  coverConcept: string;
+}
+
+/** The snapshot fields a title composes from — a structural subset of both the
+ *  provider `SessionStyleSnapshot` and the DB jsonb `StyleSnapshot` shapes. */
+export interface SessionTitleSnapshot {
+  /** LLM-proposed session Name; wins over derivation when present. */
+  title?: string;
+  mood?: string;
+  activity?: string;
+  genreTags?: string[];
+  energy?: string;
+  vocalMode?: string;
+}
+
+function titleCase(value: string): string {
+  return value.replace(/\b[a-z]/g, (c) => c.toUpperCase());
+}
+
+/**
+ * Derive the session's display Name. Precedence: an LLM-proposed `snapshot.title`
+ * (creative, when a text LLM produced one) → the user's free-text prompt, trimmed
+ * and word-truncated → a composition from the snapshot (`Mood Activity · Genres`)
+ * → energy + vocal mode, so even empty default controls yield something
+ * descriptive. Total: always returns a non-empty title.
+ */
+export function deriveSessionTitle(source: {
+  userPrompt?: string | null;
+  snapshot: SessionTitleSnapshot;
+}): string {
+  const proposed = typeof source.snapshot.title === 'string' ? source.snapshot.title.trim() : '';
+  if (proposed) return clampAtWord(proposed, MAX_SESSION_TITLE_LENGTH);
+
+  const prompt = source.userPrompt?.trim() ?? '';
+  if (prompt) return derivePromptSessionName(prompt);
+
+  const { mood = '', activity = '', genreTags = [], energy = '', vocalMode } = source.snapshot;
+  const moodActivity = [mood, activity]
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map(titleCase)
+    .join(' ');
+  const genres = genreTags
+    .slice(0, 2)
+    .map((tag) => titleCase(tag.trim()))
+    .filter(Boolean)
+    .join(', ');
+  const composed = [moodActivity, genres].filter(Boolean).join(' · ');
+  if (composed) return clampAtWord(composed, MAX_SESSION_TITLE_LENGTH);
+
+  const vocals = vocalMode === 'vocal' ? 'Vocal' : 'Instrumental';
+  return energy ? `${titleCase(energy)} Energy ${vocals}` : `${vocals} Session`;
+}

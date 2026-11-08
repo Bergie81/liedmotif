@@ -1,0 +1,1 @@
+ALTER TABLE "activity_sessions" ADD COLUMN "cover_style_hint_normalized" text;

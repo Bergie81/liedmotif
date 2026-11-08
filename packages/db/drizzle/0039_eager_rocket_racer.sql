@@ -1,0 +1,1 @@
+ALTER TABLE "activity_sessions" ADD COLUMN "vibe_switch_revision" integer;

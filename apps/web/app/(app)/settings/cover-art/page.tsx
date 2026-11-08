@@ -1,0 +1,39 @@
+import { getCoverArtSettings } from '@liedmotif/db';
+import { CoverArtForm } from '@/components/settings/cover-art-form';
+import {
+  SettingsCard,
+  SettingsColumns,
+  SettingsPageHeader,
+  SettingsSection,
+} from '@/components/settings/settings-ui';
+import { getDb } from '@/lib/db';
+import { requireAdmin } from '@/lib/session';
+import { getLlmProvider } from '@/lib/providers';
+
+export const dynamic = 'force-dynamic';
+
+export default async function CoverArtPage() {
+  await requireAdmin();
+  const db = getDb();
+  const [settings, llmProvider] = await Promise.all([
+    getCoverArtSettings(db),
+    getLlmProvider().catch(() => null),
+  ]);
+
+  return (
+    <section>
+      <SettingsPageHeader
+        title="Cover art"
+        description="Choose the look of generated Session covers."
+      />
+
+      <SettingsColumns>
+        <SettingsSection title="Default style">
+          <SettingsCard>
+            <CoverArtForm initial={settings} llmConfigured={llmProvider !== null} />
+          </SettingsCard>
+        </SettingsSection>
+      </SettingsColumns>
+    </section>
+  );
+}

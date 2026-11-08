@@ -1,0 +1,237 @@
+'use client';
+
+import { useState } from 'react';
+import type {
+  CoverStyleChoice,
+  StartSessionRequest,
+  StartSurpriseRequest,
+  SurpriseProposal,
+} from '@liedmotif/shared';
+import { cn } from '@/lib/cn';
+import type { SessionLanguageChoice } from '@/lib/session-languages';
+import type { OwnVoiceOffer } from '@/lib/voice';
+import { useClientId } from '@/lib/use-client-id';
+import { primaryButtonClass } from '@/components/ui/form-styles';
+import { LiedmotifLoader } from '@/components/ui/loading';
+import { OnlineOnly } from '@/components/ui/online-only';
+import { AlertBanner, sectionHeadingClass } from '@/components/ui/design-system';
+import { DescribeFineTuneSection, DescribeSessionPanel } from './describe-session-panel';
+import { SessionDurationControl } from './session-duration-control';
+import { useSeededPrompt } from './use-seeded-prompt';
+import { SessionExtras } from './session-start-controls';
+import { SurpriseMe } from './surprise-me';
+import {
+  buildPromptIntent,
+  buildStartRequest,
+  DEFAULT_GUARDRAIL_DRAFT,
+  formMatchesSurprise,
+  surpriseFineTune,
+  type DescribeFineTune,
+  type GuardrailDraft,
+} from './create-session-model';
+
+/** Everything the card holds for the next Session beyond the prompt text: the
+ * fine-tune picks and the Guardrails fold. It IS the pick set `buildPromptIntent`
+ * takes, so the card hands it over whole instead of re-mapping it field by field. */
+interface CreateSessionDraft extends DescribeFineTune {
+  guardrails: GuardrailDraft;
+}
+
+export function CreateSessionCard({
+  onStart,
+  llmConfigured,
+  initialPrompt,
+  defaultCoverStyle = 'poster_art',
+  defaultUseStandardCover = false,
+  defaultLanguage = 'auto',
+  forYouGenres = [],
+  ownVoiceOffer = 'hidden',
+  surprise,
+}: {
+  onStart: (request: StartSessionRequest) => void;
+  llmConfigured: boolean;
+  /** Seeds the Describe field once (the search hand-off), ready to review — never auto-submitted. */
+  initialPrompt?: string;
+  defaultCoverStyle?: CoverStyleChoice;
+  /** The owner's Settings → Cover art default for the standard-cover toggle. */
+  defaultUseStandardCover?: boolean;
+  /** The owner's Settings → Generation default; each Session can override it. */
+  defaultLanguage?: SessionLanguageChoice;
+  /** The User's For you genres from learned taste (ranked); empty means curated defaults. */
+  forYouGenres?: readonly string[];
+  /** How "Use my voice" is offered; defaults to `hidden` so a surface that
+   * forgets to pass it shows nothing rather than a control it cannot justify. */
+  ownVoiceOffer?: OwnVoiceOffer;
+  /** Offer Surprise Me beside the input, opening on the pending proposal (if
+   * any). Omitted = the surface has no Surprise Me. */
+  surprise?: {
+    pending: SurpriseProposal | null;
+    onStart: (request: StartSurpriseRequest) => void;
+  };
+}) {
+  const clientId = useClientId();
+  // The proposal Surprise Me is showing. A search hand-off outranks a pending
+  // one for the form's opening words: it is what the User just asked for.
+  const [proposal, setProposal] = useState(surprise?.pending ?? null);
+  const seed = initialPrompt ? null : proposal;
+  const [prompt, setPrompt] = useSeededPrompt(initialPrompt ?? seed?.edit.prompt);
+  const [draft, setDraft] = useState<CreateSessionDraft>(() => ({
+    genres: [],
+    energy: 'auto',
+    vocal: 'auto',
+    voice: 'any',
+    ownVoice: false,
+    language: defaultLanguage,
+    ...(seed ? surpriseFineTune(seed.edit, defaultLanguage) : {}),
+    guardrails: DEFAULT_GUARDRAIL_DRAFT,
+  }));
+  const [targetDurationMinutes, setTargetDurationMinutes] = useState<number | null>(
+    seed?.edit.durationMinutes ?? null,
+  );
+  const [coverStyle, setCoverStyle] = useState<CoverStyleChoice>(defaultCoverStyle);
+  const [useStandardCover, setUseStandardCover] = useState(defaultUseStandardCover);
+  // Start-without-profile (default off): reset by the card's unmount on
+  // navigation — a fresh visit always personalizes again.
+  const [skipProfile, setSkipProfile] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // A handed-off start navigates to /player, which unmounts this card; until
+  // that lands the button must show the click was taken.
+  const [starting, setStarting] = useState(false);
+  const duration = targetDurationMinutes != null ? { targetDurationMinutes } : {};
+
+  function startSession() {
+    if (starting) return;
+    setError(null);
+    const result = buildPromptIntent(prompt, draft);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    // The untouched proposal starts from its stored Style Snapshot, so the
+    // Session is the one previewed and no second expansion is bought. The
+    // snapshot already holds (or lacks) profile context, so a flipped Start
+    // without profile makes it the User's own request too.
+    if (
+      surprise &&
+      proposal &&
+      proposal.skipProfile === skipProfile &&
+      formMatchesSurprise(prompt, draft, proposal.edit, defaultLanguage)
+    ) {
+      startProposal(proposal);
+      return;
+    }
+    setStarting(true);
+    onStart({
+      ...buildStartRequest(result.intent, clientId, { coverStyle, skipProfile, useStandardCover }),
+      ...duration,
+    });
+  }
+
+  /** Start a proposal from its stored Style Snapshot, with the card's cover and length. */
+  function startProposal(next: SurpriseProposal) {
+    if (!surprise || starting) return;
+    setStarting(true);
+    surprise.onStart({
+      proposalId: next.id,
+      ...(coverStyle !== 'auto' ? { coverStyle } : {}),
+      useStandardCover,
+      ...duration,
+    });
+  }
+
+  // The modal's Start. A proposal made under the other Start without profile
+  // setting holds (or lacks) profile context its snapshot cannot shed, so it
+  // starts as the User's own request from the form it prefilled.
+  function startFromModal(next: SurpriseProposal) {
+    if (next.skipProfile === skipProfile) startProposal(next);
+    else startSession();
+  }
+
+  // A proposal's words, picks and length land in the form as a plain prefill;
+  // the Guardrails are the User's own and stay as set.
+  function showProposal(next: SurpriseProposal | null) {
+    setProposal(next);
+    if (!next) return;
+    setError(null);
+    setPrompt(next.edit.prompt);
+    setDraft((current) => ({ ...current, ...surpriseFineTune(next.edit, defaultLanguage) }));
+    setTargetDurationMinutes(next.edit.durationMinutes);
+  }
+
+  return (
+    <section aria-labelledby="create-session-heading" data-testid="create-session">
+      <h2 id="create-session-heading" className={cn(sectionHeadingClass, 'mt-6 mb-3')}>
+        Start a new Session
+      </h2>
+      <DescribeSessionPanel
+        prompt={prompt}
+        onPromptChange={setPrompt}
+        llmConfigured={llmConfigured}
+        skipProfile={skipProfile}
+        onSkipProfileChange={setSkipProfile}
+        autoFocus={Boolean(initialPrompt)}
+        action={
+          surprise ? (
+            <OnlineOnly>
+              <SurpriseMe
+                skipProfile={skipProfile}
+                initialProposal={surprise.pending}
+                starting={starting}
+                onProposalChange={showProposal}
+                onStart={startFromModal}
+              />
+            </OnlineOnly>
+          ) : null
+        }
+      />
+
+      <SessionExtras
+        coverStyle={coverStyle}
+        onCoverStyleChange={setCoverStyle}
+        useStandardCover={useStandardCover}
+        onUseStandardCoverChange={setUseStandardCover}
+        guardrails={draft.guardrails}
+        onGuardrailsChange={(patch) =>
+          setDraft((current) => ({ ...current, guardrails: { ...current.guardrails, ...patch } }))
+        }
+      >
+        <DescribeFineTuneSection
+          forYouGenres={forYouGenres}
+          picks={draft}
+          onPicksChange={(patch) => setDraft((current) => ({ ...current, ...patch }))}
+          ownVoiceOffer={ownVoiceOffer}
+          className="border-b border-line"
+        >
+          <SessionDurationControl
+            value={targetDurationMinutes}
+            onChange={setTargetDurationMinutes}
+            auto
+          />
+        </DescribeFineTuneSection>
+      </SessionExtras>
+
+      {/* The card commits from below the extras stack, so every pick a Session
+          starts with sits above the button that sends it. */}
+      <div className="mt-2">
+        <OnlineOnly>
+          <button
+            type="button"
+            data-testid="start-vibe"
+            onClick={startSession}
+            disabled={starting}
+            className={cn(primaryButtonClass, 'w-full')}
+          >
+            {starting ? <LiedmotifLoader /> : null}
+            {starting ? 'Starting…' : 'Start Session'}
+          </button>
+        </OnlineOnly>
+      </div>
+
+      {error ? (
+        <AlertBanner data-testid="create-error" className="mt-4">
+          {error}
+        </AlertBanner>
+      ) : null}
+    </section>
+  );
+}

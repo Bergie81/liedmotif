@@ -1,0 +1,2 @@
+ALTER TABLE "session_cover_generations" RENAME COLUMN "attempt_count" TO "safe_retry_count";--> statement-breakpoint
+ALTER TABLE "session_cover_generations" RENAME COLUMN "max_attempts" TO "max_safe_retries";

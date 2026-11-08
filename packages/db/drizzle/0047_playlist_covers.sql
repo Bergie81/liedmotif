@@ -1,0 +1,3 @@
+ALTER TABLE "session_cover_generations" ADD COLUMN "playlist_id" uuid;--> statement-breakpoint
+ALTER TABLE "session_cover_generations" ADD CONSTRAINT "session_cover_generations_playlist_id_playlists_id_fk" FOREIGN KEY ("playlist_id") REFERENCES "public"."playlists"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "session_cover_generations_owner_playlist_live_unique" ON "session_cover_generations" USING btree ("owner_user_id","playlist_id") WHERE state in ('reserved', 'planned', 'submitting', 'storing');

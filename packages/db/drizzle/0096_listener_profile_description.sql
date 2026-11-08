@@ -1,0 +1,1 @@
+ALTER TABLE "listener_profiles" ADD COLUMN "description" text;

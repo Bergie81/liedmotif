@@ -1,0 +1,2 @@
+CREATE INDEX "usage_events_created_at_idx" ON "usage_events" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX "playback_events_prunable_idx" ON "playback_events" USING btree ("created_at") WHERE "playback_events"."event_type" <> 'started' or "playback_events"."track_id" is null;

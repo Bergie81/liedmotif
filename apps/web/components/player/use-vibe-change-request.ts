@@ -1,0 +1,76 @@
+'use client';
+
+// The provider-scoped Change Vibe workflow: a fire-and-forget submit with
+// single-flight, pending, and error state. Lives beside — not inside — the
+// PlayerProvider so the audio-host orchestrator stays about playback hosting;
+// the provider mounts this once (giving the request its cross-route lifetime)
+// and hands the result through its context.
+//
+// This gate is DELIBERATELY independent of the player hook's Stop/More Like
+// This gate: stopping must never wait on a pending restyle. A Stop that beats
+// an in-flight change makes the late restyle fail server-side against the
+// no-longer-active session; the late success is dropped by the caller's
+// engagement guard, and the session-scoped error only surfaces where that
+// session still renders — so the race resolves without a mis-applied write.
+// A submit that arrives while one is in flight is dropped by the gate; the
+// player disables its triggers on `pendingSessionId`, so a dropped call means
+// a surface forgot that check.
+
+import { useCallback, useMemo, useRef, useState } from 'react';
+import type { ChangeVibeIntentInput, SessionSummary } from '@liedmotif/shared';
+import { changeVibe, setSessionDuration, type ChangeVibeOptions } from '@/lib/api-client';
+import {
+  runPlayerSessionAction,
+  type PlayerSessionActionGate,
+} from './player-session-action-runner';
+
+/** The Change Vibe request narration the player surfaces read. */
+export interface VibeChangeState {
+  /** The session whose Change Vibe request is in flight, or null. */
+  pendingSessionId: string | null;
+  /** The last failed submit, scoped to its session; cleared on the next submit. */
+  error: { sessionId: string; message: string } | null;
+}
+
+export function useVibeChangeRequest(
+  /** Applies the restyled summary — the caller owns the "is this session still
+   * the engaged source" guard, since it owns the engagement model. */
+  applyRestyledSession: (session: SessionSummary) => void,
+): {
+  vibeChange: VibeChangeState;
+  submitChangeVibe: (
+    sessionId: string,
+    input: ChangeVibeIntentInput | undefined,
+    options: ChangeVibeOptions,
+  ) => void;
+} {
+  const gate = useRef<PlayerSessionActionGate>({ active: null });
+  const [pendingSessionId, setPendingSessionId] = useState<string | null>(null);
+  const [error, setError] = useState<VibeChangeState['error']>(null);
+
+  const submitChangeVibe = useCallback(
+    (sessionId: string, input: ChangeVibeIntentInput | undefined, options: ChangeVibeOptions) => {
+      void runPlayerSessionAction({
+        gate: gate.current,
+        action: 'change-vibe',
+        failureLabel: 'Change Vibe failed',
+        // The sheet submits a duration-only edit without an intent; that is a
+        // Session policy write, not a restyle, so it takes the duration route.
+        request: () =>
+          input
+            ? changeVibe(sessionId, input, options)
+            : setSessionDuration(sessionId, options.targetDurationMinutes ?? null),
+        onBusyChange: (action) => setPendingSessionId(action ? sessionId : null),
+        onFailure: (err) => setError(err ? { sessionId, message: err.message } : null),
+        onSuccess: (data) => applyRestyledSession(data.session),
+      });
+    },
+    [applyRestyledSession],
+  );
+
+  const vibeChange = useMemo<VibeChangeState>(
+    () => ({ pendingSessionId, error }),
+    [pendingSessionId, error],
+  );
+  return { vibeChange, submitChangeVibe };
+}

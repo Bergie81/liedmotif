@@ -1,0 +1,6 @@
+{
+  "description": "MP3 decode-offset parity constant. The marker fixture carries a Hann-windowed 1 kHz burst starting at exactly 1.000 s; `anchorSeconds` is where the ffmpeg decode path first reaches `thresholdAmplitude` (the window ramp adds ~2.2 ms). The worker test asserts the live ffmpeg decode still lands here; the browser harness asserts `decodeAudioData` lands on the SAME constant — equal LAME/Xing encoder-delay handling on both sides of a mixed media↔buffer edge.",
+  "anchorSeconds": 1.00222,
+  "thresholdAmplitude": 0.1,
+  "toleranceSeconds": 0.002
+}

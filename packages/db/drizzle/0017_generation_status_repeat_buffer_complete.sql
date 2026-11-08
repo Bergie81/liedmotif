@@ -1,0 +1,1 @@
+ALTER TYPE "public"."session_generation_status" ADD VALUE 'repeat_buffer_complete' BEFORE 'provider_credits';

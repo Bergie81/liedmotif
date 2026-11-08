@@ -1,0 +1,2 @@
+ALTER TABLE "playback_events" ADD COLUMN "client_event_id" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "playback_events_session_client_event_id_uq" ON "playback_events" USING btree ("activity_session_id","client_event_id");

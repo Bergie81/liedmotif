@@ -1,0 +1,1 @@
+ALTER TABLE "listening_preferences" DROP COLUMN "reporting_timezone";

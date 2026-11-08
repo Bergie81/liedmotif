@@ -1,0 +1,28 @@
+{
+  "name": "@liedmotif/worker",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "author": "Thomas Bergmann",
+  "scripts": {
+    "dev": "NO_LOG_SUCCESS=1 tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsup",
+    "migrate": "tsx src/migrate.ts",
+    "smoke:cover-models": "tsx scripts/cover-model-test.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@liedmotif/db": "*",
+    "@liedmotif/media": "*",
+    "@liedmotif/providers": "*",
+    "@liedmotif/shared": "*",
+    "@liedmotif/storage": "*",
+    "graphile-worker": "^0.18.0",
+    "sharp": "^0.35.4"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.15"
+  }
+}
