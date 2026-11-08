@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 
-import { createElement as h, useState } from 'react';
-import { act, cleanup, render, screen, within } from '@testing-library/react';
+import { createElement as h } from 'react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
+import { presentNewMusicStatus } from './new-music-status';
 import { PlayerSessionOptions } from './player-session-options';
-import { useSessionModeToggle } from './use-session-mode-toggle';
 
 // Lazily loaded and needs the app shell: left real, it throws whenever its import
 // settles before the test ends, which makes these tests depend on load timing.
@@ -12,25 +12,32 @@ vi.mock('./regenerate-cover-dialog', () => ({ RegenerateCoverDialog: () => null 
 
 afterEach(() => {
   cleanup();
-  vi.useRealTimers();
-  vi.unstubAllGlobals();
+});
+
+const GENERATING = presentNewMusicStatus({
+  session: {
+    sessionMode: 'keep_going',
+    targetDurationMinutes: 60,
+    generatedDurationSeconds: 22 * 60,
+    unknownDurationTrackCount: 0,
+  },
+  generatingAhead: 2,
+  generationStatus: 'ok',
 });
 
 function Options({
   changeVibeAvailable = true,
   onConvertToPlaylist = () => {},
+  onOpenNewMusic = () => {},
+  onOpenLyrics = () => {},
+  lyricsAvailable = false,
 }: {
   changeVibeAvailable?: boolean;
   onConvertToPlaylist?: () => void;
+  onOpenNewMusic?: () => void;
+  onOpenLyrics?: () => void;
+  lyricsAvailable?: boolean;
 }) {
-  const [error, setError] = useState<string | null>(null);
-  const modeToggle = useSessionModeToggle({
-    sessionId: 'session-1',
-    sessionMode: 'repeat',
-    available: true,
-    onSessionChange: () => {},
-    onError: setError,
-  });
   const noop = () => {};
   const succeed = async () => null;
   const complete = async () => {};
@@ -38,12 +45,13 @@ function Options({
     sessionId: 'session-1',
     sessionTitle: 'Night',
     coverImageId: null,
-    modeToggle,
-    actionError: error,
+    newMusicStatus: GENERATING,
+    onOpenNewMusic,
+    actionError: null,
     busy: false,
     onStop: noop,
-    lyricsAvailable: false,
-    onOpenLyrics: noop,
+    lyricsAvailable,
+    onOpenLyrics,
     onOpenTrackData: noop,
     track: null,
     onConvertToPlaylist,
@@ -63,27 +71,29 @@ function Options({
   });
 }
 
-it('reports refused activation inside the still-open options dialog', async () => {
-  vi.useFakeTimers();
-  vi.stubGlobal('fetch', async () => ({
-    json: async () => ({
-      ok: false,
-      error: {
-        code: 'internal_error',
-        message: 'Mode change failed.',
-        retryable: true,
-      },
-    }),
-  }));
-  render(h(Options));
+it('states the New music status in its row and hands over to the New music sheet', () => {
+  const onOpenNewMusic = vi.fn();
+  render(h(Options, { onOpenNewMusic }));
   act(() => screen.getByRole('button', { name: 'Session and Track options' }).click());
-  act(() => screen.getByTestId('player-session-mode-menu-toggle').click());
-  await act(() => vi.advanceTimersByTimeAsync(5000));
-  const dialog = screen.getByRole('dialog');
-  expect(within(dialog).getByRole('alert').textContent).toBe('Mode change failed.');
-  expect(
-    within(dialog).getByTestId('player-session-mode-menu-toggle').getAttribute('aria-pressed'),
-  ).toBe('false');
+
+  const row = screen.getByTestId('player-new-music-row');
+  expect(row.textContent).toContain('New music');
+  expect(row.textContent).toContain('Generating 2 · 22 / 60 min');
+
+  act(() => row.click());
+
+  expect(onOpenNewMusic).toHaveBeenCalledOnce();
+  expect(screen.queryByRole('dialog')).toBeNull();
+});
+
+it('opens the Lyrics from their tile', () => {
+  const onOpenLyrics = vi.fn();
+  render(h(Options, { lyricsAvailable: true, onOpenLyrics }));
+  act(() => screen.getByRole('button', { name: 'Session and Track options' }).click());
+
+  act(() => screen.getByTestId('player-open-lyrics').click());
+
+  expect(onOpenLyrics).toHaveBeenCalledOnce();
 });
 
 it('offers Convert to Playlist with no current Track, as after a reload before play', () => {

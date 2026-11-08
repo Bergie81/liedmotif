@@ -1,6 +1,6 @@
 'use client';
 
-// The Available-offline switch for one collection: the first row of its options
+// The Available-offline switch for one collection: at the top of its options
 // menu, with the sync state under the label — "Downloading 12 / 30" while the
 // device fetches, "Ready offline" once it holds every Track. The mark lives on
 // this device only. Absent wherever the page cannot store music offline (plain

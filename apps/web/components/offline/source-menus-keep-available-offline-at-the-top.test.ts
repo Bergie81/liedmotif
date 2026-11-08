@@ -1,16 +1,17 @@
 // @vitest-environment jsdom
 
-// Available offline is the first row of every options menu that reaches a
+// Available offline sits at the top of every options menu that reaches a
 // Playlist or Session: My Sessions and both Player sources. In the Player the
-// one-tap tiles stay above the list, so the switch leads the list under them.
+// one-tap tiles stay above the list, and a Session's New music row, the one
+// control over what it spends, comes just before the switch.
 
 import { createElement as h } from 'react';
 import type { PlaylistSummaryItem, SessionListItem } from '@liedmotif/shared';
 import { act, cleanup, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { presentNewMusicStatus } from '@/components/player/new-music-status';
 import { PlayerSessionOptions } from '@/components/player/player-session-options';
 import { PlaylistOptions } from '@/components/player/playlist-options';
-import { useSessionModeToggle } from '@/components/player/use-session-mode-toggle';
 import { SessionOptionsSheet } from '@/components/sessions/session-options-sheet';
 import { Sheet } from '@/components/ui/sheet';
 
@@ -33,18 +34,16 @@ const succeed = async () => null;
 const complete = async () => {};
 
 function SessionInPlayer() {
-  const modeToggle = useSessionModeToggle({
-    sessionId: 'session-1',
-    sessionMode: 'repeat',
-    available: true,
-    onSessionChange: noop,
-    onError: noop,
-  });
   return h(PlayerSessionOptions, {
     sessionId: 'session-1',
     sessionTitle: 'Night',
     coverImageId: null,
-    modeToggle,
+    newMusicStatus: presentNewMusicStatus({
+      session: { sessionMode: 'repeat' },
+      generatingAhead: 0,
+      generationStatus: 'ok',
+    }),
+    onOpenNewMusic: noop,
     actionError: null,
     busy: false,
     onStop: noop,
@@ -106,7 +105,7 @@ function expectFirst(before: HTMLElement, after: HTMLElement) {
   expect(before.compareDocumentPosition(after)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
 }
 
-describe('options menus lead with Available offline', () => {
+describe('options menus keep Available offline at the top', () => {
   it('in My Sessions, above Resume Session', () => {
     render(
       h(
@@ -142,7 +141,8 @@ describe('options menus lead with Available offline', () => {
 
     const dialog = within(screen.getByRole('dialog'));
     const toggle = dialog.getByTestId('offline-toggle');
-    expectFirst(dialog.getByTestId('player-session-mode-menu-toggle'), toggle);
+    expectFirst(dialog.getByTestId('player-regenerate-cover'), toggle);
+    expectFirst(dialog.getByTestId('player-new-music-row'), toggle);
     expectFirst(toggle, dialog.getByText('This Track'));
   });
 

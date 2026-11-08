@@ -347,11 +347,12 @@ export function changeVibe(
 export function setSessionDuration(
   sessionId: string,
   targetDurationMinutes: number | null,
+  sessionMode?: SessionMode,
 ): Promise<ApiResult<SetSessionDurationData>> {
   return callApi<SetSessionDurationData>(
     '/api/sessions/duration',
     setSessionDurationResponseSchema,
-    { method: 'POST', body: { sessionId, targetDurationMinutes } },
+    { method: 'POST', body: { sessionId, targetDurationMinutes, sessionMode } },
   );
 }
 

@@ -11,12 +11,13 @@ import { Square } from 'lucide-react';
 import { MAX_SESSION_TITLE_LENGTH } from '@liedmotif/shared';
 import { OfflineMenuRow } from '@/components/offline/offline-menu-row';
 import { largeSecondaryButtonClass } from '@/components/ui/form-styles';
+import { MenuRow } from '@/components/ui/menu-row';
 import { OnlineOnly } from '@/components/ui/online-only';
 import { SheetClose } from '@/components/ui/sheet';
 import { cn } from '@/lib/cn';
 import { sessionDownloadUrl, startFileDownload } from '@/lib/downloads';
-import { SessionModeToggleTile } from './session-mode-control';
-import type { SessionModeToggleProps } from './use-session-mode-toggle';
+import { NEW_MUSIC_ICONS } from './new-music-icons';
+import { newMusicStatusLine, type NewMusicStatus } from './new-music-status';
 import { SESSION_OPTIONS_SCOPES, type AvailableSessionOptionsId } from './player-options-model';
 import {
   sectionLoopAction,
@@ -39,7 +40,8 @@ const RegenerateCoverDialog = dynamic(
 export function PlayerSessionOptions({
   sessionId,
   sessionTitle,
-  modeToggle,
+  newMusicStatus,
+  onOpenNewMusic,
   actionError,
   coverImageId,
   busy,
@@ -65,7 +67,9 @@ export function PlayerSessionOptions({
 }: {
   sessionId: string;
   sessionTitle: string;
-  modeToggle: SessionModeToggleProps;
+  newMusicStatus: NewMusicStatus;
+  /** Opens the New music sheet (parent-owned, so two sheets never stack). */
+  onOpenNewMusic: () => void;
   /** The player's action feedback, which this sheet covers while it is up. */
   actionError: string | null;
   coverImageId: string | null;
@@ -180,7 +184,7 @@ export function PlayerSessionOptions({
         coverImageId={coverImageId}
         trackTitle={track?.title ?? null}
         tiles={{
-          modeToggle: <SessionModeToggleTile {...modeToggle} />,
+          lyrics: { disabled: !lyricsAvailable, onSelect: onOpenLyrics },
           blend: { enabled: blendEnabled, onToggle: onToggleBlend },
           sourceCover: {
             label: 'Session Cover',
@@ -193,10 +197,31 @@ export function PlayerSessionOptions({
         scopes={SESSION_OPTIONS_SCOPES}
         actions={actions}
         actionError={actionError}
-        firstRow={<OfflineMenuRow kind="session" id={sessionId} />}
+        leadRows={
+          <>
+            <NewMusicRow status={newMusicStatus} onOpen={onOpenNewMusic} />
+            <OfflineMenuRow kind="session" id={sessionId} />
+          </>
+        }
         footer={<StopSession busy={busy} onStop={onStop} />}
       />
     </>
+  );
+}
+
+function NewMusicRow({ status, onOpen }: { status: NewMusicStatus; onOpen: () => void }) {
+  const Icon = NEW_MUSIC_ICONS[status.icon];
+  return (
+    <SheetClose asChild>
+      <MenuRow
+        data-testid="player-new-music-row"
+        icon={<Icon aria-hidden />}
+        label="New music"
+        description={newMusicStatusLine(status)}
+        onlineOnly
+        onClick={onOpen}
+      />
+    </SheetClose>
   );
 }
 

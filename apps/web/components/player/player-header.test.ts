@@ -1,16 +1,17 @@
 // @vitest-environment jsdom
 
 // The header's action row is shared by both Playback sources, so the parts only
-// one of them has ride in as slots. The Session player fills the mode-toggle
-// slot from its session summary; the Playlist player has no Session mode and
-// passes nothing, which must leave the row exactly as it was.
+// one of them has ride in as slots. The Session player fills the New music slot
+// from its session summary; the Playlist player generates nothing and passes
+// nothing, which leaves only the shared controls in the row.
 
 import { act, createElement as h, type ReactNode } from 'react';
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { PlayerHeader } from './player-header';
-import { SessionModeToggleButton } from './session-mode-control';
+import { presentNewMusicStatus } from './new-music-status';
+import { NewMusicStatusButton } from './new-music-status-button';
 
 beforeAll(() => {
   // The scrambling title/subtitle ask the platform whether motion is welcome;
@@ -37,7 +38,7 @@ afterEach(() => {
 });
 
 /** The row's icon buttons carry tooltips, whose timing the root layout owns. */
-function renderHeader(modeToggle?: ReactNode) {
+function renderHeader(newMusic?: ReactNode) {
   return render(
     h(
       TooltipProvider,
@@ -62,34 +63,38 @@ function renderHeader(modeToggle?: ReactNode) {
           onAddToPlaylist: () => {},
         },
         options: null,
-        modeToggle,
+        newMusic,
       }),
     ),
   );
 }
 
 describe('PlayerHeader', () => {
-  it('places the mode toggle ahead of the blend toggle', () => {
+  it('places the New music status ahead of the blend toggle', () => {
     const view = renderHeader(
-      h(SessionModeToggleButton, {
-        sessionMode: 'keep_going',
-        pending: false,
-        disabled: false,
-        onToggle: () => {},
+      h(NewMusicStatusButton, {
+        status: presentNewMusicStatus({
+          session: { sessionMode: 'keep_going' },
+          generatingAhead: 0,
+          generationStatus: 'ok',
+        }),
+        generatingAhead: 0,
+        playableTracks: [],
+        onOpen: () => {},
       }),
     );
 
-    const indicator = view.getByTestId('player-session-mode-toggle');
+    const indicator = view.getByTestId('player-new-music');
     const blend = view.getByTestId('player-blend-toggle');
     expect(
       indicator.compareDocumentPosition(blend) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
 
-  it('shows no mode toggle for a source without one (a Playlist)', () => {
+  it('shows no New music status for a source that generates nothing (a Playlist)', () => {
     const view = renderHeader();
 
-    expect(view.queryByTestId('player-session-mode-toggle')).toBeNull();
+    expect(view.queryByTestId('player-new-music')).toBeNull();
     expect(view.getByTestId('player-blend-toggle')).toBeTruthy();
   });
 

@@ -527,6 +527,59 @@ describe.each(SURFACES)('the $name surface', (surface) => {
   });
 });
 
+describe('the New music status on a Session', () => {
+  const status = () => screen.getByTestId('player-new-music');
+
+  it('counts live generation towards the target, from the same numbers as the slider', () => {
+    SESSION_SURFACE.show(
+      playingPlayer({
+        generatingTracksAhead: 2,
+        generatedDurationSeconds: 22 * 60,
+        unknownDurationTrackCount: 0,
+      }),
+    );
+
+    expect(status().textContent).toContain('Generating 2');
+    expect(status().textContent).toContain('22 / 60 min');
+    expect(screen.getByTestId('new-music-ring')).toBeTruthy();
+    expect(screen.getByTestId('progress-track-number').textContent).toContain('Generating 2');
+  });
+
+  it('shows no ring while nothing is being generated', () => {
+    SESSION_SURFACE.show(playingPlayer({ generatedDurationSeconds: 12 * 60 }));
+
+    expect(status().textContent).toContain('12 / 60 min');
+    expect(screen.queryByTestId('new-music-ring')).toBeNull();
+  });
+
+  it('drops the ring while the worker is silent on Tracks in flight', () => {
+    SESSION_SURFACE.show(
+      playingPlayer({ generatingTracksAhead: 2, generationStatus: 'worker_stalled' }),
+    );
+
+    expect(status().getAttribute('aria-label')).toBe('New music: New music paused. Change.');
+    expect(screen.queryByTestId('new-music-ring')).toBeNull();
+  });
+
+  it('opens the New music sheet from the header', () => {
+    SESSION_SURFACE.show(playingPlayer());
+
+    fireEvent.click(status());
+
+    expect(screen.getByRole('dialog', { name: 'New music' })).toBeTruthy();
+  });
+
+  it('opens the same sheet from the options menu, one sheet at a time', () => {
+    SESSION_SURFACE.show(playingPlayer());
+
+    const sheet = openOptions('Session');
+    fireEvent.click(sheet.getByTestId('player-new-music-row'));
+
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
+    expect(screen.getByRole('dialog', { name: 'New music' })).toBeTruthy();
+  });
+});
+
 describe('the Session shell belongs to a Session alone', () => {
   /** A player with every shell piece lit, whichever surface it is handed to. */
   const busySessionPlayer = () =>
@@ -549,14 +602,13 @@ describe('the Session shell belongs to a Session alone', () => {
     Reroll: () => screen.queryAllByRole('button', { name: /^Reroll Track/ }),
     'Change Vibe': () => screen.queryAllByRole('button', { name: 'Change Vibe' }),
     'More Like This': () => screen.queryAllByRole('button', { name: 'More Like This' }),
-    'Session mode': () => screen.queryAllByRole('button', { name: /Generate new Tracks/ }),
-    'Session duration': () => screen.queryAllByRole('button', { name: /Edit Session duration/ }),
+    'New music': () => screen.queryAllByRole('button', { name: /^New music:/ }),
   };
 
   const shellOnScreen = () => Object.keys(SHELL).filter((piece) => SHELL[piece]!().length > 0);
 
   const SHELL_OPTIONS = [
-    'Generate new Tracks',
+    'New music',
     'Reroll Track',
     'Change Vibe',
     'Rename Session',

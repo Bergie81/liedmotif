@@ -171,7 +171,7 @@ export function PlaylistOptions({
           // reference into the LISTENER's own playlists, never the owner's.
           addToPlaylist: { disabled: track === null, onSelect: onAddTrackToPlaylist },
         }}
-        firstRow={<OfflineMenuRow kind="playlist" id={playlist.id} />}
+        leadRows={<OfflineMenuRow kind="playlist" id={playlist.id} />}
         scopes={visitor ? visitorPlaylistOptionsScopes() : playlistOptionsScopes(playlist.kind)}
         actions={actions}
         actionError={actionError}

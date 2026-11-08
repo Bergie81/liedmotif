@@ -36,7 +36,7 @@ export function PlayerHeader({
   announcement,
   controls,
   statusMark,
-  modeToggle,
+  newMusic,
   options,
 }: {
   /** The status line above the title (a source may suffix its own kind). */
@@ -59,8 +59,8 @@ export function PlayerHeader({
      * Shared reference into the LISTENER's own playlists. */
     onAddToPlaylist: () => void;
   };
-  /** The Session's generation toggle; a Playlist has no mode and omits it. */
-  modeToggle?: ReactNode;
+  /** The Session's New music status; a Playlist generates nothing and omits it. */
+  newMusic?: ReactNode;
   /** The source's options control, revealed on the desk breakpoint only. */
   options: ReactNode;
 }) {
@@ -71,7 +71,7 @@ export function PlayerHeader({
           them. Beside the cover it rises by the padding around its icons, so
           the icons themselves line up with the cover's top edge. */}
       <div className="flex items-center justify-end gap-2 @split:-mt-[10px]">
-        {modeToggle}
+        {newMusic}
         {controls ? (
           // The blend setting and the retention actions save on the server;
           // looping a part only needs the audio this device already has.
@@ -96,7 +96,7 @@ export function PlayerHeader({
         ) : null}
         <span className="hidden flex-none desk:inline-flex">{options}</span>
       </div>
-      <div className="flex items-center font-mono text-[10px] uppercase tracking-[0.16em] text-lamp desk:mt-6">
+      <div className="mt-3 flex items-center font-mono text-[10px] uppercase tracking-[0.16em] text-lamp desk:mt-6">
         {statusMark}
         <span className="truncate">{statusLabel}</span>
       </div>

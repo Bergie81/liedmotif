@@ -26,7 +26,6 @@ describe('player options menu', () => {
 
   it('gives both sources the shared Track rows, plus what only that source can do', () => {
     expect(SESSION_OPTIONS_SCOPES[0].rows.map((row) => row.id)).toEqual([
-      'lyrics',
       'rename-track',
       'track-data',
       'section-loop',

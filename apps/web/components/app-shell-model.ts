@@ -52,15 +52,17 @@ export function isSettingsDetailRoute(pathname: string): boolean {
   return pathname.startsWith('/settings/');
 }
 
-/** The chrome's Tracks-left readout, or `null` when there is no limit to count down to. */
-export function deriveGenerationHeadroom(usage: ShellUsage): {
+export interface GenerationHeadroom {
   remainingTracks: number;
   remainingRatio: number;
   /** Which window the figure belongs to, so a readout can name the period it
    *  covers. A One-time budget has no period: its total never returns. */
   window: 'day' | 'month' | 'total';
   critical: boolean;
-} | null {
+}
+
+/** The chrome's Tracks-left readout, or `null` when there is no limit to count down to. */
+export function deriveGenerationHeadroom(usage: ShellUsage): GenerationHeadroom | null {
   const { dailyTracksLimit, monthlyTracksLimit } = usage;
   if (dailyTracksLimit === null || monthlyTracksLimit === null) return null;
   const dailyRemaining = Math.max(dailyTracksLimit - usage.dailyTracksUsed, 0);

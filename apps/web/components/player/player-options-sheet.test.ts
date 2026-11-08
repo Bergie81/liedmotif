@@ -15,7 +15,6 @@ import {
   type AvailableSessionOptionsId,
 } from './player-options-model';
 import { trackScopeActions, type OptionsRowAction } from './player-options-rows';
-import { SessionModeToggleTile } from './session-mode-control';
 import { PlayerOptionsSheet } from './player-options-sheet';
 
 afterEach(cleanup);
@@ -52,7 +51,6 @@ function sessionActions(
     'change-vibe': { kind: 'button', onSelect: noop },
     'sleep-timer': { kind: 'button', onSelect: noop },
     'rename-session': { kind: 'button', onSelect: noop },
-    lyrics: { kind: 'button', testId: 'player-open-lyrics', onSelect: noop },
     'delete-session': {
       kind: 'confirm',
       heading: 'Delete Session',
@@ -67,7 +65,10 @@ function sessionActions(
 /** Renders the sheet and opens it — a sheet under review is a sheet that is up. */
 function renderSessionSheet(
   actions: Record<AvailableSessionOptionsId, OptionsRowAction>,
-  { lyricsAvailable = true }: { lyricsAvailable?: boolean } = {},
+  {
+    lyricsAvailable = true,
+    onOpenLyrics = () => {},
+  }: { lyricsAvailable?: boolean; onOpenLyrics?: () => void } = {},
 ) {
   const view = render(
     h(PlayerOptionsSheet, {
@@ -76,12 +77,7 @@ function renderSessionSheet(
       coverImageId: null,
       trackTitle: TRACK.title,
       tiles: {
-        modeToggle: h(SessionModeToggleTile, {
-          sessionMode: 'repeat',
-          pending: false,
-          disabled: false,
-          onToggle: () => {},
-        }),
+        lyrics: { disabled: !lyricsAvailable, onSelect: onOpenLyrics },
         blend: { enabled: true, onToggle: () => {} },
         sourceCover: {
           label: 'Session Cover',
@@ -92,12 +88,7 @@ function renderSessionSheet(
         addToPlaylist: { disabled: false, onSelect: () => {} },
       },
       scopes: SESSION_OPTIONS_SCOPES,
-      actions: {
-        ...actions,
-        ...(!lyricsAvailable
-          ? { lyrics: { kind: 'unavailable', testId: 'player-open-lyrics' } as const }
-          : {}),
-      },
+      actions,
     }),
   );
   act(() => row(/Session and Track options/).click());
@@ -140,7 +131,9 @@ describe('player options sheet', () => {
         }),
       );
       act(() => row(/Playlist and Track options/).click());
-      expect(screen.queryByTestId('player-session-mode-menu-toggle')).toBeNull();
+      expect(
+        screen.getByTestId('player-open-lyrics').closest('[role="dialog"]')?.textContent,
+      ).toContain('Read along with this track');
       expect(
         screen.getByTestId('playlist-cover').parentElement?.querySelectorAll('button'),
       ).toHaveLength(3);
@@ -162,7 +155,7 @@ describe('player options sheet', () => {
     expect(screen.getByText(/^in Session/).textContent).toBe('in Session John nervt mit KI');
   });
 
-  it('keeps the Lyrics row first under This Track on an instrumental Track, greyed out', () => {
+  it('keeps the Lyrics tile in its slot on an instrumental Track, greyed out', () => {
     renderSessionSheet(sessionActions(), { lyricsAvailable: false });
 
     expect((screen.getByTestId('player-open-lyrics') as HTMLButtonElement).disabled).toBe(true);
@@ -188,17 +181,38 @@ describe('player options sheet', () => {
     expect(onSelect).toHaveBeenCalledOnce();
   });
 
-  it('puts the mode toggle first above Lyrics and keeps options open when toggled', () => {
-    renderSessionSheet(sessionActions());
-    const mode = screen.getByTestId('player-session-mode-menu-toggle');
-    const cover = screen.getByTestId('player-regenerate-cover');
+  it('leads a Session’s tiles with Lyrics, once, and closes the sheet to open it', () => {
+    const onOpenLyrics = vi.fn();
+    renderSessionSheet(sessionActions(), { onOpenLyrics });
     const lyrics = screen.getByTestId('player-open-lyrics');
-    expect(mode.compareDocumentPosition(cover) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(cover.compareDocumentPosition(lyrics) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(lyrics.parentElement?.textContent).toContain('This Track');
-    act(() => mode.click());
-    expect(screen.getByRole('dialog')).toBeTruthy();
-    expect(screen.queryByText('Session mode')).toBeNull();
+    const cover = screen.getByTestId('player-regenerate-cover');
+
+    expect(lyrics.compareDocumentPosition(cover) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getAllByText('Lyrics')).toHaveLength(1);
+    expect(screen.queryByText('Read along with this track')).toBeNull();
+
+    act(() => lyrics.click());
+
+    expect(onOpenLyrics).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('keeps the Lyrics tile usable offline, where the tiles that write are not', () => {
+    Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false });
+    try {
+      renderSessionSheet(sessionActions());
+      act(() => {
+        window.dispatchEvent(new Event('offline'));
+      });
+
+      expect(screen.getByTestId('player-open-lyrics').matches(':disabled')).toBe(false);
+      expect(screen.getByTestId('player-regenerate-cover').matches(':disabled')).toBe(true);
+    } finally {
+      delete (navigator as { onLine?: boolean }).onLine;
+      act(() => {
+        window.dispatchEvent(new Event('online'));
+      });
+    }
   });
 
   it('renames through the action the row was tapped with', async () => {

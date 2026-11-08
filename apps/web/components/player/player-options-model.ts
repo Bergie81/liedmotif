@@ -146,7 +146,6 @@ export const SESSION_OPTIONS_SCOPES = [
   {
     label: 'This Track',
     rows: [
-      LYRICS_ROW,
       RENAME_TRACK_ROW,
       TRACK_DATA_ROW,
       SECTION_LOOP_ROW,

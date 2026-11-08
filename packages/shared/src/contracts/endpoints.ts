@@ -496,6 +496,8 @@ export const setSessionDurationRequestSchema = z.strictObject({
   sessionId: uuidSchema,
   /** Omitted preserves the target; null explicitly clears it. */
   targetDurationMinutes: targetDurationMinutesSchema.nullable().optional(),
+  /** Omitted leaves the mode to the target rule: setting a target selects Keep Going. */
+  sessionMode: z.enum(SESSION_MODES).optional(),
 });
 export type SetSessionDurationRequest = z.infer<typeof setSessionDurationRequestSchema>;
 
@@ -1700,7 +1702,7 @@ export const API_CONTRACTS: Readonly<Record<ApiEndpointName, EndpointContract>> 
       idempotent: true,
       note: 'Sets or clears the Session target under generation admission serialization.',
     },
-    description: 'Edit the Session duration target without changing its mode or creative style.',
+    description: 'Edit the Session duration target, optionally with its mode, in one write.',
   },
   resumeSession: {
     method: 'POST',

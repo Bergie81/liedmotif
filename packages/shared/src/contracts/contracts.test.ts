@@ -65,7 +65,7 @@ const VALID_REQUESTS: Record<ApiEndpointName, unknown> = {
   convertSessionToPlaylist: { sessionId: UUID },
   renameSession: { sessionId: UUID, title: 'Late Night Focus' },
   setSessionMode: { sessionId: UUID, mode: 'repeat' },
-  setSessionDuration: { sessionId: UUID, targetDurationMinutes: null },
+  setSessionDuration: { sessionId: UUID, targetDurationMinutes: null, sessionMode: 'keep_going' },
   resumeSession: { sessionId: UUID, clientId: 'phone-1' },
   playSessionTrack: { sessionId: UUID, trackId: UUID, clientId: 'phone-1' },
   changeVibe: { sessionId: UUID, input: { mode: 'controls', controls: { energy: 'low' } } },

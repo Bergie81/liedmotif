@@ -2,7 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { isSessionRepeatGenerationStatus, type SessionSummary } from '@liedmotif/shared';
+import {
+  isDurationTargetReached,
+  isSessionRepeatGenerationStatus,
+  type SessionSummary,
+} from '@liedmotif/shared';
 import { SessionTracksDialog } from '@/components/sessions/session-tracks-sheet';
 import {
   deleteSession,
@@ -42,10 +46,9 @@ import {
 import { optionsTrackOf } from './playable-track';
 import { sectionLoopControl, sectionLoopLive } from './playback-controller-api';
 import { usePlayerContext, type LivePlayback } from './player-provider';
-import { SessionDurationEditor } from './session-duration-editor';
-import { isSessionDurationReached } from './session-duration-model';
-import { SessionModeToggleButton } from './session-mode-control';
-import { useSessionModeToggle } from './use-session-mode-toggle';
+import { NewMusicSheet } from './new-music-sheet';
+import { presentNewMusicStatus } from './new-music-status';
+import { NewMusicStatusButton } from './new-music-status-button';
 import {
   SaveToPlaylistSheet,
   type SavePickerTrack,
@@ -194,7 +197,10 @@ export function NowPlaying({
   const sessionRepeat =
     session.sessionMode === 'repeat' ||
     isSessionRepeatGenerationStatus(player.generationStatus) ||
-    isSessionDurationReached(durationSession);
+    isDurationTargetReached(
+      durationSession.targetDurationMinutes,
+      durationSession.generatedDurationSeconds,
+    );
   const sessionTitle = session.title ?? 'Untitled Session';
   const sessionActions = usePlayerSessionActions({
     sessionId: session.id,
@@ -207,6 +213,17 @@ export function NowPlaying({
       router.push(`/library/playlist/${playlistId}`);
     },
   });
+  const generatingAhead = countGeneratingAhead({
+    items: player.queueItems,
+    currentQueueItemId,
+    generatingTracksAhead: player.generatingTracksAhead,
+  });
+  const newMusicStatus = presentNewMusicStatus({
+    session: durationSession,
+    generatingAhead,
+    generationStatus: player.generationStatus,
+    loopHeld: player.loopHeld,
+  });
   const sessionActivity = presentSessionActivity({
     incoming: incoming != null,
     vibeChangeCaption: presentVibeChangeCaption({
@@ -217,11 +234,7 @@ export function NowPlaying({
       requestPending: vibeChangePending,
     }),
     sessionRepeat,
-    generatingAhead: countGeneratingAhead({
-      items: player.queueItems,
-      currentQueueItemId,
-      generatingTracksAhead: player.generatingTracksAhead,
-    }),
+    generatingAhead,
   });
   // The Change Vibe sheet's open state lives here so the options menu and the
   // direction bar open the same sheet.
@@ -239,19 +252,16 @@ export function NowPlaying({
   // The policy is only this player's to write while the Session it is showing
   // is the live, settled one: a stop, a delete, or a handoff to another Session
   // is about to take the Session the owner would be aiming at.
-  const modeToggle = useSessionModeToggle({
-    sessionId: session.id,
-    sessionMode: session.sessionMode,
-    available:
-      session.status === 'active' &&
-      player.sessionStatus === 'active' &&
-      sessionActions.busyAction === null &&
-      !deletingSession &&
-      !incoming &&
-      !pendingSource,
-    onSessionChange,
-    onError: setOptionsError,
-  });
+  const newMusicAvailable =
+    session.status === 'active' &&
+    player.sessionStatus === 'active' &&
+    sessionActions.busyAction === null &&
+    !deletingSession &&
+    !incoming &&
+    !pendingSource;
+  // Parent-owned for the same never-stack reason as Lyrics: the options menu
+  // and the header open this one sheet.
+  const [newMusicOpen, setNewMusicOpen] = useState(false);
   // Every current failure shows, so an older one never hides a newer one.
   const surfaceError = [
     player.actionError,
@@ -361,7 +371,8 @@ export function NowPlaying({
     <PlayerSessionOptions
       sessionId={session.id}
       sessionTitle={sessionTitle}
-      modeToggle={modeToggle}
+      newMusicStatus={newMusicStatus}
+      onOpenNewMusic={() => setNewMusicOpen(true)}
       actionError={surfaceError}
       coverImageId={coverId}
       busy={sessionActions.busyAction === 'stop'}
@@ -458,10 +469,14 @@ export function NowPlaying({
               : `${statusLabel}: ${player.pendingGeneration?.trackTitle ?? sessionTitle}.`
           }
           controls={{ hasTrack, player, onAddToPlaylist: openSavePicker }}
-          modeToggle={
+          newMusic={
             <OnlineOnly>
-              <SessionDurationEditor session={durationSession} onSessionChange={onSessionChange} />
-              <SessionModeToggleButton {...modeToggle} />
+              <NewMusicStatusButton
+                status={newMusicStatus}
+                generatingAhead={generatingAhead}
+                playableTracks={player.playableQueueItemIds}
+                onOpen={() => setNewMusicOpen(true)}
+              />
             </OnlineOnly>
           }
           options={sessionOptions}
@@ -507,6 +522,15 @@ export function NowPlaying({
           onReroll={player.dislike}
           onChangeVibe={(input, options) => submitChangeVibe(session.id, input, options)}
           onMoreLikeThis={sessionActions.startMoreLikeThis}
+        />
+
+        <NewMusicSheet
+          session={durationSession}
+          status={newMusicStatus}
+          open={newMusicOpen}
+          onOpenChange={setNewMusicOpen}
+          available={newMusicAvailable}
+          onSessionChange={onSessionChange}
         />
 
         <SessionTracksDialog

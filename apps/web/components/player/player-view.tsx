@@ -317,7 +317,7 @@ function ConnectingCard({ startedAt }: { startedAt: string }) {
           announcement="Connecting: preparing your new Session."
           // Narrow screens hide the options slot, so this holds the height the
           // live player's icon row takes over.
-          modeToggle={<span aria-hidden className={cn(iconButtonClass, 'invisible')} />}
+          newMusic={<span aria-hidden className={cn(iconButtonClass, 'invisible')} />}
           options={CONNECTING_OPTIONS}
         />
         <TrackMetaLine />

@@ -11,7 +11,7 @@
 // actually chose, so the tapped action's closures are what the modal runs.
 
 import { useState, type ReactNode } from 'react';
-import { ImagePlus, ListPlus, MoreHorizontal } from 'lucide-react';
+import { ImagePlus, ListPlus, MicVocal, MoreHorizontal } from 'lucide-react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { RenameDialog } from '@/components/rename-dialog';
 import { AlertBanner, iconButtonClass, menuTileClass } from '@/components/ui/design-system';
@@ -25,8 +25,8 @@ import type { SourceNoun } from './player-presentation';
 import { SleepTimerDialog } from './sleep-timer-dialog';
 
 interface TileTargets {
-  /** A Session's generation toggle; Playlists have no generation policy. */
-  modeToggle?: ReactNode;
+  /** A Session's Lyrics; a Playlist keeps them as a row in its list. */
+  lyrics?: { disabled: boolean; onSelect: () => void };
   blend: { enabled: boolean; onToggle: () => void };
   /** The source's own artwork — a Session Cover or a Playlist Cover. Disabled
    *  where managing it is not the listener's to do (a visitor's foreign
@@ -50,7 +50,7 @@ export function PlayerOptionsSheet({
   scopes,
   actions,
   actionError,
-  firstRow,
+  leadRows,
   footer,
 }: {
   sourceKind: SourceNoun;
@@ -69,8 +69,8 @@ export function PlayerOptionsSheet({
   /** The player's own failure line, repeated here because a tile that keeps the
    *  sheet up can fail while the player behind it is covered. */
   actionError?: string | null;
-  /** About the source as a whole, so it leads the list above the scoped groups. */
-  firstRow?: ReactNode;
+  /** About the source as a whole, so they lead the list above the scoped groups. */
+  leadRows?: ReactNode;
   /** The source's closing action, below the list (a Session can be stopped). */
   footer?: ReactNode;
 }) {
@@ -123,9 +123,9 @@ export function PlayerOptionsSheet({
           />
           {tiles ? <OptionsTiles {...tiles} /> : null}
           {actionError ? <AlertBanner className="mt-3">{actionError}</AlertBanner> : null}
-          {/* Alone in its wrapper it is a last child, so it draws no rule above the
-              first scope's own heading rule. */}
-          {firstRow ? <div>{firstRow}</div> : null}
+          {/* In their own wrapper the last of them is a last child, so it draws
+              no rule above the first scope's own heading rule. */}
+          {leadRows ? <div>{leadRows}</div> : null}
           {scopes.map((scope) => (
             <OptionsScope
               key={scope.label}
@@ -184,12 +184,21 @@ function OptionsPlate({
  * nothing to show greys out in place: a slot that keeps its position costs less
  * than every other slot moving.
  */
-function OptionsTiles({ modeToggle, blend, sourceCover, addToPlaylist }: TileTargets) {
+function OptionsTiles({ lyrics, blend, sourceCover, addToPlaylist }: TileTargets) {
   return (
     <div className="mb-2 mt-4 grid auto-cols-[minmax(0,1fr)] grid-flow-col gap-2">
-      {/* Each tile writes to the server, the blend setting included. */}
+      {/* Lyrics read what the player already holds, so they work offline. */}
+      {lyrics ? (
+        <OptionsTile
+          testId="player-open-lyrics"
+          icon={MicVocal}
+          label="Lyrics"
+          disabled={lyrics.disabled}
+          onSelect={lyrics.onSelect}
+        />
+      ) : null}
+      {/* Every other tile writes to the server, the blend setting included. */}
       <OnlineOnly>
-        {modeToggle}
         <OptionsTile
           testId={sourceCover.testId}
           icon={ImagePlus}

@@ -233,8 +233,7 @@ async function supersedeActiveSession(
 /**
  * A Session duration target is met by buying music, so setting one puts the
  * Session on Keep Going; Repeat would stop at the first batch and never reach
- * it. Clearing the target leaves the mode alone, and the player's mode switch
- * can still choose Repeat afterwards.
+ * it. Clearing the target leaves the mode alone unless the same write names one.
  */
 function durationTargetMode(targetDurationMinutes: number | null | undefined) {
   return targetDurationMinutes != null ? { sessionMode: 'keep_going' as const } : {};
@@ -645,7 +644,13 @@ export async function renameSession(
 /** Target edits share paid-submit serialization, so admission always sees the committed target. */
 export async function setSessionDuration(
   db: Database,
-  args: { ownerUserId: string; sessionId: string; targetDurationMinutes?: number | null },
+  args: {
+    ownerUserId: string;
+    sessionId: string;
+    targetDurationMinutes?: number | null;
+    /** Lands with the target, so choosing No limit can never half-apply. */
+    sessionMode?: 'keep_going' | 'repeat';
+  },
 ): Promise<SessionRecord | null> {
   return withOwnerGenerationLock(db, args.ownerUserId, async (tx) => {
     if (args.targetDurationMinutes === undefined) return getSessionById(tx, args);
@@ -653,6 +658,7 @@ export async function setSessionDuration(
       .update(activitySessions)
       .set({
         targetDurationMinutes: args.targetDurationMinutes,
+        ...(args.sessionMode ? { sessionMode: args.sessionMode } : {}),
         ...durationTargetMode(args.targetDurationMinutes),
       })
       .where(
