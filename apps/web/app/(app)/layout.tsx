@@ -6,7 +6,7 @@ import { PlayerProvider } from '@/components/player/player-provider';
 import { answerLinkTargets } from '@/lib/assistant/link-targets';
 import { getDb } from '@/lib/db';
 import { getLlmProvider, getTypicalTracksPerMusicRequest } from '@/lib/providers';
-import { cachedListenerProfile, cachedUserProfile, requestNow } from '@/lib/request-cache';
+import { cachedListenerProfile, requestNow } from '@/lib/request-cache';
 import { requireAppAccess } from '@/lib/session';
 import { cachedOwnerUsageTracks, toSessionSummary } from '@/lib/sessions';
 import { ownVoiceOfferedTo } from '@/lib/voice';
@@ -27,11 +27,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     getLlmProvider().catch(() => null),
     // Whether this viewer has the Assistant, and what is left of today's
     // allowance. A failed read hides it too.
-    cachedUserProfile(db, session.user.id)
-      .then((knownProfile) =>
-        resolveAssistantStanding(db, { userId: session.user.id, now: requestNow(), knownProfile }),
-      )
-      .catch(() => null),
+    resolveAssistantStanding(db, { userId: session.user.id, role, now: requestNow() }).catch(
+      () => null,
+    ),
   ]);
   // Deliberately NOT awaited: the usage tile streams in after the shell paints,
   // so the 5–9 query budget computation never blocks first paint. Settings pages

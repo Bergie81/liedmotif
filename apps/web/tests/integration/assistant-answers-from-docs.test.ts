@@ -24,10 +24,12 @@ vi.mock('@/lib/session', () => ({
   getAppSession: async () => (holder.userId ? { user: { id: holder.userId } } : null),
 }));
 vi.mock('@/lib/providers', () => ({ getLlmProvider: async () => holder.llm }));
-// No database here: the users have no profile row. The route shows such a user
-// a Member's pages and holds them to no daily allowance.
+// No database here: every asker is the Admin, whose messages are held to no
+// daily allowance and so read and count nothing.
 vi.mock('@/lib/db', () => ({ getDb: () => null }));
-vi.mock('@/lib/request-cache', () => ({ cachedUserProfile: async () => null }));
+vi.mock('@/lib/request-cache', () => ({
+  cachedUserProfile: async () => ({ role: 'admin', disabledAt: null }),
+}));
 
 const { POST } = await import('@/app/api/assistant/route');
 

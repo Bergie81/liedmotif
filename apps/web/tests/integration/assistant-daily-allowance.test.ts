@@ -220,6 +220,24 @@ describe.skipIf(skip)('the Assistant daily allowance', () => {
     expect(await errorCodeOf(burst)).toBe('rate_limited');
   });
 
+  it("holds anyone who is not the Admin to a Member allowance and to a Member's pages", async () => {
+    const model = scriptModel([{ text: ['Sure.'] }]);
+    // A user row with no profile row: no role says this is the Admin.
+    holder.userId = `no-profile-${Date.now()}`;
+    await testDb.db
+      .insert(user)
+      .values({ id: holder.userId, name: 'No profile', email: `${holder.userId}@example.test` });
+    await updateAssistantAccess(testDb.db, { dailyMessages: 1 });
+
+    const first = await ask();
+
+    expect(first.status).toBe(200);
+    expect(standingOf(first).allowance).toMatchObject({ dailyMessages: 1, remaining: 0 });
+    await first.text();
+    expect(String(model.doStreamCalls[0]?.prompt[0]?.content)).not.toContain('/settings/members');
+    expect(await askTimes(1)).toEqual([429]);
+  });
+
   it('lets messages sent in parallel through only up to the allowance', async () => {
     const model = scriptModel([{ text: ['Sure.'] }]);
     holder.userId = await createUser('member');

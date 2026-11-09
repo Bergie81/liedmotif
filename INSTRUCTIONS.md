@@ -235,8 +235,9 @@ npm run assistant:eval
 
 Every question is a real Assistant turn with the app's own system prompt, route
 map and `readDocs` tool. The set is asked once, one question after the other, and
-nothing is retried, so a run costs about 20 questions on that provider, each up to
-five model calls. It resolves the text LLM as the app does (`LLM_*` in
+no question is asked again, so a run costs about 20 questions on that provider,
+each up to five model calls (a model call that fails in transit is resent once,
+as in the app). It resolves the text LLM as the app does (`LLM_*` in
 `.env` first, then what is saved under **Settings › AI Providers**), so the dev
 database has to be up. To check another model, name the whole connection for that
 run; the `LLM_*` settings count only next to the `LLM_PROVIDER` they describe:
@@ -252,6 +253,10 @@ is not scored: the report puts question, expected section and answer side by sid
 for you to judge. A question that fails or gets no answer within 10 minutes is
 recorded as failed. One model call is bounded by `LLM_REQUEST_TIMEOUT_MS`, which a
 slow local model needs raised.
+
+On the `openai` preset the Assistant ignores `LLM_REASONING_EFFORT` and always
+asks with `none`: OpenAI refuses tool calls sent with any other effort. Session
+writing keeps the configured effort.
 
 `LLM_PROVIDER=mock npm run assistant:eval` tries the tooling without calling a
 model.

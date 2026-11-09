@@ -118,7 +118,7 @@ export function limitWindowStarts(now: Date, resetTimezone: string): LimitWindow
 /** The day `now` falls in, as `resetTimezone` sees it. */
 export interface LimitDay {
   /** The local calendar date, `YYYY-MM-DD`: the key a per-day count is kept under. */
-  day: string;
+  date: string;
   /** The next local midnight, as a UTC instant: when a per-day count starts over. */
   endsAt: Date;
 }
@@ -132,7 +132,7 @@ export function limitDay(now: Date, resetTimezone: string): LimitDay {
   const { year, month, day } = partsOf(formatter, now);
   const two = (value: number) => String(value).padStart(2, '0');
   return {
-    day: `${year}-${two(month)}-${two(day)}`,
+    date: `${year}-${two(month)}-${two(day)}`,
     // A day past the month's last rolls into the next month (`Date.UTC`).
     endsAt: localMidnightToUtc(formatter, year, month, day + 1),
   };

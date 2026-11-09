@@ -1,6 +1,6 @@
 // Checks whether the configured text LLM is good enough for the Assistant
 // (`npm run assistant:eval`). It asks the fixed eval set once — every question a
-// real Assistant turn, one after the other, nothing retried — and writes a
+// real Assistant turn, one after the other, none asked again — and writes a
 // scored Markdown report to `eval-reports/`, which git ignores.
 //
 // The model is the one the app itself would use: `LLM_*` in `.env` or the

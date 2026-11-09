@@ -64,7 +64,11 @@ async function createUser(id: string, role: 'admin' | 'member'): Promise<string>
 
 /** What the Assistant holds a Member to right now. */
 async function standingOf(userId: string) {
-  const standing = await resolveAssistantStanding(testDb.db, { userId, now: new Date() });
+  const standing = await resolveAssistantStanding(testDb.db, {
+    userId,
+    role: 'member',
+    now: new Date(),
+  });
   return { enabled: standing.enabled, dailyMessages: standing.allowance?.dailyMessages };
 }
 

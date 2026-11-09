@@ -8,7 +8,6 @@ describe("a Member's Assistant access on Settings → Members", () => {
     expect(memberAssistantView(INSTANCE_DEFAULT, {})).toEqual({
       enabled: { value: true, source: 'default' },
       dailyMessages: { value: 30, source: 'default' },
-      overridden: false,
     });
   });
 
@@ -22,12 +21,10 @@ describe("a Member's Assistant access on Settings → Members", () => {
     expect(memberAssistantView(INSTANCE_DEFAULT, { enabled: false })).toEqual({
       enabled: { value: false, source: 'own' },
       dailyMessages: { value: 30, source: 'default' },
-      overridden: true,
     });
     expect(memberAssistantView(INSTANCE_DEFAULT, { dailyMessages: 5 })).toEqual({
       enabled: { value: true, source: 'default' },
       dailyMessages: { value: 5, source: 'own' },
-      overridden: true,
     });
   });
 
@@ -35,7 +32,6 @@ describe("a Member's Assistant access on Settings → Members", () => {
     const view = memberAssistantView(INSTANCE_DEFAULT, { enabled: true, dailyMessages: 30 });
     expect(view.enabled.source).toBe('own');
     expect(view.dailyMessages.source).toBe('own');
-    expect(view.overridden).toBe(true);
   });
 });
 

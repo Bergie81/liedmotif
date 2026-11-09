@@ -1,7 +1,8 @@
 // Where a user stands with the Assistant: whether they have it, and how much of
-// today's message allowance is left. The role branch lives here and nowhere
-// else: the Admin has no daily allowance, a Member has the instance default
-// unless the Admin gave them values of their own.
+// today's message allowance is left. The Admin has no daily allowance; a Member
+// has the instance default unless the Admin gave them values of their own. The
+// caller names the role, so a request decides the allowance and everything
+// else that depends on the role from one reading of it.
 //
 // A day is the calendar date in the Instance timezone (`usageLimits
 // .resetTimezone`), the same midnight every other budget resets on.
@@ -15,12 +16,12 @@ import {
   type LimitDay,
 } from '@liedmotif/shared';
 import type { Database } from '../client';
-import { resolveUserProfile, type UserProfile } from '../profile/resolve-user-profile';
+import type { UserRole } from '../profile/resolve-user-profile';
 import { assistantUsage } from '../schema';
 import { getMemberAssistantAccess } from '../settings/user-settings-repo';
 import { getAssistantAccess, getUsageLimits } from '../setup/settings';
 
-/** The Admin's standing. A profile-less user reads as the Admin, as their budget does. */
+/** The Admin's standing. */
 const NO_DAILY_ALLOWANCE: AssistantStanding = { enabled: true, allowance: null };
 
 /** What a Member's messages are held to right now. */
@@ -52,11 +53,11 @@ function memberStanding({ access, day }: MemberAllowance, used: number): Assista
   };
 }
 
-async function messagesCounted(db: Database, userId: string, day: string): Promise<number> {
+async function messagesCounted(db: Database, userId: string, date: string): Promise<number> {
   const [row] = await db
     .select({ messages: assistantUsage.messages })
     .from(assistantUsage)
-    .where(and(eq(assistantUsage.userId, userId), eq(assistantUsage.day, day)))
+    .where(and(eq(assistantUsage.userId, userId), eq(assistantUsage.day, date)))
     .limit(1);
   return row?.messages ?? 0;
 }
@@ -64,17 +65,8 @@ async function messagesCounted(db: Database, userId: string, day: string): Promi
 /** Whose standing, and as of when. */
 interface StandingQuery {
   userId: string;
+  role: UserRole;
   now: Date;
-  /** A profile the caller already resolved this request; `null` means "resolved, no row". */
-  knownProfile?: UserProfile | null;
-}
-
-async function holdsDailyAllowance(db: Database, query: StandingQuery): Promise<boolean> {
-  const profile =
-    query.knownProfile !== undefined
-      ? query.knownProfile
-      : await resolveUserProfile(db, query.userId);
-  return profile?.role === 'member';
 }
 
 /**
@@ -85,14 +77,14 @@ export async function resolveAssistantStanding(
   db: Database,
   args: StandingQuery,
 ): Promise<AssistantStanding> {
-  if (!(await holdsDailyAllowance(db, args))) return NO_DAILY_ALLOWANCE;
+  if (args.role === 'admin') return NO_DAILY_ALLOWANCE;
   const allowance = await memberAllowance(db, args.userId, args.now);
-  return memberStanding(allowance, await messagesCounted(db, args.userId, allowance.day.day));
+  return memberStanding(allowance, await messagesCounted(db, args.userId, allowance.day.date));
 }
 
 /**
- * Count one message against the user's allowance for today, and report the
- * standing after it. `counted: false` means the message must be refused: the
+ * Take one message against the user's allowance for today, and report the
+ * standing after it. `accepted: false` means the message must be refused: the
  * access is off, or the allowance is spent.
  *
  * The check and the increment are ONE statement: the row is created at one, or
@@ -100,24 +92,22 @@ export async function resolveAssistantStanding(
  * on the row, and each sees the count the one before it left, so they can never
  * add up to more than the allowance.
  *
- * The Admin has no daily allowance and is not counted.
+ * The Admin has no daily allowance: their message is accepted and not counted.
  */
 export async function countAssistantMessage(
   db: Database,
   args: StandingQuery,
-): Promise<{ counted: boolean; standing: AssistantStanding }> {
-  if (!(await holdsDailyAllowance(db, args))) {
-    return { counted: true, standing: NO_DAILY_ALLOWANCE };
-  }
+): Promise<{ accepted: boolean; standing: AssistantStanding }> {
+  if (args.role === 'admin') return { accepted: true, standing: NO_DAILY_ALLOWANCE };
   const allowance = await memberAllowance(db, args.userId, args.now);
   const { access, day } = allowance;
   if (!access.enabled) {
-    const used = await messagesCounted(db, args.userId, day.day);
-    return { counted: false, standing: memberStanding(allowance, used) };
+    const used = await messagesCounted(db, args.userId, day.date);
+    return { accepted: false, standing: memberStanding(allowance, used) };
   }
   const [row] = await db
     .insert(assistantUsage)
-    .values({ userId: args.userId, day: day.day, messages: 1 })
+    .values({ userId: args.userId, day: day.date, messages: 1 })
     .onConflictDoUpdate({
       target: [assistantUsage.userId, assistantUsage.day],
       set: { messages: sql`${assistantUsage.messages} + 1` },
@@ -125,7 +115,7 @@ export async function countAssistantMessage(
     })
     .returning({ messages: assistantUsage.messages });
   return {
-    counted: row !== undefined,
+    accepted: row !== undefined,
     standing: memberStanding(allowance, row?.messages ?? access.dailyMessages),
   };
 }

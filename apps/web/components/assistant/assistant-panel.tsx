@@ -118,8 +118,9 @@ export function AssistantPanel({
 
       <footer className="flex flex-none flex-col gap-2 px-3 pb-[calc(12px+env(safe-area-inset-bottom,0px))] pt-2">
         {/* Where lines about asking show: why an answer did not arrive, and how
-            much of today's allowance is left. */}
-        {notice ? <AlertBanner>{notice}</AlertBanner> : null}
+            much of today's allowance is left. A used-up allowance is said once,
+            by the line that also names when it refills. */}
+        {notice && !usedUp ? <AlertBanner>{notice}</AlertBanner> : null}
         <AllowanceNotice allowance={allowance} />
         <Composer
           inputRef={inputRef}

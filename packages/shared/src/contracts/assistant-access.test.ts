@@ -3,7 +3,6 @@ import {
   DEFAULT_ASSISTANT_ACCESS,
   assistantAccessSchema,
   effectiveAssistantAccess,
-  memberAssistantAccessSchema,
   updateAssistantAccessRequestSchema,
   updateMemberAssistantAccessRequestSchema,
 } from './assistant-access';
@@ -28,13 +27,6 @@ describe('Assistant access', () => {
     expect(updateAssistantAccessRequestSchema.safeParse({ monthlyMessages: 5 }).success).toBe(
       false,
     );
-  });
-
-  it('lets a Member hold any subset of the fields, each within the same range', () => {
-    expect(memberAssistantAccessSchema.safeParse({}).success).toBe(true);
-    expect(memberAssistantAccessSchema.safeParse({ dailyMessages: 5 }).success).toBe(true);
-    expect(memberAssistantAccessSchema.safeParse({ dailyMessages: 0 }).success).toBe(false);
-    expect(memberAssistantAccessSchema.safeParse({ dailyMessages: null }).success).toBe(false);
   });
 
   it("takes null in a change to a Member's values, to clear the field", () => {

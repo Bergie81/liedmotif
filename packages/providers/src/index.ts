@@ -54,7 +54,7 @@ export {
   type TrackAnalysisOutcome,
   type TrackAudioRef,
 } from './music/analyzer';
-export { mockLlmProvider, type MockAssistantScript } from './llm/mock';
+export { mockLlmProvider } from './llm/mock';
 
 export type {
   MusicProvider,

@@ -184,13 +184,6 @@ it.each([
     notice: 'That was a lot of questions at once. Try again in 3 minutes.',
   },
   {
-    refusal: 'no Writing AI',
-    status: 503,
-    code: 'assistant_unavailable',
-    headers: undefined,
-    notice: 'Mo is not available: no Writing AI is set up.',
-  },
-  {
     refusal: 'a Writing AI that failed',
     status: 502,
     code: 'provider_error',

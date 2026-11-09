@@ -9,7 +9,7 @@
 // failure arrives as its last event.
 
 import { NextResponse } from 'next/server';
-import { countAssistantMessage, resolveAssistantStanding } from '@liedmotif/db';
+import { countAssistantMessage, resolveAssistantStanding, type UserRole } from '@liedmotif/db';
 import { ProviderError } from '@liedmotif/providers';
 import {
   ASSISTANT_STREAM_CONTENT_TYPE,
@@ -20,6 +20,7 @@ import {
   type AssistantStreamEvent,
 } from '@liedmotif/shared';
 import { apiError, apiRateLimited, parseJsonBody, requireOwnerId } from '@/lib/api-response';
+import { ASSISTANT_NAME } from '@/lib/assistant/persona';
 import { streamAssistantAnswer } from '@/lib/assistant/reply';
 import {
   assistantRefusal,
@@ -48,21 +49,23 @@ function failureMessage(err: unknown): string {
   logger.error('Assistant reply failed', {
     errorName: err instanceof Error ? err.name : typeof err,
   });
-  return 'The Assistant could not answer. Try again.';
+  return `${ASSISTANT_NAME} could not answer. Try again.`;
 }
 
 export async function POST(request: Request) {
   const ownerUserId = await requireOwnerId(request);
   if (ownerUserId instanceof NextResponse) return ownerUserId;
 
-  // The profile is read once per message. It decides the daily allowance, and
-  // further down which pages of the app the answer may point to.
+  // The role is read once per message, from the profile row and never from the
+  // request. It decides the daily allowance and which pages of the app the
+  // answer may point to; anyone who is not the Admin is held to a Member's.
   const db = getDb();
   const profile = await cachedUserProfile(db, ownerUserId);
+  const role: UserRole = profile?.role === 'admin' ? 'admin' : 'member';
 
   // Access and today's allowance come first: a Member who may not ask spends
   // none of the burst budget and reaches no model.
-  const asker = { userId: ownerUserId, now: new Date(), knownProfile: profile };
+  const asker = { userId: ownerUserId, role, now: new Date() };
   const standingBefore = await resolveAssistantStanding(db, asker);
   if (!mayAskAssistant(standingBefore)) return assistantRefusal(standingBefore);
 
@@ -73,7 +76,7 @@ export async function POST(request: Request) {
   if (!llm) {
     return apiError(
       'assistant_unavailable',
-      'The Assistant is not available: no Writing AI is set up.',
+      `${ASSISTANT_NAME} is not available: no Writing AI is set up.`,
     );
   }
 
@@ -86,17 +89,12 @@ export async function POST(request: Request) {
   // then fails or the reader leaves, because the call it paid for was made.
   // Messages sent in parallel all passed the check above; the count is what
   // holds them to the allowance, and one it turns away gets its burst unit back.
-  const { counted, standing } = await countAssistantMessage(db, asker);
-  if (!counted) {
+  const { accepted, standing } = await countAssistantMessage(db, asker);
+  if (!accepted) {
     assistantLimiter.refund(ownerUserId);
     return assistantRefusal(standing);
   }
   const standingHeaders = assistantStandingHeaders(standing);
-
-  // The role decides which pages of the app the answer may point to. It comes
-  // from the profile row, never from the request; anyone who is not the Admin
-  // gets a Member's pages.
-  const role = profile?.role === 'admin' ? 'admin' : 'member';
 
   // Two ways the reader leaves: the request is dropped before the answer
   // starts, or the response stream is cancelled once it has. Either stops the

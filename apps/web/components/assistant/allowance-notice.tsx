@@ -11,7 +11,7 @@ import { AlertBanner } from '@/components/ui/design-system';
 type Allowance = NonNullable<AssistantStanding['allowance']>;
 
 /** From this many messages left, the panel says how many. */
-export const ASSISTANT_LOW_MESSAGES = 5;
+const ASSISTANT_LOW_MESSAGES = 5;
 
 /**
  * Today's allowance, or `null` for a user who has none and once its day is

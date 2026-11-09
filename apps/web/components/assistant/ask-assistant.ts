@@ -16,13 +16,12 @@ import { OFFLINE_MESSAGE } from '@/lib/api-fetch';
 import { ASSISTANT_NAME } from '@/lib/assistant/persona';
 import { isOnline, reportServerAnswered, reportServerUnreachable } from '@/lib/online-state';
 
-/** `notice` is `null` when the panel already says why from what it knows. */
-export type AskOutcome = { ok: true } | { ok: false; notice: string | null };
+export type AskOutcome = { ok: true } | { ok: false; notice: string };
 
 const COULD_NOT_ANSWER = `${ASSISTANT_NAME} could not answer. Try again.`;
 const BROKE_OFF = 'The connection was lost before the answer was finished. Try again.';
 
-const failed = (notice: string | null): AskOutcome => ({ ok: false, notice });
+const failed = (notice: string): AskOutcome => ({ ok: false, notice });
 
 /** "40 seconds", "3 minutes": how long a `Retry-After` header asks the user to wait. */
 function waitFrom(retryAfter: string | null): string | null {
@@ -34,18 +33,12 @@ function waitFrom(retryAfter: string | null): string | null {
 }
 
 /** The line for a request the server refused before any answer. */
-function refusalNotice(error: ApiErrorResponse['error'], retryAfter: string | null): string | null {
+function refusalNotice(error: ApiErrorResponse['error'], retryAfter: string | null): string {
   switch (error.code) {
     case 'rate_limited': {
       const wait = waitFrom(retryAfter);
       return `That was a lot of questions at once. Try again in ${wait ?? 'a moment'}.`;
     }
-    case 'assistant_allowance_used_up':
-      // The standing this refusal carries has the panel say so itself, with
-      // the time the allowance refills.
-      return null;
-    case 'assistant_unavailable':
-      return `${ASSISTANT_NAME} is not available: no Writing AI is set up.`;
     case 'unauthorized':
       return 'You are signed out. Sign in again to keep asking.';
     default:

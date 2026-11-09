@@ -40,8 +40,7 @@ export type UpdateAssistantAccessRequest = z.infer<typeof updateAssistantAccessR
  * so a change to the default reaches every Member who has not been given a
  * value of their own for that field.
  */
-export const memberAssistantAccessSchema = assistantAccessSchema.partial();
-export type MemberAssistantAccess = z.infer<typeof memberAssistantAccessSchema>;
+export type MemberAssistantAccess = Partial<AssistantAccess>;
 
 /**
  * A change to one Member's own values. `null` takes a field back to the
@@ -88,7 +87,8 @@ export const assistantStandingSchema = z.strictObject({
 export type AssistantStanding = z.infer<typeof assistantStandingSchema>;
 
 /**
- * The response header `POST /api/assistant` reports the standing in, as JSON,
- * on an answer and on a refusal alike. The panel reads it instead of asking.
+ * The response header `POST /api/assistant` reports the standing in, as JSON:
+ * on an answer, and on a refusal for access or allowance. The panel reads it
+ * instead of asking.
  */
 export const ASSISTANT_STANDING_HEADER = 'Assistant-Standing';

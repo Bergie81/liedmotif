@@ -22,8 +22,6 @@ interface SourcedValue<T> {
 export interface MemberAssistantView {
   enabled: SourcedValue<boolean>;
   dailyMessages: SourcedValue<number>;
-  /** Whether the Member has any value of their own to take back to the default. */
-  overridden: boolean;
 }
 
 function sourced<T>(own: T | undefined, instanceDefault: T): SourcedValue<T> {
@@ -44,7 +42,6 @@ export function memberAssistantView(
   return {
     enabled: sourced(own.enabled, instanceDefault.enabled),
     dailyMessages: sourced(own.dailyMessages, instanceDefault.dailyMessages),
-    overridden: own.enabled !== undefined || own.dailyMessages !== undefined,
   };
 }
 

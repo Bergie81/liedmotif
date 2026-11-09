@@ -34,6 +34,11 @@ describe('resolveAnswerLink', () => {
     ['a listed path on a full address', 'http://localhost:2206/library'],
     ['a listed path behind a space', ' /library'],
     ['a path without its leading slash', 'library'],
+    ['a listed path in other letter case', '/Library'],
+    ['a listed path with an encoded letter', '/%6cibrary'],
+    ['a listed path behind a backslash', '\\library'],
+    ['a listed path with a line break behind it', '/library\n'],
+    ['a listed path in look-alike letters', '/l\u0456brary'],
   ])('does not follow %s', (_what, href) => {
     expect(resolveAnswerLink(href, ADMIN)).toBeNull();
   });
@@ -101,6 +106,18 @@ describe('resolveAnswerLink', () => {
     ['a path that only starts like the docs', '/docsbackups'],
     ['the docs on another host', 'https://liedmotif.com.example.net/docs/backups'],
     ['the docs over plain http', DOCS_BASE_URL.replace('https:', 'http:')],
+    ['the docs with a user name in the address', 'https://liedmotif.com@example.net/docs/backups'],
+    ['the docs with a sign-in before the host', 'https://user:pass@liedmotif.com/docs/backups'],
+    ['the docs on a named port', 'https://liedmotif.com:8443/docs/backups'],
+    ['another host behind the website address', 'https://liedmotif.com//example.net/docs/backups'],
+    ['a protocol-relative docs address', '//liedmotif.com/docs/backups'],
+    ['a docs page behind backslashes', '\\docs\\backups'],
+    ['a known docs page with an encoded letter', '/docs/%62ackups'],
+    ['a known docs page with a line break behind it', '/docs/backups\n'],
+    ['an anchor with an encoded character', '/docs/backups#restore%20now'],
+    ['an anchor with a control character', '/docs/backups#restore\u0000'],
+    ['an anchor that turns the text around', '/docs/backups#restore\u202Enow'],
+    ['a second anchor', '/docs/backups#restore#now'],
   ])('does not follow %s', (_what, href) => {
     expect(resolveAnswerLink(href, ADMIN)).toBeNull();
   });

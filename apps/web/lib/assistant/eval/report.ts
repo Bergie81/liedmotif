@@ -24,7 +24,7 @@ export function renderEvalReport(run: {
     '# Assistant model evaluation',
     [
       `- Model: \`${run.model}\` (provider \`${run.providerKey}\`)`,
-      `- Run: ${run.startedAt.toISOString()}, ${results.length} questions, each asked once, no retries`,
+      `- Run: ${run.startedAt.toISOString()}, ${results.length} questions, each asked once and never again`,
       `- Answered: ${answered} of ${results.length}`,
     ].join('\n'),
     '## Scores',

@@ -11,7 +11,7 @@ export function mayAskAssistant(standing: AssistantStanding): boolean {
   return standing.enabled && standing.allowance?.remaining !== 0;
 }
 
-/** The header every response that knows the standing carries, for the panel to read. */
+/** The header an answer, and a refusal for access or allowance, reports the standing in. */
 export function assistantStandingHeaders(standing: AssistantStanding): Record<string, string> {
   return { [ASSISTANT_STANDING_HEADER]: JSON.stringify(standing) };
 }

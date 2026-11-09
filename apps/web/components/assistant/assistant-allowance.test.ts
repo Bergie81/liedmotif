@@ -125,6 +125,30 @@ it('learns from a refusal that the allowance is used up', async () => {
   expect(field().value).toBe('How do I invite someone?');
 });
 
+it("says so when the server refuses for a day the viewer's own clock has already ended", async () => {
+  // The viewer's clock runs ahead of the server's: the day it was told about
+  // is over here, and the server still counts against it.
+  const overHere = memberStanding(0, new Date(Date.now() - 60_000));
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () =>
+      Response.json(makeApiError('assistant_allowance_used_up', 'The server said why.'), {
+        status: 429,
+        headers: { [ASSISTANT_STANDING_HEADER]: JSON.stringify(overHere) },
+      }),
+    ),
+  );
+  const panel = openPanel(overHere);
+  expect(field().disabled).toBe(false);
+  fireEvent.change(field(), { target: { value: 'How do I invite someone?' } });
+
+  fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+
+  await waitFor(() => expect(panel.textContent).toContain('The server said why.'));
+  expect(screen.getAllByRole('alert')).toHaveLength(1);
+  expect(field().value).toBe('How do I invite someone?');
+});
+
 it('learns from an answer how many messages are left', async () => {
   vi.stubGlobal(
     'fetch',
