@@ -5,7 +5,11 @@
 // shape via a deterministic template (`./template`) with no LLM — so the music
 // path (the one hard-required provider) never depends on a configured LLM. Title/artist metadata
 // is cosmetic and must never block playback, buffering, or provider submission.
+//
+// The Assistant is the text LLM's one use outside the music path
+// (`streamAssistantReply`): a tool-calling exchange per chat message.
 
+import type { z } from 'zod';
 import type { BaseProvider } from '../types';
 import type { EnergyLevel, SessionStyleSnapshot } from './snapshot';
 import type { SessionNamingMetadata } from './session-title';
@@ -67,12 +71,41 @@ export interface CoverDirectionEnhancement {
   applied: boolean;
 }
 
-// The canonical `ListenerContext` lives in `@liedmotif/shared` (produced by
-// `@liedmotif/db`, consumed here); re-exported so LLM consumers get it with the
-// provider interface.
-import type { ListenerContext } from '@liedmotif/shared';
+// The canonical `ListenerContext` (produced by `@liedmotif/db`, consumed here)
+// and `AssistantMessage` (the request contract's message) live in
+// `@liedmotif/shared`; re-exported so LLM consumers get them with the provider
+// interface.
+import type { AssistantMessage, ListenerContext } from '@liedmotif/shared';
 
-export type { ListenerContext };
+export type { AssistantMessage, ListenerContext };
+
+/**
+ * A function the model may call while it writes a reply. Vendor-neutral: each
+ * adapter maps it onto its own SDK's tool shape.
+ */
+export interface LlmTool<Input = unknown> {
+  name: string;
+  /** Tells the model what the tool is for and when to call it. */
+  description: string;
+  inputSchema: z.ZodType<Input>;
+  /**
+   * Runs with the validated input; what it returns is what the model reads.
+   * A method, not a function property: that is what lets tools with different
+   * input types sit in one `LlmTool[]`.
+   */
+  execute(input: Input): Promise<string>;
+}
+
+export interface AssistantReplyInput {
+  system: string;
+  /** The conversation so far, oldest first, ending with the user's message. */
+  messages: readonly AssistantMessage[];
+  tools: readonly LlmTool[];
+  /** How many model calls may go to tools before the model has to answer. */
+  maxToolSteps: number;
+  /** Stops the exchange, e.g. when the user closes the chat mid-answer. */
+  signal?: AbortSignal;
+}
 
 export interface LlmProvider extends BaseProvider {
   readonly providerType: 'llm';
@@ -148,6 +181,15 @@ export interface LlmProvider extends BaseProvider {
    * LLM-free, and the deterministic worker sanitizer still applies afterwards.
    */
   enhanceCoverDirection(input: CoverDirectionInput): Promise<CoverDirectionEnhancement>;
+  /**
+   * The Assistant's reply to a conversation, as chunks of Markdown text in the
+   * order the model writes them. The model may call the tools first; what they
+   * return reaches the model only, never the stream. Outside the music path:
+   * one exchange per chat message. Iterating throws a sanitized `ProviderError`
+   * when the model cannot be reached or fails mid-answer — a retryable error for
+   * the caller, never a substitute answer.
+   */
+  streamAssistantReply(input: AssistantReplyInput): AsyncIterable<string>;
 }
 
 export {

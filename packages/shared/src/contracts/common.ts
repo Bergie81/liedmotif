@@ -51,6 +51,9 @@ export const API_ERROR_CODES = [
   // Change Vibe at the Session duration target: a new revision could
   // never fill there, so the change is refused before any text-LLM call.
   'session_duration_reached',
+  // The Assistant runs on the optional text LLM: with none configured there is
+  // nothing to answer with, and retrying changes nothing.
+  'assistant_unavailable',
   'provider_error',
   'internal_error',
 ] as const;

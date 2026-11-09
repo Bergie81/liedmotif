@@ -1,6 +1,6 @@
 // Process-local rate limiters for the unauthenticated endpoints (setup + login)
-// and for the authenticated session-creation doors, whose cost the usage
-// windows do not meter.
+// and for the authenticated doors whose cost the usage windows do not meter:
+// session creation and the Assistant.
 //
 // The setup routes reach out to provider APIs (validation) or create the admin
 // (submit); login guards the password against online brute force. Those are
@@ -94,3 +94,11 @@ export function linkTokenLookupAllowed(headers: Headers): boolean {
  * listen to judge, so nobody starts ten in a minute.
  */
 export const sessionCreateLimiter = createRateLimiter({ limit: 10, windowMs: 60_000 });
+
+/**
+ * Assistant messages, per USER. Each one is a tool-calling exchange with the
+ * text LLM, which the usage windows — counting music tasks — never meter. This
+ * bounds a burst from any one account, the Admin's included. Sized well above
+ * a real chat: nobody reads twenty answers in five minutes.
+ */
+export const assistantLimiter = createRateLimiter({ limit: 20, windowMs: 5 * 60_000 });

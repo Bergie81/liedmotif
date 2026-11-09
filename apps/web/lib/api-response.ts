@@ -32,6 +32,7 @@ const STATUS_BY_CODE: Record<ApiErrorCode, number> = {
   // user is prompted to Resume (My Sessions) or browse the Library, not to retry.
   session_headroom_blocked: 429,
   session_duration_reached: 409,
+  assistant_unavailable: 503,
   provider_error: 502,
   internal_error: 500,
 };

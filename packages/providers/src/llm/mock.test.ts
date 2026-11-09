@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 import { mockLlmProvider } from './mock';
 import { sessionStyleSnapshotSchema } from './snapshot';
 
@@ -302,5 +303,60 @@ describe('mock createTrackTitles', () => {
     expect(new Set(titles).size).toBe(5);
     for (const title of titles) expect(input.takenTitles).not.toContain(title);
     expect(await provider.createTrackTitles(input)).toEqual(titles);
+  });
+});
+
+describe('mock streamAssistantReply', () => {
+  const question = { role: 'user' as const, content: 'How do I invite someone?' };
+  const collect = async (stream: AsyncIterable<string>) => {
+    const chunks: string[] = [];
+    for await (const chunk of stream) chunks.push(chunk);
+    return chunks;
+  };
+
+  it('answers in several chunks without a script, naming the question', async () => {
+    const chunks = await collect(
+      mockLlmProvider().streamAssistantReply({
+        system: 's',
+        messages: [question],
+        tools: [],
+        maxToolSteps: 4,
+      }),
+    );
+
+    expect(chunks.length).toBeGreaterThan(1);
+    expect(chunks.join('')).toBe('Mock answer to: How do I invite someone?');
+  });
+
+  it('runs its scripted tool calls and answers from what they returned', async () => {
+    const asked: unknown[] = [];
+    const provider = mockLlmProvider({
+      assistantScript: {
+        toolCalls: [{ name: 'lookup', input: { topic: 'invites' } }],
+        reply: ([found]) => `The docs say: ${found}`,
+      },
+    });
+
+    const chunks = await collect(
+      provider.streamAssistantReply({
+        system: 's',
+        messages: [question],
+        tools: [
+          {
+            name: 'lookup',
+            description: 'Look a topic up.',
+            inputSchema: z.object({ topic: z.string() }),
+            async execute(input) {
+              asked.push(input);
+              return 'Invites are made under Members.';
+            },
+          },
+        ],
+        maxToolSteps: 4,
+      }),
+    );
+
+    expect(asked).toEqual([{ topic: 'invites' }]);
+    expect(chunks.join('')).toBe('The docs say: Invites are made under Members.');
   });
 });

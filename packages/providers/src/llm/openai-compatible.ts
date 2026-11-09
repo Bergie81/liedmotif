@@ -1,6 +1,7 @@
 // Generic OpenAI-compatible text-LLM adapter (Vercel AI SDK Core), with OpenRouter
-// and Ollama presets. The text LLM is OPTIONAL and only used for the free-text/
-// voice expansion path; structured controls never reach here.
+// and Ollama presets. The text LLM is OPTIONAL. In the music path it is only used
+// for the free-text/voice expansion path; structured controls never reach here.
+// Outside it, the Assistant's replies run through `streamAssistantReply`.
 //
 // Security: the base URL is configurable, so EVERY outbound call (credential probe
 // and generation) is gated by the SSRF guard first and then dialed through the
@@ -13,7 +14,15 @@
 // prompt and run the reply through `safeParse`. Either way a single repair retry
 // runs on a parse failure.
 
-import { generateText, Output, type JSONValue, type LanguageModel } from 'ai';
+import {
+  generateText,
+  isStepCount,
+  Output,
+  streamText,
+  tool,
+  type JSONValue,
+  type LanguageModel,
+} from 'ai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import {
   MAX_COVER_GUIDANCE_LENGTH,
@@ -62,6 +71,7 @@ import {
   type TrackMetadata,
 } from './template';
 import type {
+  AssistantReplyInput,
   CoverDirectionInput,
   ListenerContext,
   LlmProvider,
@@ -262,6 +272,7 @@ const surpriseRequestSchema = z.object({
     ),
 });
 const SURPRISE_REQUEST_FAILED = 'The Writing AI could not write a surprise. Try again.';
+const ASSISTANT_REPLY_FAILED = 'The Writing AI could not answer. Try again.';
 
 /** The creative-naming response shape (`createSessionMetadata`); all default so
  *  a partial reply still validates and consumers keep their deterministic fallback. */
@@ -673,6 +684,71 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
         // Enhancement is best-effort; the raw direction is always usable.
       }
       return { text: input.text, applied: false };
+    },
+
+    async *streamAssistantReply(input: AssistantReplyInput) {
+      assertAllowedBaseUrl(config.providerKey, config.baseUrl);
+      const result = streamText({
+        model: getModel(),
+        instructions: input.system,
+        messages: input.messages.map(({ role, content }) => ({ role, content })),
+        tools: Object.fromEntries(
+          input.tools.map((definition) => [
+            definition.name,
+            tool({
+              description: definition.description,
+              inputSchema: definition.inputSchema,
+              execute: (toolInput) => definition.execute(toolInput),
+            }),
+          ]),
+        ),
+        // One step is one model call. After `maxToolSteps` of them the next
+        // call goes out without tools, which leaves the model nothing to do
+        // but answer.
+        stopWhen: isStepCount(input.maxToolSteps + 1),
+        prepareStep: ({ stepNumber }) =>
+          stepNumber >= input.maxToolSteps ? { activeTools: [] } : {},
+        // The configured timeout bounds one model call, as it does everywhere
+        // else in this adapter; a reply is several calls.
+        timeout: { stepMs: timeoutMs },
+        ...(input.signal ? { abortSignal: input.signal } : {}),
+        maxRetries,
+        providerOptions,
+        // The SDK's default handler prints the raw provider error.
+        onError: () => {},
+      });
+      // A model may say something before it calls a tool ("Let me check"). Its
+      // answer comes from a later call, so it starts a new paragraph.
+      let wroteInEarlierStep = false;
+      let wroteInThisStep = false;
+      try {
+        for await (const part of result.stream) {
+          if (part.type === 'text-delta' && part.text) {
+            if (wroteInEarlierStep && !wroteInThisStep) yield '\n\n';
+            wroteInThisStep = true;
+            yield part.text;
+          } else if (part.type === 'finish-step') {
+            wroteInEarlierStep ||= wroteInThisStep;
+            wroteInThisStep = false;
+          } else if (part.type === 'error') {
+            throw part.error;
+          } else if (part.type === 'abort') {
+            // The SDK ends an aborted stream without an error, which would pass
+            // for a finished answer. It aborts for the caller's signal or for
+            // a timeout.
+            throw input.signal?.aborted
+              ? new ProviderError(ASSISTANT_REPLY_FAILED, { aborted: true })
+              : new ProviderError(EXPANSION_TIMED_OUT, { timedOut: true });
+          }
+        }
+      } catch (err) {
+        if (err instanceof ProviderError) throw err;
+        const summary = safeErrorSummary(err);
+        throw new ProviderError(
+          summary.timedOut ? EXPANSION_TIMED_OUT : ASSISTANT_REPLY_FAILED,
+          summary,
+        );
+      }
     },
   };
   return provider;

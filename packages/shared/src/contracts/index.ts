@@ -3,6 +3,7 @@
 // vocabularies. The client, API routes, and worker all import from here so they
 // cannot drift on shapes, value sets, or the error shape.
 
+export * from './assistant';
 export * from './blend';
 export * from './common';
 export * from './domain';

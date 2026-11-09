@@ -1,7 +1,7 @@
 // Mock text-LLM provider — tests/dev only, never user-facing. It implements the
 // LlmProvider contract deterministically and WITHOUT the AI SDK or any network, so
 // the free-text create path can be exercised offline. Expansion derives a snapshot
-// from the intent text.
+// from the intent text; the Assistant's reply follows a script.
 
 import { MAX_COVER_GUIDANCE_LENGTH, tokenize } from '@liedmotif/shared';
 import {
@@ -21,6 +21,7 @@ import {
 } from './template';
 import { takenTitles } from './session-prompts';
 import type {
+  AssistantReplyInput,
   ExpansionOptions,
   ListenerContext,
   LlmProvider,
@@ -118,7 +119,17 @@ function baseSnapshot(
   });
 }
 
-export function mockLlmProvider(): LlmProvider {
+/** What the mock does with an Assistant conversation, in place of a model deciding. */
+export interface MockAssistantScript {
+  /** Tool calls to make, in order, before answering. */
+  toolCalls?: ReadonlyArray<{ name: string; input: unknown }>;
+  /** The answer, from what each tool call returned. */
+  reply(toolResults: string[]): string;
+}
+
+export function mockLlmProvider(
+  options: { assistantScript?: MockAssistantScript } = {},
+): LlmProvider {
   return {
     providerType: 'llm',
     providerKey: 'mock',
@@ -251,6 +262,21 @@ export function mockLlmProvider(): LlmProvider {
         ),
         applied: true,
       };
+    },
+
+    async *streamAssistantReply(input: AssistantReplyInput) {
+      const script = options.assistantScript;
+      const toolResults: string[] = [];
+      for (const call of script?.toolCalls ?? []) {
+        const tool = input.tools.find((candidate) => candidate.name === call.name);
+        if (!tool) throw new Error(`the mock's script calls a tool it was not given: ${call.name}`);
+        toolResults.push(await tool.execute(tool.inputSchema.parse(call.input)));
+      }
+      const answer = script
+        ? script.reply(toolResults)
+        : `Mock answer to: ${input.messages.at(-1)?.content ?? ''}`;
+      // Word by word, so a consumer sees a stream rather than one block.
+      yield* answer.match(/\S+\s*/g) ?? [];
     },
   };
 }
