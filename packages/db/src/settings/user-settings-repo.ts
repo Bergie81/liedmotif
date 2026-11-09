@@ -11,9 +11,11 @@ import {
   DEFAULT_ONBOARDING_STATE,
   DEFAULT_PLAYBACK_SETTINGS,
   type GenerationSettings,
+  type MemberAssistantAccess,
   type MemberLimits,
   type OnboardingState,
   type PlaybackSettings,
+  type UpdateMemberAssistantAccessRequest,
 } from '@liedmotif/shared';
 import type { DbOrTx } from '../transactions';
 import { userProfiles, userSettings, USER_SETTINGS_KEYS, type UserSettingKey } from '../schema';
@@ -196,6 +198,52 @@ export async function listMemberLimits(
     userId: row.userId,
     limits: { ...DEFAULT_MEMBER_LIMITS, ...((row.value ?? {}) as Partial<MemberLimits>) },
   }));
+}
+
+/**
+ * A Member's own Assistant access: only the fields the Admin set for them.
+ * Nothing is merged in here — an absent field follows the instance default,
+ * which the reader applies (`effectiveAssistantAccess`).
+ */
+export async function getMemberAssistantAccess(
+  db: DbOrTx,
+  ownerUserId: string,
+): Promise<MemberAssistantAccess> {
+  const stored = await readUserSetting<MemberAssistantAccess>(
+    db,
+    ownerUserId,
+    USER_SETTINGS_KEYS.assistant,
+  );
+  return stored ?? {};
+}
+
+/**
+ * Change a Member's own Assistant access and return what is stored after it. A
+ * value sets the field, `null` removes it so the instance default applies
+ * again, and a field left out stays as it is. One atomic upsert, like every
+ * other settings patch: concurrent changes to different fields both survive.
+ */
+export async function updateMemberAssistantAccess(
+  db: DbOrTx,
+  args: { ownerUserId: string; patch: UpdateMemberAssistantAccessRequest },
+): Promise<MemberAssistantAccess> {
+  const patch = JSON.stringify(args.patch);
+  const [row] = await db
+    .insert(userSettings)
+    .values({
+      ownerUserId: args.ownerUserId,
+      key: USER_SETTINGS_KEYS.assistant,
+      value: sql`jsonb_strip_nulls(${patch}::jsonb)`,
+    })
+    .onConflictDoUpdate({
+      target: [userSettings.ownerUserId, userSettings.key],
+      set: {
+        value: sql`jsonb_strip_nulls(${userSettings.value} || ${patch}::jsonb)`,
+        updatedAt: new Date(),
+      },
+    })
+    .returning({ value: userSettings.value });
+  return row!.value as MemberAssistantAccess;
 }
 
 /** Whether — and when — the owner finished first-login onboarding. */

@@ -5,16 +5,19 @@
 // recorded at first run), `usageLimits` (the Admin's cost-control object),
 // `coverArt`, `memberPool` (the shared Member ceiling), `unitCosts`
 // (the Admin's price per Track / Cover), `backupSchedule` / `backupRequest`
-// (instance backups), and `instanceAlerts`. Defaults are merged on read. Writes
+// (instance backups), `assistant` (the Assistant access every Member starts
+// from), and `instanceAlerts`. Defaults are merged on read. Writes
 // patch the stored jsonb rather than restating it, except the two that replace a
 // whole value: `backupRequest`, and `instanceAlerts`, where a recovery removes keys
 // a patch could not.
 
 import { eq, sql } from 'drizzle-orm';
 import {
+  DEFAULT_ASSISTANT_ACCESS,
   DEFAULT_BACKUP_SCHEDULE,
   DEFAULT_MEMBERS_POOL,
   DEFAULT_UNIT_COSTS,
+  type AssistantAccess,
   type BackupRequest,
   type BackupSchedule,
   type MembersPool,
@@ -158,6 +161,22 @@ export async function updateMembersPool(
   patch: Partial<MembersPool>,
 ): Promise<MembersPool> {
   return updateSetting(db, APP_SETTINGS_KEYS.memberPool, DEFAULT_MEMBERS_POOL, patch);
+}
+
+/**
+ * What every Member gets of the Assistant unless the Admin gave them values of
+ * their own: stored values over the shipped default.
+ */
+export async function getAssistantAccess(db: DbOrTx): Promise<AssistantAccess> {
+  return getSetting(db, APP_SETTINGS_KEYS.assistant, DEFAULT_ASSISTANT_ACCESS);
+}
+
+/** Merge a partial change over the instance's Assistant default and persist it. */
+export async function updateAssistantAccess(
+  db: Database,
+  patch: Partial<AssistantAccess>,
+): Promise<AssistantAccess> {
+  return updateSetting(db, APP_SETTINGS_KEYS.assistant, DEFAULT_ASSISTANT_ACCESS, patch);
 }
 
 /** The Admin's Unit costs — stored prices over the shipped defaults. */

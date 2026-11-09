@@ -128,18 +128,22 @@ export * from './invites';
 export * from './people';
 export * from './voice';
 // Owner-scoped user settings: the `playback`, `generation`, `onboarding`, and
-// (per-Member) `limits` keys.
+// (per-Member) `limits` and `assistant` keys.
 export {
   completeOnboarding,
   getGenerationSettings,
+  getMemberAssistantAccess,
   getMemberLimits,
   getOnboardingState,
   getPlaybackSettings,
   listMemberLimits,
   updateGenerationSettings,
+  updateMemberAssistantAccess,
   updateMemberLimits,
   updatePlaybackSettings,
 } from './settings/user-settings-repo';
+// The Assistant: who has it, and today's message allowance.
+export { countAssistantMessage, resolveAssistantStanding } from './assistant/assistant-standing';
 // Cover rows by id (pure Drizzle). The ingest/seed bootstrap — which reads
 // bundled asset files — stays behind the `@liedmotif/db/seed` subpath.
 export { getCoverImageById, recordCoverRenditionBytes, type CoverImageRow } from './covers/repo';

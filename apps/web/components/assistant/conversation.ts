@@ -6,6 +6,7 @@ import {
   ASSISTANT_MAX_MESSAGE_LENGTH,
   ASSISTANT_MAX_MESSAGES,
   type AssistantMessage,
+  type AssistantStanding,
 } from '@liedmotif/shared';
 import { askAssistant } from './ask-assistant';
 
@@ -38,7 +39,12 @@ function toRequestMessages(messages: readonly AssistantMessage[]): AssistantMess
   }));
 }
 
-export function createAssistantConversation(): AssistantConversation {
+export function createAssistantConversation({
+  onStanding,
+}: {
+  /** Told where the user stands with their allowance, each time a response says. */
+  onStanding?: (standing: AssistantStanding) => void;
+} = {}): AssistantConversation {
   let state: AssistantConversationState = {
     messages: [],
     answering: false,
@@ -101,6 +107,7 @@ export function createAssistantConversation(): AssistantConversation {
       });
       void askAssistant(toRequestMessages(asked), {
         signal: request.signal,
+        onStanding,
         onText: (more) => {
           if (running !== request) return;
           const answer = state.messages.at(-1)!;

@@ -95,6 +95,11 @@ function localMidnightToUtc(
   return new Date(instant);
 }
 
+/** The formatter for `resetTimezone`; a blank or invalid one reads as `UTC`. */
+function resetFormatter(resetTimezone: string): Intl.DateTimeFormat {
+  return zonedFormatter(resetTimezone.trim() || 'UTC') ?? zonedFormatter('UTC')!;
+}
+
 /**
  * The start instants of the current daily and monthly limit windows for `now`,
  * resetting at local midnight in `resetTimezone`. A blank or invalid timezone
@@ -102,10 +107,33 @@ function localMidnightToUtc(
  * never break limit accounting).
  */
 export function limitWindowStarts(now: Date, resetTimezone: string): LimitWindowStarts {
-  const formatter = zonedFormatter(resetTimezone.trim() || 'UTC') ?? zonedFormatter('UTC')!;
+  const formatter = resetFormatter(resetTimezone);
   const { year, month, day } = partsOf(formatter, now);
   return {
     dayStart: localMidnightToUtc(formatter, year, month, day),
     monthStart: localMidnightToUtc(formatter, year, month, 1),
+  };
+}
+
+/** The day `now` falls in, as `resetTimezone` sees it. */
+export interface LimitDay {
+  /** The local calendar date, `YYYY-MM-DD`: the key a per-day count is kept under. */
+  day: string;
+  /** The next local midnight, as a UTC instant: when a per-day count starts over. */
+  endsAt: Date;
+}
+
+/**
+ * The local day of `now` in `resetTimezone` and the instant it ends — the same
+ * midnight `limitWindowStarts` resets on, seen from the other side.
+ */
+export function limitDay(now: Date, resetTimezone: string): LimitDay {
+  const formatter = resetFormatter(resetTimezone);
+  const { year, month, day } = partsOf(formatter, now);
+  const two = (value: number) => String(value).padStart(2, '0');
+  return {
+    day: `${year}-${two(month)}-${two(day)}`,
+    // A day past the month's last rolls into the next month (`Date.UTC`).
+    endsAt: localMidnightToUtc(formatter, year, month, day + 1),
   };
 }

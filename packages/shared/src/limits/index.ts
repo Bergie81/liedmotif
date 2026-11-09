@@ -3,7 +3,7 @@
 // controller and the creation-time headroom gate. No DB dependency —
 // callers pass counts in.
 
-export { limitWindowStarts, type LimitWindowStarts } from './window';
+export { limitDay, limitWindowStarts, type LimitDay, type LimitWindowStarts } from './window';
 export { DURATION_TARGET_REACHED_MESSAGE, isDurationTargetReached } from './session-duration';
 export {
   boundedOrNull,

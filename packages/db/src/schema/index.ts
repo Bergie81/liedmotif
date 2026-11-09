@@ -33,6 +33,7 @@ export * from './feedback';
 export * from './deletion';
 export * from './voice';
 export * from './analytics';
+export * from './assistant';
 
 // Relational-query relations (metadata only; no migration impact).
 export * from './relations';

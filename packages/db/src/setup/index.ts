@@ -16,6 +16,7 @@ export {
 } from './state';
 
 export {
+  getAssistantAccess,
   getBackupRequest,
   getBackupSchedule,
   getCoverArtSettings,
@@ -27,6 +28,7 @@ export {
   getUsageLimits,
   readInstanceAlertsState,
   requestBackup,
+  updateAssistantAccess,
   updateBackupSchedule,
   updateCoverArtSettings,
   updateMembersPool,

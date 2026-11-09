@@ -24,7 +24,8 @@ vi.mock('@/lib/session', () => ({
   getAppSession: async () => (holder.userId ? { user: { id: holder.userId } } : null),
 }));
 vi.mock('@/lib/providers', () => ({ getLlmProvider: async () => holder.llm }));
-// No database here: the users have no profile row, which the route reads as a Member.
+// No database here: the users have no profile row. The route shows such a user
+// a Member's pages and holds them to no daily allowance.
 vi.mock('@/lib/db', () => ({ getDb: () => null }));
 vi.mock('@/lib/request-cache', () => ({ cachedUserProfile: async () => null }));
 

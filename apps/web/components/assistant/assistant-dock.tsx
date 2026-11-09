@@ -13,6 +13,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'reac
 import { useRouter } from 'next/navigation';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Sparkles, X } from 'lucide-react';
+import type { AssistantStanding } from '@liedmotif/shared';
 import { WithTooltip } from '@/components/ui/tooltip';
 import type { AnswerLinkTargets } from '@/lib/assistant/answer-links';
 import { ASSISTANT_NAME } from '@/lib/assistant/persona';
@@ -42,13 +43,24 @@ function usePanelBesidePage(): boolean {
 export function AssistantDock({
   links,
   launcherHidden = false,
+  standing: renderedStanding = null,
 }: {
   /** The app pages and docs pages an answer may link this user to. */
   links: AnswerLinkTargets;
   /** The page has controls where the launcher sits. An open panel stays, and closes from its header. */
   launcherHidden?: boolean;
+  /** Where the viewer stood with their allowance when the server rendered the page. */
+  standing?: AssistantStanding | null;
 }) {
-  const [conversation] = useState(createAssistantConversation);
+  // The newest word on the allowance: the server's render, then whatever each
+  // response reports, then a later render again.
+  const [standing, setStanding] = useState(renderedStanding);
+  const [seenStanding, setSeenStanding] = useState(renderedStanding);
+  if (seenStanding !== renderedStanding) {
+    setSeenStanding(renderedStanding);
+    setStanding(renderedStanding);
+  }
+  const [conversation] = useState(() => createAssistantConversation({ onStanding: setStanding }));
   const [open, setOpen] = useState(false);
   const besidePage = usePanelBesidePage();
   const router = useRouter();
@@ -124,7 +136,7 @@ export function AssistantDock({
           }}
         >
           <AnswerLinksContext.Provider value={answerLinks}>
-            <AssistantPanel conversation={conversation} inputRef={inputRef} />
+            <AssistantPanel conversation={conversation} inputRef={inputRef} standing={standing} />
           </AnswerLinksContext.Provider>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>

@@ -13,12 +13,17 @@ import {
 } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { ArrowUp, Sparkles, Square, SquarePen, X } from 'lucide-react';
-import { ASSISTANT_MAX_MESSAGE_LENGTH, type AssistantMessage } from '@liedmotif/shared';
+import {
+  ASSISTANT_MAX_MESSAGE_LENGTH,
+  type AssistantMessage,
+  type AssistantStanding,
+} from '@liedmotif/shared';
 import { AlertBanner, chipClass, iconButtonClass } from '@/components/ui/design-system';
 import { LiedmotifLoader } from '@/components/ui/loading';
 import { WithTooltip } from '@/components/ui/tooltip';
 import { ASSISTANT_NAME } from '@/lib/assistant/persona';
 import { cn } from '@/lib/cn';
+import { AllowanceNotice, useAllowance } from './allowance-notice';
 import { AssistantMarkdown } from './assistant-markdown';
 import type { AssistantConversation } from './conversation';
 
@@ -40,15 +45,21 @@ const FOLLOW_DISTANCE_PX = 80;
 export function AssistantPanel({
   conversation,
   inputRef,
+  standing,
 }: {
   conversation: AssistantConversation;
   inputRef: RefObject<HTMLTextAreaElement | null>;
+  /** Where the viewer stands with their daily allowance, as far as is known. */
+  standing: AssistantStanding | null;
 }) {
   const { messages, answering, draft, notice } = useSyncExternalStore(
     conversation.subscribe,
     conversation.getState,
     conversation.getState,
   );
+
+  const allowance = useAllowance(standing);
+  const usedUp = allowance?.remaining === 0;
 
   const ask = (text?: string) => {
     conversation.send(text);
@@ -91,8 +102,9 @@ export function AssistantPanel({
               <li key={question}>
                 <button
                   type="button"
+                  disabled={usedUp}
                   onClick={() => ask(question)}
-                  className={cn(chipClass, 'text-left')}
+                  className={cn(chipClass, 'text-left disabled:opacity-35')}
                 >
                   {question}
                 </button>
@@ -105,12 +117,15 @@ export function AssistantPanel({
       )}
 
       <footer className="flex flex-none flex-col gap-2 px-3 pb-[calc(12px+env(safe-area-inset-bottom,0px))] pt-2">
-        {/* The one place a line about asking shows: why an answer did not arrive. */}
+        {/* Where lines about asking show: why an answer did not arrive, and how
+            much of today's allowance is left. */}
         {notice ? <AlertBanner>{notice}</AlertBanner> : null}
+        <AllowanceNotice allowance={allowance} />
         <Composer
           inputRef={inputRef}
           draft={draft}
           answering={answering}
+          disabled={usedUp}
           onDraftChange={conversation.setDraft}
           onSend={() => ask()}
           onStop={() => {
@@ -182,6 +197,7 @@ function Composer({
   inputRef,
   draft,
   answering,
+  disabled,
   onDraftChange,
   onSend,
   onStop,
@@ -189,6 +205,8 @@ function Composer({
   inputRef: RefObject<HTMLTextAreaElement | null>;
   draft: string;
   answering: boolean;
+  /** Nothing can be asked right now: the field and Send are closed. */
+  disabled: boolean;
   onDraftChange: (text: string) => void;
   onSend: () => void;
   onStop: () => void;
@@ -220,12 +238,13 @@ function Composer({
         ref={inputRef}
         rows={1}
         value={draft}
+        disabled={disabled}
         maxLength={ASSISTANT_MAX_MESSAGE_LENGTH}
         aria-label={`Ask ${ASSISTANT_NAME}`}
         placeholder="Ask about Liedmotif"
         onChange={(event) => onDraftChange(event.target.value)}
         onKeyDown={onKeyDown}
-        className="min-w-0 flex-1 resize-none self-center bg-transparent py-1.5 text-[15px] leading-[1.45] text-paper outline-none placeholder:text-dim"
+        className="min-w-0 flex-1 resize-none self-center bg-transparent py-1.5 text-[15px] leading-[1.45] text-paper outline-none placeholder:text-dim disabled:cursor-not-allowed disabled:opacity-50"
       />
       {answering ? (
         <button
@@ -240,7 +259,7 @@ function Composer({
         <button
           type="submit"
           aria-label="Send"
-          disabled={!draft.trim()}
+          disabled={disabled || !draft.trim()}
           className="grid h-9 w-9 flex-none place-items-center rounded-full text-[var(--on-lamp)] [background:var(--gradient-primary)] disabled:cursor-not-allowed disabled:opacity-35 disabled:grayscale-[0.7]"
         >
           <ArrowUp className="h-[18px] w-[18px]" aria-hidden />

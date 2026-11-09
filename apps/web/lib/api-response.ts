@@ -33,6 +33,8 @@ const STATUS_BY_CODE: Record<ApiErrorCode, number> = {
   session_headroom_blocked: 429,
   session_duration_reached: 409,
   assistant_unavailable: 503,
+  assistant_access_off: 403,
+  assistant_allowance_used_up: 429,
   provider_error: 502,
   internal_error: 500,
 };

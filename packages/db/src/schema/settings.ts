@@ -48,6 +48,8 @@ export const APP_SETTINGS_KEYS = {
   backupSchedule: 'backupSchedule',
   /** The latest Back up now press (`BackupRequest`), read by the sidecar like `backupSchedule`. */
   backupRequest: 'backupRequest',
+  /** What every Member gets of the Assistant unless given their own (`AssistantAccess`). */
+  assistant: 'assistant',
 } as const;
 
 export type AppSettingKey = (typeof APP_SETTINGS_KEYS)[keyof typeof APP_SETTINGS_KEYS];
@@ -115,6 +117,11 @@ export const USER_SETTINGS_KEYS = {
   onboarding: 'onboarding',
   /** A Member's personal budget (`MemberLimits`) — written by the Admin. */
   limits: 'limits',
+  /**
+   * A Member's own Assistant access (`MemberAssistantAccess`) — written by the
+   * Admin. Holds only the fields that differ from the instance default.
+   */
+  assistant: 'assistant',
   /**
    * The owner's latest learned-taste answer. Derived: dropping the
    * row only costs one recomputation.

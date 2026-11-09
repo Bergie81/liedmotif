@@ -54,6 +54,12 @@ export const API_ERROR_CODES = [
   // The Assistant runs on the optional text LLM: with none configured there is
   // nothing to answer with, and retrying changes nothing.
   'assistant_unavailable',
+  // The Admin switched the Assistant off for this Member.
+  'assistant_access_off',
+  // The Member's daily message allowance is spent; it refills when the next day
+  // starts in the Instance timezone. Distinct from `rate_limited`, the burst
+  // bound, which clears in minutes.
+  'assistant_allowance_used_up',
   'provider_error',
   'internal_error',
 ] as const;

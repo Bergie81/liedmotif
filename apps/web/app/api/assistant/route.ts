@@ -9,6 +9,7 @@
 // failure arrives as its last event.
 
 import { NextResponse } from 'next/server';
+import { countAssistantMessage, resolveAssistantStanding } from '@liedmotif/db';
 import { ProviderError } from '@liedmotif/providers';
 import {
   ASSISTANT_STREAM_CONTENT_TYPE,
@@ -20,6 +21,11 @@ import {
 } from '@liedmotif/shared';
 import { apiError, apiRateLimited, parseJsonBody, requireOwnerId } from '@/lib/api-response';
 import { streamAssistantAnswer } from '@/lib/assistant/reply';
+import {
+  assistantRefusal,
+  assistantStandingHeaders,
+  mayAskAssistant,
+} from '@/lib/assistant/standing';
 import { getDb } from '@/lib/db';
 import { getLlmProvider } from '@/lib/providers';
 import { cachedUserProfile } from '@/lib/request-cache';
@@ -49,6 +55,17 @@ export async function POST(request: Request) {
   const ownerUserId = await requireOwnerId(request);
   if (ownerUserId instanceof NextResponse) return ownerUserId;
 
+  // The profile is read once per message. It decides the daily allowance, and
+  // further down which pages of the app the answer may point to.
+  const db = getDb();
+  const profile = await cachedUserProfile(db, ownerUserId);
+
+  // Access and today's allowance come first: a Member who may not ask spends
+  // none of the burst budget and reaches no model.
+  const asker = { userId: ownerUserId, now: new Date(), knownProfile: profile };
+  const standingBefore = await resolveAssistantStanding(db, asker);
+  if (!mayAskAssistant(standingBefore)) return assistantRefusal(standingBefore);
+
   const body = await parseJsonBody(request, assistantRequestSchema, 'Invalid Assistant request.');
   if (body instanceof NextResponse) return body;
 
@@ -60,14 +77,25 @@ export async function POST(request: Request) {
     );
   }
 
-  // The last gate, so a request that reaches no model spends none of the budget.
+  // After every refusal that reaches no model, so none of those spends the budget.
   const burst = assistantLimiter.check(ownerUserId);
   if (!burst.allowed) return apiRateLimited(burst.retryAfterMs);
+
+  // The message is counted here, once, whatever the answer takes: the tool
+  // steps of one answer are one message. It stays counted when the text LLM
+  // then fails or the reader leaves, because the call it paid for was made.
+  // Messages sent in parallel all passed the check above; the count is what
+  // holds them to the allowance, and one it turns away gets its burst unit back.
+  const { counted, standing } = await countAssistantMessage(db, asker);
+  if (!counted) {
+    assistantLimiter.refund(ownerUserId);
+    return assistantRefusal(standing);
+  }
+  const standingHeaders = assistantStandingHeaders(standing);
 
   // The role decides which pages of the app the answer may point to. It comes
   // from the profile row, never from the request; anyone who is not the Admin
   // gets a Member's pages.
-  const profile = await cachedUserProfile(getDb(), ownerUserId);
   const role = profile?.role === 'admin' ? 'admin' : 'member';
 
   // Two ways the reader leaves: the request is dropped before the answer
@@ -83,11 +111,15 @@ export async function POST(request: Request) {
     // The reader left before the answer started. Nothing failed, so nothing is
     // logged, and nobody reads this response: 499 is "client closed request".
     if (stopped.aborted) return new Response(null, { status: 499 });
-    return apiError('provider_error', failureMessage(err), { retryable: true });
+    return apiError('provider_error', failureMessage(err), {
+      retryable: true,
+      headers: standingHeaders,
+    });
   }
   if (first.done) {
     return apiError('provider_error', 'The Writing AI gave no answer. Try again.', {
       retryable: true,
+      headers: standingHeaders,
     });
   }
 
@@ -122,6 +154,7 @@ export async function POST(request: Request) {
   });
   return new Response(events, {
     headers: {
+      ...standingHeaders,
       'Content-Type': ASSISTANT_STREAM_CONTENT_TYPE,
       // `no-transform` keeps a proxy from compressing the stream, which would
       // hold the answer back until its buffer fills.

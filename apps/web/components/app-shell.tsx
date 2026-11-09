@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import type { AssistantStanding } from '@liedmotif/shared';
 import { getChrome, type ChromeData } from '@/lib/api-client';
 import type { AnswerLinkTargets } from '@/lib/assistant/answer-links';
 import { readBrowserPreference, writeBrowserPreference } from '@/lib/browser-preferences';
@@ -35,6 +36,7 @@ export function AppShell({
   usagePromise,
   assistantAvailable,
   assistantLinks,
+  assistantStanding,
 }: {
   children: ReactNode;
   listener: Listener;
@@ -46,6 +48,8 @@ export function AppShell({
   assistantAvailable: boolean;
   /** Where the Assistant's answers may lead this viewer. */
   assistantLinks: AnswerLinkTargets;
+  /** Where this viewer stands with their daily Assistant allowance, when they have the Assistant. */
+  assistantStanding: AssistantStanding | null;
 }) {
   const pathname = usePathname() ?? '/';
   const previousPathname = useRef(pathname);
@@ -195,7 +199,11 @@ export function AppShell({
       {/* No launcher on the Player: in its one-column layout the seek bar and
           the transport's last control end up under that corner. */}
       {assistantAvailable ? (
-        <AssistantDock links={assistantLinks} launcherHidden={isPlayer} />
+        <AssistantDock
+          links={assistantLinks}
+          launcherHidden={isPlayer}
+          standing={assistantStanding}
+        />
       ) : null}
     </div>
   );

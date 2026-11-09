@@ -3,22 +3,26 @@
 // the line to show the user.
 
 import {
+  ASSISTANT_STANDING_HEADER,
+  assistantStandingSchema,
   createAssistantStreamDecoder,
   errorResponseSchema,
   type ApiErrorResponse,
   type AssistantMessage,
   type AssistantRequest,
+  type AssistantStanding,
 } from '@liedmotif/shared';
 import { OFFLINE_MESSAGE } from '@/lib/api-fetch';
 import { ASSISTANT_NAME } from '@/lib/assistant/persona';
 import { isOnline, reportServerAnswered, reportServerUnreachable } from '@/lib/online-state';
 
-export type AskOutcome = { ok: true } | { ok: false; notice: string };
+/** `notice` is `null` when the panel already says why from what it knows. */
+export type AskOutcome = { ok: true } | { ok: false; notice: string | null };
 
 const COULD_NOT_ANSWER = `${ASSISTANT_NAME} could not answer. Try again.`;
 const BROKE_OFF = 'The connection was lost before the answer was finished. Try again.';
 
-const failed = (notice: string): AskOutcome => ({ ok: false, notice });
+const failed = (notice: string | null): AskOutcome => ({ ok: false, notice });
 
 /** "40 seconds", "3 minutes": how long a `Retry-After` header asks the user to wait. */
 function waitFrom(retryAfter: string | null): string | null {
@@ -30,12 +34,16 @@ function waitFrom(retryAfter: string | null): string | null {
 }
 
 /** The line for a request the server refused before any answer. */
-function refusalNotice(error: ApiErrorResponse['error'], retryAfter: string | null): string {
+function refusalNotice(error: ApiErrorResponse['error'], retryAfter: string | null): string | null {
   switch (error.code) {
     case 'rate_limited': {
       const wait = waitFrom(retryAfter);
       return `That was a lot of questions at once. Try again in ${wait ?? 'a moment'}.`;
     }
+    case 'assistant_allowance_used_up':
+      // The standing this refusal carries has the panel say so itself, with
+      // the time the allowance refills.
+      return null;
     case 'assistant_unavailable':
       return `${ASSISTANT_NAME} is not available: no Writing AI is set up.`;
     case 'unauthorized':
@@ -45,9 +53,30 @@ function refusalNotice(error: ApiErrorResponse['error'], retryAfter: string | nu
   }
 }
 
+/** Where the response says the user stands, when it says so. */
+function standingFrom(response: Response): AssistantStanding | null {
+  try {
+    const standing = assistantStandingSchema.safeParse(
+      JSON.parse(response.headers.get(ASSISTANT_STANDING_HEADER) ?? 'null'),
+    );
+    return standing.success ? standing.data : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function askAssistant(
   messages: AssistantMessage[],
-  { signal, onText }: { signal: AbortSignal; onText: (text: string) => void },
+  {
+    signal,
+    onText,
+    onStanding,
+  }: {
+    signal: AbortSignal;
+    onText: (text: string) => void;
+    /** The user's standing after this question, from an answer and a refusal alike. */
+    onStanding?: (standing: AssistantStanding) => void;
+  },
 ): Promise<AskOutcome> {
   if (!isOnline()) return failed(OFFLINE_MESSAGE);
   let response: Response;
@@ -63,6 +92,9 @@ export async function askAssistant(
     if (!signal.aborted) reportServerUnreachable();
     return failed('Could not reach the server. Try again.');
   }
+
+  const standing = standingFrom(response);
+  if (standing) onStanding?.(standing);
 
   if (!response.ok || !response.body) {
     const refusal = errorResponseSchema.safeParse(await response.json().catch(() => null));
