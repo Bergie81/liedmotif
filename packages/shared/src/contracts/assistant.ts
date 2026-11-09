@@ -59,6 +59,41 @@ export function encodeAssistantStreamEvent(event: AssistantStreamEvent): string 
   return `data: ${JSON.stringify(event)}\n\n`;
 }
 
+const EVENT_END = '\n\n';
+const DATA_PREFIX = 'data: ';
+
+/**
+ * Reads a reply stream back into its events. The network cuts the stream
+ * wherever it likes, so `push` takes each piece of text as it arrives and
+ * returns the events that piece completed; the start of an unfinished event
+ * waits for the next one. A block that is not a `data:` line is passed over. A
+ * `data:` line that is not one of the three events throws: the stream is not a
+ * reply.
+ */
+export function createAssistantStreamDecoder(): {
+  push(chunk: string): AssistantStreamEvent[];
+} {
+  let pending = '';
+  return {
+    push(chunk) {
+      pending += chunk;
+      const events: AssistantStreamEvent[] = [];
+      let end = pending.indexOf(EVENT_END);
+      while (end !== -1) {
+        const block = pending.slice(0, end);
+        pending = pending.slice(end + EVENT_END.length);
+        if (block.startsWith(DATA_PREFIX)) {
+          events.push(
+            assistantStreamEventSchema.parse(JSON.parse(block.slice(DATA_PREFIX.length))),
+          );
+        }
+        end = pending.indexOf(EVENT_END);
+      }
+      return events;
+    },
+  };
+}
+
 /**
  * What the model passes to `readDocs`, the one tool it has: which section of
  * the user docs to load. Lenient about extra keys — a small model adds them.

@@ -61,6 +61,10 @@
   /* The shell's content column below `desk`, which the mini player tracks so it
      never outgrows the page it belongs to. */
   --shell-col: 520px;
+  /* The Assistant sidebar's width, and the room the page gives up for it:
+     nothing below `desk`, where the Assistant covers the page instead. */
+  --assistant-w: clamp(320px, 30vw, 400px);
+  --assistant: 0px;
 
   --color-bg: var(--night);
   --color-surface: var(--panel);
@@ -145,6 +149,10 @@ html.light {
 
   html.rail-expanded {
     --rail: 208px;
+  }
+
+  html.assistant-open {
+    --assistant: var(--assistant-w);
   }
 }
 

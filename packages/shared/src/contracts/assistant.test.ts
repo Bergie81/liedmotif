@@ -4,6 +4,7 @@ import {
   ASSISTANT_MAX_MESSAGES,
   assistantRequestSchema,
   assistantStreamEventSchema,
+  createAssistantStreamDecoder,
   encodeAssistantStreamEvent,
   makeApiError,
 } from './index';
@@ -74,5 +75,43 @@ describe('assistantStreamEventSchema', () => {
     const framed = encodeAssistantStreamEvent({ type: 'text', text: 'One\n\nTwo' });
 
     expect(framed).toBe('data: {"type":"text","text":"One\\n\\nTwo"}\n\n');
+  });
+});
+
+describe('createAssistantStreamDecoder', () => {
+  const answer = [
+    { type: 'text', text: 'Open **Settings › Members**.\n\n' },
+    { type: 'text', text: 'Then create an invite link.' },
+    { type: 'done' },
+  ] as const;
+
+  it('reads back the events a reply was framed from', () => {
+    const decoder = createAssistantStreamDecoder();
+
+    expect(decoder.push(answer.map(encodeAssistantStreamEvent).join(''))).toEqual(answer);
+  });
+
+  it('holds an event split across chunks until the rest arrives', () => {
+    const framed = answer.map(encodeAssistantStreamEvent).join('');
+    for (let cut = 1; cut < framed.length; cut += 1) {
+      const decoder = createAssistantStreamDecoder();
+      const events = [...decoder.push(framed.slice(0, cut)), ...decoder.push(framed.slice(cut))];
+      expect(events, `cut at ${cut}`).toEqual(answer);
+    }
+  });
+
+  it('passes over a comment line a proxy adds to keep the stream open', () => {
+    const decoder = createAssistantStreamDecoder();
+
+    expect(decoder.push(`: keep-alive\n\n${encodeAssistantStreamEvent({ type: 'done' })}`)).toEqual(
+      [{ type: 'done' }],
+    );
+  });
+
+  it('refuses an event that is not one of the three', () => {
+    expect(() =>
+      createAssistantStreamDecoder().push('data: {"type":"tool","name":"readDocs"}\n\n'),
+    ).toThrow();
+    expect(() => createAssistantStreamDecoder().push('data: not json\n\n')).toThrow();
   });
 });

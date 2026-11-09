@@ -4,7 +4,7 @@ import { AppShell } from '@/components/app-shell';
 import { OfflineSyncHost } from '@/components/offline/offline-sync-host';
 import { PlayerProvider } from '@/components/player/player-provider';
 import { getDb } from '@/lib/db';
-import { getTypicalTracksPerMusicRequest } from '@/lib/providers';
+import { getLlmProvider, getTypicalTracksPerMusicRequest } from '@/lib/providers';
 import { cachedListenerProfile } from '@/lib/request-cache';
 import { requireAppAccess } from '@/lib/session';
 import { cachedOwnerUsageTracks, toSessionSummary } from '@/lib/sessions';
@@ -18,9 +18,12 @@ export const dynamic = 'force-dynamic';
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const { session, role } = await requireAppAccess();
   const db = getDb();
-  const [activeSession, profile] = await Promise.all([
+  const [activeSession, profile, llmProvider] = await Promise.all([
     getActiveSession(db, { ownerUserId: session.user.id }),
     cachedListenerProfile(db, session.user.id),
+    // The Assistant answers with the text LLM; a failed read hides it rather
+    // than failing the shell.
+    getLlmProvider().catch(() => null),
   ]);
   // Deliberately NOT awaited: the usage tile streams in after the shell paints,
   // so the 5–9 query budget computation never blocks first paint. Settings pages
@@ -47,6 +50,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         }}
         initialActiveSession={activeSession ? toSessionSummary(activeSession) : null}
         usagePromise={usagePromise}
+        assistantAvailable={llmProvider !== null}
       >
         {children}
       </AppShell>

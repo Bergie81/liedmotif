@@ -8,6 +8,7 @@ import { readBrowserPreference, writeBrowserPreference } from '@/lib/browser-pre
 import { cn } from '@/lib/cn';
 import { AccountMenu, type Listener } from './account-menu';
 import { AppChromeContext, type AppChromeContextValue } from './app-chrome-context';
+import { AssistantDock } from './assistant/assistant-dock';
 import {
   deriveGenerationHeadroom,
   getPageIdentity,
@@ -31,6 +32,7 @@ export function AppShell({
   ownVoiceOffered,
   initialActiveSession,
   usagePromise,
+  assistantAvailable,
 }: {
   children: ReactNode;
   listener: Listener;
@@ -38,6 +40,8 @@ export function AppShell({
   ownVoiceOffered: boolean;
   initialActiveSession: ChromeData['activeSession'];
   usagePromise: Promise<ChromeData['usage'] | null>;
+  /** Whether this viewer has the Assistant: decides if its launcher shows at all. */
+  assistantAvailable: boolean;
 }) {
   const pathname = usePathname() ?? '/';
   const previousPathname = useRef(pathname);
@@ -150,7 +154,7 @@ export function AppShell({
   );
 
   return (
-    <div className="min-h-[100dvh]">
+    <div className="min-h-[100dvh] desk:pr-(--assistant)">
       {!isPlayer && !hasSettingsDetailHeader ? (
         <MobileHeader
           title={getPageIdentity(pathname)}
@@ -163,7 +167,7 @@ export function AppShell({
 
       <main
         className={cn(
-          'relative mx-auto max-w-(--shell-col) space-y-6 px-4 pt-4 desk:mr-auto desk:max-w-[1120px] desk:ml-[max(calc(var(--rail)+24px),calc(50vw-560px))] desk:px-10 desk:pt-6 rail-anim:transition-[margin-left] rail-anim:duration-150 rail-anim:ease-[ease]',
+          'relative mx-auto max-w-(--shell-col) space-y-6 px-4 pt-4 desk:mr-auto desk:max-w-[1120px] desk:ml-[max(calc(var(--rail)+24px),calc(50vw-var(--assistant)/2-560px))] desk:px-10 desk:pt-6 rail-anim:transition-[margin-left] rail-anim:duration-150 rail-anim:ease-[ease]',
           showMiniPlayer
             ? 'pb-[calc(var(--tab-h)+var(--mini-h)+32px+env(safe-area-inset-bottom,0px))] desk:pb-12'
             : 'pb-[calc(var(--tab-h)+32px+env(safe-area-inset-bottom,0px))] desk:pb-12',
@@ -184,6 +188,9 @@ export function AppShell({
         themeMode={themeMode}
         onToggleThemeMode={toggleThemeMode}
       />
+      {/* No launcher on the Player: in its one-column layout the seek bar and
+          the transport's last control end up under that corner. */}
+      {assistantAvailable ? <AssistantDock launcherHidden={isPlayer} /> : null}
     </div>
   );
 }
