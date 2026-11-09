@@ -1,8 +1,9 @@
 // Settings → Members, Admin-only: mint invites, see each Member's
-// aggregate usage, adjust budgets, reset passwords, disable — never a window
-// into anyone's music.
+// aggregate usage, adjust budgets and Assistant access, reset passwords,
+// disable — never a window into anyone's music.
 
 import { formatUsd } from '@liedmotif/shared';
+import { AssistantDefaultPanel } from '@/components/settings/members/assistant-access-controls';
 import { InviteMembersSection } from '@/components/settings/members/invite-members-section';
 import { MemberCards } from '@/components/settings/members/member-cards';
 import { membersCostSummary } from '@/components/settings/members/members-admin-model';
@@ -15,13 +16,19 @@ import {
 } from '@/components/settings/settings-ui';
 import { isAccountEmailEnabled } from '@/lib/env';
 import { loadMembersAdminData } from '@/lib/members-admin-data';
+import { getLlmProvider } from '@/lib/providers';
 import { requireAdmin } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
 export default async function MembersSettingsPage() {
   await requireAdmin();
-  const data = await loadMembersAdminData();
+  const [data, llm] = await Promise.all([
+    loadMembersAdminData(),
+    getLlmProvider().catch(() => null),
+  ]);
+  // The Assistant runs on the text LLM: without one there is no access to set.
+  const assistantDefault = llm ? data.assistantDefault : null;
   const costSummary = membersCostSummary(data.members, data.unitCosts);
 
   return (
@@ -66,6 +73,7 @@ export default async function MembersSettingsPage() {
             members={data.members}
             tracksPerCall={data.tracksPerCall}
             unitCosts={data.unitCosts}
+            assistantDefault={assistantDefault}
           />
         </SettingsSection>
 
@@ -77,6 +85,10 @@ export default async function MembersSettingsPage() {
             tracksPerCall={data.tracksPerCall}
             unitCosts={data.unitCosts}
           />
+        </SettingsSection>
+
+        <SettingsSection title="Assistant">
+          <AssistantDefaultPanel access={assistantDefault} />
         </SettingsSection>
       </SettingsColumns>
     </section>

@@ -1,12 +1,13 @@
 'use client';
 
-// One card per Member: aggregates and usage meters (never content),
-// with the three account actions. Budget edits open inline and save through
-// the same route enforcement reads back.
+// One card per Member: aggregates and usage meters (never content), their
+// Assistant access, and the three account actions. Budget edits open inline and
+// save through the same route enforcement reads back.
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type {
+  AssistantAccess,
   MemberResetPasswordResponse,
   PoolOverSubscription,
   UnitCosts,
@@ -21,6 +22,7 @@ import {
 import type { MembersAdminData, MembersAdminMember } from '@/lib/members-admin-data';
 import { BudgetUsageMeters, MEMBER_TRACK_LABELS } from '../budget-meters';
 import { SettingsCard, SettingsFeedback, SettingsStatusBadge } from '../settings-ui';
+import { MemberAssistantControls } from './assistant-access-controls';
 import { CopyLinkBox } from './copy-link-box';
 import { MemberBudgetKindFields } from './member-budget-fields';
 import {
@@ -61,10 +63,12 @@ function MemberCard({
   member,
   tracksPerCall,
   unitCosts,
+  assistantDefault,
 }: {
   member: MembersAdminMember;
   tracksPerCall: number;
   unitCosts: UnitCosts;
+  assistantDefault: AssistantAccess | null;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -182,6 +186,15 @@ function MemberCard({
           unitCosts={unitCosts}
         />
       </div>
+
+      {assistantDefault ? (
+        <MemberAssistantControls
+          memberUserId={member.userId}
+          memberName={member.name}
+          instanceDefault={assistantDefault}
+          own={member.assistant}
+        />
+      ) : null}
 
       {editing ? (
         <div className="mt-2 border-t border-line pt-4">
@@ -315,10 +328,13 @@ export function MemberCards({
   members,
   tracksPerCall,
   unitCosts,
+  assistantDefault,
 }: {
   members: MembersAdminData['members'];
   tracksPerCall: number;
   unitCosts: UnitCosts;
+  /** The instance default for Assistant access; null while no Writing AI is connected. */
+  assistantDefault: AssistantAccess | null;
 }) {
   if (members.length === 0) {
     return (
@@ -335,6 +351,7 @@ export function MemberCards({
           member={member}
           tracksPerCall={tracksPerCall}
           unitCosts={unitCosts}
+          assistantDefault={assistantDefault}
         />
       ))}
     </>

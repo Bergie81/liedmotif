@@ -136,6 +136,7 @@ export {
   getMemberLimits,
   getOnboardingState,
   getPlaybackSettings,
+  listMemberAssistantAccess,
   listMemberLimits,
   updateGenerationSettings,
   updateMemberAssistantAccess,

@@ -70,7 +70,7 @@ function routePath(file: string): string {
 }
 
 // `requireAdminAndMember` is the admin gate plus a member-id check, shared by the
-// four `/settings/members/[userId]` routes. It counts as the admin guard only
+// `/settings/members/[userId]` routes. It counts as the admin guard only
 // because the spec below proves it opens with `requireAdminOwnerId` — one level
 // of indirection is allowed, an unproven one is not.
 const ADMIN_GUARDS = ['requireAdminOwnerId', 'requireAdminAndMember'];

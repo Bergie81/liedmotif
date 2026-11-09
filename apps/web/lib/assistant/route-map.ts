@@ -125,7 +125,7 @@ export const APP_ROUTES: readonly AppRoute[] = [
     path: '/settings/members',
     label: 'Settings › Members',
     description:
-      "Invite people, set each Member's budget and the shared budget, and disable or remove a Member.",
+      "Invite people, set each Member's budget and the shared budget, choose who may use the Assistant and how many messages a day, and disable or remove a Member.",
     adminOnly: true,
   },
   {

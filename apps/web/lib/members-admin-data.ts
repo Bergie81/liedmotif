@@ -5,10 +5,12 @@
 // usage numbers come from the same counting functions enforcement uses.
 
 import {
+  getAssistantAccess,
   getMembersPool,
   getUnitCosts,
   getUsageLimits,
   listMemberAccounts,
+  listMemberAssistantAccess,
   listMemberLimits,
   listOpenMemberInvites,
   ownerScope,
@@ -17,6 +19,8 @@ import {
 import {
   DEFAULT_MEMBER_LIMITS,
   poolOverSubscription,
+  type AssistantAccess,
+  type MemberAssistantAccess,
   type MemberLimits,
   type MembersPool,
   type PoolOverSubscription,
@@ -45,6 +49,8 @@ export interface MembersAdminMember {
   budget: MemberLimits;
   /** Usage against that budget, per its kind, already converted to Tracks/Covers. */
   usage: BudgetUsage;
+  /** Assistant access the Admin set for this Member; an absent field follows the default. */
+  assistant: MemberAssistantAccess;
 }
 
 export interface MembersAdminData {
@@ -63,6 +69,8 @@ export interface MembersAdminData {
   tracksPerCall: number;
   /** The Admin's price per Track / Cover — Admin-only, like this whole payload. */
   unitCosts: UnitCosts;
+  /** Assistant access every Member has until the Admin sets their own. */
+  assistantDefault: AssistantAccess;
 }
 
 export async function loadMembersAdminData(): Promise<MembersAdminData> {
@@ -72,13 +80,16 @@ export async function loadMembersAdminData(): Promise<MembersAdminData> {
   const instanceLimits = await getUsageLimits(db);
   const { resetTimezone } = instanceLimits;
 
-  const [accounts, memberBudgets, pool, invites, unitCosts] = await Promise.all([
-    listMemberAccounts(db),
-    listMemberLimits(db),
-    getMembersPool(db),
-    listOpenMemberInvites(db),
-    getUnitCosts(db),
-  ]);
+  const [accounts, memberBudgets, pool, invites, unitCosts, assistantDefault, assistantByUser] =
+    await Promise.all([
+      listMemberAccounts(db),
+      listMemberLimits(db),
+      getMembersPool(db),
+      listOpenMemberInvites(db),
+      getUnitCosts(db),
+      getAssistantAccess(db),
+      listMemberAssistantAccess(db),
+    ]);
   const budgetsByUser = new Map(memberBudgets.map((entry) => [entry.userId, entry.limits]));
 
   // Rolling usage comes from one batched per-owner pass (the same counting
@@ -115,6 +126,7 @@ export async function loadMembersAdminData(): Promise<MembersAdminData> {
         storageBytes: account.storageBytes,
         budget,
         usage: await usageOf(account.userId, budget),
+        assistant: assistantByUser.get(account.userId) ?? {},
       };
     }),
   );
@@ -137,5 +149,6 @@ export async function loadMembersAdminData(): Promise<MembersAdminData> {
     defaultBudget: DEFAULT_MEMBER_LIMITS,
     tracksPerCall,
     unitCosts,
+    assistantDefault,
   };
 }

@@ -57,7 +57,8 @@ const TOTAL_ROWS: BudgetRow[] = [
   { field: 'totalCovers', label: 'Covers in total', unit: 'Covers' },
 ];
 
-const totalInputClass =
+/** A typed whole number at the end of a settings row. */
+export const budgetNumberInputClass =
   'h-9 w-[88px] rounded-[11px] border border-line-2 bg-[var(--field-bg)] shadow-[var(--shadow-field)] light:focus:bg-panel px-3 text-right font-mono text-[13px] text-paper focus:border-lamp/60 focus:shadow-[0_0_0_3px_var(--lamp-glow)] disabled:opacity-35';
 
 interface BudgetFieldsProps {
@@ -109,7 +110,7 @@ function MemberBudgetTotalFields({
                 maxLength={6}
                 disabled={disabled}
                 onChange={(event) => onChange(field, event.target.value)}
-                className={totalInputClass}
+                className={budgetNumberInputClass}
               />
               <span className={`${stepperValueClass} min-w-0`}>{unit}</span>
             </span>

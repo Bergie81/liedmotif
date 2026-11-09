@@ -231,6 +231,7 @@ describe.skipIf(skip)('Settings → Members administration routes', () => {
 
     const data = await loadMembersAdminData();
     expect(Object.keys(data).sort()).toEqual([
+      'assistantDefault',
       'defaultBudget',
       'invites',
       'members',
@@ -245,6 +246,7 @@ describe.skipIf(skip)('Settings → Members administration routes', () => {
     // prompts, covers, or any other content field. A new key fails this test
     // until it is deliberately vetted as aggregate-only.
     expect(Object.keys(data.members[0]!).sort()).toEqual([
+      'assistant',
       'budget',
       'disabled',
       'joinedAt',

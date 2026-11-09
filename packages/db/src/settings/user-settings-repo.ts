@@ -218,6 +218,28 @@ export async function getMemberAssistantAccess(
 }
 
 /**
+ * Every Member's own Assistant access, keyed by user id — what Settings →
+ * Members shows beside the instance default. A Member the Admin never set a
+ * value for has no entry.
+ */
+export async function listMemberAssistantAccess(
+  db: DbOrTx,
+): Promise<Map<string, MemberAssistantAccess>> {
+  const rows = await db
+    .select({ userId: userProfiles.userId, value: userSettings.value })
+    .from(userProfiles)
+    .innerJoin(
+      userSettings,
+      and(
+        eq(userSettings.ownerUserId, userProfiles.userId),
+        eq(userSettings.key, USER_SETTINGS_KEYS.assistant),
+      ),
+    )
+    .where(eq(userProfiles.role, 'member'));
+  return new Map(rows.map((row) => [row.userId, row.value as MemberAssistantAccess]));
+}
+
+/**
  * Change a Member's own Assistant access and return what is stored after it. A
  * value sets the field, `null` removes it so the instance default applies
  * again, and a field left out stays as it is. One atomic upsert, like every
