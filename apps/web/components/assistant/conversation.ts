@@ -117,8 +117,11 @@ export function createAssistantConversation(): AssistantConversation {
     },
     stop,
     newChat() {
-      stop();
-      update({ messages: [], notice: null });
+      // Ended without `stop`, which hands an unanswered question back to the
+      // field: a new chat keeps nothing of the old one.
+      running?.abort();
+      running = null;
+      update({ messages: [], answering: false, notice: null });
     },
   };
 }

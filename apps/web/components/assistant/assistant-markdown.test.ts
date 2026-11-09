@@ -39,6 +39,23 @@ it('shows a link as its text, with nothing to click', () => {
   );
 });
 
+it('has nothing to click in the other ways Markdown writes a link', () => {
+  const source = [
+    'See <https://example.com/a>, [the docs][docs], mail <someone@example.com>.',
+    'A note.[^1]',
+    '[docs]: javascript:alert(1)',
+    '[^1]: With [a link](https://example.com/b).',
+  ].join('\n\n');
+
+  for (const streaming of [false, true]) {
+    const answer = render(h(AssistantMarkdown, { streaming, children: source })).container;
+
+    expect(answer.querySelector('a, [href], [src]')).toBeNull();
+    expect(answer.innerHTML).not.toContain('javascript:');
+    cleanup();
+  }
+});
+
 it('never loads an image the model points at', () => {
   const answer = renderAnswer('Here: ![the Members screen](https://example.com/pixel.png)');
 

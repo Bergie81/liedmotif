@@ -128,7 +128,8 @@ export interface OpenAiCompatibleLlmConfig {
   /** SDK network retries per call. Kept low — generation costs real money. */
   maxRetries?: number;
   /** Reasoning effort forwarded as `reasoning_effort` on every generation call
-   *  (hosted reasoning models; ignored by providers that don't know the field). */
+   *  (hosted reasoning models; ignored by providers that don't know the field).
+   *  The Assistant's call to hosted OpenAI goes out at `none` instead. */
   reasoningEffort?: LlmReasoningEffort;
 }
 
@@ -178,13 +179,13 @@ function safeErrorSummary(err: unknown): Record<string, unknown> {
   };
 }
 
-/** Sanitized expansion failure. A timeout gets its own actionable message — the
+/** Sanitized failure of a call. A timeout gets its own actionable message — the
  *  configuration is usually fine, the model was just slow (reasoning models
- *  routinely take 25s+) — while everything else keeps the check-your-configuration
+ *  routinely take 25s+) — while everything else gets the call's own `failed`
  *  message. The summary stays attached as the loggable `safeDetail`. */
-function expansionError(err: unknown): ProviderError {
+function sanitizedError(err: unknown, failed: string): ProviderError {
   const summary = safeErrorSummary(err);
-  return new ProviderError(summary.timedOut ? EXPANSION_TIMED_OUT : EXPANSION_FAILED, summary);
+  return new ProviderError(summary.timedOut ? EXPANSION_TIMED_OUT : failed, summary);
 }
 
 /** Pull the first JSON object out of a model response (tolerating prose / fences). */
@@ -356,17 +357,28 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
   // OpenAI-style `reasoning_effort`.
   // Widened to the SDK's provider-options shape: the wire formats as a plain
   // union carry phantom `?: undefined` props that fail its Record type.
-  const providerOptions: Record<string, Record<string, JSONValue>> = {
-    openaiCompatible: {
-      strictJsonSchema: false,
-      ...(config.reasoningEffort && config.providerKey !== 'openrouter'
-        ? { reasoningEffort: config.reasoningEffort }
+  function providerOptionsAt(
+    reasoningEffort: LlmReasoningEffort | undefined,
+  ): Record<string, Record<string, JSONValue>> {
+    return {
+      openaiCompatible: {
+        strictJsonSchema: false,
+        ...(reasoningEffort && config.providerKey !== 'openrouter' ? { reasoningEffort } : {}),
+      },
+      ...(reasoningEffort && config.providerKey === 'openrouter'
+        ? { openrouter: { reasoning: { effort: reasoningEffort } } }
         : {}),
-    },
-    ...(config.reasoningEffort && config.providerKey === 'openrouter'
-      ? { openrouter: { reasoning: { effort: config.reasoningEffort } } }
-      : {}),
-  };
+    };
+  }
+  const providerOptions = providerOptionsAt(config.reasoningEffort);
+  // Hosted OpenAI's chat-completions endpoint answers 400 to function tools
+  // sent with any reasoning effort but `none`, so a call that offers tools goes
+  // out with reasoning off there. A model configured without an effort gets
+  // none named: it may not know the field.
+  const toolCallProviderOptions =
+    config.providerKey === 'openai' && config.reasoningEffort
+      ? providerOptionsAt('none')
+      : providerOptions;
   /** Bounded call settings: a fresh per-call timeout (never above the configured
    *  one), cut short by the caller's own signal, a low retry cap, and the
    *  provider options above. */
@@ -402,7 +414,7 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
         lastError = err; // fall through to the single repair attempt, then give up
       }
     }
-    throw expansionError(lastError);
+    throw sanitizedError(lastError, EXPANSION_FAILED);
   }
 
   async function expandViaJsonText(
@@ -492,7 +504,7 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
       } catch (err) {
         if (err instanceof ProviderError) throw err; // already sanitized
         // Sanitize any raw provider/SDK error, keeping loggable non-secret facts.
-        throw expansionError(err);
+        throw sanitizedError(err, EXPANSION_FAILED);
       }
       const { coverConcept, requestedDurationMinutes, ...rawSnapshot } = expanded;
       // An adjustment holds the session's frozen blend anchors: a reply that
@@ -655,11 +667,7 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
           ...callSettings(timeoutMs, input.signal),
         }));
       } catch (err) {
-        const summary = safeErrorSummary(err);
-        throw new ProviderError(
-          summary.timedOut ? EXPANSION_TIMED_OUT : SURPRISE_REQUEST_FAILED,
-          summary,
-        );
+        throw sanitizedError(err, SURPRISE_REQUEST_FAILED);
       }
       const parsed = surpriseRequestSchema.safeParse(parseJsonObject(text));
       if (!parsed.success) {
@@ -713,7 +721,7 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
         timeout: { stepMs: timeoutMs },
         ...(input.signal ? { abortSignal: input.signal } : {}),
         maxRetries,
-        providerOptions,
+        providerOptions: toolCallProviderOptions,
         // The SDK's default handler prints the raw provider error.
         onError: () => {},
       });
@@ -743,11 +751,7 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
         }
       } catch (err) {
         if (err instanceof ProviderError) throw err;
-        const summary = safeErrorSummary(err);
-        throw new ProviderError(
-          summary.timedOut ? EXPANSION_TIMED_OUT : ASSISTANT_REPLY_FAILED,
-          summary,
-        );
+        throw sanitizedError(err, ASSISTANT_REPLY_FAILED);
       }
     },
   };

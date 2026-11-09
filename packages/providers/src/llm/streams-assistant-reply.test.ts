@@ -2,8 +2,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { ProviderError } from '../errors';
 import { scriptedLanguageModel, type ScriptedModelStep } from '../testing';
-import type { LlmTool } from './index';
-import { createOllamaLlmProvider, createOpenRouterLlmProvider } from './openai-compatible';
+import type { LlmProvider, LlmTool } from './index';
+import {
+  createOllamaLlmProvider,
+  createOpenAiLlmProvider,
+  createOpenRouterLlmProvider,
+} from './openai-compatible';
 
 /** A lookup tool that records what it was asked and answers from a table. */
 function lookupTool(answers: Record<string, string>) {
@@ -223,31 +227,66 @@ describe('streamAssistantReply on the wire (real SDK model, stubbed transport)',
     ],
   ];
 
-  it('offers the tools to an Ollama model and returns what they answer, over the configured transport', async () => {
+  /** What a Session expansion gets back: one whole chat completion, not a stream. */
+  const EXPANSION_REPLY = {
+    id: 'chatcmpl-2',
+    object: 'chat.completion',
+    created: 1,
+    model: 'qwen',
+    choices: [
+      {
+        index: 0,
+        message: {
+          role: 'assistant',
+          content: JSON.stringify({
+            stylePrompt: 'mellow lofi beats',
+            genreTags: ['lofi'],
+            vocalMode: 'instrumental',
+          }),
+        },
+        finish_reason: 'stop',
+      },
+    ],
+    usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+  };
+
+  /**
+   * A `fetch` that records each request and answers it as the endpoint would:
+   * a streamed call with the next of `REPLIES`, any other with a completion.
+   */
+  function stubWire() {
     const requests: Array<{ url: string; redirect?: string; body: Record<string, unknown> }> = [];
+    let streamed = 0;
     const fetchImpl = (async (url: string | URL, init?: RequestInit) => {
-      requests.push({
-        url: String(url),
-        redirect: init?.redirect,
-        body: JSON.parse(String(init?.body)),
-      });
-      const reply = REPLIES[requests.length - 1] ?? [];
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      requests.push({ url: String(url), redirect: init?.redirect, body });
+      if (body.stream !== true) return Response.json(EXPANSION_REPLY);
+      const reply = REPLIES[streamed] ?? [];
+      streamed += 1;
       return new Response(`${reply.join('')}data: [DONE]\n\n`, {
         status: 200,
         headers: { 'content-type': 'text/event-stream' },
       });
     }) as unknown as typeof fetch;
-    const { tool } = lookupTool({ invites: 'Invites are made under Members.' });
-    const provider = createOllamaLlmProvider({ model: 'qwen', fetchImpl });
+    return { fetchImpl, requests };
+  }
 
-    const chunks = await collect(
+  function askOverTheWire(provider: LlmProvider): Promise<string[]> {
+    return collect(
       provider.streamAssistantReply({
         system: 'You are the helper.',
         messages: [{ role: 'user', content: 'How do I invite someone?' }],
-        tools: [tool],
+        tools: [lookupTool({ invites: 'Invites are made under Members.' }).tool],
         maxToolSteps: 4,
       }),
     );
+  }
+
+  it('offers the tools to an Ollama model and returns what they answer, over the configured transport', async () => {
+    const { fetchImpl, requests } = stubWire();
+    const provider = createOllamaLlmProvider({ model: 'qwen', fetchImpl });
+
+    const chunks = await askOverTheWire(provider);
 
     expect(chunks.join('')).toBe('Create an invite link.');
     expect(requests).toHaveLength(2);
@@ -276,5 +315,50 @@ describe('streamAssistantReply on the wire (real SDK model, stubbed transport)',
       { role: 'assistant' },
       { role: 'tool', tool_call_id: 'call_1', content: 'Invites are made under Members.' },
     ]);
+  });
+
+  it('asks hosted OpenAI with reasoning off, and leaves a Session expansion at the configured effort', async () => {
+    // Its chat-completions endpoint answers 400 to function tools sent with any
+    // reasoning effort but `none`; the preset's default effort is `high`.
+    const { fetchImpl, requests } = stubWire();
+    const provider = createOpenAiLlmProvider({ apiKey: 'sk-oai-1', fetchImpl });
+
+    const chunks = await askOverTheWire(provider);
+    await provider.expandSessionIntent('chill study music');
+
+    expect(chunks.join('')).toBe('Create an invite link.');
+    const asked = requests.filter((request) => request.body.stream === true);
+    const expanded = requests.filter((request) => request.body.stream !== true);
+    expect(asked).toHaveLength(2);
+    for (const { body } of asked) {
+      expect(body.tools).toHaveLength(1);
+      expect(body.reasoning_effort).toBe('none');
+    }
+    expect(expanded.length).toBeGreaterThan(0);
+    for (const { body } of expanded) {
+      expect(body).not.toHaveProperty('tools');
+      expect(body.reasoning_effort).toBe('high');
+    }
+  });
+
+  it('names no reasoning effort to an OpenAI model configured without one', async () => {
+    // A model picked by hand may not know the field at all.
+    const { fetchImpl, requests } = stubWire();
+    const provider = createOpenAiLlmProvider({ apiKey: 'sk-oai-1', model: 'plain', fetchImpl });
+
+    await askOverTheWire(provider);
+
+    expect(requests).toHaveLength(2);
+    for (const { body } of requests) expect(body).not.toHaveProperty('reasoning_effort');
+  });
+
+  it('keeps the configured effort where the endpoint takes it with tools', async () => {
+    const { fetchImpl, requests } = stubWire();
+    const provider = createOllamaLlmProvider({ model: 'qwen', reasoningEffort: 'low', fetchImpl });
+
+    await askOverTheWire(provider);
+
+    expect(requests).toHaveLength(2);
+    for (const { body } of requests) expect(body.reasoning_effort).toBe('low');
   });
 });

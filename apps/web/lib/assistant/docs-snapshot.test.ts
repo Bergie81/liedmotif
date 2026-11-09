@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { buildDocsIndex, docsSnapshotDir, loadDocs, readDocsFiles } from './docs';
+import { SECTIONS_READ_CHAR_BUDGET } from './read-docs-tool';
 
 describe('the committed docs snapshot', () => {
   it('loads every page with a title, a description and sections', () => {
@@ -25,10 +26,10 @@ describe('the committed docs snapshot', () => {
 });
 
 // One Assistant turn has to fit a 16k-token context, so that a local model can
-// run it: about 4k for the rules, the route map and the docs index, 4k for the
-// conversation, 6k for the sections read and 1k for the answer.
+// run it: about 4k for the system prompt, 4k for the conversation, 6k for the
+// sections read and 1k for the answer. The docs index is most of the system
+// prompt.
 const INDEX_TOKEN_BUDGET = 3_000;
-const SECTION_TOKEN_BUDGET = 6_000;
 
 /**
  * No tokenizer ships with the app, so sizes are estimated from length. The docs
@@ -47,15 +48,14 @@ describe("the docs snapshot within one turn's context budget", () => {
   it('has no section too large to read in one turn', () => {
     const oversized = loadDocs().flatMap((page) =>
       page.sections
-        .filter((section) => estimateTokens(section.markdown) > SECTION_TOKEN_BUDGET)
+        .filter((section) => section.markdown.length > SECTIONS_READ_CHAR_BUDGET)
         .map(
-          (section) =>
-            `${page.slug} › ${section.heading}: ~${estimateTokens(section.markdown)} tokens`,
+          (section) => `${page.slug} › ${section.heading}: ${section.markdown.length} characters`,
         ),
     );
 
     // A section is never cut to fit: the fix is to split it on the website.
-    expect(oversized, `over ${SECTION_TOKEN_BUDGET} tokens`).toEqual([]);
+    expect(oversized, `over ${SECTIONS_READ_CHAR_BUDGET} characters`).toEqual([]);
   });
 });
 

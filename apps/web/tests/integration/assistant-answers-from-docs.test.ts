@@ -38,12 +38,13 @@ function scriptModel(steps: ScriptedModelStep[]) {
   return model;
 }
 
-function send(messages: AssistantMessage[]): Promise<Response> {
+function send(messages: AssistantMessage[], signal?: AbortSignal): Promise<Response> {
   return POST(
     new Request('http://localhost/api/assistant', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ messages }),
+      ...(signal ? { signal } : {}),
     }),
   );
 }
@@ -211,6 +212,17 @@ describe('POST /api/assistant', () => {
     await reader.cancel();
 
     expect(model.doStreamCalls[0]?.abortSignal?.aborted).toBe(true);
+  });
+
+  it('stops the model call when the reader leaves before the answer starts, and logs no failure', async () => {
+    const model = scriptModel([{ hang: true }]);
+    const reader = new AbortController();
+    setTimeout(() => reader.abort(), 10);
+
+    await send([{ role: 'user', content: 'How do I invite someone?' }], reader.signal);
+
+    expect(model.doStreamCalls[0]?.abortSignal?.aborted).toBe(true);
+    expect(logged).not.toContain('Assistant reply failed');
   });
 
   it('refuses a burst past 20 messages in the window, for that user only', async () => {

@@ -21,7 +21,7 @@ export interface DocsPage {
   sections: DocsSection[];
 }
 
-export const INTRO_SECTION = 'intro';
+const INTRO_SECTION = 'intro';
 
 const SNAPSHOT_DIR = 'docs-snapshot';
 
@@ -31,7 +31,8 @@ const SNAPSHOT_DIR = 'docs-snapshot';
  * Next config's `outputFileTracingIncludes` entry ships the directory), the
  * repo root for Vitest and root scripts.
  */
-export function docsSnapshotDir(cwd: string = process.cwd()): string {
+export function docsSnapshotDir(): string {
+  const cwd = process.cwd();
   const candidates = [join(cwd, SNAPSHOT_DIR), join(cwd, 'apps', 'web', SNAPSHOT_DIR)];
   const found = candidates.find((candidate) => existsSync(candidate));
   if (!found) throw new Error(`Docs snapshot not found (looked in ${candidates.join(', ')})`);

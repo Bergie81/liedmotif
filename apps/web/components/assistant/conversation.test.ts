@@ -377,3 +377,19 @@ it('starts over with New chat, ending an answer still being written', async () =
     { role: 'user', content: 'How do I listen offline?' },
   ]);
 });
+
+it('starts over with New chat without handing back a question that has no answer yet', () => {
+  const asked = captureQuestions();
+  const conversation = createAssistantConversation();
+  conversation.send('How do I invite someone?');
+
+  conversation.newChat();
+
+  expect(asked[0]!.signal.aborted).toBe(true);
+  expect(conversation.getState()).toEqual({
+    messages: [],
+    answering: false,
+    draft: '',
+    notice: null,
+  });
+});

@@ -72,6 +72,9 @@ export async function POST(request: Request) {
   try {
     first = await chunks.next();
   } catch (err) {
+    // The reader left before the answer started. Nothing failed, so nothing is
+    // logged, and nobody reads this response: 499 is "client closed request".
+    if (stopped.aborted) return new Response(null, { status: 499 });
     return apiError('provider_error', failureMessage(err), { retryable: true });
   }
   if (first.done) {
