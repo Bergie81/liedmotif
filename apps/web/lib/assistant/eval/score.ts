@@ -2,6 +2,7 @@
 // functions over the answer and the docs sections the turn read. Whether the
 // answer agrees with the docs is left to a human reading the report.
 
+import { compiler } from 'markdown-to-jsx/react';
 import { readDocsInputSchema } from '@liedmotif/shared';
 import { resolveAnswerLink, type AnswerLinkTargets } from '../answer-links';
 import { readDocsSection, type DocsPage } from '../docs';
@@ -131,26 +132,32 @@ export interface AnswerLinks {
   plainText: string[];
 }
 
-const CODE = /```[\s\S]*?```|`[^`\n]*`/g;
-// `[text](target)` with an optional title. An image is not a link: the panel
-// shows only its description.
-const INLINE_LINK = /(!?)\[[^\]]*\]\(\s*<?([^\s)>]+)>?[^)]*\)/g;
-
 /**
- * The Markdown links of an answer, sorted the way the chat panel treats them.
- * Only links written as `[text](target)` are seen; a bare web address is not.
+ * The links of an answer, sorted the way the chat panel treats them. The
+ * answer is parsed by the panel's own Markdown renderer, so a link counts here
+ * exactly when the panel would show one: an image and a link inside code do
+ * not, a link written with a reference does.
  */
 export function answerLinks(answer: string, targets: AnswerLinkTargets): AnswerLinks {
   const links: AnswerLinks = { app: [], docs: [], plainText: [] };
-  for (const [, image, href] of answer.replace(CODE, '').matchAll(INLINE_LINK)) {
-    if (image || !href) continue;
-    const link = resolveAnswerLink(href, targets);
-    if (link?.kind === 'app') links.app.push(link.path);
-    else if (link?.kind === 'docs') links.docs.push(link.url);
-    else links.plainText.push(href);
-  }
+  compiler(answer, {
+    disableParsingRawHTML: true,
+    // The renderer drops a target it distrusts; the report shows it as written.
+    sanitizer: (value) => value,
+    createElement: (tag, props) => {
+      const href = tag === 'a' ? (props as { href?: unknown }).href : undefined;
+      if (typeof href !== 'string' || !href) return null;
+      const link = resolveAnswerLink(href, targets);
+      if (link?.kind === 'app') links.app.push(link.path);
+      else if (link?.kind === 'docs') links.docs.push(link.url);
+      else links.plainText.push(href);
+      return null;
+    },
+  });
   return links;
 }
+
+const CODE = /```[\s\S]*?```|`[^`\n]*`/g;
 
 // Function words that are frequent in one of the three languages and not a word
 // of the other two.

@@ -59,6 +59,15 @@ function AnswerImage({ alt }: { alt?: string }) {
   return alt ? <span>{alt}</span> : null;
 }
 
+/**
+ * Code the model wrote. The renderer turns whatever follows an opening fence
+ * into attributes of the element (`style="…"`, `id="…"`), so only the text is
+ * taken over.
+ */
+function AnswerCode({ children }: { children?: ReactNode }) {
+  return <code>{children}</code>;
+}
+
 const BASE_OPTIONS: MarkdownToJSX.Options = {
   // HTML in an answer stays the text it is; nothing the model writes becomes an
   // element except through Markdown.
@@ -66,7 +75,7 @@ const BASE_OPTIONS: MarkdownToJSX.Options = {
   forceBlock: true,
   forceWrapper: true,
   wrapper: 'div',
-  overrides: { a: AnswerLink, img: AnswerImage },
+  overrides: { a: AnswerLink, img: AnswerImage, code: AnswerCode },
 };
 // Half-written syntax (an unclosed `**`) stays hidden until its other end arrives.
 const STREAMING_OPTIONS: MarkdownToJSX.Options = { ...BASE_OPTIONS, optimizeForStreaming: true };

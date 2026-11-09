@@ -274,6 +274,7 @@ const surpriseRequestSchema = z.object({
 });
 const SURPRISE_REQUEST_FAILED = 'The Writing AI could not write a surprise. Try again.';
 const ASSISTANT_REPLY_FAILED = 'The Writing AI could not answer. Try again.';
+const ASSISTANT_REPLY_CUT_OFF = 'The Writing AI stopped before the answer was finished. Try again.';
 
 /** The creative-naming response shape (`createSessionMetadata`); all default so
  *  a partial reply still validates and consumers keep their deterministic fallback. */
@@ -736,6 +737,13 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
             wroteInThisStep = true;
             yield part.text;
           } else if (part.type === 'finish-step') {
+            // A provider that stops at its token limit, or withholds the rest,
+            // ends the stream cleanly; what arrived is not the whole answer.
+            if (part.finishReason === 'length' || part.finishReason === 'content-filter') {
+              throw new ProviderError(ASSISTANT_REPLY_CUT_OFF, {
+                finishReason: part.finishReason,
+              });
+            }
             wroteInEarlierStep ||= wroteInThisStep;
             wroteInThisStep = false;
           } else if (part.type === 'error') {

@@ -203,6 +203,16 @@ describe('the links of an answer', () => {
     });
   });
 
+  it('sees a link written with a reference, which the panel also turns into a button', () => {
+    const answer = 'Your music is in the [Library][lib].\n\n[lib]: /library';
+
+    expect(answerLinks(answer, targetsFor('member'))).toEqual({
+      app: ['/library'],
+      docs: [],
+      plainText: [],
+    });
+  });
+
   it('leaves out images and links inside code', () => {
     const answer = '![Home](/) and `[Home](/)` are not links.';
 

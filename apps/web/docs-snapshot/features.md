@@ -18,6 +18,21 @@ Look up any feature here to see what it does, where to find it and what its limi
 
 Tap your avatar for **Profile**, **Your Stats**, **Settings**, **Mode** and **Sign out**. The full player opens when you start music or tap the mini player.
 
+## Ask Mo
+
+Mo is the Assistant inside the app. Ask it how something in Liedmotif works, such as "How do I listen offline?", and it answers from these docs and says where in the app to look. Mo explains and points. It doesn't change anything for you.
+
+- **Open it:** tap the round sparkles button, **Ask Mo**, at the bottom right. On a wide screen Mo opens as a sidebar beside the page, so you can keep using the page while you ask, and the same button closes it. On a phone Mo fills the screen, and the close button in its top bar brings you back. The button isn't shown on the full player.
+- **Ask:** type a question and press Enter, or pick one of the suggested questions. The answer appears as it's written, and the stop button ends it early.
+- **Follow the answer:** an answer can end in a button that opens the right page in the app. Links to these docs open the website.
+- **Start over:** **New chat** clears the conversation. The conversation stays while you move between pages and is gone when you reload.
+
+Mo answers in the language you write in. Names of screens and buttons stay as the app shows them.
+
+**For members:** the admin can give each member a daily message allowance. When yours runs low, Mo says how many messages are left today, and once it's used up, when you can ask again. The admin can also switch Mo off for a member, and then the button isn't shown. Both are set under **Settings › Members**, see [members](/docs/members).
+
+**Good to know:** Mo runs on your writing AI, so it only appears when one is connected, and each question is a small request to that provider. If the writing AI fails or you ask a lot in a short time, Mo says so, and your question stays in the field so you can send it again. What Mo sends where is in [privacy and security](/docs/privacy-and-security#the-writing-ai).
+
 ## Ask for music
 
 ### Start a session

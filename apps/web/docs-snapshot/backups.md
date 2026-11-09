@@ -115,7 +115,7 @@ Your instance keeps its data in Docker volumes, listed in [Email and storage](/d
 
 Inside the volume, it looks like this. The stamp is UTC.
 
-```text
+```
 /backups/
   status.json                         what Settings › Backups reads
   .last-attempt  .healthy             the service's own notes

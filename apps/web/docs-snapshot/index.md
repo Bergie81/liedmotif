@@ -26,7 +26,7 @@ Where you run Liedmotif decides how you install it. You can move later, so pick 
 - **Learn what the app can do:** [Features](/docs/features)
 - **Invite family and friends:** [Members, invites and the lounge](/docs/members)
 - **Let a friend reach your home server:** [Share with a friend](/docs/share-with-a-friend)
-- **Got an invite to a friend's Liedmotif:** [Join a friend](/docs/join-a-friend)
+- **You're a member of someone else's Liedmotif:** [Help for members](/docs/member-help)
 - **Move to a new version:** [Updates](/docs/updates)
 - **Protect your library or move it:** [Backups and restore](/docs/backups)
 - **Hear about problems early:** [Instance alerts](/docs/alerts)

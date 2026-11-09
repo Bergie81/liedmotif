@@ -166,6 +166,26 @@ describe('streamAssistantReply (OpenAI-compatible adapter)', () => {
     printed.mockRestore();
   });
 
+  it('ends an answer the provider cut short with an error, never as a finished answer', async () => {
+    const { chunks, error } = await replyOutcome([
+      { text: ['Open the settings and'], thenCutOff: 'length' },
+    ]);
+
+    expect(chunks).toEqual(['Open the settings and']);
+    expect(error).toBeInstanceOf(ProviderError);
+    const failure = error as ProviderError;
+    expect(failure.message).toBe(
+      'The Writing AI stopped before the answer was finished. Try again.',
+    );
+    expect(failure.safeDetail).toEqual({ finishReason: 'length' });
+  });
+
+  it('treats an answer the provider withheld part of the same way', async () => {
+    const { error } = await replyOutcome([{ text: ['Open '], thenCutOff: 'content-filter' }]);
+
+    expect((error as ProviderError).safeDetail).toEqual({ finishReason: 'content-filter' });
+  });
+
   it('refuses to reach a private host before any model call', async () => {
     const { error, model } = await replyOutcome([{ text: ['never'] }], {
       baseUrl: 'http://10.0.0.5/v1',

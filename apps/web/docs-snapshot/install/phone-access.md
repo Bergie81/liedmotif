@@ -13,7 +13,7 @@ Liedmotif is a web app, so your phone needs a browser and an address, and there'
 | [Home server](/docs/install/home-server) | Install [Tailscale](https://tailscale.com/download), sign in to the same tailnet, keep it switched on, and open your `https://….ts.net` address | Only devices in your tailnet |
 | [Cloud provider](/docs/install/cloud) | Open your domain in any browser | Anyone can load the sign-in page, and only people you invited can sign in |
 | [Laptop](/docs/install/local) | Your phone can't reach it as it stands, because the laptop's address, `localhost`, means "this device". Move to a home server, or use a by-hand path below | Only that laptop |
-| [A friend's Liedmotif](/docs/join-a-friend) | Follow your friend's links | Whoever your friend lets in |
+| [Someone else's Liedmotif](/docs/member-help), as a member | Follow your admin's links | Whoever the admin lets in |
 
 A tablet works the same way.
 

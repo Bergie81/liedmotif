@@ -204,6 +204,46 @@ describe.skipIf(skip)('the Assistant daily allowance', () => {
     expect(await askTimes(1)).toEqual([429]);
   });
 
+  it('counts a message for the day it is accepted on, not the day its request began', async () => {
+    scriptModel([{ text: ['Sure.'] }]);
+    holder.userId = await createUser('member');
+    await updateUsageLimits(testDb.db, { resetTimezone: 'Asia/Tokyo' });
+    await updateAssistantAccess(testDb.db, { dailyMessages: 1 });
+    vi.useFakeTimers({ toFake: ['Date'] });
+
+    // The request begins at 23:59 on 1 March in Tokyo; its body arrives at 00:01.
+    vi.setSystemTime(new Date('2026-03-01T14:59:00.000Z'));
+    const body = new TextEncoder().encode(
+      JSON.stringify({ messages: [{ role: 'user', content: 'How do I invite someone?' }] }),
+    );
+    // A streamed body needs `duplex`, which the DOM's `RequestInit` does not list.
+    const init = {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      duplex: 'half',
+      body: new ReadableStream<Uint8Array>(
+        {
+          pull(controller) {
+            vi.setSystemTime(new Date('2026-03-01T15:01:00.000Z'));
+            controller.enqueue(body);
+            controller.close();
+          },
+        },
+        { highWaterMark: 0 },
+      ),
+    } as RequestInit;
+    const late = await POST(new Request('http://localhost/api/assistant', init));
+
+    expect(late.status).toBe(200);
+    expect(standingOf(late).allowance).toEqual({
+      dailyMessages: 1,
+      remaining: 0,
+      resetsAt: '2026-03-02T15:00:00.000Z',
+    });
+    await late.text();
+    expect(await askTimes(1)).toEqual([429]);
+  });
+
   it('never holds the Admin to a daily allowance, only to the burst limit', async () => {
     scriptModel([{ text: ['Sure.'] }]);
     holder.userId = await createUser('admin');

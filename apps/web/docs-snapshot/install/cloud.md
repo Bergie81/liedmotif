@@ -9,10 +9,15 @@ A rented server is always on, and anyone you invite can listen from anywhere in 
 
 It stays your own instance on your own provider keys. There's no Liedmotif-run service: you pay the server provider and the music provider directly.
 
-> **Let an AI assistant walk you through it.** Copy this whole page into an AI assistant, then send it this message:
+> **Let an AI assistant walk you through it.** Copy this message into ChatGPT, Claude, Gemini or another AI assistant. It tells the assistant where to read this guide. If the assistant can't open the link, open [this page as plain text](/docs/install/cloud.md), copy it all and paste it in.
 >
 > ```text
-> I want to set up Liedmotif on a rented server by following this guide. I have never used a server, DNS or SSH. Walk me through it one step at a time. After each step, ask me what I see and compare it with the "You should now see" check. If it does not match, help me fix it before we go on, using the "Common problems" section first. Never ask me to paste a password, my music provider key, the setup link or my .env file into this chat.
+> I want to set up Liedmotif, a self-hosted AI music app, on a rented server. I have never used a server, DNS or SSH. Read this guide and walk me through it one step at a time:
+> https://www.liedmotif.com/docs/install/cloud.md
+>
+> Follow the guide exactly and use plain words. After each step, ask me what I see and compare it with the "You should now see" check. If it does not match, help me fix it before we go on, using the "Common problems" section first. If the guide does not cover something, say so before you suggest anything of your own. If you cannot open the guide, tell me and I will paste it in.
+>
+> Never ask me for a password, my music provider key, the setup link or my .env file, and remind me to leave them out of anything I paste
 > ```
 
 **Keep secrets out of chats.** Never paste a password, your provider key, the setup link or the contents of `.env` into an AI chat, a forum or a screenshot.

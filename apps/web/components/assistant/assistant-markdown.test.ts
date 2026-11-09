@@ -139,6 +139,15 @@ it('keeps HTML the model wrote as plain text', () => {
   expect(answer.textContent).toContain('<a href="https://example.com">a link</a>');
 });
 
+it('shows a code block as code only, whatever the model writes after the opening fence', () => {
+  const answer = renderAnswer(
+    'Run this:\n\n```bash style="color:red" id="main" onclick="alert(1)"\nnpm run docs:sync\n```',
+  );
+
+  expect(answer.querySelector('pre code')?.textContent).toBe('npm run docs:sync');
+  expect(answer.querySelector('[style], [id], [onclick]')).toBeNull();
+});
+
 it('hides half-written syntax while the answer is still arriving', () => {
   const answer = renderAnswer('Open **Settings › Mem', { streaming: true });
 

@@ -65,8 +65,8 @@ export async function POST(request: Request) {
 
   // Access and today's allowance come first: a Member who may not ask spends
   // none of the burst budget and reaches no model.
-  const asker = { userId: ownerUserId, role, now: new Date() };
-  const standingBefore = await resolveAssistantStanding(db, asker);
+  const asker = { userId: ownerUserId, role };
+  const standingBefore = await resolveAssistantStanding(db, { ...asker, now: new Date() });
   if (!mayAskAssistant(standingBefore)) return assistantRefusal(standingBefore);
 
   const body = await parseJsonBody(request, assistantRequestSchema, 'Invalid Assistant request.');
@@ -89,7 +89,9 @@ export async function POST(request: Request) {
   // then fails or the reader leaves, because the call it paid for was made.
   // Messages sent in parallel all passed the check above; the count is what
   // holds them to the allowance, and one it turns away gets its burst unit back.
-  const { accepted, standing } = await countAssistantMessage(db, asker);
+  // The day it counts for is read here: a body that took its time arriving may
+  // have crossed midnight since the check above.
+  const { accepted, standing } = await countAssistantMessage(db, { ...asker, now: new Date() });
   if (!accepted) {
     assistantLimiter.refund(ownerUserId);
     return assistantRefusal(standing);

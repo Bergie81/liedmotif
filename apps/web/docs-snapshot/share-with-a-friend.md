@@ -9,10 +9,15 @@ A friend anywhere in the world can listen on your Liedmotif, while your home sta
 
 This guide is for a box at home in Tailscale mode, which is the installer's default: your Liedmotif address ends in `.ts.net`. If yours runs on a cloud provider or your own domain, you don't need any of this. Just [invite them](/docs/members).
 
-> **Let an AI assistant walk you through it.** Copy this whole page into ChatGPT, Claude, Gemini or another AI assistant, then send it the message below.
+> **Let an AI assistant walk you through it.** Copy the message below into ChatGPT, Claude, Gemini or another AI assistant. It tells the assistant where to read this guide. If the assistant can't open the link, open [this page as plain text](/docs/share-with-a-friend.md), copy it all and paste it in.
 
 ```text
-I run Liedmotif at home in Tailscale mode and want to let a friend in by following this guide. Walk me through it one step at a time. After each step, ask me what I see and compare it with the "You should now see" check. If it does not match, help me fix it before we go on, using the "Common problems" section first. Never suggest inviting my friend into my tailnet, and never suggest making my home box reachable from the internet (no Tailscale Funnel, no port forwarding, no router changes). Never ask me to paste the share link, the invite link or a password into this chat.
+I run Liedmotif, a self-hosted AI music app, at home in Tailscale mode, and I want to let a friend in. Read this guide and walk me through it one step at a time:
+https://www.liedmotif.com/docs/share-with-a-friend.md
+
+Follow the guide exactly and use plain words. After each step, ask me what I see and compare it with the "You should now see" check. If it does not match, help me fix it before we go on, using the "Common problems" section first. If the guide does not cover something, say so before you suggest anything of your own. If you cannot open the guide, tell me and I will paste it in.
+
+Never suggest inviting my friend into my tailnet, and never suggest making my home box reachable from the internet (no Tailscale Funnel, no port forwarding, no router changes). Never ask me for the share link, the invite link or a password, and remind me to leave them out of anything I paste
 ```
 
 > **Treat both links like passwords.** Whoever accepts the share link can reach your Liedmotif box, and whoever creates an account with the invite link first gets it. Send them only to your friend, in a private message. Never put them in a group chat, an AI chat or a screenshot.
@@ -22,7 +27,7 @@ I run Liedmotif at home in Tailscale mode and want to let a friend in by followi
 - **Liedmotif from the one-line installer, without `--domain`.** At the end it printed `Liedmotif … is running at https://….ts.net`.
 - **The admin account.** That's the one you created with the setup link.
 - **Control of your Tailscale network.** You have it if you created the network.
-- **A friend with a phone or a computer.** They need a free Tailscale account, and [their guide](/docs/join-a-friend) covers it.
+- **A friend with a phone or a computer.** They need a free Tailscale account, and [Help for members](/docs/member-help) covers it.
 
 Three words come up on this page:
 
@@ -71,19 +76,19 @@ If you've set up [account email](/docs/email-and-storage), this form also asks f
 
 ## 3. Send both links to your friend
 
-Send your friend one private message with both links and their guide. Copy this, paste your two links in, and send it. If Liedmotif mailed the invite, replace the third line with a note to look for the mail.
+Send your friend one private message with both links and the guide for members. Copy this, paste your two links in, and send it. If Liedmotif mailed the invite, replace the third line with a note to look for the mail.
 
 ```text
 I'd like you to listen on my Liedmotif. It runs on a box at my home and stays private, so you get in with Tailscale (a free app).
 
-1. Follow this guide: https://www.liedmotif.com/docs/join-a-friend
+1. Follow this guide: https://www.liedmotif.com/docs/member-help
 2. Tailscale share link: <paste the share link>
 3. Liedmotif invite link: <paste the invite link>
 
 The invite link works for 7 days.
 ```
 
-**You should now see,** once your friend has followed their guide:
+**You should now see,** once your friend has followed the guide:
 
 - in Tailscale, on the **Machines** page, an indicator on your Liedmotif box that it's shared with someone outside your tailnet;
 - in Liedmotif, under **Settings › Members**, a card with the name your friend chose, and their invite gone from **Open invites**.
@@ -113,7 +118,7 @@ To take back links nobody has used yet, press **Revoke** next to the invite unde
 
 ## Common problems
 
-- **Your friend's browser says the site can't be reached.** First check your box: on the **Machines** page it has to show as connected, not "last seen" a while ago. If it does, send your friend to [common problems in their guide](/docs/join-a-friend).
+- **Your friend's browser says the site can't be reached.** First check your box: on the **Machines** page it has to show as connected, not "last seen" a while ago. If it does, send your friend to [common problems in Help for members](/docs/member-help#common-problems).
 - **There's no Share option.** Only an Owner, Admin or IT admin of the tailnet can share. If someone else set up your tailnet, ask them to share the box.
 - **Your friend accepted the share, everything else is right, and it still doesn't load.** If you ever edited your tailnet's access controls, your policy has to let shared users reach the box. Tailscale's default policy does. See [Sharing and access control policies](https://tailscale.com/docs/features/sharing#sharing-and-access-control-policies).
 - **The share link expired, or your friend accepted it with the wrong account.** Revoke it in the **Share** dialog and send a new one.

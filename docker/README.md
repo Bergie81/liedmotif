@@ -88,7 +88,7 @@ HTTPS certificate does. Pick a machine name that says nothing private.
 
 To let a friend in, the website has
 [Share a home server with a friend](https://liedmotif.com/docs/share-with-a-friend/) for you and
-[Join a friend's Liedmotif](https://liedmotif.com/docs/join-a-friend/) for your friend.
+[Help for members](https://liedmotif.com/docs/member-help/) for your friend.
 
 ### Tailscale mode hand test
 

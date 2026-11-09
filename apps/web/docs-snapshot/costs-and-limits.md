@@ -83,6 +83,10 @@ Pressing **Reroll Track** is often free. Since tracks come in pairs, Liedmotif f
 
 With tailored art, a new session buys one cover. Each regeneration buys another, and a generated playlist cover buys one too. A session holds up to 10 covers in its history. A change of vibe never makes a new cover by itself.
 
+### Asking Mo
+
+Each question to Mo, the Assistant, is a small request to your writing AI. It buys no music and counts against no track or cover limit. Two things keep it small. Nobody can send more than 20 questions in 5 minutes. And each member has a daily allowance, 30 messages unless you change it, which resets at midnight in the **Instance timezone**. Under **Settings › Members** you set the allowance for everyone or for one member, from 1 to 1,000 a day, or switch Mo off for a member. As the admin you have no daily allowance, since the key is yours.
+
 ### When nobody is listening
 
 New tracks need a listener. Pause or close the player, and spending stops within about 2 minutes, though work already underway finishes. Playing a playlist, or having **Loop a Part** running, holds new tracks back as well.

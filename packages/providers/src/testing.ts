@@ -28,9 +28,16 @@ export type ScriptedModelStep =
   | { toolCalls: Array<{ name: string; input: unknown }>; say?: string }
   /**
    * `thenFail` breaks the stream after the text, as a provider that drops
-   * mid-answer does; `thenHang` leaves it open until the call is aborted.
+   * mid-answer does; `thenHang` leaves it open until the call is aborted;
+   * `thenCutOff` ends it cleanly with that finish reason, as a provider that
+   * stops at its token limit or withholds the rest does.
    */
-  | { text: string[]; thenFail?: Error; thenHang?: true }
+  | {
+      text: string[];
+      thenFail?: Error;
+      thenHang?: true;
+      thenCutOff?: 'length' | 'content-filter';
+    }
   /** The call itself is refused, before anything streams. */
   | { fail: Error }
   /** The model never answers: the call ends only when it is aborted. */
@@ -60,7 +67,7 @@ export function scriptedLanguageModel(steps: ScriptedModelStep[]): MockLanguageM
           abortSignal?.addEventListener('abort', () => reject(abortSignal.reason));
         });
       }
-      const finish = (unified: 'stop' | 'tool-calls') =>
+      const finish = (unified: 'stop' | 'tool-calls' | 'length' | 'content-filter') =>
         ({
           type: 'finish',
           finishReason: { unified, raw: undefined },
@@ -108,7 +115,7 @@ export function scriptedLanguageModel(steps: ScriptedModelStep[]): MockLanguageM
           ...written,
           ...(step.thenFail
             ? [{ type: 'error', error: step.thenFail } as const]
-            : [{ type: 'text-end', id: 'text' } as const, finish('stop')]),
+            : [{ type: 'text-end', id: 'text' } as const, finish(step.thenCutOff ?? 'stop')]),
         ]),
       };
     },
