@@ -18,6 +18,9 @@ playwright-report/
 test-results/
 .playwright/
 
+# Assistant model evaluation reports (`npm run assistant:eval`)
+/eval-reports/
+
 # Local data volume contents (keep the directory, ignore its contents)
 /data/*
 !/data/.gitkeep

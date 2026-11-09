@@ -223,6 +223,39 @@ LLM_PROVIDER=mock
 The mock text LLM does not call any API. It deterministically turns your free text
 into a Style Snapshot for offline testing.
 
+### Check a model for the Assistant
+
+The Assistant needs a model that calls tools reliably and keeps to what the docs
+say. To check the configured text LLM, ask it the fixed question set in
+`apps/web/lib/assistant/eval/eval-set.ts`:
+
+```bash
+npm run assistant:eval
+```
+
+Every question is a real Assistant turn with the app's own system prompt, route
+map and `readDocs` tool. The set is asked once, one question after the other, and
+nothing is retried, so a run costs about 20 questions on that provider, each up to
+five model calls. It resolves the text LLM as the app does (`LLM_*` in
+`.env` first, then what is saved under **Settings › AI Providers**), so the dev
+database has to be up. To check another model, name the whole connection for that
+run; the `LLM_*` settings count only next to the `LLM_PROVIDER` they describe:
+
+```bash
+LLM_PROVIDER=ollama LLM_BASE_URL=http://localhost:11434 LLM_MODEL=llama3.1 npm run assistant:eval
+```
+
+The Markdown report lands in `eval-reports/`, which git ignores. It scores each
+answer on the docs section read, the link, the language and the screen names, and
+records tool calls, prompt size and time. Whether an answer agrees with the docs
+is not scored: the report puts question, expected section and answer side by side
+for you to judge. A question that fails or gets no answer within 10 minutes is
+recorded as failed. One model call is bounded by `LLM_REQUEST_TIMEOUT_MS`, which a
+slow local model needs raised.
+
+`LLM_PROVIDER=mock npm run assistant:eval` tries the tooling without calling a
+model.
+
 ## Optional generated Session Covers
 
 Generated Session Covers use OpenRouter, with a key of its own apart from the

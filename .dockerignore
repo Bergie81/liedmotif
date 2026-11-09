@@ -14,5 +14,6 @@
 
 # Local data volume — not part of the app image.
 data
+eval-reports
 
 npm-debug.log*

@@ -35,6 +35,7 @@
     "db:seed": "dotenv -- npm run db:seed -w @liedmotif/db",
     "icons:generate": "tsx scripts/generate-icons.mts",
     "docs:sync": "tsx scripts/sync-docs.mts",
+    "assistant:eval": "dotenv -- tsx --tsconfig apps/web/tsconfig.json scripts/assistant-eval.mts",
     "onboarding:demo": "bash scripts/onboarding-demo.sh",
     "onboarding:state": "dotenv -- tsx scripts/onboarding-state.mts",
     "db:studio": "npm run db:studio -w @liedmotif/db",
