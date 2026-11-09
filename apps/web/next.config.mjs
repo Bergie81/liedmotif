@@ -118,6 +118,7 @@ const nextConfig = {
     '/api/sessions/cover/upload': ['../../packages/media/assets/branding/*'],
     '/api/covers/[id]': ['../../packages/db/assets/covers/*'],
     '/api/setup': ['../../packages/db/assets/covers/*'],
+    '/api/assistant': ['./docs-snapshot/**/*.md'],
   },
   // Test/tooling packages that tracing may pull into the standalone output.
   // sharp/@img stay traced — the covers route needs them at runtime.

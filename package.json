@@ -34,6 +34,7 @@
     "db:migrate": "dotenv -- npm run db:migrate -w @liedmotif/db",
     "db:seed": "dotenv -- npm run db:seed -w @liedmotif/db",
     "icons:generate": "tsx scripts/generate-icons.mts",
+    "docs:sync": "tsx scripts/sync-docs.mts",
     "onboarding:demo": "bash scripts/onboarding-demo.sh",
     "onboarding:state": "dotenv -- tsx scripts/onboarding-state.mts",
     "db:studio": "npm run db:studio -w @liedmotif/db",
