@@ -24,6 +24,9 @@ vi.mock('@/lib/session', () => ({
   getAppSession: async () => (holder.userId ? { user: { id: holder.userId } } : null),
 }));
 vi.mock('@/lib/providers', () => ({ getLlmProvider: async () => holder.llm }));
+// No database here: the users have no profile row, which the route reads as a Member.
+vi.mock('@/lib/db', () => ({ getDb: () => null }));
+vi.mock('@/lib/request-cache', () => ({ cachedUserProfile: async () => null }));
 
 const { POST } = await import('@/app/api/assistant/route');
 

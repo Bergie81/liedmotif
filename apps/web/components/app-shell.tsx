@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { getChrome, type ChromeData } from '@/lib/api-client';
+import type { AnswerLinkTargets } from '@/lib/assistant/answer-links';
 import { readBrowserPreference, writeBrowserPreference } from '@/lib/browser-preferences';
 import { cn } from '@/lib/cn';
 import { AccountMenu, type Listener } from './account-menu';
@@ -33,6 +34,7 @@ export function AppShell({
   initialActiveSession,
   usagePromise,
   assistantAvailable,
+  assistantLinks,
 }: {
   children: ReactNode;
   listener: Listener;
@@ -42,6 +44,8 @@ export function AppShell({
   usagePromise: Promise<ChromeData['usage'] | null>;
   /** Whether this viewer has the Assistant: decides if its launcher shows at all. */
   assistantAvailable: boolean;
+  /** Where the Assistant's answers may lead this viewer. */
+  assistantLinks: AnswerLinkTargets;
 }) {
   const pathname = usePathname() ?? '/';
   const previousPathname = useRef(pathname);
@@ -190,7 +194,9 @@ export function AppShell({
       />
       {/* No launcher on the Player: in its one-column layout the seek bar and
           the transport's last control end up under that corner. */}
-      {assistantAvailable ? <AssistantDock launcherHidden={isPlayer} /> : null}
+      {assistantAvailable ? (
+        <AssistantDock links={assistantLinks} launcherHidden={isPlayer} />
+      ) : null}
     </div>
   );
 }

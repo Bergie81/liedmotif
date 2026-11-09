@@ -9,12 +9,15 @@
 // The conversation is created here, once per shell, so it outlives the pages
 // the user moves between and ends with a reload.
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useRouter } from 'next/navigation';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Sparkles, X } from 'lucide-react';
 import { WithTooltip } from '@/components/ui/tooltip';
+import type { AnswerLinkTargets } from '@/lib/assistant/answer-links';
 import { ASSISTANT_NAME } from '@/lib/assistant/persona';
 import { cn } from '@/lib/cn';
+import { AnswerLinksContext, type AnswerLinks } from './assistant-markdown';
 import { AssistantPanel } from './assistant-panel';
 import { createAssistantConversation } from './conversation';
 
@@ -37,14 +40,29 @@ function usePanelBesidePage(): boolean {
 }
 
 export function AssistantDock({
+  links,
   launcherHidden = false,
 }: {
+  /** The app pages and docs pages an answer may link this user to. */
+  links: AnswerLinkTargets;
   /** The page has controls where the launcher sits. An open panel stays, and closes from its header. */
   launcherHidden?: boolean;
 }) {
   const [conversation] = useState(createAssistantConversation);
   const [open, setOpen] = useState(false);
   const besidePage = usePanelBesidePage();
+  const router = useRouter();
+  const answerLinks = useMemo<AnswerLinks>(
+    () => ({
+      targets: links,
+      onOpenAppPage(path) {
+        router.push(path);
+        // Over the page, the panel would hide the page the link led to.
+        if (!besidePage) setOpen(false);
+      },
+    }),
+    [links, router, besidePage],
+  );
   const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -105,7 +123,9 @@ export function AssistantDock({
             if (!panelRef.current?.contains(document.activeElement)) event.preventDefault();
           }}
         >
-          <AssistantPanel conversation={conversation} inputRef={inputRef} />
+          <AnswerLinksContext.Provider value={answerLinks}>
+            <AssistantPanel conversation={conversation} inputRef={inputRef} />
+          </AnswerLinksContext.Provider>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>

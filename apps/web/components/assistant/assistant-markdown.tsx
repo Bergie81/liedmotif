@@ -1,15 +1,56 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
+import { ArrowRight, ExternalLink } from 'lucide-react';
 import Markdown, { type MarkdownToJSX } from 'markdown-to-jsx/react';
+import { resolveAnswerLink, type AnswerLinkTargets } from '@/lib/assistant/answer-links';
 import { cn } from '@/lib/cn';
 
+export interface AnswerLinks {
+  /** Where this user's answers may lead. */
+  targets: AnswerLinkTargets;
+  /** Go to a page of the app, by its path. */
+  onOpenAppPage: (path: string) => void;
+}
+
+/** Without a provider no link is followed: every link shows as its text. */
+export const AnswerLinksContext = createContext<AnswerLinks | null>(null);
+
 /**
- * A link the model wrote. The model can write any target, so the target is
- * never followed: the link shows as its text. This component is the one place
+ * A link the model wrote. The model can write any target, so a link is
+ * followed only where `resolveAnswerLink` finds it among the user's targets: a
+ * page of the app becomes a button that goes there, a docs page opens on the
+ * website. Any other link shows as its text. This component is the one place
  * that decides what a link in an answer becomes.
  */
-function AnswerLink({ children }: { href?: string; children?: ReactNode }) {
+function AnswerLink({ href, children }: { href?: string; children?: ReactNode }) {
+  const links = useContext(AnswerLinksContext);
+  const link = links ? resolveAnswerLink(href, links.targets) : null;
+  if (links && link?.kind === 'app') {
+    return (
+      <button
+        type="button"
+        onClick={() => links.onOpenAppPage(link.path)}
+        className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-line-2 bg-[var(--control-bg)] px-2.5 py-0.5 align-baseline text-[13px] font-medium text-lamp [-webkit-tap-highlight-color:transparent] hover:bg-[var(--control-bg-hover)]"
+      >
+        {children}
+        <ArrowRight className="h-3 w-3 flex-none" aria-hidden />
+      </button>
+    );
+  }
+  if (link?.kind === 'docs') {
+    return (
+      <a
+        href={link.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline decoration-line-2 underline-offset-[3px] hover:decoration-current"
+      >
+        {children}
+        <ExternalLink className="ml-1 inline h-3 w-3 align-[-1px] text-muted" aria-hidden />
+      </a>
+    );
+  }
   return <span>{children}</span>;
 }
 

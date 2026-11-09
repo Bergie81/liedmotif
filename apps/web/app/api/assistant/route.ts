@@ -20,7 +20,9 @@ import {
 } from '@liedmotif/shared';
 import { apiError, apiRateLimited, parseJsonBody, requireOwnerId } from '@/lib/api-response';
 import { streamAssistantAnswer } from '@/lib/assistant/reply';
+import { getDb } from '@/lib/db';
 import { getLlmProvider } from '@/lib/providers';
+import { cachedUserProfile } from '@/lib/request-cache';
 import { assistantLimiter } from '@/lib/request-limits';
 
 export const dynamic = 'force-dynamic';
@@ -62,12 +64,18 @@ export async function POST(request: Request) {
   const burst = assistantLimiter.check(ownerUserId);
   if (!burst.allowed) return apiRateLimited(burst.retryAfterMs);
 
+  // The role decides which pages of the app the answer may point to. It comes
+  // from the profile row, never from the request; anyone who is not the Admin
+  // gets a Member's pages.
+  const profile = await cachedUserProfile(getDb(), ownerUserId);
+  const role = profile?.role === 'admin' ? 'admin' : 'member';
+
   // Two ways the reader leaves: the request is dropped before the answer
   // starts, or the response stream is cancelled once it has. Either stops the
   // model call, so an answer nobody reads costs nothing more.
   const reading = new AbortController();
   const stopped = AbortSignal.any([request.signal, reading.signal]);
-  const chunks = streamAssistantAnswer(llm, body.messages, stopped)[Symbol.asyncIterator]();
+  const chunks = streamAssistantAnswer(llm, role, body.messages, stopped)[Symbol.asyncIterator]();
   let first: IteratorResult<string>;
   try {
     first = await chunks.next();

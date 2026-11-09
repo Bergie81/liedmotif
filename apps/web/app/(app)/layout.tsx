@@ -3,6 +3,7 @@ import { getActiveSession } from '@liedmotif/db';
 import { AppShell } from '@/components/app-shell';
 import { OfflineSyncHost } from '@/components/offline/offline-sync-host';
 import { PlayerProvider } from '@/components/player/player-provider';
+import { answerLinkTargets } from '@/lib/assistant/link-targets';
 import { getDb } from '@/lib/db';
 import { getLlmProvider, getTypicalTracksPerMusicRequest } from '@/lib/providers';
 import { cachedListenerProfile } from '@/lib/request-cache';
@@ -51,6 +52,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         initialActiveSession={activeSession ? toSessionSummary(activeSession) : null}
         usagePromise={usagePromise}
         assistantAvailable={llmProvider !== null}
+        assistantLinks={answerLinkTargets(role)}
       >
         {children}
       </AppShell>

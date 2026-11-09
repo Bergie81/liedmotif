@@ -1,18 +1,31 @@
 // @vitest-environment jsdom
 
 // Opening and closing the Assistant, by pointer and by keyboard: where focus
-// goes, what Escape does, and what the launcher is while the panel is open.
+// goes, what Escape does, what the launcher is while the panel is open, and
+// what following a link in an answer does to the panel.
 
 import { createElement as h } from 'react';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
+import { ASSISTANT_STREAM_CONTENT_TYPE, encodeAssistantStreamEvent } from '@liedmotif/shared';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import type { AnswerLinkTargets } from '@/lib/assistant/answer-links';
 import { AssistantDock } from './assistant-dock';
+
+const navigation = vi.hoisted(() => ({ push: vi.fn<(path: string) => void>() }));
+vi.mock('next/navigation', () => ({ useRouter: () => navigation }));
 
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  navigation.push.mockClear();
 });
+
+/** Where a Member's answers may lead. */
+const LINKS: AnswerLinkTargets = {
+  appPaths: ['/library', '/settings/playback'],
+  docsPages: ['members'],
+};
 
 /** jsdom has no media queries: say which side of the `desk` breakpoint the window is on. */
 function renderDock({ desk, launcherHidden }: { desk: boolean; launcherHidden?: boolean }) {
@@ -25,9 +38,25 @@ function renderDock({ desk, launcherHidden }: { desk: boolean; launcherHidden?: 
       TooltipProvider,
       null,
       h('button', { type: 'button' }, 'Something on the page'),
-      h(AssistantDock, { launcherHidden }),
+      h(AssistantDock, { links: LINKS, launcherHidden }),
     ),
   );
+}
+
+/** Ask a question the Assistant answers at once with `markdown`. */
+function askAndGetAnswer(markdown: string): void {
+  const reply =
+    encodeAssistantStreamEvent({ type: 'text', text: markdown }) +
+    encodeAssistantStreamEvent({ type: 'done' });
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(
+      async () =>
+        new Response(reply, { headers: { 'Content-Type': ASSISTANT_STREAM_CONTENT_TYPE } }),
+    ),
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Ask Mo' }));
+  fireEvent.click(screen.getByRole('button', { name: 'What does New music do?' }));
 }
 
 it('opens from the launcher with a greeting and questions to start from', () => {
@@ -139,4 +168,34 @@ it('asks a suggested question and can stop the answer from the field', () => {
   expect(field.value).toBe('What does New music do?');
   expect(document.activeElement).toBe(field);
   expect(screen.getByRole('button', { name: 'Send' })).toBeTruthy();
+});
+
+it('opens the page an answer links to and keeps the sidebar open beside it', async () => {
+  renderDock({ desk: true });
+  askAndGetAnswer('Set it in [Settings › Playback](/settings/playback).');
+
+  fireEvent.click(await screen.findByRole('button', { name: 'Settings › Playback' }));
+
+  expect(navigation.push).toHaveBeenCalledExactlyOnceWith('/settings/playback');
+  expect(screen.getByRole('dialog', { name: 'Mo' })).toBeTruthy();
+});
+
+it('closes the panel that covers the page when a link in an answer is followed', async () => {
+  renderDock({ desk: false });
+  askAndGetAnswer('Set it in [Settings › Playback](/settings/playback).');
+
+  fireEvent.click(await screen.findByRole('button', { name: 'Settings › Playback' }));
+
+  expect(navigation.push).toHaveBeenCalledExactlyOnceWith('/settings/playback');
+  expect(screen.queryByRole('dialog')).toBeNull();
+});
+
+it("offers no button for a page that is not among this user's link targets", async () => {
+  renderDock({ desk: true });
+  askAndGetAnswer('Ask your Admin to open [Settings › Members](/settings/members).');
+
+  await waitFor(() => expect(screen.getByRole('log').textContent).toContain('Settings › Members'));
+
+  expect(screen.queryByRole('button', { name: 'Settings › Members' })).toBeNull();
+  expect(screen.getByRole('log').querySelector('a')).toBeNull();
 });
