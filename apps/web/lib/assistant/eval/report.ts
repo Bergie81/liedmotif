@@ -4,7 +4,7 @@
 
 import { APP_ROUTES } from '../route-map';
 import type { EvalEntry } from './eval-set';
-import type { EvalResult } from './run';
+import type { EvalResult, PromptChars } from './run';
 import { CHECKS, type DocsRead } from './score';
 
 /** The estimate the Assistant's context budget is sized with. */
@@ -61,7 +61,7 @@ export function renderEvalReport(run: {
         `${ROLE_NAME[entry.role]}, ${entry.language}`,
         ...CHECKS.map(([check]) => score[check]),
         String(turn.toolCalls.length),
-        `≈ ${tokens(promptChars)} tokens`,
+        `≈ ${tokens(promptTotal(promptChars))} tokens`,
         turn.error === undefined ? seconds(ms) : 'failed',
       ]),
     ),
@@ -72,7 +72,7 @@ export function renderEvalReport(run: {
 
 function answerSection(result: EvalResult, index: number): string {
   const { entry, turn, score, promptChars, ms } = result;
-  const total = promptChars.system + promptChars.conversation + promptChars.docsRead;
+  const total = promptTotal(promptChars);
   const calls = turn.toolCalls.length;
   return [
     `### ${index + 1}. ${entry.id}`,
@@ -99,7 +99,7 @@ function answerSection(result: EvalResult, index: number): string {
       `- **Links:** ${linksLine(score.links)}`,
       `- **Language detected:** ${score.detectedLanguage ?? 'unclear'}`,
       `- **Checks:** ${CHECKS.map(([check, , title]) => `${title.toLowerCase()} ${score[check]}`).join(' · ')}`,
-      `- **Prompt:** ${count(total)} characters, about ${tokens(promptChars)} tokens (system ${count(promptChars.system)}, conversation ${count(promptChars.conversation)}, docs read ${count(promptChars.docsRead)})`,
+      `- **Prompt:** ${count(total)} characters, about ${tokens(total)} tokens (system ${count(promptChars.system)}, conversation ${count(promptChars.conversation)}, docs read ${count(promptChars.docsRead)})`,
       `- **Time:** ${seconds(ms)}`,
     ].join('\n'),
     '- [ ] The answer agrees with the docs',
@@ -145,11 +145,19 @@ function quote(markdown: string): string {
     .join('\n');
 }
 
-const count = (value: number): string => value.toLocaleString('en-US');
+function count(value: number): string {
+  return value.toLocaleString('en-US');
+}
 
-const seconds = (ms: number): string => `${(ms / 1000).toFixed(1)} s`;
+function seconds(ms: number): string {
+  return `${(ms / 1000).toFixed(1)} s`;
+}
 
-function tokens({ system, conversation, docsRead }: EvalResult['promptChars']): string {
-  const estimate = (system + conversation + docsRead) / CHARS_PER_TOKEN;
-  return count(Math.round(estimate / 100) * 100);
+function promptTotal({ system, conversation, docsRead }: PromptChars): number {
+  return system + conversation + docsRead;
+}
+
+/** A character count as tokens, rounded to the hundred. */
+function tokens(chars: number): string {
+  return count(Math.round(chars / CHARS_PER_TOKEN / 100) * 100);
 }

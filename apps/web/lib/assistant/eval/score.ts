@@ -67,7 +67,7 @@ export function scoreAnswer(
 
   const reads = docsReads(turn.toolCalls, context.pages);
   const expected = Array.isArray(entry.docs)
-    ? entry.docs.map((ref) => canonical(ref, context))
+    ? entry.docs.map((ref) => canonical(ref, context.pages))
     : [];
   const links = answerLinks(turn.answer, context.targets);
   const detectedLanguage = detectLanguage(turn.answer);
@@ -99,7 +99,7 @@ export function scoreAnswer(
 }
 
 /** A section reference as `readDocsSection` names it, whether written by id or by heading. */
-function canonical(ref: DocsRef, { pages }: { pages: readonly DocsPage[] }): DocsRef {
+function canonical(ref: DocsRef, pages: readonly DocsPage[]): DocsRef {
   const lookup = readDocsSection(pages, ref.page, ref.section);
   return lookup.found ? { page: lookup.page, section: lookup.section } : ref;
 }

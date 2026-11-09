@@ -45,15 +45,6 @@ export function memberAssistantView(
   };
 }
 
-const ACCESS_SOURCE_LABELS: Record<AccessSource, string> = {
-  default: 'Default',
-  own: 'Set for this Member',
-};
-
-export function accessSourceLabel(source: AccessSource): string {
-  return ACCESS_SOURCE_LABELS[source];
-}
-
 /** A daily allowance as typed: a whole number inside the accepted range, or why not. */
 export function parseDailyMessages(raw: string): { value: number } | { error: string } {
   const value = wholeLimitNumber(raw);

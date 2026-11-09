@@ -23,7 +23,6 @@ import {
   SettingsFootnote,
 } from '../settings-ui';
 import {
-  accessSourceLabel,
   memberAssistantView,
   parseDailyMessages,
   type AccessSource,
@@ -208,10 +207,10 @@ function SourceNote({
   disabled: boolean;
   onUseDefault: () => void;
 }) {
-  if (source === 'default') return accessSourceLabel(source);
+  if (source === 'default') return 'Default';
   return (
     <>
-      {accessSourceLabel(source)} ·{' '}
+      Set for this Member ·{' '}
       <button
         type="button"
         onClick={onUseDefault}
