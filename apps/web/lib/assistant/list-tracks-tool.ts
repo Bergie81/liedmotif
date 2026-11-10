@@ -59,14 +59,13 @@ export function createListTracksTool(asker: AssistantAsker): LlmTool<ListTracksI
     inputSchema: listTracksInputSchema,
     async execute({ in: where, id }) {
       const kind = where === 'session' ? 'Session' : 'Playlist';
+      const none = `No ${kind} with that id.`;
       // An id that is no id cannot name anything, and the database would
       // refuse to compare it.
-      const list = !isId(id)
-        ? null
-        : where === 'session'
-          ? await sessionTracks(asker, id)
-          : await playlistTracks(asker, id);
-      if (!list) return `No ${kind} with that id.`;
+      if (!isId(id)) return none;
+      const list =
+        where === 'session' ? await sessionTracks(asker, id) : await playlistTracks(asker, id);
+      if (!list) return none;
       const heading = `${kind} ${named(list.name, id)}`;
       if (list.tracks.length === 0) return `${heading} has no Tracks.`;
       return [

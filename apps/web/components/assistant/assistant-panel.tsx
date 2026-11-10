@@ -179,11 +179,13 @@ function Transcript({
         const actions = message.actions ?? [];
         // An answer is what the model wrote, then what was done in it. Either
         // can be all there is; until the first of them arrives, it is neither.
+        const empty = !message.content && actions.length === 0;
         return (
           <div key={index} className="flex min-w-0 flex-col gap-2">
             {message.content ? (
               <AssistantMarkdown streaming={writing}>{message.content}</AssistantMarkdown>
-            ) : actions.length === 0 ? (
+            ) : null}
+            {empty ? (
               <p role="status" className="flex items-center gap-2 text-[13px] text-muted">
                 <LiedmotifLoader />
                 {ASSISTANT_NAME} is looking it up…

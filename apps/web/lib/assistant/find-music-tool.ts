@@ -195,12 +195,11 @@ async function mostRecent(
   kind: FindMusicInput['kind'],
   list: NonNullable<FindMusicInput['list']>,
 ): Promise<string> {
-  const limit = FIND_MUSIC_LIMIT;
   if (kind === 'track') {
     const { items, nextCursor } = await getLibraryTracks(db, {
       ownerUserId: userId,
       view: list,
-      limit,
+      limit: FIND_MUSIC_LIMIT,
     });
     return listed(
       `Tracks in ${LIST_NAMES[list]}, most recent first:`,
@@ -209,7 +208,9 @@ async function mostRecent(
     );
   }
   if (kind === 'playlist') {
-    const { playlists, nextCursor } = await loadPlaylistSummaries(db, userId, { limit });
+    const { playlists, nextCursor } = await loadPlaylistSummaries(db, userId, {
+      limit: FIND_MUSIC_LIMIT,
+    });
     return listed(
       'Playlists, in the order the Library lists them:',
       head(playlists.map(playlistRow), nextCursor),
@@ -218,7 +219,7 @@ async function mostRecent(
   }
   const now = new Date();
   const { activeSession, items, nextCursor } = await loadSessionList(db, userId, {
-    limit,
+    limit: FIND_MUSIC_LIMIT,
     includeActive: true,
     includePinned: false,
   });

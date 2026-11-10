@@ -24,10 +24,13 @@ export const refused = (why: string): ActionOutcome<'done'> => ({
  * The Tracks a call names, each once, or the one on the player's deck when it
  * names none: "this". Empty when there is neither.
  */
-export const askedTracks = (
+export function askedTracks(
   given: readonly string[] | null | undefined,
   player: AssistantPlayerState | null,
-): string[] => [...new Set(given?.length ? given : player?.trackId ? [player.trackId] : [])];
+): string[] {
+  if (given?.length) return [...new Set(given)];
+  return player?.trackId ? [player.trackId] : [];
+}
 
 /** A tool was given no Track, and the player has none on the deck for "this" to mean. */
 export const NO_TRACK_PLAYING =
