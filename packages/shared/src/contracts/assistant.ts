@@ -4,7 +4,7 @@
 // reply starts gets the ordinary error response instead.
 
 import { z } from 'zod';
-import { errorResponseSchema } from './common';
+import { errorResponseSchema, uuidSchema } from './common';
 
 /** How much of a conversation one request carries; the client drops older messages. */
 export const ASSISTANT_MAX_MESSAGES = 12;
@@ -22,6 +22,22 @@ export const assistantMessageSchema = z.strictObject({
 });
 export type AssistantMessage = z.infer<typeof assistantMessageSchema>;
 
+/**
+ * What the browser's player has engaged when a message is sent. The player
+ * lives in the browser, and a playing Playlist is unknown to the server, so
+ * this is the only way the Assistant learns what "this" is. It carries ids
+ * only: the server names what they point to from its own records, as far as
+ * the asking user may see them.
+ */
+export const assistantPlayerStateSchema = z.strictObject({
+  source: z.strictObject({ kind: z.enum(['session', 'playlist']), id: uuidSchema }),
+  /** The Track on the deck; null while the source has none ready. */
+  trackId: uuidSchema.nullable(),
+  /** Audible now; false covers paused and everything short of playing. */
+  playing: z.boolean(),
+});
+export type AssistantPlayerState = z.infer<typeof assistantPlayerStateSchema>;
+
 export const assistantRequestSchema = z.strictObject({
   /** Oldest first, ending with the message to answer. */
   messages: z
@@ -31,6 +47,8 @@ export const assistantRequestSchema = z.strictObject({
     .refine((messages) => messages.at(-1)?.role === 'user', {
       message: 'The last message must be from the user.',
     }),
+  /** Left out while the player has nothing engaged. */
+  player: assistantPlayerStateSchema.optional(),
 });
 export type AssistantRequest = z.infer<typeof assistantRequestSchema>;
 
@@ -95,8 +113,8 @@ export function createAssistantStreamDecoder(): {
 }
 
 /**
- * What the model passes to `readDocs`, the one tool it has: which section of
- * the user docs to load. Lenient about extra keys — a small model adds them.
+ * What the model passes to `readDocs`: which section of the user docs to load.
+ * Lenient about extra keys — a small model adds them.
  */
 export const readDocsInputSchema = z.object({
   page: z.string().describe('The page slug from the docs index, for example "members".'),
@@ -107,3 +125,7 @@ export const readDocsInputSchema = z.object({
     ),
 });
 export type ReadDocsInput = z.infer<typeof readDocsInputSchema>;
+
+/** What the model passes to a tool that needs nothing from it; extra keys are ignored. */
+export const noToolInputSchema = z.object({});
+export type NoToolInput = z.infer<typeof noToolInputSchema>;

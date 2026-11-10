@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { buildDocsIndex, docsSnapshotDir, loadDocs, readDocsFiles } from './docs';
-import { SECTIONS_READ_CHAR_BUDGET } from './read-docs-tool';
+import { TURN_READ_CHAR_BUDGET } from './turn-budget';
 
 describe('the committed docs snapshot', () => {
   it('loads every page with a title, a description and sections', () => {
@@ -48,14 +48,14 @@ describe("the docs snapshot within one turn's context budget", () => {
   it('has no section too large to read in one turn', () => {
     const oversized = loadDocs().flatMap((page) =>
       page.sections
-        .filter((section) => section.markdown.length > SECTIONS_READ_CHAR_BUDGET)
+        .filter((section) => section.markdown.length > TURN_READ_CHAR_BUDGET)
         .map(
           (section) => `${page.slug} › ${section.heading}: ${section.markdown.length} characters`,
         ),
     );
 
     // A section is never cut to fit: the fix is to split it on the website.
-    expect(oversized, `over ${SECTIONS_READ_CHAR_BUDGET} characters`).toEqual([]);
+    expect(oversized, `over ${TURN_READ_CHAR_BUDGET} characters`).toEqual([]);
   });
 });
 

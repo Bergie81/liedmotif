@@ -13,7 +13,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'reac
 import { useRouter } from 'next/navigation';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Sparkles, X } from 'lucide-react';
-import type { AssistantStanding } from '@liedmotif/shared';
+import type { AssistantPlayerState, AssistantStanding } from '@liedmotif/shared';
 import { WithTooltip } from '@/components/ui/tooltip';
 import type { AnswerLinkTargets } from '@/lib/assistant/answer-links';
 import { ASSISTANT_NAME } from '@/lib/assistant/persona';
@@ -44,6 +44,7 @@ export function AssistantDock({
   links,
   launcherHidden = false,
   standing: renderedStanding = null,
+  player,
 }: {
   /** The app pages and docs pages an answer may link this user to. */
   links: AnswerLinkTargets;
@@ -51,6 +52,8 @@ export function AssistantDock({
   launcherHidden?: boolean;
   /** Where the viewer stood with their allowance when the server rendered the page. */
   standing?: AssistantStanding | null;
+  /** What the player has engaged right now; every question takes it along. */
+  player?: AssistantPlayerState;
 }) {
   // The newest word on the allowance: the server's render, then whatever each
   // response reports, then a later render again.
@@ -60,7 +63,18 @@ export function AssistantDock({
     setSeenStanding(renderedStanding);
     setStanding(renderedStanding);
   }
-  const [conversation] = useState(() => createAssistantConversation({ onStanding: setStanding }));
+  // The conversation outlives every render, so it reads the player through a
+  // ref: a question carries what is engaged when it is sent.
+  const playerRef = useRef(player);
+  useEffect(() => {
+    playerRef.current = player;
+  }, [player]);
+  const [conversation] = useState(() =>
+    createAssistantConversation({
+      onStanding: setStanding,
+      getPlayer: () => playerRef.current,
+    }),
+  );
   const [open, setOpen] = useState(false);
   const besidePage = usePanelBesidePage();
   const router = useRouter();

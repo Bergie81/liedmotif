@@ -9,6 +9,7 @@ import {
   errorResponseSchema,
   type ApiErrorResponse,
   type AssistantMessage,
+  type AssistantPlayerState,
   type AssistantRequest,
   type AssistantStanding,
 } from '@liedmotif/shared';
@@ -61,10 +62,13 @@ function standingFrom(response: Response): AssistantStanding | null {
 export async function askAssistant(
   messages: AssistantMessage[],
   {
+    player,
     signal,
     onText,
     onStanding,
   }: {
+    /** What the player has engaged as the question is sent; left out when nothing is. */
+    player?: AssistantPlayerState;
     signal: AbortSignal;
     onText: (text: string) => void;
     /** The user's standing after this question, from an answer and a refusal alike. */
@@ -77,7 +81,7 @@ export async function askAssistant(
     response = await fetch('/api/assistant', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ messages } satisfies AssistantRequest),
+      body: JSON.stringify({ messages, player } satisfies AssistantRequest),
       signal,
     });
     reportServerAnswered();

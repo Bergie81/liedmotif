@@ -103,6 +103,29 @@ it('shows the answer as it is written', async () => {
   expect(conversation.getState().notice).toBeNull();
 });
 
+it('sends what the player has engaged with every message, as it is when the message is sent', async () => {
+  const asked = captureQuestions();
+  const source = { kind: 'playlist' as const, id: '7b0a1c5e-3f0d-4a55-9d0e-2f6f3f1f8a11' };
+  let player: AssistantRequest['player'] = {
+    source,
+    trackId: '0c9d4b7a-8a41-4b0e-b1a3-5a2d9d6c7e22',
+    playing: true,
+  };
+  const conversation = createAssistantConversation({ getPlayer: () => player });
+
+  await exchange(conversation, asked, 'What is this?', 'Night Drive.');
+  expect(asked[0]!.request.player).toEqual(player);
+
+  player = { ...player, playing: false };
+  await exchange(conversation, asked, 'And now?', 'Paused.');
+  expect(asked[1]!.request.player).toEqual({ ...player, playing: false });
+
+  // Nothing engaged: the request says nothing about the player.
+  player = undefined;
+  conversation.send('And now?');
+  expect(asked[2]!.request).not.toHaveProperty('player');
+});
+
 /** Asks, and has the Assistant answer in full. */
 async function exchange(
   conversation: ReturnType<typeof createAssistantConversation>,

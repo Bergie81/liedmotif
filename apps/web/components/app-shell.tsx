@@ -11,6 +11,7 @@ import { cn } from '@/lib/cn';
 import { AccountMenu, type Listener } from './account-menu';
 import { AppChromeContext, type AppChromeContextValue } from './app-chrome-context';
 import { AssistantDock } from './assistant/assistant-dock';
+import { assistantPlayerState } from './assistant/player-state';
 import {
   deriveGenerationHeadroom,
   getPageIdentity,
@@ -203,6 +204,7 @@ export function AppShell({
           links={assistantLinks}
           launcherHidden={isPlayer}
           standing={assistantStanding}
+          player={assistantPlayerState(playback)}
         />
       ) : null}
     </div>

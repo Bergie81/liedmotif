@@ -1,7 +1,7 @@
 ---
 title: Privacy and security
 description: What stays on your own Liedmotif instance, what each provider sees, what an admin can see, and how the instance protects itself.
-checkedOn: 2026-11-09
+checkedOn: 2026-11-10
 ---
 
 Everything on this page is about your own instance: the copy of Liedmotif you run on your laptop, your server or your cloud provider. There's no Liedmotif-run service behind it. This website, liedmotif.com, has no accounts and no connection to your instance, so we can't see your music, your prompts or even that you exist.
@@ -50,7 +50,7 @@ This is optional, and it's the service `.env` calls the text LLM. If you connect
 
 About text is only for lyrics. It's never used for style, titles or covers.
 
-**When you ask Mo,** the Assistant inside the app, the writing AI receives your question and the last few messages of that conversation. Nothing from your profile, your people or your library is sent with them. The conversation lives in your browser tab only: your instance doesn't store it or write it to its logs, and it's gone when you reload the page.
+**When you ask Mo,** the Assistant inside the app, the writing AI receives your question and the last few messages of that conversation. What Mo looks up for you to answer, such as the name of the playlist and track that is playing or how many tracks you have left, goes to the writing AI provider with the conversation. Nothing from your profile or your people is sent. The conversation lives in your browser tab only: your instance doesn't store it or write it to its logs, and it's gone when you reload the page.
 
 With no writing AI, none of this leaves your instance. With a local Ollama, it stays on your own machine.
 

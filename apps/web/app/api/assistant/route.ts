@@ -22,6 +22,7 @@ import {
 import { apiError, apiRateLimited, parseJsonBody, requireOwnerId } from '@/lib/api-response';
 import { ASSISTANT_NAME } from '@/lib/assistant/persona';
 import { streamAssistantAnswer } from '@/lib/assistant/reply';
+import { createAssistantTools } from '@/lib/assistant/tools';
 import {
   assistantRefusal,
   assistantStandingHeaders,
@@ -103,7 +104,17 @@ export async function POST(request: Request) {
   // model call, so an answer nobody reads costs nothing more.
   const reading = new AbortController();
   const stopped = AbortSignal.any([request.signal, reading.signal]);
-  const chunks = streamAssistantAnswer(llm, role, body.messages, stopped)[Symbol.asyncIterator]();
+  // The tools act for this user and no other: the id and the role are the
+  // server's own reading, and the player state is only ever looked up as them.
+  const tools = createAssistantTools({
+    db,
+    userId: ownerUserId,
+    role,
+    player: body.player ?? null,
+  });
+  const chunks = streamAssistantAnswer(llm, role, tools, body.messages, stopped)[
+    Symbol.asyncIterator
+  ]();
   let first: IteratorResult<string>;
   try {
     first = await chunks.next();

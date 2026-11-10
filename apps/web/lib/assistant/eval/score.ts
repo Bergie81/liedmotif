@@ -6,7 +6,7 @@ import { compiler } from 'markdown-to-jsx/react';
 import { readDocsInputSchema } from '@liedmotif/shared';
 import { resolveAnswerLink, type AnswerLinkTargets } from '../answer-links';
 import { readDocsSection, type DocsPage } from '../docs';
-import { READ_DOCS_TOOL_NAME } from '../read-docs-tool';
+import { READ_DOCS_TOOL_NAME } from '../tool-names';
 import { APP_ROUTES } from '../route-map';
 import type { DocsRef, EvalEntry, EvalLanguage } from './eval-set';
 

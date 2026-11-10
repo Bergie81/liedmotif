@@ -272,7 +272,14 @@ describe('POST /api/assistant', () => {
     const events = await readEvents(await ask('Tell me everything.'));
 
     expect(answerOf(events)).toBe('Here it is.');
-    expect(model.doStreamCalls.map((call) => call.tools?.length ?? 0)).toEqual([1, 1, 1, 1, 0]);
+    // Four calls with the tools on offer, then one with none.
+    expect(model.doStreamCalls.map((call) => (call.tools?.length ?? 0) > 0)).toEqual([
+      true,
+      true,
+      true,
+      true,
+      false,
+    ]);
   });
 
   it('sends the model a conversation that opens with the user', async () => {
@@ -299,6 +306,25 @@ describe('POST /api/assistant', () => {
     }));
 
     const response = await send(messages);
+
+    expect(response.status).toBe(400);
+    expect(errorResponseSchema.parse(await response.json()).error.code).toBe('validation_error');
+    expect(model.doStreamCalls).toHaveLength(0);
+  });
+
+  it('refuses a player state it cannot read before any model call', async () => {
+    const model = scriptModel([{ text: ['Sure.'] }]);
+
+    const response = await POST(
+      new Request('http://localhost/api/assistant', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: 'What is this?' }],
+          player: { source: { kind: 'session', id: 'not-an-id' }, trackId: null, playing: true },
+        }),
+      }),
+    );
 
     expect(response.status).toBe(400);
     expect(errorResponseSchema.parse(await response.json()).error.code).toBe('validation_error');

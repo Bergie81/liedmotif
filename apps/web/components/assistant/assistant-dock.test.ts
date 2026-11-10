@@ -7,7 +7,11 @@
 import { createElement as h } from 'react';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { ASSISTANT_STREAM_CONTENT_TYPE, encodeAssistantStreamEvent } from '@liedmotif/shared';
+import {
+  ASSISTANT_STREAM_CONTENT_TYPE,
+  encodeAssistantStreamEvent,
+  type AssistantPlayerState,
+} from '@liedmotif/shared';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import type { AnswerLinkTargets } from '@/lib/assistant/answer-links';
 import { AssistantDock } from './assistant-dock';
@@ -28,7 +32,15 @@ const LINKS: AnswerLinkTargets = {
 };
 
 /** jsdom has no media queries: say which side of the `desk` breakpoint the window is on. */
-function renderDock({ desk, launcherHidden }: { desk: boolean; launcherHidden?: boolean }) {
+function renderDock({
+  desk,
+  launcherHidden,
+  player,
+}: {
+  desk: boolean;
+  launcherHidden?: boolean;
+  player?: AssistantPlayerState;
+}) {
   vi.stubGlobal(
     'matchMedia',
     () => ({ matches: desk, addEventListener: () => {}, removeEventListener: () => {} }) as never,
@@ -38,7 +50,7 @@ function renderDock({ desk, launcherHidden }: { desk: boolean; launcherHidden?: 
       TooltipProvider,
       null,
       h('button', { type: 'button' }, 'Something on the page'),
-      h(AssistantDock, { links: LINKS, launcherHidden }),
+      h(AssistantDock, { links: LINKS, launcherHidden, player }),
     ),
   );
 }
@@ -58,6 +70,20 @@ function askAndGetAnswer(markdown: string): void {
   fireEvent.click(screen.getByRole('button', { name: 'Ask Mo' }));
   fireEvent.click(screen.getByRole('button', { name: 'What does New music do?' }));
 }
+
+it('sends what the player has engaged along with a question', () => {
+  const player = {
+    source: { kind: 'playlist' as const, id: '7b0a1c5e-3f0d-4a55-9d0e-2f6f3f1f8a11' },
+    trackId: '0c9d4b7a-8a41-4b0e-b1a3-5a2d9d6c7e22',
+    playing: true,
+  };
+  renderDock({ desk: true, player });
+
+  askAndGetAnswer('Night Drive.');
+
+  const [, init] = vi.mocked(fetch).mock.calls[0]!;
+  expect(JSON.parse(String(init?.body))).toMatchObject({ player });
+});
 
 it('opens from the launcher with a greeting and questions to start from', () => {
   renderDock({ desk: true });

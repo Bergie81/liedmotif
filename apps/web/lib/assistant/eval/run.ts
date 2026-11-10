@@ -4,7 +4,9 @@
 import { ProviderError, type AssistantReplyInput, type LlmProvider } from '@liedmotif/providers';
 import { loadDocs } from '../docs';
 import { answerLinkTargets } from '../link-targets';
+import { createReadDocsTool } from '../read-docs-tool';
 import { streamAssistantAnswer } from '../reply';
+import { withinTurnBudget } from '../turn-budget';
 import type { EvalEntry } from './eval-set';
 import { scoreAnswer, type AnswerScore, type ObservedToolCall, type ObservedTurn } from './score';
 
@@ -55,7 +57,16 @@ async function ask(llm: LlmProvider, entry: EvalEntry, timeoutMs: number): Promi
   let answer = '';
   let error: string | undefined;
   try {
-    for await (const chunk of streamAssistantAnswer(observed.llm, entry.role, messages, signal)) {
+    // Nobody in particular asks these questions, so the turn has the docs tool
+    // and none of the tools that read an asking user's own data.
+    const tools = withinTurnBudget([createReadDocsTool(loadDocs())]);
+    for await (const chunk of streamAssistantAnswer(
+      observed.llm,
+      entry.role,
+      tools,
+      messages,
+      signal,
+    )) {
       answer += chunk;
     }
   } catch (err) {

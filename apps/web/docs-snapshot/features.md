@@ -1,7 +1,7 @@
 ---
 title: Every feature, and how to use it
 description: The reference for using Liedmotif day to day, with what each feature does, where it is in the app and what to watch out for.
-checkedOn: 2026-11-09
+checkedOn: 2026-11-10
 ---
 
 Look up any feature here to see what it does, where to find it and what its limits are. Buttons and menus appear in bold, exactly as the app shows them.
@@ -24,6 +24,7 @@ Mo is the Assistant inside the app. Ask it how something in Liedmotif works, suc
 
 - **Open it:** tap the round sparkles button, **Ask Mo**, at the bottom right. On a wide screen Mo opens as a sidebar beside the page, so you can keep using the page while you ask, and the same button closes it. On a phone Mo fills the screen, and the close button in its top bar brings you back. The button isn't shown on the full player.
 - **Ask:** type a question and press Enter, or pick one of the suggested questions. The answer appears as it's written, and the stop button ends it early.
+- **Ask about your own music:** "What is playing?" gets the session or playlist, the track and, for a session, whether New music is on. "How many tracks do I have left?" gets what is left today and this month: for a member their own budget and the shared one, for the admin the instance limits.
 - **Follow the answer:** an answer can end in a button that opens the right page in the app. Links to these docs open the website.
 - **Start over:** **New chat** clears the conversation. The conversation stays while you move between pages and is gone when you reload.
 
