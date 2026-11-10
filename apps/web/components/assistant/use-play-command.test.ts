@@ -307,25 +307,3 @@ describe('a play command while a new Session is starting', () => {
     expect(api.playSessionTrack).toHaveBeenCalledOnce();
   });
 });
-
-describe('two play commands of one message', () => {
-  it('run one after the other, so each learns what came of its own flow', async () => {
-    playerWith();
-    let answerFirst: (result: Result) => void = () => undefined;
-    api.resumeSession.mockReturnValueOnce(
-      new Promise<Result>((resolve) => {
-        answerFirst = resolve;
-      }),
-    );
-    const play = playCommand();
-
-    const first = play(PLAY_FOCUS);
-    const second = play(PLAY_TRACK);
-    await vi.waitFor(() => expect(api.resumeSession).toHaveBeenCalledOnce());
-    expect(api.playSessionTrack).not.toHaveBeenCalled();
-
-    answerFirst(NO);
-    expect(await first).toBe('failed');
-    expect(await second).toBe('started');
-  });
-});

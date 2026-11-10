@@ -25,6 +25,7 @@ export function usePlayCommand(): (play: AssistantPlayCommand) => Promise<PlaySt
   const context = usePlayerContext();
   // The flows tell the page they sit on what went wrong, in words. The chat
   // has its own line for a command that failed, so here they are only counted.
+  // One count serves every command: the shell runs them one after the other.
   const refusals = useRef(0);
   const openings = useRef(0);
   const refuse = useCallback(() => {
@@ -40,9 +41,6 @@ export function usePlayCommand(): (play: AssistantPlayCommand) => Promise<PlaySt
   useEffect(() => {
     live.current = { context, sessions, tracks, playlists, loungePlaylists };
   });
-  // The counts above are shared, so a command's flow ends before the next begins.
-  const last = useRef<Promise<unknown>>(Promise.resolve());
-
   return useCallback(({ source, track }) => {
     async function playlist(source: Source<'playlist'>): Promise<PlayStart> {
       const members = await getAllPlaylistMembers(
@@ -89,10 +87,6 @@ export function usePlayCommand(): (play: AssistantPlayCommand) => Promise<PlaySt
       return 'started';
     }
 
-    const start = last.current.then(() =>
-      source.kind === 'playlist' ? playlist(source) : session(source),
-    );
-    last.current = start.catch(() => undefined);
-    return start;
+    return source.kind === 'playlist' ? playlist(source) : session(source);
   }, []);
 }

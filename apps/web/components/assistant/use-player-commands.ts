@@ -51,16 +51,26 @@ export function usePlayerCommands(shell: {
         const stopped = await stopSession(session.id);
         if (!stopped.ok) return false;
         const { context, router, shell } = live.current;
-        context.release();
+        // Music that took over the player while the request was out is not
+        // what was stopped: it keeps playing, on the page it plays on.
+        const stillEngaged = context.playback?.session?.id === session.id;
+        if (stillEngaged) context.release();
         // The stopped Session is no longer the active one the mini player offers.
         shell.refreshChrome();
-        if (shell.onPlayerPage) router.push('/sessions');
+        if (stillEngaged && shell.onPlayerPage) router.push('/sessions');
         return true;
       },
     };
+    // A command acts on what the one before it left in the player, so each
+    // waits until the one before has come to its outcome.
+    let last: Promise<unknown> = Promise.resolve();
     return {
       prime: primePlayerAutoplay,
-      run: (command) => runPlayerCommand(command, player),
+      run: (command) => {
+        const ran = last.then(() => runPlayerCommand(command, player));
+        last = ran.catch(() => undefined);
+        return ran;
+      },
       tapToPlay: () => tapToPlay(player),
     };
   }, [start]);

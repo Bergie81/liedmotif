@@ -184,6 +184,60 @@ describe('the player, for the Assistant’s commands', () => {
     expect(await outcome).toBe('done');
   });
 
+  it('runs the commands of one answer in the order they arrived, each on what the one before left', async () => {
+    const before = engaged();
+    let loaded: (members: unknown) => void = () => undefined;
+    api.getAllPlaylistMembers.mockReturnValue(new Promise((resolve) => (loaded = resolve)));
+    const { result, rerender } = renderHook(() =>
+      usePlayerCommands({ onPlayerPage: false, refreshChrome: vi.fn() }),
+    );
+
+    const played = result.current.run({
+      name: 'play',
+      source: { kind: 'playlist', id: PLAYLIST_ID, name: 'Running', trackCount: 1, foreign: false },
+    });
+    const skipped = result.current.run({ name: 'next' });
+
+    loaded({
+      ok: true,
+      data: {
+        playlist: { id: PLAYLIST_ID, name: 'Running' },
+        items: [{ id: 'track-1', audioUrl: '/api/audio/track-1' }],
+      },
+    });
+    await vi.waitFor(() => expect(before.engagePlaylist).toHaveBeenCalledOnce());
+    const playlist = engaged(null);
+    rerender();
+
+    expect(await played).toBe('done');
+    expect(await skipped).toBe('done');
+    // The Session that was playing when the answer arrived is not what "next" skips.
+    expect(before.controller.skip).not.toHaveBeenCalled();
+    expect(playlist.controller.skip).toHaveBeenCalledOnce();
+  });
+
+  it('leaves other music alone when it took over the player before the stop came back', async () => {
+    engaged();
+    let stopped: (result: { ok: boolean }) => void = () => undefined;
+    api.stopSession.mockReturnValue(new Promise((resolve) => (stopped = resolve)));
+    const refreshChrome = vi.fn();
+    const { result, rerender } = renderHook(() =>
+      usePlayerCommands({ onPlayerPage: true, refreshChrome }),
+    );
+
+    const outcome = result.current.run({ name: 'stop' });
+    await vi.waitFor(() => expect(api.stopSession).toHaveBeenCalledOnce());
+    const other = engaged(null);
+    rerender();
+    stopped({ ok: true });
+
+    expect(await outcome).toBe('done');
+    expect(other.release).not.toHaveBeenCalled();
+    expect(navigation.push).not.toHaveBeenCalled();
+    // The stopped Session is still no longer the one the mini player offers.
+    expect(refreshChrome).toHaveBeenCalledOnce();
+  });
+
   it('unlocks audio the way a Session start does when asked to prime', () => {
     engaged();
     const { result } = renderHook(() =>
