@@ -4,3 +4,5 @@
 export const READ_DOCS_TOOL_NAME = 'readDocs';
 export const NOW_PLAYING_TOOL_NAME = 'nowPlaying';
 export const BUDGET_TOOL_NAME = 'budget';
+export const FIND_MUSIC_TOOL_NAME = 'findMusic';
+export const LIST_TRACKS_TOOL_NAME = 'listTracks';

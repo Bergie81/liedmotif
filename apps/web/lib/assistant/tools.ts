@@ -8,6 +8,8 @@ import type { LlmTool } from '@liedmotif/providers';
 import { createLogger, type AssistantPlayerState } from '@liedmotif/shared';
 import { createBudgetTool } from './budget-tool';
 import { loadDocs, type DocsPage } from './docs';
+import { createFindMusicTool } from './find-music-tool';
+import { createListTracksTool } from './list-tracks-tool';
 import { createNowPlayingTool } from './now-playing-tool';
 import { createReadDocsTool } from './read-docs-tool';
 import { withinTurnBudget } from './turn-budget';
@@ -53,8 +55,12 @@ export function createAssistantTools(
   pages: readonly DocsPage[] = loadDocs(),
 ): LlmTool[] {
   return withinTurnBudget(
-    [createReadDocsTool(pages), createNowPlayingTool(asker), createBudgetTool(asker)].map(
-      failingQuietly,
-    ),
+    [
+      createReadDocsTool(pages),
+      createNowPlayingTool(asker),
+      createBudgetTool(asker),
+      createFindMusicTool(asker),
+      createListTracksTool(asker),
+    ].map(failingQuietly),
   );
 }

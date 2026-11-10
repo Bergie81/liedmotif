@@ -4,19 +4,15 @@
 
 import {
   getActiveSession,
-  getLoungePlaylistDetail,
-  getPlaylistDetail,
   getReadableTrackDetails,
   getSessionById,
   type SessionRecord,
 } from '@liedmotif/db';
 import type { LlmTool } from '@liedmotif/providers';
 import { noToolInputSchema, type NoToolInput } from '@liedmotif/shared';
+import { named, readablePlaylist } from './readable-music';
 import { NOW_PLAYING_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
-
-/** A name as the model reads it: quoted, so text a user wrote stays told apart from the rest. */
-const quoted = (name: string | null) => JSON.stringify(name ?? 'Untitled');
 
 function sessionLines(session: SessionRecord): string[] {
   const generated = Math.floor((session.generatedDurationSeconds ?? 0) / 60);
@@ -25,23 +21,12 @@ function sessionLines(session: SessionRecord): string[] {
       ? 'no duration target'
       : `duration target ${session.targetDurationMinutes} min (${generated} min generated)`;
   return [
-    `Session: ${quoted(session.title)} (id ${session.id})`,
+    `Session: ${named(session.title, session.id)}`,
     session.sessionMode === 'keep_going' ? `New music: on, ${target}` : 'New music: off',
     ...(session.status === 'stopped'
       ? ['The Session is stopped: nothing is generated until it is resumed.']
       : []),
   ];
-}
-
-/** The Playlist's name when the asker may see it: their own, or one in the Lounge for them. */
-async function readablePlaylistName(
-  { db, userId }: AssistantAsker,
-  playlistId: string,
-): Promise<string | null> {
-  const own = await getPlaylistDetail(db, { ownerUserId: userId, playlistId, limit: 1 });
-  if (own) return own.playlist.name;
-  const shared = await getLoungePlaylistDetail(db, { viewerUserId: userId, playlistId, limit: 1 });
-  return shared?.playlist.name ?? null;
 }
 
 async function trackLine(
@@ -51,7 +36,7 @@ async function trackLine(
 ): Promise<string[]> {
   if (!trackId) return [];
   const track = await getReadableTrackDetails(db, { viewerUserId: userId, trackId });
-  return track ? [`${label}: ${quoted(track.title)} (id ${trackId})`] : [];
+  return track ? [`${label}: ${named(track.title, trackId)}`] : [];
 }
 
 /**
@@ -71,9 +56,9 @@ async function engagedLines(asker: AssistantAsker): Promise<string[] | null> {
     if (!session) return null;
     source = sessionLines(session);
   } else {
-    const name = await readablePlaylistName(asker, player.source.id);
-    if (name === null) return null;
-    source = [`Playlist: ${quoted(name)} (id ${player.source.id})`];
+    const readable = await readablePlaylist(asker, player.source.id, 1);
+    if (!readable) return null;
+    source = [`Playlist: ${named(readable.playlist.name, player.source.id)}`];
   }
   const [first, ...rest] = source;
   return [

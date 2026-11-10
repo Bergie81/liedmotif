@@ -26,9 +26,8 @@ import {
   type SessionFixture,
   type TestDb,
 } from '@liedmotif/db/testing';
-import { createOpenRouterLlmProvider } from '@liedmotif/providers';
-import { scriptedLanguageModel } from '@liedmotif/providers/testing';
 import type { AssistantPlayerState } from '@liedmotif/shared';
+import { askWithToolCall, type ToolTurn } from '../helpers/assistant-tool-turn';
 
 const holder = vi.hoisted(() => ({
   db: null as unknown,
@@ -104,46 +103,20 @@ async function spendCalls(ownerUserId: string, count: number): Promise<void> {
  * `userId` asks, the model calls `tool` once and then answers. Returns what the
  * tool handed the model, and the system prompt the turn opened with.
  */
-async function askWithTool(
+function askWithTool(
   userId: string,
   tool: 'nowPlaying' | 'budget',
   player?: AssistantPlayerState,
-): Promise<{ result: string; system: string }> {
-  const model = scriptedLanguageModel([
-    { toolCalls: [{ name: tool, input: {} }] },
-    { text: ['Here you go.'] },
-  ]);
-  holder.llm = createOpenRouterLlmProvider({
-    apiKey: 'sk-or-test-key',
-    model: 'test-model',
-    languageModel: model,
-  });
+): Promise<ToolTurn> {
   holder.sessionUserId = userId;
-
-  const response = await POST(
-    new Request('http://localhost/api/assistant', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ messages: [{ role: 'user', content: 'Look it up.' }], player }),
-    }),
+  return askWithToolCall(
+    POST,
+    (llm) => {
+      holder.llm = llm;
+    },
+    { name: tool, input: {} },
+    player,
   );
-  expect(response.status).toBe(200);
-  await response.text();
-
-  expect(model.doStreamCalls).toHaveLength(2);
-  const [first, second] = model.doStreamCalls.map((call) => call.prompt);
-  const results = second!.flatMap((message) =>
-    message.role === 'tool'
-      ? message.content.flatMap((part) => (part.type === 'tool-result' ? [part.output] : []))
-      : [],
-  );
-  expect(results).toHaveLength(1);
-  const [output] = results;
-  expect(output).toMatchObject({ type: 'text' });
-  return {
-    result: output?.type === 'text' ? output.value : '',
-    system: String(first![0]?.content),
-  };
 }
 
 beforeAll(async () => {

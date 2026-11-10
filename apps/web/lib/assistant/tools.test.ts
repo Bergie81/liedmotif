@@ -32,6 +32,8 @@ describe("one turn's tools", () => {
       'readDocs',
       'nowPlaying',
       'budget',
+      'findMusic',
+      'listTracks',
     ]);
   });
 

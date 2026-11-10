@@ -129,3 +129,38 @@ export type ReadDocsInput = z.infer<typeof readDocsInputSchema>;
 /** What the model passes to a tool that needs nothing from it; extra keys are ignored. */
 export const noToolInputSchema = z.object({});
 export type NoToolInput = z.infer<typeof noToolInputSchema>;
+
+/**
+ * What the model passes to `findMusic`. Lenient where a small model slips: it
+ * sends null or an empty string for what it means to leave out, and extra keys.
+ */
+export const findMusicInputSchema = z.object({
+  kind: z.enum(['session', 'playlist', 'track']).describe('What to look for.'),
+  query: z
+    .string()
+    .nullish()
+    .describe(
+      'Words to search for, as the user would type them into Search: a name, a genre, a mood. Leave out for the most recent.',
+    ),
+  lyrics: z
+    .boolean()
+    .nullish()
+    .describe('Tracks only: true searches the sung lyrics for the query instead.'),
+  list: z
+    .enum(['saved', 'favorites', 'history'])
+    .nullish()
+    .describe(
+      'Tracks without a query: which Library list to read. "history" is everything generated and the default.',
+    ),
+});
+export type FindMusicInput = z.infer<typeof findMusicInputSchema>;
+
+/**
+ * What the model passes to `listTracks`. The id is any string: one that is not
+ * an id at all is answered like one that names nothing.
+ */
+export const listTracksInputSchema = z.object({
+  in: z.enum(['session', 'playlist']).describe('Whether the id is a Session or a Playlist.'),
+  id: z.string().describe('The id of the Session or Playlist, as another tool returned it.'),
+});
+export type ListTracksInput = z.infer<typeof listTracksInputSchema>;
