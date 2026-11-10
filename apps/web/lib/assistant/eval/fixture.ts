@@ -395,13 +395,23 @@ function fixtureAnswers(role: UserRole, actions: TurnActions): Record<string, An
         return 'why' in play ? leftAsItIs(play.why) : handedOver({ name: 'play', ...play });
       }),
 
-    [PROPOSE_SESSION_TOOL_NAME]: ({ prompt, vocal, targetDurationMinutes }: ProposeSessionInput) =>
+    [PROPOSE_SESSION_TOOL_NAME]: ({
+      prompt,
+      vocal,
+      targetDurationMinutes: minutes,
+      noLimit,
+    }: ProposeSessionInput) =>
       actions.take('proposed', async () => {
+        if (minutes == null && !noLimit) {
+          return notOffered(
+            'A new Session needs a length in minutes, or no limit. Ask the user how long it should run.',
+          );
+        }
         const card = assistantCardSchema.safeParse({
           kind: 'session',
           prompt: prompt.trim(),
           vocal: vocal ? 'vocal' : 'instrumental',
-          ...(targetDurationMinutes != null && { targetDurationMinutes }),
+          targetDurationMinutes: minutes ?? null,
         });
         return card.success
           ? proposed(card.data)

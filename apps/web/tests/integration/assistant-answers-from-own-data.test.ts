@@ -19,6 +19,7 @@ import {
   createGenerationRequest,
   createProviderJob,
   createSession,
+  createTrack,
   GENERATION_FIXTURE_TABLES,
   seedSessionTrack,
   TEST_DATABASE_URL,
@@ -209,6 +210,40 @@ describe.skipIf(skip)('the Assistant asked what is playing', () => {
     expect(result).toContain('Track: "First Light"');
     expect(result).toContain('Player: paused');
     expect(result).toContain('New music: on, duration target 60 min');
+  });
+
+  it('says New music has finished for a Session that reached its duration target', async () => {
+    const asker = await createProfiledUser('member-1', 'member');
+    const sessionId = await createSession(testDb.db, {
+      ownerUserId: asker,
+      title: 'Deep Focus',
+      sessionMode: 'keep_going',
+      targetDurationMinutes: 5,
+    });
+    const generationRequestId = await createGenerationRequest(testDb.db, {
+      ownerUserId: asker,
+      activitySessionId: sessionId,
+    });
+    const providerJobId = await createProviderJob(testDb.db, { generationRequestId });
+    const trackId = await createTrack(testDb.db, {
+      ownerUserId: asker,
+      generationRequestId,
+      providerJobId,
+      title: 'First Light',
+      durationSeconds: 6 * 60,
+      audioStorageKey: 'audio/first-light.mp3',
+    });
+
+    const { result } = await askWithTool(asker, 'nowPlaying', {
+      source: { kind: 'session', id: sessionId },
+      trackId,
+      playing: true,
+    });
+
+    expect(result).toContain(
+      'New music: finished, the duration target of 5 min is reached (6 min generated)',
+    );
+    expect(result).not.toContain('New music: on');
   });
 
   it('says New music is off for a Session in Repeat', async () => {

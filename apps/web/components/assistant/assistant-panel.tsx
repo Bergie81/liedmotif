@@ -169,7 +169,7 @@ function Transcript({
           return (
             <p
               key={index}
-              className="max-w-[88%] self-end whitespace-pre-wrap break-words rounded-[16px] rounded-br-[5px] border border-line bg-panel-2 px-3.5 py-2 text-[14.5px] leading-[1.5]"
+              className="max-w-[88%] self-end whitespace-pre-wrap break-words rounded-[16px] rounded-tr-[5px] border border-line bg-panel-2 px-3.5 py-2 text-[14.5px] leading-[1.5]"
             >
               {message.content}
             </p>
@@ -236,7 +236,7 @@ function Composer({
 
   return (
     <form
-      className="flex items-end gap-2 rounded-[16px] border border-line-2 bg-[var(--field-bg)] p-1.5 pl-3.5 shadow-[var(--shadow-field)] focus-within:border-lamp/60 focus-within:shadow-[0_0_0_3px_var(--lamp-glow)]"
+      className="flex items-end gap-2 rounded-[16px] rounded-r-[24px] border border-line-2 bg-[var(--field-bg)] p-1.5 pl-3.5 shadow-[var(--shadow-field)] focus-within:border-lamp/60 focus-within:shadow-[0_0_0_3px_var(--lamp-glow)]"
       onSubmit={(event) => {
         event.preventDefault();
         onSend();

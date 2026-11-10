@@ -39,7 +39,7 @@ const VALID_CALLS: Record<string, unknown> = {
   play: { kind: 'playlist', id: PLAYLISTS.running.id },
   playerControl: { command: 'next' },
   sleepTimer: { minutes: 30 },
-  proposeSession: { prompt: 'calm piano for reading' },
+  proposeSession: { prompt: 'calm piano for reading', targetDurationMinutes: 45 },
   proposeChangeVibe: { prompt: 'slower' },
   proposeMoreLikeThis: {},
   proposeNewMusicOn: { noLimit: true },
@@ -284,8 +284,8 @@ describe('the tools of a fixture turn that act', () => {
   it('hold a turn to the caps of a real one', async () => {
     const { call, reported } = openTurn();
 
-    await call('proposeSession', { prompt: 'calm piano' });
-    const second = await call('proposeSession', { prompt: 'loud drums' });
+    await call('proposeSession', { prompt: 'calm piano', targetDurationMinutes: 45 });
+    const second = await call('proposeSession', { prompt: 'loud drums', noLimit: true });
 
     expect(second).toMatch(/already prepared a card/);
     expect(reported).toHaveLength(1);

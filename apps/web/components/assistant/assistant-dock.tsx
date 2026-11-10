@@ -58,7 +58,7 @@ export function AssistantDock({
   links,
   open,
   onOpenChange: setOpen,
-  launcherHidden = false,
+  pageCarriesPhoneLauncher = false,
   standing: renderedStanding = null,
   player,
   onReceipt,
@@ -69,8 +69,11 @@ export function AssistantDock({
   links: AnswerLinkTargets;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** The page has controls where the launcher sits, and carries its own (`AssistantLauncherButton`). */
-  launcherHidden?: boolean;
+  /**
+   * On a phone the page has controls where the launcher sits, and carries its
+   * own (`AssistantLauncherButton`). Beside the page that corner is free.
+   */
+  pageCarriesPhoneLauncher?: boolean;
   /** Where the viewer stood with their allowance when the server rendered the page. */
   standing?: AssistantStanding | null;
   /** What the player has engaged right now; every question takes it along. */
@@ -189,7 +192,7 @@ export function AssistantDock({
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={setOpen} modal={!besidePage}>
-      {launcherHidden ? null : (
+      {pageCarriesPhoneLauncher && !besidePage ? null : (
         <WithTooltip label={launcherLabel} side="left">
           <DialogPrimitive.Trigger
             aria-label={launcherLabel}

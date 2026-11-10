@@ -26,6 +26,12 @@ describe('a Session card', () => {
       'With vocals · 45 min',
     );
   });
+
+  it('says No limit, in the player’s words, when the Session generates without a target', () => {
+    expect(cardWording({ ...calm, targetDurationMinutes: null }).details).toBe(
+      'Instrumental · No limit',
+    );
+  });
 });
 
 const RAINY = { id: '00000000-0000-4000-8000-000000000003', name: 'Rainy Window' };

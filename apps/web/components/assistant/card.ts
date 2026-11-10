@@ -37,22 +37,22 @@ export interface CardWording {
 
 export function cardWording(card: AssistantCard): CardWording {
   switch (card.kind) {
-    case 'session':
+    case 'session': {
+      const minutes = card.targetDurationMinutes;
+      const details = [card.vocal === 'vocal' ? 'With vocals' : 'Instrumental'];
+      if (minutes === null) details.push(NEW_MUSIC_CHOICES['no-limit'].label);
+      else if (minutes !== undefined) details.push(`${minutes} min`);
       return {
         title: 'Start a new Session',
         words: card.prompt,
-        details: [
-          card.vocal === 'vocal' ? 'With vocals' : 'Instrumental',
-          ...(card.targetDurationMinutes === undefined
-            ? []
-            : [`${card.targetDurationMinutes} min`]),
-        ].join(' · '),
+        details: details.join(' · '),
         cost: 'Starting generates new Tracks from your budget.',
         confirm: 'Start Session',
         confirming: 'Starting…',
         confirmed: 'Session started',
         failed: 'This Session did not start',
       };
+    }
     case 'changeVibe':
       return {
         title: 'Change Vibe',

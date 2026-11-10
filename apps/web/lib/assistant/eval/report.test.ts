@@ -145,7 +145,7 @@ describe('the eval report', () => {
     );
     const proposed = report(
       await act(
-        [{ name: 'proposeSession', input: { prompt: 'calm, for reading' } }],
+        [{ name: 'proposeSession', input: { prompt: 'calm, for reading', noLimit: true } }],
         'A card is ready.',
         'start-a-session',
       ),

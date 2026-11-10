@@ -43,13 +43,13 @@ const LINKS: AnswerLinkTargets = {
 /** jsdom has no media queries: say which side of the `desk` breakpoint the window is on. */
 function renderDock({
   desk,
-  launcherHidden,
+  pageCarriesPhoneLauncher,
   player,
   onReceipt,
   playerCommands,
 }: {
   desk: boolean;
-  launcherHidden?: boolean;
+  pageCarriesPhoneLauncher?: boolean;
   player?: AssistantPlayerState;
   onReceipt?: (receipt: AssistantReceipt) => void;
   playerCommands?: PlayerCommands;
@@ -64,7 +64,7 @@ function renderDock({
       null,
       h(
         ShellAssistant,
-        { links: LINKS, launcherHidden, player, onReceipt, playerCommands },
+        { links: LINKS, pageCarriesPhoneLauncher, player, onReceipt, playerCommands },
         h('button', { type: 'button' }, 'Something on the page'),
       ),
     ),
@@ -185,10 +185,16 @@ it('keeps the conversation while the panel is closed', () => {
   );
 });
 
-it('shows no launcher on a page that keeps controls in that corner', () => {
-  renderDock({ desk: false, launcherHidden: true });
+it('shows no launcher on a phone where the page keeps controls in that corner', () => {
+  renderDock({ desk: false, pageCarriesPhoneLauncher: true });
 
   expect(screen.queryByRole('button', { name: 'Ask Mo' })).toBeNull();
+});
+
+it('keeps the launcher on such a page on a wide screen, where the corner is free', () => {
+  renderDock({ desk: true, pageCarriesPhoneLauncher: true });
+
+  expect(screen.getByRole('button', { name: 'Ask Mo' })).toBeTruthy();
 });
 
 it('asks a suggested question and can stop the answer from the field', () => {

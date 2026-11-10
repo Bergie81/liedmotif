@@ -241,6 +241,7 @@ describe('assistantStreamEventSchema', () => {
 
     expect(parses(proposed(card))).toBe(true);
     expect(parses(proposed({ ...card, vocal: 'vocal', targetDurationMinutes: 45 }))).toBe(true);
+    expect(parses(proposed({ ...card, targetDurationMinutes: null }))).toBe(true);
     expect(parses(proposed({ ...card, label: 'Free, nothing is bought' }))).toBe(false);
     expect(parses(proposed({ ...card, prompt: '' }))).toBe(false);
     expect(parses(proposed({ ...card, targetDurationMinutes: 601 }))).toBe(false);
@@ -264,6 +265,15 @@ describe('assistantStreamEventSchema', () => {
     );
     expect(
       sessionCardStartRequest({ kind: 'session', prompt: 'calm piano', vocal: 'instrumental' }),
+    ).toEqual({ input: { mode: 'prompt', prompt: 'calm piano', vocal: 'instrumental' } });
+    // No limit is the absence of a target: the start route takes no null.
+    expect(
+      sessionCardStartRequest({
+        kind: 'session',
+        prompt: 'calm piano',
+        vocal: 'instrumental',
+        targetDurationMinutes: null,
+      }),
     ).toEqual({ input: { mode: 'prompt', prompt: 'calm piano', vocal: 'instrumental' } });
   });
 

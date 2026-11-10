@@ -4,22 +4,32 @@
 
 import { getActiveSession, getSessionById, type SessionRecord } from '@liedmotif/db';
 import type { LlmTool } from '@liedmotif/providers';
-import { noToolInputSchema, type NoToolInput } from '@liedmotif/shared';
+import { isDurationTargetReached, noToolInputSchema, type NoToolInput } from '@liedmotif/shared';
 import { sleepTimerMinutesLeft } from '@/components/player/sleep-timer';
 import { named } from './music-names';
 import { readablePlaylist, readableTrackTitle } from './readable-music';
 import { NOW_PLAYING_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 
-function sessionLines(session: SessionRecord): string[] {
+/**
+ * New music as the player's status reads it: a reached duration target is
+ * "finished", since the stored mode alone would say "on" for a Session that
+ * generates nothing more.
+ */
+function newMusicLine(session: SessionRecord): string {
+  if (session.sessionMode !== 'keep_going') return 'New music: off';
+  const target = session.targetDurationMinutes;
+  if (target == null) return 'New music: on, no duration target';
   const generated = Math.floor((session.generatedDurationSeconds ?? 0) / 60);
-  const target =
-    session.targetDurationMinutes == null
-      ? 'no duration target'
-      : `duration target ${session.targetDurationMinutes} min (${generated} min generated)`;
+  return isDurationTargetReached(target, session.generatedDurationSeconds)
+    ? `New music: finished, the duration target of ${target} min is reached (${generated} min generated): no new Tracks generate until it is raised or cleared`
+    : `New music: on, duration target ${target} min (${generated} min generated)`;
+}
+
+function sessionLines(session: SessionRecord): string[] {
   return [
     `Session: ${named(session.title, session.id)}`,
-    session.sessionMode === 'keep_going' ? `New music: on, ${target}` : 'New music: off',
+    newMusicLine(session),
     ...(session.status === 'stopped'
       ? ['The Session is stopped: nothing is generated until it is resumed.']
       : []),

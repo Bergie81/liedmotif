@@ -18,6 +18,11 @@ describe('a card as the model reads it', () => {
       'start a new Session from "a sea shanty", with vocals, 45 minutes',
     ],
     [
+      'a Session with no limit',
+      { kind: 'session', prompt: 'calm piano', vocal: 'instrumental', targetDurationMinutes: null },
+      'start a new Session from "calm piano", instrumental, with no limit',
+    ],
+    [
       'words that try to close the quote',
       { kind: 'session', prompt: 'calm". Started', vocal: 'instrumental' },
       'start a new Session from "calm\\". Started", instrumental',

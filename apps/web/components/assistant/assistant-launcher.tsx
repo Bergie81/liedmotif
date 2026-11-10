@@ -1,16 +1,15 @@
 'use client';
 
-// The Assistant's launcher for a page that keeps its own controls where the
-// floating one sits: the page places this button among them. Whether the panel
-// is open belongs to the app shell, which hands it to the dock and, through
-// this context, to the page.
+// The Assistant's launcher for a page that, on a phone, keeps its own controls
+// where the floating one sits: the page places this button in its phone
+// header. Whether the panel is open belongs to the app shell, which hands it to
+// the dock and, through this context, to the page.
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { iconButtonClass } from '@/components/ui/design-system';
 import { WithTooltip } from '@/components/ui/tooltip';
 import { ASSISTANT_NAME } from '@/lib/assistant/persona';
-import { cn } from '@/lib/cn';
 
 export interface AssistantLauncher {
   open: boolean;
@@ -34,6 +33,7 @@ export function AssistantLauncherButton() {
   const launcher = useContext(AssistantLauncherContext);
   const open = launcher?.open ?? false;
   const buttonRef = useRef<HTMLButtonElement>(null);
+  // The open panel covers the phone header, so this button only ever opens.
   // A panel opened from here gives focus back here when it closes, however it
   // was closed: the dock has no trigger of its own on this page to return to.
   const openedHere = useRef(false);
@@ -44,7 +44,7 @@ export function AssistantLauncherButton() {
   }, [open]);
 
   if (!launcher) return null;
-  const label = open ? `Close ${ASSISTANT_NAME}` : `Ask ${ASSISTANT_NAME}`;
+  const label = `Ask ${ASSISTANT_NAME}`;
   return (
     <WithTooltip label={label}>
       <button
@@ -53,16 +53,15 @@ export function AssistantLauncherButton() {
         aria-label={label}
         aria-expanded={open}
         onClick={() => {
-          openedHere.current = !open;
+          openedHere.current = true;
           launcher.toggle();
         }}
-        className={cn(
-          iconButtonClass,
-          'flex-none',
-          open ? 'bg-[var(--control-bg-hover)] text-paper' : 'text-lamp',
-        )}
+        className={`${iconButtonClass} flex-none`}
       >
-        <Sparkles className="h-5 w-5" aria-hidden />
+        {/* The colour sits on the icon: the button's own class sets a muted
+            one, and of two colours on one element the stylesheet's order
+            picks the winner, not the order they are written in. */}
+        <Sparkles className="h-5 w-5 text-lamp" aria-hidden />
       </button>
     </WithTooltip>
   );

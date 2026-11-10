@@ -4,7 +4,7 @@
 // stands in for the text LLM.
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { updateUsageLimits, user, userProfiles } from '@liedmotif/db';
+import { updateGenerationSettings, updateUsageLimits, user, userProfiles } from '@liedmotif/db';
 import {
   connectTestDb,
   createGenerationRequest,
@@ -150,14 +150,77 @@ describe.skipIf(skip)('the Assistant asked to start a Session', () => {
     expect(await rowsIn('generation_requests')).toBe(0);
   });
 
+  it('asks how long when the user named no length and new Sessions keep generating', async () => {
+    const asker = await createAdmin();
+
+    const turn = await propose(asker, { prompt: 'calm piano for reading' });
+
+    expect(cards(turn)).toEqual([]);
+    expect(turn.results[0]).toMatch(/ask the user how long/i);
+    expect(turn.results[0]).toMatch(/no card was shown/i);
+  });
+
   it('prepares vocals only when the model says the user asked for them', async () => {
     const asker = await createAdmin();
 
-    const turn = await propose(asker, { prompt: 'a sea shanty about deploys', vocal: true });
+    const turn = await propose(asker, {
+      prompt: 'a sea shanty about deploys',
+      vocal: true,
+      targetDurationMinutes: 30,
+    });
 
     expect(cards(turn)).toEqual([
-      { kind: 'session', prompt: 'a sea shanty about deploys', vocal: 'vocal' },
+      {
+        kind: 'session',
+        prompt: 'a sea shanty about deploys',
+        vocal: 'vocal',
+        targetDurationMinutes: 30,
+      },
     ]);
+  });
+
+  it('prepares a Session with no limit only when the model says the user asked for that', async () => {
+    const asker = await createAdmin();
+
+    const turn = await propose(asker, { prompt: 'calm piano for reading', noLimit: true });
+
+    expect(cards(turn)).toEqual([
+      {
+        kind: 'session',
+        prompt: 'calm piano for reading',
+        vocal: 'instrumental',
+        targetDurationMinutes: null,
+      },
+    ]);
+    expect(turn.results[0]).toMatch(/^Prepared: .*with no limit/);
+  });
+
+  it('prepares a Session without a length when the user’s new Sessions start on Repeat', async () => {
+    const asker = await createAdmin();
+    await updateGenerationSettings(testDb.db, {
+      ownerUserId: asker,
+      patch: { bufferEnabled: false },
+    });
+
+    const turn = await propose(asker, { prompt: 'calm piano for reading' });
+
+    expect(cards(turn)).toEqual([
+      { kind: 'session', prompt: 'calm piano for reading', vocal: 'instrumental' },
+    ]);
+  });
+
+  it('shows no card for a Session with no limit when the user’s new Sessions start on Repeat', async () => {
+    const asker = await createAdmin();
+    await updateGenerationSettings(testDb.db, {
+      ownerUserId: asker,
+      patch: { bufferEnabled: false },
+    });
+
+    const turn = await propose(asker, { prompt: 'calm piano for reading', noLimit: true });
+
+    expect(cards(turn)).toEqual([]);
+    expect(turn.results[0]).toMatch(/repeats them/i);
+    expect(turn.results[0]).toMatch(/no card was shown/i);
   });
 
   it('gives the model the app’s refusal and sends no card when the budget is used up', async () => {
@@ -176,9 +239,15 @@ describe.skipIf(skip)('the Assistant asked to start a Session', () => {
   it('refuses a second card in one turn', async () => {
     const asker = await createAdmin();
 
-    const turn = await propose(asker, { prompt: 'calm piano' }, { prompt: 'loud guitars' });
+    const turn = await propose(
+      asker,
+      { prompt: 'calm piano', targetDurationMinutes: 30 },
+      { prompt: 'loud guitars', targetDurationMinutes: 30 },
+    );
 
-    expect(cards(turn)).toEqual([{ kind: 'session', prompt: 'calm piano', vocal: 'instrumental' }]);
+    expect(cards(turn)).toEqual([
+      { kind: 'session', prompt: 'calm piano', vocal: 'instrumental', targetDurationMinutes: 30 },
+    ]);
     expect(turn.results[1]).toMatch(/already prepared a card.*no second card/i);
   });
 

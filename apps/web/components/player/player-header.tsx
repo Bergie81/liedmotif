@@ -5,12 +5,9 @@
 // options slot, then the status line, the title, the subtitle, and the live
 // announcement. Both surfaces render the SAME header — keeping it here means a
 // spacing or control change is one edit, not one per source. What only one
-// source has arrives as a slot, so the header's own props stay narrow. The row
-// ends in the Assistant's launcher on the desk breakpoint; the phone has it in
-// the page header.
+// source has arrives as a slot, so the header's own props stay narrow.
 
 import type { ReactNode } from 'react';
-import { AssistantLauncherButton } from '@/components/assistant/assistant-launcher';
 import { OnlineOnly } from '@/components/ui/online-only';
 import { BlendToggleButton } from './blend-toggle';
 import { sectionLoopControl, type PlaybackControllerApi } from './playback-controller-api';
@@ -97,10 +94,7 @@ export function PlayerHeader({
             </OnlineOnly>
           </>
         ) : null}
-        <span className="hidden flex-none items-center gap-2 desk:inline-flex">
-          {options}
-          <AssistantLauncherButton />
-        </span>
+        <span className="hidden flex-none desk:inline-flex">{options}</span>
       </div>
       <div className="mt-3 flex items-center font-mono text-[10px] uppercase tracking-[0.16em] text-lamp desk:mt-6">
         {statusMark}

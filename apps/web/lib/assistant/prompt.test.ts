@@ -123,6 +123,13 @@ describe.each([
     expect(tools).toMatch(/starts only when they confirm it/i);
   });
 
+  it('has the model leave the length of a new Session to the user and the tool', () => {
+    const line = prompt.match(/^- proposeSession .*$/m)![0];
+    expect(line).toMatch(/a length in minutes when they named one, or no limit when they said so/i);
+    expect(line).toMatch(/said neither, call it without one and never pick a length yourself/i);
+    expect(line).toMatch(/its answer says when the user has to be asked/i);
+  });
+
   it('names the three other things that are only prepared, each on a card the user confirms', () => {
     const tools = prompt.slice(prompt.indexOf('Tools:'), prompt.indexOf('Links:'));
     expect(tools).toMatch(/^- proposeChangeVibe prepares a Change Vibe for the active Session/m);

@@ -214,15 +214,15 @@ export function AppShell({
         themeMode={themeMode}
         onToggleThemeMode={toggleThemeMode}
       />
-      {/* No floating launcher on the Player: in its one-column layout the seek
-          bar and the transport's last control end up under that corner. Its
-          header carries the launcher instead. */}
+      {/* No floating launcher on the Player on a phone: the seek bar and the
+          transport's last control end up under that corner. Its page header
+          carries the launcher there instead. */}
       {assistantAvailable ? (
         <AssistantDock
           links={assistantLinks}
           open={assistant.open}
           onOpenChange={assistant.setOpen}
-          launcherHidden={isPlayer}
+          pageCarriesPhoneLauncher={isPlayer}
           standing={assistantStanding}
           player={assistantPlayerState(playback, sleepTimer.endsAt)}
           onReceipt={followAssistantReceipt}

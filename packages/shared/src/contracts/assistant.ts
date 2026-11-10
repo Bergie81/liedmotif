@@ -174,8 +174,8 @@ export const assistantCardSchema = z.discriminatedUnion('kind', [
     /** What the Session should sound like, as free text for the start-Session route. */
     prompt: z.string().min(1).max(MAX_USER_PROMPT_LENGTH),
     vocal: z.enum(VOCAL_MODES),
-    /** Left out when the user named no length. */
-    targetDurationMinutes: targetDurationMinutesSchema.optional(),
+    /** How long the Session generates; null is No limit. Left out when it starts on Repeat and the user named no length. */
+    targetDurationMinutes: targetDurationMinutesSchema.nullable().optional(),
   }),
   z.strictObject({
     kind: z.literal('changeVibe'),
@@ -209,7 +209,7 @@ export function sessionCardStartRequest(
 ): Omit<StartSessionRequest, 'clientId'> {
   return {
     input: { mode: 'prompt', prompt: card.prompt, vocal: card.vocal },
-    ...(card.targetDurationMinutes !== undefined && {
+    ...(card.targetDurationMinutes != null && {
       targetDurationMinutes: card.targetDurationMinutes,
     }),
   };
@@ -429,6 +429,8 @@ export type PlayInput = z.infer<typeof playInputSchema>;
 /**
  * What the model passes to `proposeSession`. Lenient like the other tools; the
  * values are checked against the start-Session request before a card is offered.
+ * A length and `noLimit` carry what the user said, never a guess: the tool
+ * answers when it needs one of them.
  */
 export const proposeSessionInputSchema = z.object({
   prompt: z
@@ -444,6 +446,10 @@ export const proposeSessionInputSchema = z.object({
     .number()
     .nullish()
     .describe('How long the Session should run, in minutes. Only when the user named a length.'),
+  noLimit: z
+    .boolean()
+    .nullish()
+    .describe('true only when the user asked for a Session without a limit.'),
 });
 export type ProposeSessionInput = z.infer<typeof proposeSessionInputSchema>;
 

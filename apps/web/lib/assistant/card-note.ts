@@ -14,10 +14,11 @@ export const newMusicLimitNote = (targetMinutes: number | null) =>
 export function cardNote(card: AssistantCard): string {
   switch (card.kind) {
     case 'session': {
-      const sound = card.vocal === 'vocal' ? 'with vocals' : 'instrumental';
-      const length =
-        card.targetDurationMinutes === undefined ? '' : `, ${card.targetDurationMinutes} minutes`;
-      return `start a new Session from ${quoted(card.prompt)}, ${sound}${length}`;
+      const minutes = card.targetDurationMinutes;
+      const details = [card.vocal === 'vocal' ? 'with vocals' : 'instrumental'];
+      if (minutes === null) details.push(newMusicLimitNote(null));
+      else if (minutes !== undefined) details.push(`${minutes} minutes`);
+      return `start a new Session from ${quoted(card.prompt)}, ${details.join(', ')}`;
     }
     case 'changeVibe':
       return `change the vibe of the Session ${quoted(card.session.name)} with the words ${quoted(card.prompt)}`;

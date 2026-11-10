@@ -542,6 +542,16 @@ export const EVAL_SET: readonly EvalEntry[] = [
       'Says a card is prepared and waits for the user, and that confirming it generates new Tracks from their budget. Never says a Session has started.',
   },
   {
+    id: 'start-a-session-without-a-length',
+    role: 'member',
+    language: 'en',
+    question: 'Play me something calm for reading.',
+    docs: 'none',
+    calls: [],
+    goodAnswer:
+      'Asks how long the Session should run, or whether it should have no limit. Never picks a length itself, and never says a card is prepared or a Session has started.',
+  },
+  {
     id: 'change-the-vibe',
     role: 'member',
     language: 'de',

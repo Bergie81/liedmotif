@@ -29,7 +29,7 @@ export const nowPlayingLayoutClass =
  *  column above), so its first and last rows finish level with the art. Its rows
  *  keep a fixed height, so anything that comes and goes belongs above the cover. */
 export const nowPlayingDetailsClass =
-  'mt-2 min-w-0 desk:mt-0 @split:flex @split:min-h-[440px] @split:flex-col';
+  'mt-5 min-w-0 @split:mt-0 @split:flex @split:min-h-[440px] @split:flex-col';
 /** A details row that takes a share of the column's spare height above it. */
 export const nowPlayingSpareRowClass = '@split:mt-auto @split:pt-4';
 /** The icon button a menu hangs off — smaller than `iconButtonClass`, and lit

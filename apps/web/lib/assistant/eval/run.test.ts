@@ -164,7 +164,7 @@ describe('an eval run', () => {
   it('gives every question a turn of its own: its actions and its caps start over', async () => {
     const llm = mockLlmProvider({
       assistantScript: {
-        toolCalls: [{ name: 'proposeSession', input: { prompt: 'calm piano' } }],
+        toolCalls: [{ name: 'proposeSession', input: { prompt: 'calm piano', noLimit: true } }],
         reply: () => 'A card is ready.',
       },
     });

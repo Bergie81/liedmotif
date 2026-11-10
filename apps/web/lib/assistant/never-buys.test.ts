@@ -88,6 +88,7 @@ const SERVER_CALLS = [
   'searchPlaylists',
   'searchSessions',
   'searchTracks',
+  'startingSessionMode',
   'toPlaylistMemberItem',
   // Library writes: they add and rename.
   'addPlaylistTracks',
