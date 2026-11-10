@@ -19,7 +19,7 @@ import { AssistantDock } from '@/components/assistant/assistant-dock';
 import { useCardHost } from '@/components/assistant/use-card-host';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
-export const LEFT_TODAY: GenerationHeadroom = {
+const LEFT_TODAY: GenerationHeadroom = {
   remainingTracks: 38,
   remainingRatio: 0.38,
   window: 'day',

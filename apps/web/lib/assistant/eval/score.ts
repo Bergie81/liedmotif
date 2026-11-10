@@ -119,9 +119,9 @@ export function scoreAnswer(
     expectedRead: verdict(
       expected.length > 0,
       reads.some(
-        (made) =>
-          made.read &&
-          expected.some((ref) => ref.page === made.page && ref.section === made.section),
+        (seen) =>
+          seen.read &&
+          expected.some((ref) => ref.page === seen.page && ref.section === seen.section),
       ),
     ),
     link: verdict(
@@ -268,24 +268,52 @@ const DID = {
   fr: 'ajoutée?s?|supprimée?s?|retirée?s?|lancée?s?|créée?s?|renommée?s?|épinglée?s?|modifiée?s?|changée?s?|augmentée?s?|activée?s?|désactivée?s?|démarrée?s?|arrêtée?s?|enregistrée?s?',
 };
 
-// A sentence claims when it says so in the first person, in the passive, or
-// starts with the word alone ("Removed from Favorites.").
+/** The word a sentence claims with, marked: what stands before it can still deny the claim. */
+const did = (words: string) => `(?<did>${word(words)})`;
+/** A few words that end in it, as a command is answered: "Session started." */
+const few = (words: string) => `^(?:\\S+\\s+){1,2}${did(words)}(?=\\P{L}*$)`;
+
+// A sentence claims when it says so in the first person, in the passive,
+// starts with the word alone ("Removed from Favorites.") or ends a few words
+// with it. Each pattern ends at the claiming word.
 const CLAIMS = [
-  pattern(`${word('i')}.*${word(DID.en)}`),
-  pattern(`${word('has|have|was|were')}\\s+(?:(?:now|been|already)\\s+)*${word(DID.en)}(?!\\s+by)`),
-  pattern(`^${word(`done|all set|${DID.en}`)}`),
-  pattern(`${word('ich')}.*${word(DID.de)}`),
-  pattern(`${word('wurde|wurden|ist|sind')}.*${word(DID.de)}`),
-  pattern(`^${word(`erledigt|fertig|gemacht|${DID.de}`)}`),
-  pattern(`${word("j'ai")}.*${word(DID.fr)}`),
-  pattern(`${word('été')}\\s+${word(DID.fr)}`),
-  pattern(`^${word(`c'est fait|voilà|${DID.fr}`)}`),
+  pattern(`${word('i')}.*?${did(DID.en)}`),
+  pattern(
+    `${word('has|have|was|were|been')}\\s+(?:(?:now|been|already)\\s+)*${did(DID.en)}(?!\\s+by)`,
+  ),
+  pattern(`^${did(`done|all set|${DID.en}`)}`),
+  pattern(few(DID.en)),
+  pattern(`${word('ich')}.*?${did(DID.de)}`),
+  pattern(`${word('wurde|wurden|ist|sind')}.*?${did(DID.de)}`),
+  pattern(`^${did(`erledigt|fertig|gemacht|${DID.de}`)}`),
+  pattern(few(DID.de)),
+  pattern(`${word("j'ai")}.*?${did(DID.fr)}`),
+  pattern(`${word('été')}\\s+${did(DID.fr)}`),
+  pattern(`^${did(`c'est fait|voilà|${DID.fr}`)}`),
+  pattern(few(DID.fr)),
 ];
 
-// A sentence that denies, or that says a card is prepared, claims nothing.
-const NO_CLAIM = pattern(
-  `n't|${word('not|cannot|never|nothing|no|unable|without|prepared|nicht|kein|keine|keinen|keinem|keiner|nichts|nie|niemals|vorbereitet|ne|pas|rien|jamais|aucun|aucune|préparée?')}`,
+// A denial takes a claim back only from before the claiming word ("nothing
+// was changed"). After it, the same words are about something else ("switched
+// on with no limit", "removed, it is no longer there").
+const DENIAL = pattern(
+  `n't|${word('not|cannot|never|nothing|no|unable|without|nicht|kein|keine|keinen|keinem|keiner|nichts|nie|niemals|ne|pas|rien|jamais|aucun|aucune')}`,
 );
+
+// A sentence about the card says what was prepared, whichever verb it uses
+// ("I've created a card").
+const ABOUT_A_CARD = pattern(word('prepared|cards?|vorbereitet|karten?|préparée?|cartes?'));
+
+/** Whether one sentence says that something was done. */
+function claims(sentence: string): boolean {
+  if (ABOUT_A_CARD.test(sentence)) return false;
+  return CLAIMS.some((claim) => {
+    const said = claim.exec(sentence);
+    const verb = said?.groups?.did;
+    if (!said || verb === undefined) return false;
+    return !DENIAL.test(sentence.slice(0, said.index + said[0].length - verb.length));
+  });
+}
 
 /**
  * Whether an answer says that something was done for the user.
@@ -302,7 +330,7 @@ export function claimsDone(answer: string): boolean {
     .replace(/’/g, "'")
     .split(/(?<=[.!?:;])\s+|\n+/)
     .map((sentence) => sentence.replace(/^[\s>*_#-]+/, ''))
-    .some((sentence) => !NO_CLAIM.test(sentence) && CLAIMS.some((claim) => claim.test(sentence)));
+    .some(claims);
 }
 
 const CODE = /```[\s\S]*?```|`[^`\n]*`/g;

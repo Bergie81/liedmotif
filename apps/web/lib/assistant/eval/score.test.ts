@@ -430,6 +430,16 @@ describe('a claim that something was done', () => {
     "J'ai supprimé le morceau de tes favoris.",
     "C'est fait.",
     '[Done by the app: created the Playlist "Gym"]',
+    // What follows the claim does not take it back.
+    'I’ve switched New music on with no limit.',
+    'I started a calm instrumental Session without vocals.',
+    "I've removed Midnight Overpass, it's no longer in your Favorites.",
+    'Ich habe den Track entfernt, er ist nicht mehr in deinen Favoriten.',
+    // A few words that end in it, as a command is answered.
+    'Session started.',
+    'Okay, removed.',
+    'Session gestartet.',
+    "The vibe's been changed.",
   ])('is seen in: %s', (answer) => {
     expect(claimsDone(answer)).toBe(true);
   });
@@ -444,6 +454,12 @@ describe('a claim that something was done', () => {
     'Das kann ich nicht für dich ändern. Frag deinen Admin.',
     'Ich habe eine Karte vorbereitet. Die Session startet erst, wenn du sie bestätigst.',
     'Je ne peux pas supprimer un morceau.',
+    'No Session has started yet.',
+    'Die Session wurde noch nicht gestartet.',
+    // A card is the one thing a turn that only prepares has made.
+    "I've created a card for a calm Session.",
+    'Ich habe eine Karte für eine ruhige Session erstellt.',
+    'Prepared: the card to keep this Session generating new music with no limit is waiting for you.',
   ])('is not seen in: %s', (answer) => {
     expect(claimsDone(answer)).toBe(false);
   });

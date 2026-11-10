@@ -22,7 +22,7 @@ export type ChatAction =
 export type SettleableAction = Exclude<ChatAction, { status: 'done' }>;
 
 /** What a later turn is told about one action: one line, in brackets, worded by the app. */
-export function actionNote(action: ChatAction): string {
+function actionNote(action: ChatAction): string {
   switch (action.status) {
     case 'done':
       return receiptRecord(action.receipt);

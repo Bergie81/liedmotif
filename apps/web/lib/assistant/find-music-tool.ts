@@ -28,10 +28,10 @@ import { FIND_MUSIC_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 
 /** How many rows one result lists. */
-export const FIND_MUSIC_LIMIT = 10;
+const FIND_MUSIC_LIMIT = 10;
 
 /** The Library's Track lists, under the names its tabs show. */
-const LIST_NAMES: Record<NonNullable<FindMusicInput['list']>, string> = {
+export const LIST_NAMES: Record<NonNullable<FindMusicInput['list']>, string> = {
   saved: 'Saved',
   favorites: 'Favorites',
   history: 'History',

@@ -12,7 +12,7 @@ import { LIST_TRACKS_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 
 /** How many Tracks one result lists. */
-export const LIST_TRACKS_LIMIT = 30;
+const LIST_TRACKS_LIMIT = 30;
 
 /** The head of one Session's or Playlist's Tracks, and how many it has in all. */
 interface TrackList {

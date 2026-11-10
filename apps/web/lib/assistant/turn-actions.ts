@@ -7,7 +7,7 @@ import type { AssistantAction } from '@liedmotif/shared';
 type ActionStatus = AssistantAction['status'];
 
 /** How many actions of each kind one user message may lead to. */
-export const TURN_ACTION_CAPS: Record<ActionStatus, number> = { done: 3, player: 2, proposed: 1 };
+const TURN_ACTION_CAPS: Record<ActionStatus, number> = { done: 3, player: 2, proposed: 1 };
 
 const OVER_CAP: Record<ActionStatus, string> = {
   done: `You have already done ${TURN_ACTION_CAPS.done} things for this message. Nothing was changed. Tell the user what is done, and that they can ask for the rest in their next message.`,

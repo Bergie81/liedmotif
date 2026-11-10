@@ -110,6 +110,9 @@ describe('the read tools of a fixture turn', () => {
     const { call } = openTurn();
 
     expect(await call('findMusic', { kind: 'session' })).toContain('"Morning Focus"');
+    expect(await call('findMusic', { kind: 'track', list: 'favorites' })).toMatch(
+      /^Tracks in Favorites, most recent first:\n- "Midnight Overpass"/,
+    );
     expect(await call('findMusic', { kind: 'track', query: 'zither' })).toBe(
       'No Track matches "zither".',
     );

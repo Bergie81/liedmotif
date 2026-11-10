@@ -9,7 +9,7 @@ import {
   proposeMoreLikeThisInputSchema,
   type ProposeMoreLikeThisInput,
 } from '@liedmotif/shared';
-import { NO_SUCH_TRACK, NO_TRACK_PLAYING } from './library-action';
+import { askedTracks, NO_SUCH_TRACK, NO_TRACK_PLAYING } from './library-action';
 import { newSessionRefusal, notOffered, proposed } from './proposal';
 import { readableTrackTitle } from './readable-music';
 import { PROPOSE_MORE_LIKE_THIS_TOOL_NAME } from './tool-names';
@@ -26,8 +26,7 @@ export function createProposeMoreLikeThisTool(
     inputSchema: proposeMoreLikeThisInputSchema,
     execute: ({ trackIds: given }) =>
       actions.take('proposed', async () => {
-        const playing = asker.player?.trackId;
-        const asked = [...new Set(given?.length ? given : playing ? [playing] : [])];
+        const asked = askedTracks(given, asker.player);
         if (asked.length === 0) return notOffered(NO_TRACK_PLAYING);
         if (asked.length > MAX_SEED_TRACKS) {
           return notOffered(

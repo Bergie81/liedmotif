@@ -1,7 +1,7 @@
 // What a Library action tool hands back: the receipt when the server did
 // something, or only words for the model when it did not.
 
-import type { AssistantReceipt } from '@liedmotif/shared';
+import type { AssistantPlayerState, AssistantReceipt } from '@liedmotif/shared';
 import { receiptNote } from './receipt-note';
 import type { ActionOutcome } from './turn-actions';
 
@@ -19,6 +19,15 @@ export const done = (receipt: AssistantReceipt, ...also: string[]): ActionOutcom
 export const refused = (why: string): ActionOutcome<'done'> => ({
   told: `${why} Nothing was changed.`,
 });
+
+/**
+ * The Tracks a call names, each once, or the one on the player's deck when it
+ * names none: "this". Empty when there is neither.
+ */
+export const askedTracks = (
+  given: readonly string[] | null | undefined,
+  player: AssistantPlayerState | null,
+): string[] => [...new Set(given?.length ? given : player?.trackId ? [player.trackId] : [])];
 
 /** A tool was given no Track, and the player has none on the deck for "this" to mean. */
 export const NO_TRACK_PLAYING =

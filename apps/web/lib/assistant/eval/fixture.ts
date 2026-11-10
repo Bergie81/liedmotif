@@ -25,7 +25,8 @@ import {
   type ProposeSessionInput,
   type RenamePlaylistInput,
 } from '@liedmotif/shared';
-import { done, NO_SUCH_PLAYLIST, NO_SUCH_TRACK, refused } from '../library-action';
+import { LIST_NAMES } from '../find-music-tool';
+import { askedTracks, done, NO_SUCH_PLAYLIST, NO_SUCH_TRACK, refused } from '../library-action';
 import { named, quoted, trackCount } from '../music-names';
 import { handedOver, refused as leftAsItIs } from '../player-tools';
 import { notOffered, proposed } from '../proposal';
@@ -142,7 +143,7 @@ const ACTIVE_GENERATED_MINUTES = 40;
 const CREATED_PLAYLIST_ID = id(399);
 
 /** What the browser's player has engaged when a question is asked: "this" is Neon Rain. */
-export const PLAYER: AssistantPlayerState = {
+const PLAYER: AssistantPlayerState = {
   source: { kind: 'session', id: ACTIVE.id },
   trackId: TRACKS.neonRain.id,
   playing: true,
@@ -233,7 +234,12 @@ function findMusic({ kind, query, lyrics, list }: FindMusicInput): string {
         : list === 'saved'
           ? tracks.filter((track) => playlists.some((playlist) => playlist.tracks.includes(track)))
           : tracks;
-    return listed('Tracks, most recent first:', inList.map(trackRow), 'There are no Tracks.');
+    const name = LIST_NAMES[list ?? 'history'];
+    return listed(
+      `Tracks in ${name}, most recent first:`,
+      inList.map(trackRow),
+      `There are no Tracks in ${name}.`,
+    );
   }
   if (kind === 'playlist') {
     return words
@@ -254,7 +260,11 @@ function findMusic({ kind, query, lyrics, list }: FindMusicInput): string {
         matching(sessions, words, ({ title }) => title).map(sessionRow),
         `No Session matches ${text}.`,
       )
-    : listed('Sessions, most recent first:', sessions.map(sessionRow), 'There are no Sessions.');
+    : listed(
+        'Sessions, most recent first:',
+        sessions.map(sessionRow),
+        'There are no Sessions yet.',
+      );
 }
 
 function listTracks({ in: where, id: listId }: ListTracksInput): string {
@@ -273,10 +283,6 @@ function listTracks({ in: where, id: listId }: ListTracksInput): string {
     ),
   ].join('\n');
 }
-
-/** The Tracks a call names, or the one that is playing when it names none ("this"). */
-const askedTracks = (given: readonly string[] | null | undefined) =>
-  given?.length ? [...new Set(given)] : PLAYER.trackId ? [PLAYER.trackId] : [];
 
 /** What a play command starts, or why the fixture has nothing to hand over. */
 function playable({
@@ -339,7 +345,7 @@ function fixtureAnswers(role: UserRole, actions: TurnActions): Record<string, An
       actions.take('done', async () => {
         const playlist = playlistById(playlistId);
         if (!playlist) return refused(NO_SUCH_PLAYLIST);
-        const added = askedTracks(trackIds).flatMap((trackId) => trackById(trackId) ?? []);
+        const added = askedTracks(trackIds, PLAYER).flatMap((trackId) => trackById(trackId) ?? []);
         if (added.length === 0) {
           return refused(`No Track was added to ${named(playlist.name, playlist.id)}.`);
         }
@@ -414,7 +420,7 @@ function fixtureAnswers(role: UserRole, actions: TurnActions): Record<string, An
       }),
     [PROPOSE_MORE_LIKE_THIS_TOOL_NAME]: ({ trackIds }: ProposeMoreLikeThisInput) =>
       actions.take('proposed', async () => {
-        const asked = askedTracks(trackIds);
+        const asked = askedTracks(trackIds, PLAYER);
         const seeds = asked.flatMap((trackId) => trackById(trackId) ?? []);
         const card = assistantCardSchema.safeParse({
           kind: 'moreLikeThis',

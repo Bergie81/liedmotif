@@ -9,7 +9,7 @@ import {
   addToPlaylistInputSchema,
   type AddToPlaylistInput,
 } from '@liedmotif/shared';
-import { done, NO_SUCH_PLAYLIST, NO_TRACK_PLAYING, refused } from './library-action';
+import { askedTracks, done, NO_SUCH_PLAYLIST, NO_TRACK_PLAYING, refused } from './library-action';
 import { named } from './music-names';
 import { isId, ownPlaylist, readableTrackTitle } from './readable-music';
 import { ADD_TO_PLAYLIST_TOOL_NAME } from './tool-names';
@@ -29,7 +29,7 @@ export function createAddToPlaylistTool(
     inputSchema: addToPlaylistInputSchema,
     execute: ({ playlistId, trackIds: given }) =>
       actions.take('done', async () => {
-        const asked = [...new Set(given?.length ? given : player?.trackId ? [player.trackId] : [])];
+        const asked = askedTracks(given, player);
         if (asked.length === 0) return refused(NO_TRACK_PLAYING);
         if (asked.length > ASSISTANT_MAX_TRACKS_PER_ADD) {
           return refused(
