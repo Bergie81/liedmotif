@@ -7,6 +7,7 @@ import { createElement as h, type ComponentType } from 'react';
 import type { PlaylistSummaryItem } from '@liedmotif/shared';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { announceOutsideLibraryWrite } from '@/lib/offline/library-writes';
 import { PlaylistsGrid, type PlaylistsFirstPage } from './playlists-grid';
 
 const listPlaylists = vi.hoisted(() => vi.fn());
@@ -80,6 +81,26 @@ function tapPinRow(playlist: PlaylistSummaryItem) {
 function searchFor(text: string) {
   fireEvent.change(screen.getByPlaceholderText(/Search playlists/), { target: { value: text } });
 }
+
+describe('PlaylistsGrid — a write from outside the page', () => {
+  it('reloads the list, keeping the search that is typed', async () => {
+    listPlaylists.mockResolvedValue({ ok: true, data: { playlists: [base], nextCursor: null } });
+    renderGrid([base]);
+    searchFor('foc');
+    await waitFor(() => expect(listPlaylists).toHaveBeenCalledTimes(1));
+
+    listPlaylists.mockResolvedValueOnce({
+      ok: true,
+      data: { playlists: [base, OTHER], nextCursor: null },
+    });
+    announceOutsideLibraryWrite();
+
+    await waitFor(() =>
+      expect(cardOrder()).toEqual([`playlist-card-${base.id}`, `playlist-card-${OTHER.id}`]),
+    );
+    expect(listPlaylists).toHaveBeenLastCalledWith({ search: 'foc' });
+  });
+});
 
 describe('PlaylistsGrid — a failed load', () => {
   it('keeps the list and its search field, and clears the banner on the next good load', async () => {

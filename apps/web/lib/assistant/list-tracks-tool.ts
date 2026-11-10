@@ -6,7 +6,8 @@ import { getSessionById, listSessionTracks } from '@liedmotif/db';
 import type { LlmTool } from '@liedmotif/providers';
 import { listTracksInputSchema, uuidSchema, type ListTracksInput } from '@liedmotif/shared';
 import { formatTrackDuration } from '@/components/library/library-view-model';
-import { named, readablePlaylist, trackCount } from './readable-music';
+import { named, trackCount } from './music-names';
+import { readablePlaylist } from './readable-music';
 import { LIST_TRACKS_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 

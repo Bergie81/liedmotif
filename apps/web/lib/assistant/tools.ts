@@ -1,17 +1,26 @@
 // The tools of one Assistant turn, and who they work for. A tool that reads
-// the asking user's own data is created with that user: it calls the app's own
-// domain functions with their id, so it finds what they find in the app, no
-// more and no less.
+// or changes the asking user's own data is created with that user: it calls
+// the app's own domain functions with their id, so it finds what they find in
+// the app and can do what they can do there, no more and no less.
 
 import type { Database, UserRole } from '@liedmotif/db';
 import type { LlmTool } from '@liedmotif/providers';
 import { createLogger, type AssistantPlayerState } from '@liedmotif/shared';
+import { createAddToPlaylistTool } from './add-to-playlist-tool';
 import { createBudgetTool } from './budget-tool';
 import { loadDocs, type DocsPage } from './docs';
+import { createFavoriteTrackTool } from './favorite-track-tool';
 import { createFindMusicTool } from './find-music-tool';
 import { createListTracksTool } from './list-tracks-tool';
+import {
+  createCreatePlaylistTool,
+  createPinPlaylistTool,
+  createRenamePlaylistTool,
+} from './manage-playlist-tools';
+import { createNewMusicOffTool } from './new-music-off-tool';
 import { createNowPlayingTool } from './now-playing-tool';
 import { createReadDocsTool } from './read-docs-tool';
+import type { TurnActions } from './turn-actions';
 import { withinTurnBudget } from './turn-budget';
 
 const logger = createLogger({ name: 'assistant' });
@@ -26,14 +35,16 @@ export interface AssistantAsker {
 }
 
 const LOOKUP_FAILED = 'That could not be looked up right now. Answer from what you have.';
+const ACTION_FAILED = 'That could not be done right now. Tell the user it did not work.';
 
 /**
- * A lookup that fails tells the model so and nothing more. What a tool returns
+ * A tool that fails tells the model so and nothing more. What a tool returns
  * goes to the text-LLM provider, and an error's own text may quote a query.
  * The log gets the tool and the kind of error, never the input.
  */
-function failingQuietly(tool: LlmTool): LlmTool {
-  return {
+const failingQuietly =
+  (told: string) =>
+  (tool: LlmTool): LlmTool => ({
     ...tool,
     async execute(input: unknown) {
       try {
@@ -43,24 +54,39 @@ function failingQuietly(tool: LlmTool): LlmTool {
           tool: tool.name,
           errorName: err instanceof Error ? err.name : typeof err,
         });
-        return LOOKUP_FAILED;
+        return told;
       }
     },
-  };
-}
+  });
 
-/** The tools for ONE turn of `asker`; together they read within one turn's budget. */
+/**
+ * The tools for ONE turn of `asker`. The ones that read share one turn's read
+ * budget. The ones that act report through `actions`, which also caps them;
+ * they stand outside the read budget, because that budget withholds a result
+ * after the tool ran, and what an action did must always reach the model.
+ */
 export function createAssistantTools(
   asker: AssistantAsker,
+  actions: TurnActions,
   pages: readonly DocsPage[] = loadDocs(),
 ): LlmTool[] {
-  return withinTurnBudget(
-    [
-      createReadDocsTool(pages),
-      createNowPlayingTool(asker),
-      createBudgetTool(asker),
-      createFindMusicTool(asker),
-      createListTracksTool(asker),
-    ].map(failingQuietly),
-  );
+  return [
+    ...withinTurnBudget(
+      [
+        createReadDocsTool(pages),
+        createNowPlayingTool(asker),
+        createBudgetTool(asker),
+        createFindMusicTool(asker),
+        createListTracksTool(asker),
+      ].map(failingQuietly(LOOKUP_FAILED)),
+    ),
+    ...[
+      createFavoriteTrackTool(asker, actions),
+      createAddToPlaylistTool(asker, actions),
+      createCreatePlaylistTool(asker, actions),
+      createRenamePlaylistTool(asker, actions),
+      createPinPlaylistTool(asker, actions),
+      createNewMusicOffTool(asker, actions),
+    ].map(failingQuietly(ACTION_FAILED)),
+  ];
 }

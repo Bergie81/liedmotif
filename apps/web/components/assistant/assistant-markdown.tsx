@@ -16,6 +16,10 @@ export interface AnswerLinks {
 /** Without a provider no link is followed: every link shows as its text. */
 export const AnswerLinksContext = createContext<AnswerLinks | null>(null);
 
+/** A button in the chat that goes to a page of the app. */
+export const appPageButtonClass =
+  'inline-flex items-center gap-1 rounded-full border border-line-2 bg-[var(--control-bg)] px-2.5 py-0.5 text-[13px] font-medium text-lamp [-webkit-tap-highlight-color:transparent] hover:bg-[var(--control-bg-hover)]';
+
 /**
  * A link the model wrote. The model can write any target, so a link is
  * followed only where `resolveAnswerLink` finds it among the user's targets: a
@@ -31,7 +35,7 @@ function AnswerLink({ href, children }: { href?: string; children?: ReactNode })
       <button
         type="button"
         onClick={() => links.onOpenAppPage(link.path)}
-        className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-line-2 bg-[var(--control-bg)] px-2.5 py-0.5 align-baseline text-[13px] font-medium text-lamp [-webkit-tap-highlight-color:transparent] hover:bg-[var(--control-bg-hover)]"
+        className={cn(appPageButtonClass, 'mx-0.5 align-baseline')}
       >
         {children}
         <ArrowRight className="h-3 w-3 flex-none" aria-hidden />

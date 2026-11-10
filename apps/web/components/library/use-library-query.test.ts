@@ -3,6 +3,7 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { captureFetches } from '@/tests/helpers/capture-fetches';
+import { announceOutsideLibraryWrite } from '@/lib/offline/library-writes';
 import { useLibraryQuery } from './use-library-query';
 
 function libraryTrack(id: string) {
@@ -181,5 +182,20 @@ describe('useLibraryQuery', () => {
     // The picker is the only writer of this fact, so dropping it here leaves the
     // row's Add to Playlist reporting the pre-commit state until the next fetch.
     expect(result.current.items?.[0]?.inCuratedPlaylist).toBe(true);
+  });
+
+  it('reloads the list when a write comes from outside the page', async () => {
+    const requests = captureFetches();
+    const { result } = renderHook(() => useLibraryQuery('saved'));
+    await waitFor(() => expect(requests).toHaveLength(1));
+    await act(async () => requests[0]!.respond(libraryPage('saved', null)));
+    await waitFor(() => expect(result.current.items).toEqual([]));
+
+    act(() => announceOutsideLibraryWrite());
+
+    await waitFor(() => expect(requests).toHaveLength(2));
+    const track = libraryTrack('00000000-0000-4000-8000-000000000001');
+    await act(async () => requests[1]!.respond(libraryPage('saved', null, [track])));
+    await waitFor(() => expect(result.current.items).toHaveLength(1));
   });
 });

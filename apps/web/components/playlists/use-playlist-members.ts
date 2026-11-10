@@ -17,6 +17,7 @@ import {
   type PlaylistPageFetcher,
 } from '@/lib/api-client';
 import { appendUniqueById } from '@/lib/append-unique';
+import { useOutsideLibraryWrite } from '@/components/library/use-outside-library-write';
 import { usePageEpoch } from '@/components/use-page-epoch';
 import { useServerSeed } from '@/components/use-server-seed';
 import {
@@ -89,6 +90,7 @@ export function usePlaylistMembers({
     if (consumeServerSeed()) return;
     void load();
   }, [load, consumeServerSeed]);
+  useOutsideLibraryWrite(() => void load());
 
   const hasMore =
     playlist !== null && items !== null && hasUnloadedMembers(items, playlist.trackCount);

@@ -3,6 +3,7 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PlaylistMemberItem, PlaylistSummaryItem } from '@liedmotif/shared';
+import { announceOutsideLibraryWrite } from '@/lib/offline/library-writes';
 import { usePlaylistMembers } from './use-playlist-members';
 
 const api = vi.hoisted(() => ({
@@ -154,5 +155,22 @@ describe('usePlaylistMembers', () => {
     expect(result.current.playlist?.totalDurationSeconds).toBe(540);
     expect(result.current.playlist?.downloadableTrackCount).toBe(3);
     expect(router.refresh).not.toHaveBeenCalled();
+  });
+
+  it('reloads the Playlist and its Tracks when a write comes from outside the page', async () => {
+    const { result } = renderMembers([member('01', 0)], 1);
+    api.getPlaylist.mockResolvedValueOnce({
+      ok: true,
+      data: {
+        playlist: summary({ name: 'Renamed', trackCount: 2 }),
+        items: [member('01', 0), member('02', 1)],
+        nextCursor: null,
+      },
+    });
+
+    act(() => announceOutsideLibraryWrite());
+
+    await waitFor(() => expect(result.current.items).toHaveLength(2));
+    expect(result.current.playlist?.name).toBe('Renamed');
   });
 });

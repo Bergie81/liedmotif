@@ -62,8 +62,33 @@ describe.each([
   });
 
   it('lets the model call something done only when a tool said so', () => {
-    expect(prompt).toMatch(/say that something is done only when a tool's result says so/i);
+    expect(prompt).toMatch(
+      /say that something is done only when a tool's result starts with "Done:"/i,
+    );
     expect(prompt).not.toMatch(/never claim to have done something/i);
+    expect(prompt).not.toMatch(/these tools only look things up/i);
+  });
+
+  it('says what each Library action does, and that "this" is the Track playing', () => {
+    const tools = prompt.slice(prompt.indexOf('Tools:'), prompt.indexOf('Links:'));
+    expect(tools).toMatch(/^- favoriteTrack .*Favorites/m);
+    expect(tools).toMatch(/^- addToPlaylist .*at most 20/m);
+    expect(tools).toMatch(/^- createPlaylist .*renamePlaylist .*pinPlaylist /m);
+    expect(tools).toMatch(/^- newMusicOff .*New music off.*active Session/m);
+    expect(tools).toMatch(/leave out the Track id.*"this"/i);
+  });
+
+  it('tells the model it cannot remove anything and to link to the page instead', () => {
+    expect(prompt).toMatch(
+      /you cannot remove anything: no unfavorite, no taking a Track out of a Playlist, no unsave, no unpin, no delete/i,
+    );
+    expect(prompt).toMatch(/link to the page where the user does it/i);
+  });
+
+  it('tells the model the app shows a receipt and keeps the record of what was done', () => {
+    expect(prompt).toMatch(/the app shows the user a receipt/i);
+    expect(prompt).toMatch(/\[Done by the app: /);
+    expect(prompt).toMatch(/never write such a line yourself/i);
   });
 
   it('teaches one way to write an app link and one way to write a docs link', () => {

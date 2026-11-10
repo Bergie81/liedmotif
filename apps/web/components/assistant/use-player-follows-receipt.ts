@@ -1,0 +1,57 @@
+'use client';
+
+// The player after a receipt. The Assistant writes on the server, past the
+// player's own buttons, so what the player already shows of the thing that
+// changed is brought in line here: the same state those buttons would have set.
+
+import { useCallback, useEffect, useRef } from 'react';
+import type { AssistantReceipt } from '@liedmotif/shared';
+import { usePlayerContext } from '@/components/player/player-provider';
+import { optimisticFavoriteFlags } from '@/components/player/track-retention';
+
+/**
+ * What to call with each receipt. `refreshChrome` re-reads the shell's own
+ * copy of the active Session, which the mini player shows while nothing is
+ * engaged in this browser.
+ */
+export function usePlayerFollowsReceipt(
+  refreshChrome: () => void,
+): (receipt: AssistantReceipt) => void {
+  const { playback, engage } = usePlayerContext();
+  // A receipt arrives long after the render that made this callback.
+  const playbackRef = useRef(playback);
+  useEffect(() => {
+    playbackRef.current = playback;
+  }, [playback]);
+
+  return useCallback(
+    (receipt) => {
+      const live = playbackRef.current;
+      switch (receipt.action) {
+        case 'favoriteTrack': {
+          const track = live?.player.currentTrack;
+          if (!live || track?.trackId !== receipt.track.id) return;
+          // The star's own tap sets these flags; curated membership is not its to move.
+          live.player.applyRetentionFlags(
+            track.trackId,
+            optimisticFavoriteFlags(track, true, new Date().toISOString()),
+            track.inCuratedPlaylist,
+          );
+          return;
+        }
+        case 'newMusicOff': {
+          const session = live?.session;
+          // The same Session engaged again is its summary refreshed in place.
+          if (session?.id === receipt.session.id) {
+            engage({ ...session, sessionMode: 'repeat' }, { autoplay: false });
+          }
+          refreshChrome();
+          return;
+        }
+        default:
+          return;
+      }
+    },
+    [engage, refreshChrome],
+  );
+}

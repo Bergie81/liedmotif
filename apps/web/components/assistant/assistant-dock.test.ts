@@ -11,18 +11,25 @@ import {
   ASSISTANT_STREAM_CONTENT_TYPE,
   encodeAssistantStreamEvent,
   type AssistantPlayerState,
+  type AssistantReceipt,
+  type AssistantStreamEvent,
 } from '@liedmotif/shared';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import type { AnswerLinkTargets } from '@/lib/assistant/answer-links';
+import { onOutsideLibraryWrite } from '@/lib/offline/library-writes';
 import { AssistantDock } from './assistant-dock';
 
-const navigation = vi.hoisted(() => ({ push: vi.fn<(path: string) => void>() }));
+const navigation = vi.hoisted(() => ({
+  push: vi.fn<(path: string) => void>(),
+  refresh: vi.fn<() => void>(),
+}));
 vi.mock('next/navigation', () => ({ useRouter: () => navigation }));
 
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
   navigation.push.mockClear();
+  navigation.refresh.mockClear();
 });
 
 /** Where a Member's answers may lead. */
@@ -36,10 +43,12 @@ function renderDock({
   desk,
   launcherHidden,
   player,
+  onReceipt,
 }: {
   desk: boolean;
   launcherHidden?: boolean;
   player?: AssistantPlayerState;
+  onReceipt?: (receipt: AssistantReceipt) => void;
 }) {
   vi.stubGlobal(
     'matchMedia',
@@ -50,16 +59,19 @@ function renderDock({
       TooltipProvider,
       null,
       h('button', { type: 'button' }, 'Something on the page'),
-      h(AssistantDock, { links: LINKS, launcherHidden, player }),
+      h(AssistantDock, { links: LINKS, launcherHidden, player, onReceipt }),
     ),
   );
 }
 
 /** Ask a question the Assistant answers at once with `markdown`. */
 function askAndGetAnswer(markdown: string): void {
-  const reply =
-    encodeAssistantStreamEvent({ type: 'text', text: markdown }) +
-    encodeAssistantStreamEvent({ type: 'done' });
+  askAndGetReply([{ type: 'text', text: markdown }]);
+}
+
+/** Ask a question the Assistant answers at once with `events`, then ends. */
+function askAndGetReply(events: AssistantStreamEvent[]): void {
+  const reply = [...events, { type: 'done' } as const].map(encodeAssistantStreamEvent).join('');
   vi.stubGlobal(
     'fetch',
     vi.fn(
@@ -224,4 +236,71 @@ it("offers no button for a page that is not among this user's link targets", asy
 
   expect(screen.queryByRole('button', { name: 'Settings › Members' })).toBeNull();
   expect(screen.getByRole('log').querySelector('a')).toBeNull();
+});
+
+const PLAYLIST = { id: '7b0a1c5e-3f0d-4a55-9d0e-2f6f3f1f8a11', name: 'Sunday' };
+const CREATED: AssistantReceipt = { action: 'createPlaylist', playlist: PLAYLIST };
+const receiptFor = (receipt: AssistantReceipt): AssistantStreamEvent => ({
+  type: 'action',
+  action: { status: 'done', receipt },
+});
+
+it('shows a receipt in the app’s words for what the Assistant did, next to what it wrote', async () => {
+  renderDock({ desk: true });
+
+  askAndGetReply([receiptFor(CREATED), { type: 'text', text: 'All set, as “Weekend”.' }]);
+
+  const log = await screen.findByRole('log', { name: 'Conversation' });
+  await waitFor(() => expect(log.textContent).toContain('Created Playlist: Sunday'));
+  expect(log.textContent).toContain('All set, as “Weekend”.');
+});
+
+it('shows the receipt alone when the Assistant acted and wrote nothing', async () => {
+  renderDock({ desk: true });
+
+  askAndGetReply([receiptFor(CREATED)]);
+
+  const log = await screen.findByRole('log', { name: 'Conversation' });
+  await waitFor(() => expect(log.textContent).toContain('Created Playlist: Sunday'));
+  expect(log.textContent).not.toContain('looking it up');
+  expect(screen.queryByRole('alert')).toBeNull();
+});
+
+it('links a receipt to where the thing now is, a page no answer of the model could link to', async () => {
+  renderDock({ desk: false });
+  askAndGetReply([receiptFor(CREATED)]);
+
+  fireEvent.click(await screen.findByRole('button', { name: 'Open Sunday' }));
+
+  expect(navigation.push).toHaveBeenCalledWith(`/library/playlist/${PLAYLIST.id}`);
+  // Over the page, the panel would hide the page the receipt led to.
+  expect(screen.queryByRole('dialog')).toBeNull();
+});
+
+it('has the pages re-read the Library when a receipt arrives, and tells the app shell', async () => {
+  const outsideWrites = vi.fn();
+  const stopListening = onOutsideLibraryWrite(outsideWrites);
+  const onReceipt = vi.fn();
+  renderDock({ desk: true, onReceipt });
+
+  askAndGetReply([receiptFor(CREATED), { type: 'text', text: 'Done.' }]);
+
+  await waitFor(() => expect(onReceipt).toHaveBeenCalledWith(CREATED));
+  expect(navigation.refresh).toHaveBeenCalledTimes(1);
+  expect(outsideWrites).toHaveBeenCalledTimes(1);
+  stopListening();
+});
+
+it('leaves the Library pages alone when a receipt changed nothing they show', async () => {
+  const onReceipt = vi.fn();
+  renderDock({ desk: true, onReceipt });
+  const off: AssistantReceipt = {
+    action: 'newMusicOff',
+    session: { id: '5d2f8e1b-6c3a-4f7e-8b9d-1a2b3c4d5e6f', name: 'Rainy Window' },
+  };
+
+  askAndGetReply([receiptFor(off)]);
+
+  await waitFor(() => expect(onReceipt).toHaveBeenCalledWith(off));
+  expect(navigation.refresh).not.toHaveBeenCalled();
 });

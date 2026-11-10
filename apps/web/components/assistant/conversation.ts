@@ -5,15 +5,23 @@
 import {
   ASSISTANT_MAX_MESSAGE_LENGTH,
   ASSISTANT_MAX_MESSAGES,
+  type AssistantAction,
   type AssistantMessage,
   type AssistantPlayerState,
   type AssistantStanding,
 } from '@liedmotif/shared';
 import { askAssistant } from './ask-assistant';
+import { withActionNotes, type ChatAction } from './chat-actions';
+
+/** One message as the panel holds it. `content` is what was typed or what the model wrote. */
+export interface ConversationMessage extends AssistantMessage {
+  /** What the Assistant did while writing this answer, in the order it happened. */
+  actions?: readonly ChatAction[];
+}
 
 export interface AssistantConversationState {
   /** Oldest first. While an answer is being written, the last one is that answer so far. */
-  messages: readonly AssistantMessage[];
+  messages: readonly ConversationMessage[];
   answering: boolean;
   /** What is typed and not yet sent. */
   draft: string;
@@ -32,20 +40,26 @@ export interface AssistantConversation {
   newChat(): void;
 }
 
-/** What one request carries: the newest messages, each within the length a message may have. */
-function toRequestMessages(messages: readonly AssistantMessage[]): AssistantMessage[] {
-  return messages.slice(-ASSISTANT_MAX_MESSAGES).map(({ role, content }) => ({
+/**
+ * What one request carries: the newest messages, each within the length a
+ * message may have. An answer goes back with what was done in it.
+ */
+function toRequestMessages(messages: readonly ConversationMessage[]): AssistantMessage[] {
+  return messages.slice(-ASSISTANT_MAX_MESSAGES).map(({ role, content, actions }) => ({
     role,
-    content: content.slice(0, ASSISTANT_MAX_MESSAGE_LENGTH),
+    content: withActionNotes(content, actions),
   }));
 }
 
 export function createAssistantConversation({
   onStanding,
+  onAction,
   getPlayer,
 }: {
   /** Told where the user stands with their allowance, each time a response says. */
   onStanding?: (standing: AssistantStanding) => void;
+  /** Told what the Assistant did, once, the moment an answer says so. */
+  onAction?: (action: AssistantAction) => void;
   /** Asked at every send for what the player has engaged right then. */
   getPlayer?: () => AssistantPlayerState | undefined;
 } = {}): AssistantConversation {
@@ -66,10 +80,11 @@ export function createAssistantConversation({
 
   // An exchange that brought no answer at all is taken back: the question
   // returns to the field to be sent again, unless something new is typed there.
+  // Something done is an answer, with or without words.
   const settle = (notice: string | null) => {
     running = null;
     const [question, answer] = state.messages.slice(-2);
-    const unanswered = question && answer && !answer.content.trim();
+    const unanswered = question && answer && !answer.content.trim() && !answer.actions?.length;
     update({
       answering: false,
       notice,
@@ -102,26 +117,27 @@ export function createAssistantConversation({
       if (!content || running) return;
       const request = new AbortController();
       running = request;
-      const asked: AssistantMessage[] = [...state.messages, { role: 'user', content }];
+      const asked: ConversationMessage[] = [...state.messages, { role: 'user', content }];
       update({
         messages: [...asked, { role: 'assistant', content: '' }],
         answering: true,
         draft: text === undefined ? '' : state.draft,
         notice: null,
       });
+      const extendAnswer = (extend: (answer: ConversationMessage) => ConversationMessage) =>
+        update({ messages: [...state.messages.slice(0, -1), extend(state.messages.at(-1)!)] });
       void askAssistant(toRequestMessages(asked), {
         player: getPlayer?.(),
         signal: request.signal,
         onStanding,
         onText: (more) => {
           if (running !== request) return;
-          const answer = state.messages.at(-1)!;
-          update({
-            messages: [
-              ...state.messages.slice(0, -1),
-              { ...answer, content: answer.content + more },
-            ],
-          });
+          extendAnswer((answer) => ({ ...answer, content: answer.content + more }));
+        },
+        onAction: (action) => {
+          if (running !== request) return;
+          extendAnswer((answer) => ({ ...answer, actions: [...(answer.actions ?? []), action] }));
+          onAction?.(action);
         },
       }).then((outcome) => {
         if (running === request) settle(outcome.ok ? null : outcome.notice);

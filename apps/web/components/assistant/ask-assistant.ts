@@ -1,6 +1,6 @@
 // One question to the Assistant: the request, and the reply stream read back
-// into text. Never throws; an answer that did not arrive whole comes back as
-// the line to show the user.
+// into text and actions. Never throws; an answer that did not arrive whole
+// comes back as the line to show the user.
 
 import {
   ASSISTANT_STANDING_HEADER,
@@ -8,6 +8,7 @@ import {
   createAssistantStreamDecoder,
   errorResponseSchema,
   type ApiErrorResponse,
+  type AssistantAction,
   type AssistantMessage,
   type AssistantPlayerState,
   type AssistantRequest,
@@ -65,12 +66,15 @@ export async function askAssistant(
     player,
     signal,
     onText,
+    onAction,
     onStanding,
   }: {
     /** What the player has engaged as the question is sent; left out when nothing is. */
     player?: AssistantPlayerState;
     signal: AbortSignal;
     onText: (text: string) => void;
+    /** Something the Assistant did, the moment the stream says so. */
+    onAction?: (action: AssistantAction) => void;
     /** The user's standing after this question, from an answer and a refusal alike. */
     onStanding?: (standing: AssistantStanding) => void;
   },
@@ -112,6 +116,7 @@ export async function askAssistant(
       if (done) return failed(BROKE_OFF);
       for (const event of decoder.push(utf8.decode(value, { stream: true }))) {
         if (event.type === 'text') onText(event.text);
+        else if (event.type === 'action') onAction?.(event.action);
         else if (event.type === 'done') return { ok: true };
         else return failed(event.error.message || COULD_NOT_ANSWER);
       }

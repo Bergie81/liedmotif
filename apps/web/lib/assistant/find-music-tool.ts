@@ -22,7 +22,7 @@ import {
 import { loungeOwnerDisplayName } from '@/components/lounge/lounge-view-model';
 import { loadPlaylistSummaries } from '@/lib/playlists';
 import { loadSessionList } from '@/lib/sessions';
-import { named, quoted, trackCount } from './readable-music';
+import { named, quoted, trackCount } from './music-names';
 import { FIND_MUSIC_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 

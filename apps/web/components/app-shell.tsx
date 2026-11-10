@@ -12,6 +12,7 @@ import { AccountMenu, type Listener } from './account-menu';
 import { AppChromeContext, type AppChromeContextValue } from './app-chrome-context';
 import { AssistantDock } from './assistant/assistant-dock';
 import { assistantPlayerState } from './assistant/player-state';
+import { usePlayerFollowsReceipt } from './assistant/use-player-follows-receipt';
 import {
   deriveGenerationHeadroom,
   getPageIdentity,
@@ -113,6 +114,9 @@ export function AppShell({
     void fetchChrome();
   }, [pathname, fetchChrome]);
 
+  const refreshChrome = useCallback(() => void fetchChrome(), [fetchChrome]);
+  const followAssistantReceipt = usePlayerFollowsReceipt(refreshChrome);
+
   useEffect(() => {
     const root = document.documentElement;
     const expanded = readBrowserPreference('liedmotif-rail-expanded') === 'true';
@@ -205,6 +209,7 @@ export function AppShell({
           launcherHidden={isPlayer}
           standing={assistantStanding}
           player={assistantPlayerState(playback)}
+          onReceipt={followAssistantReceipt}
         />
       ) : null}
     </div>

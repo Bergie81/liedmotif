@@ -13,19 +13,16 @@ import {
 } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { ArrowUp, Sparkles, Square, SquarePen, X } from 'lucide-react';
-import {
-  ASSISTANT_MAX_MESSAGE_LENGTH,
-  type AssistantMessage,
-  type AssistantStanding,
-} from '@liedmotif/shared';
+import { ASSISTANT_MAX_MESSAGE_LENGTH, type AssistantStanding } from '@liedmotif/shared';
 import { AlertBanner, chipClass, iconButtonClass } from '@/components/ui/design-system';
 import { LiedmotifLoader } from '@/components/ui/loading';
 import { WithTooltip } from '@/components/ui/tooltip';
 import { ASSISTANT_NAME } from '@/lib/assistant/persona';
 import { cn } from '@/lib/cn';
+import { ActionLine } from './action-line';
 import { AllowanceNotice, useAllowance } from './allowance-notice';
 import { AssistantMarkdown } from './assistant-markdown';
-import type { AssistantConversation } from './conversation';
+import type { AssistantConversation, ConversationMessage } from './conversation';
 
 const GREETING = `Hi, I'm ${ASSISTANT_NAME}. Ask me anything about your Liedmotif.`;
 
@@ -144,7 +141,7 @@ function Transcript({
   messages,
   answering,
 }: {
-  messages: readonly AssistantMessage[];
+  messages: readonly ConversationMessage[];
   answering: boolean;
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -179,15 +176,23 @@ function Transcript({
           );
         }
         const writing = answering && index === messages.length - 1;
-        return message.content ? (
-          <AssistantMarkdown key={index} streaming={writing}>
-            {message.content}
-          </AssistantMarkdown>
-        ) : (
-          <p key={index} role="status" className="flex items-center gap-2 text-[13px] text-muted">
-            <LiedmotifLoader />
-            {ASSISTANT_NAME} is looking it up…
-          </p>
+        const actions = message.actions ?? [];
+        // An answer is what the model wrote, then what was done in it. Either
+        // can be all there is; until the first of them arrives, it is neither.
+        return (
+          <div key={index} className="flex min-w-0 flex-col gap-2">
+            {message.content ? (
+              <AssistantMarkdown streaming={writing}>{message.content}</AssistantMarkdown>
+            ) : actions.length === 0 ? (
+              <p role="status" className="flex items-center gap-2 text-[13px] text-muted">
+                <LiedmotifLoader />
+                {ASSISTANT_NAME} is looking it up…
+              </p>
+            ) : null}
+            {actions.map((action, position) => (
+              <ActionLine key={position} action={action} />
+            ))}
+          </div>
         );
       })}
     </div>

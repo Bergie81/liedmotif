@@ -10,7 +10,8 @@ import {
 } from '@liedmotif/db';
 import type { LlmTool } from '@liedmotif/providers';
 import { noToolInputSchema, type NoToolInput } from '@liedmotif/shared';
-import { named, readablePlaylist } from './readable-music';
+import { named } from './music-names';
+import { readablePlaylist } from './readable-music';
 import { NOW_PLAYING_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 

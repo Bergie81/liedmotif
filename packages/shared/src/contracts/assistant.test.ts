@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ASSISTANT_MAX_MESSAGE_LENGTH,
   ASSISTANT_MAX_MESSAGES,
+  ASSISTANT_MAX_TRACKS_PER_ADD,
   assistantRequestSchema,
   assistantStreamEventSchema,
   createAssistantStreamDecoder,
@@ -80,8 +81,24 @@ describe('assistantRequestSchema', () => {
   });
 });
 
+const TRACK = { id: '0c9d4b7a-8a41-4b0e-b1a3-5a2d9d6c7e22', name: 'Night Drive' };
+const PLAYLIST = { id: '7b0a1c5e-3f0d-4a55-9d0e-2f6f3f1f8a11', name: 'Running' };
+const SESSION = { id: '5d2f8e1b-6c3a-4f7e-8b9d-1a2b3c4d5e6f', name: null };
+
+/** One receipt per thing the Assistant can do in the Library. */
+const RECEIPTS = [
+  { action: 'favoriteTrack', track: TRACK, playlist: { ...PLAYLIST, name: 'Favorites' } },
+  { action: 'addToPlaylist', playlist: PLAYLIST, tracks: [TRACK] },
+  { action: 'createPlaylist', playlist: PLAYLIST },
+  { action: 'renamePlaylist', playlist: PLAYLIST, previousName: 'Jogging' },
+  { action: 'pinPlaylist', playlist: PLAYLIST },
+  { action: 'newMusicOff', session: SESSION },
+];
+
+const done = (receipt: unknown) => ({ type: 'action', action: { status: 'done', receipt } });
+
 describe('assistantStreamEventSchema', () => {
-  it('reads the three events a reply stream is made of', () => {
+  it('reads the events a reply stream is made of', () => {
     const { error } = makeApiError('provider_error', 'The Writing AI could not answer.', true);
     for (const event of [
       { type: 'text', text: 'Open ' },
@@ -95,6 +112,37 @@ describe('assistantStreamEventSchema', () => {
     );
   });
 
+  it('reads a receipt for each thing the Assistant can do in the Library', () => {
+    for (const receipt of RECEIPTS) {
+      expect(assistantStreamEventSchema.safeParse(done(receipt)).success, receipt.action).toBe(
+        true,
+      );
+    }
+  });
+
+  it('refuses an action it does not know, and a receipt with anything added to it', () => {
+    const parses = (event: unknown) => assistantStreamEventSchema.safeParse(event).success;
+
+    expect(parses(done({ action: 'deletePlaylist', playlist: PLAYLIST }))).toBe(false);
+    expect(parses({ type: 'action', action: { status: 'bought', receipt: RECEIPTS[0] } })).toBe(
+      false,
+    );
+    expect(parses(done({ ...RECEIPTS[2], text: 'Deleted everything.' }))).toBe(false);
+    expect(
+      parses(done({ action: 'createPlaylist', playlist: { id: 'not-an-id', name: 'x' } })),
+    ).toBe(false);
+  });
+
+  it('takes a receipt for at most 20 added Tracks', () => {
+    expect(ASSISTANT_MAX_TRACKS_PER_ADD).toBe(20);
+    const adding = (count: number) =>
+      done({ action: 'addToPlaylist', playlist: PLAYLIST, tracks: Array(count).fill(TRACK) });
+
+    expect(assistantStreamEventSchema.safeParse(adding(20)).success).toBe(true);
+    expect(assistantStreamEventSchema.safeParse(adding(21)).success).toBe(false);
+    expect(assistantStreamEventSchema.safeParse(adding(0)).success).toBe(false);
+  });
+
   it('frames an event as one data line, whatever the text holds', () => {
     const framed = encodeAssistantStreamEvent({ type: 'text', text: 'One\n\nTwo' });
 
@@ -105,6 +153,10 @@ describe('assistantStreamEventSchema', () => {
 describe('createAssistantStreamDecoder', () => {
   const answer = [
     { type: 'text', text: 'Open **Settings › Members**.\n\n' },
+    {
+      type: 'action',
+      action: { status: 'done', receipt: { action: 'pinPlaylist', playlist: PLAYLIST } },
+    },
     { type: 'text', text: 'Then create an invite link.' },
     { type: 'done' },
   ] as const;
@@ -132,7 +184,7 @@ describe('createAssistantStreamDecoder', () => {
     );
   });
 
-  it('refuses an event that is not one of the three', () => {
+  it('refuses an event that is none of a reply’s events', () => {
     expect(() =>
       createAssistantStreamDecoder().push('data: {"type":"tool","name":"readDocs"}\n\n'),
     ).toThrow();

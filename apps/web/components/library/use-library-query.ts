@@ -6,6 +6,7 @@ import { getLibrary } from '@/lib/api-client';
 import { appendUniqueById } from '@/lib/append-unique';
 import { usePageEpoch } from '@/components/use-page-epoch';
 import { withSettledRetention } from './library-view-model';
+import { useOutsideLibraryWrite } from './use-outside-library-write';
 
 export type LibraryTab = LibraryView | 'playlists';
 
@@ -14,6 +15,10 @@ export function useLibraryQuery(view: LibraryView, search = '') {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { loadingMore, invalidate, beginFirstPage, beginNextPage, settle } = usePageEpoch();
+  // Counts the writes made from outside the page: each one is a reason to read
+  // the first page again, like a change of the query.
+  const [outsideWrites, setOutsideWrites] = useState(0);
+  useOutsideLibraryWrite(() => setOutsideWrites((count) => count + 1));
 
   useEffect(() => {
     // A query change supersedes every in-flight fetch; the fresh first page
@@ -35,7 +40,7 @@ export function useLibraryQuery(view: LibraryView, search = '') {
       controller.abort();
       invalidate();
     };
-  }, [view, search, invalidate, beginFirstPage, settle]);
+  }, [view, search, outsideWrites, invalidate, beginFirstPage, settle]);
 
   async function loadMore() {
     if (!nextCursor || loadingMore) return;

@@ -51,6 +51,7 @@ import { OnlineOnly } from '@/components/ui/online-only';
 import { RenameDialog } from '@/components/rename-dialog';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { LibrarySearchField } from '@/components/library/library-search-field';
+import { useOutsideLibraryWrite } from '@/components/library/use-outside-library-write';
 import { Sheet, SheetTrigger } from '@/components/ui/sheet';
 import { LoadMoreButton } from '@/components/ui/load-more-button';
 import { LoadingRow } from '@/components/ui/loading';
@@ -147,6 +148,7 @@ export function PlaylistsGrid({
     if (consumeServerSeed()) return;
     void load();
   }, [load, consumeServerSeed]);
+  useOutsideLibraryWrite(() => void loadRef.current());
 
   async function loadMore() {
     if (!nextCursor || loadingMore) return;

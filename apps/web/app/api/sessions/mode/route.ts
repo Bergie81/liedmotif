@@ -1,4 +1,4 @@
-// `POST /api/sessions/mode` → setSessionMode.
+// `POST /api/sessions/mode` → switchSessionMode.
 //
 // The Session's generation policy, written from user
 // intent only: `keep_going` generates new Tracks indefinitely — regardless of
@@ -9,12 +9,11 @@
 // (one cancellation point, not two).
 
 import { NextResponse } from 'next/server';
-import { setSessionMode } from '@liedmotif/db';
 import { setSessionModeRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
 import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/api-response';
+import { switchSessionMode } from '@/lib/session-mode';
 import { toSessionSummary } from '@/lib/sessions';
-import { enqueueEnsureSessionBuffer } from '@/lib/worker-jobs';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,19 +28,12 @@ export async function POST(request: Request) {
   );
   if (parsed instanceof NextResponse) return parsed;
 
-  const session = await setSessionMode(getDb(), {
+  const session = await switchSessionMode(getDb(), {
     ownerUserId,
     sessionId: parsed.sessionId,
     mode: parsed.mode,
   });
   if (!session) return apiError('not_found', 'Session not found.');
-
-  // Kick the buffer tick so the new policy applies promptly instead of waiting
-  // for the sweep (never throws; deduped against the sweep by job key). Stopped
-  // sessions keep the stored mode for their next Resume — nothing to tick.
-  if (session.status === 'active') {
-    await enqueueEnsureSessionBuffer(getDb(), session.id);
-  }
 
   return apiOk({ session: toSessionSummary(session) });
 }

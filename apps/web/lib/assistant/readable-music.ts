@@ -1,22 +1,20 @@
-// How the Assistant's tools name a Session, Playlist or Track to the model,
-// and which Playlists the asking user may read. Every tool that hands out or
-// takes an id goes through here, so they agree on both.
+// Which Playlists and Tracks the asking user may read, and which Playlists are
+// theirs to change. Every tool that takes an id asks through here, so an id
+// from the model is only ever a question to the database, asked as that user.
 
 import {
   getLoungePlaylistDetail,
   getPlaylistDetail,
+  getReadableTrackDetails,
+  listPlaylists,
   type PlaylistDetailResult,
+  type PlaylistSummary,
 } from '@liedmotif/db';
+import { uuidSchema } from '@liedmotif/shared';
 import type { AssistantAsker } from './tools';
 
-/** A name as the model reads it: quoted, so text a user wrote stays told apart from the rest. */
-export const quoted = (name: string | null) => JSON.stringify(name ?? 'Untitled');
-
-/** One thing by its name and the id the tools take for it. */
-export const named = (name: string | null, id: string) => `${quoted(name)} (id ${id})`;
-
-/** How many Tracks something holds, as the app counts them. */
-export const trackCount = (count: number) => `${count} ${count === 1 ? 'Track' : 'Tracks'}`;
+/** Whether the model handed over something shaped like an id; the database refuses to compare anything else. */
+export const isId = (id: string) => uuidSchema.safeParse(id).success;
 
 /**
  * A Playlist with its first `limit` Tracks in order, when the asker may see
@@ -30,4 +28,27 @@ export async function readablePlaylist(
   const own = await getPlaylistDetail(db, { ownerUserId: userId, playlistId, limit });
   if (own) return own;
   return getLoungePlaylistDetail(db, { viewerUserId: userId, playlistId, limit });
+}
+
+/** One of the asker's own Playlists, Favorites included; null for every other id. */
+export async function ownPlaylist(
+  { db, userId }: AssistantAsker,
+  playlistId: string,
+): Promise<PlaylistSummary | null> {
+  if (!isId(playlistId)) return null;
+  const [playlist] = await listPlaylists(db, { ownerUserId: userId, playlistId });
+  return playlist ?? null;
+}
+
+/**
+ * The title of a Track the asker may hear: their own, or one in the Lounge for
+ * them. `undefined` for every other id; `null` is a Track without a title.
+ */
+export async function readableTrackTitle(
+  { db, userId }: AssistantAsker,
+  trackId: string,
+): Promise<string | null | undefined> {
+  if (!isId(trackId)) return undefined;
+  const track = await getReadableTrackDetails(db, { viewerUserId: userId, trackId });
+  return track ? track.title : undefined;
 }

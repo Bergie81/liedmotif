@@ -8,6 +8,7 @@ import {
   encodeAssistantStreamEvent,
   makeApiError,
   type ApiErrorCode,
+  type AssistantAction,
   type AssistantRequest,
   type AssistantStreamEvent,
 } from '@liedmotif/shared';
@@ -408,4 +409,128 @@ it('starts over with New chat without handing back a question that has no answer
     draft: '',
     notice: null,
   });
+});
+
+const PLAYLIST_ID = '7b0a1c5e-3f0d-4a55-9d0e-2f6f3f1f8a11';
+
+/** The receipt for a Playlist the Assistant created. */
+const created = (name: string): AssistantAction => ({
+  status: 'done',
+  receipt: { action: 'createPlaylist', playlist: { id: PLAYLIST_ID, name } },
+});
+const createdNote = (name: string) =>
+  `[Done by the app: created the Playlist "${name}" (id ${PLAYLIST_ID})]`;
+
+it('holds what the Assistant did with the answer it belongs to, and says so the moment it arrives', async () => {
+  const asked = captureQuestions();
+  const arrived: AssistantAction[] = [];
+  const conversation = createAssistantConversation({ onAction: (action) => arrived.push(action) });
+
+  conversation.send('Make a playlist called Sunday.');
+  const reply = asked[0]!.reply();
+  reply.send({ type: 'action', action: created('Sunday') });
+  await vi.waitFor(() => expect(arrived).toEqual([created('Sunday')]));
+  expect(conversation.getState()).toMatchObject({
+    messages: [{ role: 'user' }, { role: 'assistant', content: '', actions: [created('Sunday')] }],
+    answering: true,
+  });
+
+  reply.send({ type: 'text', text: 'Done.' });
+  reply.send({ type: 'done' });
+  await vi.waitFor(() => expect(conversation.getState().answering).toBe(false));
+  expect(conversation.getState().messages.at(-1)).toEqual({
+    role: 'assistant',
+    content: 'Done.',
+    actions: [created('Sunday')],
+  });
+  expect(arrived).toHaveLength(1);
+});
+
+it('keeps an answer that is an action and no text', async () => {
+  const asked = captureQuestions();
+  const conversation = createAssistantConversation();
+
+  conversation.send('Make a playlist called Sunday.');
+  const reply = asked[0]!.reply();
+  reply.send({ type: 'action', action: created('Sunday') });
+  reply.send({ type: 'done' });
+  await vi.waitFor(() => expect(conversation.getState().answering).toBe(false));
+
+  expect(conversation.getState()).toMatchObject({
+    messages: [
+      { role: 'user', content: 'Make a playlist called Sunday.' },
+      { role: 'assistant', content: '', actions: [created('Sunday')] },
+    ],
+    draft: '',
+    notice: null,
+  });
+});
+
+it('keeps what was done when the answer breaks off after it', async () => {
+  const asked = captureQuestions();
+  const conversation = createAssistantConversation();
+
+  conversation.send('Make a playlist called Sunday.');
+  const reply = asked[0]!.reply();
+  reply.send({ type: 'action', action: created('Sunday') });
+  reply.send({
+    type: 'error',
+    error: makeApiError('provider_error', 'The Writing AI could not answer.', true).error,
+  });
+  await vi.waitFor(() => expect(conversation.getState().answering).toBe(false));
+
+  expect(conversation.getState()).toMatchObject({
+    messages: [{ role: 'user' }, { role: 'assistant', actions: [created('Sunday')] }],
+    draft: '',
+    notice: 'The Writing AI could not answer.',
+  });
+});
+
+it('tells the next request what was done, as part of the answer it was done in', async () => {
+  const asked = captureQuestions();
+  const conversation = createAssistantConversation();
+  conversation.send('Make two playlists.');
+  const first = asked[0]!.reply();
+  first.send({ type: 'action', action: created('Sunday') });
+  first.send({ type: 'text', text: 'Both are there.' });
+  first.send({ type: 'action', action: created('Monday') });
+  first.send({ type: 'done' });
+  await vi.waitFor(() => expect(conversation.getState().answering).toBe(false));
+  conversation.send('And one more, called Tuesday.');
+  const second = asked[1]!.reply();
+  second.send({ type: 'action', action: created('Tuesday') });
+  second.send({ type: 'done' });
+  await vi.waitFor(() => expect(conversation.getState().answering).toBe(false));
+
+  conversation.send('Pin the first one.');
+
+  expect(asked[2]!.request.messages).toEqual([
+    { role: 'user', content: 'Make two playlists.' },
+    {
+      role: 'assistant',
+      content: `Both are there.\n\n${createdNote('Sunday')}\n${createdNote('Monday')}`,
+    },
+    { role: 'user', content: 'And one more, called Tuesday.' },
+    { role: 'assistant', content: createdNote('Tuesday') },
+    { role: 'user', content: 'Pin the first one.' },
+  ]);
+  // What is shown stays the model's own words; the receipt is shown from the action.
+  expect(conversation.getState().messages[1]!.content).toBe('Both are there.');
+});
+
+it('clips a long earlier answer around what was done in it, never the record of it', async () => {
+  const asked = captureQuestions();
+  const conversation = createAssistantConversation();
+  conversation.send('Make a playlist and tell me everything.');
+  const reply = asked[0]!.reply();
+  reply.send({ type: 'action', action: created('Sunday') });
+  reply.send({ type: 'text', text: 'x'.repeat(4500) });
+  reply.send({ type: 'done' });
+  await vi.waitFor(() => expect(conversation.getState().answering).toBe(false));
+
+  conversation.send('And then?');
+
+  const sent = asked[1]!.request.messages[1]!.content;
+  expect(sent).toHaveLength(4000);
+  expect(sent.endsWith(`x\n\n${createdNote('Sunday')}`)).toBe(true);
 });

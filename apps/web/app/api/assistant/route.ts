@@ -2,11 +2,12 @@
 // it is written.
 //
 // A request refused before an answer starts gets the ordinary error response.
-// That includes a text LLM that fails before it writes anything: the first
-// chunk is awaited before the response begins, so the usual failures — a
+// That includes a text LLM that fails before it writes or does anything: the
+// first event is awaited before the response begins, so the usual failures — a
 // provider that is down, a rejected key, a model that says nothing — still
 // carry a status. Past that point the response is an event stream, and a
-// failure arrives as its last event.
+// failure arrives as its last event. An answer may be actions alone: what the
+// Assistant did for the user is an event like the text it writes.
 
 import { NextResponse } from 'next/server';
 import { countAssistantMessage, resolveAssistantStanding, type UserRole } from '@liedmotif/db';
@@ -23,6 +24,8 @@ import { apiError, apiRateLimited, parseJsonBody, requireOwnerId } from '@/lib/a
 import { ASSISTANT_NAME } from '@/lib/assistant/persona';
 import { streamAssistantAnswer } from '@/lib/assistant/reply';
 import { createAssistantTools } from '@/lib/assistant/tools';
+import { createTurnActions } from '@/lib/assistant/turn-actions';
+import { turnEvents, type TurnEvent } from '@/lib/assistant/turn-events';
 import {
   assistantRefusal,
   assistantStandingHeaders,
@@ -106,18 +109,22 @@ export async function POST(request: Request) {
   const stopped = AbortSignal.any([request.signal, reading.signal]);
   // The tools act for this user and no other: the id and the role are the
   // server's own reading, and the player state is only ever looked up as them.
-  const tools = createAssistantTools({
-    db,
-    userId: ownerUserId,
-    role,
-    player: body.player ?? null,
-  });
-  const chunks = streamAssistantAnswer(llm, role, tools, body.messages, stopped)[
-    Symbol.asyncIterator
-  ]();
-  let first: IteratorResult<string>;
+  // What a tool does reaches the reader through `report` and no other way.
+  const events = turnEvents((report) =>
+    streamAssistantAnswer(
+      llm,
+      role,
+      createAssistantTools(
+        { db, userId: ownerUserId, role, player: body.player ?? null },
+        createTurnActions(report),
+      ),
+      body.messages,
+      stopped,
+    ),
+  );
+  let first: IteratorResult<TurnEvent>;
   try {
-    first = await chunks.next();
+    first = await events.next();
   } catch (err) {
     // The reader left before the answer started. Nothing failed, so nothing is
     // logged, and nobody reads this response: 499 is "client closed request".
@@ -139,17 +146,17 @@ export async function POST(request: Request) {
     controller: ReadableStreamDefaultController<Uint8Array>,
     event: AssistantStreamEvent,
   ) => controller.enqueue(encoder.encode(encodeAssistantStreamEvent(event)));
-  let next: IteratorResult<string> = first;
-  const events = new ReadableStream<Uint8Array>({
+  let next: IteratorResult<TurnEvent> = first;
+  const stream = new ReadableStream<Uint8Array>({
     async pull(controller) {
       if (next.done) {
         send(controller, { type: 'done' });
         controller.close();
         return;
       }
-      send(controller, { type: 'text', text: next.value });
+      send(controller, next.value);
       try {
-        next = await chunks.next();
+        next = await events.next();
       } catch (err) {
         // Nobody is reading. Erroring a cancelled stream does nothing; one that
         // is somehow still open must not close as if the answer were whole.
@@ -163,7 +170,7 @@ export async function POST(request: Request) {
       reading.abort();
     },
   });
-  return new Response(events, {
+  return new Response(stream, {
     headers: {
       ...standingHeaders,
       'Content-Type': ASSISTANT_STREAM_CONTENT_TYPE,

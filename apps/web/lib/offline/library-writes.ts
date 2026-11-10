@@ -4,9 +4,14 @@
 // a Session, is a library write. A playing Session's new Track is announced as
 // its local final lands, so a Keep Going Session's offline copy grows while it
 // plays.
-// Announcing is a bare window event: nothing here knows about the device store.
+// A write the page on screen did not make itself (the Assistant's, from its
+// panel beside the page) is announced as an outside write on top: the page
+// could not follow it in its own state, so whatever lists the Library reloads.
+// Announcing is a bare window event: nothing here knows about the device store
+// or about who listens.
 
 const LIBRARY_WRITE_EVENT = 'liedmotif:library-write';
+const OUTSIDE_LIBRARY_WRITE_EVENT = 'liedmotif:outside-library-write';
 const SESSION_TRACKS_EVENT = 'liedmotif:session-tracks-landed';
 const LIBRARY_PATHS = [
   '/api/playlists',
@@ -25,6 +30,18 @@ export function announceLibraryWrite(path: string): void {
 export function onLibraryWrite(listener: () => void): () => void {
   window.addEventListener(LIBRARY_WRITE_EVENT, listener);
   return () => window.removeEventListener(LIBRARY_WRITE_EVENT, listener);
+}
+
+/** A library write that did not go through the page on screen. */
+export function announceOutsideLibraryWrite(): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new Event(LIBRARY_WRITE_EVENT));
+  window.dispatchEvent(new Event(OUTSIDE_LIBRARY_WRITE_EVENT));
+}
+
+export function onOutsideLibraryWrite(listener: () => void): () => void {
+  window.addEventListener(OUTSIDE_LIBRARY_WRITE_EVENT, listener);
+  return () => window.removeEventListener(OUTSIDE_LIBRARY_WRITE_EVENT, listener);
 }
 
 /**

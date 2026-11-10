@@ -13,14 +13,21 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'reac
 import { useRouter } from 'next/navigation';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Sparkles, X } from 'lucide-react';
-import type { AssistantPlayerState, AssistantStanding } from '@liedmotif/shared';
+import type {
+  AssistantAction,
+  AssistantPlayerState,
+  AssistantReceipt,
+  AssistantStanding,
+} from '@liedmotif/shared';
 import { WithTooltip } from '@/components/ui/tooltip';
 import type { AnswerLinkTargets } from '@/lib/assistant/answer-links';
 import { ASSISTANT_NAME } from '@/lib/assistant/persona';
 import { cn } from '@/lib/cn';
+import { announceOutsideLibraryWrite } from '@/lib/offline/library-writes';
 import { AnswerLinksContext, type AnswerLinks } from './assistant-markdown';
 import { AssistantPanel } from './assistant-panel';
 import { createAssistantConversation } from './conversation';
+import { receiptChangesLibrary } from './receipt';
 
 /** Tailwind's `desk` breakpoint (globals.css). */
 const SIDEBAR_QUERY = '(min-width: 920px)';
@@ -45,6 +52,7 @@ export function AssistantDock({
   launcherHidden = false,
   standing: renderedStanding = null,
   player,
+  onReceipt,
 }: {
   /** The app pages and docs pages an answer may link this user to. */
   links: AnswerLinkTargets;
@@ -54,6 +62,8 @@ export function AssistantDock({
   standing?: AssistantStanding | null;
   /** What the player has engaged right now; every question takes it along. */
   player?: AssistantPlayerState;
+  /** The Assistant did something on the server: what the shell shows of it may have to follow. */
+  onReceipt?: (receipt: AssistantReceipt) => void;
 }) {
   // The newest word on the allowance: the server's render, then whatever each
   // response reports, then a later render again.
@@ -69,15 +79,34 @@ export function AssistantDock({
   useEffect(() => {
     playerRef.current = player;
   }, [player]);
+  const router = useRouter();
+  // What the app around the chat does the moment an action arrives. The chat
+  // itself only shows the action; this is where the rest of the app follows.
+  const followActionRef = useRef<(action: AssistantAction) => void>(() => {});
+  useEffect(() => {
+    followActionRef.current = (action) => {
+      switch (action.status) {
+        case 'done':
+          // What the app's own Library buttons do after a write: the router
+          // drops the pages it cached, and the page on screen reloads.
+          if (receiptChangesLibrary(action.receipt)) {
+            router.refresh();
+            announceOutsideLibraryWrite();
+          }
+          onReceipt?.(action.receipt);
+          break;
+      }
+    };
+  }, [router, onReceipt]);
   const [conversation] = useState(() =>
     createAssistantConversation({
       onStanding: setStanding,
+      onAction: (action) => followActionRef.current(action),
       getPlayer: () => playerRef.current,
     }),
   );
   const [open, setOpen] = useState(false);
   const besidePage = usePanelBesidePage();
-  const router = useRouter();
   const answerLinks = useMemo<AnswerLinks>(
     () => ({
       targets: links,
