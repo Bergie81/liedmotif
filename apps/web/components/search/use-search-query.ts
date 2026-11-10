@@ -7,6 +7,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { SearchResponseData } from '@liedmotif/shared';
+import { useOutsideLibraryWrite } from '@/components/library/use-outside-library-write';
 import { search } from '@/lib/api-client';
 import { effectiveSearchQuery, type SearchGroupKind, type SearchState } from './search-model';
 
@@ -34,6 +35,10 @@ export function useSearchQuery(state: SearchState, revision = 0): SearchQuerySta
   const [error, setError] = useState<string | null>(null);
   const [counts, setCounts] = useState<SearchGroupCounts>(UNKNOWN_COUNTS);
   const seqRef = useRef(0);
+  // Counts the writes made from outside the page: the matches on screen may
+  // have changed under each one, so it is a reason to read the search again.
+  const [outsideWrites, setOutsideWrites] = useState(0);
+  useOutsideLibraryWrite(() => setOutsideWrites((count) => count + 1));
 
   const query = effectiveSearchQuery(state);
   const { scope, sort, lyrics } = state;
@@ -73,7 +78,7 @@ export function useSearchQuery(state: SearchState, revision = 0): SearchQuerySta
       }));
     });
     return () => controller.abort();
-  }, [query, scope, sort, lyrics, revision]);
+  }, [query, scope, sort, lyrics, revision, outsideWrites]);
 
   return { data, loading, error, counts };
 }

@@ -125,7 +125,7 @@ async function playlistNamesOf(userId: string): Promise<string[]> {
 
 beforeAll(async () => {
   if (skip) return;
-  testDb = await connectTestDb('assistant-library-actions-test');
+  testDb = await connectTestDb('assistant-acts-in-library-test');
   holder.db = testDb.db;
 }, 60_000);
 
@@ -163,7 +163,9 @@ describe.skipIf(skip)('the Assistant asked to favorite a Track', () => {
         playlist: { id: favorites.id, name: 'Favorites' },
       },
     ]);
-    expect(turn.results[0]).toMatch(/^Done: added "Night Drive" \(id .+\) to Favorites\.$/);
+    expect(turn.results[0]).toMatch(
+      /^Done: added the Track "Night Drive" \(id .+\) to Favorites\.$/,
+    );
     expect(turn.events.at(-1)).toEqual({ type: 'done' });
   });
 
@@ -249,7 +251,7 @@ describe.skipIf(skip)('the Assistant asked to add Tracks to a Playlist', () => {
         ],
       },
     ]);
-    expect(turn.results[0]).toMatch(/^Done: added 3 Tracks to "Running" \(id .+\)\.$/);
+    expect(turn.results[0]).toMatch(/^Done: added 3 Tracks to the Playlist "Running" \(id .+\)\.$/);
   });
 
   it('adds the Track on the deck when the model names none', async () => {
@@ -287,7 +289,9 @@ describe.skipIf(skip)('the Assistant asked to add Tracks to a Playlist', () => {
 
     expect(await membersOf(asker, playlist.id)).toEqual(['Already There', 'Mine']);
     expect(receipts(turn)).toMatchObject([{ tracks: [{ id: mine, name: 'Mine' }] }]);
-    expect(turn.results[0]).toMatch(/^Done: added "Mine" \(id .+\) to "Running" \(id .+\)\./);
+    expect(turn.results[0]).toMatch(
+      /^Done: added the Track "Mine" \(id .+\) to the Playlist "Running" \(id .+\)\. /,
+    );
     expect(turn.results[0]).toMatch(/1 was already in it/);
     expect(turn.results[0]).toMatch(/2 could not be added/);
   });

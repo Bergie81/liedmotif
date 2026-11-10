@@ -27,9 +27,10 @@ export function createNewMusicOffTool(
       actions.take('done', async () => {
         const active = await getActiveSession(db, { ownerUserId: userId });
         if (!active) return refused(NO_ACTIVE_SESSION);
-        const session = `the Session ${named(active.title, active.id)}`;
         if (active.sessionMode === 'repeat') {
-          return refused(`New music is already off for ${session}.`);
+          return refused(
+            `New music is already off for the Session ${named(active.title, active.id)}.`,
+          );
         }
         const switched = await switchSessionMode(db, {
           ownerUserId: userId,
@@ -37,7 +38,7 @@ export function createNewMusicOffTool(
           mode: 'repeat',
         });
         if (!switched) return refused(NO_ACTIVE_SESSION);
-        return done(`switched New music off for ${session}.`, {
+        return done({
           action: 'newMusicOff',
           session: { id: active.id, name: active.title },
         });

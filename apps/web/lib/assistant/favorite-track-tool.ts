@@ -6,7 +6,6 @@ import { ensureFavoritesPlaylist, setTrackFavorited } from '@liedmotif/db';
 import type { LlmTool } from '@liedmotif/providers';
 import { favoriteTrackInputSchema, type FavoriteTrackInput } from '@liedmotif/shared';
 import { done, NO_SUCH_TRACK, NO_TRACK_PLAYING, refused } from './library-action';
-import { named } from './music-names';
 import { readableTrackTitle } from './readable-music';
 import { FAVORITE_TRACK_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
@@ -38,7 +37,7 @@ export function createFavoriteTrackTool(
         });
         if (!flags) return refused(NO_SUCH_TRACK);
         if (flags === 'removed') return refused('That Track was removed.');
-        return done(`added ${named(title, trackId)} to Favorites.`, {
+        return done({
           action: 'favoriteTrack',
           track: { id: trackId, name: title },
           playlist: { id: favorites.id, name: favorites.name },

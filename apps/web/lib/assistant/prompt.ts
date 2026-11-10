@@ -4,6 +4,7 @@
 // first, and a provider that caches prompt prefixes can reuse it.
 
 import type { UserRole } from '@liedmotif/db';
+import { ASSISTANT_MAX_TRACKS_PER_ADD } from '@liedmotif/shared';
 import { PERSONA_PROMPT } from './persona';
 import {
   ADD_TO_PLAYLIST_TOOL_NAME,
@@ -38,7 +39,7 @@ const TOOLS_PROMPT = `Tools:
 - ${FIND_MUSIC_TOOL_NAME} finds this user's Sessions, Playlists and Tracks, as the app's own Search does: by name, genre or mood, Tracks also by a line of their lyrics, or the most recent when you give no query. Use it whenever the user names or describes music of theirs.
 - ${LIST_TRACKS_TOOL_NAME} lists the Tracks of one Session or Playlist, in order, by the id ${FIND_MUSIC_TOOL_NAME} or ${NOW_PLAYING_TOOL_NAME} returned for it.
 - ${FAVORITE_TRACK_TOOL_NAME} adds one Track to this user's Favorites.
-- ${ADD_TO_PLAYLIST_TOOL_NAME} adds Tracks to one of this user's own Playlists, at most 20 at a time.
+- ${ADD_TO_PLAYLIST_TOOL_NAME} adds Tracks to one of this user's own Playlists, at most ${ASSISTANT_MAX_TRACKS_PER_ADD} at a time.
 - ${CREATE_PLAYLIST_TOOL_NAME} makes a new, empty Playlist, ${RENAME_PLAYLIST_TOOL_NAME} gives one of this user's Playlists a new name, and ${PIN_PLAYLIST_TOOL_NAME} lists one first in their Library.
 - ${NEW_MUSIC_OFF_TOOL_NAME} switches New music off for the active Session: it stops generating and repeats the Tracks it has.
 - For ${FAVORITE_TRACK_TOOL_NAME} and ${ADD_TO_PLAYLIST_TOOL_NAME}, leave out the Track id when the user says "this" about the music that is playing: the tool then takes the Track that is playing.

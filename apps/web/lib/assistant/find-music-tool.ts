@@ -20,6 +20,7 @@ import {
   type SearchMatchField,
 } from '@liedmotif/shared';
 import { loungeOwnerDisplayName } from '@/components/lounge/lounge-view-model';
+import { MIN_SEARCH_QUERY_LENGTH } from '@/components/search/search-model';
 import { loadPlaylistSummaries } from '@/lib/playlists';
 import { loadSessionList } from '@/lib/sessions';
 import { named, quoted, trackCount } from './music-names';
@@ -29,8 +30,12 @@ import type { AssistantAsker } from './tools';
 /** How many rows one result lists. */
 export const FIND_MUSIC_LIMIT = 10;
 
-/** The shortest query the app's search takes. */
-const MIN_SEARCH_QUERY_LENGTH = 2;
+/** The Library's Track lists, under the names its tabs show. */
+const LIST_NAMES: Record<NonNullable<FindMusicInput['list']>, string> = {
+  saved: 'Saved',
+  favorites: 'Favorites',
+  history: 'History',
+};
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const utcDay = (at: Date) => Math.floor(at.getTime() / DAY_MS);
@@ -110,7 +115,7 @@ interface Listing {
   more: string | null;
 }
 
-function told(heading: string, { rows, more }: Listing, none: string): string {
+function listed(heading: string, { rows, more }: Listing, none: string): string {
   if (rows.length === 0) return none;
   return [heading, ...rows.map((line) => `- ${line}`), ...(more ? [more] : [])].join('\n');
 }
@@ -156,28 +161,28 @@ async function search(
   } as const;
   const text = quoted(query);
   if (lyrics) {
-    return told(
+    return listed(
       `Tracks with ${text} in their lyrics:`,
       hits(await searchTracks(db, { ...args, lyricsOnly: true }), trackRow),
       `No Track has ${text} in its lyrics.`,
     );
   }
   if (kind === 'track') {
-    return told(
+    return listed(
       `Tracks matching ${text}:`,
       hits(await searchTracks(db, args), trackRow),
       `No Track matches ${text}.`,
     );
   }
   if (kind === 'playlist') {
-    return told(
+    return listed(
       `Playlists matching ${text}:`,
       hits(await searchPlaylists(db, args), playlistRow),
       `No Playlist matches ${text}.`,
     );
   }
   const now = new Date();
-  return told(
+  return listed(
     `Sessions matching ${text}:`,
     hits(await searchSessions(db, args), (hit) => sessionRow(hit, now)),
     `No Session matches ${text}.`,
@@ -197,15 +202,15 @@ async function mostRecent(
       view: list,
       limit,
     });
-    return told(
-      `Tracks in ${list}, most recent first:`,
+    return listed(
+      `Tracks in ${LIST_NAMES[list]}, most recent first:`,
       head(items.map(trackRow), nextCursor),
-      `There are no Tracks in ${list}.`,
+      `There are no Tracks in ${LIST_NAMES[list]}.`,
     );
   }
   if (kind === 'playlist') {
     const { playlists, nextCursor } = await loadPlaylistSummaries(db, userId, { limit });
-    return told(
+    return listed(
       'Playlists, in the order the Library lists them:',
       head(playlists.map(playlistRow), nextCursor),
       'There are no Playlists yet.',
@@ -218,7 +223,7 @@ async function mostRecent(
     includePinned: false,
   });
   const sessions = [...(activeSession ? [activeSession] : []), ...items];
-  return told(
+  return listed(
     'Sessions, most recent first:',
     head(
       sessions.map((session) => sessionRow(session, now)),

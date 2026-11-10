@@ -2,16 +2,11 @@
 // browser, so the request says what it has engaged; the server names it from
 // its own records, and only as far as the asker may see it.
 
-import {
-  getActiveSession,
-  getReadableTrackDetails,
-  getSessionById,
-  type SessionRecord,
-} from '@liedmotif/db';
+import { getActiveSession, getSessionById, type SessionRecord } from '@liedmotif/db';
 import type { LlmTool } from '@liedmotif/providers';
 import { noToolInputSchema, type NoToolInput } from '@liedmotif/shared';
 import { named } from './music-names';
-import { readablePlaylist } from './readable-music';
+import { readablePlaylist, readableTrackTitle } from './readable-music';
 import { NOW_PLAYING_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 
@@ -31,13 +26,13 @@ function sessionLines(session: SessionRecord): string[] {
 }
 
 async function trackLine(
-  { db, userId }: AssistantAsker,
+  asker: AssistantAsker,
   label: string,
   trackId: string | null,
 ): Promise<string[]> {
   if (!trackId) return [];
-  const track = await getReadableTrackDetails(db, { viewerUserId: userId, trackId });
-  return track ? [`${label}: ${named(track.title, trackId)}`] : [];
+  const title = await readableTrackTitle(asker, trackId);
+  return title === undefined ? [] : [`${label}: ${named(title, trackId)}`];
 }
 
 /**

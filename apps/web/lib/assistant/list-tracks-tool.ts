@@ -4,10 +4,10 @@
 
 import { getSessionById, listSessionTracks } from '@liedmotif/db';
 import type { LlmTool } from '@liedmotif/providers';
-import { listTracksInputSchema, uuidSchema, type ListTracksInput } from '@liedmotif/shared';
+import { listTracksInputSchema, type ListTracksInput } from '@liedmotif/shared';
 import { formatTrackDuration } from '@/components/library/library-view-model';
 import { named, trackCount } from './music-names';
-import { readablePlaylist } from './readable-music';
+import { isId, readablePlaylist } from './readable-music';
 import { LIST_TRACKS_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 
@@ -61,7 +61,7 @@ export function createListTracksTool(asker: AssistantAsker): LlmTool<ListTracksI
       const kind = where === 'session' ? 'Session' : 'Playlist';
       // An id that is no id cannot name anything, and the database would
       // refuse to compare it.
-      const list = !uuidSchema.safeParse(id).success
+      const list = !isId(id)
         ? null
         : where === 'session'
           ? await sessionTracks(asker, id)

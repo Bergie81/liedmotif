@@ -115,7 +115,7 @@ export async function POST(request: Request) {
       llm,
       role,
       createAssistantTools(
-        { db, userId: ownerUserId, role, player: body.player ?? null },
+        { db, ...asker, player: body.player ?? null },
         createTurnActions(report),
       ),
       body.messages,

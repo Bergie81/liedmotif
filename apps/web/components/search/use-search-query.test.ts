@@ -3,6 +3,7 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { captureFetches } from '@/tests/helpers/capture-fetches';
+import { announceOutsideLibraryWrite } from '@/lib/offline/library-writes';
 import { createInitialSearchState, type SearchState } from './search-model';
 import { useSearchQuery } from './use-search-query';
 
@@ -156,5 +157,19 @@ describe('useSearchQuery', () => {
     // Sessions and Playlists cannot match under the lyrics lens — no stale
     // count may survive onto a collapsed tab.
     expect(result.current.counts).toEqual({ sessions: null, tracks: null, playlists: null });
+  });
+
+  it('reads the same search again after the Library was written to from outside the page', async () => {
+    const requests = captureFetches();
+    const { result } = renderHook(() => useSearchQuery(state({ query: 'rain' })));
+    await waitFor(() => expect(requests).toHaveLength(1));
+    await act(async () => requests[0]!.respond(searchResponse('rain', 3)));
+
+    act(() => announceOutsideLibraryWrite());
+
+    await waitFor(() => expect(requests).toHaveLength(2));
+    expect(requests[1]!.path).toBe(requests[0]!.path);
+    await act(async () => requests[1]!.respond(searchResponse('rain', 4)));
+    expect(result.current.data?.tracks?.matchCount).toBe(4);
   });
 });

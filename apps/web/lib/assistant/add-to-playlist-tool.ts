@@ -10,7 +10,7 @@ import {
   type AddToPlaylistInput,
 } from '@liedmotif/shared';
 import { done, NO_SUCH_PLAYLIST, NO_TRACK_PLAYING, refused } from './library-action';
-import { named, trackCount } from './music-names';
+import { named } from './music-names';
 import { isId, ownPlaylist, readableTrackTitle } from './readable-music';
 import { ADD_TO_PLAYLIST_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
@@ -67,14 +67,14 @@ export function createAddToPlaylistTool(
               : [`No Track was added to ${where}.`, ...rest].join(' '),
           );
         }
-        const tracks = added.map((id) => ({ id, name: titles.get(id) ?? null }));
-        const what =
-          tracks.length === 1 ? named(tracks[0]!.name, tracks[0]!.id) : trackCount(tracks.length);
-        return done([`added ${what} to ${where}.`, ...rest].join(' '), {
-          action: 'addToPlaylist',
-          playlist: { id: playlist.id, name: playlist.name },
-          tracks,
-        });
+        return done(
+          {
+            action: 'addToPlaylist',
+            playlist: { id: playlist.id, name: playlist.name },
+            tracks: added.map((id) => ({ id, name: titles.get(id) ?? null })),
+          },
+          ...rest,
+        );
       }),
   };
 }

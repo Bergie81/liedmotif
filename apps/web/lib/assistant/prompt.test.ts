@@ -65,8 +65,6 @@ describe.each([
     expect(prompt).toMatch(
       /say that something is done only when a tool's result starts with "Done:"/i,
     );
-    expect(prompt).not.toMatch(/never claim to have done something/i);
-    expect(prompt).not.toMatch(/these tools only look things up/i);
   });
 
   it('says what each Library action does, and that "this" is the Track playing', () => {

@@ -2,11 +2,16 @@
 // something, or only words for the model when it did not.
 
 import type { AssistantReceipt } from '@liedmotif/shared';
+import { receiptNote } from './receipt-note';
 import type { ActionOutcome } from './turn-actions';
 
-/** The action was carried out. `told` starts the model's line; the receipt is what the user is shown. */
-export const done = (told: string, receipt: AssistantReceipt): ActionOutcome<'done'> => ({
-  told: `Done: ${told}`,
+/**
+ * The action was carried out. The model's line is worded from the receipt the
+ * user is shown, so the two cannot say different things; `also` adds what the
+ * receipt does not carry.
+ */
+export const done = (receipt: AssistantReceipt, ...also: string[]): ActionOutcome<'done'> => ({
+  told: [`Done: ${receiptNote(receipt)}.`, ...also].join(' '),
   action: { status: 'done', receipt },
 });
 

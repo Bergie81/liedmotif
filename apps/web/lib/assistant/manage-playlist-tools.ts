@@ -15,7 +15,6 @@ import {
   type RenamePlaylistInput,
 } from '@liedmotif/shared';
 import { done, NO_SUCH_PLAYLIST, refused } from './library-action';
-import { named, quoted } from './music-names';
 import { ownPlaylist } from './readable-music';
 import {
   CREATE_PLAYLIST_TOOL_NAME,
@@ -46,7 +45,7 @@ export function createCreatePlaylistTool(
         const name = playlistName(input.name);
         if (name === null) return refused(BAD_NAME);
         const playlist = await createPlaylist(db, { ownerUserId: userId, name });
-        return done(`created the Playlist ${named(playlist.name, playlist.id)}.`, {
+        return done({
           action: 'createPlaylist',
           playlist: { id: playlist.id, name: playlist.name },
         });
@@ -76,14 +75,11 @@ export function createRenamePlaylistTool(
         });
         if (result === null) return refused(NO_SUCH_PLAYLIST);
         if (result === 'system') return refused('Favorites cannot be renamed.');
-        return done(
-          `renamed the Playlist ${quoted(playlist.name)} to ${named(name, playlist.id)}.`,
-          {
-            action: 'renamePlaylist',
-            playlist: { id: playlist.id, name },
-            previousName: playlist.name,
-          },
-        );
+        return done({
+          action: 'renamePlaylist',
+          playlist: { id: playlist.id, name },
+          previousName: playlist.name,
+        });
       }),
   };
 }
@@ -110,7 +106,7 @@ export function createPinPlaylistTool(
         // The asker has this Playlist, so what the write turned away is one
         // the Library shows no pin on: Favorites.
         if (result === 'not_found') return refused('That Playlist cannot be pinned.');
-        return done(`pinned the Playlist ${named(playlist.name, playlist.id)}.`, {
+        return done({
           action: 'pinPlaylist',
           playlist: { id: playlist.id, name: playlist.name },
         });

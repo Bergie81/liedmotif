@@ -25,12 +25,15 @@ import { withinTurnBudget } from './turn-budget';
 
 const logger = createLogger({ name: 'assistant' });
 
-/** Who a turn's tools act for. Every field comes from the server's own reading of the request. */
+/** Who a turn's tools act for. The id and the role are the server's own reading, never the request's. */
 export interface AssistantAsker {
   db: Database;
   userId: string;
   role: UserRole;
-  /** What the browser's player has engaged, as the request reported it; null when nothing is. */
+  /**
+   * What the browser's player has engaged, as the request reported it; null
+   * when nothing is. Ids a browser sent: a tool looks them up as `userId`.
+   */
   player: AssistantPlayerState | null;
 }
 

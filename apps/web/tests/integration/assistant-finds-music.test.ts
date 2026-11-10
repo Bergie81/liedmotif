@@ -333,7 +333,7 @@ describe.skipIf(skip)('the Assistant asked to find Tracks', () => {
     const asker = await createMember('member-1');
 
     expect(await findMusic(asker, { kind: 'track', list: 'favorites' })).toBe(
-      'There are no Tracks in favorites.',
+      'There are no Tracks in Favorites.',
     );
   });
 
@@ -433,7 +433,7 @@ describe.skipIf(skip)('what the Assistant finds', () => {
       'No Track has "lighthouse" in its lyrics.',
     );
     expect(await findMusic(asker, { kind: 'session' })).toBe('There are no Sessions yet.');
-    expect(await findMusic(asker, { kind: 'track' })).toBe('There are no Tracks in history.');
+    expect(await findMusic(asker, { kind: 'track' })).toBe('There are no Tracks in History.');
     expect(rows(await findMusic(asker, { kind: 'playlist' }))).toHaveLength(1);
     // The owner still finds all of it.
     expect(await findMusic(owner, { kind: 'session', query: 'rainy' })).toContain('"Rainy Window"');

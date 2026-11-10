@@ -4,7 +4,7 @@
 // The server keeps no conversation, so that line is the model's only record.
 
 import { ASSISTANT_MAX_MESSAGE_LENGTH, type AssistantAction } from '@liedmotif/shared';
-import { receiptNote } from './receipt';
+import { receiptNote } from '@/lib/assistant/receipt-note';
 
 /** One action of an answer, with everything the panel knows about what came of it. */
 export type ChatAction = AssistantAction;

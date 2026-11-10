@@ -1,6 +1,6 @@
 // Which Playlists and Tracks the asking user may read, and which Playlists are
-// theirs to change. Every tool that takes an id asks through here, so an id
-// from the model is only ever a question to the database, asked as that user.
+// theirs to change. Every tool that takes the id of one asks through here, so
+// such an id is only ever a question to the database, asked as that user.
 
 import {
   getLoungePlaylistDetail,
