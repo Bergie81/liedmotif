@@ -47,9 +47,9 @@ function pointless(command: AssistantPlayerControl, player: AssistantPlayerState
     case 'previous':
     case 'restart':
       return player.trackId ? null : NO_TRACK;
-    case 'stop':
+    case 'endSession':
       return player.source.kind === 'playlist'
-        ? 'A Playlist has no Stop: Stop ends a Session. Use pause to halt the music.'
+        ? 'A Playlist is not a Session and has nothing to end. Use pause to halt the music.'
         : null;
     case 'loopOn':
     case 'loopOff':
@@ -79,7 +79,7 @@ export function createPlayerControlTool(
   return {
     name: PLAYER_CONTROL_TOOL_NAME,
     description:
-      "Controls the player in the user's browser, like its own buttons: pause, continue, next, previous, restart, loopOn, loopOff, stop. It cannot Dislike or delete a Track, change the volume or seek.",
+      "Controls the player in the user's browser, like its own buttons: pause, continue, next, previous, restart, loopOn, loopOff, endSession. It cannot Dislike or delete a Track, change the volume or seek.",
     inputSchema: playerControlInputSchema,
     execute: ({ command }) =>
       actions.take('player', async () => {

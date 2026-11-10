@@ -11,6 +11,7 @@ import { cn } from '@/lib/cn';
 import { AccountMenu, type Listener } from './account-menu';
 import { AppChromeContext, type AppChromeContextValue } from './app-chrome-context';
 import { AssistantDock } from './assistant/assistant-dock';
+import { AssistantLauncherContext, useAssistantLauncher } from './assistant/assistant-launcher';
 import { assistantPlayerState } from './assistant/player-state';
 import { usePlayerCommands } from './assistant/use-player-commands';
 import { useCardHost } from './assistant/use-card-host';
@@ -123,6 +124,7 @@ export function AppShell({
   const followAssistantReceipt = usePlayerFollowsReceipt(refreshChrome);
   const assistantPlayerCommands = usePlayerCommands({ onPlayerPage: isPlayer, refreshChrome });
   const assistantCards = useCardHost(headroom, refreshChrome);
+  const assistant = useAssistantLauncher();
 
   useEffect(() => {
     const root = document.documentElement;
@@ -193,7 +195,11 @@ export function AppShell({
             : 'pb-[calc(var(--tab-h)+32px+env(safe-area-inset-bottom,0px))] desk:pb-12',
         )}
       >
-        <AppChromeContext.Provider value={chromeContext}>{children}</AppChromeContext.Provider>
+        <AppChromeContext.Provider value={chromeContext}>
+          <AssistantLauncherContext.Provider value={assistantAvailable ? assistant.launcher : null}>
+            {children}
+          </AssistantLauncherContext.Provider>
+        </AppChromeContext.Provider>
       </main>
 
       <PrimaryNavigation
@@ -208,11 +214,14 @@ export function AppShell({
         themeMode={themeMode}
         onToggleThemeMode={toggleThemeMode}
       />
-      {/* No launcher on the Player: in its one-column layout the seek bar and
-          the transport's last control end up under that corner. */}
+      {/* No floating launcher on the Player: in its one-column layout the seek
+          bar and the transport's last control end up under that corner. Its
+          header carries the launcher instead. */}
       {assistantAvailable ? (
         <AssistantDock
           links={assistantLinks}
+          open={assistant.open}
+          onOpenChange={assistant.setOpen}
           launcherHidden={isPlayer}
           standing={assistantStanding}
           player={assistantPlayerState(playback, sleepTimer.endsAt)}

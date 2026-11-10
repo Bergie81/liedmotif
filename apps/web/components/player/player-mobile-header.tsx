@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { AccountMenu } from '@/components/account-menu';
 import { useAppChrome } from '@/components/app-chrome-context';
+import { AssistantLauncherButton } from '@/components/assistant/assistant-launcher';
 import { MobileHeader } from '@/components/mobile-header';
 
 export function PlayerMobileHeader({ title, action }: { title: string; action: ReactNode }) {
@@ -10,6 +11,7 @@ export function PlayerMobileHeader({ title, action }: { title: string; action: R
   return (
     <MobileHeader title={title} className="mb-4">
       {action}
+      <AssistantLauncherButton />
       <AccountMenu
         listener={chrome.listener}
         mode={chrome.themeMode}

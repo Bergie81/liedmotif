@@ -235,6 +235,19 @@ describe.skipIf(skip)('the Assistant asked to find Sessions', () => {
       'No Session matches "lighthouse".',
     );
   });
+
+  it('offers the closest-spelled names when nothing matches, the nearest first', async () => {
+    const asker = await createMember('member-1');
+    const meant = await seedStoppedSession(asker, 'Neon, Ping & Bass', 3);
+    await seedStoppedSession(asker, 'Deep Focus', 1);
+
+    const result = await findMusic(asker, { kind: 'session', query: 'Neon, Ping und Bass' });
+
+    expect(result.split('\n')).toEqual([
+      'No Session matches "Neon, Ping und Bass". The names spelled nearest, none may be the one meant:',
+      `- "Neon, Ping & Bass" (id ${meant.sessionId})`,
+    ]);
+  });
 });
 
 describe.skipIf(skip)('the Assistant asked to find Playlists', () => {
@@ -277,6 +290,32 @@ describe.skipIf(skip)('the Assistant asked to find Playlists', () => {
         `- "Night Shift" (id ${byName.playlistId}) · 1 Track`,
         `- "Night Owls" (id ${pinned.playlistId}) · 1 Track · shared by "member-2"`,
         `- "Running" (id ${byTrack.playlistId}) · 2 Tracks · tracks: "Night Drive"`,
+      ].sort(),
+    );
+  });
+
+  it('says whose a closest-spelled Playlist is when it is one pinned from the Lounge', async () => {
+    const asker = await createMember('member-1');
+    const owner = await createMember('member-2');
+    const own = await seedPlaylist(asker, 'Night Owls', ['Slow Coffee']);
+    const pinned = await seedPlaylist(owner, 'Night Owls', ['Moonlit']);
+    await setPlaylistShared(testDb.db, {
+      ownerUserId: owner,
+      playlistId: pinned.playlistId,
+      audience: { kind: 'everyone' },
+    });
+    await setPlaylistLoungePinned(testDb.db, {
+      viewerUserId: asker,
+      playlistId: pinned.playlistId,
+      pinned: true,
+    });
+
+    const result = await findMusic(asker, { kind: 'playlist', query: 'Night and Owls' });
+
+    expect(rows(result).sort()).toEqual(
+      [
+        `- "Night Owls" (id ${own.playlistId})`,
+        `- "Night Owls" (id ${pinned.playlistId}) · shared by "member-2"`,
       ].sort(),
     );
   });
@@ -438,6 +477,58 @@ describe.skipIf(skip)('what the Assistant finds', () => {
     // The owner still finds all of it.
     expect(await findMusic(owner, { kind: 'session', query: 'rainy' })).toContain('"Rainy Window"');
     expect(await findMusic(owner, { kind: 'track', query: 'rainy' })).toContain('"Rainy Harbour"');
+  });
+
+  it('offers the closest-spelled Playlist and Track names too, a typo away from the query', async () => {
+    const asker = await createMember('member-1');
+    const { playlistId, trackIds } = await seedPlaylist(asker, 'Morning Coffee', [
+      'Harbour Lights',
+    ]);
+
+    expect(await findMusic(asker, { kind: 'playlist', query: 'Mornign Coffee' })).toBe(
+      `No Playlist matches "Mornign Coffee". The names spelled nearest, none may be the one meant:\n- "Morning Coffee" (id ${playlistId})`,
+    );
+    expect(await findMusic(asker, { kind: 'track', query: 'Harbor Lights' })).toBe(
+      `No Track matches "Harbor Lights". The names spelled nearest, none may be the one meant:\n- "Harbour Lights" (id ${trackIds[0]})`,
+    );
+  });
+
+  it("never offers another user's private names as the closest", async () => {
+    const asker = await createMember('member-1');
+    const owner = await createMember('member-2');
+    await seedStoppedSession(owner, 'Neon, Ping & Bass', 1);
+    await seedPlaylist(owner, 'Neon, Ping & Bass', ['Neon, Ping & Bass']);
+
+    for (const [kind, what] of [
+      ['session', 'Session'],
+      ['playlist', 'Playlist'],
+      ['track', 'Track'],
+    ]) {
+      expect(await findMusic(asker, { kind, query: 'Neon, Ping und Bass' })).toBe(
+        `No ${what} matches "Neon, Ping und Bass".`,
+      );
+    }
+  });
+
+  it('offers at most fifty closest names, the nearest first', async () => {
+    const asker = await createMember('member-1');
+    const nearest = await createSession(testDb.db, {
+      ownerUserId: asker,
+      status: 'stopped',
+      title: 'Neon, Ping & Bass',
+    });
+    for (let i = 1; i <= 51; i += 1) {
+      await createSession(testDb.db, {
+        ownerUserId: asker,
+        status: 'stopped',
+        title: `Neon, Ping & Bass Vol. ${i}`,
+      });
+    }
+
+    const result = await findMusic(asker, { kind: 'session', query: 'Neon, Ping und Bass' });
+
+    expect(rows(result)).toHaveLength(50);
+    expect(rows(result)[0]).toBe(`- "Neon, Ping & Bass" (id ${nearest})`);
   });
 
   it('lists at most ten of the most recent and says that more exist', async () => {

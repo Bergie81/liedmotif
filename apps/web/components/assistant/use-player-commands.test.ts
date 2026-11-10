@@ -100,7 +100,7 @@ describe('the player, for the Assistant’s commands', () => {
     const refreshChrome = vi.fn();
     const { result } = renderHook(() => usePlayerCommands({ onPlayerPage: false, refreshChrome }));
 
-    expect(await result.current.run({ name: 'stop' })).toBe('done');
+    expect(await result.current.run({ name: 'endSession' })).toBe('done');
 
     expect(api.stopSession).toHaveBeenCalledExactlyOnceWith(SESSION_ID);
     expect(release).toHaveBeenCalledOnce();
@@ -114,7 +114,7 @@ describe('the player, for the Assistant’s commands', () => {
       usePlayerCommands({ onPlayerPage: true, refreshChrome: vi.fn() }),
     );
 
-    await result.current.run({ name: 'stop' });
+    await result.current.run({ name: 'endSession' });
 
     expect(navigation.push).toHaveBeenCalledExactlyOnceWith('/sessions');
   });
@@ -126,7 +126,7 @@ describe('the player, for the Assistant’s commands', () => {
       usePlayerCommands({ onPlayerPage: true, refreshChrome: vi.fn() }),
     );
 
-    expect(await result.current.run({ name: 'stop' })).toBe('failed');
+    expect(await result.current.run({ name: 'endSession' })).toBe('failed');
     expect(release).not.toHaveBeenCalled();
     expect(navigation.push).not.toHaveBeenCalled();
   });
@@ -137,7 +137,7 @@ describe('the player, for the Assistant’s commands', () => {
       usePlayerCommands({ onPlayerPage: false, refreshChrome: vi.fn() }),
     );
 
-    expect(await result.current.run({ name: 'stop' })).toBe('failed');
+    expect(await result.current.run({ name: 'endSession' })).toBe('failed');
     expect(api.stopSession).not.toHaveBeenCalled();
     expect(release).not.toHaveBeenCalled();
   });
@@ -225,7 +225,7 @@ describe('the player, for the Assistant’s commands', () => {
       usePlayerCommands({ onPlayerPage: true, refreshChrome }),
     );
 
-    const outcome = result.current.run({ name: 'stop' });
+    const outcome = result.current.run({ name: 'endSession' });
     await vi.waitFor(() => expect(api.stopSession).toHaveBeenCalledOnce());
     const other = engaged(null);
     rerender();

@@ -1,14 +1,18 @@
 // `findMusic`: the asking user's Sessions, Playlists and Tracks, found the way
 // the app finds them. A query goes to the app's own search, no query reads the
 // lists the app's pages show, both as this user. A result is a short list of
-// ids and names: the tools that play or file something take those ids.
+// ids and names: the tools that play or file something take those ids. A
+// search that matches nothing answers with the names spelled most like the
+// query, so the model can tell which one a near miss meant.
 
 import {
+  closestNames,
   getLibraryTracks,
   searchPlaylists,
   searchSessions,
   searchTracks,
   type OwnerAttribution,
+  type SearchArgs,
   type SearchGroup,
   type SearchMatch,
 } from '@liedmotif/db';
@@ -29,6 +33,19 @@ import type { AssistantAsker } from './tools';
 
 /** How many rows one result lists. */
 const FIND_MUSIC_LIMIT = 10;
+
+/**
+ * How many names a search that matched nothing offers. Most are unrelated;
+ * the list is this long so a name the spelling ranks low, one with two letters
+ * swapped, is still on it for the model to recognise.
+ */
+const CLOSEST_NAMES_LIMIT = 50;
+
+const KIND_NAMES: Record<FindMusicInput['kind'], string> = {
+  session: 'Session',
+  playlist: 'Playlist',
+  track: 'Track',
+};
 
 /** The Library's Track lists, under the names its tabs show. */
 export const LIST_NAMES: Record<NonNullable<FindMusicInput['list']>, string> = {
@@ -76,6 +93,10 @@ function sessionRow(
   );
 }
 
+/** Whose a Playlist is, when it is another user's. */
+const sharedBy = (owner: OwnerAttribution | null | undefined) =>
+  owner ? `shared by ${quoted(loungeOwnerDisplayName(owner.artistName, owner.name))}` : null;
+
 /** A Playlist of another user says whose it is; that tells more than what matched. */
 function playlistRow(playlist: {
   id: string;
@@ -88,9 +109,7 @@ function playlistRow(playlist: {
     playlist.name,
     playlist.id,
     trackCount(playlist.trackCount),
-    playlist.owner
-      ? `shared by ${quoted(loungeOwnerDisplayName(playlist.owner.artistName, playlist.owner.name))}`
-      : matched(playlist.match, ['name']),
+    sharedBy(playlist.owner) ?? matched(playlist.match, ['name']),
   );
 }
 
@@ -143,9 +162,33 @@ function head(rows: string[], nextCursor: string | null): Listing {
   };
 }
 
+/** One kind's Search hits, as the rows a result lists. */
+async function searchHits(
+  db: AssistantAsker['db'],
+  kind: FindMusicInput['kind'],
+  args: SearchArgs,
+): Promise<Listing> {
+  if (kind === 'track') return hits(await searchTracks(db, args), trackRow);
+  if (kind === 'playlist') return hits(await searchPlaylists(db, args), playlistRow);
+  const now = new Date();
+  return hits(await searchSessions(db, args), (hit) => sessionRow(hit, now));
+}
+
+/** The names of one kind spelled most like the query, as rows. */
+async function closestRows(
+  db: AssistantAsker['db'],
+  kind: FindMusicInput['kind'],
+  { ownerUserId, query }: SearchArgs,
+): Promise<Listing> {
+  const closest = await closestNames(db, { ownerUserId, kind, query, limit: CLOSEST_NAMES_LIMIT });
+  return { rows: closest.map(({ id, name, owner }) => row(name, id, sharedBy(owner))), more: null };
+}
+
 /**
  * The app's search, as this user. Lyrics are sung by Tracks only, so a lyrics
- * search is one for Tracks whatever kind came with it.
+ * search is one for Tracks whatever kind came with it. Search that matches
+ * nothing lists the closest-spelled names instead: what a user says is often a
+ * word or a sign off the name they mean.
  */
 async function search(
   { db, userId }: AssistantAsker,
@@ -153,12 +196,12 @@ async function search(
   query: string,
   lyrics: boolean,
 ): Promise<string> {
-  const args = {
+  const args: SearchArgs = {
     ownerUserId: userId,
     query,
     limit: FIND_MUSIC_LIMIT,
     sort: 'relevance',
-  } as const;
+  };
   const text = quoted(query);
   if (lyrics) {
     return listed(
@@ -167,26 +210,16 @@ async function search(
       `No Track has ${text} in its lyrics.`,
     );
   }
-  if (kind === 'track') {
-    return listed(
-      `Tracks matching ${text}:`,
-      hits(await searchTracks(db, args), trackRow),
-      `No Track matches ${text}.`,
-    );
-  }
-  if (kind === 'playlist') {
-    return listed(
-      `Playlists matching ${text}:`,
-      hits(await searchPlaylists(db, args), playlistRow),
-      `No Playlist matches ${text}.`,
-    );
-  }
-  const now = new Date();
-  return listed(
-    `Sessions matching ${text}:`,
-    hits(await searchSessions(db, args), (hit) => sessionRow(hit, now)),
-    `No Session matches ${text}.`,
-  );
+  const what = KIND_NAMES[kind];
+  const none = `No ${what} matches ${text}.`;
+  const found = await searchHits(db, kind, args);
+  return found.rows.length > 0
+    ? listed(`${what}s matching ${text}:`, found, none)
+    : listed(
+        `${none} The names spelled nearest, none may be the one meant:`,
+        await closestRows(db, kind, args),
+        none,
+      );
 }
 
 /** The lists the app's own pages open with, as this user. */
@@ -238,7 +271,7 @@ export function createFindMusicTool(asker: AssistantAsker): LlmTool<FindMusicInp
   return {
     name: FIND_MUSIC_TOOL_NAME,
     description:
-      "Finds the user's Sessions, Playlists or Tracks: by a search query, Tracks also by their lyrics, or the most recent when no query is given. Returns ids and names.",
+      "Finds the user's Sessions, Playlists or Tracks: by a search query, Tracks also by their lyrics, or the most recent when no query is given. Returns ids and names; a query that matches nothing returns the names spelled most like it.",
     inputSchema: findMusicInputSchema,
     async execute({ kind, query, lyrics, list }) {
       const words = (query ?? '').trim().slice(0, MAX_SEARCH_QUERY_LENGTH);

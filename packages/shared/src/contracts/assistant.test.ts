@@ -174,7 +174,7 @@ describe('assistantStreamEventSchema', () => {
       'restart',
       'loopOn',
       'loopOff',
-      'stop',
+      'endSession',
     ]);
     for (const name of ASSISTANT_PLAYER_CONTROLS) expect(parses({ name }), name).toBe(true);
     expect(parses({ name: 'sleepTimer', minutes: 30 })).toBe(true);

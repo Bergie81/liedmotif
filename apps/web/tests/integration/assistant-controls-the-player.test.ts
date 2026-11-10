@@ -126,7 +126,7 @@ describe.skipIf(skip)('the Assistant asked to control the player', () => {
       restart: /^Done: the player was told to play the current Track from its start\.$/,
       loopOn: /^Done: the player was told to loop the current Track\.$/,
       loopOff: /^Done: the player was told to stop looping the current Track\.$/,
-      stop: /^Done: the player was told to stop the Session\.$/,
+      endSession: /^Done: the player was told to end the Session\.$/,
     };
 
     for (const [command, expected] of Object.entries(told)) {
@@ -152,7 +152,7 @@ describe.skipIf(skip)('the Assistant asked to control the player', () => {
   it('refuses every command while the player has nothing engaged, and sends none', async () => {
     const asker = await createMember();
 
-    for (const command of ['pause', 'continue', 'next', 'loopOn', 'stop']) {
+    for (const command of ['pause', 'continue', 'next', 'loopOn', 'endSession']) {
       const turn = await act(asker, undefined, control(command));
 
       expect(commands(turn), command).toEqual([]);
@@ -168,7 +168,7 @@ describe.skipIf(skip)('the Assistant asked to control the player', () => {
       [{ ...PAUSED, trackId: null }, 'next', /no Track ready/i],
       [{ ...PAUSED, trackId: null }, 'previous', /no Track ready/i],
       [{ ...PAUSED, trackId: null }, 'restart', /no Track ready/i],
-      [{ ...PLAYING, source: PLAYLIST }, 'stop', /Playlist has no Stop.*pause/i],
+      [{ ...PLAYING, source: PLAYLIST }, 'endSession', /Playlist is not a Session.*pause/i],
     ];
 
     for (const [player, command, why] of refusals) {

@@ -312,6 +312,17 @@ function toTrackHit(row: TrackHitRow, match: SearchMatch): SearchTrackHit {
   };
 }
 
+/** The Tracks a search may hand their owner. */
+export function searchableTracks(ownerUserId: string): SQL {
+  return sql`${tracks.ownerUserId} = ${ownerUserId}
+    and ${tracks.status} not in ('rejected', 'deleted')`;
+}
+
+/** The Sessions a search may hand their owner. */
+export function searchableSessions(ownerUserId: string): SQL {
+  return sql`${activitySessions.ownerUserId} = ${ownerUserId} and ${sessionNotPendingDelete()}`;
+}
+
 export async function searchTracks(
   db: Database,
   args: SearchArgs & {
@@ -333,8 +344,7 @@ export async function searchTracks(
           on ${activitySessions.id} = ${generationRequests.activitySessionId}
           and ${activitySessions.ownerUserId} = ${args.ownerUserId}
       `,
-      where: sql`${tracks.ownerUserId} = ${args.ownerUserId}
-        and ${tracks.status} not in ('rejected', 'deleted')`,
+      where: searchableTracks(args.ownerUserId),
       defs: args.lyricsOnly ? lyricsMatchFields() : trackMatchFields(),
       titleAlias: 'title',
     },
@@ -383,7 +393,7 @@ export async function searchSessions(
         createdAt: activitySessions.createdAt,
       },
       from: sql`from ${activitySessions}`,
-      where: sql`${activitySessions.ownerUserId} = ${args.ownerUserId} and ${sessionNotPendingDelete()}`,
+      where: searchableSessions(args.ownerUserId),
       defs: sessionMatchFields(),
       titleAlias: 'title',
     },
@@ -438,15 +448,13 @@ function toPlaylistHit(row: PlaylistHitRow, match: SearchMatch): SearchPlaylistH
 }
 
 /**
- * Attach the sharing owner's attribution to the Lounge-pinned (foreign) rows of
- * a Playlists group, where they rank among the viewer's own — a foreign row is
- * always visibly foreign.
+ * Attach the sharing owner's attribution to the Lounge-pinned (foreign) rows
+ * among a viewer's Playlists, where they rank among the viewer's own — a
+ * foreign row is always visibly foreign.
  */
-async function attributeForeignPlaylists(
-  db: Database,
-  viewerUserId: string,
-  items: SearchPlaylistHit[],
-): Promise<SearchPlaylistHit[]> {
+export async function attributeForeignPlaylists<
+  Item extends { ownerUserId: string; owner: OwnerAttribution | null },
+>(db: Database, viewerUserId: string, items: Item[]): Promise<Item[]> {
   const foreignOwnerIds = [
     ...new Set(items.filter((i) => i.ownerUserId !== viewerUserId).map((i) => i.ownerUserId)),
   ];

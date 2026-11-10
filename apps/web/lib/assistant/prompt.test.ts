@@ -92,10 +92,16 @@ describe.each([
   it('says what the player tools do, and what they leave to the user', () => {
     const tools = prompt.slice(prompt.indexOf('Tools:'), prompt.indexOf('Links:'));
     expect(tools).toMatch(
-      /^- playerControl .*pause, continue, next, previous, restart, loopOn, loopOff.*stop/m,
+      /^- playerControl .*pause, continue, next, previous, restart, loopOn, loopOff.*endSession/m,
     );
     expect(tools).toMatch(/^- sleepTimer .*5 to 90 minutes/m);
     expect(tools).toMatch(/no command for Dislike, deleting a Track, the volume or seeking/i);
+  });
+
+  it('takes "stop" for pause, and ends a Session only when the user asks to end or close it', () => {
+    const tools = prompt.slice(prompt.indexOf('Tools:'), prompt.indexOf('Links:'));
+    expect(tools).toMatch(/"stop", "stop the music" and "stop playing" mean pause/i);
+    expect(tools).toMatch(/endSession only when the user asks to end or close the Session/i);
   });
 
   it('says that play starts music the user already has, by its id, and that new music is not its job', () => {

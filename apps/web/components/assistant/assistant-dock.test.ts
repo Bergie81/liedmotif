@@ -18,7 +18,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import type { AnswerLinkTargets } from '@/lib/assistant/answer-links';
 import type { PlayerCommandOutcome } from '@/lib/assistant/player-command-note';
 import { onOutsideLibraryWrite } from '@/lib/offline/library-writes';
-import { AssistantDock } from './assistant-dock';
+import { ShellAssistant } from '@/tests/helpers/shell-assistant';
 import type { PlayerCommands } from './player-command';
 
 const navigation = vi.hoisted(() => ({
@@ -62,8 +62,11 @@ function renderDock({
     h(
       TooltipProvider,
       null,
-      h('button', { type: 'button' }, 'Something on the page'),
-      h(AssistantDock, { links: LINKS, launcherHidden, player, onReceipt, playerCommands }),
+      h(
+        ShellAssistant,
+        { links: LINKS, launcherHidden, player, onReceipt, playerCommands },
+        h('button', { type: 'button' }, 'Something on the page'),
+      ),
     ),
   );
 }

@@ -16,7 +16,7 @@ import {
 } from '@liedmotif/shared';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import type { AnswerLinkTargets } from '@/lib/assistant/answer-links';
-import { AssistantDock } from './assistant-dock';
+import { ShellAssistant } from '@/tests/helpers/shell-assistant';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: () => {} }) }));
 
@@ -46,7 +46,7 @@ function openPanel(standing: AssistantStanding | null): HTMLElement {
     'matchMedia',
     () => ({ matches: true, addEventListener: () => {}, removeEventListener: () => {} }) as never,
   );
-  render(h(TooltipProvider, null, h(AssistantDock, { links: NO_LINKS, standing })));
+  render(h(TooltipProvider, null, h(ShellAssistant, { links: NO_LINKS, standing })));
   fireEvent.click(screen.getByRole('button', { name: 'Ask Mo' }));
   return screen.getByRole('dialog', { name: 'Mo' });
 }
@@ -181,7 +181,7 @@ it('takes a fresher standing from the server over the one it had', () => {
     () => ({ matches: true, addEventListener: () => {}, removeEventListener: () => {} }) as never,
   );
   const dock = (standing: AssistantStanding) =>
-    h(TooltipProvider, null, h(AssistantDock, { links: NO_LINKS, standing }));
+    h(TooltipProvider, null, h(ShellAssistant, { links: NO_LINKS, standing }));
   const { rerender } = render(dock(memberStanding(0)));
   fireEvent.click(screen.getByRole('button', { name: 'Ask Mo' }));
   expect(field().disabled).toBe(true);

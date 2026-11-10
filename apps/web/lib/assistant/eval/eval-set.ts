@@ -450,6 +450,25 @@ export const EVAL_SET: readonly EvalEntry[] = [
     goodAnswer: 'A word or two, or nothing: the music pauses. Does not stop the Session.',
   },
   {
+    id: 'stop-the-music',
+    role: 'member',
+    language: 'de',
+    question: 'Stopp die Musik.',
+    docs: 'none',
+    calls: [{ tool: 'playerControl', input: [{ command: 'pause' }] }],
+    goodAnswer:
+      'A word or two, or nothing: the music pauses. "Stop" is pause: the Session is not ended.',
+  },
+  {
+    id: 'end-the-session',
+    role: 'member',
+    language: 'en',
+    question: 'Close this session, I am done for today.',
+    docs: 'none',
+    calls: [{ tool: 'playerControl', input: [{ command: 'endSession' }] }],
+    goodAnswer: 'A word or two: the Session is ended, not only paused.',
+  },
+  {
     id: 'sleep-timer-30',
     role: 'member',
     language: 'de',

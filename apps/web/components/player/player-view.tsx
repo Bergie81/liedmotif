@@ -16,13 +16,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Disc3, MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal } from 'lucide-react';
 import type { SessionSummary } from '@liedmotif/shared';
 import { useAppChrome } from '@/components/app-chrome-context';
 import { cn } from '@/lib/cn';
 import { CreationBlockedDialog } from '@/components/create/creation-blocked-dialog';
 import {
-  EmptyState,
   iconButtonClass,
   nowPlayingDetailsClass,
   nowPlayingLayoutClass,
@@ -94,8 +93,7 @@ type View =
 
 /** Where a resolved start lands once its session has been engaged: the live
  * player (only a session the user just started auto-plays), the
- * headroom-blocked popup over the idle frame (no session was
- * created), or the error card. */
+ * headroom-blocked popup (no session was created), or the error card. */
 function startedView(result: Awaited<PendingStart['result']>): View {
   if (result.ok) return { kind: 'player' };
   if (result.error.code === 'session_headroom_blocked') {
@@ -179,9 +177,16 @@ export function PlayerView() {
     },
     [engage],
   );
+  // The Player has nothing of its own to show without music: Home is where a
+  // Session starts. Replaced, so Back does not land on a page that leaves again.
+  const idle = view.kind === 'idle';
+  useEffect(() => {
+    if (idle) router.replace('/');
+  }, [idle, router]);
+
   // A stopped Session leaves Now Playing for My Sessions, where it can be
   // resumed; the view stays on the quiet player frame while the navigation
-  // lands (never a "Nothing playing" flash).
+  // lands.
   const showStopped = useCallback(() => {
     release();
     router.push('/sessions');
@@ -251,7 +256,7 @@ export function PlayerView() {
       // No Session was created: whatever was playing keeps its player.
       return (
         <>
-          {livePlayer ?? <IdleCard />}
+          {livePlayer ?? <LoadingScreen pathname="/player" />}
           <CreationBlockedDialog
             open
             onOpenChange={(open) => {
@@ -271,7 +276,8 @@ export function PlayerView() {
         </>
       );
     case 'idle':
-      return <IdleCard />;
+      // The quiet frame, while the navigation to Home lands.
+      return <LoadingScreen pathname="/player" />;
   }
 }
 
@@ -380,23 +386,5 @@ function StartFailedCard({
         Try again
       </Link>
     </div>
-  );
-}
-
-function IdleCard() {
-  return (
-    <EmptyState
-      icon={<Disc3 className="h-6 w-6" aria-hidden />}
-      title="Nothing playing"
-      titleAs="h1"
-      action={
-        <Link href="/" className={primaryButtonClass}>
-          Start a Session
-        </Link>
-      }
-      className="py-16"
-    >
-      <span data-testid="player-empty">Start a Session and the player picks it up here.</span>
-    </EmptyState>
   );
 }

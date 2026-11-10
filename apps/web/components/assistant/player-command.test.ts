@@ -149,11 +149,11 @@ describe('a player command from the Assistant', () => {
     const { controller } = controllerIn('playing');
     const { player, stopSession } = playerWith(controller);
 
-    expect(await runPlayerCommand(named('stop'), player)).toBe('done');
+    expect(await runPlayerCommand(named('endSession'), player)).toBe('done');
     expect(stopSession).toHaveBeenCalledOnce();
 
     stopSession.mockResolvedValueOnce(false);
-    expect(await runPlayerCommand(named('stop'), player)).toBe('failed');
+    expect(await runPlayerCommand(named('endSession'), player)).toBe('failed');
   });
 
   it('sets the player’s Sleep Timer and cancels it', async () => {
@@ -170,7 +170,7 @@ describe('a player command from the Assistant', () => {
   it('fails, and touches nothing, when the player has nothing engaged any more', async () => {
     const { player, sleepTimer, stopSession } = playerWith(null);
 
-    for (const command of [named('pause'), named('continue'), named('stop')]) {
+    for (const command of [named('pause'), named('continue'), named('endSession')]) {
       expect(await runPlayerCommand(command, player)).toBe('failed');
     }
     expect(await runPlayerCommand({ name: 'sleepTimer', minutes: 30 }, player)).toBe('failed');
@@ -390,7 +390,7 @@ describe('the line a player command gets in the chat', () => {
     expect(said(named('restart'))).toBe('Playing the Track from its start');
     expect(said(named('loopOn'))).toBe('Loop Track on');
     expect(said(named('loopOff'))).toBe('Loop Track off');
-    expect(said(named('stop'))).toBe('Session stopped');
+    expect(said(named('endSession'))).toBe('Session stopped');
     expect(said({ name: 'sleepTimer', minutes: 30 })).toBe('Sleep Timer set: 30 min');
     expect(said(named('sleepTimerOff'))).toBe('Sleep Timer off');
   });
@@ -431,7 +431,9 @@ describe('the line a player command gets in the chat', () => {
   });
 
   it('says a command that failed did not happen', () => {
-    expect(playerCommandLine(named('stop'), 'failed').text).toBe('The player could not do that.');
+    expect(playerCommandLine(named('endSession'), 'failed').text).toBe(
+      'The player could not do that.',
+    );
   });
 
   it('words a command still on its way like one that is done', () => {

@@ -7,7 +7,8 @@
 // covers the screen and behaves as a modal dialog.
 //
 // The conversation is created here, once per shell, so it outlives the pages
-// the user moves between and ends with a reload.
+// the user moves between and ends with a reload. Whether the panel is open is
+// the shell's to hold: a page without the launcher opens it from its own header.
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
@@ -55,6 +56,8 @@ function usePanelBesidePage(): boolean {
 
 export function AssistantDock({
   links,
+  open,
+  onOpenChange: setOpen,
   launcherHidden = false,
   standing: renderedStanding = null,
   player,
@@ -64,7 +67,9 @@ export function AssistantDock({
 }: {
   /** The app pages and docs pages an answer may link this user to. */
   links: AnswerLinkTargets;
-  /** The page has controls where the launcher sits. An open panel stays, and closes from its header. */
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** The page has controls where the launcher sits, and carries its own (`AssistantLauncherButton`). */
   launcherHidden?: boolean;
   /** Where the viewer stood with their allowance when the server rendered the page. */
   standing?: AssistantStanding | null;
@@ -139,7 +144,6 @@ export function AssistantDock({
         .then((outcome) => conversation.settleAction(action, outcome)),
     [playerCommands, conversation],
   );
-  const [open, setOpen] = useState(false);
   const besidePage = usePanelBesidePage();
   const answerLinks = useMemo<AnswerLinks>(
     () => ({
@@ -150,7 +154,7 @@ export function AssistantDock({
         if (!besidePage) setOpen(false);
       },
     }),
-    [links, router, besidePage],
+    [links, router, besidePage, setOpen],
   );
   const confirm = useCallback(
     (action: ProposedChatAction) => {
@@ -163,7 +167,7 @@ export function AssistantDock({
         },
       });
     },
-    [conversation, cardHost, besidePage],
+    [conversation, cardHost, besidePage, setOpen],
   );
   const cards = useMemo<Cards | null>(
     () => (cardHost ? { headroom: cardHost.headroom, confirm } : null),

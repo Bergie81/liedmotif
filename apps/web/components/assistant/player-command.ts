@@ -133,7 +133,7 @@ export async function runPlayerCommand(
       // Only a loop is switched off: Shuffle is not this command's to end.
       if (controller.playbackMode === 'loop-track') controller.setPlaybackMode('loop-session');
       return 'done';
-    case 'stop':
+    case 'endSession':
       return (await player.stopSession()) ? 'done' : 'failed';
     case 'sleepTimer':
       player.sleepTimer.start(command.minutes);
@@ -194,7 +194,7 @@ function happened(command: AssistantPlayerCommand): string {
       return 'Loop Track on';
     case 'loopOff':
       return 'Loop Track off';
-    case 'stop':
+    case 'endSession':
       return 'Session stopped';
     case 'sleepTimer':
       return `Sleep Timer set: ${command.minutes} min`;

@@ -30,8 +30,8 @@ export function playerCommandNote(command: AssistantPlayerCommand): string {
       return 'loop the current Track';
     case 'loopOff':
       return 'stop looping the current Track';
-    case 'stop':
-      return 'stop the Session';
+    case 'endSession':
+      return 'end the Session';
     case 'sleepTimer':
       return `fade out and pause the music in ${command.minutes} min`;
     case 'sleepTimerOff':

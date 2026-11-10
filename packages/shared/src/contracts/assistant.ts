@@ -121,8 +121,8 @@ export const ASSISTANT_PLAYER_CONTROLS = [
   /** Loop Track, the playback mode. */
   'loopOn',
   'loopOff',
-  /** Stop Session. */
-  'stop',
+  /** Stop Session. Not named "stop": a user who says "stop" wants the music paused. */
+  'endSession',
 ] as const;
 export type AssistantPlayerControl = (typeof ASSISTANT_PLAYER_CONTROLS)[number];
 
@@ -389,7 +389,7 @@ export const playerControlInputSchema = z.object({
   command: z
     .enum(ASSISTANT_PLAYER_CONTROLS)
     .describe(
-      'pause halts the music and continue plays on. next is Skip, previous goes back one Track, restart plays the current Track from its start. loopOn is Loop Track: the current Track plays again and again until loopOff. stop is Stop Session: it ends the Session, which then generates nothing until it is resumed.',
+      'pause halts the music and continue plays on. next is Skip, previous goes back one Track, restart plays the current Track from its start. loopOn is Loop Track: the current Track plays again and again until loopOff. endSession is Stop Session in the app: it ends the Session, which then generates nothing until it is resumed. Use it only when the user asks to end or close the Session; when they say "stop" or "stop the music", use pause.',
     ),
 });
 export type PlayerControlInput = z.infer<typeof playerControlInputSchema>;

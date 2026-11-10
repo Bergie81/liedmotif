@@ -15,9 +15,9 @@ import {
   type AssistantStreamEvent,
 } from '@liedmotif/shared';
 import type { GenerationHeadroom } from '@/components/app-shell-model';
-import { AssistantDock } from '@/components/assistant/assistant-dock';
 import { useCardHost } from '@/components/assistant/use-card-host';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { ShellAssistant } from '@/tests/helpers/shell-assistant';
 
 const LEFT_TODAY: GenerationHeadroom = {
   remainingTracks: 38,
@@ -76,7 +76,7 @@ function Shell({
   return h(
     TooltipProvider,
     null,
-    h(AssistantDock, { links: { appPaths: [], docsPages: [] }, cards }),
+    h(ShellAssistant, { links: { appPaths: [], docsPages: [] }, cards }),
   );
 }
 
