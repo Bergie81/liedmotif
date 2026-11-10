@@ -127,10 +127,11 @@ export * from './profile';
 export * from './invites';
 export * from './people';
 export * from './voice';
-// Owner-scoped user settings: the `playback`, `generation`, `onboarding`, and
-// (per-Member) `limits` and `assistant` keys.
+// Owner-scoped user settings: the `playback`, `generation`, `onboarding`,
+// `assistantTone`, and (per-Member) `limits` and `assistant` keys.
 export {
   completeOnboarding,
+  getAssistantTone,
   getGenerationSettings,
   getMemberAssistantAccess,
   getMemberLimits,
@@ -138,6 +139,7 @@ export {
   getPlaybackSettings,
   listMemberAssistantAccess,
   listMemberLimits,
+  updateAssistantTone,
   updateGenerationSettings,
   updateMemberAssistantAccess,
   updateMemberLimits,

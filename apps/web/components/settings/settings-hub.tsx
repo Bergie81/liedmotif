@@ -7,10 +7,12 @@ import {
   Image,
   KeyRound,
   ListMusic,
+  Sparkles,
   Stethoscope,
   UserRound,
   UsersRound,
 } from 'lucide-react';
+import { ASSISTANT_NAME } from '@/lib/assistant/persona';
 import type { SettingsHubData } from '@/lib/settings-hub-data';
 import { PricedQuantity } from './cost-readout';
 import { SignOutButton } from './sign-out-button';
@@ -50,6 +52,14 @@ export function SettingsHub({ data }: { data: SettingsHubData }) {
                 label="People"
                 summary={data.people}
               />
+              {data.assistant ? (
+                <SettingsRow
+                  href="/settings/assistant"
+                  icon={<Sparkles />}
+                  label={ASSISTANT_NAME}
+                  summary={data.assistant}
+                />
+              ) : null}
               <SettingsRow
                 href="/settings/members"
                 icon={<UsersRound />}

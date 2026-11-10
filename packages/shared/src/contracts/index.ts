@@ -5,6 +5,7 @@
 
 export * from './assistant';
 export * from './assistant-access';
+export * from './assistant-tone';
 export * from './blend';
 export * from './common';
 export * from './domain';

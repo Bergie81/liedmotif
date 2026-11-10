@@ -3,11 +3,13 @@
 // follows a link only when its target is on it. Plain data, safe to import from
 // the browser.
 //
-// A page is listed only when it is there for everyone of its role: pages with
-// an id in the path and pages behind an instance opt-in (My voice) are left
-// out, so a listed link always works.
+// A page is listed only when it is there for everyone of its role who can ask:
+// pages with an id in the path and pages behind an instance opt-in (My voice)
+// are left out, so a listed link always works. The Assistant's own settings
+// page is there for exactly the users who have the Assistant.
 
 import type { UserRole } from '@liedmotif/db';
+import { ASSISTANT_NAME } from './persona';
 
 export interface AppRoute {
   /** The page's URL path, exactly as its `page.tsx` serves it. */
@@ -104,6 +106,12 @@ export const APP_ROUTES: readonly AppRoute[] = [
     path: '/settings/playback',
     label: 'Settings › Playback',
     description: 'How one Track blends into the next, and personalization from learned taste.',
+    adminOnly: false,
+  },
+  {
+    path: '/settings/assistant',
+    label: `Settings › ${ASSISTANT_NAME}`,
+    description: `The tone ${ASSISTANT_NAME} answers you in: your own words, or a ready-made tone.`,
     adminOnly: false,
   },
   {

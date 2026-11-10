@@ -83,11 +83,11 @@ Pressing **Reroll Track** is often free. Since tracks come in pairs, Liedmotif f
 
 With tailored art, a new session buys one cover. Each regeneration buys another, and a generated playlist cover buys one too. A session holds up to 10 covers in its history. A change of vibe never makes a new cover by itself.
 
-### Asking Mo
+### Asking Roadie
 
-Each question to Mo, the Assistant, is a small request to your writing AI. It buys no music and counts against no track or cover limit. Two things keep it small. Nobody can send more than 20 questions in 5 minutes. And each member has a daily allowance, 30 messages unless you change it, which resets at midnight in the **Instance timezone**. Under **Settings › Members** you set the allowance for everyone or for one member, from 1 to 1,000 a day, or switch Mo off for a member. As the admin you have no daily allowance, since the key is yours.
+Each question to Roadie, the Assistant, is a small request to your writing AI. It buys no music and counts against no track or cover limit. Two things keep it small. Nobody can send more than 20 questions in 5 minutes. And each member has a daily allowance, 30 messages unless you change it, which resets at midnight in the **Instance timezone**. Under **Settings › Members** you set the allowance for everyone or for one member, from 1 to 1,000 a day, or switch Roadie off for a member. As the admin you have no daily allowance, since the key is yours.
 
-Mo never buys music by itself. Asked for new music, a change of vibe, more like a track or New music on, it shows a card in the chat, and nothing is generated until you press the button on it. What that starts counts against your track limits like the same button in the app. Mo can resume a session for you without a card, because resuming is not a new purchase: the session carries on with the New music setting you gave it, as when you press **Resume** yourself. With New music on it generates again, inside your limits.
+Roadie never buys music by itself. Asked for new music, a change of vibe, more like a track or New music on, it shows a card in the chat, and nothing is generated until you press the button on it. What that starts counts against your track limits like the same button in the app. Roadie can resume a session for you without a card, because resuming is not a new purchase: the session carries on with the New music setting you gave it, as when you press **Resume** yourself. With New music on it generates again, inside your limits.
 
 ### When nobody is listening
 

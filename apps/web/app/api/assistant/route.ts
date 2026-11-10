@@ -10,7 +10,12 @@
 // Assistant did for the user is an event like the text it writes.
 
 import { NextResponse } from 'next/server';
-import { countAssistantMessage, resolveAssistantStanding, type UserRole } from '@liedmotif/db';
+import {
+  countAssistantMessage,
+  getAssistantTone,
+  resolveAssistantStanding,
+  type UserRole,
+} from '@liedmotif/db';
 import { ProviderError } from '@liedmotif/providers';
 import {
   ASSISTANT_STREAM_CONTENT_TYPE,
@@ -84,6 +89,11 @@ export async function POST(request: Request) {
     );
   }
 
+  // The user's tone is read on every message, so a change in Settings holds
+  // from the next one. It is read before anything is counted: a read that
+  // fails costs the user no message.
+  const { tone } = await getAssistantTone(db, ownerUserId);
+
   // After every refusal that reaches no model, so none of those spends the budget.
   const burst = assistantLimiter.check(ownerUserId);
   if (!burst.allowed) return apiRateLimited(burst.retryAfterMs);
@@ -113,7 +123,7 @@ export async function POST(request: Request) {
   const events = turnEvents((report) =>
     streamAssistantAnswer(
       llm,
-      role,
+      { role, tone },
       createAssistantTools(
         { db, ...asker, player: body.player ?? null },
         createTurnActions(report),

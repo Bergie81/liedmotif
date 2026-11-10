@@ -131,7 +131,7 @@ describe('confirming a Session card', () => {
     });
     expect(navigation.push).toHaveBeenCalledExactlyOnceWith('/player');
     // Beside the page, the chat stays while the Player narrates the start.
-    expect(screen.getByRole('dialog', { name: 'Mo' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: 'Roadie' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Starting…' })).toHaveProperty('disabled', true);
 
     server.sent[0]!.answer(started());

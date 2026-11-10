@@ -1,4 +1,13 @@
-import { AudioLines, Gauge, HardDrive, ListMusic, UserRound, UsersRound } from 'lucide-react';
+import {
+  AudioLines,
+  Gauge,
+  HardDrive,
+  ListMusic,
+  Sparkles,
+  UserRound,
+  UsersRound,
+} from 'lucide-react';
+import { ASSISTANT_NAME } from '@/lib/assistant/persona';
 import type { MemberSettingsHubData } from '@/lib/settings-hub-data';
 import { SignOutButton } from './sign-out-button';
 import {
@@ -13,7 +22,8 @@ import {
  * The Member's settings hub: only the entries a Member owns. Instance
  * configuration (providers, limits, instance storage, diagnostics, cover-art
  * defaults, Voice, Members) is neither rendered nor present in the payload;
- * Storage shows a Member only the offline music on their own device.
+ * Storage shows a Member only the offline music on their own device. The
+ * Assistant's row is there only for a Member who has the Assistant.
  */
 export function MemberSettingsHub({ data }: { data: MemberSettingsHubData }) {
   return (
@@ -45,6 +55,14 @@ export function MemberSettingsHub({ data }: { data: MemberSettingsHubData }) {
               label="Storage"
               summary={{ text: 'Offline music on this device' }}
             />
+            {data.assistant ? (
+              <SettingsRow
+                href="/settings/assistant"
+                icon={<Sparkles />}
+                label={ASSISTANT_NAME}
+                summary={data.assistant}
+              />
+            ) : null}
           </SettingsCard>
         </SettingsSection>
 

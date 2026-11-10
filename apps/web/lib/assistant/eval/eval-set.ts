@@ -299,8 +299,7 @@ export const EVAL_SET: readonly EvalEntry[] = [
     question: 'Schreib mir bitte ein Gedicht über den Herbst.',
     docs: 'none',
     link: null,
-    goodAnswer:
-      'A short, friendly no in German, and an offer to help with Liedmotif instead. No poem.',
+    goodAnswer: 'A short no in German, and an offer to help with Liedmotif instead. No poem.',
   },
   // About the user's own music. The Library is the fixture's; the player has
   // the Session "Night Drive" engaged and plays its Track "Neon Rain".

@@ -100,7 +100,7 @@ export async function askForCard(
   const server = serve(events);
   const refresh = vi.fn();
   render(h(Shell, { headroom, refresh }));
-  fireEvent.click(screen.getByRole('button', { name: 'Ask Mo' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Ask Roadie' }));
   fireEvent.click(screen.getByRole('button', { name: 'What does New music do?' }));
   const card = await screen.findByRole('group', { name: title });
   return { server, refresh, card };
@@ -108,7 +108,9 @@ export async function askForCard(
 
 /** Asks one more question in the open chat. */
 export function askAgain(text: string): void {
-  fireEvent.change(screen.getByRole('textbox', { name: 'Ask Mo' }), { target: { value: text } });
+  fireEvent.change(screen.getByRole('textbox', { name: 'Ask Roadie' }), {
+    target: { value: text },
+  });
   fireEvent.click(screen.getByRole('button', { name: 'Send' }));
 }
 

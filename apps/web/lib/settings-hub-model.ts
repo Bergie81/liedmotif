@@ -1,5 +1,6 @@
 import { unitCostsSet, type UnitCosts } from '@liedmotif/shared';
 import type { CredentialSource, VoiceProfileStatus } from '@liedmotif/db';
+import { ASSISTANT_NAME } from '@/lib/assistant/persona';
 import { coverSource, type CoverSource } from '@/lib/cover-source';
 import type { DiagnosticHealth } from '@/lib/storage-diagnostics-model';
 import { formatBinaryBytes } from '@/lib/format-bytes';
@@ -39,6 +40,8 @@ export interface SettingsHubData {
   coverArt: SettingsHubSummary;
   profile: SettingsHubSummary;
   people: SettingsHubSummary;
+  /** Null for a user who has no Assistant — the row is not offered. */
+  assistant: SettingsHubSummary | null;
   storage: SettingsHubSummary;
   diagnostics: SettingsHubSummary;
 }
@@ -98,6 +101,9 @@ export interface SettingsHubInput {
    * while the own-voice feature is switched off and nothing was read. */
   voiceStatus: SettingsHubRead<VoiceProfileStatus | null> | null;
   peopleCount: SettingsHubRead<number>;
+  /** The tone the user gave the Assistant (empty when none), or null itself
+   * for a user who has no Assistant and nothing was read. */
+  assistantTone: SettingsHubRead<string> | null;
   storageProviderKey: SettingsHubRead<string>;
   /** Heartbeat-derived worker status, precomputed server-side (this module stays client-safe). */
   worker: SettingsHubRead<{ health: DiagnosticHealth; heartbeatAgo: string | null }>;
@@ -112,13 +118,15 @@ export interface SettingsHubInput {
 export interface MemberSettingsHubData {
   profile: SettingsHubSummary;
   people: SettingsHubSummary;
+  /** Null for a Member who has no Assistant — the row is not offered. */
+  assistant: SettingsHubSummary | null;
   generation: SettingsHubSummary;
   playback: SettingsHubSummary;
 }
 
 export type MemberSettingsHubInput = Pick<
   SettingsHubInput,
-  'generation' | 'playback' | 'profile' | 'peopleCount'
+  'generation' | 'playback' | 'profile' | 'peopleCount' | 'assistantTone'
 >;
 
 export function credentialState(input: {
@@ -258,6 +266,15 @@ function peopleSummary(peopleCount: SettingsHubInput['peopleCount']): SettingsHu
       );
 }
 
+/** The Assistant row: whose tone it answers in, for a user who has the Assistant. */
+function assistantSummary(tone: SettingsHubInput['assistantTone']): SettingsHubSummary | null {
+  if (!tone) return null;
+  if (!tone.ok) return unhealthy('Tone could not be read');
+  return tone.value
+    ? { status: { label: 'Custom', tone: 'ok' }, text: 'Your own tone' }
+    : { status: { label: 'Default', tone: 'muted' }, text: `${ASSISTANT_NAME}'s own tone` };
+}
+
 /**
  * The Member hub: personal settings only. The generation row deliberately
  * carries no Track-ceiling numbers — those are budget figures and belong to
@@ -268,6 +285,7 @@ export function buildMemberSettingsHubData(input: MemberSettingsHubInput): Membe
   return {
     profile: profileSummary(input.profile),
     people: peopleSummary(input.peopleCount),
+    assistant: assistantSummary(input.assistantTone),
     generation: !input.generation.ok
       ? unhealthy('Generation settings could not be read')
       : configured(`${bufferSummary} · ${languageSummary} language`),
@@ -385,6 +403,7 @@ export function buildSettingsHubData(input: SettingsHubInput): SettingsHubData {
     coverArt,
     profile,
     people,
+    assistant: assistantSummary(input.assistantTone),
     storage,
     diagnostics,
   };

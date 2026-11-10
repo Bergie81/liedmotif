@@ -86,7 +86,7 @@ function askAndGetReply(events: AssistantStreamEvent[]): void {
         new Response(reply, { headers: { 'Content-Type': ASSISTANT_STREAM_CONTENT_TYPE } }),
     ),
   );
-  fireEvent.click(screen.getByRole('button', { name: 'Ask Mo' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Ask Roadie' }));
   fireEvent.click(screen.getByRole('button', { name: 'What does New music do?' }));
 }
 
@@ -108,52 +108,52 @@ it('opens from the launcher with a greeting and questions to start from', () => 
   renderDock({ desk: true });
   expect(screen.queryByRole('dialog')).toBeNull();
 
-  fireEvent.click(screen.getByRole('button', { name: 'Ask Mo' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Ask Roadie' }));
 
-  const panel = screen.getByRole('dialog', { name: 'Mo' });
-  expect(panel.textContent).toContain("Hi, I'm Mo. Ask me anything about your Liedmotif.");
+  const panel = screen.getByRole('dialog', { name: 'Roadie' });
+  expect(panel.textContent).toContain("Hi, I'm Roadie. Ask me anything about your Liedmotif.");
   expect(screen.getByRole('button', { name: 'What does New music do?' })).toBeTruthy();
 });
 
 it('puts the cursor in the question field when it opens beside the page', () => {
   renderDock({ desk: true });
 
-  fireEvent.click(screen.getByRole('button', { name: 'Ask Mo' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Ask Roadie' }));
 
-  expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Ask Mo' }));
+  expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Ask Roadie' }));
 });
 
 it('moves focus into the panel, not the field, when it covers the page', () => {
   renderDock({ desk: false });
 
-  fireEvent.click(screen.getByRole('button', { name: 'Ask Mo' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Ask Roadie' }));
 
-  expect(document.activeElement).toBe(screen.getByRole('dialog', { name: 'Mo' }));
+  expect(document.activeElement).toBe(screen.getByRole('dialog', { name: 'Roadie' }));
 });
 
 it('turns the launcher into the close button while the sidebar is open', () => {
   renderDock({ desk: true });
-  fireEvent.click(screen.getByRole('button', { name: 'Ask Mo' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Ask Roadie' }));
   expect(document.documentElement.classList.contains('assistant-open')).toBe(true);
 
   // The panel's own header carries a close button of the same name; the
   // launcher is the one outside the panel.
   const launcher = screen
-    .getAllByRole('button', { name: 'Close Mo' })
+    .getAllByRole('button', { name: 'Close Roadie' })
     .find((button) => !screen.getByRole('dialog').contains(button))!;
   fireEvent.click(launcher);
 
   expect(screen.queryByRole('dialog')).toBeNull();
   expect(document.documentElement.classList.contains('assistant-open')).toBe(false);
-  expect(screen.getByRole('button', { name: 'Ask Mo' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Ask Roadie' })).toBeTruthy();
 });
 
 it('closes on Escape and hands focus back to the launcher', async () => {
   renderDock({ desk: true });
-  const launcher = screen.getByRole('button', { name: 'Ask Mo' });
+  const launcher = screen.getByRole('button', { name: 'Ask Roadie' });
   fireEvent.click(launcher);
 
-  fireEvent.keyDown(screen.getByRole('textbox', { name: 'Ask Mo' }), { key: 'Escape' });
+  fireEvent.keyDown(screen.getByRole('textbox', { name: 'Ask Roadie' }), { key: 'Escape' });
 
   expect(screen.queryByRole('dialog')).toBeNull();
   await waitFor(() => expect(document.activeElement).toBe(launcher));
@@ -161,26 +161,26 @@ it('closes on Escape and hands focus back to the launcher', async () => {
 
 it('leaves Escape to the page while focus is in the page beside the sidebar', () => {
   renderDock({ desk: true });
-  fireEvent.click(screen.getByRole('button', { name: 'Ask Mo' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Ask Roadie' }));
   const pageButton = screen.getByRole('button', { name: 'Something on the page' });
 
   pageButton.focus();
   fireEvent.keyDown(pageButton, { key: 'Escape' });
 
-  expect(screen.getByRole('dialog', { name: 'Mo' })).toBeTruthy();
+  expect(screen.getByRole('dialog', { name: 'Roadie' })).toBeTruthy();
 });
 
 it('keeps the conversation while the panel is closed', () => {
   renderDock({ desk: true });
-  fireEvent.click(screen.getByRole('button', { name: 'Ask Mo' }));
-  fireEvent.change(screen.getByRole('textbox', { name: 'Ask Mo' }), {
+  fireEvent.click(screen.getByRole('button', { name: 'Ask Roadie' }));
+  fireEvent.change(screen.getByRole('textbox', { name: 'Ask Roadie' }), {
     target: { value: 'How do I invite' },
   });
 
-  fireEvent.keyDown(screen.getByRole('textbox', { name: 'Ask Mo' }), { key: 'Escape' });
-  fireEvent.click(screen.getByRole('button', { name: 'Ask Mo' }));
+  fireEvent.keyDown(screen.getByRole('textbox', { name: 'Ask Roadie' }), { key: 'Escape' });
+  fireEvent.click(screen.getByRole('button', { name: 'Ask Roadie' }));
 
-  expect((screen.getByRole('textbox', { name: 'Ask Mo' }) as HTMLTextAreaElement).value).toBe(
+  expect((screen.getByRole('textbox', { name: 'Ask Roadie' }) as HTMLTextAreaElement).value).toBe(
     'How do I invite',
   );
 });
@@ -188,13 +188,13 @@ it('keeps the conversation while the panel is closed', () => {
 it('shows no launcher on a phone where the page keeps controls in that corner', () => {
   renderDock({ desk: false, pageCarriesPhoneLauncher: true });
 
-  expect(screen.queryByRole('button', { name: 'Ask Mo' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Ask Roadie' })).toBeNull();
 });
 
 it('keeps the launcher on such a page on a wide screen, where the corner is free', () => {
   renderDock({ desk: true, pageCarriesPhoneLauncher: true });
 
-  expect(screen.getByRole('button', { name: 'Ask Mo' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Ask Roadie' })).toBeTruthy();
 });
 
 it('asks a suggested question and can stop the answer from the field', () => {
@@ -204,18 +204,18 @@ it('asks a suggested question and can stop the answer from the field', () => {
     vi.fn(() => new Promise(() => {})),
   );
   renderDock({ desk: true });
-  fireEvent.click(screen.getByRole('button', { name: 'Ask Mo' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Ask Roadie' }));
 
   fireEvent.click(screen.getByRole('button', { name: 'What does New music do?' }));
 
   expect(screen.getByRole('log').textContent).toContain('What does New music do?');
-  expect(screen.getByRole('status').textContent).toContain('Mo is looking it up');
+  expect(screen.getByRole('status').textContent).toContain('Roadie is looking it up');
   expect(screen.queryByRole('button', { name: 'Send' })).toBeNull();
 
   fireEvent.click(screen.getByRole('button', { name: 'Stop the answer' }));
 
   // Nothing was answered: the question is back in the field, ready to send again.
-  const field = screen.getByRole('textbox', { name: 'Ask Mo' }) as HTMLTextAreaElement;
+  const field = screen.getByRole('textbox', { name: 'Ask Roadie' }) as HTMLTextAreaElement;
   expect(field.value).toBe('What does New music do?');
   expect(document.activeElement).toBe(field);
   expect(screen.getByRole('button', { name: 'Send' })).toBeTruthy();
@@ -228,7 +228,7 @@ it('opens the page an answer links to and keeps the sidebar open beside it', asy
   fireEvent.click(await screen.findByRole('button', { name: 'Settings › Playback' }));
 
   expect(navigation.push).toHaveBeenCalledExactlyOnceWith('/settings/playback');
-  expect(screen.getByRole('dialog', { name: 'Mo' })).toBeTruthy();
+  expect(screen.getByRole('dialog', { name: 'Roadie' })).toBeTruthy();
 });
 
 it('closes the panel that covers the page when a link in an answer is followed', async () => {
@@ -369,7 +369,7 @@ it('primes the player’s audio inside the gesture that sends a message: the but
 
   askAndGetAnswer('It keeps the music coming.');
   expect(playerCommands.prime).toHaveBeenCalledTimes(1);
-  const field = screen.getByRole('textbox', { name: 'Ask Mo' });
+  const field = screen.getByRole('textbox', { name: 'Ask Roadie' });
   fireEvent.change(field, { target: { value: 'Continue.' } });
   // The first answer is through: the field sends again.
   await screen.findByRole('button', { name: 'Send' });

@@ -25,8 +25,12 @@ vi.mock('@/lib/session', () => ({
 }));
 vi.mock('@/lib/providers', () => ({ getLlmProvider: async () => holder.llm }));
 // No database here: every asker is the Admin, whose messages are held to no
-// daily allowance and so read and count nothing.
+// daily allowance and so read and count nothing, and who has set no tone.
 vi.mock('@/lib/db', () => ({ getDb: () => null }));
+vi.mock('@liedmotif/db', async (original) => ({
+  ...(await original<typeof import('@liedmotif/db')>()),
+  getAssistantTone: async () => ({ tone: '' }),
+}));
 vi.mock('@/lib/request-cache', () => ({
   cachedUserProfile: async () => ({ role: 'admin', disabledAt: null }),
 }));
@@ -139,7 +143,7 @@ describe('POST /api/assistant', () => {
     expect(systems[0]).toMatchObject({ role: 'system' });
     expect(systems[0]).toEqual(systems[1]);
     const system = JSON.stringify(systems[0]);
-    expect(system).toContain('You are Mo,');
+    expect(system).toContain('You are Roadie,');
     expect(system).toContain("Answer in the language of the user's latest message");
     // The docs index: every page is listed for the model to pick from.
     for (const page of loadDocs()) expect(system).toContain(`${page.slug}: `);

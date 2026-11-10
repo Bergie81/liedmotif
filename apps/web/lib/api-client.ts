@@ -112,6 +112,8 @@ import {
   setSessionModeResponseSchema,
   type SetSessionDurationResponse,
   setSessionDurationResponseSchema,
+  type AssistantTone,
+  assistantToneResponseSchema,
   type GenerationSettings,
   type UpdateGenerationSettingsRequest,
   generationSettingsResponseSchema,
@@ -569,6 +571,14 @@ export function updatePlaybackSettings(
   return callApi<PlaybackSettings>('/api/settings/playback', playbackSettingsResponseSchema, {
     method: 'POST',
     body: patch,
+  });
+}
+
+/** Save the tone the user gives the Assistant; answers with it as stored. */
+export function updateAssistantTone(tone: AssistantTone): Promise<ApiResult<AssistantTone>> {
+  return callApi<AssistantTone>('/api/settings/assistant-tone', assistantToneResponseSchema, {
+    method: 'POST',
+    body: tone,
   });
 }
 

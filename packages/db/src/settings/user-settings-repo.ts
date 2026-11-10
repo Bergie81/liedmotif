@@ -1,15 +1,17 @@
 // Owner-scoped `user_settings` reads/writes. The table is a typed key/value
 // store (`app_settings`' per-user counterpart); `playback` and `generation` are
-// its keys. Values are validated at the ROUTE boundary with the
+// among its keys. Values are validated at the ROUTE boundary with the
 // `@liedmotif/shared` Zod schemas — this repo only merges defaults on read and
 // upserts full, already-validated objects on write.
 
 import { and, eq, sql } from 'drizzle-orm';
 import {
+  DEFAULT_ASSISTANT_TONE,
   DEFAULT_GENERATION_SETTINGS,
   DEFAULT_MEMBER_LIMITS,
   DEFAULT_ONBOARDING_STATE,
   DEFAULT_PLAYBACK_SETTINGS,
+  type AssistantTone,
   type GenerationSettings,
   type MemberAssistantAccess,
   type MemberLimits,
@@ -142,6 +144,24 @@ export async function updateGenerationSettings(
     args.ownerUserId,
     USER_SETTINGS_KEYS.generation,
     DEFAULT_GENERATION_SETTINGS,
+    args.patch,
+  );
+}
+
+/** The tone the owner gave the Assistant; empty until they save one. */
+export async function getAssistantTone(db: DbOrTx, ownerUserId: string): Promise<AssistantTone> {
+  return getUserSetting(db, ownerUserId, USER_SETTINGS_KEYS.assistantTone, DEFAULT_ASSISTANT_TONE);
+}
+
+export async function updateAssistantTone(
+  db: DbOrTx,
+  args: { ownerUserId: string; patch: Partial<AssistantTone> },
+): Promise<AssistantTone> {
+  return updateUserSetting(
+    db,
+    args.ownerUserId,
+    USER_SETTINGS_KEYS.assistantTone,
+    DEFAULT_ASSISTANT_TONE,
     args.patch,
   );
 }

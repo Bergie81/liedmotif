@@ -66,7 +66,7 @@ async function ask(llm: LlmProvider, entry: EvalEntry, timeoutMs: number): Promi
     );
     for await (const chunk of streamAssistantAnswer(
       observed.llm,
-      entry.role,
+      { role: entry.role },
       tools,
       messages,
       signal,

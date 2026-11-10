@@ -16,17 +16,19 @@ const MAX_TOOL_STEPS = 4;
  * writes them. Iterating throws the provider's sanitized `ProviderError` when
  * the text LLM fails. What the tools return stays inside the turn. `role` is
  * the asking user's: it decides which pages of the app the model is told
- * about. `tools` are this turn's own (`createAssistantTools`).
+ * about. `tone` is the tone they gave the Assistant; without one the model
+ * answers in the default voice. `tools` are this turn's own
+ * (`createAssistantTools`).
  */
 export function streamAssistantAnswer(
   llm: LlmProvider,
-  role: UserRole,
+  { role, tone }: { role: UserRole; tone?: string },
   tools: readonly LlmTool[],
   messages: readonly AssistantMessage[],
   signal: AbortSignal,
 ): AsyncIterable<string> {
   return llm.streamAssistantReply({
-    system: buildAssistantSystemPrompt({ role, docsIndex: buildDocsIndex(loadDocs()) }),
+    system: buildAssistantSystemPrompt({ role, tone, docsIndex: buildDocsIndex(loadDocs()) }),
     messages: fitHistory(messages),
     tools,
     maxToolSteps: MAX_TOOL_STEPS,

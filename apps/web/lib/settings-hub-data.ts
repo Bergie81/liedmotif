@@ -1,5 +1,6 @@
 import {
   countPeople,
+  getAssistantTone,
   getCoverArtSettings,
   getAdminCoverUsage,
   getGenerationSettings,
@@ -9,8 +10,10 @@ import {
   getVoiceProfile,
   readWorkerHeartbeat,
   workerHeartbeatHealth,
+  type UserRole,
 } from '@liedmotif/db';
 import { createLogger } from '@liedmotif/shared';
+import { cachedAssistantAvailability } from '@/lib/assistant/availability';
 import { sunoCoverFallbackConfigured } from '@/lib/covers';
 import { getDb } from '@/lib/db';
 import { getStorageProvider, getTypicalTracksPerMusicRequest } from '@/lib/providers';
@@ -147,18 +150,37 @@ async function loadAccountSection(
   return { profile, peopleCount, storageProviderKey, worker, voiceStatus };
 }
 
+/** The user's tone for the Assistant row, read only for a user who has the Assistant. */
+async function loadAssistantTone(
+  ownerUserId: string,
+  role: UserRole,
+): Promise<SettingsHubInput['assistantTone']> {
+  const db = getDb();
+  const { available } = await cachedAssistantAvailability(db, ownerUserId, role);
+  if (!available) return null;
+  return read('assistant-tone', async () => (await getAssistantTone(db, ownerUserId)).tone);
+}
+
 export async function loadSettingsHubData(ownerUserId: string): Promise<SettingsHubData> {
   const tracksPerCall = getTypicalTracksPerMusicRequest();
   // The shared request clock: the cover-usage windows here count from the same
   // instant as the request-cached music-usage computation.
   const now = requestNow();
-  const [usage, providers, generation, account] = await Promise.all([
+  const [usage, providers, generation, account, assistantTone] = await Promise.all([
     loadUsageSection(ownerUserId, tracksPerCall, now),
     loadProviderSection(),
     loadGenerationSection(ownerUserId),
     loadAccountSection(ownerUserId),
+    loadAssistantTone(ownerUserId, 'admin'),
   ]);
-  return buildSettingsHubData({ tracksPerCall, ...usage, ...providers, ...generation, ...account });
+  return buildSettingsHubData({
+    tracksPerCall,
+    ...usage,
+    ...providers,
+    ...generation,
+    ...account,
+    assistantTone,
+  });
 }
 
 /**
@@ -170,11 +192,12 @@ export async function loadMemberSettingsHubData(
   ownerUserId: string,
 ): Promise<MemberSettingsHubData> {
   const db = getDb();
-  const [generation, playback, profile, peopleCount] = await Promise.all([
+  const [generation, playback, profile, peopleCount, assistantTone] = await Promise.all([
     read('generation', () => getGenerationSettings(db, ownerUserId)),
     read('playback', () => getPlaybackSettings(db, ownerUserId)),
     read('profile', () => cachedListenerProfile(db, ownerUserId)),
     read('people', () => countPeople(db, ownerUserId)),
+    loadAssistantTone(ownerUserId, 'member'),
   ]);
-  return buildMemberSettingsHubData({ generation, playback, profile, peopleCount });
+  return buildMemberSettingsHubData({ generation, playback, profile, peopleCount, assistantTone });
 }

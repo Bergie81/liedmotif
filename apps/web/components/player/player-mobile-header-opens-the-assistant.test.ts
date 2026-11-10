@@ -56,18 +56,18 @@ it('opens the Assistant from the phone header of the Player', () => {
   render(h(Shell, null, phoneHeader));
   expect(screen.queryByRole('dialog')).toBeNull();
 
-  fireEvent.click(screen.getByRole('button', { name: 'Ask Mo' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Ask Roadie' }));
 
-  expect(screen.getByRole('dialog', { name: 'Mo' })).toBeTruthy();
+  expect(screen.getByRole('dialog', { name: 'Roadie' })).toBeTruthy();
 });
 
 it('hands focus back to the phone header button when the panel closes', async () => {
   onScreen(false);
   render(h(Shell, null, phoneHeader));
-  const launcher = screen.getByRole('button', { name: 'Ask Mo' });
+  const launcher = screen.getByRole('button', { name: 'Ask Roadie' });
   fireEvent.click(launcher);
 
-  fireEvent.keyDown(screen.getByRole('dialog', { name: 'Mo' }), { key: 'Escape' });
+  fireEvent.keyDown(screen.getByRole('dialog', { name: 'Roadie' }), { key: 'Escape' });
 
   expect(screen.queryByRole('dialog')).toBeNull();
   await waitFor(() => expect(document.activeElement).toBe(launcher));
@@ -77,5 +77,5 @@ it('shows no Assistant button to a viewer without the Assistant', () => {
   onScreen(false);
   render(h(TooltipProvider, null, phoneHeader));
 
-  expect(screen.queryByRole('button', { name: 'Ask Mo' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Ask Roadie' })).toBeNull();
 });

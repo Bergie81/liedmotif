@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
-import { getActiveSession, resolveAssistantStanding } from '@liedmotif/db';
+import { getActiveSession } from '@liedmotif/db';
 import { AppShell } from '@/components/app-shell';
 import { OfflineSyncHost } from '@/components/offline/offline-sync-host';
 import { PlayerProvider } from '@/components/player/player-provider';
+import { cachedAssistantAvailability } from '@/lib/assistant/availability';
 import { answerLinkTargets } from '@/lib/assistant/link-targets';
 import { getDb } from '@/lib/db';
-import { getLlmProvider, getTypicalTracksPerMusicRequest } from '@/lib/providers';
-import { cachedListenerProfile, requestNow } from '@/lib/request-cache';
+import { getTypicalTracksPerMusicRequest } from '@/lib/providers';
+import { cachedListenerProfile } from '@/lib/request-cache';
 import { requireAppAccess } from '@/lib/session';
 import { cachedOwnerUsageTracks, toSessionSummary } from '@/lib/sessions';
 import { ownVoiceOfferedTo } from '@/lib/voice';
@@ -19,17 +20,12 @@ export const dynamic = 'force-dynamic';
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const { session, role } = await requireAppAccess();
   const db = getDb();
-  const [activeSession, profile, llmProvider, assistantStanding] = await Promise.all([
+  const [activeSession, profile, assistant] = await Promise.all([
     getActiveSession(db, { ownerUserId: session.user.id }),
     cachedListenerProfile(db, session.user.id),
-    // The Assistant answers with the text LLM; a failed read hides it rather
-    // than failing the shell.
-    getLlmProvider().catch(() => null),
     // Whether this viewer has the Assistant, and what is left of today's
-    // allowance. A failed read hides it too.
-    resolveAssistantStanding(db, { userId: session.user.id, role, now: requestNow() }).catch(
-      () => null,
-    ),
+    // allowance. A failed read hides it rather than failing the shell.
+    cachedAssistantAvailability(db, session.user.id, role),
   ]);
   // Deliberately NOT awaited: the usage tile streams in after the shell paints,
   // so the 5–9 query budget computation never blocks first paint. Settings pages
@@ -56,9 +52,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         }}
         initialActiveSession={activeSession ? toSessionSummary(activeSession) : null}
         usagePromise={usagePromise}
-        assistantAvailable={llmProvider !== null && assistantStanding?.enabled === true}
+        assistantAvailable={assistant.available}
         assistantLinks={answerLinkTargets(role)}
-        assistantStanding={assistantStanding}
+        assistantStanding={assistant.standing}
       >
         {children}
       </AppShell>

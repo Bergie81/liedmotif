@@ -47,11 +47,11 @@ function openPanel(standing: AssistantStanding | null): HTMLElement {
     () => ({ matches: true, addEventListener: () => {}, removeEventListener: () => {} }) as never,
   );
   render(h(TooltipProvider, null, h(ShellAssistant, { links: NO_LINKS, standing })));
-  fireEvent.click(screen.getByRole('button', { name: 'Ask Mo' }));
-  return screen.getByRole('dialog', { name: 'Mo' });
+  fireEvent.click(screen.getByRole('button', { name: 'Ask Roadie' }));
+  return screen.getByRole('dialog', { name: 'Roadie' });
 }
 
-const field = () => screen.getByRole('textbox', { name: 'Ask Mo' }) as HTMLTextAreaElement;
+const field = () => screen.getByRole('textbox', { name: 'Ask Roadie' }) as HTMLTextAreaElement;
 
 it.each([
   { remaining: 5, line: '5 messages left today.' },
@@ -183,7 +183,7 @@ it('takes a fresher standing from the server over the one it had', () => {
   const dock = (standing: AssistantStanding) =>
     h(TooltipProvider, null, h(ShellAssistant, { links: NO_LINKS, standing }));
   const { rerender } = render(dock(memberStanding(0)));
-  fireEvent.click(screen.getByRole('button', { name: 'Ask Mo' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Ask Roadie' }));
   expect(field().disabled).toBe(true);
 
   // The Admin raised the allowance, and the page was rendered again.

@@ -122,6 +122,8 @@ export const USER_SETTINGS_KEYS = {
    * Admin. Holds only the fields that differ from the instance default.
    */
   assistant: 'assistant',
+  /** The tone the owner gave the Assistant (`AssistantTone`) — written by the owner. */
+  assistantTone: 'assistantTone',
   /**
    * The owner's latest learned-taste answer. Derived: dropping the
    * row only costs one recomputation.

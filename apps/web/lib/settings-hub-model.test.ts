@@ -60,6 +60,7 @@ function configuredInput(): SettingsHubInput {
     storageProviderKey: { ok: true, value: 'local' },
     worker: { ok: true, value: { health: 'healthy' as const, heartbeatAgo: '8 s ago' } },
     voiceStatus: { ok: true, value: null },
+    assistantTone: { ok: true, value: '' },
   };
 }
 
@@ -69,6 +70,23 @@ describe('Settings hub model', () => {
     expect(buildSettingsHubData(input).voice).not.toBeNull();
     input.voiceStatus = null;
     expect(buildSettingsHubData(input).voice).toBeNull();
+  });
+
+  it('offers the Assistant row only to a user who has the Assistant, and says whose tone it speaks in', () => {
+    const input = configuredInput();
+    expect(buildSettingsHubData(input).assistant).toEqual({
+      status: { label: 'Default', tone: 'muted' },
+      text: "Roadie's own tone",
+    });
+    input.assistantTone = { ok: true, value: 'Talk like a ship captain.' };
+    expect(buildSettingsHubData(input).assistant).toEqual({
+      status: { label: 'Custom', tone: 'ok' },
+      text: 'Your own tone',
+    });
+    input.assistantTone = { ok: false };
+    expect(buildSettingsHubData(input).assistant?.status.tone).toBe('warn');
+    input.assistantTone = null;
+    expect(buildSettingsHubData(input).assistant).toBeNull();
   });
 
   it('provides configured prices for usage and keeps counts when prices cannot be read', () => {
@@ -249,13 +267,19 @@ describe('Settings hub model', () => {
 
 describe('Member settings hub model', () => {
   const memberInput = () => {
-    const { generation, playback, profile, peopleCount } = configuredInput();
-    return { generation, playback, profile, peopleCount };
+    const { generation, playback, profile, peopleCount, assistantTone } = configuredInput();
+    return { generation, playback, profile, peopleCount, assistantTone };
   };
 
   it('carries exactly the Member-owned entries', () => {
     const result = buildMemberSettingsHubData(memberInput());
-    expect(Object.keys(result).sort()).toEqual(['generation', 'people', 'playback', 'profile']);
+    expect(Object.keys(result).sort()).toEqual([
+      'assistant',
+      'generation',
+      'people',
+      'playback',
+      'profile',
+    ]);
   });
 
   it('summarizes generation without any instance limit values', () => {
@@ -272,6 +296,13 @@ describe('Member settings hub model', () => {
     expect(member.profile).toEqual(admin.profile);
     expect(member.people).toEqual(admin.people);
     expect(member.playback).toEqual(admin.playback);
+  });
+
+  it('offers a Member the Assistant row only when they have the Assistant', () => {
+    expect(buildMemberSettingsHubData(memberInput()).assistant?.text).toBe("Roadie's own tone");
+    expect(
+      buildMemberSettingsHubData({ ...memberInput(), assistantTone: null }).assistant,
+    ).toBeNull();
   });
 
   it('degrades per entry when a source is unreadable', () => {

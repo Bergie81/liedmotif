@@ -108,7 +108,7 @@ describe('a Change Vibe card', () => {
     expect(button('Changing…')).toHaveProperty('disabled', true);
     // The same Session plays on: there is no other page to show, on the phone either.
     expect(navigation.push).not.toHaveBeenCalled();
-    expect(screen.getByRole('dialog', { name: 'Mo' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: 'Roadie' })).toBeTruthy();
 
     const restyled = summary({ updatedAt: '2026-11-10T10:05:00Z' });
     server.sent[0]!.answer(saved(restyled));
@@ -185,7 +185,7 @@ describe('a More Like This card', () => {
     expect(button('Starting Session…')).toHaveProperty('disabled', true);
     // Nothing to show yet: the music that plays goes on until the new Session exists.
     expect(navigation.push).not.toHaveBeenCalled();
-    expect(screen.getByRole('dialog', { name: 'Mo' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: 'Roadie' })).toBeTruthy();
 
     server.sent[0]!.answer(
       Response.json({ ok: true, data: { session: NEW_SESSION, supersededSessionId: SESSION_ID } }),
@@ -195,7 +195,7 @@ describe('a More Like This card', () => {
     expect(player.engage).toHaveBeenCalledExactlyOnceWith(NEW_SESSION, { autoplay: false });
     // The panel that covers the page gets out of the Player's way.
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    fireEvent.click(button('Ask Mo'));
+    fireEvent.click(button('Ask Roadie'));
     expect(screen.getByRole('group', { name: 'More Like This' }).textContent).toContain(
       'Session started',
     );
@@ -218,7 +218,7 @@ describe('a More Like This card', () => {
     expect(within(card).queryByRole('button')).toBeNull();
     expect(player.engage).not.toHaveBeenCalled();
     expect(navigation.push).not.toHaveBeenCalled();
-    expect(screen.getByRole('dialog', { name: 'Mo' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: 'Roadie' })).toBeTruthy();
   });
 
   it('sends nothing while a Start is still in flight: it goes to the Player, and stays to be confirmed', async () => {
@@ -279,7 +279,7 @@ describe('a New music card', () => {
     // The shell reads its own copy of the active Session again, for the mini player.
     expect(refresh).toHaveBeenCalledTimes(1);
     expect(navigation.push).not.toHaveBeenCalled();
-    expect(screen.getByRole('dialog', { name: 'Mo' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: 'Roadie' })).toBeTruthy();
   });
 
   it('saves No limit as a cleared target', async () => {
