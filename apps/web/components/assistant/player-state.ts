@@ -19,9 +19,12 @@ export interface PlayerSnapshot {
  * The player state for one request, or `undefined` when there is nothing to
  * tell. An offline collection is nothing: it plays from this device where no
  * server can be asked, under a key that is not a Session or Playlist id.
+ * `sleepTimerEndsAt` is when the player's running Sleep Timer ends, null
+ * while none runs.
  */
 export function assistantPlayerState(
   playback: PlayerSnapshot | null,
+  sleepTimerEndsAt: number | null = null,
 ): AssistantPlayerState | undefined {
   if (!playback || playback.source.kind === 'offline') return undefined;
   const { source, player } = playback;
@@ -32,5 +35,6 @@ export function assistantPlayerState(
         : { kind: 'playlist', id: source.playlist.id },
     trackId: player.currentTrack?.trackId ?? null,
     playing: player.status === 'playing',
+    ...(sleepTimerEndsAt !== null && { sleepTimerEndsAt }),
   };
 }

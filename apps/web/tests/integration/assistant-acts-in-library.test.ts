@@ -99,7 +99,9 @@ function act(
 
 /** The receipts a reply stream carried, in order. */
 const receipts = ({ events }: ToolCallsTurn): AssistantReceipt[] =>
-  events.flatMap((event) => (event.type === 'action' ? [event.action.receipt] : []));
+  events.flatMap((event) =>
+    event.type === 'action' && event.action.status === 'done' ? [event.action.receipt] : [],
+  );
 
 /** The titles in `userId`'s Favorites, in order. */
 async function favoritesOf(userId: string): Promise<(string | null)[]> {

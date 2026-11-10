@@ -10,12 +10,15 @@ import { ArrowRight, Check } from 'lucide-react';
 import type { AssistantReceipt } from '@liedmotif/shared';
 import { AnswerLinksContext, appPageButtonClass } from './assistant-markdown';
 import type { ChatAction } from './chat-actions';
+import { PlayerCommandLine } from './player-command-line';
 import { receiptLine } from './receipt';
 
 export function ActionLine({ action }: { action: ChatAction }) {
   switch (action.status) {
     case 'done':
       return <ReceiptLine receipt={action.receipt} />;
+    case 'player':
+      return <PlayerCommandLine action={action} />;
   }
 }
 

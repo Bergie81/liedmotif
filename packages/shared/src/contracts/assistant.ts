@@ -36,6 +36,11 @@ export const assistantPlayerStateSchema = z.strictObject({
   trackId: uuidSchema.nullable(),
   /** Audible now; false covers paused and everything short of playing. */
   playing: z.boolean(),
+  /**
+   * When a running Sleep Timer fades the music to silence, in epoch
+   * milliseconds of the browser's clock. Left out while no timer runs.
+   */
+  sleepTimerEndsAt: z.number().int().positive().optional(),
 });
 export type AssistantPlayerState = z.infer<typeof assistantPlayerStateSchema>;
 
@@ -98,12 +103,43 @@ export const assistantReceiptSchema = z.discriminatedUnion('action', [
 ]);
 export type AssistantReceipt = z.infer<typeof assistantReceiptSchema>;
 
+/** The player's own transport buttons, as the Assistant names them. */
+export const ASSISTANT_PLAYER_CONTROLS = [
+  'pause',
+  'continue',
+  /** The app's Skip, with its meaning as feedback. */
+  'next',
+  'previous',
+  'restart',
+  /** Loop Track, the playback mode. */
+  'loopOn',
+  'loopOff',
+  /** Stop Session. */
+  'stop',
+] as const;
+export type AssistantPlayerControl = (typeof ASSISTANT_PLAYER_CONTROLS)[number];
+
+/**
+ * What the browser's player is to do, as structured values: the chat panel
+ * runs it through the player's own actions and words its line from it.
+ */
+export const assistantPlayerCommandSchema = z.discriminatedUnion('name', [
+  z.strictObject({ name: z.enum(ASSISTANT_PLAYER_CONTROLS) }),
+  /** Sets the Sleep Timer to `minutes` from now, replacing a running one. */
+  z.strictObject({ name: z.literal('sleepTimer'), minutes: z.number().int().positive() }),
+  z.strictObject({ name: z.literal('sleepTimerOff') }),
+]);
+export type AssistantPlayerCommand = z.infer<typeof assistantPlayerCommandSchema>;
+
 /**
  * Something the Assistant did while answering, by what became of it. `done` is
  * a Library action the server has carried out: the event is its receipt.
+ * `player` is a command for the browser's player, which only the browser can
+ * run: the server has checked it and knows nothing of what comes of it.
  */
 export const assistantActionSchema = z.discriminatedUnion('status', [
   z.strictObject({ status: z.literal('done'), receipt: assistantReceiptSchema }),
+  z.strictObject({ status: z.literal('player'), command: assistantPlayerCommandSchema }),
 ]);
 export type AssistantAction = z.infer<typeof assistantActionSchema>;
 
@@ -260,3 +296,23 @@ export const pinPlaylistInputSchema = z.object({
   playlistId: z.string().describe('The id of the Playlist, as another tool returned it.'),
 });
 export type PinPlaylistInput = z.infer<typeof pinPlaylistInputSchema>;
+
+/** What the model passes to `playerControl`. */
+export const playerControlInputSchema = z.object({
+  command: z
+    .enum(ASSISTANT_PLAYER_CONTROLS)
+    .describe(
+      'pause halts the music and continue plays on. next is Skip, previous goes back one Track, restart plays the current Track from its start. loopOn repeats the current Track until loopOff. stop is Stop Session: it ends the Session, which then generates nothing until it is resumed.',
+    ),
+});
+export type PlayerControlInput = z.infer<typeof playerControlInputSchema>;
+
+/** What the model passes to `sleepTimer`: a time to set, or `off`. A time outside the range is answered, not rounded. */
+export const sleepTimerInputSchema = z.object({
+  minutes: z
+    .number()
+    .nullish()
+    .describe('In how many minutes the music fades out and pauses, counted from now.'),
+  off: z.boolean().nullish().describe('true cancels the running Sleep Timer instead.'),
+});
+export type SleepTimerInput = z.infer<typeof sleepTimerInputSchema>;

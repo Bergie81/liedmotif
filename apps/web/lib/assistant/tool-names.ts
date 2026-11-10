@@ -12,3 +12,5 @@ export const CREATE_PLAYLIST_TOOL_NAME = 'createPlaylist';
 export const RENAME_PLAYLIST_TOOL_NAME = 'renamePlaylist';
 export const PIN_PLAYLIST_TOOL_NAME = 'pinPlaylist';
 export const NEW_MUSIC_OFF_TOOL_NAME = 'newMusicOff';
+export const PLAYER_CONTROL_TOOL_NAME = 'playerControl';
+export const SLEEP_TIMER_TOOL_NAME = 'sleepTimer';

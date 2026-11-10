@@ -9,7 +9,7 @@
 // The conversation is created here, once per shell, so it outlives the pages
 // the user moves between and ends with a reload.
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Sparkles, X } from 'lucide-react';
@@ -27,6 +27,8 @@ import { announceOutsideLibraryWrite } from '@/lib/offline/library-writes';
 import { AnswerLinksContext, type AnswerLinks } from './assistant-markdown';
 import { AssistantPanel } from './assistant-panel';
 import { createAssistantConversation } from './conversation';
+import type { PlayerChatAction, PlayerCommands } from './player-command';
+import { TapToPlayContext } from './player-command-line';
 import { receiptChangesLibrary } from './receipt';
 
 /** Tailwind's `desk` breakpoint (globals.css). */
@@ -53,6 +55,7 @@ export function AssistantDock({
   standing: renderedStanding = null,
   player,
   onReceipt,
+  playerCommands,
 }: {
   /** The app pages and docs pages an answer may link this user to. */
   links: AnswerLinkTargets;
@@ -64,6 +67,8 @@ export function AssistantDock({
   player?: AssistantPlayerState;
   /** The Assistant did something on the server: what the shell shows of it may have to follow. */
   onReceipt?: (receipt: AssistantReceipt) => void;
+  /** The player's own actions, for the commands the Assistant hands over. */
+  playerCommands?: PlayerCommands;
 }) {
   // The newest word on the allowance: the server's render, then whatever each
   // response reports, then a later render again.
@@ -83,6 +88,20 @@ export function AssistantDock({
   // What the app around the chat does the moment an action arrives. The chat
   // itself only shows the action; this is where the rest of the app follows.
   const followActionRef = useRef<(action: AssistantAction) => void>(() => {});
+  // Sending is the one gesture a command's audio can ride on: the player's
+  // audio is unlocked inside it, before the answer that may start it exists.
+  const playerCommandsRef = useRef(playerCommands);
+  useEffect(() => {
+    playerCommandsRef.current = playerCommands;
+  }, [playerCommands]);
+  const [conversation] = useState(() =>
+    createAssistantConversation({
+      onStanding: setStanding,
+      onAction: (action) => followActionRef.current(action),
+      onSend: () => playerCommandsRef.current?.prime(),
+      getPlayer: () => playerRef.current,
+    }),
+  );
   useEffect(() => {
     followActionRef.current = (action) => {
       switch (action.status) {
@@ -95,15 +114,20 @@ export function AssistantDock({
           }
           onReceipt?.(action.receipt);
           break;
+        case 'player':
+          void playerCommands
+            ?.run(action.command)
+            .then((outcome) => conversation.settleAction(action, outcome));
+          break;
       }
     };
-  }, [router, onReceipt]);
-  const [conversation] = useState(() =>
-    createAssistantConversation({
-      onStanding: setStanding,
-      onAction: (action) => followActionRef.current(action),
-      getPlayer: () => playerRef.current,
-    }),
+  }, [router, onReceipt, playerCommands, conversation]);
+  const tapToPlay = useCallback(
+    (action: PlayerChatAction) =>
+      void playerCommands
+        ?.tapToPlay()
+        .then((outcome) => conversation.settleAction(action, outcome)),
+    [playerCommands, conversation],
   );
   const [open, setOpen] = useState(false);
   const besidePage = usePanelBesidePage();
@@ -179,7 +203,9 @@ export function AssistantDock({
           }}
         >
           <AnswerLinksContext.Provider value={answerLinks}>
-            <AssistantPanel conversation={conversation} inputRef={inputRef} standing={standing} />
+            <TapToPlayContext.Provider value={tapToPlay}>
+              <AssistantPanel conversation={conversation} inputRef={inputRef} standing={standing} />
+            </TapToPlayContext.Provider>
           </AnswerLinksContext.Provider>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>

@@ -20,14 +20,17 @@ Tap your avatar for **Profile**, **Your Stats**, **Settings**, **Mode** and **Si
 
 ## Ask Mo
 
-Mo is the Assistant inside the app. Ask it how something in Liedmotif works, such as "How do I listen offline?", and it answers from these docs and says where in the app to look. Mo can also do a few things in your library for you. It never removes anything.
+Mo is the Assistant inside the app. Ask it how something in Liedmotif works, such as "How do I listen offline?", and it answers from these docs and says where in the app to look. Mo can also control the player and do a few things in your library for you. It never removes anything.
 
 - **Open it:** tap the round sparkles button, **Ask Mo**, at the bottom right. On a wide screen Mo opens as a sidebar beside the page, so you can keep using the page while you ask, and the same button closes it. On a phone Mo fills the screen, and the close button in its top bar brings you back. The button isn't shown on the full player.
 - **Ask:** type a question and press Enter, or pick one of the suggested questions. The answer appears as it's written, and the stop button ends it early.
 - **Ask about your own music:** "What is playing?" gets the session or playlist, the track and, for a session, whether New music is on. "How many tracks do I have left?" gets what is left today and this month: for a member their own budget and the shared one, for the admin the instance limits.
 - **Find your music:** Mo finds your sessions, playlists and tracks the way [Search](#search) does: by title, genre or mood, and tracks also by their lyrics. "Which song has the line about the lighthouse?" gets the track and the matching line, and "What was that rainy session last week?" gets the session and when you last played it. Without anything to search for, Mo lists the most recent ones, and it can list the tracks of one session or playlist. Mo finds what you can find in the app yourself, and it names up to 10 results, or the first 30 tracks of a list.
 - **Let Mo do it:** Mo can add a track to your Favorites, add up to 20 tracks to one of your playlists, make a new playlist, rename or pin one of your playlists, and switch New music off for your running session. "Favorite this" and "put this in my running playlist" mean the track that is playing. Each thing Mo did shows as a line in the chat, such as "Added to Favorites: Night Drive", with **Open** to go to where it now is. The app writes that line itself, so it shows what really happened. The pages and the player update right away. Mo does up to 3 things per message; ask again for more.
-- **What Mo doesn't do:** Mo only adds and renames. It can't unfavorite or unpin, take a track out of a playlist, unsave or delete anything. Ask for one of those and Mo points you to the page where you do it yourself. It doesn't change settings either.
+- **Control the player:** say "pause", "continue", "next", "go back", "play that again", "loop this" or "stop", and Mo does it in the player right away, with no tap. It works while a session or a playlist is in the player, from any page, and the player and the mini player follow as if you had pressed the button yourself. "Next" is the app's **Skip**, "loop this" switches **Loop Track** on, and "stop" is **Stop Session**, which ends the session; say "pause" to only halt the music. A playlist has no stop, only pause. Each command shows as a short line in the chat, such as "Paused". Mo takes up to 2 player commands per message.
+- **Set the sleep timer:** "stop the music in 30 minutes" sets the [sleep timer](#sleep-timer) to any whole number of minutes from 5 to 90, and replaces a running one. "How long is left on the timer?" and "cancel the timer" work too. It's the same timer as in the options menu, which shows it as well.
+- **If the music doesn't start:** sending your message lets the browser start the audio, so "continue" just plays. If your browser still blocks it, the line in the chat shows **Tap to play**: one tap starts the music.
+- **What Mo doesn't do:** Mo only adds and renames. It can't unfavorite or unpin, take a track out of a playlist, unsave or delete anything, and it can't dislike a track, change the volume or jump to a position in a track. Ask for one of those and Mo points you to the page where you do it yourself. It doesn't change settings either. Mo controls the music that is in the player; it doesn't start a session or a playlist for you.
 - **Follow the answer:** an answer can end in a button that opens the right page in the app. Links to these docs open the website.
 - **Start over:** **New chat** clears the conversation. The conversation stays while you move between pages and is gone when you reload.
 
@@ -201,7 +204,7 @@ If your browser can't run the blending engine, tracks simply play one after anot
 
 ### Sleep timer
 
-Open the options menu and pick **Sleep Timer**. Choose 5 to 90 minutes, in steps of 5, and press **Start timer**. It works for sessions and playlists, including ones in the lounge and the Offline Library.
+Open the options menu and pick **Sleep Timer**. Choose 5 to 90 minutes, in steps of 5, and press **Start timer**. Or ask [Mo](#ask-mo): "stop the music in 30 minutes". It works for sessions and playlists, including ones in the lounge and the Offline Library.
 
 The music fades out over the last ten seconds, so it's silent at the time you chose, and then pauses. The session stays ready to resume, and nothing new gets made. The timer keeps running while you browse or switch music, and the menu shows the minutes left, with **Restart timer** and **Turn off**. Reloading the page clears it.
 

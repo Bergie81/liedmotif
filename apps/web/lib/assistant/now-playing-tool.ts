@@ -5,6 +5,7 @@
 import { getActiveSession, getSessionById, type SessionRecord } from '@liedmotif/db';
 import type { LlmTool } from '@liedmotif/providers';
 import { noToolInputSchema, type NoToolInput } from '@liedmotif/shared';
+import { sleepTimerMinutesLeft } from '@/components/player/sleep-timer';
 import { named } from './music-names';
 import { readablePlaylist, readableTrackTitle } from './readable-music';
 import { NOW_PLAYING_TOOL_NAME } from './tool-names';
@@ -23,6 +24,13 @@ function sessionLines(session: SessionRecord): string[] {
       ? ['The Session is stopped: nothing is generated until it is resumed.']
       : []),
   ];
+}
+
+/** The Sleep Timer as the browser reported it; one that has run out is off. */
+function sleepTimerLine(endsAt: number | undefined): string {
+  const now = Date.now();
+  const minutes = endsAt !== undefined && endsAt > now ? sleepTimerMinutesLeft(endsAt, now) : null;
+  return minutes === null ? 'Sleep Timer: off' : `Sleep Timer: the music pauses in ${minutes} min`;
 }
 
 async function trackLine(
@@ -61,6 +69,7 @@ async function engagedLines(asker: AssistantAsker): Promise<string[] | null> {
     first!,
     ...(await trackLine(asker, 'Track', player.trackId)),
     `Player: ${player.playing ? 'playing' : 'paused'}`,
+    sleepTimerLine(player.sleepTimerEndsAt),
     ...rest,
   ];
 }
@@ -69,7 +78,7 @@ export function createNowPlayingTool(asker: AssistantAsker): LlmTool<NoToolInput
   return {
     name: NOW_PLAYING_TOOL_NAME,
     description:
-      'What the user is listening to right now: the Session or Playlist, the current Track, whether it is playing or paused, and for a Session its New music setting.',
+      'What the user is listening to right now: the Session or Playlist, the current Track, whether it is playing or paused, how long a running Sleep Timer has left, and for a Session its New music setting.',
     inputSchema: noToolInputSchema,
     async execute() {
       const engaged = await engagedLines(asker);

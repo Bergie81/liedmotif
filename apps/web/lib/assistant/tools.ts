@@ -19,6 +19,7 @@ import {
 } from './manage-playlist-tools';
 import { createNewMusicOffTool } from './new-music-off-tool';
 import { createNowPlayingTool } from './now-playing-tool';
+import { createPlayerControlTool, createSleepTimerTool } from './player-tools';
 import { createReadDocsTool } from './read-docs-tool';
 import type { TurnActions } from './turn-actions';
 import { withinTurnBudget } from './turn-budget';
@@ -90,6 +91,8 @@ export function createAssistantTools(
       createRenamePlaylistTool(asker, actions),
       createPinPlaylistTool(asker, actions),
       createNewMusicOffTool(asker, actions),
+      createPlayerControlTool(asker, actions),
+      createSleepTimerTool(asker, actions),
     ].map(failingQuietly(ACTION_FAILED)),
   ];
 }

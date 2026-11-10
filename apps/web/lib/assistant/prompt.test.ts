@@ -89,6 +89,19 @@ describe.each([
     expect(prompt).toMatch(/never write such a line yourself/i);
   });
 
+  it('says what the player tools do, and what they leave to the user', () => {
+    const tools = prompt.slice(prompt.indexOf('Tools:'), prompt.indexOf('Links:'));
+    expect(tools).toMatch(
+      /^- playerControl .*pause, continue, next, previous, restart, loopOn, loopOff.*stop/m,
+    );
+    expect(tools).toMatch(/^- sleepTimer .*5 to 90 minutes/m);
+    expect(tools).toMatch(/no command for Dislike, deleting a Track, the volume or seeking/i);
+  });
+
+  it('tells the model how the app records a player command that did not happen', () => {
+    expect(prompt).toMatch(/\[Not done by the app: /);
+  });
+
   it('teaches one way to write an app link and one way to write a docs link', () => {
     // An app link: the page's name as the text, its bare path as the target.
     expect(prompt).toContain('[Settings › Playback](/settings/playback)');

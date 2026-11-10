@@ -1,0 +1,62 @@
+'use client';
+
+// The player as the Assistant's commands reach it from the app shell: the live
+// controller, the provider's one Sleep Timer and the player's Stop, each the
+// same function the player's own controls call.
+
+import { useEffect, useMemo, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { primePlayerAutoplay } from '@/components/player/autoplay-arm';
+import { usePlayerContext } from '@/components/player/player-provider';
+import { stopSession } from '@/lib/api-client';
+import {
+  runPlayerCommand,
+  tapToPlay,
+  type CommandedPlayer,
+  type PlayerCommands,
+} from './player-command';
+
+/**
+ * One object for the life of the shell. A command arrives long after the
+ * render that handed it out, so everything it touches is read when it runs.
+ */
+export function usePlayerCommands(shell: {
+  /** The page on screen is the Player, which a stopped Session leaves. */
+  onPlayerPage: boolean;
+  /** Re-reads the shell's own copy of the active Session, which the mini player shows. */
+  refreshChrome: () => void;
+}): PlayerCommands {
+  const context = usePlayerContext();
+  const router = useRouter();
+  const live = useRef({ context, router, shell });
+  useEffect(() => {
+    live.current = { context, router, shell };
+  });
+
+  return useMemo(() => {
+    const player: CommandedPlayer = {
+      controller: () => live.current.context.playback?.player ?? null,
+      sleepTimer: {
+        start: (minutes) => live.current.context.sleepTimer.start(minutes),
+        cancel: () => live.current.context.sleepTimer.cancel(),
+      },
+      async stopSession() {
+        const session = live.current.context.playback?.session;
+        if (!session) return false;
+        const stopped = await stopSession(session.id);
+        if (!stopped.ok) return false;
+        const { context, router, shell } = live.current;
+        context.release();
+        // The stopped Session is no longer the active one the mini player offers.
+        shell.refreshChrome();
+        if (shell.onPlayerPage) router.push('/sessions');
+        return true;
+      },
+    };
+    return {
+      prime: primePlayerAutoplay,
+      run: (command) => runPlayerCommand(command, player),
+      tapToPlay: () => tapToPlay(player),
+    };
+  }, []);
+}

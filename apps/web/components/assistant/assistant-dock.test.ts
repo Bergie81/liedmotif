@@ -18,6 +18,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import type { AnswerLinkTargets } from '@/lib/assistant/answer-links';
 import { onOutsideLibraryWrite } from '@/lib/offline/library-writes';
 import { AssistantDock } from './assistant-dock';
+import type { PlayerCommandOutcome, PlayerCommands } from './player-command';
 
 const navigation = vi.hoisted(() => ({
   push: vi.fn<(path: string) => void>(),
@@ -44,11 +45,13 @@ function renderDock({
   launcherHidden,
   player,
   onReceipt,
+  playerCommands,
 }: {
   desk: boolean;
   launcherHidden?: boolean;
   player?: AssistantPlayerState;
   onReceipt?: (receipt: AssistantReceipt) => void;
+  playerCommands?: PlayerCommands;
 }) {
   vi.stubGlobal(
     'matchMedia',
@@ -59,7 +62,7 @@ function renderDock({
       TooltipProvider,
       null,
       h('button', { type: 'button' }, 'Something on the page'),
-      h(AssistantDock, { links: LINKS, launcherHidden, player, onReceipt }),
+      h(AssistantDock, { links: LINKS, launcherHidden, player, onReceipt, playerCommands }),
     ),
   );
 }
@@ -303,4 +306,68 @@ it('leaves the Library pages alone when a receipt changed nothing they show', as
 
   await waitFor(() => expect(onReceipt).toHaveBeenCalledWith(off));
   expect(navigation.refresh).not.toHaveBeenCalled();
+});
+
+/** The app shell's player, as the dock is handed it: every command comes to `outcome`. */
+function playerThat(outcome: PlayerCommandOutcome) {
+  return {
+    prime: vi.fn<PlayerCommands['prime']>(),
+    run: vi.fn<PlayerCommands['run']>(async () => outcome),
+    tapToPlay: vi.fn<PlayerCommands['tapToPlay']>(async () => 'done'),
+  };
+}
+
+const commandFor = (name: 'pause' | 'continue'): AssistantStreamEvent => ({
+  type: 'action',
+  action: { status: 'player', command: { name } },
+});
+
+it('hands a player command to the player the moment it arrives, and shows one line for it', async () => {
+  const playerCommands = playerThat('done');
+  renderDock({ desk: true, playerCommands });
+
+  askAndGetReply([commandFor('pause'), { type: 'text', text: 'Paused.' }]);
+
+  const log = await screen.findByRole('log', { name: 'Conversation' });
+  await waitFor(() => expect(log.textContent).toContain('Paused'));
+  expect(playerCommands.run).toHaveBeenCalledExactlyOnceWith({ name: 'pause' });
+  expect(screen.queryByRole('button', { name: 'Tap to play' })).toBeNull();
+});
+
+it('offers "Tap to play" when the browser refused the audio, and plays inside that tap', async () => {
+  const playerCommands = playerThat('blocked');
+  renderDock({ desk: true, playerCommands });
+
+  askAndGetReply([commandFor('continue')]);
+
+  const tap = await screen.findByRole('button', { name: 'Tap to play' });
+  const log = screen.getByRole('log', { name: 'Conversation' });
+  expect(log.textContent).toContain('Your browser did not start the audio.');
+
+  fireEvent.click(tap);
+
+  expect(playerCommands.tapToPlay).toHaveBeenCalledOnce();
+  await waitFor(() => expect(screen.queryByRole('button', { name: 'Tap to play' })).toBeNull());
+  expect(log.textContent).toContain('Playing');
+  expect(playerCommands.run).toHaveBeenCalledOnce();
+});
+
+it('primes the player’s audio inside the gesture that sends a message: the button and Enter', async () => {
+  const playerCommands = playerThat('done');
+  renderDock({ desk: true, playerCommands });
+  expect(playerCommands.prime).not.toHaveBeenCalled();
+
+  askAndGetAnswer('It keeps the music coming.');
+  expect(playerCommands.prime).toHaveBeenCalledTimes(1);
+  const field = screen.getByRole('textbox', { name: 'Ask Mo' });
+  fireEvent.change(field, { target: { value: 'Continue.' } });
+  // The first answer is through: the field sends again.
+  await screen.findByRole('button', { name: 'Send' });
+
+  fireEvent.keyDown(field, { key: 'Enter' });
+  expect(playerCommands.prime).toHaveBeenCalledTimes(2);
+
+  fireEvent.change(field, { target: { value: 'And next.' } });
+  fireEvent.click(await screen.findByRole('button', { name: 'Send' }));
+  expect(playerCommands.prime).toHaveBeenCalledTimes(3);
 });

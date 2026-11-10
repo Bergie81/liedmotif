@@ -3,11 +3,13 @@ import {
   ASSISTANT_MAX_MESSAGE_LENGTH,
   ASSISTANT_MAX_MESSAGES,
   ASSISTANT_MAX_TRACKS_PER_ADD,
+  ASSISTANT_PLAYER_CONTROLS,
   assistantRequestSchema,
   assistantStreamEventSchema,
   createAssistantStreamDecoder,
   encodeAssistantStreamEvent,
   makeApiError,
+  playerControlInputSchema,
 } from './index';
 
 const user = (content: string) => ({ role: 'user' as const, content });
@@ -72,6 +74,26 @@ describe('assistantRequestSchema', () => {
     );
   });
 
+  it("takes when a running Sleep Timer ends, as the browser's clock has it", () => {
+    const player = {
+      source: { kind: 'session', id: '7b0a1c5e-3f0d-4a55-9d0e-2f6f3f1f8a11' },
+      trackId: null,
+      playing: true,
+    };
+    const request = (sleepTimerEndsAt: unknown) =>
+      assistantRequestSchema.safeParse({
+        messages: [user('How long is left?')],
+        player: { ...player, sleepTimerEndsAt },
+      });
+
+    expect(request(Date.parse('2026-11-10T22:30:00.000Z')).success).toBe(true);
+    // No timer is the field left out.
+    expect(request(undefined).success).toBe(true);
+    expect(request(null).success).toBe(false);
+    expect(request('in half an hour').success).toBe(false);
+    expect(request(12.5).success).toBe(false);
+  });
+
   it('refuses roles a client has no business sending', () => {
     expect(
       assistantRequestSchema.safeParse({
@@ -131,6 +153,45 @@ describe('assistantStreamEventSchema', () => {
     expect(
       parses(done({ action: 'createPlaylist', playlist: { id: 'not-an-id', name: 'x' } })),
     ).toBe(false);
+  });
+
+  it('reads each command the Assistant hands to the player', () => {
+    const player = (command: unknown) => ({
+      type: 'action',
+      action: { status: 'player', command },
+    });
+    const parses = (command: unknown) =>
+      assistantStreamEventSchema.safeParse(player(command)).success;
+
+    expect([...ASSISTANT_PLAYER_CONTROLS]).toEqual([
+      'pause',
+      'continue',
+      'next',
+      'previous',
+      'restart',
+      'loopOn',
+      'loopOff',
+      'stop',
+    ]);
+    for (const name of ASSISTANT_PLAYER_CONTROLS) expect(parses({ name }), name).toBe(true);
+    expect(parses({ name: 'sleepTimer', minutes: 30 })).toBe(true);
+    expect(parses({ name: 'sleepTimerOff' })).toBe(true);
+
+    for (const name of ['dislike', 'deleteTrack', 'volume', 'seek']) {
+      expect(parses({ name }), name).toBe(false);
+    }
+    expect(parses({ name: 'sleepTimer' })).toBe(false);
+    expect(parses({ name: 'sleepTimer', minutes: 0 })).toBe(false);
+    expect(parses({ name: 'pause', label: 'Deleted everything.' })).toBe(false);
+  });
+
+  it('offers the model no player command that removes, rates, seeks or changes the volume', () => {
+    for (const command of ASSISTANT_PLAYER_CONTROLS) {
+      expect(playerControlInputSchema.safeParse({ command }).success, command).toBe(true);
+    }
+    for (const command of ['dislike', 'delete', 'deleteTrack', 'volume', 'seek', 'favorite']) {
+      expect(playerControlInputSchema.safeParse({ command }).success, command).toBe(false);
+    }
   });
 
   it('takes a receipt for at most 20 added Tracks', () => {

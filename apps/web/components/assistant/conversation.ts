@@ -11,7 +11,7 @@ import {
   type AssistantStanding,
 } from '@liedmotif/shared';
 import { askAssistant } from './ask-assistant';
-import { withActionNotes, type ChatAction } from './chat-actions';
+import { withActionNotes, type ChatAction, type SettleableAction } from './chat-actions';
 
 /** One message as the panel holds it. `content` is what was typed or what the model wrote. */
 export interface ConversationMessage extends AssistantMessage {
@@ -38,6 +38,14 @@ export interface AssistantConversation {
   /** Stops the answer being written. */
   stop(): void;
   newChat(): void;
+  /**
+   * Records what became of `action`, which must be the action as the
+   * conversation holds it now. One it no longer holds is left alone.
+   */
+  settleAction<Action extends SettleableAction>(
+    action: Action,
+    outcome: NonNullable<Action['outcome']>,
+  ): void;
 }
 
 /**
@@ -54,12 +62,15 @@ function toRequestMessages(messages: readonly ConversationMessage[]): AssistantM
 export function createAssistantConversation({
   onStanding,
   onAction,
+  onSend,
   getPlayer,
 }: {
   /** Told where the user stands with their allowance, each time a response says. */
   onStanding?: (standing: AssistantStanding) => void;
   /** Told what the Assistant did, once, the moment an answer says so. */
   onAction?: (action: AssistantAction) => void;
+  /** Told that a message goes out, still inside the call that sent it: a user's gesture, when one did. */
+  onSend?: () => void;
   /** Asked at every send for what the player has engaged right then. */
   getPlayer?: () => AssistantPlayerState | undefined;
 } = {}): AssistantConversation {
@@ -115,6 +126,7 @@ export function createAssistantConversation({
     send(text) {
       const content = (text ?? state.draft).trim().slice(0, ASSISTANT_MAX_MESSAGE_LENGTH);
       if (!content || running) return;
+      onSend?.();
       const request = new AbortController();
       running = request;
       const asked: ConversationMessage[] = [...state.messages, { role: 'user', content }];
@@ -150,6 +162,22 @@ export function createAssistantConversation({
       running?.abort();
       running = null;
       update({ messages: [], answering: false, notice: null });
+    },
+    settleAction(action, outcome) {
+      const holds = (message: ConversationMessage) => message.actions?.includes(action);
+      if (!state.messages.some(holds)) return;
+      update({
+        messages: state.messages.map((message) =>
+          holds(message)
+            ? {
+                ...message,
+                actions: message.actions!.map((held) =>
+                  held === action ? { ...action, outcome } : held,
+                ),
+              }
+            : message,
+        ),
+      });
     },
   };
 }

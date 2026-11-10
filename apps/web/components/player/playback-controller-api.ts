@@ -237,6 +237,9 @@ export interface PlaybackControllerApi extends PlaybackControllerState {
   back: () => void;
   /** Step to the previous Track even mid-track (restarting only when none precedes). */
   previous: () => void;
+  /** Play the current Track from its start, wherever it is — the half of Back
+   * that never leaves the Track. */
+  restart: () => void;
   /** The Tracks Skip and `previous` would land on — the cover swipe's preview. */
   peekNeighbors: () => { next: PlayableTrack | null; previous: PlayableTrack | null };
   toggle: () => void;
@@ -259,6 +262,8 @@ export interface PlaybackControllerApi extends PlaybackControllerState {
   toggleFavorite: () => void;
   /** Cycle Loop Session → Loop Track → Shuffle Session. */
   cyclePlaybackMode: () => void;
+  /** Select one playback mode outright; the mode it already has is a no-op. */
+  setPlaybackMode: (mode: PlaybackMode) => void;
   /** Hard-cut to a playable Queue item. Navigation is never feedback. */
   playQueueItem: (queueItemId: string) => void;
   /** Reflect a committed Rename in the live projection, the held

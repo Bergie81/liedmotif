@@ -12,6 +12,7 @@ import { AccountMenu, type Listener } from './account-menu';
 import { AppChromeContext, type AppChromeContextValue } from './app-chrome-context';
 import { AssistantDock } from './assistant/assistant-dock';
 import { assistantPlayerState } from './assistant/player-state';
+import { usePlayerCommands } from './assistant/use-player-commands';
 import { usePlayerFollowsReceipt } from './assistant/use-player-follows-receipt';
 import {
   deriveGenerationHeadroom,
@@ -61,7 +62,7 @@ export function AppShell({
   });
   const [railExpanded, setRailExpanded] = useState(false);
   const [themeMode, setThemeMode] = useState<'night' | 'light'>('night');
-  const { playback } = usePlayerContext();
+  const { playback, sleepTimer } = usePlayerContext();
   const isPlayer = pathname === '/player' || pathname.startsWith('/player/');
   const hasSettingsDetailHeader = isSettingsDetailRoute(pathname);
   // The live cross-route controller outranks the server-known active session:
@@ -116,6 +117,7 @@ export function AppShell({
 
   const refreshChrome = useCallback(() => void fetchChrome(), [fetchChrome]);
   const followAssistantReceipt = usePlayerFollowsReceipt(refreshChrome);
+  const assistantPlayerCommands = usePlayerCommands({ onPlayerPage: isPlayer, refreshChrome });
 
   useEffect(() => {
     const root = document.documentElement;
@@ -208,8 +210,9 @@ export function AppShell({
           links={assistantLinks}
           launcherHidden={isPlayer}
           standing={assistantStanding}
-          player={assistantPlayerState(playback)}
+          player={assistantPlayerState(playback, sleepTimer.endsAt)}
           onReceipt={followAssistantReceipt}
+          playerCommands={assistantPlayerCommands}
         />
       ) : null}
     </div>

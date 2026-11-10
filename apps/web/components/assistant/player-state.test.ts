@@ -41,6 +41,23 @@ describe('what the panel tells the Assistant about the player', () => {
     }
   });
 
+  it('says when a running Sleep Timer ends, and leaves it out while none runs', () => {
+    const playing = {
+      source: session,
+      player: { status: 'playing', currentTrack: onDeck },
+    } as const;
+    const endsAt = Date.parse('2026-11-10T22:30:00.000Z');
+
+    expect(assistantPlayerState(playing, endsAt)).toEqual({
+      source: { kind: 'session', id: SESSION_ID },
+      trackId: TRACK_ID,
+      playing: true,
+      sleepTimerEndsAt: endsAt,
+    });
+    expect(assistantPlayerState(playing, null)).not.toHaveProperty('sleepTimerEndsAt');
+    expect(assistantPlayerState(null, endsAt)).toBeUndefined();
+  });
+
   it('is nothing for an offline collection, which plays where no server can be asked', () => {
     const offline = { kind: 'offline', key: `playlist:${PLAYLIST_ID}` } as EngagedSource;
 

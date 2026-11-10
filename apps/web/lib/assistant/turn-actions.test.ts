@@ -2,7 +2,7 @@ import type { AssistantAction } from '@liedmotif/shared';
 import { describe, expect, it } from 'vitest';
 import { createTurnActions, type ActionOutcome } from './turn-actions';
 
-const pinned = (name: string): AssistantAction => ({
+const pinned = (name: string): Extract<AssistantAction, { status: 'done' }> => ({
   status: 'done',
   receipt: {
     action: 'pinPlaylist',
@@ -77,6 +77,26 @@ describe("one turn's actions", () => {
     for (const name of ['One', 'Two', 'Three']) await actions.take('done', pin(name));
 
     expect(reported).toHaveLength(3);
+  });
+
+  it('passes on two player commands for one message, counted apart from the Library actions', async () => {
+    const { actions, reported } = openTurn();
+    const command =
+      (name: 'pause' | 'next' | 'loopOn') => async (): Promise<ActionOutcome<'player'>> => ({
+        told: `Told the player: ${name}.`,
+        action: { status: 'player', command: { name } },
+      });
+
+    for (const name of ['One', 'Two', 'Three']) await actions.take('done', pin(name));
+    expect(await actions.take('player', command('next'))).toBe('Told the player: next.');
+    expect(await actions.take('player', command('loopOn'))).toBe('Told the player: loopOn.');
+    const third = await actions.take('player', command('pause'));
+
+    expect(third).toMatch(/already given the player 2 commands.*not passed on/i);
+    expect(reported.slice(3)).toEqual([
+      { status: 'player', command: { name: 'next' } },
+      { status: 'player', command: { name: 'loopOn' } },
+    ]);
   });
 
   it('counts each turn on its own', async () => {

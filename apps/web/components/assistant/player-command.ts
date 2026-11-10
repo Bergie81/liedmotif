@@ -1,0 +1,193 @@
+// A player command from the Assistant, in the browser. The server only checked
+// the command; here it reaches the player through the actions the player's own
+// buttons call, and here is the only place that learns what came of it: done,
+// or turned down by a browser that would not start audio.
+
+import type { AssistantAction, AssistantPlayerCommand } from '@liedmotif/shared';
+import type { PlaybackControllerApi } from '@/components/player/playback-controller-api';
+import type { SleepTimerControl } from '@/components/player/sleep-timer';
+import { playerCommandNote } from '@/lib/assistant/player-command-note';
+
+/**
+ * What came of a command: the player did it, the browser refused to start the
+ * audio it called for, or it could not be done at all.
+ */
+export type PlayerCommandOutcome = 'done' | 'blocked' | 'failed';
+
+/** A player command as the chat holds it. Without an outcome it is still on its way. */
+export type PlayerChatAction = Extract<AssistantAction, { status: 'player' }> & {
+  outcome?: PlayerCommandOutcome;
+};
+
+/** The part of the live playback controller a command reaches or reads. */
+export type CommandedController = Pick<
+  PlaybackControllerApi,
+  | 'status'
+  | 'playIntentPending'
+  | 'playbackMode'
+  | 'deckARef'
+  | 'deckBRef'
+  | 'play'
+  | 'pause'
+  | 'skip'
+  | 'previous'
+  | 'restart'
+  | 'setPlaybackMode'
+>;
+
+/** The player as a command finds it, read anew at every step: a command outlives the render it arrived in. */
+export interface CommandedPlayer {
+  /** The controller of the engaged source; null while nothing is engaged. */
+  controller: () => CommandedController | null;
+  sleepTimer: Pick<SleepTimerControl, 'start' | 'cancel'>;
+  /** The player's Stop Session for the engaged Session. False when nothing was stopped. */
+  stopSession: () => Promise<boolean>;
+}
+
+/** What the app shell offers the chat panel for player commands. */
+export interface PlayerCommands {
+  /** Unlocks audio; called inside the gesture that sends a message. */
+  prime: () => void;
+  run: (command: AssistantPlayerCommand) => Promise<PlayerCommandOutcome>;
+  /** Starts what a blocked command left on the deck; called inside the tap. */
+  tapToPlay: () => Promise<PlayerCommandOutcome>;
+}
+
+const START_CHECK_MS = 250;
+/** A player still waiting after this long waits for a Track, not for the browser. */
+const START_GIVE_UP_MS = 15_000;
+
+/**
+ * A start the browser turned down leaves the player idle: the controller took
+ * its play intent back, and neither deck is running. A deck the browser let
+ * start is unpaused from the moment `play()` was called, however long it loads.
+ */
+function startRefused(controller: CommandedController): boolean {
+  const idle = controller.status === 'ready' || controller.status === 'paused';
+  const decksPaused = [controller.deckARef, controller.deckBRef].every(
+    (deck) => deck.current?.paused ?? true,
+  );
+  return idle && !controller.playIntentPending && decksPaused;
+}
+
+/**
+ * What became of a start the player was just asked for. Read on a later tick,
+ * never at once: the controller's state and a rejected play promise both land
+ * after the call that caused them.
+ */
+async function audioStarted(player: CommandedPlayer): Promise<PlayerCommandOutcome> {
+  for (let waited = 0; waited < START_GIVE_UP_MS; waited += START_CHECK_MS) {
+    await new Promise((resolve) => setTimeout(resolve, START_CHECK_MS));
+    const controller = player.controller();
+    if (controller?.status === 'playing') return 'done';
+    if (controller && startRefused(controller)) return 'blocked';
+  }
+  return 'done';
+}
+
+/** Runs `command` in the player and resolves with what came of it. */
+export async function runPlayerCommand(
+  command: AssistantPlayerCommand,
+  player: CommandedPlayer,
+): Promise<PlayerCommandOutcome> {
+  const controller = player.controller();
+  if (!controller) return 'failed';
+  switch (command.name) {
+    case 'pause':
+      controller.pause();
+      return 'done';
+    case 'loopOn':
+      controller.setPlaybackMode('loop-track');
+      return 'done';
+    case 'loopOff':
+      // Only a loop is switched off: Shuffle is not this command's to end.
+      if (controller.playbackMode === 'loop-track') controller.setPlaybackMode('loop-session');
+      return 'done';
+    case 'stop':
+      return (await player.stopSession()) ? 'done' : 'failed';
+    case 'sleepTimer':
+      player.sleepTimer.start(command.minutes);
+      return 'done';
+    case 'sleepTimerOff':
+      player.sleepTimer.cancel();
+      return 'done';
+    case 'continue':
+      controller.play();
+      break;
+    case 'next':
+      controller.skip();
+      break;
+    case 'previous':
+      controller.previous();
+      break;
+    case 'restart':
+      controller.restart();
+      break;
+  }
+  return audioStarted(player);
+}
+
+/**
+ * "Tap to play": starts what is on the deck. A blocked command has already
+ * moved the player where it should be, so only the start is left to do, and
+ * `play` is called before anything is awaited, while the tap still counts.
+ */
+export function tapToPlay(player: CommandedPlayer): Promise<PlayerCommandOutcome> {
+  const controller = player.controller();
+  if (!controller) return Promise.resolve('failed');
+  controller.play();
+  return audioStarted(player);
+}
+
+function happened(command: AssistantPlayerCommand): string {
+  switch (command.name) {
+    case 'pause':
+      return 'Paused';
+    case 'continue':
+      return 'Playing';
+    case 'next':
+      return 'Skipped to the next Track';
+    case 'previous':
+      return 'Back to the previous Track';
+    case 'restart':
+      return 'Playing the Track from its start';
+    case 'loopOn':
+      return 'Loop Track on';
+    case 'loopOff':
+      return 'Loop Track off';
+    case 'stop':
+      return 'Session stopped';
+    case 'sleepTimer':
+      return `Sleep Timer set: ${command.minutes} min`;
+    case 'sleepTimerOff':
+      return 'Sleep Timer off';
+  }
+}
+
+/** The chat's line for a command, in the app's words, and whether it offers "Tap to play". */
+export function playerCommandLine(
+  command: AssistantPlayerCommand,
+  outcome: PlayerCommandOutcome | undefined,
+): { text: string; tapToPlay: boolean } {
+  switch (outcome) {
+    case 'blocked':
+      return { text: 'Your browser did not start the audio.', tapToPlay: true };
+    case 'failed':
+      return { text: 'The player could not do that.', tapToPlay: false };
+    default:
+      return { text: happened(command), tapToPlay: false };
+  }
+}
+
+/** What a later turn is told about a command: one line, in brackets, worded by the app. */
+export function playerCommandRecord({ command, outcome }: PlayerChatAction): string {
+  const told = playerCommandNote(command);
+  switch (outcome) {
+    case 'blocked':
+      return `[Not done by the app: the browser refused to start the audio when the player was told to ${told}. The user was shown a "Tap to play" button.]`;
+    case 'failed':
+      return `[Not done by the app: the player could not ${told}]`;
+    default:
+      return `[Done by the app: the player was told to ${told}]`;
+  }
+}

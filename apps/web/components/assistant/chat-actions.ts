@@ -5,15 +5,25 @@
 
 import { ASSISTANT_MAX_MESSAGE_LENGTH, type AssistantAction } from '@liedmotif/shared';
 import { receiptNote } from '@/lib/assistant/receipt-note';
+import { playerCommandRecord, type PlayerChatAction } from './player-command';
 
-/** One action of an answer, with everything the panel knows about what came of it. */
-export type ChatAction = AssistantAction;
+/**
+ * One action of an answer, with everything the panel knows about what came of
+ * it. A receipt is final as it arrives. Every other action carries an
+ * `outcome` the browser learns later; without one it is still open.
+ */
+export type ChatAction = Extract<AssistantAction, { status: 'done' }> | PlayerChatAction;
+
+/** An action whose outcome is learned after it arrived. */
+export type SettleableAction = Exclude<ChatAction, { status: 'done' }>;
 
 /** What a later turn is told about one action: one line, in brackets, worded by the app. */
 export function actionNote(action: ChatAction): string {
   switch (action.status) {
     case 'done':
       return `[Done by the app: ${receiptNote(action.receipt)}]`;
+    case 'player':
+      return playerCommandRecord(action);
   }
 }
 

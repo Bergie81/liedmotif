@@ -534,3 +534,91 @@ it('clips a long earlier answer around what was done in it, never the record of 
   expect(sent).toHaveLength(4000);
   expect(sent.endsWith(`x\n\n${createdNote('Sunday')}`)).toBe(true);
 });
+
+/** A command the Assistant handed to the player. */
+type PlayerAction = Extract<AssistantAction, { status: 'player' }>;
+const told = (name: 'continue' | 'pause'): PlayerAction => ({
+  status: 'player',
+  command: { name },
+});
+
+it('records what became of an action, and tells the next request', async () => {
+  const asked = captureQuestions();
+  const arrived: AssistantAction[] = [];
+  const conversation = createAssistantConversation({ onAction: (action) => arrived.push(action) });
+  let changes = 0;
+  conversation.send('Continue.');
+  const reply = asked[0]!.reply();
+  reply.send({ type: 'action', action: told('continue') });
+  reply.send({ type: 'done' });
+  await vi.waitFor(() => expect(conversation.getState().answering).toBe(false));
+  conversation.subscribe(() => {
+    changes += 1;
+  });
+
+  conversation.settleAction(arrived[0] as PlayerAction, 'blocked');
+
+  expect(changes).toBe(1);
+  expect(conversation.getState().messages.at(-1)).toEqual({
+    role: 'assistant',
+    content: '',
+    actions: [{ ...told('continue'), outcome: 'blocked' }],
+  });
+
+  conversation.send('Did it play?');
+  expect(asked[1]!.request.messages[1]).toEqual({
+    role: 'assistant',
+    content:
+      '[Not done by the app: the browser refused to start the audio when the player was told to play on. The user was shown a "Tap to play" button.]',
+  });
+});
+
+it('settles an action again from where the last outcome left it', async () => {
+  const asked = captureQuestions();
+  const conversation = createAssistantConversation();
+  conversation.send('Continue.');
+  const reply = asked[0]!.reply();
+  reply.send({ type: 'action', action: told('continue') });
+  reply.send({ type: 'action', action: told('pause') });
+  reply.send({ type: 'done' });
+  await vi.waitFor(() => expect(conversation.getState().answering).toBe(false));
+  const held = () => conversation.getState().messages.at(-1)!.actions!;
+
+  conversation.settleAction(held()[0] as PlayerAction, 'blocked');
+  conversation.settleAction(held()[0] as PlayerAction, 'done');
+
+  expect(held()).toEqual([{ ...told('continue'), outcome: 'done' }, told('pause')]);
+});
+
+it('leaves the conversation alone when the action settled is no longer in it', async () => {
+  const asked = captureQuestions();
+  const arrived: AssistantAction[] = [];
+  const conversation = createAssistantConversation({ onAction: (action) => arrived.push(action) });
+  conversation.send('Continue.');
+  const reply = asked[0]!.reply();
+  reply.send({ type: 'action', action: told('continue') });
+  reply.send({ type: 'done' });
+  await vi.waitFor(() => expect(conversation.getState().answering).toBe(false));
+  conversation.newChat();
+  const before = conversation.getState();
+
+  conversation.settleAction(arrived[0] as PlayerAction, 'done');
+
+  expect(conversation.getState()).toBe(before);
+});
+
+it('says a message is going out, inside the call that sends it, and only when one does', () => {
+  captureQuestions();
+  const onSend = vi.fn();
+  const conversation = createAssistantConversation({ onSend });
+
+  conversation.send('   ');
+  expect(onSend).not.toHaveBeenCalled();
+
+  conversation.send('Continue.');
+  expect(onSend).toHaveBeenCalledOnce();
+
+  // An answer is being written: nothing is sent.
+  conversation.send('And next.');
+  expect(onSend).toHaveBeenCalledOnce();
+});
