@@ -126,6 +126,23 @@ export const ASSISTANT_PLAYER_CONTROLS = [
 export type AssistantPlayerControl = (typeof ASSISTANT_PLAYER_CONTROLS)[number];
 
 /**
+ * What a play command starts, as the server read it for the asking user: a
+ * Session, which plays on from where it stopped, or a Playlist, which plays
+ * from its top.
+ */
+const assistantPlaySourceSchema = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('session'), id: uuidSchema, name: z.string().nullable() }),
+  z.strictObject({
+    kind: z.literal('playlist'),
+    id: uuidSchema,
+    name: z.string(),
+    trackCount: z.number().int().nonnegative(),
+    /** Another user's Playlist from the asker's Lounge: it plays as a Visitor plays it. */
+    foreign: z.boolean(),
+  }),
+]);
+
+/**
  * What the browser's player is to do, as structured values: the chat panel
  * runs it through the player's own actions and words its line from it.
  */
@@ -134,8 +151,15 @@ export const assistantPlayerCommandSchema = z.discriminatedUnion('name', [
   /** Sets the Sleep Timer to `minutes` from now, replacing a running one. */
   z.strictObject({ name: z.literal('sleepTimer'), minutes: z.number().int().positive() }),
   z.strictObject({ name: z.literal('sleepTimerOff') }),
+  z.strictObject({
+    name: z.literal('play'),
+    source: assistantPlaySourceSchema,
+    /** The one Track of the source to start at; left out to play the source as it stands. */
+    track: assistantActionItemSchema.optional(),
+  }),
 ]);
 export type AssistantPlayerCommand = z.infer<typeof assistantPlayerCommandSchema>;
+export type AssistantPlayCommand = Extract<AssistantPlayerCommand, { name: 'play' }>;
 
 /**
  * Something that can spend, prepared and not carried out: the values the app's
@@ -359,6 +383,28 @@ export const sleepTimerInputSchema = z.object({
   off: z.boolean().nullish().describe('true cancels the running Sleep Timer instead.'),
 });
 export type SleepTimerInput = z.infer<typeof sleepTimerInputSchema>;
+
+/**
+ * What the model passes to `play`. The ids are any strings: one that is not an
+ * id at all is answered like one that names nothing.
+ */
+export const playInputSchema = z.object({
+  kind: z
+    .enum(['session', 'playlist', 'track'])
+    .describe(
+      'What the id names. "session" resumes a Session where it stopped, "playlist" plays a Playlist from its top, "track" plays one Track of the user\'s own.',
+    ),
+  id: z
+    .string()
+    .describe('The id of that Session, Playlist or Track, as another tool returned it.'),
+  trackId: z
+    .string()
+    .nullish()
+    .describe(
+      'With "session" or "playlist" only: the id of the one Track in it to start at. Leave out to play it as it stands.',
+    ),
+});
+export type PlayInput = z.infer<typeof playInputSchema>;
 
 /**
  * What the model passes to `proposeSession`. Lenient like the other tools; the

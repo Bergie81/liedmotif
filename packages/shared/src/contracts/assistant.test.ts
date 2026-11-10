@@ -187,6 +187,30 @@ describe('assistantStreamEventSchema', () => {
     expect(parses({ name: 'pause', label: 'Deleted everything.' })).toBe(false);
   });
 
+  it('reads a play command for a Session or a Playlist, with or without a Track to start at', () => {
+    const id = '7b0a1c5e-3f0d-4a55-9d0e-2f6f3f1f8a11';
+    const parses = (command: unknown) =>
+      assistantStreamEventSchema.safeParse({
+        type: 'action',
+        action: { status: 'player', command },
+      }).success;
+    const session = { kind: 'session', id, name: null };
+    const playlist = { kind: 'playlist', id, name: 'Running', trackCount: 24, foreign: false };
+
+    expect(parses({ name: 'play', source: session })).toBe(true);
+    expect(parses({ name: 'play', source: playlist })).toBe(true);
+    expect(parses({ name: 'play', source: session, track: { id, name: 'Night Drive' } })).toBe(
+      true,
+    );
+
+    expect(parses({ name: 'play' })).toBe(false);
+    expect(parses({ name: 'play', source: { kind: 'track', id, name: 'x' } })).toBe(false);
+    expect(parses({ name: 'play', source: { ...session, id: 'focus' } })).toBe(false);
+    // A Playlist says whose it is: the browser reads another user's from the Lounge.
+    expect(parses({ name: 'play', source: { ...playlist, foreign: undefined } })).toBe(false);
+    expect(parses({ name: 'play', source: session, mode: 'keep_going' })).toBe(false);
+  });
+
   it('offers the model no player command that removes, rates, seeks or changes the volume', () => {
     for (const command of ASSISTANT_PLAYER_CONTROLS) {
       expect(playerControlInputSchema.safeParse({ command }).success, command).toBe(true);

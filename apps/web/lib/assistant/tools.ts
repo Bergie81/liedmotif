@@ -19,6 +19,7 @@ import {
 } from './manage-playlist-tools';
 import { createNewMusicOffTool } from './new-music-off-tool';
 import { createNowPlayingTool } from './now-playing-tool';
+import { createPlayTool } from './play-tool';
 import { createPlayerControlTool, createSleepTimerTool } from './player-tools';
 import { createProposeSessionTool } from './propose-session-tool';
 import { createReadDocsTool } from './read-docs-tool';
@@ -92,6 +93,7 @@ export function createAssistantTools(
       createRenamePlaylistTool(asker, actions),
       createPinPlaylistTool(asker, actions),
       createNewMusicOffTool(asker, actions),
+      createPlayTool(asker, actions),
       createPlayerControlTool(asker, actions),
       createSleepTimerTool(asker, actions),
       createProposeSessionTool(asker, actions),

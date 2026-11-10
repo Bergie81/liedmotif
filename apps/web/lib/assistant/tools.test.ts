@@ -52,6 +52,7 @@ describe("one turn's tools", () => {
       'renamePlaylist',
       'pinPlaylist',
       'newMusicOff',
+      'play',
       'playerControl',
       'sleepTimer',
       'proposeSession',

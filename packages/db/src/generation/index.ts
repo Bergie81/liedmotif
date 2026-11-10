@@ -269,7 +269,7 @@ export {
   type SessionQueueTrack,
 } from './queue-view-repo';
 export { performVibeSwitchCutover } from './vibe-switch-repo';
-export { listSessionTracks } from './session-tracks-repo';
+export { getPlayableTrackSession, listSessionTracks } from './session-tracks-repo';
 export {
   getSessionDurationProgress,
   listSessionTracksMissingDuration,

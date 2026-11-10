@@ -4,7 +4,14 @@
 // wording of a command in the turn that gave it and in every later one. Plain
 // text, safe to import from the browser.
 
-import type { AssistantPlayerCommand } from '@liedmotif/shared';
+import type { AssistantPlayCommand, AssistantPlayerCommand } from '@liedmotif/shared';
+import { quoted } from './music-names';
+
+/** What a play command starts, by kind and name; a Track is named with what it plays in. */
+function played({ source, track }: AssistantPlayCommand): string {
+  const where = `the ${source.kind === 'session' ? 'Session' : 'Playlist'} ${quoted(source.name)}`;
+  return track ? `the Track ${quoted(track.name)} in ${where}` : where;
+}
 
 /** The command as the end of "the player was told to …". */
 export function playerCommandNote(command: AssistantPlayerCommand): string {
@@ -29,5 +36,7 @@ export function playerCommandNote(command: AssistantPlayerCommand): string {
       return `fade out and pause the music in ${command.minutes} min`;
     case 'sleepTimerOff':
       return 'switch the Sleep Timer off';
+    case 'play':
+      return `play ${played(command)}`;
   }
 }

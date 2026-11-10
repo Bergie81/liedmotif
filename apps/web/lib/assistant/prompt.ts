@@ -17,6 +17,7 @@ import {
   NEW_MUSIC_OFF_TOOL_NAME,
   NOW_PLAYING_TOOL_NAME,
   PIN_PLAYLIST_TOOL_NAME,
+  PLAY_TOOL_NAME,
   PLAYER_CONTROL_TOOL_NAME,
   PROPOSE_SESSION_TOOL_NAME,
   READ_DOCS_TOOL_NAME,
@@ -46,6 +47,7 @@ const TOOLS_PROMPT = `Tools:
 - ${ADD_TO_PLAYLIST_TOOL_NAME} adds Tracks to one of this user's own Playlists, at most ${ASSISTANT_MAX_TRACKS_PER_ADD} at a time.
 - ${CREATE_PLAYLIST_TOOL_NAME} makes a new, empty Playlist, ${RENAME_PLAYLIST_TOOL_NAME} gives one of this user's Playlists a new name, and ${PIN_PLAYLIST_TOOL_NAME} lists one first in their Library.
 - ${NEW_MUSIC_OFF_TOOL_NAME} switches New music off for the active Session: it stops generating and repeats the Tracks it has.
+- ${PLAY_TOOL_NAME} plays music this user already has, in the player in their browser: it resumes a Session, plays a Playlist, or starts one Track, each by the id ${FIND_MUSIC_TOOL_NAME} or ${LIST_TRACKS_TOOL_NAME} returned for it. A resumed Session keeps its New music setting, so it may generate new Tracks, as it does when the user resumes it. For music that does not exist yet, use ${PROPOSE_SESSION_TOOL_NAME}.
 - ${PLAYER_CONTROL_TOOL_NAME} controls the player in this user's browser, like its own buttons: pause, continue, next, previous, restart, loopOn, loopOff (Loop Track), and stop, which is Stop Session and ends the Session. To only halt the music, use pause. There is no command for Dislike, deleting a Track, the volume or seeking.
 - ${SLEEP_TIMER_TOOL_NAME} sets the player's Sleep Timer, which fades the music out and pauses it after ${SLEEP_TIMER_MIN_MINUTES} to ${SLEEP_TIMER_MAX_MINUTES} minutes, or switches a running one off. ${NOW_PLAYING_TOOL_NAME} tells how long a running one has left.
 - ${PROPOSE_SESSION_TOOL_NAME} prepares a new Session when the user asks for new music: pass what they want to hear in their own words, instrumental unless they asked for vocals, and a length only when they named one. It starts nothing. The app shows the user a card, and the Session starts only when they confirm it there.

@@ -1,8 +1,8 @@
 'use client';
 
 // The player as the Assistant's commands reach it from the app shell: the live
-// controller, the provider's one Sleep Timer and the player's Stop, each the
-// same function the player's own controls call.
+// controller, the provider's one Sleep Timer, the player's Stop and the app's
+// play flows, each the same function the app's own controls call.
 
 import { useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -15,6 +15,8 @@ import {
   type CommandedPlayer,
   type PlayerCommands,
 } from './player-command';
+import { assistantPlayerState } from './player-state';
+import { usePlayCommand } from './use-play-command';
 
 /**
  * One object for the life of the shell. A command arrives long after the
@@ -28,6 +30,7 @@ export function usePlayerCommands(shell: {
 }): PlayerCommands {
   const context = usePlayerContext();
   const router = useRouter();
+  const start = usePlayCommand();
   const live = useRef({ context, router, shell });
   useEffect(() => {
     live.current = { context, router, shell };
@@ -36,6 +39,8 @@ export function usePlayerCommands(shell: {
   return useMemo(() => {
     const player: CommandedPlayer = {
       controller: () => live.current.context.playback?.player ?? null,
+      engaged: () => assistantPlayerState(live.current.context.playback),
+      start,
       sleepTimer: {
         start: (minutes) => live.current.context.sleepTimer.start(minutes),
         cancel: () => live.current.context.sleepTimer.cancel(),
@@ -58,5 +63,5 @@ export function usePlayerCommands(shell: {
       run: (command) => runPlayerCommand(command, player),
       tapToPlay: () => tapToPlay(player),
     };
-  }, []);
+  }, [start]);
 }

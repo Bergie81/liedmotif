@@ -98,6 +98,14 @@ describe.each([
     expect(tools).toMatch(/no command for Dislike, deleting a Track, the volume or seeking/i);
   });
 
+  it('says that play starts music the user already has, by its id, and that new music is not its job', () => {
+    const tools = prompt.slice(prompt.indexOf('Tools:'), prompt.indexOf('Links:'));
+    expect(tools).toMatch(/^- play plays music this user already has/m);
+    expect(tools).toMatch(/resumes a Session.*plays a Playlist.*starts one Track/i);
+    expect(tools).toMatch(/keeps its New music setting/i);
+    expect(tools).toMatch(/music that does not exist yet.*proposeSession/i);
+  });
+
   it('tells the model how the app records a player command that did not happen', () => {
     expect(prompt).toMatch(/\[Not done by the app: /);
   });

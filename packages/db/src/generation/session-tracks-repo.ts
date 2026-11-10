@@ -6,6 +6,7 @@ import { activitySessions, activitySessionQueueItems, generationRequests, tracks
 import { decodeKeysetCursor, encodeKeysetCursor } from './keyset-cursor';
 import { nextSessionQueuePosition } from './queue-position';
 import { getSessionTrackActivity } from './session-activity-repo';
+import { sessionNotPendingDelete } from './session-list-repo';
 import { playableSessionTrackCondition, sessionTrackQueueEdge } from './session-track-playability';
 
 // Cursor timestamps use JavaScript precision; the ordering must use the same precision.
@@ -91,6 +92,34 @@ export async function listPlayableSessionTrackIds(
     .where(playableTrackInSession(args))
     .orderBy(asc(createdAt), asc(tracks.id));
   return rows.map((row) => row.id);
+}
+
+/**
+ * The Session one of the owner's Tracks is selected through, as its Library
+ * row is: the Session it was generated in, while that Session is there and the
+ * Track is one `playSessionTrack` would start. Null for every other Track.
+ */
+export async function getPlayableTrackSession(
+  db: Database,
+  args: { ownerUserId: string; trackId: string },
+): Promise<{ id: string; title: string | null } | null> {
+  const [session] = await db
+    .select({ id: activitySessions.id, title: activitySessions.title })
+    .from(generationRequests)
+    .innerJoin(tracks, eq(tracks.generationRequestId, generationRequests.id))
+    .innerJoin(activitySessions, eq(activitySessions.id, generationRequests.activitySessionId))
+    .leftJoin(activitySessionQueueItems, sessionTrackQueueEdge)
+    .where(
+      and(
+        eq(tracks.id, args.trackId),
+        eq(generationRequests.ownerUserId, args.ownerUserId),
+        eq(activitySessions.ownerUserId, args.ownerUserId),
+        sessionNotPendingDelete(),
+        playableSessionTrackCondition(args.ownerUserId),
+      ),
+    )
+    .limit(1);
+  return session ?? null;
 }
 
 /** Called under the owner's generation lock; browsing never creates Queue slots. */

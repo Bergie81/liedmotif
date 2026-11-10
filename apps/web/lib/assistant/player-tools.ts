@@ -4,6 +4,7 @@
 // which runs it through the player's own actions. What comes of it there, the
 // server never learns; the next request's conversation says.
 
+import { getActiveSession } from '@liedmotif/db';
 import type { LlmTool } from '@liedmotif/providers';
 import {
   playerControlInputSchema,
@@ -21,13 +22,13 @@ import type { AssistantAsker } from './tools';
 import type { ActionOutcome, TurnActions } from './turn-actions';
 
 /** The command goes to the browser's player. The model's line is worded like the record later turns read. */
-const handedOver = (command: AssistantPlayerCommand): ActionOutcome<'player'> => ({
+export const handedOver = (command: AssistantPlayerCommand): ActionOutcome<'player'> => ({
   told: `Done: the player was told to ${playerCommandNote(command)}.`,
   action: { status: 'player', command },
 });
 
 /** No command is sent, and the model is told why. */
-const refused = (why: string): ActionOutcome<'player'> => ({
+export const refused = (why: string): ActionOutcome<'player'> => ({
   told: `${why} The player was left as it is.`,
 });
 
@@ -56,10 +57,25 @@ function pointless(command: AssistantPlayerControl, player: AssistantPlayerState
   }
 }
 
+/**
+ * "Continue" with nothing engaged: a freshly loaded page has no player yet,
+ * but its mini player offers the active Session, and that is what plays on.
+ */
+async function continueActiveSession({ db, userId }: AssistantAsker) {
+  const active = await getActiveSession(db, { ownerUserId: userId });
+  return active
+    ? handedOver({
+        name: 'play',
+        source: { kind: 'session', id: active.id, name: active.title },
+      })
+    : refused(NOTHING_ENGAGED);
+}
+
 export function createPlayerControlTool(
-  { player }: AssistantAsker,
+  asker: AssistantAsker,
   actions: TurnActions,
 ): LlmTool<PlayerControlInput> {
+  const { player } = asker;
   return {
     name: PLAYER_CONTROL_TOOL_NAME,
     description:
@@ -67,7 +83,9 @@ export function createPlayerControlTool(
     inputSchema: playerControlInputSchema,
     execute: ({ command }) =>
       actions.take('player', async () => {
-        if (!player) return refused(NOTHING_ENGAGED);
+        if (!player) {
+          return command === 'continue' ? continueActiveSession(asker) : refused(NOTHING_ENGAGED);
+        }
         const why = pointless(command, player);
         return why ? refused(why) : handedOver({ name: command });
       }),

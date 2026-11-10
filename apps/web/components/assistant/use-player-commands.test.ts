@@ -1,23 +1,27 @@
 // @vitest-environment jsdom
 
 // The app shell's player as the Assistant's commands reach it: the live
-// controller, the provider's Sleep Timer, the player's Stop, and the audio
-// unlock a sent message rides on.
+// controller, the provider's Sleep Timer, the player's Stop, the app's play
+// flows, and the audio unlock a sent message rides on.
 
 import { renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { usePlayerCommands } from './use-player-commands';
 
 const SESSION_ID = '5d2f8e1b-6c3a-4f7e-8b9d-1a2b3c4d5e6f';
+const PLAYLIST_ID = '0c9d4b7a-8a41-4b0e-b1a3-5a2d9d6c7e22';
 
 const player = vi.hoisted(() => ({ context: null as unknown }));
 vi.mock('@/components/player/player-provider', () => ({
   usePlayerContext: () => player.context,
+  usePlayerActions: () => player.context,
 }));
 const navigation = vi.hoisted(() => ({ push: vi.fn<(path: string) => void>() }));
 vi.mock('next/navigation', () => ({ useRouter: () => navigation }));
 const api = vi.hoisted(() => ({
   stopSession: vi.fn<(sessionId: string) => Promise<{ ok: boolean }>>(),
+  getAllPlaylistMembers: vi.fn<(playlistId: string) => Promise<unknown>>(),
+  markPlaylistPlayed: vi.fn<(playlistId: string) => Promise<unknown>>(),
 }));
 vi.mock('@/lib/api-client', () => api);
 const autoplay = vi.hoisted(() => ({ primePlayerAutoplay: vi.fn<() => void>() }));
@@ -39,9 +43,17 @@ function engaged(session: { id: string } | null = { id: SESSION_ID }) {
     setPlaybackMode: vi.fn(),
   };
   const context = {
-    playback: { session, player: controller },
+    playback: {
+      source: session
+        ? { kind: 'session', session }
+        : { kind: 'playlist', playlist: { id: PLAYLIST_ID } },
+      session,
+      player: controller,
+    },
     release: vi.fn(),
     sleepTimer: { endsAt: null, start: vi.fn(), cancel: vi.fn() },
+    engagePlaylist: vi.fn(),
+    beginOtherMusic: vi.fn(async () => true),
   };
   player.context = context;
   return { controller, ...context };
@@ -133,6 +145,8 @@ describe('the player, for the Assistant’s commands', () => {
   it('fails a command when nothing is engaged', async () => {
     player.context = {
       playback: null,
+      pending: null,
+      engagedSource: null,
       release: vi.fn(),
       sleepTimer: { endsAt: null, start: vi.fn(), cancel: vi.fn() },
     };
@@ -141,6 +155,33 @@ describe('the player, for the Assistant’s commands', () => {
     );
 
     expect(await result.current.run({ name: 'continue' })).toBe('failed');
+  });
+
+  it('plays through the app’s own play flow, and is done once the player has that music playing', async () => {
+    const before = engaged();
+    const members = [{ id: 'track-1', audioUrl: '/api/audio/track-1' }];
+    api.getAllPlaylistMembers.mockResolvedValue({
+      ok: true,
+      data: { playlist: { id: PLAYLIST_ID, name: 'Running' }, items: members },
+    });
+    const { result, rerender } = renderHook(() =>
+      usePlayerCommands({ onPlayerPage: false, refreshChrome: vi.fn() }),
+    );
+
+    const outcome = result.current.run({
+      name: 'play',
+      source: { kind: 'playlist', id: PLAYLIST_ID, name: 'Running', trackCount: 1, foreign: false },
+    });
+    await vi.waitFor(() => expect(before.engagePlaylist).toHaveBeenCalledOnce());
+    expect(before.engagePlaylist.mock.calls[0]?.slice(0, 2)).toEqual([
+      { id: PLAYLIST_ID, name: 'Running' },
+      members,
+    ]);
+
+    // The provider now has the Playlist on its deck, audible.
+    engaged(null);
+    rerender();
+    expect(await outcome).toBe('done');
   });
 
   it('unlocks audio the way a Session start does when asked to prime', () => {

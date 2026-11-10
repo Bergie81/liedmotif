@@ -3,16 +3,29 @@
 // buttons call, and here is the only place that learns what came of it: done,
 // or turned down by a browser that would not start audio.
 
-import type { AssistantAction, AssistantPlayerCommand } from '@liedmotif/shared';
+import type {
+  AssistantAction,
+  AssistantPlayCommand,
+  AssistantPlayerCommand,
+  AssistantPlayerState,
+} from '@liedmotif/shared';
 import type { PlaybackControllerApi } from '@/components/player/playback-controller-api';
 import type { SleepTimerControl } from '@/components/player/sleep-timer';
+import { trackCount } from '@/lib/assistant/music-names';
 import { playerCommandNote } from '@/lib/assistant/player-command-note';
 
 /**
  * What came of a command: the player did it, the browser refused to start the
- * audio it called for, or it could not be done at all.
+ * audio it called for, it could not be done at all, or the user turned it down
+ * when the player asked whether to play it over a Session that was starting.
  */
-export type PlayerCommandOutcome = 'done' | 'blocked' | 'failed';
+export type PlayerCommandOutcome = 'done' | 'blocked' | 'failed' | 'declined';
+
+/**
+ * How far the app's own play flow took a play command: it engaged the music,
+ * which then starts by itself, the user declined, or the flow refused.
+ */
+export type PlayStart = 'started' | Extract<PlayerCommandOutcome, 'declined' | 'failed'>;
 
 /** A player command as the chat holds it. Without an outcome it is still on its way. */
 export type PlayerChatAction = Extract<AssistantAction, { status: 'player' }> & {
@@ -39,6 +52,10 @@ export type CommandedController = Pick<
 export interface CommandedPlayer {
   /** The controller of the engaged source; null while nothing is engaged. */
   controller: () => CommandedController | null;
+  /** What that controller plays, as every message reports it. */
+  engaged: () => AssistantPlayerState | undefined;
+  /** Hands a play command to the app's own play flow for what it names. */
+  start: (play: AssistantPlayCommand) => Promise<PlayStart>;
   sleepTimer: Pick<SleepTimerControl, 'start' | 'cancel'>;
   /** The player's Stop Session for the engaged Session. False when nothing was stopped. */
   stopSession: () => Promise<boolean>;
@@ -71,18 +88,33 @@ function startRefused(controller: CommandedController): boolean {
 }
 
 /**
+ * Whether the player has what `play` names: the Track on its deck when it
+ * names one, wherever that Track plays, and the Session or Playlist otherwise.
+ */
+function plays(engaged: AssistantPlayerState | undefined, { source, track }: AssistantPlayCommand) {
+  if (!engaged) return false;
+  return track ? engaged.trackId === track.id : engaged.source.id === source.id;
+}
+
+/**
  * What became of a start the player was just asked for. Read on a later tick,
  * never at once: the controller's state and a rejected play promise both land
- * after the call that caused them.
+ * after the call that caused them. With `play` the start is that of music the
+ * app is only now engaging, so the player is read once it has it; music that
+ * never took over the player was not started.
  */
-async function audioStarted(player: CommandedPlayer): Promise<PlayerCommandOutcome> {
+async function audioStarted(
+  player: CommandedPlayer,
+  play?: AssistantPlayCommand,
+): Promise<PlayerCommandOutcome> {
+  const arrived = () => !play || plays(player.engaged(), play);
   for (let waited = 0; waited < START_GIVE_UP_MS; waited += START_CHECK_MS) {
     await new Promise((resolve) => setTimeout(resolve, START_CHECK_MS));
-    const controller = player.controller();
+    const controller = arrived() ? player.controller() : null;
     if (controller?.status === 'playing') return 'done';
     if (controller && startRefused(controller)) return 'blocked';
   }
-  return 'done';
+  return arrived() ? 'done' : 'failed';
 }
 
 /** Runs `command` in the player and resolves with what came of it. */
@@ -90,6 +122,10 @@ export async function runPlayerCommand(
   command: AssistantPlayerCommand,
   player: CommandedPlayer,
 ): Promise<PlayerCommandOutcome> {
+  if (command.name === 'play') {
+    const start = await player.start(command);
+    return start === 'started' ? audioStarted(player, command) : start;
+  }
   const controller = player.controller();
   if (!controller) return 'failed';
   switch (command.name) {
@@ -139,8 +175,17 @@ export function tapToPlay(player: CommandedPlayer): Promise<PlayerCommandOutcome
   return audioStarted(player);
 }
 
+/** What a play command plays, as the app names it: a Playlist with its size, a Track with where it plays. */
+function playing({ source, track }: AssistantPlayCommand): string {
+  const where = source.kind === 'session' ? source.name || 'Untitled Session' : source.name;
+  if (track) return `${track.name ?? 'Untitled Track'} · ${where}`;
+  return source.kind === 'playlist' ? `${where} · ${trackCount(source.trackCount)}` : where;
+}
+
 function happened(command: AssistantPlayerCommand): string {
   switch (command.name) {
+    case 'play':
+      return `Playing: ${playing(command)}`;
     case 'pause':
       return 'Paused';
     case 'continue':
@@ -174,6 +219,8 @@ export function playerCommandLine(
       return { text: 'Your browser did not start the audio.', tapToPlay: true };
     case 'failed':
       return { text: 'The player could not do that.', tapToPlay: false };
+    case 'declined':
+      return { text: 'Not played: you kept your new Session starting.', tapToPlay: false };
     default:
       return { text: happened(command), tapToPlay: false };
   }
@@ -187,6 +234,8 @@ export function playerCommandRecord({ command, outcome }: PlayerChatAction): str
       return `[Not done by the app: the browser refused to start the audio when the player was told to ${told}. The user was shown a "Tap to play" button.]`;
     case 'failed':
       return `[Not done by the app: the player could not ${told}]`;
+    case 'declined':
+      return `[Not done by the app: the user kept the new Session that was starting, so the player did not ${told}]`;
     default:
       return `[Done by the app: the player was told to ${told}]`;
   }
