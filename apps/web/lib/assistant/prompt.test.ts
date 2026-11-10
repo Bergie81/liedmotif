@@ -148,6 +148,12 @@ describe.each([
     expect(prompt).toMatch(/never write any other link/i);
   });
 
+  it('asks for the link to a page also when the answer already names that page in bold', () => {
+    const links = prompt.slice(prompt.indexOf('Links:'), prompt.indexOf('Pages of the app'));
+    expect(links).toMatch(/last line is a link to that page/i);
+    expect(links).toMatch(/a name in bold is not a link/i);
+  });
+
   it('names the persona in the persona block only, so a rename touches one place', () => {
     expect(ASSISTANT_NAME).toBe('Mo');
     expect(PERSONA_PROMPT).toContain(ASSISTANT_NAME);
@@ -190,5 +196,11 @@ describe('buildAssistantSystemPrompt', () => {
 
   it('tells a Member\'s model to say "ask your Admin" for what only the Admin can do', () => {
     expect(memberPrompt).toContain('ask your Admin');
+  });
+
+  it("tells a Member's model that limits and budgets are the Admin's to set, the Member's own included", () => {
+    expect(memberPrompt).toMatch(/cannot change a limit or a budget, their own included/i);
+    expect(memberPrompt).toMatch(/what the docs tell "the admin" to do/i);
+    expect(adminPrompt).not.toMatch(/cannot change a limit/i);
   });
 });

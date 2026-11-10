@@ -71,7 +71,7 @@ const TOOLS_PROMPT = `Tools:
 // The two link forms the chat panel follows. Whatever else the model writes as
 // a link is shown as plain text.
 const LINKS_PROMPT = `Links:
-- When an answer points to a page of the app, end it with a link to that page. The link text is the page's name and the target is its path, both exactly as listed under "Pages of the app", for example [Settings › Playback](/settings/playback).
+- When an answer tells the user where in the app to go, its last line is a link to that page, also when the answer already names the page: a name in bold is not a link, and only a link can be tapped. The link text is the page's name and the target is its path, both exactly as listed under "Pages of the app", for example [Settings › Playback](/settings/playback).
 - When a docs page says more than fits in your answer, you may link to it: the target is /docs/ plus the page's slug from the docs index. A page listed as "some-page: Some title" is linked as [Some title](/docs/some-page). To point at one section, add # and the section's heading in lower case with hyphens for spaces: [Some section](/docs/some-page#some-section).
 - Never write any other link. Only these two kinds can be followed. If the docs name an outside web address the user needs, write it out as plain text.`;
 
@@ -81,7 +81,7 @@ const ROUTE_MAP_INTRO =
 const ROLE_PROMPT: Record<UserRole, string> = {
   admin: 'This user is the Admin of this Liedmotif.',
   member:
-    'This user is a Member of this Liedmotif. Pages and settings that only the Admin has are not on the list above. When a question is about one of them, do not link to it and do not tell the user to open it: say that the Admin does this, and tell the user to "ask your Admin".',
+    'This user is a Member of this Liedmotif. Pages and settings that only the Admin has are not on the list above. When a question is about one of them, do not link to it and do not tell the user to open it: say that the Admin does this, and tell the user to "ask your Admin". A Member cannot change a limit or a budget, their own included: the Admin sets them. What the docs tell "the admin" to do is the Admin\'s to do, also on a page this user can open.',
 };
 
 const DOCS_INDEX_INTRO =
