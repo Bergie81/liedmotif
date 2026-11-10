@@ -27,9 +27,9 @@ export function playerCommandNote(command: AssistantPlayerCommand): string {
     case 'restart':
       return 'play the current Track from its start';
     case 'loopOn':
-      return 'repeat the current Track';
+      return 'loop the current Track';
     case 'loopOff':
-      return 'stop repeating the current Track';
+      return 'stop looping the current Track';
     case 'stop':
       return 'stop the Session';
     case 'sleepTimer':
@@ -38,5 +38,34 @@ export function playerCommandNote(command: AssistantPlayerCommand): string {
       return 'switch the Sleep Timer off';
     case 'play':
       return `play ${played(command)}`;
+  }
+}
+
+/**
+ * What came of a command in the browser: the player did it, the browser
+ * refused to start the audio it called for, it could not be done at all, or
+ * the user turned it down when the player asked whether to play it over a
+ * Session that was starting.
+ */
+export type PlayerCommandOutcome = 'done' | 'blocked' | 'failed' | 'declined';
+
+/**
+ * What a later turn is told about a command: one line, in brackets. Without an
+ * outcome the command is still on its way, and the line says what the tool said.
+ */
+export function playerCommandRecord(
+  command: AssistantPlayerCommand,
+  outcome?: PlayerCommandOutcome,
+): string {
+  const told = playerCommandNote(command);
+  switch (outcome) {
+    case 'blocked':
+      return `[Not done by the app: the browser refused to start the audio when the player was told to ${told}. The user was shown a "Tap to play" button.]`;
+    case 'failed':
+      return `[Not done by the app: the player could not ${told}]`;
+    case 'declined':
+      return `[Not done by the app: the user kept the new Session that was starting, so the player did not ${told}]`;
+    default:
+      return `[Done by the app: the player was told to ${told}]`;
   }
 }

@@ -16,9 +16,10 @@ import {
 } from '@liedmotif/shared';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import type { AnswerLinkTargets } from '@/lib/assistant/answer-links';
+import type { PlayerCommandOutcome } from '@/lib/assistant/player-command-note';
 import { onOutsideLibraryWrite } from '@/lib/offline/library-writes';
 import { AssistantDock } from './assistant-dock';
-import type { PlayerCommandOutcome, PlayerCommands } from './player-command';
+import type { PlayerCommands } from './player-command';
 
 const navigation = vi.hoisted(() => ({
   push: vi.fn<(path: string) => void>(),

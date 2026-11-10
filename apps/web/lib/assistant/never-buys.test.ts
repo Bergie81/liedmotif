@@ -3,7 +3,10 @@
 // by one function, called from the app's own route, and the only way there
 // from the chat is the user's click on a card: a request the browser sends.
 // This reads the Assistant's own source, so a later tool that reached for one
-// of those functions, or for a route, fails here.
+// of those functions, or for a route, fails here. The app has more that spends
+// than those four (a Surprise Me start, a resumed Session, a Dislike reroll),
+// so the source is also held to a list: everything the server code calls that
+// can reach the database or a provider, and every route the panel calls.
 
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -26,6 +29,85 @@ const mentioning = (files: string[], pattern: RegExp) =>
 
 const SERVER = [...sourceFiles('lib/assistant'), ...sourceFiles('app/api/assistant')];
 const PANEL = sourceFiles('components/assistant');
+
+const NAMED_IMPORT = /import\s+(type\s+)?\{([^}]*)\}\s+from\s+'([^']+)'/g;
+const ANY_IMPORT = /(?:\bfrom|\bimport\(|\brequire\()\s*'([^']+)'/g;
+
+/**
+ * The values `file` imports from the modules `watched` matches, by the names
+ * those modules export them under. A watched module reached any other way than
+ * a named import is listed as that, so nothing gets past the names.
+ */
+function valuesFrom(file: string, watched: RegExp): string[] {
+  const source = read(file);
+  const named = [...source.matchAll(NAMED_IMPORT)].filter(([, , , from]) => watched.test(from!));
+  const all = [...source.matchAll(ANY_IMPORT)].filter(([, from]) => watched.test(from!));
+  const names = named.flatMap(([, typeOnly, list]) =>
+    typeOnly
+      ? []
+      : list!
+          .split(',')
+          .map((name) => name.trim())
+          .filter((name) => name && !name.startsWith('type '))
+          .map((name) => name.split(/\s+as\s+/)[0]!),
+  );
+  return all.length === named.length ? names : [...names, `${file}: not a named import`];
+}
+
+/** The database, the providers, and the app's own server code outside the Assistant. */
+const REACHES_DATA = /^@liedmotif\/(db|providers)\b|^@\/lib\/(?!assistant\/)/;
+
+/**
+ * Everything the Assistant's server code calls there. None of it creates a
+ * Session or makes one generate.
+ */
+const SERVER_CALLS = [
+  // Reads, as the asking user: their music, their budget, what a route would refuse.
+  'cachedUserProfile',
+  'DOCS_BASE_URL',
+  'evaluateGenerationBudget',
+  'evaluateSessionHeadroom',
+  'getActiveSession',
+  'getLibraryTracks',
+  'getLoungePlaylistDetail',
+  'getOwnedTrackSummary',
+  'getOwnerUsageTracks',
+  'getPlayableTrackSession',
+  'getPlaylistDetail',
+  'getReadableTrackDetails',
+  'getSessionById',
+  'getTypicalTracksPerMusicRequest',
+  'headroomRefusalMessage',
+  'listPlaylists',
+  'listSessionTracks',
+  'loadMyBudgetData',
+  'loadPlaylistSummaries',
+  'loadSessionList',
+  'resolveAssistantStanding',
+  'searchPlaylists',
+  'searchSessions',
+  'searchTracks',
+  'toPlaylistMemberItem',
+  // Library writes: they add and rename.
+  'addPlaylistTracks',
+  'createPlaylist',
+  'ensureFavoritesPlaylist',
+  'renamePlaylist',
+  'setPlaylistLibraryPinned',
+  'setTrackFavorited',
+  // The one write to a Session: its mode, and only to Repeat.
+  'switchSessionMode',
+  // The route itself: who asks, their allowance, and the text LLM.
+  'apiError',
+  'apiRateLimited',
+  'assistantLimiter',
+  'countAssistantMessage',
+  'getDb',
+  'getLlmProvider',
+  'parseJsonBody',
+  'ProviderError',
+  'requireOwnerId',
+];
 
 /** The function that creates a Session, by the name the start and More Like This routes call it. */
 const CREATES_A_SESSION = /\bcreateSession\b/;
@@ -55,6 +137,12 @@ describe('the Assistant’s own code', () => {
     expect(read('lib/api-client.ts')).toMatch(SETS_THE_DURATION);
   });
 
+  it('reaches the database and the providers through a fixed list of functions', () => {
+    const called = new Set(SERVER.flatMap((file) => valuesFrom(file, REACHES_DATA)));
+
+    expect([...called].sort()).toEqual([...SERVER_CALLS].sort());
+  });
+
   it('never references the function that creates a Session', () => {
     expect(mentioning([...SERVER, ...PANEL], CREATES_A_SESSION)).toEqual([]);
   });
@@ -73,15 +161,27 @@ describe('the Assistant’s own code', () => {
   });
 
   it('has no server code that calls the app’s own routes', () => {
-    expect(mentioning(SERVER, /\/api\/sessions|@\/lib\/api-client/)).toEqual([]);
+    expect(mentioning(SERVER, /\/api\/(?!assistant\b)|@\/lib\/api-client/)).toEqual([]);
   });
 
-  it('sends the start request from one place in the browser: the flows a confirmed card runs', () => {
-    // The client function that posts to the start route, as a panel file imports it.
-    expect(mentioning(PANEL, importsFromApiClient('startSession'))).toEqual([CARD_HOST]);
+  it('calls the app’s routes from the browser through a fixed list of client functions', () => {
+    const calls = PANEL.map((file) => [file, valuesFrom(file, /^@\/lib\/api-client$/)] as const);
+
+    expect(Object.fromEntries(calls.filter(([, names]) => names.length > 0))).toEqual({
+      // The start request, sent from one place: the flows a confirmed card runs.
+      [CARD_HOST]: ['startSession'],
+      // Stop Session, and reading a Playlist to play it. Neither buys.
+      [join('components/assistant', 'use-player-commands.ts')]: ['stopSession'],
+      [join('components/assistant', 'use-play-command.ts')]: [
+        'getAllPlaylistMembers',
+        'getLoungePlaylist',
+      ],
+    });
+    // The chat's own route is the one path a panel file names.
+    expect(mentioning(PANEL, /\/api\/(?!assistant\b)/)).toEqual([]);
   });
 
-  it('imports none of the other client calls that spend: a card runs the app’s own flows for them', () => {
+  it('leaves the other three spends to the app’s own flows, which one panel file runs', () => {
     // The client functions that post to the Change Vibe, More Like This and duration routes.
     const importsASpend = importsFromApiClient('changeVibe|moreLikeThis|setSessionDuration');
     // The flows the app's own controls run, which hold those calls.
@@ -90,7 +190,6 @@ describe('the Assistant’s own code', () => {
     expect(read('components/player/use-vibe-change-request.ts')).toMatch(importsASpend);
     expect(read('components/sessions/use-seed-more-like-this.ts')).toMatch(importsASpend);
     expect(read('components/player/switch-new-music-on.ts')).toMatch(importsASpend);
-    expect(mentioning(PANEL, importsASpend)).toEqual([]);
     expect(mentioning(PANEL, runsASpendFlow)).toEqual([CARD_HOST]);
     expect(mentioning(SERVER, runsASpendFlow)).toEqual([]);
     for (const flow of ['submitChangeVibe', 'useSeedMoreLikeThis', 'switchNewMusicOn']) {

@@ -5,9 +5,10 @@
 
 import { ASSISTANT_MAX_MESSAGE_LENGTH, type AssistantAction } from '@liedmotif/shared';
 import { cardRecord } from '@/lib/assistant/card-note';
-import { receiptNote } from '@/lib/assistant/receipt-note';
+import { playerCommandRecord } from '@/lib/assistant/player-command-note';
+import { receiptRecord } from '@/lib/assistant/receipt-note';
 import type { ProposedChatAction } from './card';
-import { playerCommandRecord, type PlayerChatAction } from './player-command';
+import type { PlayerChatAction } from './player-command';
 
 /**
  * One action of an answer, with everything the panel knows about what came of
@@ -24,9 +25,9 @@ export type SettleableAction = Exclude<ChatAction, { status: 'done' }>;
 export function actionNote(action: ChatAction): string {
   switch (action.status) {
     case 'done':
-      return `[Done by the app: ${receiptNote(action.receipt)}]`;
+      return receiptRecord(action.receipt);
     case 'player':
-      return playerCommandRecord(action);
+      return playerCommandRecord(action.command, action.outcome);
     case 'proposed':
       return cardRecord(action.card, action.outcome);
   }

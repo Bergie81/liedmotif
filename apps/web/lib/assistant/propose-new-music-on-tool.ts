@@ -13,6 +13,7 @@ import {
   targetDurationMinutesSchema,
   type ProposeNewMusicOnInput,
 } from '@liedmotif/shared';
+import { newMusicLimitNote } from './card-note';
 import { quoted } from './music-names';
 import { generationRefusal, NO_ACTIVE_SESSION, notOffered, proposed } from './proposal';
 import { PROPOSE_NEW_MUSIC_ON_TOOL_NAME } from './tool-names';
@@ -51,12 +52,8 @@ export function createProposeNewMusicOnTool(
           active.sessionMode === 'keep_going' &&
           active.targetDurationMinutes === card.targetDurationMinutes
         ) {
-          const limit =
-            card.targetDurationMinutes === null
-              ? 'with no limit'
-              : `up to ${card.targetDurationMinutes} minutes of music`;
           return notOffered(
-            `New music is already on for the Session ${quoted(active.title)}, ${limit}.`,
+            `New music is already on for the Session ${quoted(active.title)}, ${newMusicLimitNote(card.targetDurationMinutes)}.`,
           );
         }
         // Saved at or below what the Session holds, the target is met at once

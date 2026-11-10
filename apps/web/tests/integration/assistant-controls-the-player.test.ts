@@ -124,8 +124,8 @@ describe.skipIf(skip)('the Assistant asked to control the player', () => {
       next: /^Done: the player was told to skip to the next Track\.$/,
       previous: /^Done: the player was told to go back to the previous Track\.$/,
       restart: /^Done: the player was told to play the current Track from its start\.$/,
-      loopOn: /^Done: the player was told to repeat the current Track\.$/,
-      loopOff: /^Done: the player was told to stop repeating the current Track\.$/,
+      loopOn: /^Done: the player was told to loop the current Track\.$/,
+      loopOff: /^Done: the player was told to stop looping the current Track\.$/,
       stop: /^Done: the player was told to stop the Session\.$/,
     };
 
@@ -165,9 +165,9 @@ describe.skipIf(skip)('the Assistant asked to control the player', () => {
     const refusals: [AssistantPlayerState, string, RegExp][] = [
       [PAUSED, 'pause', /not playing/i],
       [PLAYING, 'continue', /already playing/i],
-      [{ ...PAUSED, trackId: null }, 'next', /no Track on the deck/i],
-      [{ ...PAUSED, trackId: null }, 'previous', /no Track on the deck/i],
-      [{ ...PAUSED, trackId: null }, 'restart', /no Track on the deck/i],
+      [{ ...PAUSED, trackId: null }, 'next', /no Track ready/i],
+      [{ ...PAUSED, trackId: null }, 'previous', /no Track ready/i],
+      [{ ...PAUSED, trackId: null }, 'restart', /no Track ready/i],
       [{ ...PLAYING, source: PLAYLIST }, 'stop', /Playlist has no Stop.*pause/i],
     ];
 

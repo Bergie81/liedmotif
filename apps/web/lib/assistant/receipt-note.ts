@@ -30,3 +30,7 @@ export function receiptNote(receipt: AssistantReceipt): string {
       return `switched New music off for the Session ${named(receipt.session.name, receipt.session.id)}`;
   }
 }
+
+/** What a later turn is told about a receipt: one line, in brackets. */
+export const receiptRecord = (receipt: AssistantReceipt) =>
+  `[Done by the app: ${receiptNote(receipt)}]`;

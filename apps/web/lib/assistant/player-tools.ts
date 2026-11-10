@@ -34,7 +34,7 @@ export const refused = (why: string): ActionOutcome<'player'> => ({
 
 const NOTHING_ENGAGED =
   'The player has nothing engaged in this browser, so there is nothing to control.';
-const NO_TRACK = 'There is no Track on the deck yet.';
+const NO_TRACK = 'The player has no Track ready yet.';
 
 /** Why `command` makes no sense for the player as the request described it, or null when it does. */
 function pointless(command: AssistantPlayerControl, player: AssistantPlayerState): string | null {

@@ -389,7 +389,7 @@ export const playerControlInputSchema = z.object({
   command: z
     .enum(ASSISTANT_PLAYER_CONTROLS)
     .describe(
-      'pause halts the music and continue plays on. next is Skip, previous goes back one Track, restart plays the current Track from its start. loopOn repeats the current Track until loopOff. stop is Stop Session: it ends the Session, which then generates nothing until it is resumed.',
+      'pause halts the music and continue plays on. next is Skip, previous goes back one Track, restart plays the current Track from its start. loopOn is Loop Track: the current Track plays again and again until loopOff. stop is Stop Session: it ends the Session, which then generates nothing until it is resumed.',
     ),
 });
 export type PlayerControlInput = z.infer<typeof playerControlInputSchema>;

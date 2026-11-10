@@ -1,6 +1,6 @@
 // A player command the Assistant handed over, in the browser: which of the
 // player's own actions it reaches, what is made of a browser that refuses to
-// start audio, how the chat words it, and what the next request is told.
+// start audio, and how the chat words it.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
@@ -10,7 +10,6 @@ import type {
 } from '@liedmotif/shared';
 import {
   playerCommandLine,
-  playerCommandRecord,
   runPlayerCommand,
   tapToPlay,
   type CommandedController,
@@ -437,39 +436,5 @@ describe('the line a player command gets in the chat', () => {
 
   it('words a command still on its way like one that is done', () => {
     expect(playerCommandLine(named('pause'), undefined).text).toBe('Paused');
-  });
-});
-
-describe('what the next request is told about a player command', () => {
-  const record = (outcome?: 'done' | 'blocked' | 'failed') =>
-    playerCommandRecord({ status: 'player', command: named('continue'), outcome });
-
-  it('is the command as the tool worded it, once it is done or still on its way', () => {
-    expect(record('done')).toBe('[Done by the app: the player was told to play on]');
-    expect(record()).toBe('[Done by the app: the player was told to play on]');
-  });
-
-  it('says the browser refused to start the audio, and what the user was shown', () => {
-    expect(record('blocked')).toBe(
-      '[Not done by the app: the browser refused to start the audio when the player was told to play on. The user was shown a "Tap to play" button.]',
-    );
-  });
-
-  it('says the player could not do it', () => {
-    expect(record('failed')).toBe('[Not done by the app: the player could not play on]');
-  });
-
-  it('names what a play command played, as the tool worded it', () => {
-    expect(playerCommandRecord({ status: 'player', command: PLAY_TRACK, outcome: 'done' })).toBe(
-      '[Done by the app: the player was told to play the Track "Night Drive" in the Session "Deep Focus"]',
-    );
-  });
-
-  it('says the user chose the Session that was starting over a play command', () => {
-    expect(
-      playerCommandRecord({ status: 'player', command: PLAY_RUNNING, outcome: 'declined' }),
-    ).toBe(
-      '[Not done by the app: the user kept the new Session that was starting, so the player did not play the Playlist "Running"]',
-    );
   });
 });
