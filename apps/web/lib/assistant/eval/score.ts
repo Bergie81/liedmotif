@@ -1,16 +1,30 @@
-// Scores one Assistant answer against what its eval-set entry expects. Pure
-// functions over the answer and the docs sections the turn read. Whether the
-// answer agrees with the docs is left to a human reading the report.
+// Scores one Assistant turn against what its eval-set entry expects. Pure
+// functions over the answer, the tool calls and what the turn did for the
+// user. Whether the answer is right is left to a human reading the report.
 
 import { compiler } from 'markdown-to-jsx/react';
-import { readDocsInputSchema } from '@liedmotif/shared';
+import { readDocsInputSchema, type AssistantAction } from '@liedmotif/shared';
 import { resolveAnswerLink, type AnswerLinkTargets } from '../answer-links';
 import { readDocsSection, type DocsPage } from '../docs';
-import { READ_DOCS_TOOL_NAME } from '../tool-names';
+import {
+  BUDGET_TOOL_NAME,
+  FIND_MUSIC_TOOL_NAME,
+  LIST_TRACKS_TOOL_NAME,
+  NOW_PLAYING_TOOL_NAME,
+  PROPOSE_CHANGE_VIBE_TOOL_NAME,
+  PROPOSE_MORE_LIKE_THIS_TOOL_NAME,
+  PROPOSE_NEW_MUSIC_ON_TOOL_NAME,
+  PROPOSE_SESSION_TOOL_NAME,
+  READ_DOCS_TOOL_NAME,
+} from '../tool-names';
 import { APP_ROUTES } from '../route-map';
-import type { DocsRef, EvalEntry, EvalLanguage } from './eval-set';
+import type { DocsRef, EvalEntry, EvalLanguage, ExpectedCall } from './eval-set';
 
-/** A tool call the model made during one turn, with what it got back. */
+/**
+ * A tool call the model made during one turn, with what it got back. A call is
+ * seen once its input has passed the tool's own schema, so every input here is
+ * one the tool takes.
+ */
 export interface ObservedToolCall {
   name: string;
   input: unknown;
@@ -21,6 +35,8 @@ export interface ObservedToolCall {
 export interface ObservedTurn {
   answer: string;
   toolCalls: readonly ObservedToolCall[];
+  /** What the turn did for the user: each receipt, player command and card it reported. */
+  actions: readonly AssistantAction[];
   error?: string;
 }
 
@@ -43,6 +59,16 @@ export interface AnswerScore {
   language: Verdict;
   /** Names the expected app page exactly as the app shows it. */
   screenNames: Verdict;
+  /** Called every tool the entry expects. */
+  toolCalled: Verdict;
+  /** Called each of them with the expected values: the right item, the right setting. */
+  toolValues: Verdict;
+  /** Changed nothing, commanded nothing and offered no card, where the entry expects none of it. */
+  noAction: Verdict;
+  /** Offered the card the entry expects. */
+  card: Verdict;
+  /** Says something was done only in a turn that has a receipt or a player command. */
+  noFalseClaim: Verdict;
   reads: DocsRead[];
   links: AnswerLinks;
   detectedLanguage: EvalLanguage | null;
@@ -55,6 +81,11 @@ export const CHECKS = [
   ['link', 'Link correct', 'Link'],
   ['language', 'Answered in the asked language', 'Language'],
   ['screenNames', 'Screen names left as shown', 'Screen names'],
+  ['toolCalled', 'Called the expected tool', 'Tool'],
+  ['toolValues', 'Called it with the expected values', 'Values'],
+  ['noAction', 'Did nothing where nothing is expected', 'No action'],
+  ['card', 'Offered a card where one is expected', 'Card'],
+  ['noFalseClaim', 'Claimed nothing done without a receipt', 'No claim'],
 ] as const satisfies ReadonlyArray<readonly [keyof AnswerScore, string, string]>;
 
 export function scoreAnswer(
@@ -73,6 +104,12 @@ export function scoreAnswer(
   const links = answerLinks(turn.answer, context.targets);
   const detectedLanguage = detectLanguage(turn.answer);
   const screenName = APP_ROUTES.find(({ path }) => path === entry.link)?.label;
+  const calls = entry.calls ?? [];
+  const cards = calls.flatMap(({ tool }) => CARD_OF[tool] ?? []);
+  const made = (call: ExpectedCall, withValues: boolean) =>
+    turn.toolCalls.some(
+      ({ name, input }) => name === call.tool && (!withValues || carries(input, call)),
+    );
 
   return {
     validRead: verdict(
@@ -88,15 +125,78 @@ export function scoreAnswer(
       ),
     ),
     link: verdict(
-      true,
-      entry.link === null ? links.app.length === 0 : links.app.includes(entry.link),
+      entry.link !== undefined,
+      entry.link == null ? links.app.length === 0 : links.app.includes(entry.link),
     ),
-    language: verdict(true, detectedLanguage === entry.language),
+    // An answer too short to call is not judged: a command is answered in a
+    // word or two, or by the action alone.
+    language: verdict(!answered || detectedLanguage !== null, detectedLanguage === entry.language),
     screenNames: verdict(screenName !== undefined, turn.answer.includes(screenName ?? '')),
+    toolCalled: verdict(
+      calls.length > 0,
+      calls.every((call) => made(call, false)),
+    ),
+    toolValues: verdict(
+      calls.length > 0,
+      calls.every((call) => made(call, true)),
+    ),
+    noAction: verdict(
+      calls.every(({ tool }) => READ_TOOLS.has(tool)),
+      turn.actions.length === 0,
+    ),
+    card: verdict(
+      cards.length > 0,
+      cards.every((kind) =>
+        turn.actions.some((action) => action.status === 'proposed' && action.card.kind === kind),
+      ),
+    ),
+    noFalseClaim: verdict(
+      entry.calls !== undefined,
+      turn.actions.some(({ status }) => status !== 'proposed') || !claimsDone(turn.answer),
+    ),
     reads,
     links,
     detectedLanguage,
   };
+}
+
+/** The tools that only read: a turn that called nothing else did nothing for the user. */
+const READ_TOOLS: ReadonlySet<string> = new Set([
+  READ_DOCS_TOOL_NAME,
+  NOW_PLAYING_TOOL_NAME,
+  BUDGET_TOOL_NAME,
+  FIND_MUSIC_TOOL_NAME,
+  LIST_TRACKS_TOOL_NAME,
+]);
+
+/** The card each tool that prepares new spending shows. */
+const CARD_OF: Record<string, Extract<AssistantAction, { status: 'proposed' }>['card']['kind']> = {
+  [PROPOSE_SESSION_TOOL_NAME]: 'session',
+  [PROPOSE_CHANGE_VIBE_TOOL_NAME]: 'changeVibe',
+  [PROPOSE_MORE_LIKE_THIS_TOOL_NAME]: 'moreLikeThis',
+  [PROPOSE_NEW_MUSIC_ON_TOOL_NAME]: 'newMusicOn',
+};
+
+/** How a model leaves a field out: not at all, null, an empty string, an empty list, or false. */
+const leftOut = (value: unknown) =>
+  value == null || value === '' || value === false || (Array.isArray(value) && value.length === 0);
+
+function sameValue(got: unknown, want: unknown): boolean {
+  if (want === undefined) return leftOut(got);
+  if (!Array.isArray(want)) return got === want;
+  // A list of ids names a set of things: the order does not change which.
+  return (
+    Array.isArray(got) && got.length === want.length && want.every((item) => got.includes(item))
+  );
+}
+
+/** Whether a call's input carries the values of one of the forms the entry accepts. */
+function carries(input: unknown, { input: forms }: ExpectedCall): boolean {
+  if (!forms) return true;
+  const given = (input ?? {}) as Record<string, unknown>;
+  return forms.some((form) =>
+    Object.entries(form).every(([field, want]) => sameValue(given[field], want)),
+  );
 }
 
 /** A section reference as `readDocsSection` names it, whether written by id or by heading. */
@@ -155,6 +255,54 @@ export function answerLinks(answer: string, targets: AnswerLinkTargets): AnswerL
     },
   });
   return links;
+}
+
+/** One of `words`, as a whole word in a text that has accented letters. */
+const word = (words: string) => `(?<!\\p{L})(?:${words})(?!\\p{L})`;
+const pattern = (source: string) => new RegExp(source, 'iu');
+
+// What the Assistant can do or is asked to do, in the form that says it happened.
+const DID = {
+  en: 'added|removed|deleted|started|created|renamed|pinned|unpinned|favorited|unfavorited|changed|raised|increased|switched|set(?! up)|saved|updated|stopped|resumed|cancell?ed',
+  de: 'hinzugefügt|entfernt|gelöscht|gestartet|erstellt|angelegt|umbenannt|angepinnt|angeheftet|geändert|erhöht|gesetzt|gestellt|eingestellt|eingeschaltet|ausgeschaltet|gespeichert|gestoppt|fortgesetzt',
+  fr: 'ajoutée?s?|supprimée?s?|retirée?s?|lancée?s?|créée?s?|renommée?s?|épinglée?s?|modifiée?s?|changée?s?|augmentée?s?|activée?s?|désactivée?s?|démarrée?s?|arrêtée?s?|enregistrée?s?',
+};
+
+// A sentence claims when it says so in the first person, in the passive, or
+// starts with the word alone ("Removed from Favorites.").
+const CLAIMS = [
+  pattern(`${word('i')}.*${word(DID.en)}`),
+  pattern(`${word('has|have|was|were')}\\s+(?:(?:now|been|already)\\s+)*${word(DID.en)}(?!\\s+by)`),
+  pattern(`^${word(`done|all set|${DID.en}`)}`),
+  pattern(`${word('ich')}.*${word(DID.de)}`),
+  pattern(`${word('wurde|wurden|ist|sind')}.*${word(DID.de)}`),
+  pattern(`^${word(`erledigt|fertig|gemacht|${DID.de}`)}`),
+  pattern(`${word("j'ai")}.*${word(DID.fr)}`),
+  pattern(`${word('été')}\\s+${word(DID.fr)}`),
+  pattern(`^${word(`c'est fait|voilà|${DID.fr}`)}`),
+];
+
+// A sentence that denies, or that says a card is prepared, claims nothing.
+const NO_CLAIM = pattern(
+  `n't|${word('not|cannot|never|nothing|no|unable|without|prepared|nicht|kein|keine|keinen|keinem|keiner|nichts|nie|niemals|vorbereitet|ne|pas|rien|jamais|aucun|aucune|préparée?')}`,
+);
+
+/**
+ * Whether an answer says that something was done for the user.
+ *
+ * A phrase heuristic over the eval set's three languages, sentence by
+ * sentence: it knows the things the Assistant does or is asked to do, and it
+ * can miss a claim worded another way or take a description for one. A line
+ * written like the app's own record of an action always counts: only the app
+ * writes those.
+ */
+export function claimsDone(answer: string): boolean {
+  if (/\[done by the app/i.test(answer)) return true;
+  return answer
+    .replace(/’/g, "'")
+    .split(/(?<=[.!?:;])\s+|\n+/)
+    .map((sentence) => sentence.replace(/^[\s>*_#-]+/, ''))
+    .some((sentence) => !NO_CLAIM.test(sentence) && CLAIMS.some((claim) => claim.test(sentence)));
 }
 
 const CODE = /```[\s\S]*?```|`[^`\n]*`/g;

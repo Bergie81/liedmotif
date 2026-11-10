@@ -225,34 +225,44 @@ into a Style Snapshot for offline testing.
 
 ### Check a model for the Assistant
 
-The Assistant needs a model that calls tools reliably and keeps to what the docs
-say. To check the configured text LLM, ask it the fixed question set in
-`apps/web/lib/assistant/eval/eval-set.ts`:
+The Assistant needs a model that calls tools reliably, keeps to what the docs
+say, and acts only as asked. To check the configured text LLM, ask it the fixed
+question set in `apps/web/lib/assistant/eval/eval-set.ts`:
 
 ```bash
 npm run assistant:eval
 ```
 
 Every question is a real Assistant turn with the app's own system prompt, route
-map and `readDocs` tool. The set is asked once, one question after the other, and
-no question is asked again, so a run costs about 20 questions on that provider,
-each up to five model calls (a model call that fails in transit is resent once,
-as in the app). It resolves the text LLM as the app does (`LLM_*` in
-`.env` first, then what is saved under **Settings › AI Providers**), so the dev
-database has to be up. To check another model, name the whole connection for that
-run; the `LLM_*` settings count only next to the `LLM_PROVIDER` they describe:
+map and tools. About half the set asks about the docs. The other half asks about
+a user's own music or asks the Assistant to do something with it: play, pause,
+favorite, add to a Playlist, start a Session. Those are answered from a small
+fixture Library (`apps/web/lib/assistant/eval/fixture.ts`) in place of the
+database: the model gets the real tool definitions, a tool that acts reports what
+the app would do, and nothing is changed, played or bought. The set is asked
+once, one question after the other, and no question is asked again, so a run
+costs about 45 questions on that provider, each up to five model calls (a model
+call that fails in transit is resent once, as in the app). It resolves the text
+LLM as the app does (`LLM_*` in `.env` first, then what is saved under
+**Settings › AI Providers**), so the dev database has to be up. To check another
+model, name the whole connection for that run; the `LLM_*` settings count only
+next to the `LLM_PROVIDER` they describe:
 
 ```bash
 LLM_PROVIDER=ollama LLM_BASE_URL=http://localhost:11434 LLM_MODEL=llama3.1 npm run assistant:eval
 ```
 
 The Markdown report lands in `eval-reports/`, which git ignores. It scores each
-answer on the docs section read, the link, the language and the screen names, and
-records tool calls, prompt size and time. Whether an answer agrees with the docs
-is not scored: the report puts question, expected section and answer side by side
-for you to judge. A question that fails or gets no answer within 10 minutes is
-recorded as failed. One model call is bounded by `LLM_REQUEST_TIMEOUT_MS`, which a
-slow local model needs raised.
+answer on the docs section read, the link, the language and the screen names,
+and each turn on what it did: the expected tool called with the expected values,
+nothing done where nothing is expected, a card where one is expected, and no
+claim that something was done without a receipt. It records tool calls, prompt
+size and time, with the time to answer summed up for the two halves of the set.
+Whether an answer is right is not scored: the report puts the question, what was
+expected, the tool calls and the answer side by side for you to judge. A question
+that fails or gets no answer within 10 minutes is recorded as failed. One model
+call is bounded by `LLM_REQUEST_TIMEOUT_MS`, which a slow local model needs
+raised.
 
 On the `openai` preset the Assistant ignores `LLM_REASONING_EFFORT` and always
 asks with `none`: OpenAI refuses tool calls sent with any other effort. Session

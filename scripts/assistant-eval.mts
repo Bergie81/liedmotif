@@ -1,11 +1,14 @@
 // Checks whether the configured text LLM is good enough for the Assistant
 // (`npm run assistant:eval`). It asks the fixed eval set once — every question a
 // real Assistant turn, one after the other, none asked again — and writes a
-// scored Markdown report to `eval-reports/`, which git ignores.
+// scored Markdown report to `eval-reports/`, which git ignores. The questions
+// about a user's own music are asked against a fixture Library: a run reads
+// nobody's music and changes nothing.
 //
 // The model is the one the app itself would use: `LLM_*` in `.env` or the
 // environment first, then what is saved under Settings › AI Providers. So it
-// needs the app's database, and a run spends real requests on that provider.
+// needs the app's database to find the model, and a run spends real requests
+// on that provider.
 // `LLM_PROVIDER=mock npm run assistant:eval` tries the tooling without a model.
 
 import { mkdirSync, writeFileSync } from 'node:fs';

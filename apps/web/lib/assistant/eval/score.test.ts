@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import type { AssistantAction } from '@liedmotif/shared';
 import type { AnswerLinkTargets } from '../answer-links';
 import { parseDocsPage } from '../docs';
 import { appRoutesFor } from '../route-map';
 import type { EvalEntry } from './eval-set';
-import { answerLinks, detectLanguage, scoreAnswer, type ObservedTurn } from './score';
+import { answerLinks, claimsDone, detectLanguage, scoreAnswer, type ObservedTurn } from './score';
 
 const INVITE_SECTION = '## Invite someone\n\nCreate an invite link in **Settings › Members**.';
 const PAGES = [
@@ -44,6 +45,7 @@ const GOOD_ANSWER =
 const turn = (overrides: Partial<ObservedTurn> = {}): ObservedTurn => ({
   answer: GOOD_ANSWER,
   toolCalls: [readInvite],
+  actions: [],
   ...overrides,
 });
 
@@ -187,6 +189,263 @@ describe('scoring an answer', () => {
       language: 'fail',
       screenNames: 'n/a',
     });
+  });
+});
+
+const NEON_RAIN = { id: '00000000-0000-4000-8000-000000000201', name: 'Neon Rain' };
+const RUNNING = { id: '00000000-0000-4000-8000-000000000302', name: 'Running' };
+
+const receipt: AssistantAction = {
+  status: 'done',
+  receipt: {
+    action: 'favoriteTrack',
+    track: NEON_RAIN,
+    playlist: { id: '00000000-0000-4000-8000-000000000301', name: 'Favorites' },
+  },
+};
+const command: AssistantAction = { status: 'player', command: { name: 'next' } };
+const card: AssistantAction = {
+  status: 'proposed',
+  card: { kind: 'session', prompt: 'calm piano', vocal: 'instrumental' },
+};
+
+/** A request about the user's own music, with the calls a good turn makes. */
+const request = (calls: EvalEntry['calls'], overrides: Partial<EvalEntry> = {}): EvalEntry => ({
+  id: 'request',
+  role: 'member',
+  language: 'en',
+  question: 'Favorite this.',
+  docs: 'none',
+  calls,
+  goodAnswer: 'Says it is in Favorites.',
+  ...overrides,
+});
+
+const called = (name: string, input: unknown = {}, result = 'Done: it is done.') => ({
+  name,
+  input,
+  result,
+});
+
+describe('scoring what a turn did', () => {
+  const favoriteThis = request([
+    { tool: 'favoriteTrack', input: [{ trackId: undefined }, { trackId: NEON_RAIN.id }] },
+  ]);
+
+  it('passes a turn that called the expected tool for the expected item', () => {
+    const made = turn({
+      answer: 'Added to your Favorites.',
+      toolCalls: [called('favoriteTrack', { trackId: NEON_RAIN.id })],
+      actions: [receipt],
+    });
+
+    expect(scoreAnswer(favoriteThis, made, MEMBER)).toMatchObject({
+      toolCalled: 'pass',
+      toolValues: 'pass',
+      noAction: 'n/a',
+      card: 'n/a',
+      noFalseClaim: 'pass',
+    });
+  });
+
+  it('takes a field the model left out, sent as null or sent empty for "left out"', () => {
+    for (const input of [{}, { trackId: null }, { trackId: '' }]) {
+      const made = turn({ toolCalls: [called('favoriteTrack', input)], actions: [receipt] });
+
+      expect(scoreAnswer(favoriteThis, made, MEMBER).toolValues, JSON.stringify(input)).toBe(
+        'pass',
+      );
+    }
+  });
+
+  it('fails the values of a call that points at another item', () => {
+    const made = turn({ toolCalls: [called('favoriteTrack', { trackId: RUNNING.id })] });
+
+    expect(scoreAnswer(favoriteThis, made, MEMBER)).toMatchObject({
+      toolCalled: 'pass',
+      toolValues: 'fail',
+    });
+  });
+
+  it('fails both when the expected tool was never called', () => {
+    const made = turn({ toolCalls: [called('nowPlaying')] });
+
+    expect(scoreAnswer(favoriteThis, made, MEMBER)).toMatchObject({
+      toolCalled: 'fail',
+      toolValues: 'fail',
+    });
+  });
+
+  it('wants every expected call of a two-step request, in any order', () => {
+    const findThenAdd = request([
+      { tool: 'findMusic' },
+      { tool: 'addToPlaylist', input: [{ playlistId: RUNNING.id, trackIds: [NEON_RAIN.id] }] },
+    ]);
+    const add = called('addToPlaylist', { playlistId: RUNNING.id, trackIds: [NEON_RAIN.id] });
+    const find = called('findMusic', { kind: 'playlist', query: 'running' });
+
+    expect(scoreAnswer(findThenAdd, turn({ toolCalls: [add, find] }), MEMBER)).toMatchObject({
+      toolCalled: 'pass',
+      toolValues: 'pass',
+    });
+    expect(scoreAnswer(findThenAdd, turn({ toolCalls: [add] }), MEMBER)).toMatchObject({
+      toolCalled: 'fail',
+      toolValues: 'fail',
+    });
+  });
+
+  it('compares a list of ids as a set, and other values exactly', () => {
+    const two = request([{ tool: 'addToPlaylist', input: [{ trackIds: ['a', 'b'] }] }]);
+    const scored = (trackIds: string[]) =>
+      scoreAnswer(two, turn({ toolCalls: [called('addToPlaylist', { trackIds })] }), MEMBER)
+        .toolValues;
+
+    expect(scored(['b', 'a'])).toBe('pass');
+    expect(scored(['a'])).toBe('fail');
+    expect(scored(['a', 'b', 'c'])).toBe('fail');
+
+    const timer = request([{ tool: 'sleepTimer', input: [{ minutes: 30, off: undefined }] }]);
+    const set = (input: unknown) =>
+      scoreAnswer(timer, turn({ toolCalls: [called('sleepTimer', input)] }), MEMBER).toolValues;
+    expect(set({ minutes: 30, off: false })).toBe('pass');
+    expect(set({ minutes: 45 })).toBe('fail');
+    expect(set({ minutes: 30, off: true })).toBe('fail');
+  });
+
+  describe('where nothing should be done', () => {
+    const remove = request([], { question: 'Remove Neon Rain from my Favorites.' });
+
+    it('passes a turn that only looked things up', () => {
+      const made = turn({
+        answer: 'I cannot remove a Track. You do that in your Library.',
+        toolCalls: [called('findMusic', { kind: 'track', query: 'Neon Rain' }, 'Tracks: …')],
+      });
+
+      expect(scoreAnswer(remove, made, MEMBER)).toMatchObject({
+        toolCalled: 'n/a',
+        toolValues: 'n/a',
+        noAction: 'pass',
+        noFalseClaim: 'pass',
+      });
+    });
+
+    it('fails a turn that changed something, commanded the player or offered a card', () => {
+      for (const action of [receipt, command, card]) {
+        expect(
+          scoreAnswer(remove, turn({ actions: [action] }), MEMBER).noAction,
+          action.status,
+        ).toBe('fail');
+      }
+    });
+
+    it('also holds a question about the docs, and one about music, to it', () => {
+      const whatIsThis = request([{ tool: 'nowPlaying' }], { question: 'What is this?' });
+
+      expect(scoreAnswer(INVITE, turn(), ADMIN).noAction).toBe('pass');
+      expect(scoreAnswer(INVITE, turn({ actions: [command] }), ADMIN).noAction).toBe('fail');
+      expect(scoreAnswer(whatIsThis, turn({ actions: [command] }), MEMBER).noAction).toBe('fail');
+    });
+  });
+
+  describe('where a card is expected', () => {
+    const startSomething = request([{ tool: 'proposeSession' }], {
+      question: 'Start something calm.',
+    });
+
+    it('passes a turn that offered that card and says it is prepared', () => {
+      const made = turn({
+        answer: 'I have prepared a card for a calm Session. Confirming it generates new Tracks.',
+        toolCalls: [called('proposeSession', { prompt: 'something calm' }, 'Prepared: a card …')],
+        actions: [card],
+      });
+
+      expect(scoreAnswer(startSomething, made, MEMBER)).toMatchObject({
+        card: 'pass',
+        noAction: 'n/a',
+        noFalseClaim: 'pass',
+      });
+    });
+
+    it('fails a turn that offered none, or a card for something else', () => {
+      const other: AssistantAction = {
+        status: 'proposed',
+        card: { kind: 'moreLikeThis', tracks: [NEON_RAIN] },
+      };
+
+      expect(scoreAnswer(startSomething, turn(), MEMBER).card).toBe('fail');
+      expect(scoreAnswer(startSomething, turn({ actions: [other] }), MEMBER).card).toBe('fail');
+    });
+
+    it('fails the claim of a turn that says the Session has started', () => {
+      const made = turn({ answer: 'I started a calm Session for you.', actions: [card] });
+
+      expect(scoreAnswer(startSomething, made, MEMBER)).toMatchObject({
+        card: 'pass',
+        noFalseClaim: 'fail',
+      });
+    });
+  });
+
+  it('does not judge a claim in an answer about the docs', () => {
+    expect(scoreAnswer(INVITE, turn({ answer: 'I have added her.' }), ADMIN).noFalseClaim).toBe(
+      'n/a',
+    );
+  });
+
+  it('judges no link where the entry names none, and no language in an answer of two words', () => {
+    const next = request([{ tool: 'playerControl', input: [{ command: 'next' }] }]);
+    const made = turn({
+      answer: 'Skipped. [Now Playing](/player)',
+      toolCalls: [called('playerControl', { command: 'next' })],
+      actions: [command],
+    });
+
+    expect(scoreAnswer(next, made, MEMBER)).toMatchObject({
+      link: 'n/a',
+      language: 'n/a',
+      screenNames: 'n/a',
+      noFalseClaim: 'pass',
+    });
+  });
+
+  it('judges no language in a turn that acted and wrote nothing', () => {
+    const next = request([{ tool: 'playerControl' }]);
+
+    expect(scoreAnswer(next, turn({ answer: '', actions: [command] }), MEMBER).language).toBe(
+      'n/a',
+    );
+  });
+});
+
+describe('a claim that something was done', () => {
+  it.each([
+    'Done.',
+    'I have added it to your Favorites.',
+    "I've removed the Track from the Playlist.",
+    'Your budget has been raised to 50 Tracks.',
+    'Removed from Favorites.',
+    'Ich habe den Track aus deinen Favoriten entfernt.',
+    'Erledigt!',
+    'Dein Tagesbudget wurde auf 50 Tracks erhöht.',
+    "J'ai supprimé le morceau de tes favoris.",
+    "C'est fait.",
+    '[Done by the app: created the Playlist "Gym"]',
+  ])('is seen in: %s', (answer) => {
+    expect(claimsDone(answer)).toBe(true);
+  });
+
+  it.each([
+    '',
+    'I cannot remove a Track. You do that in your [Library](/library).',
+    'Nothing was changed: I could not find that Playlist.',
+    'I have prepared a card for a calm Session. It starts when you confirm it.',
+    'This is **Neon Rain** from your Session **Night Drive**.',
+    'You have 12 of 20 Tracks left today.',
+    'Das kann ich nicht für dich ändern. Frag deinen Admin.',
+    'Ich habe eine Karte vorbereitet. Die Session startet erst, wenn du sie bestätigst.',
+    'Je ne peux pas supprimer un morceau.',
+  ])('is not seen in: %s', (answer) => {
+    expect(claimsDone(answer)).toBe(false);
   });
 });
 

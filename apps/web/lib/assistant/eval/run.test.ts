@@ -11,7 +11,10 @@ import {
 import { scriptedLanguageModel } from '@liedmotif/providers/testing';
 import { buildDocsIndex, loadDocs, readDocsSection } from '../docs';
 import { buildAssistantSystemPrompt } from '../prompt';
+import { createAssistantTools } from '../tools';
+import { createTurnActions } from '../turn-actions';
 import { EVAL_SET, type EvalEntry } from './eval-set';
+import { PLAYLISTS, TRACKS } from './fixture';
 import { runEval } from './run';
 
 const entry = (id: string): EvalEntry => {
@@ -97,9 +100,78 @@ describe('an eval run', () => {
       system: buildAssistantSystemPrompt({ role: 'admin', docsIndex: buildDocsIndex(loadDocs()) })
         .length,
       conversation: INVITE.question.length,
-      docsRead: sectionText('members', 'invite-someone').length,
+      toolResults: sectionText('members', 'invite-someone').length,
     });
     expect(result?.ms).toBeGreaterThanOrEqual(0);
+  });
+
+  it('offers the model every tool of a real turn', async () => {
+    const offered: string[][] = [];
+    const llm = mockLlmProvider();
+    const watched: LlmProvider = {
+      ...llm,
+      streamAssistantReply(input) {
+        offered.push(input.tools.map(({ name }) => name));
+        return llm.streamAssistantReply(input);
+      },
+    };
+
+    await runEval(watched, [INVITE]);
+
+    const real = createAssistantTools(
+      { db: {} as never, userId: 'user-1', role: 'admin', player: null },
+      createTurnActions(() => {}),
+    );
+    expect(offered).toEqual([real.map(({ name }) => name)]);
+  });
+
+  it("records what the turn did for the user, from the fixture's Library", async () => {
+    const llm = mockLlmProvider({
+      assistantScript: {
+        toolCalls: [
+          { name: 'nowPlaying', input: {} },
+          { name: 'favoriteTrack', input: {} },
+          { name: 'playerControl', input: { command: 'next' } },
+          { name: 'proposeMoreLikeThis', input: {} },
+        ],
+        reply: () => 'Added to your Favorites.',
+      },
+    });
+
+    const [result] = await runEval(llm, [INVITE]);
+
+    const neonRain = { id: TRACKS.neonRain.id, name: 'Neon Rain' };
+    expect(result?.turn.actions).toEqual([
+      {
+        status: 'done',
+        receipt: {
+          action: 'favoriteTrack',
+          track: neonRain,
+          playlist: { id: PLAYLISTS.favorites.id, name: 'Favorites' },
+        },
+      },
+      { status: 'player', command: { name: 'next' } },
+      { status: 'proposed', card: { kind: 'moreLikeThis', tracks: [neonRain] } },
+    ]);
+    expect(result?.turn.toolCalls.map(({ name, result: told }) => [name, told])).toEqual([
+      ['nowPlaying', expect.stringContaining('Track: "Neon Rain"')],
+      ['favoriteTrack', expect.stringMatching(/^Done: added the Track "Neon Rain"/)],
+      ['playerControl', 'Done: the player was told to skip to the next Track.'],
+      ['proposeMoreLikeThis', expect.stringMatching(/^Prepared: a card/)],
+    ]);
+  });
+
+  it('gives every question a turn of its own: its actions and its caps start over', async () => {
+    const llm = mockLlmProvider({
+      assistantScript: {
+        toolCalls: [{ name: 'proposeSession', input: { prompt: 'calm piano' } }],
+        reply: () => 'A card is ready.',
+      },
+    });
+
+    const results = await runEval(llm, [INVITE, FOLLOW_UP]);
+
+    expect(results.map(({ turn }) => turn.actions.length)).toEqual([1, 1]);
   });
 
   it("sends the role's system prompt and the earlier turns to the model", async () => {

@@ -1,13 +1,15 @@
 // Runs the eval set against a text LLM: every question is one real Assistant
-// turn — the app's own system prompt, route map and docs tool — asked once.
+// turn — the app's own system prompt, route map and tools — asked once. The
+// user's music is the fixture's, so a run reads and changes nobody's data.
 
 import { ProviderError, type AssistantReplyInput, type LlmProvider } from '@liedmotif/providers';
+import type { AssistantAction } from '@liedmotif/shared';
 import { loadDocs } from '../docs';
 import { answerLinkTargets } from '../link-targets';
-import { createReadDocsTool } from '../read-docs-tool';
 import { streamAssistantAnswer } from '../reply';
-import { withinTurnBudget } from '../turn-budget';
+import { createTurnActions } from '../turn-actions';
 import type { EvalEntry } from './eval-set';
+import { fixtureTools } from './fixture';
 import { scoreAnswer, type AnswerScore, type ObservedToolCall, type ObservedTurn } from './score';
 
 /** How long one question may take, tool steps included, before it counts as failed. */
@@ -18,8 +20,8 @@ export interface PromptChars {
   system: number;
   /** The question and the earlier turns that fit the history budget. */
   conversation: number;
-  /** The docs sections and tool notes `readDocs` returned. */
-  docsRead: number;
+  /** Everything the turn's tools returned: docs sections, lookups, what an action came to. */
+  toolResults: number;
 }
 
 export interface EvalResult {
@@ -52,14 +54,16 @@ export async function runEval(
 async function ask(llm: LlmProvider, entry: EvalEntry, timeoutMs: number): Promise<EvalResult> {
   const observed = observe(llm);
   const signal = AbortSignal.timeout(timeoutMs);
+  const actions: AssistantAction[] = [];
   const messages = [...(entry.history ?? []), { role: 'user' as const, content: entry.question }];
   const started = performance.now();
   let answer = '';
   let error: string | undefined;
   try {
-    // Nobody in particular asks these questions, so the turn has the docs tool
-    // and none of the tools that read an asking user's own data.
-    const tools = withinTurnBudget([createReadDocsTool(loadDocs())]);
+    const tools = fixtureTools(
+      entry.role,
+      createTurnActions((action) => actions.push(action)),
+    );
     for await (const chunk of streamAssistantAnswer(
       observed.llm,
       entry.role,
@@ -81,6 +85,7 @@ async function ask(llm: LlmProvider, entry: EvalEntry, timeoutMs: number): Promi
   const turn: ObservedTurn = {
     answer,
     toolCalls: observed.toolCalls,
+    actions,
     ...(error === undefined ? {} : { error }),
   };
   return {
@@ -92,7 +97,7 @@ async function ask(llm: LlmProvider, entry: EvalEntry, timeoutMs: number): Promi
     }),
     promptChars: {
       ...observed.sent,
-      docsRead: observed.toolCalls.reduce((sum, { result }) => sum + result.length, 0),
+      toolResults: observed.toolCalls.reduce((sum, { result }) => sum + result.length, 0),
     },
     ms,
   };
