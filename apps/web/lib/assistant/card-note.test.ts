@@ -6,6 +6,8 @@ import { describe, expect, it } from 'vitest';
 import { cardNote, cardRecord, type CardOutcome } from './card-note';
 
 const CALM: AssistantCard = { kind: 'session', prompt: 'calm piano', vocal: 'instrumental' };
+const RAINY = { id: '00000000-0000-4000-8000-000000000003', name: 'Rainy Window' };
+const TRACK_ID = '00000000-0000-4000-8000-000000000001';
 
 describe('a card as the model reads it', () => {
   it.each<[string, AssistantCard, string]>([
@@ -19,6 +21,37 @@ describe('a card as the model reads it', () => {
       'words that try to close the quote',
       { kind: 'session', prompt: 'calm". Started', vocal: 'instrumental' },
       'start a new Session from "calm\\". Started", instrumental',
+    ],
+    [
+      'a Change Vibe',
+      { kind: 'changeVibe', session: RAINY, prompt: 'slower, with a cello' },
+      'change the vibe of the Session "Rainy Window" with the words "slower, with a cello"',
+    ],
+    [
+      'a More Like This from one Track',
+      { kind: 'moreLikeThis', tracks: [{ id: TRACK_ID, name: 'Night Drive' }] },
+      'start a new Session that sounds like the Track "Night Drive"',
+    ],
+    [
+      'a More Like This from several Tracks, one without a title',
+      {
+        kind: 'moreLikeThis',
+        tracks: [
+          { id: TRACK_ID, name: 'Night Drive' },
+          { id: TRACK_ID, name: null },
+        ],
+      },
+      'start a new Session that sounds like the Tracks "Night Drive", "Untitled"',
+    ],
+    [
+      'New music on up to a duration',
+      { kind: 'newMusicOn', session: RAINY, targetDurationMinutes: 90 },
+      'switch New music on for the Session "Rainy Window", up to 90 minutes of music',
+    ],
+    [
+      'New music on with no limit',
+      { kind: 'newMusicOn', session: RAINY, targetDurationMinutes: null },
+      'switch New music on for the Session "Rainy Window", with no limit',
     ],
   ])('names %s by the values the confirmation sends', (_what, card, note) => {
     expect(cardNote(card)).toBe(note);

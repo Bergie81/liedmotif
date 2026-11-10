@@ -21,6 +21,9 @@ import { createNewMusicOffTool } from './new-music-off-tool';
 import { createNowPlayingTool } from './now-playing-tool';
 import { createPlayTool } from './play-tool';
 import { createPlayerControlTool, createSleepTimerTool } from './player-tools';
+import { createProposeChangeVibeTool } from './propose-change-vibe-tool';
+import { createProposeMoreLikeThisTool } from './propose-more-like-this-tool';
+import { createProposeNewMusicOnTool } from './propose-new-music-on-tool';
 import { createProposeSessionTool } from './propose-session-tool';
 import { createReadDocsTool } from './read-docs-tool';
 import type { TurnActions } from './turn-actions';
@@ -97,6 +100,9 @@ export function createAssistantTools(
       createPlayerControlTool(asker, actions),
       createSleepTimerTool(asker, actions),
       createProposeSessionTool(asker, actions),
+      createProposeChangeVibeTool(asker, actions),
+      createProposeMoreLikeThisTool(asker, actions),
+      createProposeNewMusicOnTool(asker, actions),
     ].map(failingQuietly(ACTION_FAILED)),
   ];
 }

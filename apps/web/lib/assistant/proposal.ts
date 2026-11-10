@@ -5,7 +5,11 @@
 // reaches the app's own route.
 
 import type { AssistantCard } from '@liedmotif/shared';
-import { evaluateSessionHeadroom, headroomRefusalMessage } from '@/lib/sessions';
+import {
+  evaluateGenerationBudget,
+  evaluateSessionHeadroom,
+  headroomRefusalMessage,
+} from '@/lib/sessions';
 import { cardNote } from './card-note';
 import type { AssistantAsker } from './tools';
 import type { ActionOutcome } from './turn-actions';
@@ -33,3 +37,16 @@ export async function newSessionRefusal({ db, userId }: AssistantAsker): Promise
   const headroom = await evaluateSessionHeadroom(db, userId);
   return headroom.allowed ? null : headroomRefusalMessage(db, headroom);
 }
+
+/**
+ * Why the app would refuse `asker` even one more music-model call right now,
+ * in the words its own routes answer with; null when one fits. The gate the
+ * Change Vibe route applies and the worker submits through, read and never
+ * spent.
+ */
+export async function generationRefusal({ db, userId }: AssistantAsker): Promise<string | null> {
+  const budget = await evaluateGenerationBudget(db, userId);
+  return budget.withinLimits ? null : headroomRefusalMessage(db, budget);
+}
+
+export const NO_ACTIVE_SESSION = 'There is no active Session.';

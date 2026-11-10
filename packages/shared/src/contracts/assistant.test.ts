@@ -4,6 +4,7 @@ import {
   ASSISTANT_MAX_MESSAGES,
   ASSISTANT_MAX_TRACKS_PER_ADD,
   ASSISTANT_PLAYER_CONTROLS,
+  MAX_SEED_TRACKS,
   assistantRequestSchema,
   assistantStreamEventSchema,
   createAssistantStreamDecoder,
@@ -264,6 +265,33 @@ describe('assistantStreamEventSchema', () => {
     expect(
       sessionCardStartRequest({ kind: 'session', prompt: 'calm piano', vocal: 'instrumental' }),
     ).toEqual({ input: { mode: 'prompt', prompt: 'calm piano', vocal: 'instrumental' } });
+  });
+
+  it('reads a card for each other thing that can spend, by the values its confirmation sends', () => {
+    const proposed = (card: unknown) => ({ type: 'action', action: { status: 'proposed', card } });
+    const parses = (card: unknown) => assistantStreamEventSchema.safeParse(proposed(card)).success;
+    const session = { id: '00000000-0000-4000-8000-000000000003', name: 'Rainy Window' };
+
+    const changeVibe = { kind: 'changeVibe', session, prompt: 'slower, with a cello' };
+    expect(parses(changeVibe)).toBe(true);
+    expect(parses({ ...changeVibe, prompt: '' })).toBe(false);
+    expect(parses({ ...changeVibe, session: undefined })).toBe(false);
+    expect(parses({ ...changeVibe, switchImmediately: true })).toBe(false);
+
+    expect(MAX_SEED_TRACKS).toBe(10);
+    const seeded = (count: number) => ({ kind: 'moreLikeThis', tracks: Array(count).fill(TRACK) });
+    expect(parses(seeded(1))).toBe(true);
+    expect(parses(seeded(10))).toBe(true);
+    expect(parses(seeded(11))).toBe(false);
+    expect(parses(seeded(0))).toBe(false);
+
+    const newMusicOn = { kind: 'newMusicOn', session, targetDurationMinutes: 45 };
+    expect(parses(newMusicOn)).toBe(true);
+    // No limit is said, never left out.
+    expect(parses({ ...newMusicOn, targetDurationMinutes: null })).toBe(true);
+    expect(parses({ kind: 'newMusicOn', session })).toBe(false);
+    expect(parses({ ...newMusicOn, targetDurationMinutes: 601 })).toBe(false);
+    expect(parses({ ...newMusicOn, sessionMode: 'repeat' })).toBe(false);
   });
 
   it('frames an event as one data line, whatever the text holds', () => {

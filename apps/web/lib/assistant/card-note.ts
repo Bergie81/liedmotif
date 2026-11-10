@@ -15,6 +15,19 @@ export function cardNote(card: AssistantCard): string {
         card.targetDurationMinutes === undefined ? '' : `, ${card.targetDurationMinutes} minutes`;
       return `start a new Session from ${quoted(card.prompt)}, ${sound}${length}`;
     }
+    case 'changeVibe':
+      return `change the vibe of the Session ${quoted(card.session.name)} with the words ${quoted(card.prompt)}`;
+    case 'moreLikeThis': {
+      const titles = card.tracks.map(({ name }) => quoted(name)).join(', ');
+      return `start a new Session that sounds like the ${card.tracks.length === 1 ? 'Track' : 'Tracks'} ${titles}`;
+    }
+    case 'newMusicOn': {
+      const limit =
+        card.targetDurationMinutes === null
+          ? 'with no limit'
+          : `up to ${card.targetDurationMinutes} minutes of music`;
+      return `switch New music on for the Session ${quoted(card.session.name)}, ${limit}`;
+    }
   }
 }
 

@@ -17,21 +17,22 @@ import { SessionDurationControl } from '@/components/create/session-duration-con
 import { primaryButtonClass } from '@/components/ui/form-styles';
 import { OnlineOnly } from '@/components/ui/online-only';
 import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';
-import { setSessionDuration, setSessionMode } from '@/lib/api-client';
+import { setSessionMode } from '@/lib/api-client';
 import { cn } from '@/lib/cn';
+import {
+  NEW_MUSIC_CHOICES,
+  NEW_MUSIC_SAVING,
+  newMusicSaveLabel,
+  type NewMusicChoice,
+} from './new-music-choices';
 import { NEW_MUSIC_ICONS } from './new-music-icons';
 import type { NewMusicStatus } from './new-music-status';
-
-type NewMusicChoice = 'off' | 'target' | 'no-limit';
+import { switchNewMusicOn } from './switch-new-music-on';
 
 const DEFAULT_TARGET_MINUTES = 60;
 const MIN_TARGET_MINUTES = 5;
 
-const CHOICES: readonly { id: NewMusicChoice; label: string; detail: string }[] = [
-  { id: 'off', label: 'Off', detail: 'Play the Tracks you have. Buys nothing on its own.' },
-  { id: 'target', label: 'Up to a duration', detail: 'Buys music until the target.' },
-  { id: 'no-limit', label: 'No limit', detail: 'Keeps buying while you listen.' },
-];
+const CHOICE_ORDER: readonly NewMusicChoice[] = ['off', 'target', 'no-limit'];
 
 function choiceInForce(session: SessionSummary): NewMusicChoice {
   if (session.sessionMode === 'repeat') return 'off';
@@ -40,10 +41,6 @@ function choiceInForce(session: SessionSummary): NewMusicChoice {
 
 function allowanceLine(headroom: GenerationHeadroom | null): string {
   return headroom ? ` · ${headroomLine(headroom)}` : '';
-}
-
-function saveLabel(choice: NewMusicChoice, minutes: number): string {
-  return choice === 'target' ? `Save · up to ${minutes} min` : 'Save · no limit';
 }
 
 /** Mounted only while the sheet is up, so each opening starts from what is in force. */
@@ -93,7 +90,7 @@ function NewMusicPanel({
     const result =
       next === 'off'
         ? await setSessionMode(session.id, 'repeat')
-        : await setSessionDuration(session.id, next === 'target' ? minutes : null, 'keep_going');
+        : await switchNewMusicOn(session.id, next === 'target' ? minutes : null);
     if (!mounted.current) return;
     onSavingChange(false);
     if (!result.ok) {
@@ -118,7 +115,8 @@ function NewMusicPanel({
   return (
     <OnlineOnly>
       <div className="mt-4 space-y-2" role="group" aria-label="New music">
-        {CHOICES.map(({ id, label, detail }) => {
+        {CHOICE_ORDER.map((id) => {
+          const { label, detail } = NEW_MUSIC_CHOICES[id];
           const selected = choice === id;
           const Icon = NEW_MUSIC_ICONS[id];
           return (
@@ -176,7 +174,7 @@ function NewMusicPanel({
           onClick={() => void commit(choice)}
           className={cn(primaryButtonClass, 'mt-4 w-full')}
         >
-          {saving ? 'Saving…' : saveLabel(choice, minutes)}
+          {saving ? NEW_MUSIC_SAVING : newMusicSaveLabel(choice === 'target' ? minutes : null)}
         </button>
       ) : null}
     </OnlineOnly>

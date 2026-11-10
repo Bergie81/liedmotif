@@ -36,8 +36,8 @@ export function ProposalCard({ action }: { action: ProposedChatAction }) {
       className="flex flex-col gap-2 rounded-[14px] border border-line-2 bg-panel-2 p-3.5 text-[13.5px] leading-[1.45]"
     >
       <p className="font-display text-[15px] font-bold tracking-[-0.01em]">{wording.title}</p>
-      <p className="break-words text-paper">“{wording.words}”</p>
-      <p className="text-muted">{wording.details}</p>
+      {wording.words ? <p className="break-words text-paper">“{wording.words}”</p> : null}
+      <p className="break-words text-muted">{wording.details}</p>
       {open ? (
         <>
           <p className="text-muted">
@@ -57,13 +57,15 @@ export function ProposalCard({ action }: { action: ProposedChatAction }) {
           </OnlineOnly>
         </>
       ) : (
-        <p role="status" className="flex items-center gap-2 text-muted">
+        <p role="status" className="flex items-start gap-2 text-muted">
           {outcome === 'confirmed' ? (
-            <Check className="h-3.5 w-3.5 flex-none text-lamp" aria-hidden />
+            <Check className="mt-[3px] h-3.5 w-3.5 flex-none text-lamp" aria-hidden />
           ) : (
-            <AlertCircle className="h-3.5 w-3.5 flex-none text-warn" aria-hidden />
+            <AlertCircle className="mt-[3px] h-3.5 w-3.5 flex-none text-warn" aria-hidden />
           )}
-          {outcome === 'confirmed' ? wording.confirmed : wording.failed}
+          <span className="min-w-0 break-words">
+            {outcome === 'confirmed' ? wording.confirmed : (action.refusal ?? wording.failed)}
+          </span>
         </p>
       )}
     </div>

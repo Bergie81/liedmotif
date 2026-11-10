@@ -117,6 +117,17 @@ describe.each([
     expect(tools).toMatch(/starts only when they confirm it/i);
   });
 
+  it('names the three other things that are only prepared, each on a card the user confirms', () => {
+    const tools = prompt.slice(prompt.indexOf('Tools:'), prompt.indexOf('Links:'));
+    expect(tools).toMatch(/^- proposeChangeVibe prepares a Change Vibe for the active Session/m);
+    expect(tools).toMatch(/^- proposeMoreLikeThis prepares a new Session in the style of Tracks/m);
+    expect(tools).toMatch(/^- proposeNewMusicOn prepares switching New music on/m);
+    expect(tools).toMatch(/up to a length .* or with no limit/i);
+    expect(tools).toMatch(
+      /each of these three only shows the user a card.*nothing happens until they confirm it/i,
+    );
+  });
+
   it('tells the model to say a card is prepared and can spend, never that a Session started', () => {
     expect(prompt).toMatch(/when a tool's result starts with "Prepared:"/i);
     expect(prompt).toMatch(/confirming it generates new Tracks from their budget/i);

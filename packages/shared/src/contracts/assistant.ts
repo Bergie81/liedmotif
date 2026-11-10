@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { errorResponseSchema, uuidSchema } from './common';
 import { VOCAL_MODES } from './domain';
 import {
+  MAX_SEED_TRACKS,
   MAX_USER_PROMPT_LENGTH,
   targetDurationMinutesSchema,
   type StartSessionRequest,
@@ -175,6 +176,25 @@ export const assistantCardSchema = z.discriminatedUnion('kind', [
     vocal: z.enum(VOCAL_MODES),
     /** Left out when the user named no length. */
     targetDurationMinutes: targetDurationMinutesSchema.optional(),
+  }),
+  z.strictObject({
+    kind: z.literal('changeVibe'),
+    /** The active Session whose vibe changes. */
+    session: assistantActionItemSchema,
+    /** What should change, as the message of the Change Vibe route. */
+    prompt: z.string().min(1).max(MAX_USER_PROMPT_LENGTH),
+  }),
+  z.strictObject({
+    kind: z.literal('moreLikeThis'),
+    /** The Tracks the new Session is seeded from, in the order they are sent. */
+    tracks: z.array(assistantActionItemSchema).min(1).max(MAX_SEED_TRACKS),
+  }),
+  z.strictObject({
+    kind: z.literal('newMusicOn'),
+    /** The active Session that generates again. */
+    session: assistantActionItemSchema,
+    /** How much music the Session may hold in all; null is No limit. */
+    targetDurationMinutes: targetDurationMinutesSchema.nullable(),
   }),
 ]);
 export type AssistantCard = z.infer<typeof assistantCardSchema>;
@@ -426,3 +446,39 @@ export const proposeSessionInputSchema = z.object({
     .describe('How long the Session should run, in minutes. Only when the user named a length.'),
 });
 export type ProposeSessionInput = z.infer<typeof proposeSessionInputSchema>;
+
+/** What the model passes to `proposeChangeVibe`. The words are checked like the app's own Change Vibe message. */
+export const proposeChangeVibeInputSchema = z.object({
+  prompt: z
+    .string()
+    .describe(
+      'What should change about the music, in the words the user used: "slower", "add a cello", "more upbeat".',
+    ),
+});
+export type ProposeChangeVibeInput = z.infer<typeof proposeChangeVibeInputSchema>;
+
+/** What the model passes to `proposeMoreLikeThis`. More Tracks than the cap is answered, not cut. */
+export const proposeMoreLikeThisInputSchema = z.object({
+  trackIds: z
+    .array(z.string())
+    .nullish()
+    .describe(
+      `The ids of the Tracks the new Session should sound like, at most ${MAX_SEED_TRACKS}, as another tool returned them. Leave out for the Track that is playing now ("more like this").`,
+    ),
+});
+export type ProposeMoreLikeThisInput = z.infer<typeof proposeMoreLikeThisInputSchema>;
+
+/** What the model passes to `proposeNewMusicOn`: a length, or `noLimit`. Neither is answered, not guessed. */
+export const proposeNewMusicOnInputSchema = z.object({
+  targetDurationMinutes: z
+    .number()
+    .nullish()
+    .describe(
+      'How many minutes of music the Session may hold in all; it generates until it has that much. Only when the user named a length.',
+    ),
+  noLimit: z
+    .boolean()
+    .nullish()
+    .describe('true when the user asked for new music without a limit.'),
+});
+export type ProposeNewMusicOnInput = z.infer<typeof proposeNewMusicOnInputSchema>;

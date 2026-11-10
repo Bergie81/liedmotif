@@ -529,8 +529,11 @@ export type ChangeVibeResponse = z.infer<typeof changeVibeResponseSchema>;
 
 // --- 4. moreLikeThis (track-seeded Start Session; supersedes the active session) ---
 
+/** How many Tracks one More Like This is seeded from at most. */
+export const MAX_SEED_TRACKS = 10;
+
 export const moreLikeThisRequestSchema = z.strictObject({
-  seedTrackIds: z.array(uuidSchema).min(1).max(10),
+  seedTrackIds: z.array(uuidSchema).min(1).max(MAX_SEED_TRACKS),
   clientId: clientIdSchema,
   targetDurationMinutes: targetDurationMinutesSchema.optional(),
 });

@@ -12,9 +12,9 @@
 // no-longer-active session; the late success is dropped by the caller's
 // engagement guard, and the session-scoped error only surfaces where that
 // session still renders — so the race resolves without a mis-applied write.
-// A submit that arrives while one is in flight is dropped by the gate; the
-// player disables its triggers on `pendingSessionId`, so a dropped call means
-// a surface forgot that check.
+// A submit that arrives while one is in flight is dropped by the gate and
+// answered null; the player disables its triggers on `pendingSessionId`, and a
+// surface that cannot see that state reads the null.
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { ChangeVibeIntentInput, SessionSummary } from '@liedmotif/shared';
@@ -38,11 +38,13 @@ export function useVibeChangeRequest(
   applyRestyledSession: (session: SessionSummary) => void,
 ): {
   vibeChange: VibeChangeState;
+  /** Resolves with whether the change was saved. Null when one is already in
+   * flight: this one was dropped and nothing was sent. */
   submitChangeVibe: (
     sessionId: string,
     input: ChangeVibeIntentInput | undefined,
     options: ChangeVibeOptions,
-  ) => void;
+  ) => Promise<boolean> | null;
 } {
   const gate = useRef<PlayerSessionActionGate>({ active: null });
   const [pendingSessionId, setPendingSessionId] = useState<string | null>(null);
@@ -50,7 +52,8 @@ export function useVibeChangeRequest(
 
   const submitChangeVibe = useCallback(
     (sessionId: string, input: ChangeVibeIntentInput | undefined, options: ChangeVibeOptions) => {
-      void runPlayerSessionAction({
+      if (gate.current.active) return null;
+      return runPlayerSessionAction({
         gate: gate.current,
         action: 'change-vibe',
         failureLabel: 'Change Vibe failed',

@@ -111,12 +111,14 @@ export interface PlayerActionsValue {
   beginOtherMusic: () => Promise<boolean>;
   /** Fire-and-forget Change Vibe: the overlay closes at once and this request
    * runs at provider scope. Single-flight; success refreshes the engaged
-   * session summary in place, failure lands in `vibeChange.error`. */
+   * session summary in place, failure lands in `vibeChange.error`. A caller
+   * that does wait gets whether the change was saved, or null when another
+   * change was in flight and this one was dropped. */
   submitChangeVibe: (
     sessionId: string,
     input: ChangeVibeIntentInput | undefined,
     options: ChangeVibeOptions,
-  ) => void;
+  ) => Promise<boolean> | null;
 }
 
 export interface PlayerContextValue extends PlayerActionsValue {
