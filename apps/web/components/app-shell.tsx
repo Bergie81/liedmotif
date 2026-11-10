@@ -13,6 +13,7 @@ import { AppChromeContext, type AppChromeContextValue } from './app-chrome-conte
 import { AssistantDock } from './assistant/assistant-dock';
 import { assistantPlayerState } from './assistant/player-state';
 import { usePlayerCommands } from './assistant/use-player-commands';
+import { useCardHost } from './assistant/use-card-host';
 import { usePlayerFollowsReceipt } from './assistant/use-player-follows-receipt';
 import {
   deriveGenerationHeadroom,
@@ -75,7 +76,10 @@ export function AppShell({
   const previewAnnouncement = useTrackPreviewAnnouncement();
   const showMiniPlayer =
     !isPlayer && (previewAnnouncement !== null || playback !== null || miniPlayerSession !== null);
-  const headroom = chrome.usage ? deriveGenerationHeadroom(chrome.usage) : null;
+  const headroom = useMemo(
+    () => (chrome.usage ? deriveGenerationHeadroom(chrome.usage) : null),
+    [chrome.usage],
+  );
   const headroomHref = viewerRole === 'member' ? '/settings/my-budget' : '/settings/limits';
 
   // The layout streams the usage read so the shell paints before the budget
@@ -118,6 +122,7 @@ export function AppShell({
   const refreshChrome = useCallback(() => void fetchChrome(), [fetchChrome]);
   const followAssistantReceipt = usePlayerFollowsReceipt(refreshChrome);
   const assistantPlayerCommands = usePlayerCommands({ onPlayerPage: isPlayer, refreshChrome });
+  const assistantCards = useCardHost(headroom, refreshChrome);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -213,6 +218,7 @@ export function AppShell({
           player={assistantPlayerState(playback, sleepTimer.endsAt)}
           onReceipt={followAssistantReceipt}
           playerCommands={assistantPlayerCommands}
+          cards={assistantCards}
         />
       ) : null}
     </div>

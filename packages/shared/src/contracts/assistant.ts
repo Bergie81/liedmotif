@@ -6,6 +6,12 @@
 
 import { z } from 'zod';
 import { errorResponseSchema, uuidSchema } from './common';
+import { VOCAL_MODES } from './domain';
+import {
+  MAX_USER_PROMPT_LENGTH,
+  targetDurationMinutesSchema,
+  type StartSessionRequest,
+} from './endpoints';
 
 /** How much of a conversation one request carries; the client drops older messages. */
 export const ASSISTANT_MAX_MESSAGES = 12;
@@ -132,14 +138,51 @@ export const assistantPlayerCommandSchema = z.discriminatedUnion('name', [
 export type AssistantPlayerCommand = z.infer<typeof assistantPlayerCommandSchema>;
 
 /**
+ * Something that can spend, prepared and not carried out: the values the app's
+ * own route gets once the user confirms. The chat panel words the card from
+ * them, and the confirmation sends them; no text of the model's is part of
+ * either. Nothing exists on the server for a card.
+ */
+export const assistantCardSchema = z.discriminatedUnion('kind', [
+  z.strictObject({
+    kind: z.literal('session'),
+    /** What the Session should sound like, as free text for the start-Session route. */
+    prompt: z.string().min(1).max(MAX_USER_PROMPT_LENGTH),
+    vocal: z.enum(VOCAL_MODES),
+    /** Left out when the user named no length. */
+    targetDurationMinutes: targetDurationMinutesSchema.optional(),
+  }),
+]);
+export type AssistantCard = z.infer<typeof assistantCardSchema>;
+
+/**
+ * The start-Session request a Session card stands for, less the client id only
+ * the browser has. The tool checks this request before it offers the card, and
+ * the confirmation sends it, so the two cannot differ.
+ */
+export function sessionCardStartRequest(
+  card: Extract<AssistantCard, { kind: 'session' }>,
+): Omit<StartSessionRequest, 'clientId'> {
+  return {
+    input: { mode: 'prompt', prompt: card.prompt, vocal: card.vocal },
+    ...(card.targetDurationMinutes !== undefined && {
+      targetDurationMinutes: card.targetDurationMinutes,
+    }),
+  };
+}
+
+/**
  * Something the Assistant did while answering, by what became of it. `done` is
  * a Library action the server has carried out: the event is its receipt.
  * `player` is a command for the browser's player, which only the browser can
  * run: the server has checked it and knows nothing of what comes of it.
+ * `proposed` is new spending the server only prepared: the event is a card,
+ * and the user's confirmation in the browser is what carries it out.
  */
 export const assistantActionSchema = z.discriminatedUnion('status', [
   z.strictObject({ status: z.literal('done'), receipt: assistantReceiptSchema }),
   z.strictObject({ status: z.literal('player'), command: assistantPlayerCommandSchema }),
+  z.strictObject({ status: z.literal('proposed'), card: assistantCardSchema }),
 ]);
 export type AssistantAction = z.infer<typeof assistantActionSchema>;
 
@@ -316,3 +359,24 @@ export const sleepTimerInputSchema = z.object({
   off: z.boolean().nullish().describe('true cancels the running Sleep Timer instead.'),
 });
 export type SleepTimerInput = z.infer<typeof sleepTimerInputSchema>;
+
+/**
+ * What the model passes to `proposeSession`. Lenient like the other tools; the
+ * values are checked against the start-Session request before a card is offered.
+ */
+export const proposeSessionInputSchema = z.object({
+  prompt: z
+    .string()
+    .describe(
+      'What the Session should sound like, in the words the user used: the mood, the activity, the style.',
+    ),
+  vocal: z
+    .boolean()
+    .nullish()
+    .describe('true only when the user asked for vocals or singing. Leave out for instrumental.'),
+  targetDurationMinutes: z
+    .number()
+    .nullish()
+    .describe('How long the Session should run, in minutes. Only when the user named a length.'),
+});
+export type ProposeSessionInput = z.infer<typeof proposeSessionInputSchema>;

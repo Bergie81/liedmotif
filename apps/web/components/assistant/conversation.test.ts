@@ -13,6 +13,7 @@ import {
   type AssistantStreamEvent,
 } from '@liedmotif/shared';
 import { afterEach, expect, it, vi } from 'vitest';
+import type { ProposedChatAction } from './card';
 import { createAssistantConversation } from './conversation';
 
 afterEach(() => {
@@ -621,4 +622,62 @@ it('says a message is going out, inside the call that sends it, and only when on
   // An answer is being written: nothing is sent.
   conversation.send('And next.');
   expect(onSend).toHaveBeenCalledOnce();
+});
+
+const SESSION_CARD: AssistantAction = {
+  status: 'proposed',
+  card: { kind: 'session', prompt: 'calm piano', vocal: 'instrumental' },
+};
+
+/** A conversation whose one answer is a card and nothing else. */
+async function conversationWithCard() {
+  const asked = captureQuestions();
+  const conversation = createAssistantConversation();
+  conversation.send('Start something calm.');
+  const reply = asked[0]!.reply();
+  reply.send({ type: 'action', action: SESSION_CARD });
+  reply.send({ type: 'done' });
+  await vi.waitFor(() => expect(conversation.getState().answering).toBe(false));
+  const card = () => conversation.getState().messages[1]!.actions![0] as ProposedChatAction;
+  return { asked, conversation, card };
+}
+
+it('holds a card without an outcome, and tells the next request that the user left it alone', async () => {
+  const { asked, conversation, card } = await conversationWithCard();
+
+  expect(card()).toEqual(SESSION_CARD);
+
+  conversation.send('What is playing?');
+
+  expect(asked[1]!.request.messages[1]!.content).toBe(
+    '[Card shown by the app: start a new Session from "calm piano", instrumental. The user has not confirmed it, so it has not happened.]',
+  );
+});
+
+it('hands back the action as it holds it from then on, and tells the next request what became of a card', async () => {
+  const { asked, conversation, card } = await conversationWithCard();
+
+  const settled = conversation.settleAction(card(), 'confirmed');
+
+  expect(settled).toEqual({ ...SESSION_CARD, outcome: 'confirmed' });
+  expect(card()).toBe(settled);
+  conversation.send('Thanks.');
+  expect(asked[1]!.request.messages[1]!.content).toMatch(
+    /^\[Card shown by the app: start a new Session .* The user confirmed it, and the app carried it out\.\]$/,
+  );
+});
+
+it('hands back nothing for an action it no longer holds', async () => {
+  const { conversation, card } = await conversationWithCard();
+  const offered = card();
+  conversation.settleAction(offered, 'confirming');
+
+  // The copy from before is no longer what the conversation holds.
+  expect(conversation.settleAction(offered, 'confirmed')).toBeNull();
+  expect(card()).toMatchObject({ outcome: 'confirming' });
+
+  const confirming = card();
+  conversation.newChat();
+  expect(conversation.settleAction(confirming, 'confirmed')).toBeNull();
+  expect(conversation.getState().messages).toEqual([]);
 });

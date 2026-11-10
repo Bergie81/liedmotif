@@ -4,7 +4,9 @@
 // The server keeps no conversation, so that line is the model's only record.
 
 import { ASSISTANT_MAX_MESSAGE_LENGTH, type AssistantAction } from '@liedmotif/shared';
+import { cardRecord } from '@/lib/assistant/card-note';
 import { receiptNote } from '@/lib/assistant/receipt-note';
+import type { ProposedChatAction } from './card';
 import { playerCommandRecord, type PlayerChatAction } from './player-command';
 
 /**
@@ -12,7 +14,8 @@ import { playerCommandRecord, type PlayerChatAction } from './player-command';
  * it. A receipt is final as it arrives. Every other action carries an
  * `outcome` the browser learns later; without one it is still open.
  */
-export type ChatAction = Extract<AssistantAction, { status: 'done' }> | PlayerChatAction;
+export type ChatAction =
+  Extract<AssistantAction, { status: 'done' }> | PlayerChatAction | ProposedChatAction;
 
 /** An action whose outcome is learned after it arrived. */
 export type SettleableAction = Exclude<ChatAction, { status: 'done' }>;
@@ -24,6 +27,8 @@ export function actionNote(action: ChatAction): string {
       return `[Done by the app: ${receiptNote(action.receipt)}]`;
     case 'player':
       return playerCommandRecord(action);
+    case 'proposed':
+      return cardRecord(action.card, action.outcome);
   }
 }
 

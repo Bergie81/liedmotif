@@ -1,9 +1,9 @@
 'use client';
 
-// What the Assistant did, as the chat shows it: one quiet line per action,
-// under the answer it happened in. The line is worded here from the action's
-// structured values, so nothing the model writes can label an action as
-// something else.
+// What the Assistant did, as the chat shows it: one quiet line per action, or
+// a card for something it only prepared, under the answer it happened in. Each
+// is worded from the action's structured values, so nothing the model writes
+// can label an action as something else.
 
 import { useContext } from 'react';
 import { ArrowRight, Check } from 'lucide-react';
@@ -11,6 +11,7 @@ import type { AssistantReceipt } from '@liedmotif/shared';
 import { AnswerLinksContext, appPageButtonClass } from './assistant-markdown';
 import type { ChatAction } from './chat-actions';
 import { PlayerCommandLine } from './player-command-line';
+import { ProposalCard } from './proposal-card';
 import { receiptLine } from './receipt';
 
 export function ActionLine({ action }: { action: ChatAction }) {
@@ -19,6 +20,8 @@ export function ActionLine({ action }: { action: ChatAction }) {
       return <ReceiptLine receipt={action.receipt} />;
     case 'player':
       return <PlayerCommandLine action={action} />;
+    case 'proposed':
+      return <ProposalCard action={action} />;
   }
 }
 

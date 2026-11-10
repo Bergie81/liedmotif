@@ -7,7 +7,6 @@
 // the "ask for music" surface; the live player lives on /player.
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import type { CoverStyleChoice, SurpriseProposal } from '@liedmotif/shared';
 import type { SessionLanguageChoice } from '@/lib/session-languages';
 import type { OwnVoiceOffer } from '@/lib/voice';
@@ -20,8 +19,7 @@ import {
   useResumableSessions,
   type ResumableSessionsInitialData,
 } from '@/components/sessions/use-resumable-sessions';
-import { usePlayerActions } from '@/components/player/player-provider';
-import { beginPendingStart, type PendingStart } from '@/components/player/session-handoff';
+import { useHandOffStart } from '@/components/player/use-hand-off-start';
 import { startSession, startSurprise } from '@/lib/api-client';
 import { displayHeadingClass } from '@/components/ui/design-system';
 import { cn } from '@/lib/cn';
@@ -56,9 +54,8 @@ export function HomeView({
   /** The Surprise Me proposal still pending from an earlier visit. */
   pendingSurprise?: SurpriseProposal | null;
 }) {
-  const router = useRouter();
   const { listener } = useAppChrome();
-  const { engage, beginStart } = usePlayerActions();
+  const handOffStart = useHandOffStart();
   const resumable = useResumableSessions({
     limit: RECENT_SESSIONS_LIMIT,
     initial: initialSessions,
@@ -72,19 +69,6 @@ export function HomeView({
     url.searchParams.delete(INTENT_PARAM);
     window.history.replaceState(null, '', `${url.pathname}${url.search}`);
   }, []);
-
-  function handOffStart(start: (signal: AbortSignal) => PendingStart['result']) {
-    beginPendingStart(
-      (signal) => {
-        // The Start click is the browser's autoplay gesture, so priming and
-        // request creation stay synchronous with this callback.
-        beginStart();
-        return start(signal);
-      },
-      (session) => engage(session, { autoplay: true }),
-    );
-    router.push('/player');
-  }
 
   return (
     <div>

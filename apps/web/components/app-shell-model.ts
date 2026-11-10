@@ -81,3 +81,10 @@ export function deriveGenerationHeadroom(usage: ShellUsage): GenerationHeadroom 
     critical: remainingTracks === 0 || remainingTracks < usage.minHeadroomTracksToStartSession,
   };
 }
+
+const HEADROOM_PERIOD = { day: ' today', month: ' this month', total: '' } as const;
+
+/** The readout as a line of text, naming the period its figure covers: "38 Tracks left today". */
+export function headroomLine({ remainingTracks, window }: GenerationHeadroom): string {
+  return `${remainingTracks} ${remainingTracks === 1 ? 'Track' : 'Tracks'} left${HEADROOM_PERIOD[window]}`;
+}

@@ -39,7 +39,7 @@ afterEach(() => {
 });
 
 describe("one turn's tools", () => {
-  it("are the docs tool, the tools that read the asking user's own data, the Library actions and the player commands", () => {
+  it("are the docs tool, the tools that read the asking user's own data, the Library actions, the player commands and the one that prepares a card", () => {
     expect(openTurn().tools.map((tool) => tool.name)).toEqual([
       'readDocs',
       'nowPlaying',
@@ -54,6 +54,7 @@ describe("one turn's tools", () => {
       'newMusicOff',
       'playerControl',
       'sleepTimer',
+      'proposeSession',
     ]);
   });
 

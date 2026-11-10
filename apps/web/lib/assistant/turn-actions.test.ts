@@ -99,6 +99,24 @@ describe("one turn's actions", () => {
     ]);
   });
 
+  it('offers one card for one message, apart from what it does in the Library', async () => {
+    const { actions, reported } = openTurn();
+    const card: AssistantAction = {
+      status: 'proposed',
+      card: { kind: 'session', prompt: 'calm piano', vocal: 'instrumental' },
+    };
+    const offer = async (): Promise<ActionOutcome<'proposed'>> => ({
+      told: 'Prepared.',
+      action: card,
+    });
+
+    for (const name of ['One', 'Two', 'Three']) await actions.take('done', pin(name));
+    expect(await actions.take('proposed', offer)).toBe('Prepared.');
+    expect(await actions.take('proposed', offer)).toMatch(/already prepared a card/i);
+
+    expect(reported.filter(({ status }) => status === 'proposed')).toEqual([card]);
+  });
+
   it('counts each turn on its own', async () => {
     const first = openTurn();
     for (const name of ['One', 'Two', 'Three']) await first.actions.take('done', pin(name));

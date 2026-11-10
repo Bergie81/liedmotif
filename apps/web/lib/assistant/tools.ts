@@ -20,6 +20,7 @@ import {
 import { createNewMusicOffTool } from './new-music-off-tool';
 import { createNowPlayingTool } from './now-playing-tool';
 import { createPlayerControlTool, createSleepTimerTool } from './player-tools';
+import { createProposeSessionTool } from './propose-session-tool';
 import { createReadDocsTool } from './read-docs-tool';
 import type { TurnActions } from './turn-actions';
 import { withinTurnBudget } from './turn-budget';
@@ -93,6 +94,7 @@ export function createAssistantTools(
       createNewMusicOffTool(asker, actions),
       createPlayerControlTool(asker, actions),
       createSleepTimerTool(asker, actions),
+      createProposeSessionTool(asker, actions),
     ].map(failingQuietly(ACTION_FAILED)),
   ];
 }

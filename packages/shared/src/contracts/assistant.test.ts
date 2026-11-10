@@ -10,6 +10,8 @@ import {
   encodeAssistantStreamEvent,
   makeApiError,
   playerControlInputSchema,
+  sessionCardStartRequest,
+  startSessionRequestSchema,
 } from './index';
 
 const user = (content: string) => ({ role: 'user' as const, content });
@@ -202,6 +204,42 @@ describe('assistantStreamEventSchema', () => {
     expect(assistantStreamEventSchema.safeParse(adding(20)).success).toBe(true);
     expect(assistantStreamEventSchema.safeParse(adding(21)).success).toBe(false);
     expect(assistantStreamEventSchema.safeParse(adding(0)).success).toBe(false);
+  });
+
+  it('reads a card for a new Session, and refuses one that carries anything else', () => {
+    const card = { kind: 'session', prompt: 'calm piano', vocal: 'instrumental' };
+    const proposed = (value: unknown) => ({
+      type: 'action',
+      action: { status: 'proposed', card: value },
+    });
+    const parses = (event: unknown) => assistantStreamEventSchema.safeParse(event).success;
+
+    expect(parses(proposed(card))).toBe(true);
+    expect(parses(proposed({ ...card, vocal: 'vocal', targetDurationMinutes: 45 }))).toBe(true);
+    expect(parses(proposed({ ...card, label: 'Free, nothing is bought' }))).toBe(false);
+    expect(parses(proposed({ ...card, prompt: '' }))).toBe(false);
+    expect(parses(proposed({ ...card, targetDurationMinutes: 601 }))).toBe(false);
+    expect(parses(proposed({ kind: 'purchase', prompt: 'calm piano' }))).toBe(false);
+  });
+
+  it('turns a Session card into a request the start route takes once the browser adds its id', () => {
+    const request = sessionCardStartRequest({
+      kind: 'session',
+      prompt: 'calm piano',
+      vocal: 'vocal',
+      targetDurationMinutes: 45,
+    });
+
+    expect(request).toEqual({
+      input: { mode: 'prompt', prompt: 'calm piano', vocal: 'vocal' },
+      targetDurationMinutes: 45,
+    });
+    expect(startSessionRequestSchema.safeParse({ ...request, clientId: 'client-1' }).success).toBe(
+      true,
+    );
+    expect(
+      sessionCardStartRequest({ kind: 'session', prompt: 'calm piano', vocal: 'instrumental' }),
+    ).toEqual({ input: { mode: 'prompt', prompt: 'calm piano', vocal: 'instrumental' } });
   });
 
   it('frames an event as one data line, whatever the text holds', () => {

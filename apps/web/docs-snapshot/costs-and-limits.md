@@ -1,7 +1,7 @@
 ---
 title: Costs and limits
 description: What you pay for and to whom, what's free, how each action spends, and every limit Liedmotif offers, counted in tracks.
-checkedOn: 2026-11-09
+checkedOn: 2026-11-10
 ---
 
 Liedmotif is source-available, free for non-commercial use. The money goes straight from you to the providers you connect, and almost all of it pays for new tracks. This page shows how each action spends, which limits you can set, and what happens when one is reached.
@@ -86,6 +86,8 @@ With tailored art, a new session buys one cover. Each regeneration buys another,
 ### Asking Mo
 
 Each question to Mo, the Assistant, is a small request to your writing AI. It buys no music and counts against no track or cover limit. Two things keep it small. Nobody can send more than 20 questions in 5 minutes. And each member has a daily allowance, 30 messages unless you change it, which resets at midnight in the **Instance timezone**. Under **Settings › Members** you set the allowance for everyone or for one member, from 1 to 1,000 a day, or switch Mo off for a member. As the admin you have no daily allowance, since the key is yours.
+
+Mo never buys music by itself. Asked for new music, it shows a card in the chat, and nothing is generated until you press **Start Session** on it. That start counts against your track limits like one from **Home**.
 
 ### When nobody is listening
 

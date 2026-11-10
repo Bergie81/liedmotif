@@ -14,3 +14,4 @@ export const PIN_PLAYLIST_TOOL_NAME = 'pinPlaylist';
 export const NEW_MUSIC_OFF_TOOL_NAME = 'newMusicOff';
 export const PLAYER_CONTROL_TOOL_NAME = 'playerControl';
 export const SLEEP_TIMER_TOOL_NAME = 'sleepTimer';
+export const PROPOSE_SESSION_TOOL_NAME = 'proposeSession';

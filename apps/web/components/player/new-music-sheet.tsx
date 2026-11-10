@@ -8,7 +8,11 @@
 import { useEffect, useRef, useState } from 'react';
 import type { SessionSummary } from '@liedmotif/shared';
 import { useAppChrome } from '@/components/app-chrome-context';
-import { deriveGenerationHeadroom, type GenerationHeadroom } from '@/components/app-shell-model';
+import {
+  deriveGenerationHeadroom,
+  headroomLine,
+  type GenerationHeadroom,
+} from '@/components/app-shell-model';
 import { SessionDurationControl } from '@/components/create/session-duration-control';
 import { primaryButtonClass } from '@/components/ui/form-styles';
 import { OnlineOnly } from '@/components/ui/online-only';
@@ -16,7 +20,7 @@ import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { setSessionDuration, setSessionMode } from '@/lib/api-client';
 import { cn } from '@/lib/cn';
 import { NEW_MUSIC_ICONS } from './new-music-icons';
-import { tracksWord, type NewMusicStatus } from './new-music-status';
+import type { NewMusicStatus } from './new-music-status';
 
 type NewMusicChoice = 'off' | 'target' | 'no-limit';
 
@@ -29,17 +33,13 @@ const CHOICES: readonly { id: NewMusicChoice; label: string; detail: string }[] 
   { id: 'no-limit', label: 'No limit', detail: 'Keeps buying while you listen.' },
 ];
 
-const HEADROOM_PERIOD = { day: ' today', month: ' this month', total: '' } as const;
-
 function choiceInForce(session: SessionSummary): NewMusicChoice {
   if (session.sessionMode === 'repeat') return 'off';
   return session.targetDurationMinutes != null ? 'target' : 'no-limit';
 }
 
 function allowanceLine(headroom: GenerationHeadroom | null): string {
-  if (!headroom) return '';
-  const { remainingTracks, window } = headroom;
-  return ` · ${remainingTracks} ${tracksWord(remainingTracks)} left${HEADROOM_PERIOD[window]}`;
+  return headroom ? ` · ${headroomLine(headroom)}` : '';
 }
 
 function saveLabel(choice: NewMusicChoice, minutes: number): string {

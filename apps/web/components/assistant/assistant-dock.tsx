@@ -26,10 +26,14 @@ import { cn } from '@/lib/cn';
 import { announceOutsideLibraryWrite } from '@/lib/offline/library-writes';
 import { AnswerLinksContext, type AnswerLinks } from './assistant-markdown';
 import { AssistantPanel } from './assistant-panel';
+import type { ProposedChatAction } from './card';
+import { confirmCard } from './confirm-card';
 import { createAssistantConversation } from './conversation';
 import type { PlayerChatAction, PlayerCommands } from './player-command';
 import { TapToPlayContext } from './player-command-line';
+import { CardsContext, type Cards } from './proposal-card';
 import { receiptChangesLibrary } from './receipt';
+import type { CardHost } from './use-card-host';
 
 /** Tailwind's `desk` breakpoint (globals.css). */
 const SIDEBAR_QUERY = '(min-width: 920px)';
@@ -56,6 +60,7 @@ export function AssistantDock({
   player,
   onReceipt,
   playerCommands,
+  cards: cardHost,
 }: {
   /** The app pages and docs pages an answer may link this user to. */
   links: AnswerLinkTargets;
@@ -69,6 +74,8 @@ export function AssistantDock({
   onReceipt?: (receipt: AssistantReceipt) => void;
   /** The player's own actions, for the commands the Assistant hands over. */
   playerCommands?: PlayerCommands;
+  /** What the app lends a card. Without it a card can be read and not confirmed. */
+  cards?: CardHost;
 }) {
   // The newest word on the allowance: the server's render, then whatever each
   // response reports, then a later render again.
@@ -119,9 +126,12 @@ export function AssistantDock({
             ?.run(action.command)
             .then((outcome) => conversation.settleAction(action, outcome));
           break;
+        case 'proposed':
+          cardHost?.refreshHeadroom();
+          break;
       }
     };
-  }, [router, onReceipt, playerCommands, conversation]);
+  }, [router, onReceipt, playerCommands, cardHost, conversation]);
   const tapToPlay = useCallback(
     (action: PlayerChatAction) =>
       void playerCommands
@@ -141,6 +151,23 @@ export function AssistantDock({
       },
     }),
     [links, router, besidePage],
+  );
+  const confirm = useCallback(
+    (action: ProposedChatAction) => {
+      if (!cardHost) return;
+      confirmCard(action, {
+        conversation,
+        host: cardHost,
+        onPlayerShown() {
+          if (!besidePage) setOpen(false);
+        },
+      });
+    },
+    [conversation, cardHost, besidePage],
+  );
+  const cards = useMemo<Cards | null>(
+    () => (cardHost ? { headroom: cardHost.headroom, confirm } : null),
+    [cardHost, confirm],
   );
   const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -204,7 +231,13 @@ export function AssistantDock({
         >
           <AnswerLinksContext.Provider value={answerLinks}>
             <TapToPlayContext.Provider value={tapToPlay}>
-              <AssistantPanel conversation={conversation} inputRef={inputRef} standing={standing} />
+              <CardsContext.Provider value={cards}>
+                <AssistantPanel
+                  conversation={conversation}
+                  inputRef={inputRef}
+                  standing={standing}
+                />
+              </CardsContext.Provider>
             </TapToPlayContext.Provider>
           </AnswerLinksContext.Provider>
         </DialogPrimitive.Content>

@@ -102,6 +102,24 @@ describe.each([
     expect(prompt).toMatch(/\[Not done by the app: /);
   });
 
+  it('says that a new Session is only prepared, and starts when the user confirms the card', () => {
+    const tools = prompt.slice(prompt.indexOf('Tools:'), prompt.indexOf('Links:'));
+    expect(tools).toMatch(/^- proposeSession prepares a new Session/m);
+    expect(tools).toMatch(/instrumental unless they asked for vocals/i);
+    expect(tools).toMatch(/starts only when they confirm it/i);
+  });
+
+  it('tells the model to say a card is prepared and can spend, never that a Session started', () => {
+    expect(prompt).toMatch(/when a tool's result starts with "Prepared:"/i);
+    expect(prompt).toMatch(/confirming it generates new Tracks from their budget/i);
+    expect(prompt).toMatch(/never say that you started/i);
+  });
+
+  it('tells the model the app keeps the record of a card and of what the user did with it', () => {
+    expect(prompt).toMatch(/\[Card shown by the app: /);
+    expect(prompt.match(/never write such a line yourself/gi)).toHaveLength(2);
+  });
+
   it('teaches one way to write an app link and one way to write a docs link', () => {
     // An app link: the page's name as the text, its bare path as the target.
     expect(prompt).toContain('[Settings › Playback](/settings/playback)');

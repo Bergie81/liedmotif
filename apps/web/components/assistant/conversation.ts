@@ -40,12 +40,13 @@ export interface AssistantConversation {
   newChat(): void;
   /**
    * Records what became of `action`, which must be the action as the
-   * conversation holds it now. One it no longer holds is left alone.
+   * conversation holds it now, and returns it as held from here on. One it no
+   * longer holds is left alone, and null comes back.
    */
   settleAction<Action extends SettleableAction>(
     action: Action,
     outcome: NonNullable<Action['outcome']>,
-  ): void;
+  ): Action | null;
 }
 
 /**
@@ -165,19 +166,19 @@ export function createAssistantConversation({
     },
     settleAction(action, outcome) {
       const holds = (message: ConversationMessage) => message.actions?.includes(action);
-      if (!state.messages.some(holds)) return;
+      if (!state.messages.some(holds)) return null;
+      const settled = { ...action, outcome };
       update({
         messages: state.messages.map((message) =>
           holds(message)
             ? {
                 ...message,
-                actions: message.actions!.map((held) =>
-                  held === action ? { ...action, outcome } : held,
-                ),
+                actions: message.actions!.map((held) => (held === action ? settled : held)),
               }
             : message,
         ),
       });
+      return settled;
     },
   };
 }

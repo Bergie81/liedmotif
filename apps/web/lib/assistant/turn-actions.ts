@@ -7,16 +7,19 @@ import type { AssistantAction } from '@liedmotif/shared';
 type ActionStatus = AssistantAction['status'];
 
 /** How many actions of each kind one user message may lead to. */
-export const TURN_ACTION_CAPS: Record<ActionStatus, number> = { done: 3, player: 2 };
+export const TURN_ACTION_CAPS: Record<ActionStatus, number> = { done: 3, player: 2, proposed: 1 };
 
 const OVER_CAP: Record<ActionStatus, string> = {
   done: `You have already done ${TURN_ACTION_CAPS.done} things for this message. Nothing was changed. Tell the user what is done, and that they can ask for the rest in their next message.`,
   player: `You have already given the player ${TURN_ACTION_CAPS.player} commands for this message. This one was not passed on. Tell the user what was done, and that they can ask for the rest in their next message.`,
+  proposed:
+    'You have already prepared a card for this message. No second card was shown. Tell the user what the card they have offers, and that they can ask for the next thing in their next message.',
 };
 
 /**
  * What an action tool came to. `told` is what the model reads. `action` is
- * there only when something was done; without it the action was refused.
+ * there only when something was done or prepared; without it the action was
+ * refused.
  */
 export interface ActionOutcome<Status extends ActionStatus = ActionStatus> {
   told: string;
