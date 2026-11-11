@@ -11,6 +11,7 @@ import type {
   PlaybackMode,
   QueueItem,
   SessionGenerationStatus,
+  SessionMode,
   SessionVibe,
 } from '@liedmotif/shared';
 import type { PlayableTrack } from './playable-track';
@@ -90,6 +91,9 @@ export function sectionLoopControl(
 }
 
 export interface PlaybackControllerState {
+  /** The Session's New music policy as last polled (another device may change it). */
+  sessionMode?: SessionMode;
+  targetDurationMinutes?: number | null;
   generatedDurationSeconds?: number;
   unknownDurationTrackCount?: number;
   status: PlayerStatus;

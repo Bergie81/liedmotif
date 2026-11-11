@@ -187,9 +187,10 @@ export type RecoverableRefusalStatus = Extract<
 /**
  * Park a job whose submit ended without a task id. It is NEVER auto-resubmitted,
  * so a Graphile retry can't issue a second paid call for the same intended
- * track: either the row holds the in-flight buffer slot (`submit_unknown`, and a
- * plain `submit_rejected`), or its recoverable status blocks the session until
- * that status's cooldown ends, after which only a NEW job is submitted. The
+ * track: a `submit_unknown` row holds the in-flight buffer slot, a plain
+ * `submit_rejected` blocks the session until the provider config changes or the
+ * listener resumes, and a recoverable status blocks it until that status's
+ * cooldown ends; after either block only a NEW job is submitted. The
  * outcome alone decides the spend classification above. Only ever parks a job
  * that holds NO task id (a job that already captured one is already money-safe).
  */
@@ -216,9 +217,10 @@ export async function parkUnsubmittedProviderJob(
  * Failure-safe persist of a returned provider task id when the normal promote failed
  * (e.g. a transient DB error, or a unique-index clash on the task id). Tries once more
  * to record the task id (so the paid call is never orphaned); if even that can't land
- * it, parks the job as `submit_unknown`. Never throws — it is the money-safety net the
- * caller runs before re-raising the original error, and it must leave the row in a
- * state a retry will not re-submit.
+ * it, parks the job as `submit_unknown`. It is the money-safety net the caller runs
+ * before re-raising the original error, and it must leave the row in a state a retry
+ * will not re-submit. It throws only when the park write fails too; the row then
+ * stays `submitting`, counted as spend and held like a submit that crashed mid-call.
  */
 export async function recordProviderTaskIdFailSafe(
   db: Database,

@@ -251,6 +251,19 @@ describe('openRouter generated-image adapter', () => {
     });
   });
 
+  it('never lets a bare input_references assertion narrow discovered reference limits', async () => {
+    const fetchImpl = vi.fn().mockResolvedValueOnce(endpointDescriptor(['input_references']));
+    const capabilities = await adapter(fetchImpl as unknown as typeof fetch, {
+      capabilityAssertion: { supportedParameters: ['input_references'] },
+    }).getCapabilities();
+
+    expect(capabilities.references).toMatchObject({
+      roles: ['subject', 'style'],
+      maxCount: 3,
+      maxBytesPerReference: 2_000_000,
+    });
+  });
+
   it('allows an operator assertion to narrow discovered reference limits', async () => {
     const fetchImpl = vi.fn().mockResolvedValueOnce(endpointDescriptor(['input_references']));
     const capabilities = await adapter(fetchImpl as unknown as typeof fetch, {
@@ -524,7 +537,7 @@ describe('openRouter generated-image adapter', () => {
     ).resolves.toMatchObject({
       references: {
         roles: ['subject'],
-        maxCount: 1,
+        maxCount: 4,
         multiSubjectIdentity: true,
         mediaTypes: ['image/webp'],
       },

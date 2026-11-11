@@ -48,10 +48,13 @@ export function SearchTrackResults({
   items,
   query,
   onEngage,
+  onTrackRemoved,
 }: {
   items: SearchTrackItem[];
   query: string;
   onEngage: SearchEngagement;
+  /** A row's Track was deleted. */
+  onTrackRemoved: () => void;
 }) {
   const [selected, setSelected] = useState<SearchTrackItem | null>(null);
   const [pickerTrack, setPickerTrack] = useState<SavePickerTrack | null>(null);
@@ -94,7 +97,10 @@ export function SearchTrackResults({
   const actions = useLibraryActions({
     view: 'history',
     onFlagsResolved: resolveFlags,
-    onTrackRemoved: (trackId) => setRemovedIds((current) => new Set(current).add(trackId)),
+    onTrackRemoved: (trackId) => {
+      setRemovedIds((current) => new Set(current).add(trackId));
+      onTrackRemoved();
+    },
   });
   const playback = useTrackRowPlayback(actions.reportActionError);
 

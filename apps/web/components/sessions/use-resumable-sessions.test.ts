@@ -106,6 +106,28 @@ describe('useResumableSessions paging', () => {
     expect(result.current.items?.map((item) => item.id)).toEqual([SECOND.id]);
     expect(result.current.nextCursor).toBeNull();
   });
+
+  it('never pages a reload with the cursor of the list it replaces', async () => {
+    const requests = captureFetches();
+    const THIRD = sessionItem('00000000-0000-4000-8000-000000000003');
+    const { result } = renderHook(() =>
+      useResumableSessions({
+        includeActive: true,
+        initial: { items: [FIRST, SECOND], activeSession: null, nextCursor: 'page-2', pinned: [] },
+      }),
+    );
+
+    act(() => result.current.retry());
+    await waitFor(() => expect(requests).toHaveLength(1));
+    act(() => {
+      void result.current.loadMore();
+    });
+    expect(requests).toHaveLength(1);
+
+    await act(async () => requests[0]!.respond(sessionsPage([THIRD, FIRST], 'after-first')));
+    expect(result.current.items?.map((item) => item.id)).toEqual([THIRD.id, FIRST.id]);
+    expect(result.current.nextCursor).toBe('after-first');
+  });
 });
 
 describe('useResumableSessions pinning', () => {

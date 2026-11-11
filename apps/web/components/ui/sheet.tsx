@@ -131,7 +131,7 @@ function SheetGrabber({ disabled, onDismiss }: { disabled: boolean; onDismiss: (
     const dismisses =
       !cancelled &&
       event.clientY > current.y.start &&
-      current.y.commits(event.clientY, DISMISS_DISTANCE_PX);
+      current.y.commits(event.clientY, DISMISS_DISTANCE_PX, event.timeStamp);
     if (dismisses) onDismiss();
     current.sheet.style.transition = 'transform 0.2s ease-out';
     current.sheet.style.transform = '';

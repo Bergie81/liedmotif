@@ -11,12 +11,13 @@
 // handful of statements as a one-track one.
 
 import { LIVE_QUEUE_ITEM_STATES } from '@liedmotif/shared';
-import { and, eq, inArray, isNull, sql, type SQL } from 'drizzle-orm';
+import { and, eq, inArray, isNull, or, sql, type SQL } from 'drizzle-orm';
 import type { Database } from '../client';
 import { withTransaction, type Transaction } from '../transactions';
 import {
   activitySessions,
   activitySessionQueueItems,
+  generationOutputs,
   generationRequests,
   tracks,
   trackAudioAssets,
@@ -30,17 +31,28 @@ export const EPHEMERAL_EVICTION_REASON = 'ephemeral_eviction';
 export const ORPHAN_CLEANUP_REASON = 'orphan_cleanup';
 
 /**
- * The "Ephemeral `ready` track" predicate: a `ready` track carrying NO retention
- * flag (Saved/Favorited/Disliked). Shared by both reclaim paths so they can never
- * drift on what counts as Ephemeral.
+ * The "Ephemeral track" predicate: a `ready` track, or a `streamable` one whose
+ * final download was given up on (no final can land, so it never becomes
+ * `ready`), carrying NO retention flag (Saved/Favorited/Disliked). Shared by
+ * both reclaim paths so they can never drift on what counts as Ephemeral.
  */
 function ephemeralTrackConditions(): SQL[] {
   return [
-    eq(tracks.status, 'ready'),
+    or(eq(tracks.status, 'ready'), and(eq(tracks.status, 'streamable'), downloadGivenUp()))!,
     isNull(tracks.savedAt),
     isNull(tracks.favoritedAt),
     isNull(tracks.dislikedAt),
   ];
+}
+
+/** `download-final-audio` marked the give-up on the Track's ledger row. */
+function downloadGivenUp(): SQL {
+  return sql`exists (
+    select 1
+    from ${generationOutputs} as given_up_output
+    where given_up_output.track_id = ${tracks.id}
+      and given_up_output.storage_failed_at is not null
+  )`;
 }
 
 /**
@@ -127,7 +139,7 @@ function generatedBySession(sessionId: string): SQL {
 
 /**
  * Reclaim every track matching `conditions` inside the caller's transaction —
- * the one write shape both reclaim paths share: flip `ready → deleted` (cover
+ * the one write shape both reclaim paths share: flip the track to `deleted` (cover
  * pointer cleared with the tombstone — a pointer-bearing tombstone would hold
  * its cover_images row alive forever), transition still-live queue items to
  * `failed`, and snapshot-queue-drop the audio assets. The track ROWS stay.

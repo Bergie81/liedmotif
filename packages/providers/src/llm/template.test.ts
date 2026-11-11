@@ -356,6 +356,15 @@ describe('applyStylePicks (deterministic fine-tune enforcement on a produced sna
     expect(picked.stylePrompt).toContain('ambient');
   });
 
+  it('counts a genre pick as mentioned only as a whole word, not inside a longer one', () => {
+    const style = (prompt: string, genre: string) =>
+      compilePromptPassthrough(prompt, { genres: [genre] }).stylePrompt;
+    expect(style('music for discovering a new city', 'disco')).toMatch(/^disco, /);
+    expect(style('entrance music for a wedding', 'trance')).toMatch(/^trance, /);
+    expect(style('gritty rock riffs', 'rock')).toMatch(/^gritty rock riffs/);
+    expect(style('dusty hip-hop loops', 'hip-hop')).toMatch(/^dusty hip-hop loops/);
+  });
+
   it('a forced energy overrides the model and re-freezes the tempo from it', () => {
     const forced = freezeStyleParameters(applyStylePicks(base(), { energy: 'high' }));
     expect(forced.energy).toBe('high');
@@ -665,6 +674,15 @@ describe('deriveTrackMetadata (cosmetic, deterministic)', () => {
     expect(meta.title.length).toBeGreaterThan(0);
     expect(meta.artistName.length).toBeGreaterThan(0);
     expect(deriveTrackMetadata(snapshot, 0)).toEqual(meta); // deterministic
+  });
+
+  it('capitalizes only word starts, in any script, never after an apostrophe', () => {
+    expect(deriveTrackMetadata(compilePromptPassthrough('müde über nacht'), 0).title).toBe(
+      'Müde Über Nacht 1',
+    );
+    expect(deriveTrackMetadata(compilePromptPassthrough("don't stop dancing"), 0).title).toBe(
+      "Don't Stop Dancing 1",
+    );
   });
 });
 

@@ -56,7 +56,7 @@ export function useTrackPreview(onError: (message: string) => void) {
       toggle: () => {
         const audio = audioRef.current;
         if (!audio) return;
-        if (audio.paused) void audio.play().catch(() => failPreview(track.id));
+        if (audio.paused) void audio.play().catch((error) => playRefused(error, track.id));
         else audio.pause();
       },
     });
@@ -70,6 +70,13 @@ export function useTrackPreview(onError: (message: string) => void) {
     onError('This Track could not be played. Try again later.');
   }
 
+  // A pause while `play()` is pending rejects it with AbortError: that is the
+  // listener's own pause, not a failure. A real load failure fires `error`.
+  function playRefused(error: unknown, trackId: string) {
+    if (error instanceof DOMException && error.name === 'AbortError') return;
+    failPreview(trackId);
+  }
+
   function playTrack(track: PreviewableTrack) {
     const audio = audioRef.current;
     if (!audio || !track.audioUrl) return;
@@ -81,7 +88,7 @@ export function useTrackPreview(onError: (message: string) => void) {
     }
     trackRef.current = track;
     setPreview({ trackId: track.id, state: 'idle' });
-    void audio.play().catch(() => failPreview(track.id));
+    void audio.play().catch((error) => playRefused(error, track.id));
   }
 
   function togglePreview(track: PreviewableTrack) {
@@ -92,6 +99,19 @@ export function useTrackPreview(onError: (message: string) => void) {
       return;
     }
     playTrack(track);
+  }
+
+  /** Silence the preview for good: once another player owns the audio, a
+   *  paused preview must not keep speaking for the rows or the mini player. */
+  function stop() {
+    const track = trackRef.current;
+    // Cleared first, so the `pause` event this fires is not read as a paused preview.
+    trackRef.current = null;
+    audioRef.current?.pause();
+    if (!track) return;
+    meter().close(track.id, 'navigated');
+    setPreview({ trackId: null, state: 'idle' });
+    clearTrackPreview(ownerRef.current);
   }
 
   function updateState(state: PreviewState) {
@@ -114,6 +134,7 @@ export function useTrackPreview(onError: (message: string) => void) {
     preview,
     playTrack,
     togglePreview,
+    stop,
     audioEvents: {
       onPlay: () => updateState('playing'),
       onPause: () => updateState('paused'),

@@ -218,6 +218,20 @@ describe('LoopLeaseProtocol — acknowledged-hold window and hung requests', () 
     expect(h.heldChanges).toEqual([true, false, false]);
   });
 
+  it("another tab's hold reported by a release ack is displayed for one TTL, not forever", async () => {
+    const h = harness();
+    h.protocol.acquire();
+    h.sent[0]!.settle(h.ok(true, true, LIVE));
+    await vi.advanceTimersByTimeAsync(0);
+    h.protocol.release();
+    h.sent[1]!.settle(h.ok(true, true, { released: true }));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(h.heldChanges).toEqual([true, false, true]);
+    // This tab no longer renews, so nothing re-confirms the other tab's hold.
+    await vi.advanceTimersByTimeAsync(61_000);
+    expect(h.heldChanges).toEqual([true, false, true, false]);
+  });
+
   it('a HUNG request is ABORTED at the stale window and stops blocking the cadence', async () => {
     const h = harness();
     h.protocol.acquire(); // never settles

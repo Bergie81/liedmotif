@@ -13,7 +13,7 @@ const OVER_CAP: Record<ActionStatus, string> = {
   done: `You have already done ${TURN_ACTION_CAPS.done} things for this message. Nothing was changed. Tell the user what is done, and that they can ask for the rest in their next message.`,
   player: `You have already given the player ${TURN_ACTION_CAPS.player} commands for this message. This one was not passed on. Tell the user what was done, and that they can ask for the rest in their next message.`,
   proposed:
-    'You have already prepared a card for this message. No second card was shown. Tell the user what the card they have offers, and that they can ask for the next thing in their next message.',
+    'Only one card can be prepared for each message, and one was already asked for. No second card was shown. If that first card was prepared, tell the user what it offers; either way, tell them they can ask for the next thing in their next message.',
 };
 
 /**

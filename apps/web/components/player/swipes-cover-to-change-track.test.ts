@@ -188,4 +188,20 @@ describe('player cover swipe', () => {
     expect(onSwipeNext).not.toHaveBeenCalled();
     expect(onSwipePrevious).not.toHaveBeenCalled();
   });
+
+  // A pointer held still fires no move, so the flick speed of the last move is stale by release.
+  it('ignores a short flick that was held before release', () => {
+    const { onSwipeNext } = renderCover();
+    const cover = screen.getByTestId('player-cover');
+    fireEvent.pointerDown(cover, { pointerId: 1, button: 0, clientX: 200, clientY: 200 });
+    act(() => {
+      vi.advanceTimersByTime(10);
+    });
+    fireEvent.pointerMove(cover, { pointerId: 1, clientX: 160, clientY: 200 });
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    release(-40);
+    expect(onSwipeNext).not.toHaveBeenCalled();
+  });
 });

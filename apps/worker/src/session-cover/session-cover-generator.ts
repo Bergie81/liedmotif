@@ -92,7 +92,9 @@ async function admit(
       ownerUserId: runtime.deps.ownerUserId,
       sessionId,
     });
-    if (!session) return null;
+    // A Session whose delete is pending buys no cover; with no attempt row the
+    // deferred delete is free to finish.
+    if (!session || session.deleteRequestedAt) return null;
 
     // The caller already holds the per-owner cover-admission lock; a Member's
     // check takes the Pool lock inside (fixed order).
@@ -107,12 +109,19 @@ async function admit(
       ...(forcedTerminalReason ? { forcedTerminalReason } : {}),
     });
 
+    const fields = frozenAttemptFields(frozen, frozen.plan, capabilities);
+    // The source task is pinned at admission: an older task that turns ready
+    // later must not change which music task a safe retry asks to cover.
+    const sourceMusicTaskId = capabilities.musicTaskSource
+      ? await readySourceMusicTaskId(tx, session, capabilities.musicTaskSource)
+      : null;
     const coverImageId = randomUUID();
     const inserted = await planSessionCoverGeneration(tx, {
       id: randomUUID(),
       ownerUserId: session.ownerUserId,
       activitySessionId: session.id,
-      ...frozenAttemptFields(frozen, frozen.plan, capabilities),
+      ...fields,
+      ...(sourceMusicTaskId ? { retryPolicy: { ...fields.retryPolicy, sourceMusicTaskId } } : {}),
       idempotencyKey: `session-cover:${session.id}:${SESSION_COVER_PLAN_VERSION}`,
       coverImageId,
       storageKey: storageKeys.generatedCover(session.ownerUserId, session.id, coverImageId, 'webp'),
@@ -325,6 +334,22 @@ async function resumeExisting(
     );
   }
 
+  if (session.deleteRequestedAt) {
+    // A Session whose delete is pending buys no cover. Settling the unsubmitted
+    // attempt (it keeps whatever spend it holds) lets the deferred delete finish.
+    await updateSessionCoverGeneration(runtime.deps.db, {
+      ownerUserId: session.ownerUserId,
+      id: ledger.id,
+      state: 'not_admitted',
+      possiblyPaid: ledger.possiblyPaid,
+      failureCategory: 'session_delete_pending',
+      settledAt: now,
+      updatedAt: now,
+      expectedStates: ['planned', 'reserved'],
+    });
+    return currentCoverFallback(runtime, session, 'not_admitted');
+  }
+
   if (ledger.state === 'reserved') {
     if (!aged) return { status: 'pending' };
     const planned = await updateSessionCoverGeneration(runtime.deps.db, {
@@ -398,7 +423,7 @@ export function createSessionCoverGenerator(
         }
         if (session.coverImageId && session.coverImageId !== PLACEHOLDER_COVER_ID) {
           if (existing?.state === 'ready' && existing.coverImageId === session.coverImageId) {
-            return resultFromExisting(runtime, session, existing);
+            return await resultFromExisting(runtime, session, existing);
           }
           if (!existing || !PENDING_STATES.has(existing.state)) {
             return { status: 'preserved', coverImageId: session.coverImageId };
@@ -410,7 +435,7 @@ export function createSessionCoverGenerator(
         if (existing?.trigger === 'user_regenerate' && PENDING_STATES.has(existing.state)) {
           return { status: 'pending' };
         }
-        if (existing) return resumeExisting(runtime, session, existing);
+        if (existing) return await resumeExisting(runtime, session, existing);
         return await generate(runtime, session);
       } catch (error) {
         throw error instanceof SessionCoverRetryableError

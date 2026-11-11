@@ -139,6 +139,9 @@ export interface OnboardingDraft {
   imageModel: string;
   ceiling: TrackCeiling;
   coverBudget: CoverBudget;
+  /** The ceiling and budget as last stored: a spend cap is reported only once it binds. */
+  savedCeiling: TrackCeiling;
+  savedCoverBudget: CoverBudget;
 }
 
 export function initialOnboardingDraft(data: OnboardingData): OnboardingDraft {
@@ -153,6 +156,8 @@ export function initialOnboardingDraft(data: OnboardingData): OnboardingDraft {
     imageModel: data.image.model ?? '',
     ceiling: trackCeilingFromLimits(data.limits, data.tracksPerRequest),
     coverBudget: coverBudgetFromLimits(data.limits),
+    savedCeiling: trackCeilingFromLimits(data.limits, data.tracksPerRequest),
+    savedCoverBudget: coverBudgetFromLimits(data.limits),
   };
 }
 
@@ -251,7 +256,8 @@ export function memberOnboardingRecord(
 
 /**
  * The rail's "Set so far" list — the overview doubling as a record of what the owner
- * has committed. The draft carries what the flow edits; every other value is read
+ * has committed. The draft carries what the flow edits, and its spend rows read the
+ * stored ceiling and budget, never an edit not yet saved; every other value is read
  * straight off the load.
  */
 export function onboardingRecord(
@@ -266,7 +272,7 @@ export function onboardingRecord(
   const covers = coverSource({
     imageProviderConfigured: draft.imageConnected,
     musicProviderCoverConfigured: data.musicProviderCoverConfigured,
-    ...draft.coverBudget,
+    ...draft.savedCoverBudget,
   });
   return [
     row('You', profile.name || '—', Boolean(profile.name)),
@@ -274,8 +280,8 @@ export function onboardingRecord(
     row('Location', place || 'Not set', Boolean(place)),
     row('People', named ? `${named} ${named === 1 ? 'person' : 'people'}` : 'None', named > 0),
     credentialRow('Music model', data.music, draft.musicConnected, 'Connected', 'Not connected'),
-    draft.ceiling.enabled
-      ? row('Tracks / day', `${draft.ceiling.dailyTracks} Tracks`, true)
+    draft.savedCeiling.enabled
+      ? row('Tracks / day', `${draft.savedCeiling.dailyTracks} Tracks`, true)
       : row('Tracks / day', 'No limit', false),
     credentialRow('Writing AI', data.llm, draft.llmConnected, draft.llmModel || 'Connected', 'Off'),
     // Having no source is what a Session falls back to when nothing was chosen,

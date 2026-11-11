@@ -287,7 +287,7 @@ describe('the tools of a fixture turn that act', () => {
     await call('proposeSession', { prompt: 'calm piano', targetDurationMinutes: 45 });
     const second = await call('proposeSession', { prompt: 'loud drums', noLimit: true });
 
-    expect(second).toMatch(/already prepared a card/);
+    expect(second).toMatch(/No second card was shown/);
     expect(reported).toHaveLength(1);
   });
 });

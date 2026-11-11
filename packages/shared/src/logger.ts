@@ -63,8 +63,10 @@ export const DEFAULT_SENSITIVE_KEY_FRAGMENTS: readonly string[] = [
  * recognized as sensitive. The required `://` (and userinfo containing no `/`)
  * keeps bare emails / `mailto:` in prose untouched. Userinfo excludes `?`/`#`
  * (query/fragment delimiters), so a `scheme://host?x=a@b` query form isn't matched.
+ * It runs to the last `@` before the host, as URL parsing (and pg) splits it, so
+ * a raw `@` inside a password doesn't leave the password's tail behind.
  */
-const URL_CREDENTIALS_PATTERN = /\b([a-z][a-z0-9+.-]*:\/\/)[^\s/@?#]+@/gi;
+const URL_CREDENTIALS_PATTERN = /\b([a-z][a-z0-9+.-]*:\/\/)[^\s/?#]+@/gi;
 
 /**
  * Patterns wholly replaced with REDACTED inside string values, by field name or
@@ -87,6 +89,13 @@ const SENSITIVE_VALUE_PATTERNS: readonly RegExp[] = [
  */
 const URL_WITH_QUERY = /([a-z][a-z0-9+.-]*:\/\/[^\s?#'"<>]+)[^\s'"<>]*/gi;
 
+/**
+ * A Drizzle query error's message — `Failed query: <sql>\nparams: <values>` —
+ * logged as a plain string. The values may span lines, so they are cut up to
+ * the first stack frame (or the end), which keeps an Error's stack readable.
+ */
+const FAILED_QUERY_PARAMS = /(Failed query: [\s\S]*?\nparams: )[\s\S]*?(?=\n\s+at\s|$)/g;
+
 function normalizeKey(key: string): string {
   return key.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
@@ -95,7 +104,10 @@ function normalizeKey(key: string): string {
 function redactSecretsInString(value: string): string {
   // A URL keeps its scheme, host and path: only the embedded credentials and the
   // query are removed, so the line still says what was talked to.
-  let out = value.replace(URL_CREDENTIALS_PATTERN, `$1${REDACTED}@`).replace(URL_WITH_QUERY, '$1');
+  let out = value
+    .replace(FAILED_QUERY_PARAMS, `$1${REDACTED}`)
+    .replace(URL_CREDENTIALS_PATTERN, `$1${REDACTED}@`)
+    .replace(URL_WITH_QUERY, '$1');
   for (const pattern of SENSITIVE_VALUE_PATTERNS) {
     out = out.replace(pattern, REDACTED);
   }
@@ -150,6 +162,9 @@ export function createRedactor(options: RedactorOptions = {}): (input: unknown) 
           typeof input.stack === 'string'
             ? redactSecretsInString(input.stack.split(input.message).join(message))
             : input.stack,
+        // A failed query's database reason (constraint, timeout, lost
+        // connection) lives only in its cause.
+        ...(input.cause !== undefined ? { cause: walk(input.cause, seen, depth + 1) } : {}),
       };
     }
 

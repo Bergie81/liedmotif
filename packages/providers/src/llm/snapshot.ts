@@ -91,9 +91,10 @@ export function clampLyricContext(value: string): string {
 
 /** Hard cap on a per-generation track lyric brief. Tighter than
  *  `MAX_LYRIC_CONTEXT_LENGTH` (which still backstops the snapshot slot the brief
- *  rides in): the own-voice path sends "Write the lyrics in <language>. " + brief
- *  into Suno's 200-char lyrics-brief cap, so the brief itself must stay short
- *  enough not to be truncated there. */
+ *  rides in). The own-voice path sends "Write the lyrics in <language>. " + brief
+ *  into Suno's 200-char lyrics-brief cap, which keeps the leading directive and
+ *  cuts the brief's tail; the room for the directive comes from the prompt's
+ *  soft target (`TRACK_LYRIC_BRIEF_TARGET_CHARS`), not from this cap. */
 export const MAX_TRACK_LYRIC_BRIEF_LENGTH = 200;
 
 /** Clamp a proposed track lyric brief where it enters the system (the adapter's

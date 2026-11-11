@@ -125,6 +125,48 @@ it('learns from a refusal that the allowance is used up', async () => {
   expect(field().value).toBe('How do I invite someone?');
 });
 
+it.each([
+  {
+    failure: 'a refusal before any answer',
+    respond: (headers: Record<string, string>) =>
+      Response.json(makeApiError('provider_error', 'The Writing AI gave no answer.', true), {
+        status: 502,
+        headers,
+      }),
+    notice: 'The Writing AI gave no answer.',
+  },
+  {
+    failure: 'an answer that broke off',
+    respond: (headers: Record<string, string>) =>
+      new Response(
+        encodeAssistantStreamEvent({ type: 'text', text: 'To invite someone, open' }) +
+          encodeAssistantStreamEvent({
+            type: 'error',
+            error: makeApiError('provider_error', 'Roadie could not answer.', true).error,
+          }),
+        { headers: { 'Content-Type': ASSISTANT_STREAM_CONTENT_TYPE, ...headers } },
+      ),
+    notice: 'Roadie could not answer.',
+  },
+])(
+  'says why the last message of the day got no whole answer: $failure',
+  async ({ respond, notice }) => {
+    const headers = { [ASSISTANT_STANDING_HEADER]: JSON.stringify(memberStanding(0)) };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => respond(headers)),
+    );
+    const panel = openPanel(memberStanding(1));
+    fireEvent.change(field(), { target: { value: 'How do I invite someone?' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+
+    await waitFor(() => expect(field().disabled).toBe(true));
+    expect(panel.textContent).toContain(notice);
+    expect(panel.textContent).toContain("You have used all of today's messages.");
+  },
+);
+
 it("says so when the server refuses for a day the viewer's own clock has already ended", async () => {
   // The viewer's clock runs ahead of the server's: the day it was told about
   // is over here, and the server still counts against it.

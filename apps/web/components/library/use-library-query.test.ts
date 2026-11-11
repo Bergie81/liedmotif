@@ -107,6 +107,32 @@ describe('useLibraryQuery', () => {
     expect(requests[2]!.path).toContain('cursor=rain-page-2');
   });
 
+  it('never pages a new search with the previous search’s cursor after its first page fails', async () => {
+    const requests = captureFetches();
+    const { result, rerender } = renderHook(
+      ({ search }: { search: string }) => useLibraryQuery('history', search),
+      { initialProps: { search: '' } },
+    );
+    await waitFor(() => expect(requests).toHaveLength(1));
+    await act(async () => requests[0]!.respond(libraryPage('history', 'all-page-2')));
+    await waitFor(() => expect(result.current.nextCursor).toBe('all-page-2'));
+
+    rerender({ search: 'rain' });
+    await waitFor(() => expect(requests).toHaveLength(2));
+    await act(async () =>
+      requests[1]!.respond({
+        ok: false,
+        error: { code: 'internal_error', message: 'Network error.', retryable: true },
+      }),
+    );
+    await waitFor(() => expect(result.current.error).toBe('Network error.'));
+
+    act(() => {
+      void result.current.loadMore();
+    });
+    expect(requests).toHaveLength(2);
+  });
+
   it('aborts a superseded first-page request on the next keystroke', async () => {
     const requests = captureFetches();
     const { rerender, unmount } = renderHook(

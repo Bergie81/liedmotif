@@ -122,6 +122,25 @@ describe('member budget form', () => {
     });
   });
 
+  it('refuses a monthly cap below the daily one, as the budget routes do', () => {
+    const result = buildMemberBudgetPatch(
+      {
+        ...memberBudgetFormValues(DEFAULT_MEMBER_LIMITS, 2),
+        dailyTracks: '20',
+        monthlyTracks: '10',
+        coversPerDay: '10',
+        coversPerMonth: '9',
+      },
+      2,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors).toEqual({
+      monthlyTracks: 'Enter 20 or more.',
+      coversPerMonth: 'Enter 10 or more.',
+    });
+  });
+
   it('refuses non-numbers with a per-field message', () => {
     const result = buildMemberBudgetPatch(
       {

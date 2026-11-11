@@ -3,9 +3,10 @@
 // Run inside the deployment with local container access; it needs no account
 // email. Bundled into the worker image by tsup, so:
 //
-//   docker compose exec \
-//     -e ADMIN_RESET_PASSWORD='new-password' \
+//   read -rs ADMIN_RESET_PASSWORD && export ADMIN_RESET_PASSWORD
+//   docker compose exec -e ADMIN_RESET_PASSWORD \
 //     worker node dist/reset-admin-password.js --email admin@example.com
+//   unset ADMIN_RESET_PASSWORD
 //
 // The new password is read from the ADMIN_RESET_PASSWORD env var (never passed on
 // the command line, where it would land in shell history / the process list). The

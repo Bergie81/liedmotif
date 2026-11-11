@@ -737,6 +737,21 @@ describe.skipIf(skip)('getLoungePlaylistDetail', () => {
     });
     expect(revealed!.items.map((item) => item.id)).toEqual([jonas.trackId, mira.trackId]);
     expect(revealed!.playlist.trackCount).toBe(2);
+    // The playlist's own owner is the header's attribution; the reference
+    // carries its own owner's.
+    await testDb.pool.query('update "user" set name = $1 where id = $2', [
+      'Mira Marlowe',
+      mira.ownerUserId,
+    ]);
+    const attributed = await getLoungePlaylistDetail(testDb.db, {
+      viewerUserId: visitor,
+      playlistId: jonas.playlistId,
+      limit: 10,
+    });
+    expect(attributed!.items.map((item) => item.owner?.name ?? null)).toEqual([
+      null,
+      'Mira Marlowe',
+    ]);
   });
 
   it('never carries the owner’s retention shelves to a visitor — the flags read empty', async () => {

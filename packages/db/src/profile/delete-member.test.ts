@@ -5,6 +5,7 @@
 // owner and keeps counting in the Members Pool until the window rolls over.
 
 import { randomUUID } from 'node:crypto';
+import pg from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { eq, isNull } from 'drizzle-orm';
 import { connectTestDb, TEST_DATABASE_URL, truncateTables, type TestDb } from '../test-support';
@@ -46,6 +47,7 @@ import { planSessionCoverGeneration } from '../covers/generation-ledger-repo';
 import { countCoverSpendSince } from '../covers/usage';
 import { writeSetting } from '../setup/settings';
 import { POOL_SCOPE } from '../member-pool';
+import { withTrackDownloadLock, writeDownloadedTrackAudio } from '../generation/tracks-repo';
 import { deleteMember } from './delete-member';
 
 const describeIfDb = TEST_DATABASE_URL ? describe : describe.skip;
@@ -439,6 +441,61 @@ describeIfDb('deleteMember', () => {
       reason: 'not_member',
     });
     expect(await queuedKeys()).toEqual(keysAfterFirst);
+  });
+
+  it('a final download landing mid-delete declines instead of leaving its file unqueued', async () => {
+    const sessionId = await createSession(ctx.db, { ownerUserId: memberId });
+    const requestId = await createGenerationRequest(ctx.db, {
+      ownerUserId: memberId,
+      activitySessionId: sessionId,
+    });
+    const jobId = await createProviderJob(ctx.db, { generationRequestId: requestId });
+    const trackId = await createTrack(ctx.db, {
+      ownerUserId: memberId,
+      generationRequestId: requestId,
+      providerJobId: jobId,
+      status: 'streamable',
+    });
+    const playlist = await createPlaylist(ctx.db, { ownerUserId: adminId, name: 'For you' });
+    await setPlaylistShared(ctx.db, {
+      ownerUserId: adminId,
+      playlistId: playlist.id,
+      audience: { kind: 'selected', userIds: [memberId] },
+    });
+
+    // A share write holding the audience row parks the delete after its audio
+    // snapshot, widening the window a download claim could land in.
+    // Its own connections: the suite's pool holds two, both taken by the race.
+    const blocker = new pg.Client({ connectionString: TEST_DATABASE_URL });
+    await blocker.connect();
+    await blocker.query('begin');
+    await blocker.query('select id from playlists where id = $1 for update', [playlist.id]);
+    const lockWaiters = async () =>
+      Number(
+        (
+          await blocker.query(
+            "select count(*) as n from pg_stat_activity where wait_event_type = 'Lock'",
+          )
+        ).rows[0].n,
+      );
+    const waitForLockWaiters = async (count: number) => {
+      for (let attempt = 0; attempt < 100 && (await lockWaiters()) < count; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+    };
+
+    const deleting = deleteMember(ctx.db, { userId: memberId });
+    await waitForLockWaiters(1);
+    const downloading = withTrackDownloadLock(ctx.db, trackId, (tx) =>
+      writeDownloadedTrackAudio(tx, { trackId, storageKey: `tracks/${memberId}/late.mp3` }),
+    );
+    await Promise.race([waitForLockWaiters(2), downloading]);
+    await blocker.query('commit');
+    await blocker.end();
+
+    expect((await deleting).ok).toBe(true);
+    expect(await downloading).toEqual({ written: false });
+    expect(await ctx.db.select().from(tracks).where(eq(tracks.id, trackId))).toEqual([]);
   });
 
   it("returns to Private another owner's playlist the Member was the only selected User of", async () => {

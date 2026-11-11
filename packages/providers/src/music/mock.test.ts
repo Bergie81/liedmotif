@@ -36,8 +36,11 @@ describe('mockMusicProvider', () => {
     const task = await provider.createGenerationTask(INPUT);
     expect(task.providerTaskId.length).toBeGreaterThan(0);
     expect(task.provider.providerKey).toBe('mock');
-    // Deterministic id for the same input.
-    expect((await provider.createGenerationTask(INPUT)).providerTaskId).toBe(task.providerTaskId);
+    // Every call is its own task, like a real provider's: provider_jobs holds the
+    // id unique, and two Sessions with the same style submit the same input.
+    expect((await provider.createGenerationTask(INPUT)).providerTaskId).not.toBe(
+      task.providerTaskId,
+    );
   });
 
   it('returns two normalized sibling tracks on status', async () => {

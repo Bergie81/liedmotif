@@ -533,6 +533,23 @@ describe('expandSessionIntent', () => {
     expect(obeyed.bpm).toBe(ignored.bpm);
   });
 
+  it('adjustment keeps the running voice when the reply names none', async () => {
+    const current = compileStructuredControls({ vocal: 'vocal', voice: 'female' });
+    const expand = (reply: Record<string, unknown>) =>
+      createOpenRouterLlmProvider({
+        apiKey: 'sk-or-1',
+        model: 'm',
+        supportsStructuredOutputs: true,
+        languageModel: fakeModel([
+          JSON.stringify({ stylePrompt: 'upbeat indie pop', language: 'English', ...reply }),
+        ]),
+      }).expandSessionIntent('a bit more upbeat', null, undefined, { adjustFrom: current });
+
+    expect((await expand({ vocalMode: 'vocal' })).voiceGender).toBe('female');
+    expect((await expand({ vocalMode: 'vocal', voiceGender: 'male' })).voiceGender).toBe('male');
+    expect((await expand({ vocalMode: 'instrumental' })).voiceGender).toBe('');
+  });
+
   it('sends the current snapshot and adjustment framing to the model', async () => {
     const captured: string[] = [];
     const current = compileStructuredControls({ genres: ['indie-pop'], language: 'German' });
@@ -785,6 +802,26 @@ describe('expandSessionIntent', () => {
       expect(err.message).not.toContain('configuration');
       expect(err.safeDetail?.timedOut).toBe(true);
     }
+  });
+
+  it('sends a failed structured call once: only an unparseable answer earns the repair', async () => {
+    const timeoutError = new DOMException(
+      'The operation was aborted due to timeout',
+      'TimeoutError',
+    );
+    const model = throwingModel(timeoutError as unknown as Error) as unknown as {
+      doGenerate: () => Promise<never>;
+    };
+    const doGenerate = vi.spyOn(model, 'doGenerate');
+    const provider = createOpenRouterLlmProvider({
+      apiKey: 'sk-or-1',
+      model: 'm',
+      supportsStructuredOutputs: true,
+      languageModel: model as unknown as LanguageModel,
+    });
+    const err = (await provider.expandSessionIntent('x').catch((e: unknown) => e)) as ProviderError;
+    expect(err.message).toContain('took too long');
+    expect(doGenerate).toHaveBeenCalledTimes(1);
   });
 
   it('stops the model call when the caller gives up', async () => {

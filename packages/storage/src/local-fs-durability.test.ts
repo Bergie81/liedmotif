@@ -4,6 +4,8 @@
 // to the data root) — so a power loss cannot leave a zero-length "final" object
 // or lose a freshly created directory chain. fsync has no observable filesystem
 // effect, so these tests wrap the fs modules and record an ordered event log.
+// The same wrap lets a test run a sibling delete right after a write's `mkdir`,
+// or fail a delete's directory prune.
 
 import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
@@ -16,10 +18,16 @@ const recorded = vi.hoisted(() => ({
   writeFileOptions: [] as unknown[],
   writeStreamOptions: [] as unknown[],
   events: [] as string[],
+  /** One-shot hook run right after the next `mkdir` resolves. */
+  afterMkdir: null as null | (() => Promise<void>),
+  /** Error code every `rmdir` fails with while set. */
+  rmdirErrorCode: null as null | string,
   reset() {
     this.writeFileOptions.length = 0;
     this.writeStreamOptions.length = 0;
     this.events.length = 0;
+    this.afterMkdir = null;
+    this.rmdirErrorCode = null;
   },
 }));
 
@@ -53,7 +61,19 @@ vi.mock('node:fs/promises', async (importOriginal) => {
     };
     return handle;
   };
-  return { ...actual, writeFile, rename, open };
+  const mkdir = (async (...args: Parameters<typeof actual.mkdir>) => {
+    const created = await actual.mkdir(...args);
+    const hook = recorded.afterMkdir;
+    recorded.afterMkdir = null;
+    await hook?.();
+    return created;
+  }) as typeof actual.mkdir;
+  const rmdir: typeof actual.rmdir = async (...args) => {
+    const code = recorded.rmdirErrorCode;
+    if (code) throw Object.assign(new Error(`${code}: rmdir`), { code });
+    return actual.rmdir(...args);
+  };
+  return { ...actual, writeFile, rename, open, mkdir, rmdir };
 });
 
 describe('localFsStorageProvider write durability', () => {
@@ -111,5 +131,35 @@ describe('localFsStorageProvider write durability', () => {
       'network died',
     );
     expect(recorded.events).toEqual(['write-temp']);
+  });
+
+  it('stores a write whose fresh folder a sibling delete prunes right after mkdir', async () => {
+    const storage = localFsStorageProvider({ dataRoot });
+    await storage.write({ key: 'covers/generated/u/s/old.webp', body: Buffer.from('old') });
+    recorded.afterMkdir = () => storage.delete('covers/generated/u/s/old.webp');
+
+    await storage.write({ key: 'covers/generated/u/s/new.webp', body: Buffer.from('new') });
+
+    expect(await storage.stat('covers/generated/u/s/new.webp')).not.toBeNull();
+    expect(await storage.stat('covers/generated/u/s/old.webp')).toBeNull();
+  });
+
+  it('streams a write whose fresh folder a sibling delete prunes right after mkdir', async () => {
+    const storage = localFsStorageProvider({ dataRoot });
+    await storage.write({ key: 'tracks/u/s/a.mp3', body: Buffer.from('a') });
+    recorded.afterMkdir = () => storage.delete('tracks/u/s/a.mp3');
+
+    await storage.write({ key: 'tracks/u/s/b.mp3', body: Readable.from(Buffer.from('b')) });
+
+    expect(await storage.stat('tracks/u/s/b.mp3')).not.toBeNull();
+  });
+
+  it('reports a delete as done once the file is gone, even when pruning its folder fails', async () => {
+    const storage = localFsStorageProvider({ dataRoot });
+    await storage.write({ key: 'tracks/u/s/a.mp3', body: Buffer.from('a') });
+    recorded.rmdirErrorCode = 'EBUSY';
+
+    await expect(storage.delete('tracks/u/s/a.mp3')).resolves.toBeUndefined();
+    expect(await storage.stat('tracks/u/s/a.mp3')).toBeNull();
   });
 });

@@ -23,9 +23,14 @@ export function supportedTimezones(): string[] {
   return cachedZones;
 }
 
-/** Whether a stored or submitted zone is one `Intl` can actually format in. */
+/**
+ * Whether a stored or submitted zone is one `Intl` can actually format in. A bare
+ * offset (`+05:00`) is refused although `Intl` accepts it: Postgres reads the same
+ * string as a POSIX zone, west of UTC, so backups and stats would roll over on the
+ * opposite side of UTC from the limit windows.
+ */
 export function isSupportedTimezone(zone: string): boolean {
-  if (!zone.trim()) return false;
+  if (!zone.trim() || /^[+-]/.test(zone.trim())) return false;
   try {
     new Intl.DateTimeFormat('en-US', { timeZone: zone });
     return true;

@@ -115,7 +115,13 @@ export const MAX_GENRE_PICKS = 3;
 /** The prompt intent's required core, extended below with the fine-tune picks. */
 const basePromptIntentSchema = z.strictObject({
   mode: z.literal('prompt'),
-  prompt: z.string().min(1).max(MAX_USER_PROMPT_LENGTH),
+  // A blank prompt would compile to the generic fallback vibe and buy Tracks
+  // nobody asked for. The prompt is kept as written, so this refines, not trims.
+  prompt: z
+    .string()
+    .min(1)
+    .max(MAX_USER_PROMPT_LENGTH)
+    .refine((prompt) => prompt.trim().length > 0, 'Prompt is blank'),
 });
 
 /** The explicit fine-tune picks a prompt intent may carry. One shape, so a new
@@ -385,7 +391,9 @@ export type StopSessionResponse = z.infer<typeof stopSessionResponseSchema>;
 // Removes the session identity (row, queue, playback history) and reclaims its
 // Ephemeral tracks' audio; Saved/Favorited tracks stay in the Library and spend
 // accounting (provider jobs / generation requests) survives untouched. Refused
-// with `conflict` while the session is active or provider tasks are in flight.
+// with `conflict` while the session is active. With provider or cover work in
+// flight it is a deferred delete: gone now, finished by the worker once the work
+// settles.
 
 export const deleteSessionRequestSchema = z.strictObject({ sessionId: uuidSchema });
 export type DeleteSessionRequest = z.infer<typeof deleteSessionRequestSchema>;
@@ -585,6 +593,9 @@ export const getSessionQueueResponseSchema = apiResponse(
     ...sessionDurationFields,
     sessionId: uuidSchema,
     sessionStatus: z.enum(ACTIVITY_SESSION_STATUSES),
+    // The live Session mode, so a New music change made on another device
+    // reaches this player's status with the target above.
+    sessionMode: z.enum(SESSION_MODES).optional(),
     // The generation-controller state rides ALONGSIDE the two-value `sessionStatus`
     // so the player can render "why generation isn't producing" (cost-limit
     // Session Repeat, provider blocks) straight from a queue poll — no second fetch.
@@ -1647,7 +1658,7 @@ export const API_CONTRACTS: Readonly<Record<ApiEndpointName, EndpointContract>> 
     retry: {
       retryable: false,
       idempotent: true,
-      note: 'Destructive; a repeat of a completed delete answers not_found. A conflict (active / generation in flight) is not retryable automatically — surface it.',
+      note: 'Destructive; a repeat of a completed delete answers not_found. A conflict (session still active) is not retryable automatically — surface it.',
     },
     description:
       'Permanently delete a Stopped session and reclaim its Ephemeral audio; Saved tracks and spend accounting are untouched.',

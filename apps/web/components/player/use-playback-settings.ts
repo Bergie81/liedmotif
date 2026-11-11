@@ -7,13 +7,14 @@
 // Settings are read from the ref at every edge decision, so a change landing
 // mid-track applies to the next transition. The in-player blend toggle rides
 // exactly that: it flips the ref first (the engine's live gate), then
-// persists — a failed write reverts the flip so the UI and the engine never
-// disagree with the server.
+// persists — a failed write reverts the gate to the last value the server
+// confirmed, so the UI and the engine never disagree with the server.
 //
 // A toggle can outrun both the mount fetch and an earlier toggle, so the blend
 // gate has ONE owner: the newest write. `blendWritesRef` counts writes; the
 // mount fetch and every superseded response defer to it rather than restoring
-// a value the user has already moved past.
+// a value the user has already moved past. A write that failed owns nothing:
+// a mount fetch landing after it still applies the saved value.
 
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import {
@@ -74,6 +75,11 @@ export function usePlaybackSettings({ read }: { read: boolean }): {
   const settingsRef = useRef<PlaybackSettings>(initial);
   const settledRef = useRef<boolean>(!read);
   const blendWritesRef = useRef(0);
+  const blendWritesInFlightRef = useRef(0);
+  // The server's blend value as last confirmed (the mount fetch, or the newest
+  // write that saved), and which write confirmed it (0: none has).
+  const confirmedBlendRef = useRef<boolean | null>(null);
+  const confirmedWriteRef = useRef(0);
   const [blendEnabled, setBlendEnabledState] = useState<boolean>(initial.blendEnabled);
   const [blendSettled, setBlendSettled] = useState(!read);
 
@@ -90,7 +96,8 @@ export function usePlaybackSettings({ read }: { read: boolean }): {
       if (res.ok) {
         // A toggle made while this was in flight already owns the gate; take
         // the rest of the server's answer but leave that choice standing.
-        if (blendWritesRef.current > 0) {
+        if (confirmedWriteRef.current === 0) confirmedBlendRef.current = res.data.blendEnabled;
+        if (blendWritesInFlightRef.current > 0 || confirmedWriteRef.current > 0) {
           settingsRef.current = { ...res.data, blendEnabled: settingsRef.current.blendEnabled };
         } else {
           settingsRef.current = res.data;
@@ -111,11 +118,17 @@ export function usePlaybackSettings({ read }: { read: boolean }): {
       const write = ++blendWritesRef.current;
       const previous = settingsRef.current.blendEnabled;
       applyBlend(enabled);
+      blendWritesInFlightRef.current += 1;
       const result = await updatePlaybackSettings({ blendEnabled: enabled });
+      blendWritesInFlightRef.current -= 1;
       // Only the newest write may still move the gate: an older response would
       // otherwise resurrect its own value over a toggle made while it was out.
       const newest = write === blendWritesRef.current;
       if (result.ok) {
+        if (write > confirmedWriteRef.current) {
+          confirmedWriteRef.current = write;
+          confirmedBlendRef.current = result.data.blendEnabled;
+        }
         if (newest) {
           settingsRef.current = result.data;
           setBlendEnabledState(result.data.blendEnabled);
@@ -123,7 +136,7 @@ export function usePlaybackSettings({ read }: { read: boolean }): {
         }
         return null;
       }
-      if (newest) applyBlend(previous);
+      if (newest) applyBlend(confirmedBlendRef.current ?? previous);
       const kept = settingsRef.current.blendEnabled;
       return `The blend change didn’t save — Tracks keep ${kept ? 'blending' : 'hard cuts'}. ${result.error.message}`;
     },

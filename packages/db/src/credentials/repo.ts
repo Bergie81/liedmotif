@@ -18,6 +18,7 @@ import type { EncryptedSecret, ProviderConfig } from '../schema/types';
 import { decryptSecret, encryptSecret } from './crypto';
 import { maskSecret } from './masking';
 import {
+  parseTimeoutMs,
   readEnvLayer,
   resolveCredentialSource,
   resolveLlmRuntimeSettings,
@@ -282,11 +283,11 @@ export async function getStoredProviderKey(
 }
 
 /**
- * When the stored instance-level credential for a requirement last changed — the
- * provider-config revision a caller compares against to decide whether a stored
- * decision about that provider is still current. `null` when nothing is stored:
- * an env-sourced (or unconfigured) provider has no row, and applying an env
- * change requires a process restart, so the caller's own start stands in for it.
+ * When the stored instance-level credential for a requirement last changed, or
+ * `null` when no row is stored. It tracks app saves only: a row also exists as
+ * the fallback beside an env-supplied key or base URL, and an env change (which
+ * takes a process restart) never moves this stamp, so a caller judging whether
+ * the effective config changed must account for the env layer itself.
  */
 export async function getCredentialUpdatedAt(db: DbOrTx, ref: CredentialRef): Promise<Date | null> {
   const [row] = await db
@@ -410,14 +411,14 @@ export async function resolveImageRuntimeConfig(
   const resolution = env.IMAGE_RESOLUTION?.trim();
   const aspectRatio = env.IMAGE_ASPECT_RATIO?.trim();
   const supportedParams = env.IMAGE_SUPPORTED_PARAMS?.trim();
-  const timeoutMs = Number.parseInt(env.IMAGE_REQUEST_TIMEOUT_MS?.trim() ?? '', 10);
+  const timeoutMs = parseTimeoutMs(env.IMAGE_REQUEST_TIMEOUT_MS);
   return {
     providerKey,
     ...(apiKey ? { apiKey } : {}),
     ...(model ? { model } : {}),
     ...(resolution ? { resolution } : {}),
     ...(aspectRatio ? { aspectRatio } : {}),
-    ...(Number.isFinite(timeoutMs) && timeoutMs > 0 ? { requestTimeoutMs: timeoutMs } : {}),
+    ...(timeoutMs ? { requestTimeoutMs: timeoutMs } : {}),
     ...(supportedParams ? { supportedParams } : {}),
   };
 }

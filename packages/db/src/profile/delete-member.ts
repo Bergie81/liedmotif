@@ -14,7 +14,7 @@
 // delete-and-recreate must not reset the Pool. The cover ledger's private plan
 // is erased first, so only anonymous accounting outlives the Member.
 
-import { and, eq, inArray, isNotNull, or, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNotNull, or, sql } from 'drizzle-orm';
 import type { Database } from '../client';
 import type { Transaction } from '../transactions';
 import { deleteUnreferencedCoverRows, queueCoverFileDeletions } from '../covers/cover-reclaim';
@@ -157,8 +157,11 @@ export async function deleteMember(
 ): Promise<DeleteMemberResult> {
   const now = input.now ?? new Date();
   // Same lock chain the money paths use (owner generation lock first, then the
-  // cover locks) so an in-flight submit or cover admission for this Member
-  // finishes or fails cleanly before the rows vanish under it.
+  // cover locks) so an in-flight music or cover admission for this Member
+  // commits or fails cleanly before the rows vanish under it. A music submit's
+  // paid POST runs after its admission releases the lock, so one admitted just
+  // before this delete can still reach the provider; its ledger rows survive
+  // the cascade and keep counting.
   return withOwnerGenerationLock(db, input.userId, async (tx) => {
     await acquireOwnerCoverAdmissionLock(tx, input.userId);
     // Every photo write holds this lock, so the photo select below sees each
@@ -176,6 +179,16 @@ export async function deleteMember(
     // 1) Track audio: snapshot every asset key into the queue (and drop the
     //    asset rows), exactly as user-facing track delete does — in bulk, because
     //    the owner's generation and cover locks are held for the whole block.
+    //    The Track rows are locked first, as track delete does: a final download
+    //    claims its row only after streaming, so without the lock one landing
+    //    between this snapshot and the cascade would leave its file unqueued.
+    //    Locked, the claim waits, finds the Track gone and queues its own file.
+    await tx
+      .select({ id: tracks.id })
+      .from(tracks)
+      .where(eq(tracks.ownerUserId, input.userId))
+      .orderBy(asc(tracks.id))
+      .for('update');
     const trackCount = await queueOwnerTrackAudioDeletion(tx, {
       ownerUserId: input.userId,
       reason: MEMBER_DELETE_REASON,

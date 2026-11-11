@@ -256,6 +256,7 @@ function mount(
     pending: null,
     vibeChange: { pendingSessionId: null, error: null },
     sleepTimer: { endsAt: null, start: vi.fn(), cancel: vi.fn() },
+    startCount: 0,
   };
   provider.context = context;
   render(surface(playback), { wrapper: AppShell });

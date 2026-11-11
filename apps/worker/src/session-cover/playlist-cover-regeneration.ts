@@ -55,6 +55,7 @@ import {
   buildPlanWithRelaxedRetry,
   claimAndSubmitCover,
   fallbackForLedger,
+  isAged,
   PENDING_STATES,
   persistedCapabilities,
   processedCoverProvenance,
@@ -458,6 +459,12 @@ async function drive(
 ): Promise<PlaylistCoverResult> {
   if (!PENDING_STATES.has(ledger.state)) return resultFromSettled(ledger);
   const now = runtime.deps.clock.now();
+  // A fresh `submitting` or `storing` row belongs to a run still paying for or
+  // storing the image (the job and the aged scan can both drive one attempt);
+  // only aged work is a crash to recover, as on the Session path.
+  if ((ledger.state === 'storing' || ledger.state === 'submitting') && !isAged(ledger, now)) {
+    return { status: 'pending' };
+  }
   if (ledger.state === 'storing') return recoverStored(runtime, subject, ledger, now);
   if (ledger.state === 'submitting') {
     // A previous run crashed between claim and outcome — the spend is unknown

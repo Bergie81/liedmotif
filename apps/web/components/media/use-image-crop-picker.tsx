@@ -139,6 +139,8 @@ export function useImageCropPicker({
       // Busy from the tap on: rendering the crop takes long enough on a phone
       // for a second tap to upload the image twice.
       setBusy(true);
+      // A canvas the browser refuses (memory pressure) throws instead of
+      // returning null; either way the dialog must leave its busy state.
       const cropped = await renderCroppedFile({
         source: picked.source,
         original: picked.file,
@@ -146,7 +148,7 @@ export function useImageCropPicker({
         rotation,
         target,
         filename: CROPPED_FILENAME,
-      });
+      }).catch(() => null);
       setBusy(false);
       if (!cropped) {
         report('The crop could not be rendered. Try a different image.');

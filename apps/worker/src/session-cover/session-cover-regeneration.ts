@@ -92,6 +92,7 @@ export async function planAndExecuteRegeneration(
 
   type PlanOutcome =
     | { kind: 'missing' }
+    | { kind: 'delete_pending' }
     | { kind: 'raced'; row: SessionCoverGenerationRow | null }
     | { kind: 'applied'; row: SessionCoverGenerationRow; terminal: boolean };
   const outcome = await withOwnerCoverAdmissionLock(
@@ -108,6 +109,8 @@ export async function planAndExecuteRegeneration(
         sessionId: session.id,
       });
       if (!locked) return { kind: 'missing' };
+      // Session delete marks a pending delete under this admission lock.
+      if (locked.deleteRequestedAt) return { kind: 'delete_pending' };
       // Caller holds the per-owner cover-admission lock; a Member's check takes
       // the Pool lock inside (fixed order).
       const decision = await coverAdmissionDecision(tx, {
@@ -146,6 +149,18 @@ export async function planAndExecuteRegeneration(
     },
   );
   if (outcome.kind === 'missing') return { status: 'missing' };
+  if (outcome.kind === 'delete_pending') {
+    // No cover for a Session whose delete is pending; settling the reservation
+    // lets the deferred delete finish.
+    return settleReservedRegeneration(
+      runtime,
+      session,
+      ledger,
+      now,
+      'session_delete_pending',
+      'not_admitted',
+    );
+  }
   if (outcome.kind === 'raced') {
     return outcome.row ? resultFromExisting(runtime, session, outcome.row) : { status: 'missing' };
   }

@@ -32,7 +32,9 @@ export function SearchView({
   // The field holds raw keystrokes; the reducer holds the committed query
   // (debounced through the app's one search timing model, or Enter-flushed).
   const [input, setInput] = useState(initialState.query);
-  const results = useSearchQuery(state);
+  // A Track deleted from a row changes the exact counts the page states.
+  const [revision, setRevision] = useState(0);
+  const results = useSearchQuery(state, revision);
 
   // Recents hydrate after mount: localStorage does not exist on the server.
   const [recents, setRecents] = useState<RecentSearch[]>([]);
@@ -132,6 +134,7 @@ export function SearchView({
           onScopeChange={(scope) => dispatch({ type: 'scopeChanged', scope })}
           onSortChange={(sort) => dispatch({ type: 'sortChanged', sort })}
           onEngage={() => recordSearch(state.query)}
+          onTrackRemoved={() => setRevision((current) => current + 1)}
         />
       )}
     </>

@@ -8,6 +8,7 @@ import type { StorageProvider } from '@liedmotif/storage';
 import type { Task } from 'graphile-worker';
 import {
   resolveSessionCoverImageProvider,
+  resolveTailoredCoverImageProvider,
   type SessionCoverProviders,
 } from '../session-cover/cover-image-provider';
 import { createPlaylistCoverGenerator } from '../session-cover/playlist-cover-regeneration';
@@ -65,7 +66,7 @@ export function createRecoverSessionCoversTask(
           await createPlaylistCoverGenerator({
             db: deps.db,
             ownerUserId,
-            imageProvider: await deps.getCoverArt(),
+            imageProvider: await resolveTailoredCoverImageProvider(deps.db, deps.getCoverArt),
             storage: deps.storage,
             logger,
             clock: { now: () => now },

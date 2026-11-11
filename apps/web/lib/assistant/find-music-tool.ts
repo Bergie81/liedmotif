@@ -8,6 +8,7 @@
 import {
   closestNames,
   getLibraryTracks,
+  getUsageLimits,
   searchPlaylists,
   searchSessions,
   searchTracks,
@@ -19,6 +20,7 @@ import {
 import type { LlmTool } from '@liedmotif/providers';
 import {
   findMusicInputSchema,
+  limitDay,
   MAX_SEARCH_QUERY_LENGTH,
   type FindMusicInput,
   type SearchMatchField,
@@ -55,11 +57,24 @@ export const LIST_NAMES: Record<NonNullable<FindMusicInput['list']>, string> = {
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const utcDay = (at: Date) => Math.floor(at.getTime() / DAY_MS);
+
+/** Now, and the Instance timezone whose calendar "today" and "yesterday" are counted in. */
+interface Clock {
+  now: Date;
+  timeZone: string;
+}
+
+async function instanceClock(db: AssistantAsker['db']): Promise<Clock> {
+  return { now: new Date(), timeZone: (await getUsageLimits(db)).resetTimezone };
+}
+
+/** The calendar date of `at` in `timeZone`, as whole days since the epoch. */
+const calendarDay = (at: Date, timeZone: string) =>
+  Date.parse(limitDay(at, timeZone).date) / DAY_MS;
 
 /** When a Session was last active, in whole days: a model answers "last week" from that, not from a date. */
-function lastActive(at: Date, now: Date): string {
-  const days = utcDay(now) - utcDay(at);
+function lastActive(at: Date, { now, timeZone }: Clock): string {
+  const days = calendarDay(now, timeZone) - calendarDay(at, timeZone);
   if (days <= 0) return 'last active today';
   return days === 1 ? 'last active yesterday' : `last active ${days} days ago`;
 }
@@ -81,14 +96,14 @@ function sessionRow(
     lastActiveAt?: string | Date;
     match?: SearchMatch;
   },
-  now: Date,
+  clock: Clock,
 ): string {
   return row(
     session.title,
     session.id,
     session.status === 'active' || !session.lastActiveAt
       ? 'active now'
-      : lastActive(new Date(session.lastActiveAt), now),
+      : lastActive(new Date(session.lastActiveAt), clock),
     matched(session.match, ['name']),
   );
 }
@@ -170,8 +185,8 @@ async function searchHits(
 ): Promise<Listing> {
   if (kind === 'track') return hits(await searchTracks(db, args), trackRow);
   if (kind === 'playlist') return hits(await searchPlaylists(db, args), playlistRow);
-  const now = new Date();
-  return hits(await searchSessions(db, args), (hit) => sessionRow(hit, now));
+  const clock = await instanceClock(db);
+  return hits(await searchSessions(db, args), (hit) => sessionRow(hit, clock));
 }
 
 /** The names of one kind spelled most like the query, as rows. */
@@ -250,7 +265,7 @@ async function mostRecent(
       'There are no Playlists yet.',
     );
   }
-  const now = new Date();
+  const clock = await instanceClock(db);
   const { activeSession, items, nextCursor } = await loadSessionList(db, userId, {
     limit: FIND_MUSIC_LIMIT,
     includeActive: true,
@@ -260,7 +275,7 @@ async function mostRecent(
   return listed(
     'Sessions, most recent first:',
     head(
-      sessions.map((session) => sessionRow(session, now)),
+      sessions.map((session) => sessionRow(session, clock)),
       nextCursor,
     ),
     'There are no Sessions yet.',

@@ -1,6 +1,12 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
-import { activitySessionQueueItems, deletionQueueItems, trackAudioAssets, tracks } from '../schema';
+import {
+  activitySessionQueueItems,
+  deletionQueueItems,
+  generationOutputs,
+  trackAudioAssets,
+  tracks,
+} from '../schema';
 import { connectTestDb, TEST_DATABASE_URL, truncateTables, type TestDb } from '../test-support';
 import { withTransaction } from '../transactions';
 import {
@@ -242,6 +248,50 @@ describeIfDb('eviction repo (session-deletion audio reclaim)', () => {
 
       // Idempotent: a second run finds nothing.
       expect((await sweepOrphanedTracks(ctx.db, { limit: 10 })).evictedTrackIds).toEqual([]);
+    });
+
+    it('reclaims a session-less streamable track whose final download was given up on', async () => {
+      const ownerUserId = await createUser(ctx.db);
+      const requestId = await createGenerationRequest(ctx.db, { ownerUserId });
+      const jobId = await createProviderJob(ctx.db, { generationRequestId: requestId });
+      const base = { ownerUserId, generationRequestId: requestId, providerJobId: jobId };
+      const givenUp = await createTrack(ctx.db, {
+        ...base,
+        status: 'streamable',
+        streamEncryptedSourceUrl: 'enc:given-up',
+      });
+      // Its download is still retrying: the final may land and make it `ready`.
+      const stillDownloading = await createTrack(ctx.db, {
+        ...base,
+        status: 'streamable',
+        streamEncryptedSourceUrl: 'enc:retrying',
+      });
+      for (const [trackId, storageFailedAt] of [
+        [givenUp, new Date()],
+        [stillDownloading, null],
+      ] as const) {
+        const [row] = await ctx.db
+          .select({ analyticsId: tracks.analyticsId })
+          .from(tracks)
+          .where(eq(tracks.id, trackId));
+        await ctx.db.insert(generationOutputs).values({
+          ownerUserId,
+          analyticsTrackId: row!.analyticsId,
+          trackId,
+          storageFailedAt,
+        });
+      }
+
+      const { sweepOrphanedTracks } = await import('./eviction-repo');
+      expect((await sweepOrphanedTracks(ctx.db, { limit: 10 })).evictedTrackIds).toEqual([givenUp]);
+      const statuses = new Map(
+        (await ctx.db.select({ id: tracks.id, status: tracks.status }).from(tracks)).map((row) => [
+          row.id,
+          row.status,
+        ]),
+      );
+      expect(statuses.get(givenUp)).toBe('deleted');
+      expect(statuses.get(stillDownloading)).toBe('streamable');
     });
 
     it('never touches a Disliked track (the Reject purge owns it)', async () => {

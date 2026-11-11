@@ -6,6 +6,7 @@ import {
   buildTaskList,
   createGraphileLogger,
   RECURRING_CRONTAB,
+  withQueryParamsRedacted,
   WORKER_TASK_IDENTIFIERS,
   type WorkerRunnerDeps,
 } from './runner';
@@ -69,5 +70,31 @@ describe('graphile logger', () => {
     expect(out).toContain('Failed query: insert into');
     expect(out).not.toContain('PRIVATE-PROMPT');
     expect(out).not.toContain('second line');
+  });
+});
+
+describe('failed-task errors', () => {
+  it("rethrows a task's Drizzle query error without its params, so `last_error` never stores them", async () => {
+    const err = new DrizzleQueryError(
+      'insert into "generation_requests" ("user_id", "user_prompt") values ($1, $2)',
+      ['user-1', 'PRIVATE-PROMPT my therapist said\nsecond line'],
+      new Error('connection terminated'),
+    );
+    const tasks = withQueryParamsRedacted({
+      'ensure-session-buffer': async () => {
+        throw err;
+      },
+    });
+
+    const thrown = (await Promise.resolve(tasks['ensure-session-buffer']!({}, {} as never)).catch(
+      (e: unknown) => e,
+    )) as Error;
+
+    expect(thrown).toBe(err);
+    expect(thrown.message).toBe(
+      'Failed query: insert into "generation_requests" ("user_id", "user_prompt") values ($1, $2)\nparams: [REDACTED]',
+    );
+    expect(String(thrown.stack)).not.toContain('PRIVATE-PROMPT');
+    expect(String(thrown.stack)).not.toContain('second line');
   });
 });

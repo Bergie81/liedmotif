@@ -32,6 +32,8 @@ import { sunoFixtures as fixtures } from '@liedmotif/providers/testing';
 import {
   COLD_START_FAST_POLL_LIMIT,
   COLD_START_POLL_INTERVAL_MS,
+  createPollMusicGenerationTask,
+  DEFAULT_MAX_POLL_ATTEMPTS,
   DEFAULT_POLL_INTERVAL_MS,
   runPollMusicGeneration,
 } from './poll-music-generation';
@@ -582,6 +584,39 @@ describeIfDb('poll-music-generation', () => {
     expect(d.reschedulePoll).toHaveBeenCalledTimes(1);
   });
 
+  // A key removed or undecryptable mid-flight must not leave the job live past
+  // Graphile's own retries: only a counted attempt reaches the cap that ends it.
+  it('counts a poll whose music provider cannot be built as an attempt, so the cap still ends the job', async () => {
+    const { jobId } = await submittedJob();
+    const addJob = vi.fn(async () => ({}) as never);
+    const task = createPollMusicGenerationTask({
+      db: ctx.db,
+      encryptionKey: KEY,
+      getMusic: async () => {
+        throw new Error('No music provider key is configured.');
+      },
+    });
+    const helpers = { addJob, logger: { info: () => {} } } as unknown as Parameters<typeof task>[1];
+
+    await task({ providerJobId: jobId }, helpers);
+    expect(await jobRow(jobId)).toMatchObject({ normalizedStatus: 'submitted', retryCount: 1 });
+    expect(addJob).toHaveBeenCalledWith(
+      'poll-music-generation',
+      { providerJobId: jobId },
+      expect.objectContaining({ jobKey: `poll:${jobId}` }),
+    );
+
+    await ctx.db
+      .update(providerJobs)
+      .set({ retryCount: DEFAULT_MAX_POLL_ATTEMPTS - 1 })
+      .where(eq(providerJobs.id, jobId));
+    await task({ providerJobId: jobId }, helpers);
+    expect(await jobRow(jobId)).toMatchObject({
+      normalizedStatus: 'failed_final',
+      nextPollAt: null,
+    });
+  });
+
   it('BLOCKING 4 — terminalizes a still-non-terminal job that hits the attempt cap', async () => {
     const { jobId, requestId, sessionId } = await submittedJob();
     // A still-processing result at the cap must NOT be left non-terminal with no next
@@ -601,6 +636,30 @@ describeIfDb('poll-music-generation', () => {
     expect(req).toMatchObject({ status: 'failed', errorCode: 'generation_timeout' });
     expect(d.enqueueBuffer).toHaveBeenCalledWith(sessionId);
     expect(d.reschedulePoll).not.toHaveBeenCalled();
+  });
+
+  // The timeout leaves the in-flight count before its Tracks exist; a refill
+  // woken in between would see the batch's supply gone and buy another.
+  it('a timed-out poll keeps the Tracks it saw before it wakes the buffer', async () => {
+    const { jobId } = await submittedJob();
+    const streamOnly = [
+      { providerTrackId: 'A', streamAudioUrl: 'https://cdn.example/s/A' },
+      { providerTrackId: 'B', streamAudioUrl: 'https://cdn.example/s/B' },
+    ];
+    const { provider } = scriptedProvider(() => result('text_ready', streamOnly));
+    const tracksAtWake: number[] = [];
+    const d = deps(provider, {
+      maxPollAttempts: 1,
+      enqueueBuffer: vi.fn(async () => {
+        tracksAtWake.push((await ctx.db.select().from(tracks)).length);
+      }),
+    });
+
+    const r = await runPollMusicGeneration(d, { providerJobId: jobId });
+
+    expect(r.outcome).toBe('timed_out');
+    expect(tracksAtWake.length).toBeGreaterThan(0);
+    expect(tracksAtWake.every((count) => count === 2)).toBe(true);
   });
 
   it('BLOCKING 1 — a stale overlapping poll cannot resurrect a job another poll drove terminal', async () => {

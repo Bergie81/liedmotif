@@ -104,7 +104,7 @@ export function LoungeView({
     const token = beginFirstPage();
     setError(null);
     const result = await listLoungePlaylists({ query: query || undefined, owner: member });
-    if (!settle(token)) return;
+    if (!settle(token, result.ok)) return;
     if (!result.ok) {
       setError(`Couldn’t load the Lounge: ${result.error.message}`);
       return;

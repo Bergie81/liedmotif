@@ -114,7 +114,15 @@ export function trackMatchFields(): MatchFieldDef[] {
     { field: 'tags', weight: 1, source: { kind: 'text', expr: sql`${tracks.mood}` } },
     { field: 'tags', weight: 1, source: { kind: 'text', expr: sql`${tracks.activity}` } },
     { field: 'prompt', weight: 2, source: { kind: 'text', expr: sql`${tracks.prompt}` } },
-    { field: 'session', weight: 3, source: { kind: 'text', expr: sql`${activitySessions.title}` } },
+    {
+      field: 'session',
+      weight: 3,
+      // A pending-delete Session reads as already deleted, as in `libraryColumns`.
+      source: {
+        kind: 'text',
+        expr: sql`case when ${activitySessions.deleteRequestedAt} is null then ${activitySessions.title} end`,
+      },
+    },
   ];
 }
 

@@ -17,6 +17,8 @@
 import {
   generateText,
   isStepCount,
+  NoObjectGeneratedError,
+  NoOutputGeneratedError,
   Output,
   streamText,
   tool,
@@ -412,7 +414,14 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
         });
         return sessionExpansionSchema.parse(output);
       } catch (err) {
-        lastError = err; // fall through to the single repair attempt, then give up
+        // Only an answer that failed to parse earns the repair prompt; a
+        // timeout or a refused call would fail the same way a second time.
+        const unparsed =
+          NoObjectGeneratedError.isInstance(err) ||
+          NoOutputGeneratedError.isInstance(err) ||
+          err instanceof z.ZodError;
+        if (!unparsed) throw sanitizedError(err, EXPANSION_FAILED);
+        lastError = err;
       }
     }
     throw sanitizedError(lastError, EXPANSION_FAILED);
@@ -514,7 +523,9 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
       // running energy: the tempo is unfrozen so `freezeStyleParameters`
       // re-derives it from the picked energy. The trigger is the pick against the
       // running vibe, never the model's reply, so the same Change Vibe yields the
-      // same tempo whether or not the model obeyed the pick.
+      // same tempo whether or not the model obeyed the pick. The prompt never
+      // shows the model the running voice, so a vocal reply without one keeps
+      // it; the picks below still override it.
       const anchor = options?.adjustFrom;
       const energyChanged = picks?.energy !== undefined && picks.energy !== anchor?.energy;
       const anchored: SessionStyleSnapshot = anchor
@@ -523,6 +534,9 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
             useOwnVoice: false,
             bpm: energyChanged ? null : (rawSnapshot.bpm ?? anchor.bpm),
             key: rawSnapshot.key.trim() ? rawSnapshot.key : anchor.key,
+            voiceGender:
+              rawSnapshot.voiceGender ||
+              (rawSnapshot.vocalMode === 'vocal' ? anchor.voiceGender : ''),
           }
         : { ...rawSnapshot, useOwnVoice: false };
       // Explicit fine-tune picks are enforced deterministically FIRST (prompt

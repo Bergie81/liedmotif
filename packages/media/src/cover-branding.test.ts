@@ -43,6 +43,14 @@ describe('stripPlaceholderRect', () => {
     expect(stripPlaceholderRect(svg)).toBe('<svg><g id="logo"/></svg>');
   });
 
+  it('keeps the badge when a later rect in the export is paired', () => {
+    const svg =
+      '<svg><rect id="cover" width="1024" height="1024"/><g id="badge"><path d="M0 0"/><rect id="bg1"><title>t</title></rect></g></svg>';
+    expect(stripPlaceholderRect(svg)).toBe(
+      '<svg><g id="badge"><path d="M0 0"/><rect id="bg1"><title>t</title></rect></g></svg>',
+    );
+  });
+
   it('leaves an asset without a placeholder rect unchanged', () => {
     const svg = '<svg><g id="logo"><rect id="bg1" width="247" height="99"/></g></svg>';
     expect(stripPlaceholderRect(svg)).toBe(svg);

@@ -15,11 +15,16 @@ describe('a receipt as the model reads it', () => {
       `added the Track "Night Drive" (id ${TRACK.id}) to Favorites`,
     ],
     [
-      { action: 'addToPlaylist', playlist: PLAYLIST, tracks: [TRACK] },
+      { action: 'addToPlaylist', playlist: PLAYLIST, retention: 'curated', tracks: [TRACK] },
       `added the Track "Night Drive" (id ${TRACK.id}) to the Playlist "Running" (id ${PLAYLIST.id})`,
     ],
     [
-      { action: 'addToPlaylist', playlist: PLAYLIST, tracks: [TRACK, SECOND] },
+      {
+        action: 'addToPlaylist',
+        playlist: PLAYLIST,
+        retention: 'curated',
+        tracks: [TRACK, SECOND],
+      },
       `added 2 Tracks to the Playlist "Running" (id ${PLAYLIST.id})`,
     ],
     [

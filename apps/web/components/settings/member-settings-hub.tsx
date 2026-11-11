@@ -1,12 +1,5 @@
-import {
-  AudioLines,
-  Gauge,
-  HardDrive,
-  ListMusic,
-  Sparkles,
-  UserRound,
-  UsersRound,
-} from 'lucide-react';
+import { AudioLines, Gauge, HardDrive, ListMusic, UserRound, UsersRound } from 'lucide-react';
+import { AssistantGlyph } from '@/components/ui/glyphs';
 import { ASSISTANT_NAME } from '@/lib/assistant/persona';
 import type { MemberSettingsHubData } from '@/lib/settings-hub-data';
 import { SignOutButton } from './sign-out-button';
@@ -58,7 +51,7 @@ export function MemberSettingsHub({ data }: { data: MemberSettingsHubData }) {
             {data.assistant ? (
               <SettingsRow
                 href="/settings/assistant"
-                icon={<Sparkles />}
+                icon={<AssistantGlyph />}
                 label={ASSISTANT_NAME}
                 summary={data.assistant}
               />

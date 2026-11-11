@@ -7,11 +7,11 @@ import {
   Image,
   KeyRound,
   ListMusic,
-  Sparkles,
   Stethoscope,
   UserRound,
   UsersRound,
 } from 'lucide-react';
+import { AssistantGlyph } from '@/components/ui/glyphs';
 import { ASSISTANT_NAME } from '@/lib/assistant/persona';
 import type { SettingsHubData } from '@/lib/settings-hub-data';
 import { PricedQuantity } from './cost-readout';
@@ -55,7 +55,7 @@ export function SettingsHub({ data }: { data: SettingsHubData }) {
               {data.assistant ? (
                 <SettingsRow
                   href="/settings/assistant"
-                  icon={<Sparkles />}
+                  icon={<AssistantGlyph />}
                   label={ASSISTANT_NAME}
                   summary={data.assistant}
                 />

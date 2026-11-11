@@ -264,6 +264,48 @@ function uploadRequest(
     expect(storage.keys.size).toBe(0);
   });
 
+  it('two concurrent validate or verify submits pay the provider once', async () => {
+    const base = mockMusicProvider();
+    const calls = { validate: 0, create: 0 };
+    const slow = () => new Promise((resolve) => setTimeout(resolve, 50));
+    holder.music = {
+      ...base,
+      voice: {
+        ...base.voice!,
+        async validateSource(input) {
+          calls.validate += 1;
+          await slow();
+          return base.voice!.validateSource(input);
+        },
+        async createVoice(input) {
+          calls.create += 1;
+          await slow();
+          return base.voice!.createVoice(input);
+        },
+      },
+    } satisfies MusicProvider;
+    await viewOf(await profileRoute.POST(jsonRequest('POST', { consent: true })));
+    await viewOf(await recordingsRoute.POST(uploadRequest('source')));
+
+    const validated = await Promise.all([
+      validateRoute.POST(apiRequest()),
+      validateRoute.POST(apiRequest()),
+    ]);
+    expect(validated.map((response) => response.status).sort()).toEqual([200, 409]);
+    expect(calls.validate).toBe(1);
+
+    expect((await viewOf(await profileRoute.GET(apiRequest()))).status).toBe(
+      'awaiting_verification',
+    );
+    await viewOf(await recordingsRoute.POST(uploadRequest('verification', 6)));
+    const verified = await Promise.all([
+      verifyRoute.POST(apiRequest()),
+      verifyRoute.POST(apiRequest()),
+    ]);
+    expect(verified.map((response) => response.status).sort()).toEqual([200, 409]);
+    expect(calls.create).toBe(1);
+  });
+
   it('a provider without voice support cannot create a profile', async () => {
     const base = mockMusicProvider();
     const { voice: _voice, ...withoutVoice } = base;

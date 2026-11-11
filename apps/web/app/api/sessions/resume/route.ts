@@ -34,8 +34,8 @@ export async function POST(request: Request) {
     return apiError('conflict', 'Only a stopped session can be resumed.');
   }
 
-  // Kick the buffer so a resumed session's first top-up (when the Buffer is on
-  // and headroom allows — the worker's controller decides all of that) does not
+  // Kick the buffer so a resumed session's first top-up (when its mode and
+  // headroom allow — the worker's controller decides all of that) does not
   // wait for the once-per-minute sweep. Best-effort, same job key as the sweep.
   await enqueueEnsureSessionBuffer(db, result.session.id);
 

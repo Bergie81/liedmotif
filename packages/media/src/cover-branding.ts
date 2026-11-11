@@ -24,9 +24,11 @@ const OVERLAY_PACKAGE_PATH = [
 /**
  * The design-preview backdrop; everything else in the asset is the badge
  * itself. Both self-closing and paired forms must strip — a paired-form export
- * left in place would render a full-canvas opaque rect over every cover.
+ * left in place would render a full-canvas opaque rect over every cover. The
+ * lazy attribute runs stop at the first `/>`, so a self-closing placeholder never
+ * reaches a later paired rect's `</rect>` and swallows the badge in between.
  */
-const PLACEHOLDER_RECT = /<rect[^>]*\bid="cover"[^>]*(?:\/>|>[\s\S]*?<\/rect>)/;
+const PLACEHOLDER_RECT = /<rect\b[^>]*?\bid="cover"[^>]*?(?:\/>|>[\s\S]*?<\/rect>)/;
 
 /** Exported for tests only: the overlay-load derivation must stay covered. */
 export function stripPlaceholderRect(svg: string): string {

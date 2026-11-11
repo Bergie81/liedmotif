@@ -23,6 +23,7 @@ import {
 import { setPlaylistShared } from './playlist-share-repo';
 import { getLoungePlaylistDetail } from './lounge-repo';
 import { deleteTrack } from '../generation/delete-track-repo';
+import { getOwnedTrackSummary } from '../generation/feedback-repo';
 
 // Shared references: a Visitor files a foreign Lounge-audible track
 // into their OWN playlists — an ordinary membership row pointing at the owner's
@@ -212,6 +213,19 @@ describe.skipIf(skip)('Shared reference save', () => {
       trackId,
     });
     expect(removed).toEqual({ removed: true, unsaved: false });
+  });
+
+  it('a reference never lights the owner’s In a Playlist', async () => {
+    const { ownerUserId, trackId } = await seedReadyTrack(testDb.db);
+    const visitor = await createUser(testDb.db);
+    const mine = await createPlaylist(testDb.db, { ownerUserId: visitor, name: 'Mine' });
+    await testDb.pool.query(
+      'insert into playlist_tracks (playlist_id, track_id, position) values ($1, $2, 0)',
+      [mine.id, trackId],
+    );
+
+    const summary = await getOwnedTrackSummary(testDb.db, { ownerUserId, trackId });
+    expect(summary?.inCuratedPlaylist).toBe(false);
   });
 
   it('refuses a foreign track that is not Lounge-audible — indistinguishable from missing', async () => {
@@ -513,6 +527,82 @@ describe.skipIf(skip)('Revocation purge', () => {
     expect(await memberRows(refs.favoritesId)).toEqual([]);
     expect(await memberRows(sharedPlaylistId)).toEqual([]);
     expect(await memberRows(keep.id)).toEqual([[trackId, 0]]);
+  });
+
+  it('moving the track between two In-Lounge playlists in one picker commit keeps the references', async () => {
+    const { ownerUserId, trackId } = await seedAudibleForeignTrack();
+    const second = await createPlaylist(testDb.db, { ownerUserId, name: 'Second shelf' });
+    await setPlaylistShared(testDb.db, {
+      ownerUserId,
+      playlistId: second.id,
+      audience: { kind: 'everyone' },
+    });
+    const refs = await seedVisitorReferences(trackId);
+
+    await applyTrackMemberships(testDb.db, { ownerUserId, trackId, playlistIds: [second.id] });
+
+    expect(await memberRows(refs.mixtapeId)).toEqual([
+      [refs.ownTrackId, 0],
+      [trackId, 1],
+    ]);
+    expect(await memberRows(refs.favoritesId)).toEqual([[trackId, 0]]);
+  });
+
+  it('a visitor save waiting on the revoking commit refuses the track instead of filing it', async () => {
+    const { sharedPlaylistId, trackId } = await seedAudibleForeignTrack();
+    const visitor = await createUser(testDb.db);
+    const mine = await createPlaylist(testDb.db, { ownerUserId: visitor, name: 'Mine' });
+
+    // The owner's revocation holds the track row lock, as every revoking write does.
+    const owner = await testDb.pool.connect();
+    let save: ReturnType<typeof applyTrackMemberships> | undefined;
+    try {
+      await owner.query('begin');
+      await owner.query('select id from tracks where id = $1 for update', [trackId]);
+      await owner.query('update playlists set shared_at = null where id = $1', [sharedPlaylistId]);
+      save = applyTrackMemberships(testDb.db, {
+        ownerUserId: visitor,
+        trackId,
+        playlistIds: [mine.id],
+      });
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      await owner.query('commit');
+    } finally {
+      owner.release();
+    }
+
+    expect(await save).toBeNull();
+    expect(await memberRows(mine.id)).toEqual([]);
+  });
+
+  it('unshare waits for a visitor save in flight and purges the reference it commits', async () => {
+    const { ownerUserId, sharedPlaylistId, trackId } = await seedAudibleForeignTrack();
+    const visitor = await createUser(testDb.db);
+    const mine = await createPlaylist(testDb.db, { ownerUserId: visitor, name: 'Mine' });
+
+    // The visitor's save has locked the track and filed it, not yet committed.
+    const save = await testDb.pool.connect();
+    let unshare: ReturnType<typeof setPlaylistShared> | undefined;
+    try {
+      await save.query('begin');
+      await save.query('select id from tracks where id = $1 for update', [trackId]);
+      await save.query(
+        'insert into playlist_tracks (playlist_id, track_id, position) values ($1, $2, 0)',
+        [mine.id, trackId],
+      );
+      unshare = setPlaylistShared(testDb.db, {
+        ownerUserId,
+        playlistId: sharedPlaylistId,
+        audience: null,
+      });
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      await save.query('commit');
+    } finally {
+      save.release();
+    }
+
+    await unshare;
+    expect(await memberRows(mine.id)).toEqual([]);
   });
 
   it('deleting the track reaches the foreign references (the existing cross-playlist purge)', async () => {

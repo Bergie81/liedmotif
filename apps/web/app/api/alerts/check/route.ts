@@ -11,6 +11,7 @@ import {
   getStorageUsage,
   getUsageLimits,
   getWorkerQueueStats,
+  MAX_TRACK_AUDIO_BYTES,
   readInstanceAlertsState,
   readWorkerHeartbeat,
   writeInstanceAlertsState,
@@ -23,6 +24,7 @@ import { alertTokenRefusal } from '@/lib/alert-token';
 import { postAlertWebhook } from '@/lib/alert-webhook';
 import { getDb } from '@/lib/db';
 import { alertWebhookUrl, getPublicUrl, isAccountEmailEnabled } from '@/lib/env';
+import { getTypicalTracksPerMusicRequest } from '@/lib/providers';
 import {
   evaluateInstanceAlerts,
   type InstanceAlertNotification,
@@ -57,6 +59,7 @@ async function readAlertInputs(db: Database, emailOn: boolean): Promise<AlertInp
       failedJobs: queueStats?.failedJobs ?? null,
       storageUsage,
       storageQuotaBytes: limits.storageQuotaBytes,
+      generationReserveBytes: getTypicalTracksPerMusicRequest() * MAX_TRACK_AUDIO_BYTES,
     },
     previous,
     adminEmail,

@@ -93,10 +93,21 @@ export function createNowPlayingTool(asker: AssistantAsker): LlmTool<NoToolInput
     async execute() {
       const engaged = await engagedLines(asker);
       if (engaged) return engaged.join('\n');
+      // A player state the asker cannot see is still the player's: what it
+      // names stays unnamed, and the player is not called idle either.
+      const unnamed = asker.player
+        ? `The player in this browser has something ${asker.player.playing ? 'playing' : 'paused'} that this user cannot open: it was removed, or it is no longer shared with them.`
+        : null;
       const active = await getActiveSession(asker.db, { ownerUserId: asker.userId });
-      if (!active) return 'Nothing is playing, and there is no active Session.';
+      if (!active) {
+        return unnamed
+          ? `${unnamed} There is no active Session.`
+          : 'Nothing is playing, and there is no active Session.';
+      }
       return [
-        'Nothing is playing in this browser. The active Session:',
+        unnamed
+          ? `${unnamed} The active Session:`
+          : 'Nothing is playing in this browser. The active Session:',
         ...sessionLines(active),
         ...(await trackLine(asker, 'Last Track', active.currentTrackId)),
       ].join('\n');

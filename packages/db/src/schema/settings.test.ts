@@ -51,6 +51,17 @@ describe('defaultUsageLimits', () => {
     expect(defaultUsageLimits('   ').resetTimezone).toBe('UTC');
   });
 
+  // The limit windows fall back to UTC on a zone `Intl` refuses, while Postgres
+  // (backups, stats) errors on it or reads a bare offset with the opposite sign.
+  it('seeds UTC for an INSTANCE_TIMEZONE that is unknown or a bare offset', () => {
+    for (const zone of ['Europe/Berln', '+05:00', '-03:00']) {
+      process.env.INSTANCE_TIMEZONE = zone;
+      expect(defaultUsageLimits().resetTimezone).toBe('UTC');
+    }
+    process.env.INSTANCE_TIMEZONE = 'Etc/GMT+5';
+    expect(defaultUsageLimits().resetTimezone).toBe('Etc/GMT+5');
+  });
+
   it('carries the documented numeric defaults regardless of timezone', () => {
     delete process.env.INSTANCE_TIMEZONE;
     const limits = defaultUsageLimits();

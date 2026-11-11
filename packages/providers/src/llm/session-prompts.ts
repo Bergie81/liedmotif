@@ -441,8 +441,10 @@ export interface TrackLyricBriefInput {
 
 /** Soft length target for a brief. Kept under the hard clamp
  * (`MAX_TRACK_LYRIC_BRIEF_LENGTH`) so the own-voice path's
- * "Write the lyrics in <language>. " prefix + brief survives Suno's
- * 200-char lyrics-brief cap without truncation. */
+ * "Write the lyrics in <language>. " prefix + brief fits Suno's 200-char
+ * lyrics-brief cap for every selectable language. The longest detected name
+ * ("Brazilian Portuguese") overruns it by two characters, and a model that
+ * overshoots the target loses its brief's tail there. */
 const TRACK_LYRIC_BRIEF_TARGET_CHARS = 160;
 
 export function trackLyricBriefPrompt(input: TrackLyricBriefInput): string {

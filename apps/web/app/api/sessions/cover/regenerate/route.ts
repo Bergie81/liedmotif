@@ -12,6 +12,7 @@ import {
   getLiveSessionCoverGeneration,
   getSessionById,
   getUsageLimits,
+  lockSessionForCoverPlanning,
   reserveSessionCoverRegeneration,
   setSessionCoverStyle,
   withOwnerCoverAdmissionLock,
@@ -119,6 +120,12 @@ export async function POST(request: Request) {
   }
 
   const reservation = await withOwnerCoverAdmissionLock(db, ownerUserId, async (tx) => {
+    // The Session row is locked before the admission check takes a Member's Pool
+    // lock, the order every Session-row path uses (a row lock after the Pool lock
+    // deadlocks against a buffer tick). Session delete marks a pending delete
+    // under this same admission lock, so the re-check here is the gate.
+    const locked = await lockSessionForCoverPlanning(tx, { ownerUserId, sessionId: session.id });
+    if (!locked || locked.deleteRequestedAt) return { outcome: 'not_found' as const };
     const live = await getLiveSessionCoverGeneration(tx, {
       ownerUserId,
       activitySessionId: session.id,
@@ -167,6 +174,7 @@ export async function POST(request: Request) {
   if (!reservation) {
     return apiError('conflict', 'A cover generation is already in flight for this Session.');
   }
+  if (reservation.outcome === 'not_found') return apiError('not_found', 'Session not found.');
   if (reservation.outcome === 'session_full') {
     return apiError('limit_reached', SESSION_FULL_MESSAGE);
   }

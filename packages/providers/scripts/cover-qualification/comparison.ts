@@ -197,7 +197,8 @@ export async function writeMixedComparisonReports(args: {
     run: {
       ...args.replacementManifest.run,
       id: runId,
-      expectedArtifacts: 144,
+      // The blind comparison mixes one complete baseline and one complete replacement run.
+      expectedArtifacts: completeQualificationCallCount() * 2,
       capturedArtifacts: artifacts.filter((artifact) => artifact.technicalOutcome === 'captured')
         .length,
       failedArtifacts: artifacts.filter((artifact) => artifact.technicalOutcome !== 'captured')

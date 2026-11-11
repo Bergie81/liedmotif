@@ -13,6 +13,7 @@ import {
   setPlaylistLoungePinned,
   setPlaylistShared,
   setTrackFavorited,
+  updateUsageLimits,
   user,
   userProfiles,
 } from '@liedmotif/db';
@@ -209,6 +210,30 @@ describe.skipIf(skip)('the Assistant asked to find Sessions', () => {
       `- "Rainy Window" (id ${older.sessionId}) · last active 7 days ago`,
     ]);
     expect(result).not.toMatch(/more exist/i);
+  });
+
+  it('counts today and yesterday in the Instance timezone, not in UTC', async () => {
+    const asker = await createMember('member-1');
+    await updateUsageLimits(testDb.db, { resetTimezone: 'America/Los_Angeles' });
+    // 15:00 on 11 November in Los Angeles: 23:00 UTC, the same day there.
+    const earlier = await createSession(testDb.db, {
+      ownerUserId: asker,
+      title: 'Deep Focus',
+      status: 'stopped',
+      lastPlaybackReportAt: new Date('2026-11-11T23:00:00.000Z'),
+    });
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      // 17:00 on 11 November in Los Angeles, while UTC is already on 12 November.
+      vi.setSystemTime(new Date('2026-11-12T01:00:00.000Z'));
+      const expected = `- "Deep Focus" (id ${earlier}) · last active today`;
+      expect(rows(await findMusic(asker, { kind: 'session' }))).toEqual([expected]);
+      expect(rows(await findMusic(asker, { kind: 'session', query: 'deep focus' }))).toEqual([
+        expected,
+      ]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('searches as the app does: a name first, and it says what matched when that was not the name', async () => {

@@ -35,12 +35,12 @@ export function useTrackRowPlayback(onError: (message: string) => void) {
   /**
    * A Track plays through its origin Session (the real transport); only a
    * track whose Session was deleted falls back to the page-local preview.
-   * Handing the row to the transport silences a preview left playing, since
-   * the two share no audio element.
+   * Handing the row to the transport stops a preview left playing or paused,
+   * since the two share no audio element.
    */
   function playRow(track: PlayableTrackRow) {
     if (track.originSessionId) {
-      preview.audioRef.current?.pause();
+      preview.stop();
       void sessionPlay.playViaSession(track);
     } else {
       preview.togglePreview(track);

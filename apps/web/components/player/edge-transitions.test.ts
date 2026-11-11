@@ -209,6 +209,22 @@ describe('EdgeTransitions failure paths', () => {
     expect(f.driver.prepDeck()).toBeNull();
   });
 
+  it('emits ONE start-missed event when the pre-roll play() is still pending at the miss', async () => {
+    const f = setup();
+    // The miss unloads the deck, which aborts the pending play().
+    let abort: (() => void) | null = null;
+    f.els.b.play = () =>
+      new Promise<void>((_resolve, reject) => (abort = () => reject(new Error('aborted'))));
+    f.host.unloadDeck = (deck) => {
+      f.unloaded.push(deck);
+      if (deck === 'b') abort?.();
+    };
+    prepareToReady(f, 20);
+    await vi.runAllTimersAsync();
+    expect(f.events).toHaveLength(1);
+    expect(f.events[0]?.reasons).toContain('start-missed');
+  });
+
   it('degrades the DECISION to schedule-missed when the engine cannot arm the fade', () => {
     const f = setup();
     f.engine.crossfadeResult = false;

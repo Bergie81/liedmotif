@@ -578,8 +578,8 @@ describeIfDb('ensure-session-buffer controller', () => {
   // Spend classification. A definitive provider refusal charges
   // nothing, so counting it would let an outage burn the whole budget window and
   // degrade every session to `repeat_cost_limit` with zero tracks generated. The
-  // row still holds its in-flight slot, so the Graphile retry of this same tick
-  // cannot re-dial the provider.
+  // refusal's block signal stops the Graphile retry of this same tick from
+  // re-dialing the provider.
   it('does not spend the budget window on a definitively rejected submit', async () => {
     const { ownerUserId, sessionId } = await freshGeneratingSession();
     const { provider, calls } = countingMusicProvider(async () => {
@@ -609,8 +609,8 @@ describeIfDb('ensure-session-buffer controller', () => {
       await ctx.db.select().from(usageEvents).where(eq(usageEvents.userId, ownerUserId)),
     ).toHaveLength(0);
 
-    // Money safety: the retry finds the buffer covered by the parked row and
-    // never issues a second call.
+    // Money safety: the retry is blocked by the refusal and never issues a
+    // second call.
     const retry = await runEnsureSessionBuffer(deps, { sessionId });
     expect(retry.action).toBe('noop');
     expect(calls()).toBe(1);
@@ -1525,21 +1525,54 @@ describeIfDb('ensure-session-buffer controller', () => {
     const { provider, calls } = countingMusicProvider(async () => {
       throw new Error('a deploy must not resubmit a refused request');
     });
+    vi.stubEnv('SUNO_API_KEY', '');
+    vi.stubEnv('SUNO_BASE_URL', '');
 
-    const result = await runEnsureSessionBuffer(
-      {
-        db: ctx.db,
-        music: provider,
-        now: NOW,
-        limits: ampleLimits(),
-        // Restarted after the refusal, but the stored credential is older.
-        workerStartedAt: NOW,
-      },
-      { sessionId },
-    );
+    try {
+      const result = await runEnsureSessionBuffer(
+        {
+          db: ctx.db,
+          music: provider,
+          now: NOW,
+          limits: ampleLimits(),
+          // Restarted after the refusal, but the stored credential is older.
+          workerStartedAt: NOW,
+        },
+        { sessionId },
+      );
 
-    expect(result.action).toBe('noop');
-    expect(calls()).toBe(0);
+      expect(result.action).toBe('noop');
+      expect(calls()).toBe(0);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  // A saved row is only the fallback beside an env key, and an env change takes
+  // a restart: the restart is that key's revision, whatever the row's own date.
+  it('a restart re-opens a refused session whose key comes from the env, even beside a stored row', async () => {
+    const { sessionId } = await sessionWithLatestJob(refusedLongAgo);
+    await storeMusicCredential(new Date(HOUR_BEFORE.getTime() - 60_000));
+    const { provider, calls } = countingMusicProvider(async () => okTask('after-env-key'));
+    vi.stubEnv('SUNO_API_KEY', 'env-key');
+
+    try {
+      const result = await runEnsureSessionBuffer(
+        {
+          db: ctx.db,
+          music: provider,
+          now: NOW,
+          limits: ampleLimits(),
+          workerStartedAt: NOW,
+        },
+        { sessionId },
+      );
+
+      expect(result.action).toBe('generate');
+      expect(calls()).toBe(1);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it('Resume re-opens a refused session', async () => {
@@ -1568,6 +1601,55 @@ describeIfDb('ensure-session-buffer controller', () => {
 
     const result = await runEnsureSessionBuffer(
       { db: ctx.db, music: provider, now: NOW, limits: ampleLimits() },
+      { sessionId },
+    );
+
+    expect(result.action).toBe('generate');
+    expect(calls()).toBe(1);
+  });
+
+  // A refusal bought nothing and has no task to wait on, so it holds no Buffer
+  // or concurrency slot: a fix made minutes after it takes effect at once.
+  it.each(['resume', 'credential'] as const)(
+    'a recent refusal re-opens at once on a %s',
+    async (trigger) => {
+      const refusedAt = new Date(NOW.getTime() - 5 * 60_000);
+      const { sessionId } = await sessionWithLatestJob({ ...refusedLongAgo, updatedAt: refusedAt });
+      if (trigger === 'resume') {
+        await ctx.db
+          .update(activitySessions)
+          .set({ lastResumedAt: NOW })
+          .where(eq(activitySessions.id, sessionId));
+      } else {
+        await storeMusicCredential(new Date(NOW.getTime() - 60_000));
+      }
+      const { provider, calls } = countingMusicProvider(async () => okTask(`after-${trigger}`));
+
+      const result = await runEnsureSessionBuffer(
+        { db: ctx.db, music: provider, now: NOW, limits: ampleLimits() },
+        { sessionId },
+      );
+
+      expect(result.action).toBe('generate');
+      expect(calls()).toBe(1);
+    },
+  );
+
+  it("a recent refusal in a stopped Session leaves the owner's one concurrency slot free", async () => {
+    const refusedAt = new Date(NOW.getTime() - 5 * 60_000);
+    const { ownerUserId, sessionId: refused } = await sessionWithLatestJob({
+      ...refusedLongAgo,
+      updatedAt: refusedAt,
+    });
+    await ctx.db
+      .update(activitySessions)
+      .set({ status: 'stopped' })
+      .where(eq(activitySessions.id, refused));
+    const sessionId = await createSession(ctx.db, { ownerUserId, styleSnapshot: SNAPSHOT });
+    const { provider, calls } = countingMusicProvider(async () => okTask('next-session'));
+
+    const result = await runEnsureSessionBuffer(
+      { db: ctx.db, music: provider, now: NOW, limits: { ...ampleLimits(), maxConcurrentJobs: 1 } },
       { sessionId },
     );
 

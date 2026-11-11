@@ -278,4 +278,40 @@ describe('Surprise Me in the creation card', () => {
     });
     expect(onStart).not.toHaveBeenCalled();
   });
+
+  it('the modal’s Start starts the previewed proposal, never a search hand-off’s words', async () => {
+    function mountHandOff() {
+      const onStart = vi.fn();
+      const onStartSurprise = vi.fn();
+      render(
+        createElement(CreateSessionCard, {
+          onStart,
+          llmConfigured: true,
+          initialPrompt: 'rainy day piano',
+          surprise: { pending: EMBER, onStart: onStartSurprise },
+        }),
+      );
+      return { onStart, onStartSurprise };
+    }
+
+    const untouched = mountHandOff();
+    fireEvent.click(screen.getByRole('button', { name: 'Surprise Me' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Start Session' }));
+    expect(untouched.onStartSurprise).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ proposalId: EMBER.id, targetDurationMinutes: 45 }),
+    );
+    expect(untouched.onStart).not.toHaveBeenCalled();
+    cleanup();
+
+    const flipped = mountHandOff();
+    fireEvent.click(screen.getByTestId('skip-profile'));
+    fireEvent.click(screen.getByRole('button', { name: 'Surprise Me' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Start Session' }));
+    expect(flipped.onStartSurprise).not.toHaveBeenCalled();
+    expect(flipped.onStart.mock.calls[0]![0]).toMatchObject({
+      skipProfile: true,
+      targetDurationMinutes: 45,
+      input: { mode: 'prompt', prompt: EMBER.edit.prompt, genres: ['indie'], language: 'German' },
+    });
+  });
 });

@@ -105,7 +105,9 @@ export function planOfflineSync(input: {
       (sum, track) => sum + (track.byteSize ?? 0),
       0,
     );
-    if (usedBytes + neededBytes > input.capBytes) {
+    // A mark with nothing to fetch costs no room: stored bytes count covers
+    // the server's sizes leave out, so the device can sit past the cap.
+    if (missing.size > 0 && usedBytes + neededBytes > input.capBytes) {
       refusals.push({
         key: mark.key,
         neededBytes,

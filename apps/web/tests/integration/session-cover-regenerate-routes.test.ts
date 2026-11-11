@@ -12,13 +12,18 @@ import {
 import { randomUUID } from 'node:crypto';
 import {
   activitySessions,
+  createPool,
+  DEFAULT_USAGE_LIMITS,
   insertGeneratedCoverImage,
+  lockAndResolveBudgetScopes,
+  lockSessionForBuffer,
   planSessionCoverGeneration,
   sessionCoverGenerations,
   updateCoverArtSettings,
   updateSessionCoverGeneration,
   updateUsageLimits,
   userProfiles,
+  withTransaction,
   type SessionCoverPlanRecord,
 } from '@liedmotif/db';
 import { MAX_SESSION_COVER_HISTORY } from '@liedmotif/shared';
@@ -586,6 +591,87 @@ describe.skipIf(skip)('POST /api/sessions/cover/regenerate', () => {
     expect(error.message).toContain('Admin');
     expect(error.message).not.toContain('Settings');
     expect(holder.enqueued).toHaveLength(0);
+  });
+
+  it('reserves nothing when the Session delete lands while the guidance is enhanced', async () => {
+    const ownerUserId = await createUser(testDb.db);
+    const sessionId = await createSession(testDb.db, { ownerUserId, status: 'stopped' });
+    holder.ownerUserId = ownerUserId;
+    holder.llm = {
+      enhanceCoverDirection: async ({ text }) => {
+        await testDb.db
+          .update(activitySessions)
+          .set({ deleteRequestedAt: new Date(), pinnedAt: null })
+          .where(eq(activitySessions.id, sessionId));
+        return { text: `${text} enhanced`, applied: true };
+      },
+    };
+
+    const response = await postJson(regeneratePost, {
+      activitySessionId: sessionId,
+      guidance: 'a lighthouse',
+      enhance: true,
+    });
+
+    expect(response.status).toBe(404);
+    const rows = await testDb.db
+      .select()
+      .from(sessionCoverGenerations)
+      .where(eq(sessionCoverGenerations.activitySessionId, sessionId));
+    expect(rows).toHaveLength(0);
+    expect(holder.enqueued).toHaveLength(0);
+  });
+
+  // A buffer tick locks the Session row and then the Members Pool; a Member's
+  // style change must take the row before the Pool too, or the two deadlock.
+  it('serializes a Member style change behind a buffer tick holding the Session row', async () => {
+    const ownerUserId = await createUser(testDb.db);
+    await testDb.db.insert(userProfiles).values({ userId: ownerUserId, role: 'member' });
+    const sessionId = await createSession(testDb.db, { ownerUserId, coverStyle: 'auto' });
+    holder.ownerUserId = ownerUserId;
+    let releaseTick!: () => void;
+    const tickMayTakePool = new Promise<void>((resolve) => {
+      releaseTick = resolve;
+    });
+    let rowLocked!: () => void;
+    const tickHoldsRow = new Promise<void>((resolve) => {
+      rowLocked = resolve;
+    });
+    const tick = withTransaction(testDb.db, async (tx) => {
+      await lockSessionForBuffer(tx, sessionId);
+      rowLocked();
+      await tickMayTakePool;
+      await lockAndResolveBudgetScopes(tx, {
+        ownerUserId,
+        instanceLimits: DEFAULT_USAGE_LIMITS,
+      });
+    });
+    await tickHoldsRow;
+
+    const route = postJson(regeneratePost, { activitySessionId: sessionId, coverStyle: 'drawing' });
+    // Both test-pool connections are busy (the tick and the route), so the lock
+    // wait is observed from a connection of its own.
+    const observer = createPool(TEST_DATABASE_URL!, { max: 1 });
+    try {
+      await vi.waitFor(async () => {
+        const waiting = await observer.query<{ count: number }>(
+          'select count(*)::int as count from pg_locks where not granted',
+        );
+        expect(waiting.rows[0]!.count).toBeGreaterThan(0);
+      });
+    } finally {
+      releaseTick();
+      await observer.end();
+    }
+
+    await expect(tick).resolves.toBeUndefined();
+    const response = await route;
+    expect(response.status).toBe(200);
+    const [session] = await testDb.db
+      .select({ coverStyle: activitySessions.coverStyle })
+      .from(activitySessions)
+      .where(eq(activitySessions.id, sessionId));
+    expect(session?.coverStyle).toBe('drawing');
   });
 
   it('refuses when no image provider is configured', async () => {

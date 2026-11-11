@@ -246,6 +246,7 @@ describe.skipIf(skip)('the Assistant asked to add Tracks to a Playlist', () => {
       {
         action: 'addToPlaylist',
         playlist: { id: playlist.id, name: 'Running' },
+        retention: 'curated',
         tracks: [
           { id: third, name: 'Cool Down' },
           { id: first, name: 'Warm Up' },

@@ -3,6 +3,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { anchoredBpmEstimate } from '@liedmotif/providers';
+import { validateTrackAnalysis } from '@liedmotif/shared';
 import { createMockStorageProvider, type MockStorage } from '@liedmotif/storage';
 import { clickTrack, pcmToWav } from './analysis-fixtures';
 import type { AnchoredTempoEstimate } from './estimator';
@@ -212,6 +213,31 @@ describe('createWorkerTrackAnalyzer — provenance decision table', () => {
     await analyzer.analyze({ audio: AUDIO, targetBpm: 128 });
     await analyzer.analyze({ audio: AUDIO, targetBpm: 128 });
     expect(probe).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-probes after a failed probe, so one failed spawn does not disable analysis', async () => {
+    const probe = vi
+      .fn<() => Promise<boolean>>()
+      .mockResolvedValueOnce(false)
+      .mockResolvedValue(true);
+    const { analyzer } = stubbedAnalyzer({ probe });
+    const first = await analyzer.analyze({ audio: AUDIO, targetBpm: 128 });
+    const second = await analyzer.analyze({ audio: AUDIO, targetBpm: 128 });
+    expect(first.analysisStatus).toBe('unavailable');
+    expect(second.analysisStatus).toBe('measured');
+  });
+
+  it.each([
+    ['true peak above the write bound', { integratedLufs: -8.5, truePeakDb: 3.4 }],
+    ['true peak below the write bound', { integratedLufs: -60, truePeakDb: -21 }],
+    ['loudness above the write bound', { integratedLufs: 0.5, truePeakDb: 1 }],
+  ])('%s → failed at once, never an outcome the analysis write refuses', async (_, loudness) => {
+    const { analyzer, estimate } = stubbedAnalyzer({ measure: async () => loudness });
+    const outcome = await analyzer.analyze({ audio: AUDIO, targetBpm: 128 });
+    expect(outcome.analysisStatus).toBe('failed');
+    expect(outcome.diagnostic).toMatch(/out of range/);
+    expect(validateTrackAnalysis(outcome, { targetBpm: 128 })).toEqual([]);
+    expect(estimate).not.toHaveBeenCalled();
   });
 });
 

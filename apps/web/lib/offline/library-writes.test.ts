@@ -14,18 +14,21 @@ beforeEach(() => vi.stubGlobal('window', new EventTarget()));
 afterEach(() => vi.unstubAllGlobals());
 
 describe('library writes', () => {
-  it('announces deleting or renaming a Session, never the Session writes a playing tab polls', () => {
+  it('announces deleting, renaming or changing the cover of a Session, never the Session writes a playing tab polls', () => {
     const heard = vi.fn();
     onLibraryWrite(heard);
 
     announceLibraryWrite('/api/sessions/delete');
     announceLibraryWrite('/api/sessions/rename');
-    expect(heard).toHaveBeenCalledTimes(2);
+    announceLibraryWrite('/api/sessions/cover/select');
+    announceLibraryWrite('/api/sessions/cover/upload');
+    announceLibraryWrite('/api/sessions/cover/delete');
+    expect(heard).toHaveBeenCalledTimes(5);
 
     announceLibraryWrite('/api/sessions/playback');
     announceLibraryWrite('/api/sessions/loop-lease');
     announceLibraryWrite('/api/sessions/cover/status');
-    expect(heard).toHaveBeenCalledTimes(2);
+    expect(heard).toHaveBeenCalledTimes(5);
   });
 });
 

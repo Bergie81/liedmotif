@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   changeVibe,
   dislikeTrack,
+  getAllPlaylists,
   getLibrary,
   getTrack,
   listSessions,
@@ -209,6 +210,61 @@ describe('api-client response validation', () => {
     const res = await getSessionQueue(uuid());
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.error.code).toBe('not_found');
+  });
+});
+
+describe('api-client full playlist list', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function playlistSummary(id: string) {
+    return {
+      id,
+      name: id,
+      kind: 'user',
+      listedInPlaylists: true,
+      trackCount: 1,
+      totalDurationSeconds: 60,
+      downloadableTrackCount: 0,
+      coverImageId: null,
+      mosaicCoverImageIds: [],
+      soleMemberTrackCount: 0,
+      containsTrack: true,
+      sharedAt: null,
+      pinnedAt: null,
+      createdAt: '2026-07-20T10:00:00.000Z',
+      updatedAt: '2026-07-20T10:00:00.000Z',
+    };
+  }
+
+  it('keeps a Playlist whose activity moved it onto an already-read page mid-load', async () => {
+    // The membership picker rewrites the Track's whole set from this list, so a
+    // skipped Playlist would lose the Track.
+    const [a, b, moved, d] = [uuid(), uuid(), uuid(), uuid()];
+    const pages = [
+      { playlists: [a, b], nextCursor: 'after-b' },
+      // `moved` was played elsewhere between the reads: it left this page for the top.
+      { playlists: [d], nextCursor: null },
+      { playlists: [moved, a], nextCursor: 'after-a' },
+    ];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        const page = pages.shift()!;
+        return {
+          json: async () => ({
+            ok: true,
+            data: { playlists: page.playlists.map(playlistSummary), nextCursor: page.nextCursor },
+          }),
+        };
+      }),
+    );
+
+    const res = await getAllPlaylists({ containsTrackId: uuid() });
+
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.data.playlists.map((p) => p.id).sort()).toEqual([a, b, moved, d].sort());
+    }
   });
 });
 

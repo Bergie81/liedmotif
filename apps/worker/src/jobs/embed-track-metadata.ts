@@ -14,12 +14,10 @@
 // so a re-enqueue with unchanged inputs reads the file and returns without
 // rewriting.
 //
-// KNOWN NARROW WINDOW: the read→retag→write here is not transactional with the
-// eviction/deletion pipeline; a track evicted mid-embed could have its file
-// re-created by the final write. The window is milliseconds wide, needs the
-// track to be reclaimed at that exact moment, and costs at most one orphaned
-// file that the next eviction sweep's deletion-queue guard can reclaim —
-// accepted (mirrors the download job's documented storage/DB window).
+// The read→retag→write here is not transactional with the deletion pipeline: a
+// Track deleted mid-embed can have its file re-created by the final write. The
+// byte-size update afterwards finds no asset row then and queues the key for
+// deletion again, so the re-created file is reclaimed.
 
 import type { Database } from '@liedmotif/db';
 import { getTrackForMetadataEmbed, updateLocalOriginalByteSize } from '@liedmotif/db';
@@ -107,6 +105,7 @@ export async function runEmbedTrackMetadata(
   });
   await updateLocalOriginalByteSize(deps.db, {
     trackId: payload.trackId,
+    storageKey: audioKey,
     byteSize: stat.byteSize,
   });
   return { outcome: 'tagged' };

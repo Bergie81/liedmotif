@@ -58,15 +58,18 @@ export function useResumableSessions({
   const [error, setError] = useState<string | null>(null);
   const [reload, setReload] = useState(0);
   const consumeServerSeed = useServerSeed(initial != null);
-  const { loadingMore, invalidate, beginNextPage, settle } = usePageEpoch();
+  const { loadingMore, invalidate, beginFirstPage, beginNextPage, settle } = usePageEpoch();
 
   useEffect(() => {
+    if (consumeServerSeed()) {
+      invalidate();
+      return;
+    }
     // A first-page reload (resume, retry) supersedes any in-flight next page.
-    const token = invalidate();
-    if (consumeServerSeed()) return;
+    const token = beginFirstPage();
     setError(null);
     void listSessions({ limit, includeActive, includePinned }).then((result) => {
-      if (!settle(token)) return;
+      if (!settle(token, result.ok)) return;
       if (result.ok) {
         setItems(result.data.items);
         setPinnedItems(result.data.pinned);
@@ -77,7 +80,16 @@ export function useResumableSessions({
     return () => {
       invalidate();
     };
-  }, [includeActive, includePinned, limit, reload, consumeServerSeed, invalidate, settle]);
+  }, [
+    includeActive,
+    includePinned,
+    limit,
+    reload,
+    consumeServerSeed,
+    invalidate,
+    beginFirstPage,
+    settle,
+  ]);
 
   async function loadMore() {
     if (!nextCursor || loadingMore) return;

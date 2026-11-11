@@ -219,7 +219,11 @@ export interface DueDeletionQueueItem {
   storageKeyLive: boolean;
 }
 
-/** Unprocessed items whose `deleteAfter` has passed, oldest due first. */
+/**
+ * Unprocessed items whose `deleteAfter` has passed, oldest due first — except
+ * that items which already failed go after every untried one, so a full batch
+ * of deletes that keep failing can never starve newer items of their turn.
+ */
 export async function listDueDeletionQueueItems(
   db: Database,
   args: { now?: Date; limit: number },
@@ -242,7 +246,10 @@ export async function listDueDeletionQueueItems(
     })
     .from(deletionQueueItems)
     .where(and(isNull(deletionQueueItems.processedAt), lte(deletionQueueItems.deleteAfter, now)))
-    .orderBy(asc(deletionQueueItems.deleteAfter))
+    .orderBy(
+      sql`${deletionQueueItems.errorMessageSafe} is not null`,
+      asc(deletionQueueItems.deleteAfter),
+    )
     .limit(args.limit);
 }
 

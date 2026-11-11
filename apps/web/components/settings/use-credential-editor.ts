@@ -88,6 +88,22 @@ export function useCredentialEditor(props: CredentialEditorProps) {
     return clearedSaved ? '' : undefined;
   }
 
+  /**
+   * A field still showing its loaded value is left out of a save, so the stored
+   * config keeps whatever it had: that value is the effective one, which may come
+   * from `.env` or be the preset's default, and storing it would let it outrank
+   * the provider default once the env line is removed or the default moves.
+   */
+  function savedFields(): { baseUrl: string | undefined; model: string | undefined } {
+    const onLoadedProvider = providerKey === props.initialProviderKey;
+    const baseUrlUnchanged = onLoadedProvider && baseUrl === (props.initialBaseUrl ?? '');
+    const modelUnchanged = onLoadedProvider && model === (props.initialModel ?? '');
+    return {
+      baseUrl: baseUrlUnchanged ? undefined : submittedBaseUrl(),
+      model: modelUnchanged ? undefined : model || undefined,
+    };
+  }
+
   function editSecret(value: string) {
     setSecret(value);
     invalidateTest();
@@ -184,8 +200,7 @@ export function useCredentialEditor(props: CredentialEditorProps) {
           providerType: props.providerType,
           providerKey,
           secret: secret || undefined,
-          baseUrl: submittedBaseUrl(),
-          model: model || undefined,
+          ...savedFields(),
         }),
       }).catch(() => null);
       body = response ? ((await response.json().catch(() => ({}))) as typeof body) : {};

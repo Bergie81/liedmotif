@@ -96,7 +96,7 @@ export function OnboardingWizard({
       case 'music':
         return (
           <OnboardingMusicStep
-            credential={data.music}
+            credential={{ ...data.music, configured: draft.musicConnected }}
             encryptionKeyConfigured={data.encryptionKeyConfigured}
             onConnected={() => patch({ musicConnected: true })}
             onDone={advance}
@@ -108,13 +108,16 @@ export function OnboardingWizard({
             ceiling={draft.ceiling}
             tracksPerRequest={data.tracksPerRequest}
             onChange={(ceiling) => patch({ ceiling })}
-            onDone={advance}
+            onDone={() => {
+              patch({ savedCeiling: draft.ceiling });
+              advance();
+            }}
           />
         );
       case 'llm':
         return (
           <OnboardingLlmStep
-            credential={data.llm}
+            credential={{ ...data.llm, configured: draft.llmConnected }}
             encryptionKeyConfigured={data.encryptionKeyConfigured}
             onConnected={(llmModel) => patch({ llmConnected: true, llmModel })}
             onDone={advance}
@@ -131,7 +134,10 @@ export function OnboardingWizard({
             musicProviderCoverConfigured={data.musicProviderCoverConfigured}
             onChange={(coverBudget) => patch({ coverBudget })}
             onConnected={(imageModel) => patch({ imageConnected: true, imageModel })}
-            onDone={advance}
+            onDone={() => {
+              patch({ savedCoverBudget: draft.coverBudget });
+              advance();
+            }}
           />
         );
       case 'done':

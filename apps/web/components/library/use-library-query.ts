@@ -15,8 +15,9 @@ export function useLibraryQuery(view: LibraryView, search = '') {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { loadingMore, invalidate, beginFirstPage, beginNextPage, settle } = usePageEpoch();
-  // Counts the writes made from outside the page: each one is a reason to read
-  // the first page again, like a change of the query.
+  // Counts the writes the list cannot patch (made from outside the page, or
+  // answered without flags): each one is a reason to read the first page
+  // again, like a change of the query.
   const [outsideWrites, setOutsideWrites] = useState(0);
   useOutsideLibraryWrite(() => setOutsideWrites((count) => count + 1));
 
@@ -28,7 +29,7 @@ export function useLibraryQuery(view: LibraryView, search = '') {
     setError(null);
     const controller = new AbortController();
     void getLibrary(view, { search, signal: controller.signal }).then((result) => {
-      if (controller.signal.aborted || !settle(token)) return;
+      if (controller.signal.aborted || !settle(token, result.ok)) return;
       if (result.ok) {
         setItems(result.data.items);
         setNextCursor(result.data.nextCursor);
@@ -77,5 +78,10 @@ export function useLibraryQuery(view: LibraryView, search = '') {
     setItems((current) => (current ? current.filter((track) => track.id !== trackId) : current));
   }
 
-  return { items, nextCursor, error, loadingMore, loadMore, applyTrackFlags, removeTrack };
+  /** Read the first page again after a write whose response carries no flags to patch with. */
+  function reload() {
+    setOutsideWrites((count) => count + 1);
+  }
+
+  return { items, nextCursor, error, loadingMore, loadMore, applyTrackFlags, removeTrack, reload };
 }

@@ -38,7 +38,7 @@
     "assistant:eval": "dotenv -- tsx --tsconfig apps/web/tsconfig.json scripts/assistant-eval.mts",
     "onboarding:demo": "bash scripts/onboarding-demo.sh",
     "onboarding:state": "dotenv -- tsx scripts/onboarding-state.mts",
-    "db:studio": "npm run db:studio -w @liedmotif/db",
+    "db:studio": "dotenv -- npm run db:studio -w @liedmotif/db",
     "db:migrate:worker": "dotenv -- npm run migrate -w @liedmotif/worker",
     "auth:generate": "npm run auth:generate -w @liedmotif/db",
     "db:test:up": "docker compose --profile test up -d postgres-test",

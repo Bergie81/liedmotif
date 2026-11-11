@@ -1,7 +1,7 @@
 ---
 title: Instance alerts
 description: Get a message when Liedmotif's worker stops, background jobs fail for good or storage fills up, by webhook, email or both.
-checkedOn: 2026-11-07
+checkedOn: 2026-11-11
 howTo: true
 ---
 
@@ -13,7 +13,7 @@ howTo: true
 | --- | --- | --- |
 | Worker heartbeat | Critical | The worker never reported, or last reported over 5 minutes ago. Tracks you've paid for won't finish. An ordinary restart or update stays under that window. |
 | Failed jobs | Warning | At least one background job ran out of attempts and won't retry by itself. A failed track doesn't count: this is a job that kept crashing. It clears once those jobs are retried or deleted. See [What to do about an alert](#what-to-do-about-an-alert). |
-| Storage quota | Warning, then critical | A warning from 80% of your storage quota. Critical once there's no room for one more track, the moment new tracks are refused. Stored bytes are measured hourly, so this can lag by up to an hour. |
+| Storage quota | Warning, then critical | A warning from 80% of your storage quota. Critical once there's no room for the next generation (two tracks with Suno), the moment new tracks are refused. Stored bytes are measured hourly, so this can lag by up to an hour. |
 
 Each problem sends one message when it starts or changes severity, and one when it's fixed. The recovery says how long the whole problem lasted: three days at warning and then ten minutes at critical reads as about three days. A bad week doesn't turn into a flood.
 
@@ -27,7 +27,7 @@ Messages carry only the problem's name, severity, counts, percentages and durati
 
 You can use a webhook, email or both. With both set up, both are used.
 
-**Webhook.** Set `ALERT_WEBHOOK_URL` to the address of a service that takes a JSON POST. Plain `http` to a receiver on your own network is fine. The address is never logged, so it may carry the receiver's own token. [The webhook message](#the-webhook-message) lists what's sent. No receiver has been tried with it yet, so test yours by hand before you rely on it.
+**Webhook.** Set `ALERT_WEBHOOK_URL` to the address of a service that takes a JSON POST. Plain `http` to a receiver on your own network is fine. The address is never logged, so it may carry the receiver's own token in its path or query. A user name or password in the address (`user:token@`) can't be sent, so the app refuses to start with one. [The webhook message](#the-webhook-message) lists what's sent. No receiver has been tried with it yet, so test yours by hand before you rely on it.
 
 **Email.** Alerts go to the admin's confirmed address and nowhere else. This needs [account email](/docs/email-and-storage) turned on, and your address confirmed in **Settings › Profile**.
 
@@ -59,6 +59,7 @@ If the settings don't fit together, the app refuses to start and `docker compose
 | `ALERT_WEBHOOK_URL is set but ALERT_CHECK_TOKEN is not` | Set the token, or clear the webhook. |
 | `ALERT_CHECK_TOKEN is set but alerts have nowhere to go` | Set a webhook, turn on account email, or clear the token. |
 | `ALERT_WEBHOOK_URL must be an absolute http:// or https:// URL.` | Fix the address. |
+| `ALERT_WEBHOOK_URL must not carry a user name or password` | Move the receiver's token into the address's path or query, the way the receiver accepts it. |
 
 ## 3. Schedule the check
 
@@ -67,7 +68,7 @@ The machine calls Liedmotif every five minutes and Liedmotif does the rest. Your
 ```bash
 sudo touch /etc/liedmotif-alert-header
 sudo chmod 600 /etc/liedmotif-alert-header
-sed -n 's/^ALERT_CHECK_TOKEN=/x-alert-token: /p' .env | sudo tee /etc/liedmotif-alert-header > /dev/null
+sed -n 's/^ALERT_CHECK_TOKEN=/x-alert-token: /p' .env | tr -d "\"'" | sudo tee /etc/liedmotif-alert-header > /dev/null
 ```
 
 Open root's crontab with `sudo crontab -e` and add this line:

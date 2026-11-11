@@ -84,6 +84,19 @@ export function createPool(databaseUrl: string, options?: CreatePoolOptions): Po
       errorCode: typeof code === 'string' ? code : null,
     });
   });
+  // pg-pool drops its idle listener while a client is checked out (a
+  // transaction), so a backend lost then would emit an unheard 'error' and end
+  // the process. The caller's query still rejects, and the pool discards the
+  // broken client on release.
+  pool.on('connect', (client) => {
+    client.on('error', (error) => {
+      const code = (error as { code?: unknown }).code;
+      log.warn('pool client lost its connection', {
+        errorName: error.name,
+        errorCode: typeof code === 'string' ? code : null,
+      });
+    });
+  });
   return pool;
 }
 

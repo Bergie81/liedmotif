@@ -3,7 +3,7 @@
 // backfill / timing fetch) and persists what the provider returns —
 // write-once, so an idempotent re-request never rewrites captured words. The
 // read is scoped owner-or-Lounge-audible; the write paths stay
-// keyed by trackId under the route's owner-gated enrichment.
+// keyed by trackId under the route's enrichment gate.
 
 import { and, eq, isNull, sql, type SQL } from 'drizzle-orm';
 import type { ProviderNormalizedStatus, TimedLyrics, VocalMode } from '@liedmotif/shared';
@@ -19,8 +19,9 @@ export function trackHasLyricsColumn(): SQL<boolean> {
 
 export interface ReadableTrackLyricsContext {
   trackId: string;
-  /** The track's owner — the route's enrichment gate: provider backfill and the
-   *  paid timing fetch run only when the viewer IS the owner. */
+  /** The track's owner — the route's enrichment gate: the plain-lyrics backfill
+   *  runs only when the viewer IS the owner, while the paid timing fetch runs
+   *  for any reader (ADR 0017). */
   ownerUserId: string;
   vocalMode: VocalMode;
   lyrics: string | null;

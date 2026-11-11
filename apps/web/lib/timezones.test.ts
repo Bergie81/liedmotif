@@ -28,6 +28,13 @@ describe('isSupportedTimezone', () => {
       expect(isSupportedTimezone(zone)).toBe(false);
     }
   });
+
+  it('rejects a bare UTC offset, which Postgres reads with the opposite sign', () => {
+    for (const zone of ['+05:00', '-0300', '+05', ' +05:00']) {
+      expect(isSupportedTimezone(zone)).toBe(false);
+    }
+    expect(isSupportedTimezone('Etc/GMT+5')).toBe(true);
+  });
 });
 
 describe('timezoneGroups', () => {

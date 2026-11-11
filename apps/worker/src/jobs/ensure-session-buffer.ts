@@ -63,6 +63,7 @@ import {
   mapScopeResults,
   parkUnsubmittedProviderJob,
   peekPendingRerollIdentity,
+  readEnvLayer,
   recordProviderTaskIdFailSafe,
   recordUsageEvent,
   setGenerationStatus,
@@ -133,9 +134,9 @@ export interface EnsureSessionBufferDeps {
    */
   enqueuePoll?: (providerJobId: string) => Promise<void>;
   /**
-   * When this worker process started. Env-sourced provider credentials leave no
-   * row to compare against, and applying an env change requires a restart, so
-   * the process boundary is their config revision. Omitted means "no restart to
+   * When this worker process started. An env-supplied key or base URL is never
+   * dated by a stored row, and applying an env change requires a restart, so
+   * the process boundary is its config revision. Omitted means "no restart to
    * account for" — a definitive refusal then lifts only on the other triggers.
    */
   workerStartedAt?: Date;
@@ -191,12 +192,16 @@ async function hasRefusalContextChanged(
     providerType: 'music',
     providerKey: args.providerKey,
   });
-  // A stored credential dates itself. An env-sourced one has no row and only
+  // A stored credential dates itself. An env-supplied key or base URL only
   // takes effect across a restart, so the worker's own start is ITS revision —
-  // and only its: on an instance whose credential is stored, a deploy says
-  // nothing about the provider and must not re-open a refused Session.
-  const configRevisionAt = credentialUpdatedAt ?? args.workerStartedAt;
-  return (configRevisionAt?.getTime() ?? 0) > refusedAtMs;
+  // a stored row beside it is only the fallback and dates app saves alone. On
+  // an instance whose credential is stored and the env supplies nothing, a
+  // deploy says nothing about the provider and must not re-open a refused
+  // Session.
+  const envSupplied = Object.keys(readEnvLayer('music', args.providerKey)).length > 0;
+  const restartAt = envSupplied || credentialUpdatedAt == null ? args.workerStartedAt : null;
+  const configRevisionAt = Math.max(credentialUpdatedAt?.getTime() ?? 0, restartAt?.getTime() ?? 0);
+  return configRevisionAt > refusedAtMs;
 }
 
 /**
@@ -993,10 +998,12 @@ async function applyTrackLyricBrief(
  *     (counted toward spend);
  *   - the call returns but persisting its task id throws → record the task id in a
  *     failure-safe path, else park as `submit_unknown`.
- * The parked row either survives as in-flight, so a Graphile retry sees the buffer
- * covered (see `countInFlightSessionJobs`), or — an unbilled refusal that clears on
- * its own — blocks the session for its status's cooldown. Either way a retry does
- * NOT re-submit it. The original error is re-raised so Graphile records the attempt.
+ * An uncertain parked row survives as in-flight, so a Graphile retry sees the buffer
+ * covered (see `countInFlightSessionJobs`); an unbilled refusal blocks the session
+ * through its block signal (`mapProviderBlockSignal`) — until the provider config
+ * changes or the listener resumes, or for its status's cooldown when it clears on
+ * its own. Either way a retry does NOT re-submit it. The original error is
+ * re-raised so Graphile records the attempt.
  */
 async function performPaidSubmit(
   deps: EnsureSessionBufferDeps,

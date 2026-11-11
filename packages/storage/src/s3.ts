@@ -117,11 +117,27 @@ function totalFromContentRange(contentRange: string | undefined): number | undef
  * A wedged endpoint must fail fast, not pin a request slot indefinitely: the
  * SDK's defaults leave connection and response timeouts unset. The keep-alive
  * agents are sized well above the app's bounded fan-outs (~8 concurrent) so the
- * cap is a backstop, not a throttle; `requestTimeout` bounds time-to-response-
- * headers, so long audio streams are unaffected once bytes flow.
+ * cap is a backstop, not a throttle.
+ *
+ * `requestTimeout` is a wall clock from request start to response headers. For
+ * a GET that is time-to-first-byte, so a long audio stream is unaffected once
+ * bytes flow. A PUT's headers only arrive after its whole body is sent, so
+ * uploads run on their own client with a clock sized for sending one request
+ * body (a single PUT or one part, ≤ 8 MB) over a slow uplink: 2 min still fits
+ * 8 MB at about 0.6 Mbit/s.
  */
-const S3_CONNECTION_TIMEOUT_MS = 3_000;
-const S3_REQUEST_TIMEOUT_MS = 30_000;
+export interface S3Timeouts {
+  connectionMs: number;
+  /** Reads, stats and deletes: request start to response headers. */
+  requestMs: number;
+  /** Each upload request (a single PUT or one part), body included. */
+  uploadRequestMs: number;
+}
+const S3_TIMEOUTS: S3Timeouts = {
+  connectionMs: 3_000,
+  requestMs: 30_000,
+  uploadRequestMs: 120_000,
+};
 const S3_MAX_SOCKETS = 128;
 
 /**
@@ -132,11 +148,17 @@ const S3_MAX_SOCKETS = 128;
 const UPLOAD_PART_SIZE_BYTES = 8 * 1024 * 1024;
 const UPLOAD_QUEUE_SIZE = 2;
 
-export function s3StorageProvider(options: S3StorageOptions): StorageProvider {
+/** `timeouts` is overridable only so tests can scale the bounds down. */
+export function s3StorageProvider(
+  options: S3StorageOptions,
+  timeouts: S3Timeouts = S3_TIMEOUTS,
+): StorageProvider {
   const bucket = options.bucket;
   const keyPrefix = options.keyPrefix ? assertSafeKey(options.keyPrefix) : undefined;
   const readUrlBase = resolveReadUrlBase(options.readUrlBase);
-  const client = new S3Client({
+  const httpAgent = new HttpAgent({ keepAlive: true, maxSockets: S3_MAX_SOCKETS });
+  const httpsAgent = new HttpsAgent({ keepAlive: true, maxSockets: S3_MAX_SOCKETS });
+  const clientConfig = {
     region: options.region,
     credentials: {
       accessKeyId: options.accessKeyId,
@@ -144,14 +166,27 @@ export function s3StorageProvider(options: S3StorageOptions): StorageProvider {
     },
     ...(options.endpoint ? { endpoint: options.endpoint } : {}),
     forcePathStyle: options.forcePathStyle ?? false,
+  };
+  const client = new S3Client({
+    ...clientConfig,
     requestHandler: new NodeHttpHandler({
-      connectionTimeout: S3_CONNECTION_TIMEOUT_MS,
-      requestTimeout: S3_REQUEST_TIMEOUT_MS,
+      connectionTimeout: timeouts.connectionMs,
+      requestTimeout: timeouts.requestMs,
       // Without it the handler only logs a warning when the timeout passes and
       // the call never settles.
       throwOnRequestTimeout: true,
-      httpAgent: new HttpAgent({ keepAlive: true, maxSockets: S3_MAX_SOCKETS }),
-      httpsAgent: new HttpsAgent({ keepAlive: true, maxSockets: S3_MAX_SOCKETS }),
+      httpAgent,
+      httpsAgent,
+    }),
+  });
+  const uploadClient = new S3Client({
+    ...clientConfig,
+    requestHandler: new NodeHttpHandler({
+      connectionTimeout: timeouts.connectionMs,
+      requestTimeout: timeouts.uploadRequestMs,
+      throwOnRequestTimeout: true,
+      httpAgent,
+      httpsAgent,
     }),
   });
 
@@ -214,7 +249,7 @@ export function s3StorageProvider(options: S3StorageOptions): StorageProvider {
       // multipart above it — either way the object only becomes readable on
       // completion.
       const upload = new Upload({
-        client,
+        client: uploadClient,
         params: { Bucket: bucket, Key: target, Body: body, ContentType: contentType },
         partSize: UPLOAD_PART_SIZE_BYTES,
         queueSize: UPLOAD_QUEUE_SIZE,

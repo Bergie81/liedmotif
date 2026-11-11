@@ -102,7 +102,8 @@ export const activitySessions = pgTable(
     // written by API routes (user intent), never the worker.
     sessionMode: sessionMode('session_mode').notNull().default('keep_going'),
     // Generation-controller status: the session stays `active` while this
-    // surfaces cost-limit Session Repeat / provider blocks. Written by the worker.
+    // surfaces cost-limit Session Repeat / provider blocks. Written by the worker;
+    // Resume resets it to `ok`.
     generationStatus: sessionGenerationStatus('generation_status').notNull().default('ok'),
     // Why a Stopped session ended (user stop, supersede, idle auto-stop, bounded
     // complete); null while active.
@@ -126,8 +127,9 @@ export const activitySessions = pgTable(
     lastPlaybackPositionSeconds: doublePrecision('last_playback_position_seconds'),
     // Most-recent playback report. Also orders My Sessions by recency.
     lastPlaybackReportAt: timestamp('last_playback_report_at', { withTimezone: true }),
-    // Auto-stop an idle active session after this many minutes (worker idle sweep,
-    // `endReason='idle_timeout'`).
+    // Unused: the idle sweep (`endReason='idle_timeout'`) applies the instance
+    // `usageLimits.idleAutoStopAfterMinutes`, so Settings → Limits reaches running
+    // Sessions. Nothing writes this column.
     idleAutoStopAfterMinutes: integer('idle_auto_stop_after_minutes').notNull().default(15),
     startedAt: timestamp('started_at', { withTimezone: true }).defaultNow().notNull(),
     // When Resume last re-activated this session (null until first resumed).

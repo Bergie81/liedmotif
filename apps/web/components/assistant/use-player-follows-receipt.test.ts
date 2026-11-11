@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 
-// The player after the Assistant changed something it shows: the star of the
-// Track on the deck, and the New music setting of the engaged Session.
+// The player after the Assistant changed something it shows: the star and the
+// Add to Playlist control of the Track on the deck, and the New music setting
+// of the engaged Session.
 
 import { renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -19,8 +20,8 @@ vi.mock('@/components/player/player-provider', () => ({
   usePlayerContext: () => player.context,
 }));
 
-/** A Session playing `TRACK_ID`, saved long ago and in a hand-picked Playlist. */
-function playing() {
+/** A Session playing `TRACK_ID`, saved long ago and in a hand-picked Playlist, unless `track` says otherwise. */
+function playing(track: Record<string, unknown> = {}) {
   const applyRetentionFlags = vi.fn();
   const engage = vi.fn();
   const session = { id: SESSION_ID, title: 'Rainy Window', sessionMode: 'keep_going' };
@@ -34,6 +35,7 @@ function playing() {
           savedAt: '2026-01-01T00:00:00.000Z',
           favoritedAt: null,
           inCuratedPlaylist: true,
+          ...track,
         },
         applyRetentionFlags,
       },
@@ -73,6 +75,54 @@ describe('the player, after a receipt', () => {
       action: 'favoriteTrack',
       track: { id: OTHER_ID, name: 'Tempo' },
       playlist: FAVORITES,
+    });
+
+    expect(applyRetentionFlags).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    {
+      retention: 'curated' as const,
+      flags: { savedAt: '2026-11-10T12:00:00.000Z', favoritedAt: null },
+      inCuratedPlaylist: true,
+    },
+    {
+      retention: 'favorite' as const,
+      flags: { savedAt: '2026-11-10T12:00:00.000Z', favoritedAt: '2026-11-10T12:00:00.000Z' },
+      inCuratedPlaylist: false,
+    },
+    {
+      retention: 'saved' as const,
+      flags: { savedAt: '2026-11-10T12:00:00.000Z', favoritedAt: null },
+      inCuratedPlaylist: false,
+    },
+  ])(
+    'shows the Track on the deck as kept once it was added to a Playlist ($retention)',
+    ({ retention, flags, inCuratedPlaylist }) => {
+      vi.useFakeTimers({ now: new Date('2026-11-10T12:00:00.000Z') });
+      const { applyRetentionFlags } = playing({ savedAt: null, inCuratedPlaylist: false });
+      const { result } = renderHook(() => usePlayerFollowsReceipt(vi.fn()));
+
+      result.current({
+        action: 'addToPlaylist',
+        playlist: { id: OTHER_ID, name: 'Running' },
+        retention,
+        tracks: [{ id: TRACK_ID, name: 'Night Drive' }],
+      });
+
+      expect(applyRetentionFlags).toHaveBeenCalledWith(TRACK_ID, flags, inCuratedPlaylist);
+    },
+  );
+
+  it('leaves the deck alone when the Tracks added to a Playlist were others', () => {
+    const { applyRetentionFlags } = playing();
+    const { result } = renderHook(() => usePlayerFollowsReceipt(vi.fn()));
+
+    result.current({
+      action: 'addToPlaylist',
+      playlist: { id: OTHER_ID, name: 'Running' },
+      retention: 'curated',
+      tracks: [{ id: OTHER_ID, name: 'Tempo' }],
     });
 
     expect(applyRetentionFlags).not.toHaveBeenCalled();

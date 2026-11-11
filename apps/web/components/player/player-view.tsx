@@ -104,7 +104,7 @@ function startedView(result: Awaited<PendingStart['result']>): View {
 
 export function PlayerView() {
   const router = useRouter();
-  const { engagedSource, playback, pending, engage, release } = usePlayerContext();
+  const { engagedSource, playback, pending, startCount, engage, release } = usePlayerContext();
   // The shell refreshes its chrome on this very navigation — join its request
   // instead of firing a second identical one.
   const { fetchChrome } = useAppChrome();
@@ -161,7 +161,8 @@ export function PlayerView() {
     return () => {
       cancelled = true;
     };
-  }, [engage, fetchChrome]);
+    // `startCount`: a Start begun while this page is mounted is narrated too.
+  }, [engage, fetchChrome, startCount]);
 
   useEffect(() => {
     if (!engagedSource) return;
@@ -173,7 +174,8 @@ export function PlayerView() {
   const showSession = useCallback(
     (session: SessionSummary) => {
       engage(session, { autoplay: false });
-      setView({ kind: 'player' });
+      // A Start still in flight keeps its narration and its Cancel.
+      setView((current) => (current.kind === 'connecting' ? current : { kind: 'player' }));
     },
     [engage],
   );

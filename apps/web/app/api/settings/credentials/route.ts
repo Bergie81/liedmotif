@@ -7,6 +7,7 @@ import {
   deleteProviderCredential,
   getCredentialStatus,
   getStoredProviderConfig,
+  readEnvLayer,
   upsertProviderCredential,
   type ProviderConfig,
 } from '@liedmotif/db';
@@ -103,12 +104,25 @@ export async function POST(request: Request) {
 
   // An LLM without a model can never be built (`buildLlmProvider` returns null),
   // so reject a save whose effective config would leave the LLM unusable. A preset
-  // with a runtime model default (openai) is buildable model-less.
+  // with a runtime model default (openai) is buildable model-less, and an
+  // `.env` model wins at build time.
   const llmMeta = providerType === 'llm' ? providerMeta : undefined;
   const storedModel = typeof stored?.model === 'string' ? stored.model.trim() : '';
-  const effectiveModel = model ?? (storedModel || llmMeta?.defaultModel);
+  const effectiveModel =
+    model ??
+    (storedModel || readEnvLayer(providerType, providerKey).model || llmMeta?.defaultModel);
   if (providerType === 'llm' && !effectiveModel) {
     return badRequest('A model is required for this Writing AI provider.');
+  }
+
+  // The generic preset has no endpoint default (Ollama falls back to localhost),
+  // so without a base URL anywhere it would be the selected LLM while its builder
+  // returns null and Sessions silently compile without it.
+  const storedBaseUrl = clearsBaseUrl ? undefined : trimmed(stored?.baseUrl);
+  const effectiveBaseUrl =
+    baseUrl ?? storedBaseUrl ?? readEnvLayer(providerType, providerKey).baseUrl;
+  if (providerType === 'llm' && providerKey === 'openai-compatible' && !effectiveBaseUrl) {
+    return badRequest('A base URL is required for this Writing AI provider.');
   }
 
   // Same invariant for the key: a key-requiring LLM or image preset saved with no

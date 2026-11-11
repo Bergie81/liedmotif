@@ -1,7 +1,7 @@
 ---
 title: Troubleshooting
 description: Real Liedmotif problems with the exact message, the reason and the fix, plus how to read logs and check health.
-checkedOn: 2026-11-07
+checkedOn: 2026-11-11
 ---
 
 Find your message or symptom below. Most fixes are one line. Run every command in your install folder: `/opt/liedmotif` from the installer, or your `liedmotif` folder on a laptop. If your user isn't in the `docker` group, write `sudo docker` for `docker`.
@@ -268,7 +268,7 @@ The provider refused the request, often over a named artist. Nothing retries unt
 
 ### Free-text requests fail, but buttons work
 
-A writing AI is set up and it's failing. Liedmotif treats that as a retryable error and doesn't quietly go without it. Test it in **Settings › AI Providers**. To go without one, do both of these, because Liedmotif uses `.env` first and the saved one next: clear the `LLM_` lines in `.env` and run `docker compose up -d web worker`, then press **Disable Writing AI** in **Settings › AI Providers**. If `.env` still selects one, that button says **Delete stored fallback**. Your words then reach the music provider as you wrote them.
+A writing AI is set up and it's failing. Liedmotif treats that as a retryable error and doesn't quietly go without it. Test it in **Settings › AI Providers**. To go without one, do both of these, because Liedmotif uses `.env` first and the saved one next: clear the `LLM_` lines in `.env` and run `docker compose up -d web worker`, then press **Disable Writing AI** in **Settings › AI Providers**. If `.env` still sets one up on its own, that button says **Delete stored fallback**. Your words then reach the music provider as you wrote them.
 
 ### Every track sounds like a test, or nothing comes from the music provider
 

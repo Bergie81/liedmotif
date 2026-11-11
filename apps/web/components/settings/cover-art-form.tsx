@@ -53,7 +53,7 @@ export function CoverArtForm({
         useStandardCoverArt,
       }),
     }).catch(() => null);
-    const data = (await res?.json().catch(() => ({}))) as {
+    const data = (res ? await res.json().catch(() => ({})) : {}) as {
       ok?: boolean;
       error?: string | { message?: string };
       settings?: CoverArtSettings;

@@ -1,5 +1,5 @@
 import { Cpu, Image, Radio } from 'lucide-react';
-import { getUnitCosts } from '@liedmotif/db';
+import { getUnitCosts, readEnvLayer } from '@liedmotif/db';
 import { CostsPanel } from '@/components/settings/costs-panel';
 import { CredentialEditor } from '@/components/settings/credential-editor';
 import { CredentialMutationGroup } from '@/components/settings/credential-mutation-group';
@@ -13,11 +13,31 @@ import {
 import { StoredLlmCredentialAction } from '@/components/settings/stored-llm-credential-action';
 import { IMAGE_PROVIDERS, lockedImageModel } from '@/lib/configurable-providers';
 import { getDb } from '@/lib/db';
-import { LLM_PROVIDERS } from '@/lib/llm-providers';
+import { LLM_PROVIDERS, llmProviderMeta } from '@/lib/llm-providers';
 import { loadProviderSettingsData } from '@/lib/provider-settings-data';
 import { requireAdmin } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * Whether deleting the stored Writing AI row leaves the env-selected one running:
+ * the row backs another provider than `LLM_PROVIDER` names (so nothing reads it), or
+ * env alone supplies the key, model and base URL that provider's builder needs.
+ * `LLM_PROVIDER` by itself is not enough — with the key only stored, the delete
+ * leaves no Writing AI at all.
+ */
+function storedLlmIsEnvFallback(storedProviderKey: string, selectedProviderKey: string): boolean {
+  if (!process.env.LLM_PROVIDER?.trim()) return false;
+  if (storedProviderKey !== selectedProviderKey) return true;
+  const meta = llmProviderMeta(storedProviderKey);
+  const env = readEnvLayer('llm', storedProviderKey);
+  return Boolean(
+    meta &&
+    (!meta.needsKey || env.apiKey) &&
+    (env.model || meta.defaultModel) &&
+    (!meta.needsBaseUrl || env.baseUrl),
+  );
+}
 
 export default async function ProvidersPage() {
   await requireAdmin();
@@ -104,7 +124,10 @@ export default async function ProvidersPage() {
               {data.storedLlmProviderKey ? (
                 <StoredLlmCredentialAction
                   providerKey={data.storedLlmProviderKey}
-                  environmentActive={data.llmConfigurationSource === 'environment'}
+                  environmentActive={storedLlmIsEnvFallback(
+                    data.storedLlmProviderKey,
+                    data.llm.providerKey,
+                  )}
                 />
               ) : null}
             </CredentialMutationGroup>

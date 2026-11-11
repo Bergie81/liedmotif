@@ -141,11 +141,15 @@ describe.skipIf(skip)('POST /api/sessions/change-vibe — the session prompt his
     expect(await storedPrompt(sessionId)).toBe('make it rain outside');
   });
 
-  it('stores no history for a change whose text is only whitespace', async () => {
+  it('refuses a change whose text is only whitespace and stores no history', async () => {
     const sessionId = await startSession({ mode: 'controls', controls: { mood: 'calm' } });
 
-    await changeVibe(sessionId, { mode: 'prompt', prompt: '   ' });
+    const res = await post(changeVibeRoute, {
+      sessionId,
+      input: { mode: 'prompt', prompt: '   ' },
+    });
 
+    expect(res.status).toBe(400);
     expect(await storedPrompt(sessionId)).toBeNull();
   });
 

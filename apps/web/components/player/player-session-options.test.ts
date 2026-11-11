@@ -59,6 +59,7 @@ function Options({
     onRenameTrack: succeed,
     onReroll: noop,
     onMoreLikeThis: complete,
+    moreLikeThisAvailable: true,
     onOpenChangeVibe: noop,
     changeVibeAvailable,
     onDeleteTrack: complete,

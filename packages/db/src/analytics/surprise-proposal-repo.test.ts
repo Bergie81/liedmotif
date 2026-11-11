@@ -197,6 +197,23 @@ describeIfDb('pending Surprise Me proposal', () => {
       expect(await sessionCount()).toBe(1);
     });
 
+    it('a stale start never hands back its Session once it is stopped or being deleted', async () => {
+      for (const deleteRequested of [false, true]) {
+        const owner = await createUser(ctx.db);
+        const saved = await saveFirst(owner);
+        const started = await start(owner, saved.id);
+        if (!started.ok) throw new Error('start refused');
+        await ctx.pool.query(
+          `update activity_sessions set status = 'stopped', stopped_at = now(),
+             delete_requested_at = case when $2 then now() end where id = $1`,
+          [started.session.id, deleteRequested],
+        );
+
+        expect(await start(owner, saved.id)).toEqual({ ok: false, reason: 'not_pending' });
+      }
+      expect(await sessionCount()).toBe(2);
+    });
+
     it('refuses a replaced, dismissed, reset or foreign proposal identity', async () => {
       const owner = await createUser(ctx.db);
       const other = await createUser(ctx.db);

@@ -30,6 +30,7 @@ const HEALTHY: InstanceAlertsSnapshot = {
   failedJobs: 0,
   storageUsage: usage(0),
   storageQuotaBytes: QUOTA,
+  generationReserveBytes: 2 * 64 * MIB,
 };
 
 function evaluate(snapshot: Partial<InstanceAlertsSnapshot>, previous: InstanceAlertsState = {}) {
@@ -113,14 +114,14 @@ describe('storage-quota', () => {
     expect(fired).toMatchObject({ condition: 'storage-quota', severity: 'warning' });
   });
 
-  it('goes critical exactly when a Track of 64 MiB would be refused, not at the quota line', () => {
-    const roomForOneTrack = QUOTA - 64 * MIB;
-    expect(only(evaluate({ storageUsage: usage(roomForOneTrack) }).notifications).severity).toBe(
+  it('goes critical exactly when the worker refuses a call of two 64 MiB Tracks, not at the quota line', () => {
+    const roomForOneCall = QUOTA - 2 * 64 * MIB;
+    expect(only(evaluate({ storageUsage: usage(roomForOneCall) }).notifications).severity).toBe(
       'warning',
     );
-    expect(
-      only(evaluate({ storageUsage: usage(roomForOneTrack + 1) }).notifications).severity,
-    ).toBe('critical');
+    expect(only(evaluate({ storageUsage: usage(roomForOneCall + 1) }).notifications).severity).toBe(
+      'critical',
+    );
   });
 
   it('fires nothing when usage has never been measured', () => {

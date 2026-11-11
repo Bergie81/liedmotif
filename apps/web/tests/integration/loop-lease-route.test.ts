@@ -17,6 +17,12 @@ import {
 
 const holder = vi.hoisted(() => ({ db: null as unknown, ownerUserId: null as string | null }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
+const kicks = vi.hoisted(() => ({ sessionIds: [] as string[] }));
+vi.mock('@/lib/worker-jobs', () => ({
+  enqueueEnsureSessionBuffer: async (_db: unknown, sessionId: string) => {
+    kicks.sessionIds.push(sessionId);
+  },
+}));
 vi.mock('@/lib/session', () => ({
   getAdminSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
   getAppSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
@@ -50,6 +56,7 @@ beforeEach(async () => {
   if (skip) return;
   await truncateTables(testDb.pool, [...GENERATION_FIXTURE_TABLES, 'session_loop_leases']);
   holder.ownerUserId = null;
+  kicks.sessionIds = [];
 });
 
 describe.skipIf(skip)('POST /api/sessions/loop-lease', () => {
@@ -84,6 +91,20 @@ describe.skipIf(skip)('POST /api/sessions/loop-lease', () => {
       held: false,
       lease: { epoch: 3, released: true },
     });
+  });
+
+  it('kicks the buffer only when a release ends the hold', async () => {
+    const ownerUserId = await createUser(testDb.db);
+    holder.ownerUserId = ownerUserId;
+    const sessionId = await createSession(testDb.db, { ownerUserId });
+
+    await post({ sessionId, clientId: 'tab-a', epoch: 1, action: 'acquire' });
+    await post({ sessionId, clientId: 'tab-b', epoch: 1, action: 'acquire' });
+    await post({ sessionId, clientId: 'tab-a', epoch: 2, action: 'release' });
+    expect(kicks.sessionIds).toEqual([]);
+
+    await post({ sessionId, clientId: 'tab-b', epoch: 2, action: 'release' });
+    expect(kicks.sessionIds).toEqual([sessionId]);
   });
 
   it('acknowledges every operation with the real current state (foreign hold survives)', async () => {

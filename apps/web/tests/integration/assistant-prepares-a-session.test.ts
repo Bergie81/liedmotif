@@ -248,7 +248,7 @@ describe.skipIf(skip)('the Assistant asked to start a Session', () => {
     expect(cards(turn)).toEqual([
       { kind: 'session', prompt: 'calm piano', vocal: 'instrumental', targetDurationMinutes: 30 },
     ]);
-    expect(turn.results[1]).toMatch(/already prepared a card.*no second card/i);
+    expect(turn.results[1]).toMatch(/only one card can be prepared.*no second card/i);
   });
 
   it.each([

@@ -2,7 +2,7 @@
 //
 //   npm run onboarding:state              show it
 //   npm run onboarding:state -- complete  mark it done (the app stops diverting to /welcome)
-//   npm run onboarding:state -- clear     forget it (the next visit runs onboarding again)
+//   npm run onboarding:state -- clear     forget it (onboarding runs again once web restarts)
 //
 // `complete` writes exactly what the flow's last screen writes, and `clear` removes
 // only that one `user_settings` row — no profile, People, limits or credential is
@@ -51,7 +51,9 @@ async function main(): Promise<void> {
             eq(userSettings.key, USER_SETTINGS_KEYS.onboarding),
           ),
         );
-      console.log('cleared — the next visit runs onboarding again');
+      console.log(
+        'cleared — restart web (a running one remembers completion), then the next visit runs onboarding again',
+      );
     } else if (action === 'complete') {
       const state = await completeOnboarding(db, admin.userId);
       console.log(`completed at ${state.completedAt} — the app no longer diverts to /welcome`);

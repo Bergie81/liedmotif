@@ -2,7 +2,8 @@
 
 // Multi-select "Add Tracks" for a playlist (add-to-playlist is a
 // track-level action with multi-select): browse the full History, check any
-// number of tracks, one `addPlaylistTracks` commit. Existing members are shown
+// number of tracks, committed through `addPlaylistTracks` in batches of its
+// per-request limit. Existing members are shown
 // checked and locked (no duplicates). Adding implies Save.
 
 import { useEffect, useMemo, useState } from 'react';
@@ -19,6 +20,9 @@ import { primaryButtonClass, secondaryButtonClass } from '@/components/ui/form-s
 import { LoadingRow, LiedmotifLoader } from '@/components/ui/loading';
 import { formatTrackDuration } from '@/components/library/library-view-model';
 import { appendUniqueById } from '@/lib/append-unique';
+
+/** The most Track ids one `addPlaylistTracks` request takes. */
+const ADD_BATCH = 100;
 
 export function AddTracksSheet({
   open,
@@ -97,12 +101,23 @@ function AddTracksContent({
     if (checked.size === 0 || busy) return;
     setBusy(true);
     setError(null);
-    const result = await addPlaylistTracks(playlistId, [...checked]);
-    setBusy(false);
-    if (!result.ok) {
-      setError(`Adding failed: ${result.error.message}`);
-      return;
+    // One add takes at most ADD_BATCH Tracks; adds are idempotent and append in
+    // request order, so consecutive batches keep the picked order and a retry
+    // after a failed batch adds only what is still missing.
+    const trackIds = [...checked];
+    for (let start = 0; start < trackIds.length; start += ADD_BATCH) {
+      const result = await addPlaylistTracks(playlistId, trackIds.slice(start, start + ADD_BATCH));
+      if (!result.ok) {
+        setBusy(false);
+        setError(`Adding failed: ${result.error.message}`);
+        if (start > 0) {
+          router.refresh();
+          onAdded();
+        }
+        return;
+      }
     }
+    setBusy(false);
     router.refresh();
     onAdded();
     onClose();

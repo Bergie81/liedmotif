@@ -48,6 +48,12 @@ const TIMED: TimedLyrics = {
   alignmentErrorScore: 0.05,
 };
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((r) => (resolve = r));
+  return { promise, resolve };
+}
+
 function getLyrics(trackId: string) {
   return GET(new Request(`http://localhost/api/tracks/${trackId}/lyrics`), {
     params: Promise.resolve({ trackId }),
@@ -141,13 +147,16 @@ describe.skipIf(skip)('GET /api/tracks/[trackId]/lyrics', () => {
     expect(providerStub.getTimestampedLyrics).not.toHaveBeenCalled();
   });
 
-  it('settles once the job can no longer deliver timing', async () => {
-    const { trackId } = await seedTrack({ lyrics: LYRICS, jobStatus: 'failed_final' });
-    const body = await (await getLyrics(trackId)).json();
-    expect(body.data.state).toBe('ready');
-    expect(body.data.settled).toBe(true);
-    expect(providerStub.getTimestampedLyrics).not.toHaveBeenCalled();
-  });
+  it.each(['failed_final', 'blocked_by_provider_credits', 'blocked_by_policy'])(
+    'settles once the job can no longer deliver timing (%s)',
+    async (jobStatus) => {
+      const { trackId } = await seedTrack({ lyrics: LYRICS, jobStatus });
+      const body = await (await getLyrics(trackId)).json();
+      expect(body.data.state).toBe('ready');
+      expect(body.data.settled).toBe(true);
+      expect(providerStub.getTimestampedLyrics).not.toHaveBeenCalled();
+    },
+  );
 
   it('serves cached lyrics + timing as synced lines without any provider call', async () => {
     const { trackId } = await seedTrack({ lyrics: LYRICS, timedLyrics: TIMED });
@@ -208,6 +217,37 @@ describe.skipIf(skip)('GET /api/tracks/[trackId]/lyrics', () => {
     expect((await a.json()).data.synced).toBe(true);
     expect((await b.json()).data.synced).toBe(true);
     expect(providerStub.getTimestampedLyrics).toHaveBeenCalledTimes(1);
+  });
+
+  it('pays for one timing fetch when a second open read the track before the first persisted', async () => {
+    const { trackId } = await seedTrack({ lyrics: null });
+    const [row] = await testDb.db
+      .select({ providerTrackId: tracks.providerTrackId })
+      .from(tracks)
+      .where(eq(tracks.id, trackId));
+    const status = {
+      status: 'complete',
+      tracks: [{ providerTrackId: row!.providerTrackId, lyrics: LYRICS }],
+      provider: { providerType: 'music', providerKey: 'mock' },
+    };
+    const first = deferred<typeof status>();
+    const second = deferred<typeof status>();
+    providerStub.getGenerationStatus
+      .mockImplementationOnce(() => first.promise)
+      .mockImplementationOnce(() => second.promise);
+    providerStub.getTimestampedLyrics.mockResolvedValue(TIMED);
+
+    // Both opens read the track (no lyrics, no timing) before either backfill lands.
+    const a = getLyrics(trackId);
+    const b = getLyrics(trackId);
+    await vi.waitFor(() => expect(providerStub.getGenerationStatus).toHaveBeenCalledTimes(2));
+    first.resolve(status);
+    expect((await (await a).json()).data.synced).toBe(true);
+    second.resolve(status);
+    expect((await (await b).json()).data.synced).toBe(true);
+
+    expect(providerStub.getTimestampedLyrics).toHaveBeenCalledTimes(1);
+    expect(await testDb.db.select().from(usageEvents)).toHaveLength(1);
   });
 
   it('caches a provider "no timing" answer so the paid call is never repeated', async () => {

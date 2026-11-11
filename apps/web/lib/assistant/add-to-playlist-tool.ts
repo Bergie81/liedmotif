@@ -7,6 +7,7 @@ import type { LlmTool } from '@liedmotif/providers';
 import {
   ASSISTANT_MAX_TRACKS_PER_ADD,
   addToPlaylistInputSchema,
+  isCuratedPlaylist,
   type AddToPlaylistInput,
 } from '@liedmotif/shared';
 import { askedTracks, done, NO_SUCH_PLAYLIST, NO_TRACK_PLAYING, refused } from './library-action';
@@ -71,6 +72,12 @@ export function createAddToPlaylistTool(
           {
             action: 'addToPlaylist',
             playlist: { id: playlist.id, name: playlist.name },
+            retention:
+              playlist.kind === 'favorites'
+                ? 'favorite'
+                : isCuratedPlaylist(playlist)
+                  ? 'curated'
+                  : 'saved',
             tracks: added.map((id) => ({ id, name: titles.get(id) ?? null })),
           },
           ...rest,

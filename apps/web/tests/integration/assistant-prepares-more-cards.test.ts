@@ -551,7 +551,7 @@ describe.skipIf(skip)('one message to the Assistant', () => {
     ]);
 
     expect(cards(turn)).toHaveLength(1);
-    const refusals = turn.results.filter((result) => /already prepared a card/i.test(result));
+    const refusals = turn.results.filter((result) => /no second card was shown/i.test(result));
     expect(refusals).toHaveLength(2);
   });
 });

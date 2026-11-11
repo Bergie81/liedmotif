@@ -108,6 +108,23 @@ describeIfDb('resolveSessionCoverImageProvider', () => {
     ).resolves.toBe(openRouter);
   });
 
+  it('falls through to the other source when the first choice cannot resolve', async () => {
+    await expect(
+      resolveSessionCoverImageProvider(
+        ctx.db,
+        { getCoverArt: unreadable, getSunoCoverArt: async () => sunoCover },
+        styledSession,
+      ),
+    ).resolves.toBe(sunoCover);
+    await expect(
+      resolveSessionCoverImageProvider(
+        ctx.db,
+        { getCoverArt: async () => openRouter, getSunoCoverArt: unreadable },
+        standardSession,
+      ),
+    ).resolves.toBe(openRouter);
+  });
+
   it('never sends a regeneration to the music-provider source', async () => {
     await expect(
       resolveSessionCoverImageProvider(ctx.db, sources(null, sunoCover), null),

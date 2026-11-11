@@ -154,4 +154,31 @@ describeIfDb('process-deletion-queue job', () => {
     expect(row.processedAt).toEqual(NOW);
     expect(row.errorMessageSafe).toBeNull();
   });
+
+  it('a full batch of items that keep failing never starves a newer due item', async () => {
+    const ownerUserId = await createUser(ctx.db);
+    const stuck = [
+      await queueItem({ ownerUserId, storageKey: 'stuck/a.mp3', deleteAfter: PAST }),
+      await queueItem({ ownerUserId, storageKey: 'stuck/b.mp3', deleteAfter: PAST }),
+    ];
+    const healthy = await queueItem({
+      ownerUserId,
+      storageKey: 'tracks/owner/healthy/original.mp3',
+      deleteAfter: new Date(PAST.getTime() + 60_000),
+    });
+    const storage = {
+      ...mock.provider,
+      delete: async (key: string) => {
+        if (key.startsWith('stuck/')) throw new Error('EACCES: permission denied');
+        return mock.provider.delete(key);
+      },
+    };
+
+    for (let run = 0; run < 2; run++) {
+      await runProcessDeletionQueue({ db: ctx.db, storage, now: NOW, batchLimit: 2 });
+    }
+
+    expect((await itemRow(healthy)).processedAt).toEqual(NOW);
+    for (const id of stuck) expect((await itemRow(id)).processedAt).toBeNull();
+  });
 });

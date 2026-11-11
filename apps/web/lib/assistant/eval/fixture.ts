@@ -352,6 +352,7 @@ function fixtureAnswers(role: UserRole, actions: TurnActions): Record<string, An
         return done({
           action: 'addToPlaylist',
           playlist: { id: playlist.id, name: playlist.name },
+          retention: playlist.system ? 'favorite' : 'curated',
           tracks: added.map(item),
         });
       }),

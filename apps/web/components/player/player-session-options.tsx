@@ -55,6 +55,7 @@ export function PlayerSessionOptions({
   onConvertToPlaylist,
   onReroll,
   onMoreLikeThis,
+  moreLikeThisAvailable,
   onOpenChangeVibe,
   changeVibeAvailable,
   onDeleteTrack,
@@ -92,6 +93,8 @@ export function PlayerSessionOptions({
   onReroll: () => void;
   /** Start a new Session seeded from the current Track (after the confirm). */
   onMoreLikeThis: () => Promise<void>;
+  /** Whether More Like This can start now; the player's button reads the same. */
+  moreLikeThisAvailable: boolean;
   /** Opens the Change Vibe sheet (parent-owned, so two sheets never stack). */
   onOpenChangeVibe: () => void;
   /** Whether the Change Vibe sheet can open now; the player's button reads the same. */
@@ -119,16 +122,17 @@ export function PlayerSessionOptions({
     'reroll-track': track
       ? { kind: 'button', testId: 'player-options-reroll', onSelect: onReroll }
       : { kind: 'unavailable', testId: 'player-options-reroll' },
-    'more-like-this-track': track
-      ? {
-          kind: 'confirm',
-          testId: 'player-options-more-like-this',
-          heading: 'More Like This',
-          body: `Start a new Session seeded from “${track.title}”? This Session becomes Stopped and remains resumable.`,
-          confirmLabel: 'Start new Session',
-          onConfirm: onMoreLikeThis,
-        }
-      : { kind: 'unavailable', testId: 'player-options-more-like-this' },
+    'more-like-this-track':
+      track && moreLikeThisAvailable
+        ? {
+            kind: 'confirm',
+            testId: 'player-options-more-like-this',
+            heading: 'More Like This',
+            body: `Start a new Session seeded from “${track.title}”? This Session becomes Stopped and remains resumable.`,
+            confirmLabel: 'Start new Session',
+            onConfirm: onMoreLikeThis,
+          }
+        : { kind: 'unavailable', testId: 'player-options-more-like-this' },
     'delete-track': track
       ? {
           kind: 'confirm',

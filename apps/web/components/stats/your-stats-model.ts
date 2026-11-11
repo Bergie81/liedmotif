@@ -89,6 +89,8 @@ export interface TrackRow {
   label: string;
   coverImageId: string | null;
   plays: string;
+  /** What the line is drawn from: whole-percent shares tie or round to zero when plays spread thin. */
+  playCount: number;
   /** Percent of all qualifying plays in the range. */
   share: number;
   /**
@@ -118,6 +120,7 @@ export function trackRows(stats: ListeningStatsData): TrackRow[] {
     label: entry.trackId === null ? 'Deleted track' : (entry.title ?? 'Untitled track'),
     coverImageId: entry.coverImageId,
     plays: counted(entry.plays, 'play', 'plays'),
+    playCount: entry.plays,
     share: stats.qualifyingPlays > 0 ? Math.round((entry.plays / stats.qualifyingPlays) * 100) : 0,
     action: trackAction(entry),
   }));

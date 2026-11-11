@@ -65,9 +65,10 @@ export async function fetchPinnedAddresses(
   const agent = new Agent({ connect: { lookup: pinnedLookup(addresses) } });
   let response: Response;
   try {
-    // Two nominally distinct type worlds, one runtime: undici's fetch is the
-    // implementation behind the platform's, and its Request/Response are the
-    // platform classes. The casts cross the declaration gap, nothing else.
+    // The npm undici is not the copy bundled into Node, so its Response is a
+    // structurally compatible class, not the platform one (`instanceof Response`
+    // fails), and a platform `Request` input is not understood: pass a string or
+    // URL. The casts cross the declaration gap, nothing else.
     response = (await undiciFetch(input as Parameters<typeof undiciFetch>[0], {
       ...(init as Parameters<typeof undiciFetch>[1]),
       dispatcher: agent,

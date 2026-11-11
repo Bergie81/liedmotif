@@ -151,8 +151,30 @@ export function NowPlaying({
   const router = useRouter();
   playerRef.current = player;
   // Target edits return the policy immediately; queue polls supply live accounting.
+  // The New music policy follows whichever moved last: this player's own edit
+  // (the summary) or a poll reporting a change made on another device.
+  const [newMusicPolicy, setNewMusicPolicy] = useState(() => ({
+    sessionMode: session.sessionMode,
+    targetDurationMinutes: session.targetDurationMinutes ?? null,
+  }));
+  useEffect(() => {
+    setNewMusicPolicy({
+      sessionMode: session.sessionMode,
+      targetDurationMinutes: session.targetDurationMinutes ?? null,
+    });
+  }, [session.sessionMode, session.targetDurationMinutes]);
+  const polledSessionMode = player.sessionMode;
+  const polledTargetDurationMinutes = player.targetDurationMinutes ?? null;
+  useEffect(() => {
+    if (polledSessionMode === undefined) return;
+    setNewMusicPolicy({
+      sessionMode: polledSessionMode,
+      targetDurationMinutes: polledTargetDurationMinutes,
+    });
+  }, [polledSessionMode, polledTargetDurationMinutes]);
   const durationSession = {
     ...session,
+    ...newMusicPolicy,
     generatedDurationSeconds: player.generatedDurationSeconds ?? session.generatedDurationSeconds,
     unknownDurationTrackCount:
       player.unknownDurationTrackCount ?? session.unknownDurationTrackCount,
@@ -195,7 +217,7 @@ export function NowPlaying({
     vibeChangePending,
   });
   const sessionRepeat =
-    session.sessionMode === 'repeat' ||
+    durationSession.sessionMode === 'repeat' ||
     isSessionRepeatGenerationStatus(player.generationStatus) ||
     isDurationTargetReached(
       durationSession.targetDurationMinutes,
@@ -251,11 +273,13 @@ export function NowPlaying({
   const [deletingSession, setDeletingSession] = useState(false);
   // The policy is only this player's to write while the Session it is showing
   // is the live, settled one: a stop, a delete, or a handoff to another Session
-  // is about to take the Session the owner would be aiming at.
+  // is about to take the Session the owner would be aiming at. A pending Change
+  // Vibe may write its own target over a change made here meanwhile.
   const newMusicAvailable =
     session.status === 'active' &&
     player.sessionStatus === 'active' &&
     sessionActions.busyAction === null &&
+    !vibeChangePending &&
     !deletingSession &&
     !incoming &&
     !pendingSource;
@@ -388,6 +412,7 @@ export function NowPlaying({
       onMoreLikeThis={async () => {
         await sessionActions.startMoreLikeThis();
       }}
+      moreLikeThisAvailable={sessionActions.busyAction === null && !vibeChangePending}
       onOpenChangeVibe={() => setChangeVibeOpen(true)}
       changeVibeAvailable={changeVibeAvailable}
       onDeleteTrack={deleteCurrentTrack}
@@ -509,7 +534,7 @@ export function NowPlaying({
         <PlayerDirectionActions
           trackTitle={track?.title ?? null}
           vibe={player.vibe}
-          targetDurationMinutes={session.targetDurationMinutes ?? null}
+          targetDurationMinutes={durationSession.targetDurationMinutes}
           generatedDurationSeconds={durationSession.generatedDurationSeconds ?? 0}
           switchNowLocked={player.loopActive || sectionLoopLive(player.sectionLoopTool)}
           disabled={!hasTrack}

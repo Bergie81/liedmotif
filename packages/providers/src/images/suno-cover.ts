@@ -115,7 +115,9 @@ const CREDIT_REJECTED = 'The music provider rejected these credentials.';
 function classifySubmitStatus(status: number): GeneratedImageProviderError {
   if (status === 401 || status === 403 || status === 404)
     return new GeneratedImageProviderError('configuration', 'not_started');
-  if (status === 429) return new GeneratedImageProviderError('rate_limit', 'not_started');
+  // 405 and 430 are the provider's call-frequency refusals, which clear on retry.
+  if (status === 429 || status === 405 || status === 430)
+    return new GeneratedImageProviderError('rate_limit', 'not_started');
   if (status === 408 || status === 504)
     return new GeneratedImageProviderError('timeout', 'outcome_unknown');
   // 455 is the provider's maintenance window — transient, never a terminal

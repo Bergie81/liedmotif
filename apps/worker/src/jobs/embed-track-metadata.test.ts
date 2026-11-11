@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import {
   activitySessions,
   coverImages,
+  deletionQueueItems,
   generationRequests,
   trackAudioAssets,
   tracks,
@@ -453,5 +454,32 @@ describeIfDb('embed-track-metadata', () => {
     });
     expect(retry.outcome).toBe('tagged');
     expect(readId3Tags(await readAudio(seeded.audioKey))!.hasArtwork).toBe(true);
+  });
+
+  it('queues the re-created file for deletion when the Track is deleted mid-retag', async () => {
+    const seeded = await seedMp3Track({ sessionTitle: 'Gone Mid-Write' });
+    // A delete commits while the retag's write is in flight: its asset row goes
+    // (and its queued key would be processed) before the retag publishes.
+    const racing: EmbedTrackMetadataDeps = {
+      ...deps(fakeRenderAlbumArt().render),
+      storage: {
+        ...store.provider,
+        write: async (input) => {
+          await ctx.db.delete(trackAudioAssets).where(eq(trackAudioAssets.trackId, seeded.trackId));
+          return store.provider.write(input);
+        },
+      },
+    };
+
+    expect((await runEmbedTrackMetadata(racing, { trackId: seeded.trackId })).outcome).toBe(
+      'tagged',
+    );
+
+    const queued = await ctx.db
+      .select()
+      .from(deletionQueueItems)
+      .where(eq(deletionQueueItems.storageKey, seeded.audioKey));
+    expect(queued).toHaveLength(1);
+    expect(queued[0]).toMatchObject({ trackId: seeded.trackId, processedAt: null });
   });
 });

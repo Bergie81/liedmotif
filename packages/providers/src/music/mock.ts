@@ -4,6 +4,7 @@
 // can be exercised end-to-end without a real music model. Suno is the only
 // real music provider.
 
+import { randomUUID } from 'node:crypto';
 import { buildProviderDiagnostics, hash32 } from '@liedmotif/shared';
 import type {
   GenerationCostEstimate,
@@ -73,8 +74,10 @@ export function mockMusicProvider(options: MockMusicOptions = {}): MusicProvider
   const sampleStreamUrl = options.sampleStreamUrl ?? DEFAULT_SAMPLE_STREAM_URL;
   const model = 'mock-v1';
 
+  // Unique per call, like a real provider's task id: `provider_jobs` holds it
+  // unique, and two Sessions with the same style submit the same input.
   function taskIdFor(input: MusicGenerationInput): string {
-    return `mock-${hash32(`${input.prompt}#${input.seed ?? 0}`)}`;
+    return `mock-${hash32(`${input.prompt}#${input.seed ?? 0}`)}-${randomUUID().slice(0, 8)}`;
   }
 
   function tracksFor(taskId: string): NormalizedTrack[] {

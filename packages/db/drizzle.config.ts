@@ -9,15 +9,15 @@ import { defineConfig } from 'drizzle-kit';
 // Liedmotif application tables, so anything added to `src/schema` is picked up
 // here automatically.
 //
-// `url` falls back to the Docker Compose default (a non-secret, matching
-// `.env.example`) so offline `generate` never fails on a missing env var. Real
+// `url` falls back to the development database in `.env.example` (a
+// non-secret) so offline `generate` never fails on a missing env var. Real
 // `migrate`/`studio` runs use the `DATABASE_URL` from the environment.
 export default defineConfig({
   dialect: 'postgresql',
   schema: './src/schema/index.ts',
   out: './drizzle',
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? 'postgres://liedmotif:liedmotif@localhost:5432/liedmotif',
+    url: process.env.DATABASE_URL ?? 'postgres://liedmotif:liedmotif@localhost:5433/liedmotif_dev',
   },
   // Generate plain, reviewable SQL with descriptive prompts.
   verbose: true,

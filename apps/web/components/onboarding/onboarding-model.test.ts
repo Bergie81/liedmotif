@@ -170,6 +170,13 @@ describe('onboardingRecord', () => {
       coversPerDay: '20',
       coversPerMonth: '300',
     },
+    savedCeiling: { enabled: true, dailyTracks: '40', monthlyTracks: '400', concurrentTracks: '2' },
+    savedCoverBudget: {
+      tailoredCoverArtEnabled: false,
+      ceilingEnabled: true,
+      coversPerDay: '20',
+      coversPerMonth: '300',
+    },
   };
   const rowFor = (draft: OnboardingDraft, label: string, over: Partial<OnboardingData> = {}) =>
     onboardingRecord(draft, { ...data, ...over }).find((row) => row.label === label);
@@ -191,12 +198,25 @@ describe('onboardingRecord', () => {
   });
 
   it('records a switched-off Track ceiling as no limit, like a Writing AI left off', () => {
-    const draft = { ...empty, ceiling: { ...empty.ceiling, enabled: false } };
+    const draft = { ...empty, savedCeiling: { ...empty.savedCeiling, enabled: false } };
     expect(rowFor(draft, 'Tracks / day')).toEqual({
       label: 'Tracks / day',
       value: 'No limit',
       muted: true,
     });
+  });
+
+  it('reports a spend cap only once it is saved, never an edit still on its step', () => {
+    const editing = {
+      ...empty,
+      ceiling: { ...empty.ceiling, dailyTracks: '10' },
+      savedCeiling: { ...empty.savedCeiling, enabled: false },
+      coverBudget: { ...empty.coverBudget, tailoredCoverArtEnabled: true },
+    };
+    expect(rowFor(editing, 'Tracks / day')?.value).toBe('No limit');
+    expect(rowFor({ ...editing, imageConnected: true }, 'Cover images')?.value).toBe(
+      'Liedmotif Cover',
+    );
   });
 
   it('falls back to the name for the MP3 artist, because exports do the same', () => {
@@ -253,7 +273,7 @@ describe('onboardingRecord', () => {
   it('names the Cover source, and treats the placeholder fallback as nothing chosen', () => {
     const painting = {
       ...empty,
-      coverBudget: { ...empty.coverBudget, tailoredCoverArtEnabled: true },
+      savedCoverBudget: { ...empty.savedCoverBudget, tailoredCoverArtEnabled: true },
     };
     expect(rowFor(empty, 'Cover images')).toEqual({
       label: 'Cover images',

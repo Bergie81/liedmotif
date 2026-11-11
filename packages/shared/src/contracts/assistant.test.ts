@@ -113,7 +113,7 @@ const SESSION = { id: '5d2f8e1b-6c3a-4f7e-8b9d-1a2b3c4d5e6f', name: null };
 /** One receipt per thing the Assistant can do in the Library. */
 const RECEIPTS = [
   { action: 'favoriteTrack', track: TRACK, playlist: { ...PLAYLIST, name: 'Favorites' } },
-  { action: 'addToPlaylist', playlist: PLAYLIST, tracks: [TRACK] },
+  { action: 'addToPlaylist', playlist: PLAYLIST, retention: 'curated', tracks: [TRACK] },
   { action: 'createPlaylist', playlist: PLAYLIST },
   { action: 'renamePlaylist', playlist: PLAYLIST, previousName: 'Jogging' },
   { action: 'pinPlaylist', playlist: PLAYLIST },
@@ -224,7 +224,12 @@ describe('assistantStreamEventSchema', () => {
   it('takes a receipt for at most 20 added Tracks', () => {
     expect(ASSISTANT_MAX_TRACKS_PER_ADD).toBe(20);
     const adding = (count: number) =>
-      done({ action: 'addToPlaylist', playlist: PLAYLIST, tracks: Array(count).fill(TRACK) });
+      done({
+        action: 'addToPlaylist',
+        playlist: PLAYLIST,
+        retention: 'curated',
+        tracks: Array(count).fill(TRACK),
+      });
 
     expect(assistantStreamEventSchema.safeParse(adding(20)).success).toBe(true);
     expect(assistantStreamEventSchema.safeParse(adding(21)).success).toBe(false);

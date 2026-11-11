@@ -712,7 +712,9 @@ export class EdgeTransitions {
         }, commitDelayMs);
       },
       () => {
-        if (this.prep === prep) this.fail(prep, { type: 'start-rejected' });
+        if (this.prep === prep && prep.state === 'scheduled') {
+          this.fail(prep, { type: 'start-rejected' });
+        }
       },
     );
   }

@@ -77,4 +77,40 @@ describe('useLyricsSurface pending poll', () => {
     });
     expect(requests).toHaveLength(4);
   });
+
+  it('keeps the words already shown when a later read fails', async () => {
+    let surface: ReturnType<typeof useLyricsSurface> | null = null;
+    function Shown() {
+      surface = useLyricsSurface({
+        trackId: 'track-1',
+        enabled: true,
+        getPlaybackSample: () => ({ positionSeconds: 0, durationSeconds: 100, playbackRate: 1 }),
+      });
+      return null;
+    }
+    const requests = captureFetches();
+    render(createElement(Shown));
+
+    await act(async () => {
+      requests[0]!.respond({
+        ok: true,
+        data: {
+          state: 'ready',
+          lines: [{ kind: 'line', text: 'Hello night', timeSeconds: null }],
+          synced: false,
+          settled: false,
+        },
+      });
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(PENDING_POLL_MS);
+    });
+    await act(async () => {
+      requests[1]!.respond(null);
+    });
+
+    expect(surface!.phase).toBe('lines');
+    expect(surface!.lines).toHaveLength(1);
+    expect(surface!.settled).toBe(false);
+  });
 });

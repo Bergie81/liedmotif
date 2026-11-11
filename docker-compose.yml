@@ -91,6 +91,9 @@ services:
       PGUSER: ${POSTGRES_USER:-liedmotif}
       PGPASSWORD: ${POSTGRES_PASSWORD:-liedmotif}
       PGDATABASE: ${POSTGRES_DB:-liedmotif}
+      # The database web and worker use, when it is not the bundled one above:
+      # a backup of any other database is a backup of the wrong library.
+      DATABASE_URL: ${DOCKER_DATABASE_URL:-}
       BACKUP_RETRY_SECONDS: ${BACKUP_RETRY_SECONDS:-300}
       BACKUP_MIN_FREE_BYTES: ${BACKUP_MIN_FREE_BYTES:-2147483648}
       BACKUP_ENCRYPTION_PASSPHRASE: ${BACKUP_ENCRYPTION_PASSPHRASE:-}

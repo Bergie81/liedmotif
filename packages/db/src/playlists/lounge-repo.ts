@@ -49,6 +49,7 @@ import {
 } from '../search/match';
 import { cutSnippet } from '../search/snippet';
 import {
+  afterPlaylistPosition,
   playlistHasMembersCondition,
   playlistMosaicCoverColumn,
   playlistTotalDurationColumn,
@@ -308,7 +309,6 @@ export async function getLoungePlaylistDetail(
     .limit(1);
   if (!row) return null;
 
-  const afterPosition = args.cursor == null ? -1 : Number.parseInt(args.cursor, 10);
   const memberRows = await db
     .select({
       ...trackSummaryColumns(db),
@@ -319,15 +319,21 @@ export async function getLoungePlaylistDetail(
       coverImageId: effectiveTrackCoverColumn(activitySessions.coverImageId, tracks.coverImageId),
       originSessionTitle: activitySessions.title,
       position: playlistTracks.position,
+      trackOwnerUserId: tracks.ownerUserId,
+      trackOwnerName: user.name,
+      trackOwnerArtistName: listenerProfiles.artistName,
+      trackOwnerImageUrl: user.image,
     })
     .from(playlistTracks)
     .innerJoin(tracks, eq(tracks.id, playlistTracks.trackId))
     .leftJoin(generationRequests, eq(generationRequests.id, tracks.generationRequestId))
     .leftJoin(activitySessions, eq(activitySessions.id, generationRequests.activitySessionId))
+    .leftJoin(user, eq(user.id, tracks.ownerUserId))
+    .leftJoin(listenerProfiles, eq(listenerProfiles.ownerUserId, tracks.ownerUserId))
     .where(
       and(
         eq(playlistTracks.playlistId, row.id),
-        gt(playlistTracks.position, Number.isNaN(afterPosition) ? -1 : afterPosition),
+        gt(playlistTracks.position, afterPlaylistPosition(args.cursor)),
         viewerCanReadTrack(args.viewerUserId),
       ),
     )
@@ -336,11 +342,29 @@ export async function getLoungePlaylistDetail(
 
   const hasMore = memberRows.length > args.limit;
   const page = hasMore ? memberRows.slice(0, args.limit) : memberRows;
-  const items: PlaylistMemberTrack[] = page.map((member) => ({
-    ...member,
-    hasPlayableAudio: member.hasPlayableAudio ?? false,
-    hasFinalAsset: member.hasFinalAsset ?? false,
-  }));
+  // The playlist owner's members are attributed by the header, the viewer's
+  // own carry none; a Shared reference names its own owner.
+  const items: PlaylistMemberTrack[] = page.map(
+    ({
+      trackOwnerUserId,
+      trackOwnerName,
+      trackOwnerArtistName,
+      trackOwnerImageUrl,
+      ...member
+    }) => ({
+      ...member,
+      hasPlayableAudio: member.hasPlayableAudio ?? false,
+      hasFinalAsset: member.hasFinalAsset ?? false,
+      owner:
+        trackOwnerUserId === row.ownerUserId || trackOwnerUserId === args.viewerUserId
+          ? null
+          : {
+              name: trackOwnerName ?? '',
+              artistName: trackOwnerArtistName,
+              imageUrl: trackOwnerImageUrl,
+            },
+    }),
+  );
   const last = page[page.length - 1];
   const { owner, ...playlist } = row;
   return {

@@ -131,7 +131,7 @@ export function PlaylistsGrid({
   const load = useCallback(async () => {
     const token = beginFirstPage();
     const result = await listPlaylists({ search });
-    if (!settle(token)) return;
+    if (!settle(token, result.ok)) return;
     if (!result.ok) {
       setActionError(`Couldn’t load playlists: ${result.error.message}`);
       return;

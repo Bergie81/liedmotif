@@ -95,8 +95,12 @@ export function useVoiceRecorder(): UseVoiceRecorderResult {
     if (!recorder || state !== 'recording') return null;
     setState('processing');
     const captured = await new Promise<Blob>((resolve) => {
-      recorder.onstop = () =>
+      const collect = () =>
         resolve(new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' }));
+      // The browser stops a recorder itself when the microphone goes away or capture
+      // fails; its data has arrived by then, and `stop()` would fire no event.
+      if (recorder.state === 'inactive') return collect();
+      recorder.onstop = collect;
       recorder.stop();
     });
     teardown();

@@ -136,6 +136,40 @@ describe('usePlaybackSettings blend toggle', () => {
     expect(result.current.settingsRef.current.blendEnabled).toBe(true);
   });
 
+  it('reverts a failed newest toggle to the server value, not to an earlier unsaved flip', async () => {
+    const requests = captureFetches();
+    const { result } = renderHook(() => usePlaybackSettings({ read: true }));
+    await waitFor(() => expect(requests).toHaveLength(1));
+    await act(async () => requests[0]!.respond(ok(SETTINGS)));
+
+    await act(async () => {
+      const first = result.current.setBlendEnabled(false);
+      const second = result.current.setBlendEnabled(true);
+      requests[1]!.respond(failure);
+      requests[2]!.respond(failure);
+      await Promise.all([first, second]);
+    });
+
+    expect(result.current.blendEnabled).toBe(true);
+    expect(result.current.settingsRef.current.blendEnabled).toBe(true);
+  });
+
+  it('lets the mount fetch apply the saved value after a toggle that failed before it answered', async () => {
+    const requests = captureFetches();
+    const { result } = renderHook(() => usePlaybackSettings({ read: true }));
+    await waitFor(() => expect(requests).toHaveLength(1));
+
+    await act(async () => {
+      const pending = result.current.setBlendEnabled(false);
+      requests[1]!.respond(failure);
+      await pending;
+    });
+    await act(async () => requests[0]!.respond(ok({ ...SETTINGS, blendEnabled: false })));
+
+    expect(result.current.blendEnabled).toBe(false);
+    expect(result.current.settingsRef.current.blendEnabled).toBe(false);
+  });
+
   // The Offline Library cannot read the owner's choice from the server, so it
   // plays the settings this device last read: blending off stays off offline.
   it('plays offline with the settings this device last read, without a request', async () => {

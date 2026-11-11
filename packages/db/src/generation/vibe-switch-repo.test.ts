@@ -254,6 +254,52 @@ describeIfDb('vibe-switch cutover (switch-now Change Vibe)', () => {
     expect(states.map((s) => s.vibeSwitchSetAside)).toEqual([false, false, false]);
   });
 
+  // The cutover locks the Session row, then its queue items. A playback report
+  // taking them the other way round deadlocks against it (40P01): the switch
+  // stays armed, or `started` answers 500. Here a second connection stands in
+  // for the cutover, holding the Session row while the report runs.
+  it('a playback report takes the Session row before its queue items, as the cutover does', async () => {
+    const base = await seedArmedSession(2);
+    await seedItem(base, 0, { styleRevision: 1, state: 'playing' });
+    const { queueItemId } = await seedItem(base, 1, { styleRevision: 1 });
+    await seedItem(base, 2, { styleRevision: 2 });
+
+    const cutover = await ctx.pool.connect();
+    try {
+      await cutover.query('begin');
+      await cutover.query('select id from activity_sessions where id = $1 for no key update', [
+        base.sessionId,
+      ]);
+      const report = reportPlaybackState(ctx.db, {
+        ownerUserId: base.ownerUserId,
+        sessionId: base.sessionId,
+        clientId: 'device-1',
+        clientEventId: '60000000-0000-0000-0000-000000000006',
+        type: 'started',
+        trackId: null,
+        queueItemId,
+        positionSeconds: 0,
+        clientTimestamp: new Date('2026-08-01T10:05:00Z'),
+      });
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      // Below the deadlock timeout, so a report holding the item fails here
+      // as a lock timeout instead of either side being picked as the victim.
+      await cutover.query("set local lock_timeout = '500ms'");
+      await cutover.query(
+        `update activity_session_queue_items set state = 'skipped', vibe_switch_set_aside = true
+         where id = $1 and state = 'queued'`,
+        [queueItemId],
+      );
+      await cutover.query('commit');
+      expect((await report).ok).toBe(true);
+    } catch (err) {
+      await cutover.query('rollback');
+      throw err;
+    } finally {
+      cutover.release();
+    }
+  });
+
   it('is a no-op without an armed switch, and idempotent after a cutover', async () => {
     const base = await seedArmedSession(2);
     await seedItem(base, 0, { styleRevision: 1 });

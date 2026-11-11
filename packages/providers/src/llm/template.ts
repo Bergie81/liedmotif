@@ -6,7 +6,13 @@
 // titles / artist names are cosmetic and derived deterministically here, so they
 // never block playback, buffering, or provider submission.
 
-import { DEFAULT_NOVELTY, DEFAULT_STYLE_STRENGTH, hash32, normalizeTerm } from '@liedmotif/shared';
+import {
+  DEFAULT_NOVELTY,
+  DEFAULT_STYLE_STRENGTH,
+  escapeRegExp,
+  hash32,
+  normalizeTerm,
+} from '@liedmotif/shared';
 import { sanitizeLanguage } from './language';
 import {
   clampGuardrailLevel,
@@ -130,8 +136,10 @@ function pick<T>(values: readonly T[], index: number): T {
   return values[((index % values.length) + values.length) % values.length]!;
 }
 
+/** Capitalize each word's first letter. A letter, digit or apostrophe before it
+ *  means mid-word ("don't", "1st"), so every script capitalizes alike. */
 function titleCase(value: string): string {
-  return value.replace(/\b[a-z]/g, (c) => c.toUpperCase());
+  return value.replace(/(?<![\p{L}\p{N}_'’])\p{Ll}/gu, (c) => c.toUpperCase());
 }
 
 // --- Frozen blend parameters --------------------------------------------------
@@ -256,7 +264,10 @@ function applyGenrePicks(
   if (picks.length === 0) return snapshot;
   const picked = new Set(picks);
   const styleText = snapshot.stylePrompt.toLowerCase();
-  const missing = picks.filter((pick) => !styleText.includes(pick));
+  // A whole-word mention only: "disco" inside "discovering" names no genre.
+  const mentions = (pick: string) =>
+    new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(pick)}(?![\\p{L}\\p{N}])`, 'u').test(styleText);
+  const missing = picks.filter((pick) => !mentions(pick));
   return {
     ...snapshot,
     genreTags: [...picks, ...snapshot.genreTags.filter((tag) => !picked.has(normalizeTerm(tag)))],
@@ -338,15 +349,24 @@ function applyVocalPick(
  * Force the picked energy over the model's reading. The model's BPM reflected
  * ITS energy guess, so it is unfrozen (`bpm: null`) for `freezeStyleParameters`
  * to re-derive from the forced energy — and any stale "<level> energy" style
- * tag is rewritten to match (appended when the style never named one).
+ * tag is rewritten to match (a changed energy is appended when the style never
+ * named one).
  */
 function applyEnergyPick(
   snapshot: SessionStyleSnapshot,
   energy: EnergyLevel | undefined,
 ): SessionStyleSnapshot {
-  if (!energy || energy === snapshot.energy) return snapshot;
-  const energyTag = /\b(low|medium|high) energy\b/gi;
-  const stylePrompt = snapshot.stylePrompt.match(energyTag)
+  if (!energy) return snapshot;
+  const energyTag = /\b(low|medium|high)[\s-]energy\b/gi;
+  const tagged = snapshot.stylePrompt.match(energyTag) !== null;
+  // A pick that matches the snapshot's energy leaves its tempo alone, but the
+  // words can still name another level (the passthrough never reads them).
+  if (energy === snapshot.energy) {
+    return tagged
+      ? { ...snapshot, stylePrompt: snapshot.stylePrompt.replace(energyTag, `${energy} energy`) }
+      : snapshot;
+  }
+  const stylePrompt = tagged
     ? snapshot.stylePrompt.replace(energyTag, `${energy} energy`)
     : `${snapshot.stylePrompt}, ${energy} energy`;
   return {

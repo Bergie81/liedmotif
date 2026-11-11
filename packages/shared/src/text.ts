@@ -24,7 +24,11 @@ export function clampAtWord(text: string, maxLength: number): string {
   if (collapsed.length <= maxLength) return collapsed;
   const cut = collapsed.slice(0, maxLength);
   const boundary = cut.lastIndexOf(' ');
-  const head = boundary > 0 ? cut.slice(0, boundary) : cut.slice(0, maxLength - 1);
+  // A cut by code unit can end inside a surrogate pair; drop its lone half.
+  const head =
+    boundary > 0
+      ? cut.slice(0, boundary)
+      : cut.slice(0, maxLength - 1).replace(/[\uD800-\uDBFF]$/, '');
   return `${head.replace(/[\s,;:.!?]+$/, '')}…`;
 }
 

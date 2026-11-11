@@ -6,7 +6,7 @@
 // single-track membership picker is `save-to-playlist-sheet.tsx` — this sheet
 // exists for the many-tracks → one-playlist direction.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MAX_PLAYLIST_NAME_LENGTH, type PlaylistSummaryItem } from '@liedmotif/shared';
 import { Armchair, ListMusic, Plus, Star } from 'lucide-react';
 import { createPlaylist, getAllPlaylists } from '@/lib/api-client';
@@ -74,10 +74,19 @@ function ChooseContent({
     else onClose();
   }
 
+  // A create that succeeded before its add failed: retrying the same name adds
+  // to that Playlist instead of minting another empty one.
+  const created = useRef<{ name: string; playlistId: string } | null>(null);
+
   async function createAndChoose(name: string): Promise<string | null> {
-    const result = await createPlaylist(name);
-    if (!result.ok) return result.error.message;
-    const failure = await onChoose(result.data.playlist.id);
+    let playlistId = created.current?.name === name ? created.current.playlistId : null;
+    if (!playlistId) {
+      const result = await createPlaylist(name);
+      if (!result.ok) return result.error.message;
+      playlistId = result.data.playlist.id;
+      created.current = { name, playlistId };
+    }
+    const failure = await onChoose(playlistId);
     if (!failure) onClose();
     return failure;
   }

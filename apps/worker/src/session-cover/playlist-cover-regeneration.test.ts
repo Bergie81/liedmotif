@@ -6,6 +6,7 @@ import {
   createPerson,
   createPlaylist,
   deletePersonReferencePhoto,
+  deletePlaylist,
   ensureOwnerPerson,
   insertPersonReferencePhoto,
   playlists,
@@ -364,6 +365,65 @@ describeIfDb('PlaylistCoverGenerator regeneration', () => {
     expect(replay).toMatchObject({ status: 'ready', generatedNow: false });
     expect(calls).toHaveLength(1);
     expect(await playlistCoverId(playlistId)).toBeNull();
+  });
+
+  describe('while the paid call is in flight', () => {
+    function gatedCoverArt() {
+      const fake = fakeCoverArt();
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      let entered!: () => void;
+      const inFlight = new Promise<void>((resolve) => {
+        entered = resolve;
+      });
+      const provider: GeneratedImageProvider = {
+        ...fake.provider,
+        async generate(input) {
+          entered();
+          await gate;
+          return fake.provider.generate(input);
+        },
+      };
+      return { provider, calls: fake.calls, inFlight, release: () => release() };
+    }
+
+    it('leaves the attempt to the run paying for it when a second run arrives', async () => {
+      const { ownerUserId, playlistId } = await seedPlaylistWithMembers();
+      const attempt = await reserveAttempt(ownerUserId, playlistId);
+      const { provider, calls, inFlight, release } = gatedCoverArt();
+
+      const first = generator(ownerUserId, provider).processRegeneration(playlistId, attempt.id);
+      await inFlight;
+      const second = await generator(ownerUserId, provider).processRegeneration(
+        playlistId,
+        attempt.id,
+      );
+      release();
+
+      expect(second).toEqual({ status: 'pending' });
+      await expect(first).resolves.toMatchObject({ status: 'ready', generatedNow: true });
+      expect(calls).toHaveLength(1);
+      expect((await ledgerRow(attempt.id))?.state).toBe('ready');
+    });
+
+    it('writes no cover bytes when the Playlist is deleted before the provider returns', async () => {
+      const { ownerUserId, playlistId } = await seedPlaylistWithMembers();
+      const attempt = await reserveAttempt(ownerUserId, playlistId);
+      const { provider, inFlight, release } = gatedCoverArt();
+
+      const first = generator(ownerUserId, provider).processRegeneration(playlistId, attempt.id);
+      await inFlight;
+      await deletePlaylist(ctx.db, { ownerUserId, playlistId });
+      release();
+
+      await expect(first).resolves.toEqual({ status: 'pending' });
+      expect(await store.provider.stat(attempt.storageKey)).toBeNull();
+      expect(
+        await ctx.db.select().from(coverImages).where(eq(coverImages.id, attempt.coverImageId)),
+      ).toHaveLength(0);
+    });
   });
 
   it('never lets a music-task-driven provider serve a playlist attempt', async () => {

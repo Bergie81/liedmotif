@@ -6,8 +6,8 @@
 // Provenance rules:
 //   - no ffmpeg on this host        → `unavailable` + anchored BPM (the boot
 //     probe re-enqueues these when ffmpeg appears),
-//   - guard violation / bad input   → `failed` (permanent, with a sanitized
-//     diagnostic),
+//   - guard violation / bad input / loudness outside the write bounds →
+//     `failed` (permanent, with a sanitized diagnostic),
 //   - LUFS measured, BPM below the confidence floor (or no target to anchor
 //     to, or a fitted grid the write bounds would reject) → `partial` +
 //     anchored BPM — loudness normalization without beat-lock,
@@ -25,7 +25,11 @@ import {
   type TrackAudioAnalysisInput,
   type TrackAudioAnalyzer,
 } from '@liedmotif/providers';
-import { BPM_CONFIDENCE_FLOOR, TRACK_ANALYSIS_BOUNDS } from '@liedmotif/shared';
+import {
+  BPM_CONFIDENCE_FLOOR,
+  TRACK_ANALYSIS_BOUNDS,
+  validateTrackAnalysis,
+} from '@liedmotif/shared';
 import type { StorageProvider } from '@liedmotif/storage';
 import type { AnchoredTempoEstimate } from './estimator';
 import { runEstimatorInThread } from './estimator-thread';
@@ -129,7 +133,9 @@ export function createWorkerTrackAnalyzer(deps: WorkerTrackAnalyzerDeps): TrackA
   const estimate = deps.estimate ?? runEstimatorInThread;
   const jobDeadlineMs = deps.jobDeadlineMs ?? ANALYSIS_JOB_DEADLINE_MS;
   // Availability is a per-process fact (the boot probe defines the reanalysis
-  // semantics); memoize so each job doesn't spawn a probe process.
+  // semantics); memoize so each job doesn't spawn a probe process. Only a found
+  // ffmpeg is kept: one failed spawn under load must not stamp every later
+  // track `unavailable` until the next restart.
   let availability: Promise<boolean> | null = null;
 
   return {
@@ -165,7 +171,10 @@ export function createWorkerTrackAnalyzer(deps: WorkerTrackAnalyzerDeps): TrackA
         }
       };
 
-      availability ??= probe();
+      availability ??= probe().then((found) => {
+        if (!found) availability = null;
+        return found;
+      });
       if (!(await bounded('ffmpeg probe', PROBE_TIMEOUT_MS, () => availability!))) {
         return unavailableOutcome(input);
       }
@@ -200,6 +209,11 @@ export function createWorkerTrackAnalyzer(deps: WorkerTrackAnalyzerDeps): TrackA
             integratedLufs: loudness.integratedLufs,
             truePeakDb: loudness.truePeakDb,
           };
+          // The analysis write refuses loudness outside its plausibility
+          // bounds, and a re-run measures the same file the same way, so this
+          // is permanent: record it instead of burning the job's retries.
+          const loudnessProblems = validateTrackAnalysis(lufsFields);
+          if (loudnessProblems.length > 0) return failedOutcome(loudnessProblems.join('; '));
 
           // No generation-time target → nothing to anchor the search window to;
           // the honest outcome is loudness-only (`partial`, anchored BPM).

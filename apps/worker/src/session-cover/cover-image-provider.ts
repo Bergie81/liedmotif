@@ -24,9 +24,24 @@ export interface SessionCoverProviders {
 }
 
 /**
- * Each source is resolved only when the choice reaches it, so a source that
- * cannot resolve (a credential that no longer decrypts) never blocks a cover
- * the other one paints.
+ * The prompt-driven source alone — what every user regeneration, Session or
+ * Playlist, runs against: null while it is unconfigured or the owner switched
+ * tailored cover art off.
+ */
+export async function resolveTailoredCoverImageProvider(
+  db: Database,
+  getCoverArt: SessionCoverProviders['getCoverArt'],
+): Promise<GeneratedImageProvider | null> {
+  // The provider is tested before the switch, so an instance without an image
+  // provider never reads limits to decide a question its absence already answers.
+  const coverArt = await getCoverArt();
+  return coverArt && (await getUsageLimits(db)).tailoredCoverArtEnabled ? coverArt : null;
+}
+
+/**
+ * Each source is resolved only when the choice reaches it, and a first choice
+ * that cannot resolve (a credential that no longer decrypts) falls through to
+ * the other, so neither source blocks a cover the other one paints.
  */
 export async function resolveSessionCoverImageProvider(
   db: Database,
@@ -34,14 +49,9 @@ export async function resolveSessionCoverImageProvider(
   /** The session the cover belongs to; null for a user regeneration. */
   session: { useStandardCover: boolean } | null,
 ): Promise<GeneratedImageProvider | null> {
-  // The provider is tested before the switch, so an instance without an image
-  // provider never reads limits to decide a question its absence already answers.
-  const tailored = async () => {
-    const coverArt = await providers.getCoverArt();
-    return coverArt && (await getUsageLimits(db)).tailoredCoverArtEnabled ? coverArt : null;
-  };
+  const tailored = () => resolveTailoredCoverImageProvider(db, providers.getCoverArt);
   if (session === null) return tailored();
   return session.useStandardCover
-    ? ((await providers.getSunoCoverArt()) ?? tailored())
-    : ((await tailored()) ?? providers.getSunoCoverArt());
+    ? ((await providers.getSunoCoverArt().catch(() => null)) ?? tailored())
+    : ((await tailored().catch(() => null)) ?? providers.getSunoCoverArt());
 }

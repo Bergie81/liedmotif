@@ -56,6 +56,7 @@ function SessionInPlayer() {
     onRenameTrack: succeed,
     onReroll: noop,
     onMoreLikeThis: complete,
+    moreLikeThisAvailable: true,
     onOpenChangeVibe: noop,
     changeVibeAvailable: true,
     onDeleteTrack: complete,

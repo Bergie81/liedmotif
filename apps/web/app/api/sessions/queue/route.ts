@@ -147,6 +147,7 @@ export async function GET(request: Request) {
     generatedDurationSeconds: view.session.generatedDurationSeconds,
     unknownDurationTrackCount: view.session.unknownDurationTrackCount,
     sessionStatus: view.session.status,
+    sessionMode: view.session.sessionMode,
     generationStatus: view.session.generationStatus,
     generationStatusScope: view.session.generationStatusScope,
     statusMessageSafe: view.session.statusMessageSafe,

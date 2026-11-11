@@ -154,16 +154,35 @@ export function localFsStorageProvider(options: LocalFsStorageOptions): StorageP
   /**
    * Remove empty object directories without removing the data root. `ENOENT` is
    * expected when concurrent sibling deletions race to prune the same directory.
+   * Best-effort: it runs after the object is gone, so a directory that refuses
+   * removal (not empty, a busy mount point, no permission) stays and the delete
+   * still succeeds.
    */
   async function pruneEmptyAncestors(leaf: string): Promise<void> {
     for (let dir = leaf; dir !== dataRoot; dir = path.dirname(dir)) {
       try {
         await rmdir(dir);
       } catch (err) {
-        const code = (err as NodeJS.ErrnoException).code;
-        if (code === 'ENOENT') continue;
-        if (code === 'ENOTEMPTY' || code === 'EEXIST' || code === 'ENOTDIR') return;
-        throw err;
+        if ((err as NodeJS.ErrnoException).code === 'ENOENT') continue;
+        return;
+      }
+    }
+  }
+
+  /**
+   * Create the empty temp file with its folder. Until the file exists its
+   * freshly made folder is empty, and a sibling delete's prune may remove it
+   * between `mkdir` and the open — so an `ENOENT` re-creates the folder
+   * (bounded). Once the temp file exists, no prune can remove its folder.
+   */
+  async function createTempFile(temp: string): Promise<void> {
+    for (let attempt = 1; ; attempt += 1) {
+      await mkdir(path.dirname(temp), { recursive: true });
+      try {
+        await (await open(temp, 'wx')).close();
+        return;
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code !== 'ENOENT' || attempt >= 3) throw err;
       }
     }
   }
@@ -189,13 +208,13 @@ export function localFsStorageProvider(options: LocalFsStorageOptions): StorageP
 
     async write(input: WriteObjectInput): Promise<StorageObjectStat> {
       const absolute = await resolveConfinedPath(input.key);
-      await mkdir(path.dirname(absolute), { recursive: true });
       // Write to a sibling temp file, then atomically rename into place, so a
       // failed body never leaves a partial object and concurrent readers never
       // observe a half-written file. `flush: true` fsyncs the temp file before
       // it closes, so the rename publishes fully-durable bytes.
       const temp = `${absolute}.${randomBytes(TEMP_SUFFIX_BYTES).toString('hex')}.tmp`;
       try {
+        await createTempFile(temp);
         if (input.body instanceof Uint8Array) {
           await writeFile(temp, input.body, { flush: true });
         } else {

@@ -24,8 +24,9 @@ import { pollWhileVisible } from './visible-poll';
 const PENDING_POLL_MS = 5000;
 const POSITION_POLL_MS = 250;
 
-/** What a failed read shows: the empty view, unsettled so the re-ask below
- *  keeps retrying — a transient error must not strand an open surface. */
+/** What a failed read shows before any answer has loaded: the empty view,
+ *  unsettled so the re-ask below keeps retrying — a transient error must not
+ *  strand an open surface. A later failed read keeps the words already shown. */
 const EMPTY_RETRYING: TrackLyrics = { state: 'ready', lines: [], synced: false, settled: false };
 
 /** One shared empty array, so the unloaded case keeps a stable `lines`
@@ -43,10 +44,16 @@ function useTrackLyrics(trackId: string | null, enabled: boolean): TrackLyrics |
     // A failed read backs off (the endpoint is 5xx-ing); an OK-but-unsettled
     // read stays at the normal cadence — the job is still writing the words.
     let failures = 0;
+    let loaded: TrackLyrics | null = null;
     const load = async () => {
       const result = await readLyrics(trackId);
       if (cancelled) return;
-      const lyrics = result.ok ? result.data : EMPTY_RETRYING;
+      if (result.ok) loaded = result.data;
+      const lyrics = result.ok
+        ? result.data
+        : loaded
+          ? { ...loaded, settled: false }
+          : EMPTY_RETRYING;
       failures = result.ok ? 0 : failures + 1;
       setState({ trackId, lyrics });
       if (!lyrics.settled) {

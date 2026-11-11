@@ -3,6 +3,7 @@ import { uuidSchema } from '@liedmotif/shared';
 import type { StorageProvider } from '@liedmotif/storage';
 import type { GeneratedImageProvider } from '@liedmotif/providers';
 import type { Task } from 'graphile-worker';
+import { resolveTailoredCoverImageProvider } from '../session-cover/cover-image-provider';
 import { createPlaylistCoverGenerator } from '../session-cover/playlist-cover-regeneration';
 
 interface GeneratePlaylistCoverPayload {
@@ -47,7 +48,9 @@ export function createGeneratePlaylistCoverTask(deps: {
     const generator = createPlaylistCoverGenerator({
       db: deps.db,
       ownerUserId: jobPayload.ownerUserId,
-      imageProvider: await deps.getCoverArt(),
+      // Resolved per run, so a retry after the owner switched tailored cover art
+      // off pays nothing, as on the Session path.
+      imageProvider: await resolveTailoredCoverImageProvider(deps.db, deps.getCoverArt),
       storage: deps.storage,
       logger: {
         info: (message, fields) => helpers.logger.info(message, fields),

@@ -46,7 +46,7 @@ import { sessionNotPendingDelete } from './session-list-repo';
 /** Reason recorded on a queued Reject (disliked-track) file purge. */
 export const REJECT_PURGE_REASON = 'reject_purge';
 
-/** Grace before a Rejected track's audio + row are eligible for deletion (~24h). */
+/** Grace before a Rejected track's audio is purged (~24h); the row stays as a tombstone. */
 export const REJECT_GRACE_MS = 24 * 60 * 60 * 1000;
 
 // --- flag writes (save / favorite) ----------------------------------------------

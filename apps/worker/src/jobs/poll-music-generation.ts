@@ -31,7 +31,12 @@ import {
   updateProviderJobPollState,
   type ProviderJobForPoll,
 } from '@liedmotif/db';
-import type { MusicFailureReason, MusicProvider, ProviderJobStatus } from '@liedmotif/providers';
+import type {
+  MusicFailureReason,
+  MusicProvider,
+  NormalizedTrack,
+  ProviderJobStatus,
+} from '@liedmotif/providers';
 import { POLL_TERMINAL_PROVIDER_STATUSES } from '@liedmotif/shared';
 import type { LogFields, ProviderNormalizedStatus } from '@liedmotif/shared';
 import type { Task } from 'graphile-worker';
@@ -113,7 +118,7 @@ function mapFailure(reason: MusicFailureReason): {
 
 export interface PollMusicGenerationDeps {
   db: Database;
-  music: MusicProvider;
+  music: Pick<MusicProvider, 'getGenerationStatus'>;
   /** AES-256-GCM key sealing provider stream/final URLs at rest (passed to processing). */
   encryptionKey: Buffer;
   now?: Date;
@@ -234,6 +239,7 @@ export async function runPollMusicGeneration(
     normalizedStatus: ProviderNormalizedStatus,
     failure: { errorCode: string; errorMessageSafe: string },
     outcome: 'failed' | 'timed_out',
+    keepTracks: NormalizedTrack[] = [],
   ): Promise<PollMusicGenerationResult> {
     const cas = await updateProviderJobPollState(deps.db, {
       jobId: job!.jobId,
@@ -248,6 +254,13 @@ export async function runPollMusicGeneration(
       errorCode: failure.errorCode,
       errorMessageSafe: failure.errorMessageSafe,
     });
+    // The CAS already took the job out of the in-flight count, so its Tracks
+    // must exist before the wake: a refill in between would see the batch's
+    // supply gone and buy another. Materializing after the CAS keeps a stale
+    // poll that lost the race from writing anything.
+    if (keepTracks.length > 0) {
+      await runProcessProviderResults(deps, { job: job!, tracks: keepTracks, complete: false });
+    }
     await wakeOwnerActiveSession(deps, ownerUserId);
     return { outcome, normalizedStatus, rescheduled: false, attempt };
   }
@@ -315,14 +328,15 @@ export async function runPollMusicGeneration(
   // The attempt cap on a still-non-terminal job is NOT "stop polling and hope" — it
   // terminalizes as a timeout so the session surfaces the stall instead of hanging.
   if (!isComplete && !canRescheduleMore) {
-    const timedOut = await terminalize(status.status, 'failed_final', TIMEOUT_FAILURE, 'timed_out');
     // Tracks this last poll saw are paid for: keep them even though the job
-    // stops being polled. Materializing after the CAS keeps a stale poll that
-    // lost the race from writing anything.
-    if (timedOut.outcome === 'timed_out' && withStream + withFinal > 0) {
-      await runProcessProviderResults(deps, { job, tracks: status.tracks, complete: false });
-    }
-    return timedOut;
+    // stops being polled.
+    return terminalize(
+      status.status,
+      'failed_final',
+      TIMEOUT_FAILURE,
+      'timed_out',
+      withStream + withFinal > 0 ? status.tracks : [],
+    );
   }
   const willReschedule = !isComplete;
   // Cold start is judged on what THIS poll saw: it ends with the first
@@ -452,7 +466,15 @@ export function createPollMusicGenerationTask(deps: {
     await runPollMusicGeneration(
       {
         db: deps.db,
-        music: await deps.getMusic(),
+        // Resolved inside the status call, so a provider that cannot be built (no
+        // key, a stored key that fails to decrypt) fails like a transport error:
+        // the attempt counts and the cap still ends the job. Failing the Graphile
+        // job instead would count nothing and, once its retries ran out, leave
+        // the job live for good — holding its owner's concurrency slot.
+        music: {
+          getGenerationStatus: async (taskId) =>
+            (await deps.getMusic()).getGenerationStatus(taskId),
+        },
         encryptionKey,
         reschedulePoll: (providerJobId, runAt) =>
           enqueuePollAt(helpers.addJob, providerJobId, runAt),

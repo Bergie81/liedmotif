@@ -112,7 +112,7 @@ describe("one turn's actions", () => {
 
     for (const name of ['One', 'Two', 'Three']) await actions.take('done', pin(name));
     expect(await actions.take('proposed', offer)).toBe('Prepared.');
-    expect(await actions.take('proposed', offer)).toMatch(/already prepared a card/i);
+    expect(await actions.take('proposed', offer)).toMatch(/no second card was shown/i);
 
     expect(reported.filter(({ status }) => status === 'proposed')).toEqual([card]);
   });

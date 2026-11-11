@@ -23,13 +23,18 @@ describe('a receipt line', () => {
     ],
     [
       'one Track added to a Playlist',
-      { action: 'addToPlaylist', playlist: PLAYLIST, tracks: [TRACK] },
+      { action: 'addToPlaylist', playlist: PLAYLIST, retention: 'curated', tracks: [TRACK] },
       'Added to Running: Night Drive',
       { path: playlistPage(PLAYLIST.id), place: 'Running' },
     ],
     [
       'several Tracks added to a Playlist',
-      { action: 'addToPlaylist', playlist: PLAYLIST, tracks: [TRACK, SECOND] },
+      {
+        action: 'addToPlaylist',
+        playlist: PLAYLIST,
+        retention: 'curated',
+        tracks: [TRACK, SECOND],
+      },
       'Added 2 Tracks to Running',
       { path: playlistPage(PLAYLIST.id), place: 'Running' },
     ],

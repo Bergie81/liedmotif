@@ -106,7 +106,7 @@ export const generationRequests = pgTable(
     index('generation_requests_owner_user_id_idx').on(table.ownerUserId),
     index('generation_requests_activity_session_id_idx').on(table.activitySessionId),
     // Diagnostics feed: newest terminal failures. `status` is a text column;
-    // 'failed' is one of its two written values (see the column comment).
+    // 'failed' is one of its written values (see the column comment).
     index('generation_requests_failed_updated_idx')
       .on(sql`${table.updatedAt} desc`)
       .where(sql`${table.status} = 'failed'`),

@@ -9,7 +9,7 @@
 // picker and the star, with the playlist's ordered list one tap away in the
 // transport's queue slot.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { PlaylistMemberItem, PlaylistSummaryItem } from '@liedmotif/shared';
 import {
@@ -89,6 +89,13 @@ export function PlaylistNowPlaying({
   const [trackDataSheetOpen, setTrackDataSheetOpen] = useState(false);
   const [queueSheetOpen, setQueueSheetOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const seedingRef = useRef(false);
+  const removingRef = useRef(false);
+  // A confirm pins its tap-time closures, so the audible Track is read live.
+  const currentTrackIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    currentTrackIdRef.current = track?.trackId ?? null;
+  });
   // The player's own writes (the star, the blend toggle) report through it, so a
   // refused one is announced here as well as a refused curation write. Every
   // current failure shows, so an older one never hides a newer one.
@@ -116,15 +123,21 @@ export function PlaylistNowPlaying({
   }
 
   /** Continue playback without `removedTrackId`: re-engage the playlist on the
-   * remaining members, starting at the member after the removed one (wrapping);
-   * nothing left = stop. A hard re-engage keeps the live projection and the
-   * ordered list truthful — the removed track can never replay from a loop. */
+   * remaining members, starting at the member after the removed one (wrapping),
+   * or at the audible Track when playback has already moved past it; nothing
+   * left = stop. A hard re-engage keeps the live projection and the ordered
+   * list truthful — the removed track can never replay from a loop. */
   function continueWithout(removedTrackId: string) {
     const remaining = items.filter((item) => item.id !== removedTrackId);
     const playable = remaining.filter((item) => item.audioUrl !== null);
     if (playable.length === 0) {
       release();
       router.push(`/library/playlist/${playlist.id}`);
+      return;
+    }
+    const audible = playable.find((item) => item.id === currentTrackIdRef.current);
+    if (audible) {
+      engagePlaylist(playlist, remaining, audible.id, { foreign });
       return;
     }
     const oldIndex = items.findIndex((item) => item.id === removedTrackId);
@@ -136,14 +149,21 @@ export function PlaylistNowPlaying({
 
   /** Remove-from-this-playlist while listening: curation, never feedback. */
   async function removeFromPlaylist(trackId: string) {
-    setActionError(null);
-    const result = await removePlaylistTrack(playlist.id, trackId);
-    if (!result.ok) {
-      setActionError(`Remove failed — the track stays in the playlist. ${result.error.message}`);
-      return;
+    // A repeat tap would re-engage a second time and restart the next Track.
+    if (removingRef.current) return;
+    removingRef.current = true;
+    try {
+      setActionError(null);
+      const result = await removePlaylistTrack(playlist.id, trackId);
+      if (!result.ok) {
+        setActionError(`Remove failed — the track stays in the playlist. ${result.error.message}`);
+        return;
+      }
+      router.refresh();
+      continueWithout(trackId);
+    } finally {
+      removingRef.current = false;
     }
-    router.refresh();
-    continueWithout(trackId);
   }
 
   /** Delete Track destroys the audio itself, not a membership: the
@@ -190,17 +210,25 @@ export function PlaylistNowPlaying({
    * Tracks); engaging it hands playback over exactly as the Session surface
    * does — audibly through the provider's crossfade while the playlist plays. */
   async function seedMoreLikeThis() {
-    setActionError(null);
-    if (!(await beginOtherMusic())) return;
-    const result = await moreLikeThis(
-      items.slice(0, 10).map((item) => item.id),
-      clientId,
-    );
-    if (!result.ok) {
-      setActionError(`More Like This didn’t start: ${result.error.message}`);
-      return;
+    // Each request creates a Session that buys its initial fill, and the row
+    // shows no progress, so a repeat tap while one is in flight is dropped.
+    if (seedingRef.current) return;
+    seedingRef.current = true;
+    try {
+      setActionError(null);
+      if (!(await beginOtherMusic())) return;
+      const result = await moreLikeThis(
+        items.slice(0, 10).map((item) => item.id),
+        clientId,
+      );
+      if (!result.ok) {
+        setActionError(`More Like This didn’t start: ${result.error.message}`);
+        return;
+      }
+      engage(result.data.session, { autoplay: false });
+    } finally {
+      seedingRef.current = false;
     }
-    engage(result.data.session, { autoplay: false });
   }
 
   const playlistOptions = (

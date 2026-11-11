@@ -20,9 +20,9 @@ export interface UsageLimits {
    * Members are held to their own budget and the Members Pool regardless.
    */
   trackCeilingEnabled: boolean;
-  /** Daily provider-call (task) cap. Default 40 (~80 Suno tracks/day). */
+  /** Daily provider-call (task) cap. Default 25 (50 Suno tracks/day). */
   dailyGenerationTasks: number;
-  /** Monthly provider-call (task) cap. Default 400. */
+  /** Monthly provider-call (task) cap. Default 125 (250 Suno tracks). */
   monthlyGenerationTasks: number;
   /** IANA timezone the daily/monthly windows reset in. Default `INSTANCE_TIMEZONE` or `UTC`. */
   resetTimezone: string;
@@ -57,9 +57,9 @@ export interface UsageLimits {
   tailoredCoverArtEnabled: boolean;
   /** `trackCeilingEnabled` for the two Cover caps below. */
   coverCeilingEnabled: boolean;
-  /** Daily cap on successfully generated Session Covers. Default 20. */
+  /** Daily cap on successfully generated Session Covers. Default 25. */
   generatedCoversPerDay: number;
-  /** Monthly cap on successfully generated Session Covers. Default 300. */
+  /** Monthly cap on successfully generated Session Covers. Default 100. */
   generatedCoversPerMonth: number;
 }
 

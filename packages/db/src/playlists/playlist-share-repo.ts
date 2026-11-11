@@ -8,13 +8,20 @@
 import { and, asc, eq, inArray, isNotNull, ne, sql } from 'drizzle-orm';
 import { isCuratedPlaylist, type ShareAudience } from '@liedmotif/shared';
 import type { Database } from '../client';
-import { withTransaction, type Transaction } from '../transactions';
-import { listenerProfiles, playlists, playlistShareMembers, playlistTracks, user } from '../schema';
+import type { Transaction } from '../transactions';
+import {
+  listenerProfiles,
+  playlists,
+  playlistShareMembers,
+  playlistTracks,
+  tracks,
+  user,
+} from '../schema';
 import { playlistLoungeVisibleTo } from './lounge-audible';
 import { purgeRevokedPinsInTx, purgeRevokedSharedReferencesInTx } from './lounge-purge';
 import type { LoungeOwner } from './lounge-repo';
 import { ownerAttributionColumns, ownerDisplayNameOrder } from './owner-attribution';
-import { lockOwnedPlaylist } from './playlists-repo';
+import { lockOwnedPlaylist, withOwnerPlaylistLock } from './playlists-repo';
 
 /** The stored share state as the contract speaks it: null iff Private. */
 function toShareAudience(
@@ -60,7 +67,7 @@ export async function setPlaylistShared(
 ): Promise<
   { sharedAt: Date | null; audience: ShareAudience | null } | 'system' | 'empty_audience' | null
 > {
-  return withTransaction(db, async (tx) => {
+  return withOwnerPlaylistLock(db, args.ownerUserId, async (tx) => {
     const playlist = await lockOwnedPlaylist(tx, args.ownerUserId, args.playlistId);
     if (!playlist) return null;
     if (!isCuratedPlaylist(playlist)) return 'system';
@@ -102,9 +109,19 @@ export async function setPlaylistShared(
         .select({ trackId: playlistTracks.trackId })
         .from(playlistTracks)
         .where(eq(playlistTracks.playlistId, playlist.id));
-      await purgeRevokedSharedReferencesInTx(tx, {
-        trackIds: [...new Set(members.map((m) => m.trackId))],
-      });
+      const trackIds = [...new Set(members.map((m) => m.trackId))];
+      // The Shared-reference save locks its track row, so holding the owned
+      // members' locks makes a save in flight either commit before this purge
+      // reads, or wait and then see the revocation.
+      if (trackIds.length > 0) {
+        await tx
+          .select({ id: tracks.id })
+          .from(tracks)
+          .where(and(inArray(tracks.id, trackIds), eq(tracks.ownerUserId, args.ownerUserId)))
+          .orderBy(asc(tracks.id))
+          .for('update');
+      }
+      await purgeRevokedSharedReferencesInTx(tx, { trackIds });
       await purgeRevokedPinsInTx(tx, { playlistId: playlist.id });
     }
 

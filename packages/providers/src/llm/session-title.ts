@@ -58,8 +58,10 @@ export interface SessionTitleSnapshot {
   vocalMode?: string;
 }
 
+/** Capitalize each word's first letter. A letter, digit or apostrophe before it
+ *  means mid-word ("don't", "1st"), so every script capitalizes alike. */
 function titleCase(value: string): string {
-  return value.replace(/\b[a-z]/g, (c) => c.toUpperCase());
+  return value.replace(/(?<![\p{L}\p{N}_'’])\p{Ll}/gu, (c) => c.toUpperCase());
 }
 
 /**

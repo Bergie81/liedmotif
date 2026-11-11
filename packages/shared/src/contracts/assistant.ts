@@ -95,6 +95,11 @@ export const assistantReceiptSchema = z.discriminatedUnion('action', [
   z.strictObject({
     action: z.literal('addToPlaylist'),
     playlist: assistantActionItemSchema,
+    /**
+     * What the Playlist keeps a Track as, so the player can show it: a Favorite,
+     * a member of a hand-picked Playlist (`isCuratedPlaylist`), or only saved.
+     */
+    retention: z.enum(['favorite', 'curated', 'saved']),
     /** The Tracks that were added, in the Playlist's order. */
     tracks: z.array(assistantActionItemSchema).min(1).max(ASSISTANT_MAX_TRACKS_PER_ADD),
   }),

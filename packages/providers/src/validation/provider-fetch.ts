@@ -32,9 +32,10 @@ function targetUrl(input: Parameters<typeof fetch>[0]): string {
 }
 
 /**
- * A drop-in `fetch` that vets the target address set and then dials only it,
- * throwing a sanitized `ProviderConfigError` when the host is (or resolves to) a
- * private/metadata address.
+ * A `fetch` for string or URL targets that vets the target address set and then
+ * dials only it, throwing a sanitized `ProviderConfigError` when the host is (or
+ * resolves to) a private/metadata address. Its Response is undici's, not the
+ * platform class (see `fetchPinnedAddresses`).
  *
  * Resolution runs per call rather than through a verdict memo: these are API
  * calls seconds apart, not the media path's back-to-back byte fetches, so one

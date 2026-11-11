@@ -653,11 +653,15 @@ export async function setSessionDuration(
   },
 ): Promise<SessionRecord | null> {
   return withOwnerGenerationLock(db, args.ownerUserId, async (tx) => {
-    if (args.targetDurationMinutes === undefined) return getSessionById(tx, args);
+    if (args.targetDurationMinutes === undefined && args.sessionMode === undefined) {
+      return getSessionById(tx, args);
+    }
     const [session] = await tx
       .update(activitySessions)
       .set({
-        targetDurationMinutes: args.targetDurationMinutes,
+        ...(args.targetDurationMinutes !== undefined
+          ? { targetDurationMinutes: args.targetDurationMinutes }
+          : {}),
         ...(args.sessionMode ? { sessionMode: args.sessionMode } : {}),
         ...durationTargetMode(args.targetDurationMinutes),
       })
@@ -732,12 +736,14 @@ export async function getSeedSnapshot(
   // One read-scoped query for every seed; LEFT JOIN the originating session so
   // a missing request/session (or a null snapshot) still proves a seed is
   // readable. The seed-id ORDER decides which snapshot wins, so it is applied
-  // in JS.
+  // in JS. The request's frozen copy is the style that made the Track; the
+  // Session's live snapshot may carry a later Change Vibe, so it is only the
+  // fallback for requests that never froze one.
   const rows = await db
     .select({
       trackId: tracks.id,
       trackOwnerUserId: tracks.ownerUserId,
-      snapshot: activitySessions.sessionStyleSnapshot,
+      snapshot: sql<StyleSnapshot | null>`coalesce(${generationRequests.styleSnapshot}, ${activitySessions.sessionStyleSnapshot})`,
     })
     .from(tracks)
     .leftJoin(generationRequests, eq(tracks.generationRequestId, generationRequests.id))
@@ -920,10 +926,10 @@ async function applyQueueItemTransitions(
  * a supplied `queueItemId`/`trackId` is not part of this session/owner (an IDOR
  * attempt) — both reject before any write.
  *
- * NOTE: web has no Graphile client, so this never enqueues a buffer top-up itself —
- * the worker's `sweep-active-sessions` job tops up every active session. The
- * returned `bufferEnqueued` therefore reports whether the report WARRANTS a top-up
- * (a fresh started/ended/skipped), which the sweep will perform.
+ * Buffer top-up is not enqueued here: the worker's `sweep-active-sessions` job tops
+ * up every active session. The returned `bufferEnqueued` therefore reports whether
+ * the report WARRANTS a top-up (a fresh started/ended/skipped), which the sweep will
+ * perform.
  */
 export async function reportPlaybackState(
   db: Database,
@@ -1081,6 +1087,13 @@ export async function reportPlaybackState(
       };
     }
 
+    // The Session row is locked before any queue item, the order the switch-now
+    // cutover takes them in; the reverse order deadlocks against it.
+    await tx
+      .update(activitySessions)
+      .set(liveFields)
+      .where(eq(activitySessions.id, input.sessionId));
+
     // A fresh report also advances the reported queue item's lifecycle — without
     // this, items sit in `queued` forever, `countReadyAheadTracks` keeps counting
     // already-played tracks, and the buffer controller stops generating after the
@@ -1096,10 +1109,6 @@ export async function reportPlaybackState(
       });
     }
 
-    await tx
-      .update(activitySessions)
-      .set(liveFields)
-      .where(eq(activitySessions.id, input.sessionId));
     const bufferEnqueued =
       input.type === 'started' || input.type === 'ended' || input.type === 'skipped';
     return {

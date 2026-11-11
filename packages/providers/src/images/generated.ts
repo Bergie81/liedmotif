@@ -258,6 +258,13 @@ export function openRouterImageProvider(config: OpenRouterImageConfig): Generate
   const timeoutMs = config.requestTimeoutMs ?? DEFAULT_TIMEOUT_MS;
   const fetchImpl = config.fetch ?? pinnedProviderFetch({ providerKey: 'openrouter' });
   const operatorAssertion = assertionDescriptor(config);
+  // Against a live descriptor only the limits the operator wrote restrict: the
+  // conservative reference floor an assertion carries is an outage default, and
+  // as a restriction it would cap a live endpoint at one reference.
+  const operatorRestriction: EndpointDescriptor | null = operatorAssertion && {
+    ...operatorAssertion,
+    referenceLimits: config.capabilityAssertion?.referenceLimits,
+  };
   const providerMetadata = { providerType: 'image' as const, providerKey: 'openrouter', model };
   let capabilityPromise: Promise<CapabilityResolution> | null = null;
   /** While `capabilityPromise` holds an outage fallback, the moment it stops being
@@ -318,7 +325,7 @@ export function openRouterImageProvider(config: OpenRouterImageConfig): Generate
       if (!discovered) {
         return fallbackResolution();
       }
-      const effective = intersectDescriptor(discovered, operatorAssertion);
+      const effective = intersectDescriptor(discovered, operatorRestriction);
       if (!effective.acceptedValues.aspect_ratio?.has(aspectRatio)) {
         effective.supportedParameters.delete('aspect_ratio');
       }
@@ -453,7 +460,7 @@ export function openRouterImageProvider(config: OpenRouterImageConfig): Generate
       } catch {
         throw new GeneratedImageProviderError('invalid_response', 'outcome_unknown');
       }
-      const data = (payload as { data?: unknown }).data;
+      const data = (payload as { data?: unknown } | null)?.data;
       const datum = Array.isArray(data) ? (data[0] as OpenRouterImageDatum | undefined) : undefined;
       const image = datum ? extractImage(datum) : null;
       if (!image) throw new GeneratedImageProviderError('invalid_response', 'outcome_unknown');

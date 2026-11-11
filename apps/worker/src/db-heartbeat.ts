@@ -3,7 +3,7 @@
 // web's diagnostics can read. Best-effort by contract — a DB outage must never
 // take the file heartbeat (or the process) with it, and with the DB down,
 // staleness IS the correct diagnostics signal. Failure logs are throttled to
-// state transitions so a 10 s interval can't flood the log.
+// state transitions so a 15 s interval can't flood the log.
 
 import type { WorkerHeartbeat } from '@liedmotif/db';
 import type { WorkerReadiness } from './heartbeat';

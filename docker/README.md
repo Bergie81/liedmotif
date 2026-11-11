@@ -634,6 +634,11 @@ internals the guide leaves out:
   `low-disk` or `database-unreachable`, which Settings → Backups puts in words.
   `docker compose logs backup` carries the real error from `pg_dump`, `psql` or
   `rsync`, without a password or the passphrase.
+- The sidecar backs up, and its restore mode replaces, the database in
+  `DOCKER_DATABASE_URL` when that is set, and the bundled `postgres` service
+  otherwise: the same database web and worker use. A `sslmode=verify-full` URL
+  is verified against the system roots (libpq's `sslrootcert=system`), as the
+  app's driver does.
 - A download is the backup folder as one tar, encrypted as a whole with the
   passphrase.
 - Restore drops the schemas the dump contains (`public` is recreated) and

@@ -163,7 +163,7 @@ export interface LlmRuntimeSettings {
 
 /** A positive integer millisecond count from an env string / stored value, else
  *  undefined — a malformed timeout silently falls back to the provider default. */
-function parseTimeoutMs(value: unknown): number | undefined {
+export function parseTimeoutMs(value: unknown): number | undefined {
   const parsed =
     typeof value === 'string' && value.trim() !== '' ? Number(value.trim()) : (value as number);
   return typeof parsed === 'number' && Number.isFinite(parsed) && parsed > 0

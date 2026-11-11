@@ -316,7 +316,10 @@ describe.skipIf(skip)('the Assistant asked what is playing', () => {
     ] as const) {
       const { result } = await askWithTool(asker, 'nowPlaying', { ...player, playing: true });
 
-      expect(result).toBe('Nothing is playing, and there is no active Session.');
+      // It is playing, though: the player is not said to be idle.
+      expect(result).toBe(
+        'The player in this browser has something playing that this user cannot open: it was removed, or it is no longer shared with them. There is no active Session.',
+      );
     }
   });
 

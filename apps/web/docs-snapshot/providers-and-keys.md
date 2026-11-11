@@ -1,7 +1,7 @@
 ---
 title: Providers and keys
 description: Which AI services Liedmotif uses, how to get a key for each, where to enter it, and what changes with and without the optional ones.
-checkedOn: 2026-11-08
+checkedOn: 2026-11-11
 ---
 
 Liedmotif doesn't make music itself. It sends your requests to AI services you choose, on your own accounts, and you pay them directly. There's one you need and two you can add later, and you can change any of them at any time. Only the admin can see or change provider keys. Members create music on the admin's keys, within [the budgets the admin sets](/docs/costs-and-limits).
@@ -58,7 +58,7 @@ When a writing AI is connected, it's always used for your written requests. Lied
 
 The small jobs are the exception. If naming fails, the session still starts, with a plain name. If a lyric idea fails, the track still gets made with the session's own lyric notes. If enhancing cover text fails, your own text is used.
 
-To go without it, press **Disable Writing AI** in **Settings › AI Providers**. If `.env` configures the writing AI, remove those lines and apply the change as shown under [Where keys go](#where-keys-go), or they keep it on. Until then, the button reads **Delete stored fallback** and removes only the saved key.
+To go without it, press **Disable Writing AI** in **Settings › AI Providers**. If `.env` sets up the writing AI on its own, remove those lines and apply the change as shown under [Where keys go](#where-keys-go), or they keep it on. Until then, the button reads **Delete stored fallback** and removes only the saved key.
 
 ### Choose a service
 

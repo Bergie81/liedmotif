@@ -243,6 +243,7 @@ async function downloadUnderLock(args: {
   const { written } = await writeDownloadedTrackAudio(tx, {
     trackId,
     storageKey,
+    storageProvider: deps.storage.providerKey,
     mimeType: contentType,
     byteSize: stat.byteSize,
   });

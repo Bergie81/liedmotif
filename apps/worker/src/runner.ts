@@ -19,7 +19,7 @@ import type {
   MusicProvider,
   PinnedFetch,
 } from '@liedmotif/providers';
-import type { Logger as AppLogger } from '@liedmotif/shared';
+import { REDACTED, type Logger as AppLogger } from '@liedmotif/shared';
 import type { StorageProvider } from '@liedmotif/storage';
 import { Logger, run, type Runner, type TaskList } from 'graphile-worker';
 import { createWorkerTrackAnalyzer } from './audio/track-analyzer';
@@ -118,7 +118,7 @@ export const RECURRING_CRONTAB = [
 
 /** Build the Graphile task list, binding each job factory to the live deps. */
 export function buildTaskList(deps: WorkerRunnerDeps): TaskList {
-  return {
+  return withQueryParamsRedacted({
     'analyze-track-bpm-key': createAnalyzeTrackBpmKeyTask({
       db: deps.db,
       // The REAL analyzer: staging from the injected storage, ffmpeg
@@ -189,7 +189,35 @@ export function buildTaskList(deps: WorkerRunnerDeps): TaskList {
       db: deps.db,
       storage: deps.storage,
     }),
-  };
+  });
+}
+
+/**
+ * Graphile persists a failed task's raw `error.message` as the job's
+ * `last_error` (in the database and every backup), past the logger's
+ * redaction. A Drizzle query error's message carries the bound params (user
+ * prompts), so it is rebuilt from the SQL alone before Graphile sees it — the
+ * stack too, whose first line repeats the message.
+ */
+export function withQueryParamsRedacted(tasks: TaskList): TaskList {
+  const wrapped: TaskList = {};
+  for (const [name, task] of Object.entries(tasks)) {
+    if (!task) continue;
+    wrapped[name] = async (payload, helpers) => {
+      try {
+        return await task(payload, helpers);
+      } catch (err) {
+        const query = (err as { query?: unknown }).query;
+        if (err instanceof Error && typeof query === 'string' && 'params' in err) {
+          const safe = `Failed query: ${query}\nparams: ${REDACTED}`;
+          if (typeof err.stack === 'string') err.stack = err.stack.split(err.message).join(safe);
+          err.message = safe;
+        }
+        throw err;
+      }
+    };
+  }
+  return wrapped;
 }
 
 /**

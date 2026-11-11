@@ -19,16 +19,12 @@ import { MEMBERS_POOL_LOCK_CLASS, OWNER_GENERATION_LOCK_CLASS } from '../advisor
 /**
  * Submit states that hold a paid-generation slot. `submit_unknown` is included:
  * the call may have charged, so its slot is held — never auto-resubmitted.
- * `submit_rejected` is included for the SAME reason `submit_unknown` is (a retry
- * of the job that parked it must find the buffer covered rather than re-dial the
- * provider), even though it is not spend — the two questions are independent.
+ * `submit_rejected` is not: the provider refused unbilled and holds no task, so
+ * nothing is incoming and nothing is running. A retry of the tick that parked it
+ * is stopped by the refusal's own block signal (`mapProviderBlockSignal`), which
+ * lifts the moment the provider config changes or the listener resumes.
  */
-const IN_FLIGHT_SUBMIT_STATES = [
-  'submitting',
-  'submitted',
-  'submit_unknown',
-  'submit_rejected',
-] as const;
+const IN_FLIGHT_SUBMIT_STATES = ['submitting', 'submitted', 'submit_unknown'] as const;
 
 /**
  * The ONE definition of "this provider job occupies an in-flight (concurrency /
@@ -40,7 +36,8 @@ const IN_FLIGHT_SUBMIT_STATES = [
  *   or terminalizing them.
  * - PHANTOM submit states (shared bucket: nothing advances them — `queued` covers
  *   the whole paid HTTP submit window, `submit_unknown` an uncertain parked
- *   submit) hold a slot only while STRICTLY younger than `phantomSubmitCutoff`,
+ *   submit; a `submit_rejected` row is already left out by its submit state)
+ *   hold a slot only while STRICTLY younger than `phantomSubmitCutoff`,
  *   long enough to cover Graphile's retries of the submit that parked them, and
  *   dropped after — or one transient submit error would hold a concurrency slot
  *   (and satisfy the buffer watermark) forever. The strict `>` mirrors the
@@ -254,8 +251,11 @@ export async function withOwnerGenerationLock<T>(
  * Member submits deadlock. The `Transaction` parameter enforces half of that
  * by construction (there is no path to a tx here except through
  * `withOwnerGenerationLock` / the cover admission lock); the other half is
- * this rule: no caller may take this lock before its owner-scoped lock.
- * Admin submits are not Pool-bound and never take it. Transaction-scoped,
+ * this rule: no caller may take this lock before its owner-scoped lock. Nor
+ * may it lock an `activity_sessions` row after it: the buffer tick holds its
+ * Session row while it waits here, so a path that takes this lock and then
+ * writes a Session row deadlocks against a tick of that Session — lock the row
+ * first. Admin submits are not Pool-bound and never take it. Transaction-scoped,
  * auto-released on commit/rollback.
  */
 export async function acquireMembersPoolLock(tx: Transaction): Promise<void> {

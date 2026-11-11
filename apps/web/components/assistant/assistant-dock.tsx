@@ -13,13 +13,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { Sparkles, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import type {
   AssistantAction,
   AssistantPlayerState,
   AssistantReceipt,
   AssistantStanding,
 } from '@liedmotif/shared';
+import { AssistantGlyph } from '@/components/ui/glyphs';
 import { WithTooltip } from '@/components/ui/tooltip';
 import type { AnswerLinkTargets } from '@/lib/assistant/answer-links';
 import { ASSISTANT_NAME } from '@/lib/assistant/persona';
@@ -208,7 +209,7 @@ export function AssistantDock({
             {open ? (
               <X className="h-5 w-5" aria-hidden />
             ) : (
-              <Sparkles className="h-[22px] w-[22px]" aria-hidden />
+              <AssistantGlyph className="h-[22px] w-[22px]" />
             )}
           </DialogPrimitive.Trigger>
         </WithTooltip>

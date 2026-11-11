@@ -137,9 +137,11 @@ export async function createPlaylist(
   db: Database | Transaction,
   args: { ownerUserId: string; name: string },
 ): Promise<PlaylistRow> {
+  // The Playlists tab's keyset cursor carries the activity time at JavaScript
+  // precision, so a JS write keeps it exact; the column default is microseconds.
   const [row] = await db
     .insert(playlists)
-    .values({ ownerUserId: args.ownerUserId, name: args.name, kind: 'user' })
+    .values({ ownerUserId: args.ownerUserId, name: args.name, kind: 'user', updatedAt: new Date() })
     .returning();
   return row!;
 }
@@ -160,7 +162,7 @@ export async function createPlaylist(
  * are deliberately exempt: they only delete and resequence, which can leave a
  * gap but never mint a slot two rows can share.
  */
-async function withOwnerPlaylistLock<T>(
+export async function withOwnerPlaylistLock<T>(
   db: Database,
   ownerUserId: string,
   fn: (tx: Transaction) => Promise<T>,
@@ -531,6 +533,17 @@ async function lockSaveableTrack(
     .for('update');
   if (!track) return null;
   if (track.status === 'rejected' || track.status === 'deleted') return 'removed';
+  if (track.ownerUserId !== viewerUserId) {
+    // A revoking write holds this row lock until it commits, and the locked row
+    // comes back as the statement's older snapshot saw it, audible. This fresh
+    // statement sees the committed revocation, whose purge already ran.
+    const [audible] = await tx
+      .select({ id: tracks.id })
+      .from(tracks)
+      .where(and(eq(tracks.id, trackId), viewerCanReadTrack(viewerUserId)))
+      .limit(1);
+    if (!audible) return null;
+  }
   return { id: track.id, ownerUserId: track.ownerUserId };
 }
 
@@ -753,12 +766,6 @@ export async function applyTrackMemberships(
       await tx.update(playlists).set({ updatedAt: now }).where(eq(playlists.id, playlistId));
       if (sharedById.get(playlistId)) leftSharingPlaylist = true;
     }
-    // Unfiling the OWNER's track from an In-Lounge playlist is a membership
-    // removal at a sharing chokepoint: re-check audibility and purge.
-    // A visitor rearranging their own references can never revoke anything.
-    if (!foreign && leftSharingPlaylist) {
-      await purgeRevokedSharedReferencesInTx(tx, { trackIds: [args.trackId] });
-    }
     for (const playlistId of [...desired].filter((id) => !currentIds.has(id))) {
       await tx.insert(playlistTracks).values({
         playlistId,
@@ -766,6 +773,14 @@ export async function applyTrackMemberships(
         position: await nextPlaylistPosition(tx, playlistId),
       });
       await tx.update(playlists).set({ updatedAt: now }).where(eq(playlists.id, playlistId));
+    }
+    // Unfiling the OWNER's track from an In-Lounge playlist is a membership
+    // removal at a sharing chokepoint: re-check audibility and purge. It runs
+    // after the adds, so a move into another In-Lounge playlist in the same
+    // commit never reads as a revocation.
+    // A visitor rearranging their own references can never revoke anything.
+    if (!foreign && leftSharingPlaylist) {
+      await purgeRevokedSharedReferencesInTx(tx, { trackIds: [args.trackId] });
     }
 
     await syncTrackFlagsInTx(tx, { ownerUserId: args.ownerUserId, trackIds: [args.trackId], now });
@@ -1196,6 +1211,16 @@ export interface PlaylistDetailResult {
  * like any other member, attributed to its owner, with the shelves served as
  * the READER's relationship — the foreign track's own flags never travel.
  */
+/**
+ * The position a detail page starts after. A missing or unreadable cursor is
+ * the first page; one past the int4 column's range is past every member, never
+ * a value Postgres refuses to compare.
+ */
+export function afterPlaylistPosition(cursor: string | null | undefined): number {
+  const position = cursor == null ? -1 : Number.parseInt(cursor, 10);
+  return Number.isNaN(position) ? -1 : Math.min(Math.max(position, -1), 2_147_483_647);
+}
+
 export async function getPlaylistDetail(
   db: Database,
   args: { ownerUserId: string; playlistId: string; cursor?: string | null; limit: number },
@@ -1206,7 +1231,6 @@ export async function getPlaylistDetail(
   });
   if (!playlist) return null;
 
-  const afterPosition = args.cursor == null ? -1 : Number.parseInt(args.cursor, 10);
   const rows = await db
     .select({
       ...trackSummaryColumns(db),
@@ -1228,7 +1252,7 @@ export async function getPlaylistDetail(
     .where(
       and(
         eq(playlistTracks.playlistId, playlist.id),
-        gt(playlistTracks.position, Number.isNaN(afterPosition) ? -1 : afterPosition),
+        gt(playlistTracks.position, afterPlaylistPosition(args.cursor)),
       ),
     )
     .orderBy(asc(playlistTracks.position))

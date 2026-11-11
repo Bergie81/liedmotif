@@ -216,7 +216,7 @@ export function createProcessProviderResultsTask(deps: {
     const encryptionKey = requireEncryptionKey(deps.encryptionKey);
     const { providerJobId } = payload as ProcessProviderResultsPayload;
     const job = await getProviderJobForPoll(deps.db, providerJobId);
-    if (!job || !job.providerTaskId) return;
+    if (!job || !job.providerTaskId || job.ownerUserId === null) return;
     if (job.normalizedStatus !== 'ready') return;
     const music = await deps.getMusic();
     const status = await music.getGenerationStatus(job.providerTaskId);

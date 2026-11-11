@@ -68,6 +68,8 @@ interface Sidecar {
   seedBackup: (stamp: string) => Promise<string>;
   /** `status.json` as the last `pg_dump` found it. */
   statusDuringDump: () => Promise<Record<string, unknown>>;
+  /** The database each `psql` and `pg_dump` call was pointed at, in order. */
+  targets: () => Promise<string[]>;
 }
 
 async function sidecar(env: Record<string, string> = {}): Promise<Sidecar> {
@@ -81,11 +83,21 @@ async function sidecar(env: Record<string, string> = {}): Promise<Sidecar> {
   const dumpsFile = join(root, 'dumps');
   const dumpFailsFile = join(root, 'dump-fails');
   const statusDuringDumpFile = join(root, 'status-during-dump');
+  const targetsFile = join(root, 'targets');
 
   // Like the real tools, both name the server they could not reach.
+  // Each records the database it was pointed at: the \`-d\` connection string,
+  // or the server \`PGHOST\` names.
+  const recordTarget = `target="\${PGHOST:-}"
+while [ $# -gt 0 ]; do
+  if [ "$1" = -d ]; then target="$2"; fi
+  shift
+done
+echo "$target" >>'${targetsFile}'`;
   await writeFile(
     join(bin, 'psql'),
     `#!/bin/sh
+${recordTarget}
 if [ ! -f '${dueFile}' ]; then
   echo "psql: error: connection to server at \\"$PGHOST\\" failed for user \\"$PGUSER\\"" >&2
   exit 2
@@ -97,6 +109,7 @@ cat '${dueFile}'
   await writeFile(
     join(bin, 'pg_dump'),
     `#!/bin/sh
+${recordTarget}
 echo dump >>'${dumpsFile}'
 cp '${backups}/status.json' '${statusDuringDumpFile}'
 if [ -f '${dumpFailsFile}' ]; then
@@ -161,6 +174,8 @@ echo 'stub 0 0 ${bytes / 1024} 0% /'
     manifest: async (folder) =>
       JSON.parse(await readFile(join(backups, folder, 'manifest.json'), 'utf8')),
     statusDuringDump: async () => JSON.parse(await readFile(statusDuringDumpFile, 'utf8')),
+    targets: async () =>
+      (await readFile(targetsFile, 'utf8').catch(() => '')).split('\n').filter(Boolean),
     seedBackup: async (stamp) => {
       const folder = `liedmotif-backup-${stamp}`;
       await mkdir(join(backups, folder));
@@ -240,6 +255,17 @@ describe('backup sidecar', () => {
       lastSuccessAt: null,
       overdue: false,
     });
+  });
+
+  it('reads the schedule from and dumps the database in DATABASE_URL when it is set', async () => {
+    const url = 'postgres://app:secret@db.example.com:5432/liedmotif?sslmode=verify-full';
+    const box = await sidecar({ PGHOST: 'postgres', DATABASE_URL: url });
+    await box.setDue(dueRow());
+
+    await box.run();
+
+    expect(await box.dumps()).toBe(1);
+    expect(await box.targets()).toEqual([url, url]);
   });
 
   it('makes no second backup when it restarts within the period of a success', async () => {
@@ -541,6 +567,23 @@ describe('backup sidecar', () => {
       lastAttempt: { ok: false, error: 'database-unreachable' },
       lastSuccessAt: null,
     });
+    expect(await box.dumps()).toBe(0);
+  });
+
+  it('withdraws a recorded unreachable database once it answers with the schedule off', async () => {
+    const box = await sidecar();
+    await box.setDue(dueRow({ enabled: false }));
+    await box.run();
+    await box.setDue(null);
+    await box.run();
+    expect(await box.status()).toMatchObject({
+      lastAttempt: { ok: false, error: 'database-unreachable' },
+    });
+
+    await box.setDue(dueRow({ enabled: false }));
+    await box.run();
+
+    expect(await box.status()).toMatchObject({ lastAttempt: null, overdue: false });
     expect(await box.dumps()).toBe(0);
   });
 

@@ -587,6 +587,7 @@ describe('Session Cover art-direction policy', () => {
       customDefinition: null,
       snapshot: { mood: 'joyful', energy: 'medium' },
       sessionIntent: 'Julia plays piano while John and Amina dance nearby',
+      userGuidance: 'Julia at the piano, Amina by the window',
       capabilities: CAPABILITIES,
       referenceTreatment: 'selected private references',
       referenceSubjectCount: 3,
@@ -610,6 +611,7 @@ describe('Session Cover art-direction policy', () => {
     expect(result.plan.prompt).toContain(
       'subject one plays piano while subject two and subject three dance nearby',
     );
+    expect(result.plan.prompt).toContain('subject one at the piano, subject three by the window');
     expect(result.plan.prompt).not.toMatch(/Julia|John|Amina/);
     expect(result.plan.prompt).not.toMatch(/private-julia|private-li|private-amina|About/i);
   });

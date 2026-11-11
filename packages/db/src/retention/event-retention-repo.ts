@@ -6,22 +6,22 @@
 //
 // `feedback_events` — KEPT FOREVER, deliberately unpruned. It is the audit trail
 //   the whole retention model rests on (playlist membership is the
-//   retention rule and these rows are its history), and it is already bounded
-//   without a horizon: every row hard-references a track with `ON DELETE
-//   CASCADE` on a non-null column, so the track deletion lifecycle collects it.
-//   There is no unbounded set here to prune.
+//   retention rule and these rows are its history). Every row hard-references
+//   a track with `ON DELETE CASCADE` on a non-null column, but Track rows are
+//   only ever removed with their owner — a Disliked or Deleted Track stays as
+//   a tombstone — so the table grows with feedback and is bounded only by
+//   Member deletion.
 //
 // `playback_events` — PRUNED past `PLAYBACK_EVENT_RETENTION_DAYS`, minus the
 //   rows that still answer a live product question. The app has exactly two
 //   readers and both ask the same one — "does a `started` row exist for this
 //   track?" (the Library's `hasPlayed` column and the Dislike reroll's
 //   unplayed-sibling probe) — so a `started` row still pointing at a track is
-//   kept at any age. Everything else past the horizon is telemetry nothing
-//   reads: the ended/skipped/failed rows, and every row whose track is gone
-//   (`ON DELETE SET NULL` leaves it unreachable by either predicate). That last
-//   class is what actually grows without bound under continuous listening —
-//   Ephemeral tracks are reclaimed constantly and their playback rows outlive
-//   them.
+//   kept at any age — including one pointing at a tombstoned (rejected or
+//   deleted) track, whose row is never removed. Everything else past the
+//   horizon is telemetry nothing reads: the ended/skipped/failed rows, and any
+//   row whose track is gone (`ON DELETE SET NULL` leaves it unreachable by
+//   either predicate).
 //
 // `usage_events` — PRUNED past `USAGE_EVENT_RETENTION_DAYS`, unconditionally.
 //   It is the diagnostics-only spend ledger: nothing reads it,

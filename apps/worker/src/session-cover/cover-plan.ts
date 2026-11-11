@@ -160,7 +160,7 @@ function genericArtDirection(raw: string, max: number): string {
   const branded =
     /\b(?:marvel|dc comics?|disney|pixar|ghibli|star wars|pokemon|nike|apple|coca[- ]?cola|netflix|adidas)\b/giu;
   const namedCreator =
-    /\b(?:pablo\s+picasso|picasso|vincent\s+van\s+gogh|van\s+gogh|banksy|andy\s+warhol|warhol|salvador\s+dal[ií]|dal[ií]|claude\s+monet|monet|hayao\s+miyazaki|miyazaki)\b/giu;
+    /\b(?:pablo\s+picasso|picasso|vincent\s+van\s+gogh|van\s+gogh|banksy|andy\s+warhol|warhol|salvador\s+dal[ií]|dal[ií]|claude\s+monet|monet|hayao\s+miyazaki|miyazaki)(?![\p{L}\p{N}])/giu;
   const namedStyleAttribution =
     /\b(?:in (?:the )?style of|like the work of)\s+[\p{L}\p{N}][\p{L}\p{N}'’.-]*(?:\s+[\p{L}\p{N}][\p{L}\p{N}'’.-]*){0,3}/giu;
   const explicitCreatorAttribution =
@@ -462,7 +462,10 @@ export function buildSessionCoverPlan(
       ? []
       : ['generic centered portrait unless the selected scene explicitly requires a person'];
   const guidance = input.userGuidance
-    ? genericArtDirection(input.userGuidance, MAX_COVER_GUIDANCE_LENGTH)
+    ? genericArtDirection(
+        withOrdinalSubjectNames(input.userGuidance, input.referenceSubjects ?? []) ?? '',
+        MAX_COVER_GUIDANCE_LENGTH,
+      )
     : '';
   const sections = promptSections({
     deliverable: isPoster

@@ -27,6 +27,8 @@ export interface AssistantConversationState {
   draft: string;
   /** Why the last question got no whole answer. */
   notice: string | null;
+  /** Whether that is the refusal for a used-up allowance, which the allowance line also says. */
+  noticeIsUsedUp?: true;
 }
 
 export interface AssistantConversation {
@@ -95,13 +97,14 @@ export function createAssistantConversation({
   // An exchange that brought no answer at all is taken back: the question
   // returns to the field to be sent again, unless something new is typed there.
   // Something done is an answer, with or without words.
-  const settle = (notice: string | null) => {
+  const settle = (notice: string | null, noticeIsUsedUp?: true) => {
     running = null;
     const [question, answer] = state.messages.slice(-2);
     const unanswered = question && answer && !answer.content.trim() && !answer.actions?.length;
     update({
       answering: false,
       notice,
+      noticeIsUsedUp,
       ...(unanswered && {
         messages: state.messages.slice(0, -2),
         draft: state.draft || question.content,
@@ -155,7 +158,9 @@ export function createAssistantConversation({
           onAction?.(action);
         },
       }).then((outcome) => {
-        if (running === request) settle(outcome.ok ? null : outcome.notice);
+        if (running !== request) return;
+        if (outcome.ok) settle(null);
+        else settle(outcome.notice, outcome.usedUp);
       });
     },
     stop,

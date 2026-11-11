@@ -200,7 +200,11 @@ export async function startProposalSession(
         ownerUserId,
         sessionId: proposal.startedSessionId,
       });
-      if (!session) return { ok: false as const, reason: 'not_pending' as const };
+      // The marker answers a retry of the Start that bought the Session; once
+      // that Session is stopped or being deleted, the Start is stale, not a retry.
+      if (!session || session.status !== 'active' || session.deleteRequestedAt) {
+        return { ok: false as const, reason: 'not_pending' as const };
+      }
       return { ok: true as const, alreadyStarted: true, session, supersededSessionId: null };
     }
 

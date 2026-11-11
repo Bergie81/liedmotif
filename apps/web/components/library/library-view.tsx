@@ -165,6 +165,7 @@ function LibrarySmartListView({
     const result = await addPlaylistTracks(playlistId, [...selectedIds]);
     if (!result.ok) return result.error.message;
     router.refresh();
+    query.reload();
     exitSelectMode();
     return null;
   }

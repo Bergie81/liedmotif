@@ -252,7 +252,6 @@ export const surpriseProposals = pgTable(
     adventurous: boolean('adventurous').notNull(),
     /** Made under Start without profile: no profile or People context was read. */
     skipProfile: boolean('skip_profile').notNull(),
-    /** The owner's own Person About was offered as lyric inspiration. */
     /** A text LLM wrote it; false is the deterministic no-LLM proposal. */
     llmGenerated: boolean('llm_generated').notNull(),
     /** The user-facing request the proposal was expanded from; holds no profile text. */

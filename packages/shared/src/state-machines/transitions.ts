@@ -255,9 +255,11 @@ export const POLL_TERMINAL_PROVIDER_STATUSES = [
 ] as const satisfies readonly ProviderNormalizedStatus[];
 
 /**
- * Parked submits keep their in-flight slot so a retry cannot pay twice, but they
- * hold no provider task to poll, so no Track can ever arrive from them. Every
- * parked status is a phantom one (below), so none can count as generating.
+ * Parked submits hold no provider task to poll, so no Track can ever arrive from
+ * them. An uncertain one keeps its in-flight slot so a retry cannot pay twice; a
+ * refused one holds none (its submit state is not an in-flight one, see
+ * `inFlightProviderJobCondition`). Every parked status is a phantom one (below),
+ * so none can count as generating.
  */
 export const PARKED_SUBMIT_STATUSES = [
   'submit_unknown',
@@ -270,7 +272,8 @@ export const PARKED_SUBMIT_STATUSES = [
  * the automatic machine, see the map above) and `submit_rejected` (a definitive
  * refusal). Membership means exactly one thing: the job holds its buffer /
  * in-flight slot only while YOUNGER than the worker's
- * `PHANTOM_SUBMIT_MAX_AGE_MS`, so one dead submit cannot hold a slot forever.
+ * `PHANTOM_SUBMIT_MAX_AGE_MS`, so one dead submit cannot hold a slot forever
+ * (a refusal's submit state keeps it out of the in-flight count at any age).
  *
  * Two related questions are answered elsewhere and do NOT follow from
  * membership here: whether the job counts as spend (its submit state decides,

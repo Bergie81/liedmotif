@@ -43,7 +43,13 @@ const CREDENTIAL_PATH = '/sign-in';
  * only through the app's own paths — a reset link, or, with account email off,
  * Settings → Profile's form, whose route verifies the current password under the
  * sign-in throttle and revokes the other Logins itself — so `/change-password`
- * and `/set-password` are refused as well.
+ * and `/set-password` are refused as well. `/verify-password` answers whether a
+ * password is right for the caller's Login with only the library's own brake; the
+ * app checks passwords server-side (`verifyCredentialPassword`), so it is refused
+ * rather than left as an unthrottled guessing oracle. `/update-user` would write
+ * `name` and `image` past the profile and avatar routes; repointing `image` there
+ * strands the replaced avatar's bytes, which only the avatar route queues for
+ * deletion.
  */
 const REFUSED_PATHS = [
   '/request-password-reset',
@@ -53,6 +59,8 @@ const REFUSED_PATHS = [
   '/verify-email',
   '/change-password',
   '/set-password',
+  '/verify-password',
+  '/update-user',
 ];
 
 function refused(pathname: string): NextResponse | null {

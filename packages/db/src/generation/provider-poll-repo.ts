@@ -201,6 +201,9 @@ export async function listReadyJobsMissingTracks(
         isNotNull(providerJobs.providerTaskId),
         eq(providerJobs.normalizedStatus, 'ready'),
         gte(providerJobs.updatedAt, since),
+        // A deleted owner's Tracks cascaded away and nothing materializes for
+        // nobody, so the job would only cost a status read every minute.
+        isNotNull(generationRequests.ownerUserId),
         sql`(${generationRequests.status} = 'awaiting_results' or (select count(*) from ${tracks} where ${tracks.providerJobId} = ${providerJobs.id}) < ${generationRequests.requestedTrackCount})`,
       ),
     )

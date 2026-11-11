@@ -244,6 +244,28 @@ describeIfDb('SessionCoverGenerator regeneration', () => {
     expect(settled?.settledAt).not.toBeNull();
   });
 
+  it('settles a reserved regeneration without spending once the Session delete is pending', async () => {
+    const { ownerUserId, sessionId } = await seedSessionWithCurrentCover();
+    const attempt = await reserveAttempt(ownerUserId, sessionId);
+    await ctx.db
+      .update(activitySessions)
+      .set({ status: 'stopped', deleteRequestedAt: new Date() })
+      .where(eq(activitySessions.id, sessionId));
+
+    const { provider, calls } = fakeCoverArt();
+    const result = await generator(ownerUserId, provider).processRegeneration(
+      sessionId,
+      attempt.id,
+    );
+
+    expect(result).toMatchObject({ status: 'fallback', reason: 'not_admitted' });
+    expect(calls).toHaveLength(0);
+    expect(await ledgerRow(attempt.id)).toMatchObject({
+      state: 'not_admitted',
+      possiblyPaid: false,
+    });
+  });
+
   it('refuses admission at the cover limit without spending or touching the cover', async () => {
     const { ownerUserId, sessionId, currentCoverId } = await seedSessionWithCurrentCover();
     await updateUsageLimits(ctx.db, { generatedCoversPerDay: 0 });

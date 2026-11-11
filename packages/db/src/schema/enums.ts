@@ -248,7 +248,7 @@ export const sessionEndReason = pgEnum('session_end_reason', [
  * "limit reached" and other generation blocks are a controller property, NOT a
  * lifecycle state — the session stays `active` throughout. `repeat_cost_limit` is
  * the cost-limit Session-Repeat case (replacing the old `liedmotif_limit` pause
- * reason). Written only by the worker / buffer controller.
+ * reason). Written by the worker / buffer controller; Resume resets it to `ok`.
  * `repeat_buffer_complete` is legacy — never emitted by the controller, retained
  * because removing a Postgres enum value requires a type rebuild.
  */

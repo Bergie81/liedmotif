@@ -2,7 +2,9 @@
 // picker's atomic commit: the track's FULL desired membership set (checked
 // boxes), an optional inline new playlist, and the derived retention flags in
 // one transaction — an empty set is Unsave. A rejected/deleted track refuses
-// (409); cross-owner ids read as absent (404 — no IDOR).
+// (409). A foreign Lounge-audible track is filed as a Shared reference; any
+// other cross-owner track id reads as absent (404 — no IDOR), and playlist ids
+// the caller does not own are ignored.
 
 import { NextResponse } from 'next/server';
 import { applyTrackMemberships } from '@liedmotif/db';

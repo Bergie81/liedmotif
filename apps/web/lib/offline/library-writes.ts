@@ -1,7 +1,7 @@
 // What may change an Available-offline copy while the app is open, announced
 // for the offline sync to follow. A successful write to Playlists or Tracks
-// (adding, removing, Disliking, deleting…), or converting, deleting or renaming
-// a Session, is a library write. A playing Session's new Track is announced as
+// (adding, removing, Disliking, deleting…), or converting, deleting, renaming
+// or changing the cover of a Session, is a library write. A playing Session's new Track is announced as
 // its local final lands, so a Keep Going Session's offline copy grows while it
 // plays.
 // A write the page on screen did not make itself (the Assistant's, from its
@@ -19,6 +19,9 @@ const LIBRARY_PATHS = [
   '/api/sessions/convert-to-playlist',
   '/api/sessions/delete',
   '/api/sessions/rename',
+  '/api/sessions/cover/select',
+  '/api/sessions/cover/upload',
+  '/api/sessions/cover/delete',
 ];
 
 export function announceLibraryWrite(path: string): void {

@@ -18,7 +18,7 @@ export function workerHealth(
   return 'healthy';
 }
 
-/** Seconds-granular relative age (the heartbeat beats every ~10 s). */
+/** Seconds-granular relative age (the heartbeat beats every ~15 s). */
 export function formatSecondsAgo(iso: string, nowMs: number): string {
   const seconds = Math.max(0, Math.round((nowMs - Date.parse(iso)) / 1_000));
   if (seconds < 60) return `${seconds} s ago`;

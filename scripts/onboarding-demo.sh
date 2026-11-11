@@ -12,8 +12,10 @@
 # Switching back to your own instance is just Ctrl-C and `npm run dev`; `down` exists
 # only to reclaim the demo's database when you are finished with it for good.
 #
-# Web only, no worker: onboarding can be finished — including "Start your first
-# Session" — without anything reaching a provider, so this can never spend credits.
+# Web only, no worker, so no music is ever bought. Onboarding can be finished —
+# including "Start your first Session" — without anything reaching a provider, but
+# the web app itself still calls the text LLM from `.env` when asked to: starting a
+# Session from Home afterwards, or the Assistant.
 #
 # Served on 127.0.0.1 rather than localhost deliberately: cookies ignore the port, so
 # two instances on "localhost" would share one session cookie and sign each other out.

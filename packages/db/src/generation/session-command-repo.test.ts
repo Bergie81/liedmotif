@@ -47,6 +47,7 @@ import {
 } from './session-command-repo';
 import { listPinnedSessions, listResumableSessions } from './session-list-repo';
 import { getSessionQueue } from './queue-view-repo';
+import { listSessionTracks } from './session-tracks-repo';
 import { getLibraryTracks, rejectDislikedTrack } from './feedback-repo';
 import { setSessionPinned } from './session-pin-repo';
 import { deleteTrack } from './delete-track-repo';
@@ -569,6 +570,9 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
         ok: false,
         reason: 'not_found',
       });
+      expect(
+        await listSessionTracks(ctx.db, { ownerUserId, sessionId, cursor: null, limit: 10 }),
+      ).toBeNull();
       const library = await getLibraryTracks(ctx.db, { ownerUserId, view: 'history', limit: 10 });
       expect(library.items.find((item) => item.id === trackId)).toMatchObject({
         originSessionId: null,
@@ -1328,6 +1332,42 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
       expect(seed.foreignSeed).toBe(false);
     });
 
+    // ADR 0017: the seed is the Track's FROZEN style. A later Change Vibe must
+    // not leak into it — for a Lounge seed that later revision was never shared.
+    it('seeds from the style that made the Track, not the Session’s later Change Vibe', async () => {
+      const ownerUserId = await createUser(ctx.db);
+      const sessionId = await createSession(ctx.db, {
+        ownerUserId,
+        styleSnapshot: snapshot('lofi'),
+      });
+      const requestId = await createGenerationRequest(ctx.db, {
+        ownerUserId,
+        activitySessionId: sessionId,
+        styleRevision: 1,
+        styleSnapshot: snapshot('lofi'),
+      });
+      const jobId = await createProviderJob(ctx.db, { generationRequestId: requestId });
+      const trackId = await createTrack(ctx.db, {
+        ownerUserId,
+        generationRequestId: requestId,
+        providerJobId: jobId,
+      });
+      const restyled = await restyleSession(ctx.db, {
+        ownerUserId,
+        sessionId,
+        snapshot: snapshot('death metal'),
+      });
+      expect(restyled.ok).toBe(true);
+
+      const seed = await getSeedSnapshot(ctx.db, {
+        viewerUserId: ownerUserId,
+        seedTrackIds: [trackId],
+      });
+      expect(seed.kind).toBe('snapshot');
+      if (seed.kind !== 'snapshot') throw new Error('unreachable');
+      expect(seed.snapshot.stylePrompt).toBe('lofi');
+    });
+
     it('returns kind=no-readable-seed for a nonexistent seed track (no fallback, no session)', async () => {
       const ownerUserId = await createUser(ctx.db);
       const seed = await getSeedSnapshot(ctx.db, {
@@ -2045,9 +2085,10 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
         expect((await readQueue(ownerUserId, sessionId))!.generatingTracksAhead).toBe(2);
       });
 
-      it('promises no Tracks from a parked submit, while it keeps holding its buffer slot', async () => {
-        // Nothing polls a job with no task id, so it can never deliver; the slot
-        // hold is what stops a retry of the same submit from paying twice.
+      it('promises no Tracks from a parked submit; only an uncertain one holds its buffer slot', async () => {
+        // Nothing polls a job with no task id, so it can never deliver. The slot
+        // hold stops a retry of an uncertain submit from paying twice; a refusal
+        // charged nothing and its block signal stops the retry instead.
         await seedJob({ normalizedStatus: 'submit_unknown', submitState: 'submit_unknown' });
         await seedJob({ normalizedStatus: 'submit_rejected', submitState: 'submit_rejected' });
 
@@ -2059,7 +2100,7 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
             sessionId,
             phantomSubmitCutoff: new Date(Date.now() - PHANTOM_SUBMIT_MAX_AGE_MS),
           }),
-        ).toBe(2);
+        ).toBe(1);
       });
 
       it('scopes the new-vibe subset to the session’s live style revision', async () => {

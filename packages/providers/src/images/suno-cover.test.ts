@@ -189,6 +189,17 @@ describe('suno cover-image adapter', () => {
     );
   });
 
+  it('maps a call-frequency refusal (405, 430) to a retryable rate limit', async () => {
+    for (const code of [405, 430]) {
+      const fetchImpl = vi.fn(async () => json({ code, msg: 'too frequent', data: null }));
+      await expectProviderError(
+        adapter(fetchImpl as unknown as typeof fetch).generate(request()),
+        'rate_limit',
+        'not_started',
+      );
+    }
+  });
+
   it('maps a maintenance-window submit (455) to a retryable unavailable error', async () => {
     const fetchImpl = vi.fn(async () => json({ code: 455, msg: 'maintenance' }, 455));
     await expectProviderError(

@@ -20,8 +20,10 @@ export interface PageEpoch {
   /** Mark a next-page fetch in flight; returns the token to settle with, or null
    *  while the epoch's first page is still out. */
   beginNextPage: () => number | null;
-  /** True iff the token's epoch is still current; clears the busy flag when it is. */
-  settle: (token: number) => boolean;
+  /** True iff the token's epoch is still current; clears the busy flag when it is.
+   *  A first page settled with `landed: false` (it failed) keeps next pages out:
+   *  the only cursor in hand still belongs to the list being replaced. */
+  settle: (token: number, landed?: boolean) => boolean;
 }
 
 export function usePageEpoch(): PageEpoch {
@@ -47,9 +49,9 @@ export function usePageEpoch(): PageEpoch {
     return epoch.current;
   }, []);
 
-  const settle = useCallback((token: number) => {
+  const settle = useCallback((token: number, landed = true) => {
     if (token !== epoch.current) return false;
-    firstPageEpoch.current = null;
+    if (landed) firstPageEpoch.current = null;
     setLoadingMore(false);
     return true;
   }, []);

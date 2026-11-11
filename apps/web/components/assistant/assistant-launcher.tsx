@@ -6,8 +6,8 @@
 // the dock and, through this context, to the page.
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Sparkles } from 'lucide-react';
 import { iconButtonClass } from '@/components/ui/design-system';
+import { AssistantGlyph } from '@/components/ui/glyphs';
 import { WithTooltip } from '@/components/ui/tooltip';
 import { ASSISTANT_NAME } from '@/lib/assistant/persona';
 
@@ -61,7 +61,7 @@ export function AssistantLauncherButton() {
         {/* The colour sits on the icon: the button's own class sets a muted
             one, and of two colours on one element the stylesheet's order
             picks the winner, not the order they are written in. */}
-        <Sparkles className="h-5 w-5 text-lamp" aria-hidden />
+        <AssistantGlyph className="h-5 w-5 text-lamp" />
       </button>
     </WithTooltip>
   );

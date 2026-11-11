@@ -39,6 +39,21 @@ export function usePlayerFollowsReceipt(
           );
           return;
         }
+        case 'addToPlaylist': {
+          const track = live?.player.currentTrack;
+          if (!live || !track || !receipt.tracks.some(({ id }) => id === track.trackId)) return;
+          // What the server's flag sync makes of the membership: any Playlist
+          // saves the Track, Favorites also favorites it.
+          const now = new Date().toISOString();
+          live.player.applyRetentionFlags(
+            track.trackId,
+            receipt.retention === 'favorite'
+              ? optimisticFavoriteFlags(track, true, now)
+              : { savedAt: track.savedAt ?? now, favoritedAt: track.favoritedAt },
+            track.inCuratedPlaylist || receipt.retention === 'curated',
+          );
+          return;
+        }
         case 'newMusicOff': {
           const session = live?.session;
           // The same Session engaged again is its summary refreshed in place.

@@ -23,11 +23,18 @@ const CURSOR_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f
  * (`'2026'`) — so nothing Postgres would reject can ever reach the keyset cast.
  * `new Date(bad)` yields an Invalid Date (NaN getTime); the `&&` short-circuits before
  * `toISOString()` so an out-of-range string never throws. @liedmotif/db stays zod-free,
- * so this is a plain check rather than `isoDatetimeSchema`.
+ * so this is a plain check rather than `isoDatetimeSchema`. Only four-digit years
+ * from 0001 pass: `toISOString()` also round-trips year 0000 and the signed
+ * extended years (`+010000-…`, `-000001-…`), which Postgres refuses.
  */
 function isCanonicalUtcIsoTimestamp(t: string): boolean {
   const d = new Date(t);
-  return !Number.isNaN(d.getTime()) && d.toISOString() === t;
+  return (
+    /^\d{4}-/.test(t) &&
+    !Number.isNaN(d.getTime()) &&
+    d.getUTCFullYear() >= 1 &&
+    d.toISOString() === t
+  );
 }
 
 export function encodeKeysetCursor(cursor: KeysetCursor): string {

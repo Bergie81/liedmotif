@@ -22,6 +22,7 @@ import {
   ANALYSIS_STATUSES,
   CURRENT_ANALYSIS_VERSION,
   type AnalysisStatus,
+  type LogFields,
 } from '@liedmotif/shared';
 import type { StorageProvider } from '@liedmotif/storage';
 import type { Task } from 'graphile-worker';
@@ -38,6 +39,7 @@ export interface BackfillTrackAnalysisDeps {
   batchSize?: number;
   /** Measure stored audio in seconds; absent, the sweep leaves missing durations alone. */
   measureDuration?: (storageKey: string) => Promise<number>;
+  warn?: (message: string, fields?: LogFields) => void;
 }
 
 export interface BackfillTrackAnalysisResult {
@@ -71,8 +73,14 @@ export async function runBackfillTrackAnalysis(
       try {
         const seconds = await deps.measureDuration(track.storageKey);
         await writeMeasuredTrackDuration(deps.db, track.trackId, seconds);
-      } catch {
-        // Unknown duration keeps generation blocked; the next sweep retries independently of BPM.
+      } catch (err) {
+        // Unknown duration keeps generation blocked; the next sweep retries
+        // independently of BPM. Logged, because a file that never decodes holds
+        // its Session's generation until someone looks.
+        deps.warn?.('track duration measurement failed; the next sweep retries', {
+          trackId: track.trackId,
+          err,
+        });
       }
     }
   }
@@ -91,6 +99,7 @@ export function createBackfillTrackAnalysisTask(deps: {
     const result = await runBackfillTrackAnalysis({
       db: deps.db,
       measureDuration: (storageKey) => measureStoredAudioDuration(deps.storage, storageKey),
+      warn: (message, fields) => helpers.logger.warn(message, fields),
       enqueueAnalyze: async (trackId) => {
         const { maxRetriesPerJob } = await getUsageLimits(deps.db);
         await enqueueAnalyzeTrack(helpers.addJob, trackId, maxRetriesPerJob);

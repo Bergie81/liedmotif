@@ -10,9 +10,8 @@
 // (activity_session_id, client_event_id) index and never double-count; position pings
 // update live fields only (no row).
 //
-// LIMITATION (documented for the orchestrator): web has no Graphile client, so buffer
-// top-up is driven by the worker `sweep-active-sessions` job, not enqueued here —
-// `bufferEnqueued` reports whether the event WARRANTS a top-up (which the sweep
+// Buffer top-up is not enqueued here: the worker `sweep-active-sessions` job drives
+// it. `bufferEnqueued` reports whether the event WARRANTS a top-up (which the sweep
 // performs), and is false for deduped retries.
 
 import { NextResponse } from 'next/server';

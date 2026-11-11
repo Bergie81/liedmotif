@@ -113,13 +113,18 @@ describeIfDb('backfill-track-analysis + boot-probe reanalysis', () => {
         enqueued.push(id);
       },
     };
+    const warnings: unknown[] = [];
     await runBackfillTrackAnalysis({
       ...deps,
       measureDuration: async () => {
         throw new Error('Temporary audio read failure');
       },
+      warn: (message, fields) => warnings.push({ message, trackId: fields?.trackId }),
     });
     expect((await rawTrackRow(ctx.db, done))?.duration_seconds).toBeNull();
+    expect(warnings).toEqual([
+      { message: expect.stringMatching(/duration measurement failed/), trackId: done },
+    ]);
 
     const measured: string[] = [];
     await runBackfillTrackAnalysis({

@@ -14,6 +14,7 @@ export {
   touchVoiceProfilePolled,
   touchVoiceProfileUsed,
   VOICE_RECORDING_DELETED_REASON,
+  withLockedVoiceProfile,
   type VoiceProfileRow,
   type VoiceProfileStatus,
   type VoiceRecordingKind,

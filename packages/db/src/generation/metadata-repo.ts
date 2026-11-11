@@ -8,6 +8,8 @@
 import { and, eq, inArray, isNotNull, like, or, sql } from 'drizzle-orm';
 import type { TrackTagContext } from '@liedmotif/shared';
 import type { Database } from '../client';
+import { withTransaction } from '../transactions';
+import { queueOrphanedDownloadDeletion } from './deletion-queue-repo';
 import { user } from '../schema/auth';
 import {
   resolveArtistName,
@@ -147,18 +149,40 @@ export async function listFinalMp3TrackIdsForOwner(
   return rows.map((row) => row.trackId);
 }
 
-/** Record the retagged local MP3's new byte size on its asset row. */
+/**
+ * Record the retagged local MP3's new byte size on its asset row. The retag
+ * publishes outside any transaction, so a delete can drop the asset row and
+ * have its queued key deleted while the write is in flight; the published
+ * object would then be referenced by nothing. When no asset row names the key
+ * any more, the key is queued for deletion again (the consumer's live-key guard
+ * keeps it safe). Returns whether the asset row was still there.
+ */
 export async function updateLocalOriginalByteSize(
   db: Database,
-  args: { trackId: string; byteSize: number },
-): Promise<void> {
-  await db
-    .update(trackAudioAssets)
-    .set({ byteSize: args.byteSize })
-    .where(
-      and(
-        eq(trackAudioAssets.trackId, args.trackId),
-        eq(trackAudioAssets.assetType, 'local_original'),
-      ),
-    );
+  args: { trackId: string; storageKey: string; byteSize: number },
+): Promise<boolean> {
+  return withTransaction(db, async (tx) => {
+    const updated = await tx
+      .update(trackAudioAssets)
+      .set({ byteSize: args.byteSize })
+      .where(
+        and(
+          eq(trackAudioAssets.trackId, args.trackId),
+          eq(trackAudioAssets.assetType, 'local_original'),
+          eq(trackAudioAssets.storageKey, args.storageKey),
+        ),
+      )
+      .returning({ id: trackAudioAssets.id });
+    if (updated.length > 0) return true;
+    const [owner] = await tx
+      .select({ ownerUserId: tracks.ownerUserId })
+      .from(tracks)
+      .where(eq(tracks.id, args.trackId));
+    await queueOrphanedDownloadDeletion(tx, {
+      ownerUserId: owner?.ownerUserId ?? '',
+      trackId: args.trackId,
+      storageKey: args.storageKey,
+    });
+    return false;
+  });
 }

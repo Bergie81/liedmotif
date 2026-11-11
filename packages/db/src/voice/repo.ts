@@ -8,7 +8,7 @@ import { and, eq, inArray } from 'drizzle-orm';
 import type { Database } from '../client';
 import { queueStorageObjectDeletion } from '../generation/deletion-queue-repo';
 import { voiceProfiles, voiceRecordings, type VoiceCaptureSettings } from '../schema';
-import { withTransaction, type DbOrTx } from '../transactions';
+import { withTransaction, type DbOrTx, type Transaction } from '../transactions';
 
 /**
  * Recording bytes are sensitive personal media; a replaced or deleted recording
@@ -152,11 +152,36 @@ export async function replaceVoiceRecording(
   });
 }
 
+/**
+ * Run a provider submit while holding the owner's profile row, or return `null`
+ * when there is no profile. A validate or verify submit may cost provider
+ * credits, so a concurrent one waits here and then judges the state the first
+ * one wrote, and is refused before it reaches the provider; a profile delete
+ * waits too, so the task id lands on the profile it was submitted for. The row
+ * lock (`FOR NO KEY UPDATE`) leaves recording uploads, which only reference the
+ * row, free to run meanwhile.
+ */
+export async function withLockedVoiceProfile<T>(
+  db: Database,
+  ownerUserId: string,
+  fn: (tx: Transaction, profile: VoiceProfileRow) => Promise<T>,
+): Promise<T | null> {
+  return withTransaction(db, async (tx) => {
+    const [profile] = await tx
+      .select()
+      .from(voiceProfiles)
+      .where(eq(voiceProfiles.ownerUserId, ownerUserId))
+      .limit(1)
+      .for('no key update');
+    return profile ? fn(tx, profile) : null;
+  });
+}
+
 /** Statuses a profile may be in when a NEW source validation is submitted. */
 const VALIDATION_SUBMITTABLE: VoiceProfileStatus[] = ['draft', 'failed', 'awaiting_verification'];
 
 export async function markValidationSubmitted(
-  db: Database,
+  db: DbOrTx,
   params: { ownerUserId: string; providerTaskId: string; language?: string | null },
 ): Promise<VoiceProfileRow | null> {
   const rows = await db
@@ -185,7 +210,7 @@ export async function markValidationSubmitted(
 }
 
 export async function markVoiceCreationSubmitted(
-  db: Database,
+  db: DbOrTx,
   params: { ownerUserId: string; providerTaskId: string },
 ): Promise<VoiceProfileRow | null> {
   const rows = await db
@@ -220,13 +245,16 @@ export async function touchVoiceProfilePolled(
 }
 
 /**
- * Apply a validation poll outcome. Guarded on `validating_source` so a late
- * poll response can never regress a profile the user already moved forward.
+ * Apply a validation poll outcome for `providerTaskId`. Guarded on
+ * `validating_source` and on that task still being the profile's, so a late
+ * poll response can never regress a profile the user already moved forward,
+ * nor land on a newer validation submitted meanwhile.
  */
 export async function applyValidationOutcome(
   db: Database,
   params: {
     ownerUserId: string;
+    providerTaskId: string;
     outcome:
       | { status: 'awaiting_verification'; verificationPhrase: string }
       | { status: 'failed'; errorCode: string; errorMessageSafe: string };
@@ -253,17 +281,19 @@ export async function applyValidationOutcome(
       and(
         eq(voiceProfiles.ownerUserId, params.ownerUserId),
         eq(voiceProfiles.status, 'validating_source'),
+        eq(voiceProfiles.providerValidationTaskId, params.providerTaskId),
       ),
     )
     .returning();
   return rows[0] ?? null;
 }
 
-/** Apply a creation poll outcome; guarded on `creating_voice` like validation. */
+/** Apply a creation poll outcome; guarded on `creating_voice` and the task like validation. */
 export async function applyVoiceCreationOutcome(
   db: Database,
   params: {
     ownerUserId: string;
+    providerTaskId: string;
     outcome:
       | { status: 'ready'; providerVoiceId: string }
       | { status: 'failed'; errorCode: string; errorMessageSafe: string };
@@ -290,6 +320,7 @@ export async function applyVoiceCreationOutcome(
       and(
         eq(voiceProfiles.ownerUserId, params.ownerUserId),
         eq(voiceProfiles.status, 'creating_voice'),
+        eq(voiceProfiles.providerVoiceTaskId, params.providerTaskId),
       ),
     )
     .returning();

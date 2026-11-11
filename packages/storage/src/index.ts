@@ -105,8 +105,9 @@ export interface StorageProvider {
    * removing what was staged before `olderThan` and answering how many objects
    * went. Only an adapter that stages writes somewhere addressable has any —
    * a killed process cannot run its own cleanup, and the staged bytes carry no
-   * key, so nothing else can ever name them. Absent on adapters that stage
-   * nothing (S3 sends the body in one request).
+   * key, so nothing else can ever name them. Absent on S3: a multipart upload
+   * (bodies over its 8 MB part size) interrupted by a killed process leaves its
+   * uploaded parts in the bucket, and this interface does not reclaim them.
    */
   sweepInterruptedWrites?(olderThan: Date): Promise<number>;
 }

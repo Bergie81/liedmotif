@@ -246,9 +246,16 @@ export function assertInstanceAlertsPosture(
     );
   }
   if (webhookUrl) {
-    const protocol = URL.parse(webhookUrl)?.protocol;
-    if (protocol !== 'http:' && protocol !== 'https:') {
+    const parsed = URL.parse(webhookUrl);
+    if (parsed?.protocol !== 'http:' && parsed?.protocol !== 'https:') {
       throw new Error('ALERT_WEBHOOK_URL must be an absolute http:// or https:// URL.');
+    }
+    // `fetch` refuses a URL with credentials before sending anything.
+    if (parsed.username || parsed.password) {
+      throw new Error(
+        "ALERT_WEBHOOK_URL must not carry a user name or password: put the receiver's token " +
+          'in the path or query.',
+      );
     }
   }
 }

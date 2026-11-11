@@ -6,7 +6,11 @@ import { and, eq, exists, sql, type SQL } from 'drizzle-orm';
 import type { Database } from '../client';
 import { playlists, playlistTracks, tracks } from '../schema';
 
-/** Correlates on `tracks.id`, so the select it joins must have `tracks` in scope. */
+/**
+ * Correlates on `tracks`, so the select it joins must have `tracks` in scope.
+ * Only the track owner's own Playlists count: a Visitor's Shared reference is
+ * never an owner fact.
+ */
 export function curatedPlaylistMemberColumn(db: Database) {
   return sql<boolean>`${exists(
     db
@@ -16,6 +20,7 @@ export function curatedPlaylistMemberColumn(db: Database) {
       .where(
         and(
           eq(playlistTracks.trackId, tracks.id),
+          eq(playlists.ownerUserId, tracks.ownerUserId),
           eq(playlists.kind, 'user'),
           eq(playlists.listedInPlaylists, true),
         ),

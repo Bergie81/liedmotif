@@ -327,6 +327,19 @@ describe('assertInstanceAlertsPosture', () => {
     }
   });
 
+  it('fails the boot on a webhook URL with a user name or password, which fetch never sends', () => {
+    for (const url of ['https://user:s3cret@ntfy.example/x', 'http://s3cret@192.168.1.20/x']) {
+      let message = '';
+      try {
+        assertInstanceAlertsPosture({ ...TOKEN, ALERT_WEBHOOK_URL: url });
+      } catch (err) {
+        message = (err as Error).message;
+      }
+      expect(message).toContain('ALERT_WEBHOOK_URL');
+      expect(message).not.toContain('s3cret');
+    }
+  });
+
   it('allows plain http: a receiver on the LAN is the intended target', () => {
     expect(() =>
       assertInstanceAlertsPosture({ ...TOKEN, ALERT_WEBHOOK_URL: 'http://localhost:2586/x' }),

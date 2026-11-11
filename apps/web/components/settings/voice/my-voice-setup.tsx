@@ -569,14 +569,25 @@ function RecorderPanel({
 }
 
 function StoredRecordingPreview({ kind }: { kind: VoiceRecordingKindValue }) {
-  return (
-    // The URL is stable per kind; the browser refetches on mount, which is
-    // exactly when the stored take may have changed.
-    <audio
-      controls
-      preload="metadata"
-      src={`/api/settings/voice/recordings/${kind}`}
-      className="w-full"
-    />
-  );
+  // Played from a blob URL because the route answers without byte ranges, which
+  // Safari requires of a direct media `src`. Fetched on mount, which is exactly
+  // when the stored take may have changed.
+  const [src, setSrc] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    let cancelled = false;
+    let url: string | null = null;
+    void fetch(`/api/settings/voice/recordings/${kind}`, { cache: 'no-store' })
+      .then((response) => (response.ok ? response.blob() : null))
+      .then((blob) => {
+        if (cancelled || !blob) return;
+        url = URL.createObjectURL(blob);
+        setSrc(url);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [kind]);
+  return <audio controls preload="metadata" src={src} className="w-full" />;
 }

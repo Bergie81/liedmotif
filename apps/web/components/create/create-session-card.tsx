@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type {
   CoverStyleChoice,
+  SessionIntentInput,
   StartSessionRequest,
   StartSurpriseRequest,
   SurpriseProposal,
@@ -74,6 +75,9 @@ export function CreateSessionCard({
   // one for the form's opening words: it is what the User just asked for.
   const [proposal, setProposal] = useState(surprise?.pending ?? null);
   const seed = initialPrompt ? null : proposal;
+  // Whether the form holds the shown proposal's prefill: not while a search
+  // hand-off's words outrank it.
+  const [formHoldsProposal, setFormHoldsProposal] = useState(seed != null);
   const [prompt, setPrompt] = useSeededPrompt(initialPrompt ?? seed?.edit.prompt);
   const [draft, setDraft] = useState<CreateSessionDraft>(() => ({
     genres: [],
@@ -97,7 +101,9 @@ export function CreateSessionCard({
   // A handed-off start navigates to /player, which unmounts this card; until
   // that lands the button must show the click was taken.
   const [starting, setStarting] = useState(false);
-  const duration = targetDurationMinutes != null ? { targetDurationMinutes } : {};
+  function durationOf(minutes: number | null) {
+    return minutes != null ? { targetDurationMinutes: minutes } : {};
+  }
 
   function startSession() {
     if (starting) return;
@@ -117,34 +123,50 @@ export function CreateSessionCard({
       proposal.skipProfile === skipProfile &&
       formMatchesSurprise(prompt, draft, proposal.edit, defaultLanguage)
     ) {
-      startProposal(proposal);
+      startProposal(proposal, targetDurationMinutes);
       return;
     }
+    startOwnRequest(result.intent, targetDurationMinutes);
+  }
+
+  function startOwnRequest(intent: SessionIntentInput, minutes: number | null) {
     setStarting(true);
     onStart({
-      ...buildStartRequest(result.intent, clientId, { coverStyle, skipProfile, useStandardCover }),
-      ...duration,
+      ...buildStartRequest(intent, clientId, { coverStyle, skipProfile, useStandardCover }),
+      ...durationOf(minutes),
     });
   }
 
-  /** Start a proposal from its stored Style Snapshot, with the card's cover and length. */
-  function startProposal(next: SurpriseProposal) {
+  /** Start a proposal from its stored Style Snapshot, with the card's cover and the given length. */
+  function startProposal(next: SurpriseProposal, minutes: number | null) {
     if (!surprise || starting) return;
     setStarting(true);
     surprise.onStart({
       proposalId: next.id,
       ...(coverStyle !== 'auto' ? { coverStyle } : {}),
       useStandardCover,
-      ...duration,
+      ...durationOf(minutes),
     });
   }
 
-  // The modal's Start. A proposal made under the other Start without profile
-  // setting holds (or lacks) profile context its snapshot cannot shed, so it
-  // starts as the User's own request from the form it prefilled.
+  // The modal's Start starts what the modal previews: the proposal's words and
+  // picks, with the card's length only once the form holds the proposal. A
+  // proposal made under the other Start without profile setting holds (or
+  // lacks) profile context its snapshot cannot shed, so it starts as the User's
+  // own request built from that prefill, with the User's own Guardrails.
   function startFromModal(next: SurpriseProposal) {
-    if (next.skipProfile === skipProfile) startProposal(next);
-    else startSession();
+    if (starting) return;
+    const minutes = formHoldsProposal ? targetDurationMinutes : next.edit.durationMinutes;
+    if (next.skipProfile === skipProfile) {
+      startProposal(next, minutes);
+      return;
+    }
+    const result = buildPromptIntent(next.edit.prompt, {
+      ...draft,
+      ...surpriseFineTune(next.edit, defaultLanguage),
+    });
+    if (result.ok) startOwnRequest(result.intent, minutes);
+    else setError(result.error);
   }
 
   // A proposal's words, picks and length land in the form as a plain prefill;
@@ -152,6 +174,7 @@ export function CreateSessionCard({
   function showProposal(next: SurpriseProposal | null) {
     setProposal(next);
     if (!next) return;
+    setFormHoldsProposal(true);
     setError(null);
     setPrompt(next.edit.prompt);
     setDraft((current) => ({ ...current, ...surpriseFineTune(next.edit, defaultLanguage) }));

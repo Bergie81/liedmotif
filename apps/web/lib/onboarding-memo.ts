@@ -1,8 +1,10 @@
 // Process-level memo for COMPLETED first-login onboarding. `completedAt` is
-// monotonic — once set it never reverts (there is no reset path) — so a
-// completed user's guard check needs no `user_settings` round trip on every
-// RSC render, queue poll, audio range request, and cover request. Only `true`
-// is memoized; an incomplete (or unknown) state always re-reads, request-scoped.
+// monotonic — no app path reverts it; only the dev script's `clear` deletes the
+// row, and a running web process keeps answering from this memo until it
+// restarts — so a completed user's guard check needs no `user_settings` round
+// trip on every RSC render, queue poll, audio range request, and cover request.
+// Only `true` is memoized; an incomplete (or unknown) state always re-reads,
+// request-scoped.
 
 import { cache } from 'react';
 import { getOnboardingState, type Database } from '@liedmotif/db';

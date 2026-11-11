@@ -89,6 +89,21 @@ describe('planOfflineSync', () => {
     ]);
   });
 
+  it('never refuses a mark that needs nothing new, even with the device past the cap', () => {
+    // Stored bytes count covers too, so a held copy can sit past an audio-sized cap.
+    const plan = planOfflineSync({
+      marks: [
+        mark('playlist:held', 1, [track('h1', 5 * MB), track('h2', 5 * MB)]),
+        mark('playlist:subset', 2, [track('h1', 5 * MB)]),
+      ],
+      stored: [stored('h1', 5.2 * MB), stored('h2', 5.2 * MB)],
+      capBytes: 10 * MB,
+    });
+
+    expect(plan.downloads).toEqual([]);
+    expect(plan.refusals).toEqual([]);
+  });
+
   it('counts the space deletions free before deciding what fits', () => {
     const plan = planOfflineSync({
       marks: [mark('playlist:a', 1, [track('next', 8 * MB)])],

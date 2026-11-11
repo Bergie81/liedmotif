@@ -11,8 +11,9 @@
 // gate the worker submits through) — not the creation headroom, which exists so
 // a new Session has enough Tracks to Repeat. At the Session duration target the
 // fill is blocked too, so the change is refused there unless the same
-// edit lifts or clears the target. Both checks run ahead of the derivation, so a
-// change that could produce no music spends no LLM either.
+// edit lifts or clears the target. A Stopped Session never fills a revision, so
+// it is refused too. All three checks run ahead of the derivation, so a change
+// that could produce no music spends no LLM either.
 
 import { NextResponse } from 'next/server';
 import { getSessionById, restyleSession } from '@liedmotif/db';
@@ -101,6 +102,10 @@ export async function POST(request: Request) {
     evaluateGenerationBudget(db, ownerUserId),
   ]);
   if (!current) return apiError('not_found', 'Session not found.');
+  // `restyleSession` re-checks under its lock for a stop inside the derivation.
+  if (current.status !== 'active') {
+    return apiError('conflict', 'Change Vibe needs an active session.');
+  }
   if (!budget.withinLimits) {
     return apiError('session_headroom_blocked', await headroomRefusalMessage(db, budget));
   }

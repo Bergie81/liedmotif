@@ -1,5 +1,5 @@
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { isAbsolute, join, relative, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { ENV_EXAMPLE, machine, parseEnv, SECRET_KEYS, type Machine } from './install-test-machine';
 
@@ -202,6 +202,20 @@ describe('installer: rerun is the update', () => {
     );
   });
 
+  it('still names the version to go back to when migrate fails again on the rerun', async () => {
+    const box = await machine();
+    await box.run('--domain', 'music.example.com', '--version', '1.4.0');
+    await box.failDocker('migrate');
+    await box.run('--domain', 'music.example.com', '--version', '1.5.0');
+
+    const { code, output } = await box.run('--domain', 'music.example.com', '--version', '1.5.0');
+
+    expect(code).not.toBe(0);
+    expect(output).toMatch(
+      /restore the last backup from before this update and go back to 1\.4\.0/,
+    );
+  });
+
   it('leaves the app stopped and points at the backup when migrate fails', async () => {
     const box = await machine();
     await box.run('--domain', 'music.example.com', '--version', '1.4.0');
@@ -329,6 +343,22 @@ describe('installer: finish', () => {
       'curl -fsSL https://github.com/bergie81/liedmotif/releases/latest/download/install.sh' +
         ` | bash -s -- --domain music.example.com --dir ${box.installDir}`,
     );
+  });
+
+  it('prints the update command with the install folder as an absolute path', async () => {
+    const box = await machine();
+
+    const { code, output } = await box.run(
+      '--domain',
+      'music.example.com',
+      '--dir',
+      relative(process.cwd(), box.installDir),
+    );
+
+    expect(code, output).toBe(0);
+    const dir = /\| bash -s -- --domain music\.example\.com --dir (\S+)/.exec(output)?.[1] ?? '';
+    expect(isAbsolute(dir), output).toBe(true);
+    expect(resolve(dir)).toBe(box.installDir);
   });
 
   it('prints no secret apart from the setup token inside the one setup link', async () => {

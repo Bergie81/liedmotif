@@ -134,6 +134,8 @@ export function PlaylistDetail({
     onError: setActionError,
     onConflict: () => void members.load(),
   });
+  const { holdReloads } = members;
+  useEffect(() => holdReloads(reorder.active), [holdReloads, reorder.active]);
 
   async function applyRename(name: string): Promise<string | null> {
     const result = await renamePlaylist(playlistId, name);

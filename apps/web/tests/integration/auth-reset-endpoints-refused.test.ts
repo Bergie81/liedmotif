@@ -21,6 +21,8 @@ const REFUSED_PATHS = [
   '/verify-email?token=some-token',
   '/change-password',
   '/set-password',
+  '/verify-password',
+  '/update-user',
 ];
 
 function authRequest(method: 'GET' | 'POST', path: string): Request {

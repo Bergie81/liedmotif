@@ -79,6 +79,7 @@ const SERVER_CALLS = [
   'getReadableTrackDetails',
   'getSessionById',
   'getTypicalTracksPerMusicRequest',
+  'getUsageLimits',
   'headroomRefusalMessage',
   'listPlaylists',
   'listSessionTracks',

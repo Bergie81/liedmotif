@@ -12,9 +12,10 @@ import {
   type RefObject,
 } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { ArrowUp, Sparkles, Square, SquarePen, X } from 'lucide-react';
+import { ArrowUp, Square, SquarePen, X } from 'lucide-react';
 import { ASSISTANT_MAX_MESSAGE_LENGTH, type AssistantStanding } from '@liedmotif/shared';
 import { AlertBanner, chipClass, iconButtonClass } from '@/components/ui/design-system';
+import { AssistantGlyph } from '@/components/ui/glyphs';
 import { LiedmotifLoader } from '@/components/ui/loading';
 import { WithTooltip } from '@/components/ui/tooltip';
 import { ASSISTANT_NAME } from '@/lib/assistant/persona';
@@ -49,7 +50,7 @@ export function AssistantPanel({
   /** Where the viewer stands with their daily allowance, as far as is known. */
   standing: AssistantStanding | null;
 }) {
-  const { messages, answering, draft, notice } = useSyncExternalStore(
+  const { messages, answering, draft, notice, noticeIsUsedUp } = useSyncExternalStore(
     conversation.subscribe,
     conversation.getState,
     conversation.getState,
@@ -67,7 +68,7 @@ export function AssistantPanel({
     <>
       <header className="flex flex-none items-center gap-1 border-b border-line py-2 pl-4 pr-2 pt-[calc(8px+env(safe-area-inset-top,0px))]">
         <DialogPrimitive.Title className="flex min-w-0 flex-1 items-center gap-2 font-display text-[18px] font-bold tracking-[-0.01em]">
-          <Sparkles className="h-[18px] w-[18px] flex-none text-lamp" aria-hidden />
+          <AssistantGlyph className="h-[18px] w-[18px] flex-none text-lamp" />
           {ASSISTANT_NAME}
         </DialogPrimitive.Title>
         <WithTooltip label="New chat" side="bottom">
@@ -113,11 +114,11 @@ export function AssistantPanel({
         <Transcript messages={messages} answering={answering} />
       )}
 
-      <footer className="flex flex-none flex-col gap-2 px-3 pb-[calc(12px+env(safe-area-inset-bottom,0px))] pt-2">
+      <footer className="flex flex-none flex-col gap-2 px-3 pb-[calc(24px+env(safe-area-inset-bottom,0px))] pt-2">
         {/* Where lines about asking show: why an answer did not arrive, and how
             much of today's allowance is left. A used-up allowance is said once,
             by the line that also names when it refills. */}
-        {notice && !usedUp ? <AlertBanner>{notice}</AlertBanner> : null}
+        {notice && !(usedUp && noticeIsUsedUp) ? <AlertBanner>{notice}</AlertBanner> : null}
         <AllowanceNotice allowance={allowance} />
         <Composer
           inputRef={inputRef}

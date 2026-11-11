@@ -162,10 +162,12 @@ export async function refreshVoiceProfile(
   await touchVoiceProfilePolled(db, { ownerUserId: profile.ownerUserId });
   try {
     if (profile.status === 'validating_source' && profile.providerValidationTaskId) {
-      const result = await voice.getValidationStatus(profile.providerValidationTaskId);
+      const providerTaskId = profile.providerValidationTaskId;
+      const result = await voice.getValidationStatus(providerTaskId);
       if (result.status === 'complete' && result.verificationPhrase) {
         await applyValidationOutcome(db, {
           ownerUserId: profile.ownerUserId,
+          providerTaskId,
           outcome: {
             status: 'awaiting_verification',
             verificationPhrase: result.verificationPhrase,
@@ -174,6 +176,7 @@ export async function refreshVoiceProfile(
       } else if (result.status === 'failed') {
         await applyValidationOutcome(db, {
           ownerUserId: profile.ownerUserId,
+          providerTaskId,
           outcome: {
             status: 'failed',
             errorCode: result.failureReason ?? 'unknown',
@@ -182,15 +185,18 @@ export async function refreshVoiceProfile(
         });
       }
     } else if (profile.status === 'creating_voice' && profile.providerVoiceTaskId) {
-      const result = await voice.getVoiceStatus(profile.providerVoiceTaskId);
+      const providerTaskId = profile.providerVoiceTaskId;
+      const result = await voice.getVoiceStatus(providerTaskId);
       if (result.status === 'complete' && result.providerVoiceId) {
         await applyVoiceCreationOutcome(db, {
           ownerUserId: profile.ownerUserId,
+          providerTaskId,
           outcome: { status: 'ready', providerVoiceId: result.providerVoiceId },
         });
       } else if (result.status === 'failed') {
         await applyVoiceCreationOutcome(db, {
           ownerUserId: profile.ownerUserId,
+          providerTaskId,
           outcome: {
             status: 'failed',
             errorCode: result.failureReason ?? 'unknown',

@@ -134,6 +134,9 @@ export interface PlayerContextValue extends PlayerActionsValue {
   /** The Change Vibe request narration (see {@link VibeChangeState}). */
   vibeChange: VibeChangeState;
   sleepTimer: SleepTimerControl;
+  /** Counts the Starts begun in this tab. A Start begun while /player is on
+   * screen navigates to the page already mounted, which narrates it on this. */
+  startCount: number;
 }
 
 const PlayerContext = createContext<PlayerContextValue | null>(null);
@@ -306,10 +309,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setModel(releasePlayback);
   }, [cancelSleepTimer]);
 
+  const [startCount, setStartCount] = useState(0);
   // Unlike Stop, an arming handoff goes too: the new Start replaces it.
   const beginStart = useCallback(() => {
     primePlayerAutoplay();
     if (!entryAudible()) setModel(idlePlaybackState);
+    setStartCount((count) => count + 1);
   }, [entryAudible]);
 
   // A restyled summary lands ONLY while that session is still the engaged
@@ -422,8 +427,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     [engage, engagePlaylist, engageOffline, release, beginStart, beginOtherMusic, submitChangeVibe],
   );
   const value = useMemo<PlayerContextValue>(
-    () => ({ engagedSource, playback, pending, vibeChange, sleepTimer, ...actions }),
-    [engagedSource, playback, pending, vibeChange, sleepTimer, actions],
+    () => ({ engagedSource, playback, pending, vibeChange, sleepTimer, startCount, ...actions }),
+    [engagedSource, playback, pending, vibeChange, sleepTimer, startCount, actions],
   );
 
   return (

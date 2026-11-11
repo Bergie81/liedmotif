@@ -8,7 +8,7 @@
 // stored cursor exists to go stale when the server resequences.
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PlaylistMemberItem, PlaylistSummaryItem } from '@liedmotif/shared';
 import {
   getAllPlaylistMembers,
@@ -61,6 +61,11 @@ export function usePlaylistMembers({
   // that window reads pre-resequence positions and would resurrect the removed
   // row, so paging holds until the count drains.
   const [pendingRemoves, setPendingRemoves] = useState(0);
+  const removals = useRef(new Set<Promise<unknown>>());
+  // While the page holds its own unsaved edit of the order (reorder mode), an
+  // outside write's reload would overwrite it; it runs once the hold ends.
+  const reloadHeld = useRef(false);
+  const reloadMissed = useRef(false);
   const consumeServerSeed = useServerSeed(initial != null);
   const { loadingMore, invalidate, beginFirstPage, beginNextPage, settle } = usePageEpoch();
 
@@ -90,7 +95,20 @@ export function usePlaylistMembers({
     if (consumeServerSeed()) return;
     void load();
   }, [load, consumeServerSeed]);
-  useOutsideLibraryWrite(() => void load());
+  useOutsideLibraryWrite(() => {
+    if (reloadHeld.current) reloadMissed.current = true;
+    else void load();
+  });
+
+  const holdReloads = useCallback(
+    (held: boolean) => {
+      reloadHeld.current = held;
+      if (held || !reloadMissed.current) return;
+      reloadMissed.current = false;
+      void load();
+    },
+    [load],
+  );
 
   const hasMore =
     playlist !== null && items !== null && hasUnloadedMembers(items, playlist.trackCount);
@@ -123,6 +141,8 @@ export function usePlaylistMembers({
     if (!hasMore) return { playlist, items };
     const token = invalidate();
     setLoadingAll(true);
+    // A read that overtakes a removal still committing would bring its member back.
+    await Promise.all(removals.current);
     const result = await getAllPlaylistMembers(playlistId, fetchMemberPage);
     setLoadingAll(false);
     if (!result.ok) {
@@ -163,13 +183,21 @@ export function usePlaylistMembers({
   function removeMember(trackId: string) {
     const member = items?.find((item) => item.id === trackId);
     if (!items || !member) return;
-    const previous = items;
+    const index = items.indexOf(member);
     dropMember(member);
     setPendingRemoves((count) => count + 1);
-    void removePlaylistTrack(playlistId, trackId).then((result) => {
+    const request = removePlaylistTrack(playlistId, trackId);
+    removals.current.add(request);
+    void request.then((result) => {
+      removals.current.delete(request);
       setPendingRemoves((count) => count - 1);
       if (!result.ok) {
-        setItems(previous);
+        // Only this member comes back: another removal may have committed since.
+        setItems((current) =>
+          current && !current.some((item) => item.id === member.id)
+            ? reindexMembers([...current.slice(0, index), member, ...current.slice(index)])
+            : current,
+        );
         shiftSummary(member, 'restore');
         onError(`Remove failed: ${result.error.message}`);
         return;
@@ -194,5 +222,6 @@ export function usePlaylistMembers({
     ensureAllMembers,
     removeMember,
     dropMember,
+    holdReloads,
   };
 }

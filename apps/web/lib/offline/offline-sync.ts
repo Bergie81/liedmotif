@@ -197,7 +197,11 @@ export function createOfflineSync(deps: {
       capBytes: await capBytes(),
     });
     await store.delete(plan.deletions);
-    for (const mark of fresh) await store.putMark(mark);
+    // Another tab may unmark or clear while this sync runs; only marks still
+    // stored are written back, so a removal there is never undone here.
+    const stillMarked = async () => new Set((await store.marks()).map((mark) => mark.key));
+    let marked = await stillMarked();
+    for (const mark of fresh) if (marked.has(mark.key)) await store.putMark(mark);
     await store.putLastSyncedAt(now());
     refusals = new Map(plan.refusals.map((refusal) => [refusal.key, refusal]));
 
@@ -224,9 +228,12 @@ export function createOfflineSync(deps: {
     }
 
     const syncedAt = now();
+    marked = await stillMarked();
     for (const mark of fresh) {
       const complete = mark.manifest.tracks.every((entry) => held.has(entry.trackId));
-      if (complete && !refusals.has(mark.key)) await store.putMark({ ...mark, syncedAt });
+      if (complete && !refusals.has(mark.key) && marked.has(mark.key)) {
+        await store.putMark({ ...mark, syncedAt });
+      }
     }
   }
 

@@ -10,7 +10,8 @@ import type { WorkerHeartbeat } from '../schema/types';
 import { readSetting, writeSetting } from '../setup/settings';
 
 /**
- * Three missed 10 s heartbeats. Beyond this the worker is treated as down —
+ * Two 15 s heartbeat intervals, so a single missed beat already reads as stale.
+ * Beyond this the worker is treated as down —
  * `degraded`, not `unavailable`: a worker that WAS reporting and stopped is a
  * problem to surface, unlike one that never existed.
  */

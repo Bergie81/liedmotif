@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto';
+import { createServer, type Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { Readable } from 'node:stream';
 import { CreateBucketCommand, S3Client } from '@aws-sdk/client-s3';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { describeStorageAdapterContract } from './adapter-contract';
 import { readAllBytes } from './index';
 import { s3StorageProvider, type S3StorageOptions } from './s3';
@@ -128,4 +130,70 @@ describe('s3StorageProvider error hygiene', () => {
       expect(thrown?.message).not.toContain(secret);
     }
   });
+});
+
+describe('s3StorageProvider upload timeouts', () => {
+  const TIMEOUTS = { connectionMs: 1_000, requestMs: 300, uploadRequestMs: 1_500 };
+  const BODY = Buffer.alloc(1024 * 1024, 1);
+  let server: Server;
+  let endpoint: string;
+  let puts = 0;
+  /** How the fake S3 endpoint treats a PUT body: read it slowly, or never. */
+  let mode: 'slow' | 'stalled' = 'slow';
+
+  beforeAll(async () => {
+    server = createServer((req, res) => {
+      if (req.method !== 'PUT') {
+        res.writeHead(404).end();
+        return;
+      }
+      puts += 1;
+      if (mode === 'stalled') return;
+      // ~0.7 s to read the whole body: past the read timeout, inside the
+      // upload one.
+      req.on('data', () => {
+        req.pause();
+        setTimeout(() => req.resume(), 40);
+      });
+      req.on('end', () => res.writeHead(200, { ETag: '"etag"' }).end());
+    });
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+    endpoint = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  });
+
+  afterAll(async () => {
+    server.closeAllConnections();
+    await new Promise((resolve) => server.close(resolve));
+  });
+
+  function storage() {
+    return s3StorageProvider(
+      {
+        region: 'us-east-1',
+        bucket: 'b',
+        accessKeyId: 'k',
+        secretAccessKey: 's',
+        endpoint,
+        forcePathStyle: true,
+      },
+      TIMEOUTS,
+    );
+  }
+
+  it('stores an upload whose body takes longer to send than the request timeout', async () => {
+    mode = 'slow';
+    puts = 0;
+    const started = Date.now();
+    const stat = await storage().write({ key: 'tracks/u/s/t.mp3', body: BODY });
+    expect(Date.now() - started).toBeGreaterThan(TIMEOUTS.requestMs);
+    expect(stat.byteSize).toBe(BODY.byteLength);
+    expect(puts).toBe(1);
+  }, 15_000);
+
+  it('still fails an upload the endpoint never answers', async () => {
+    mode = 'stalled';
+    await expect(storage().write({ key: 'tracks/u/s/t.mp3', body: BODY })).rejects.toThrow(
+      /S3 write failed for key "tracks\/u\/s\/t\.mp3" \(TimeoutError\)/,
+    );
+  }, 15_000);
 });

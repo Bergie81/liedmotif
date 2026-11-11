@@ -18,7 +18,10 @@ import { OFFLINE_MESSAGE } from '@/lib/api-fetch';
 import { ASSISTANT_NAME } from '@/lib/assistant/persona';
 import { isOnline, reportServerAnswered, reportServerUnreachable } from '@/lib/online-state';
 
-export type AskOutcome = { ok: true } | { ok: false; notice: string };
+export type AskOutcome =
+  | { ok: true }
+  /** `usedUp`: the refusal for a used-up allowance, which the panel's allowance line also says. */
+  | { ok: false; notice: string; usedUp?: true };
 
 const COULD_NOT_ANSWER = `${ASSISTANT_NAME} could not answer. Try again.`;
 const BROKE_OFF = 'The connection was lost before the answer was finished. Try again.';
@@ -99,11 +102,11 @@ export async function askAssistant(
 
   if (!response.ok || !response.body) {
     const refusal = errorResponseSchema.safeParse(await response.json().catch(() => null));
-    return failed(
-      refusal.success
-        ? refusalNotice(refusal.data.error, response.headers.get('Retry-After'))
-        : COULD_NOT_ANSWER,
-    );
+    if (!refusal.success) return failed(COULD_NOT_ANSWER);
+    const notice = refusalNotice(refusal.data.error, response.headers.get('Retry-After'));
+    return refusal.data.error.code === 'assistant_allowance_used_up'
+      ? { ok: false, notice, usedUp: true }
+      : failed(notice);
   }
 
   const reader = response.body.getReader();

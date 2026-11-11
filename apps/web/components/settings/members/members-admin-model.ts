@@ -143,6 +143,13 @@ export function buildMemberBudgetPatch(
   if (daily === null || monthly === null || coversPerDay === null || coversPerMonth === null) {
     return { ok: false, errors };
   }
+  // The budget schemas refuse a monthly cap below the daily one, so the form names
+  // the figure here instead of posting and getting a refusal no field can show.
+  if (monthly < daily) {
+    errors.monthlyTracks = `Enter ${providerTasksToTracks(daily, tracksPerCall)} or more.`;
+  }
+  if (coversPerMonth < coversPerDay) errors.coversPerMonth = `Enter ${coversPerDay} or more.`;
+  if (errors.monthlyTracks || errors.coversPerMonth) return { ok: false, errors };
   return {
     ok: true,
     patch: {

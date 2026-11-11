@@ -45,11 +45,13 @@ async function readyProfile(ctx: TestDb, ownerUserId: string) {
   await markValidationSubmitted(ctx.db, { ownerUserId, providerTaskId: 'validate-1' });
   await applyValidationOutcome(ctx.db, {
     ownerUserId,
+    providerTaskId: 'validate-1',
     outcome: { status: 'awaiting_verification', verificationPhrase: 'Sing this phrase' },
   });
   await markVoiceCreationSubmitted(ctx.db, { ownerUserId, providerTaskId: 'create-1' });
   return applyVoiceCreationOutcome(ctx.db, {
     ownerUserId,
+    providerTaskId: 'create-1',
     outcome: { status: 'ready', providerVoiceId: 'voice-1' },
   });
 }
@@ -145,10 +147,50 @@ describeIfDb('Voice profile repository', () => {
     // A stale validation poll response arriving after the profile is ready.
     const regressed = await applyValidationOutcome(ctx.db, {
       ownerUserId,
+      providerTaskId: 'validate-1',
       outcome: { status: 'failed', errorCode: 'x', errorMessageSafe: 'stale' },
     });
     expect(regressed).toBeNull();
     expect((await getVoiceProfile(ctx.db, ownerUserId))?.status).toBe('ready');
+  });
+
+  it('ignores a late poll outcome for a task the profile has moved past', async () => {
+    const ownerUserId = await seedUser(ctx);
+    await createVoiceProfile(ctx.db, { ownerUserId, providerKey: 'suno', consentVersion: 'v1' });
+    await markValidationSubmitted(ctx.db, { ownerUserId, providerTaskId: 'validate-1' });
+    await applyValidationOutcome(ctx.db, {
+      ownerUserId,
+      providerTaskId: 'validate-1',
+      outcome: { status: 'awaiting_verification', verificationPhrase: 'phrase-1' },
+    });
+    await markValidationSubmitted(ctx.db, { ownerUserId, providerTaskId: 'validate-2' });
+    const staleValidation = await applyValidationOutcome(ctx.db, {
+      ownerUserId,
+      providerTaskId: 'validate-1',
+      outcome: { status: 'awaiting_verification', verificationPhrase: 'phrase-1' },
+    });
+    expect(staleValidation).toBeNull();
+    expect((await getVoiceProfile(ctx.db, ownerUserId))?.status).toBe('validating_source');
+
+    await applyValidationOutcome(ctx.db, {
+      ownerUserId,
+      providerTaskId: 'validate-2',
+      outcome: { status: 'awaiting_verification', verificationPhrase: 'phrase-2' },
+    });
+    await markVoiceCreationSubmitted(ctx.db, { ownerUserId, providerTaskId: 'create-1' });
+    await applyVoiceCreationOutcome(ctx.db, {
+      ownerUserId,
+      providerTaskId: 'create-1',
+      outcome: { status: 'failed', errorCode: 'x', errorMessageSafe: 'failed' },
+    });
+    await markVoiceCreationSubmitted(ctx.db, { ownerUserId, providerTaskId: 'create-2' });
+    const staleCreation = await applyVoiceCreationOutcome(ctx.db, {
+      ownerUserId,
+      providerTaskId: 'create-1',
+      outcome: { status: 'failed', errorCode: 'x', errorMessageSafe: 'stale' },
+    });
+    expect(staleCreation).toBeNull();
+    expect((await getVoiceProfile(ctx.db, ownerUserId))?.status).toBe('creating_voice');
   });
 
   it('hides a disabled profile from generation and re-enables cleanly', async () => {
@@ -169,6 +211,7 @@ describeIfDb('Voice profile repository', () => {
     await markValidationSubmitted(ctx.db, { ownerUserId, providerTaskId: 'validate-1' });
     await applyValidationOutcome(ctx.db, {
       ownerUserId,
+      providerTaskId: 'validate-1',
       outcome: { status: 'failed', errorCode: 'noisy', errorMessageSafe: 'Too noisy' },
     });
     const resubmitted = await markValidationSubmitted(ctx.db, {

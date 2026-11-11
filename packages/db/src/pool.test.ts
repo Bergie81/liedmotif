@@ -86,6 +86,37 @@ describeIfDb('pool session timeouts (against a real Postgres)', () => {
   }, 20_000);
 });
 
+describeIfDb('pool connection loss (against a real Postgres)', () => {
+  it('survives losing the backend of a client checked out for a transaction', async () => {
+    assertSafeTestDatabase(TEST_DATABASE_URL);
+    const pool = createPool(TEST_DATABASE_URL, { max: 1 });
+    const admin = createPool(TEST_DATABASE_URL, { max: 1 });
+    const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    const client = await pool.connect();
+    try {
+      // pg-pool drops its own idle listener on checkout, so without one of ours
+      // the lost connection's 'error' event is uncaught and ends the process.
+      expect(client.listenerCount('error')).toBeGreaterThan(0);
+      await client.query('begin');
+      const { rows } = await client.query<{ pid: number }>('select pg_backend_pid() as pid');
+      const ended = new Promise((resolve) => client.once('end', resolve));
+      await admin.query('select pg_terminate_backend($1)', [rows[0]!.pid]);
+      await ended;
+
+      await expect(client.query('select 1')).rejects.toThrow();
+    } finally {
+      client.release();
+    }
+    try {
+      expect((await pool.query<{ ok: number }>('select 1 as ok')).rows[0]!.ok).toBe(1);
+    } finally {
+      stdout.mockRestore();
+      await admin.end();
+      await pool.end();
+    }
+  }, 20_000);
+});
+
 describe('createPool', () => {
   it('survives an idle-client error instead of crashing the process', async () => {
     const pool = createPool('postgres://u:p@localhost:5432/db');

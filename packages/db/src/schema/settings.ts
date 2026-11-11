@@ -89,13 +89,32 @@ export const DEFAULT_USAGE_LIMITS: UsageLimits = {
 };
 
 /**
+ * Whether a zone is safe to seed: `Intl` formats in it, and it is not a bare
+ * offset (`+05:00`), which Postgres reads as a POSIX zone with the opposite sign.
+ * The limit windows fall back to UTC on a zone `Intl` refuses, while the
+ * Postgres-side readers (backups, stats) would error on it.
+ */
+function isUsableTimezone(zone: string): boolean {
+  if (/^[+-]/.test(zone)) return false;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: zone });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Build the default usage limits, resolving `resetTimezone` from the explicit
- * argument, then `INSTANCE_TIMEZONE`, then `UTC`. Each candidate is trimmed and a
- * blank/whitespace-only value is treated as absent — `??` alone would let
+ * argument, then `INSTANCE_TIMEZONE`, then `UTC`. Each candidate is trimmed, and
+ * a blank or unusable one is treated as absent — `??` alone would let
  * `INSTANCE_TIMEZONE=''` seed an invalid empty timezone into the shipped defaults.
  */
 export function defaultUsageLimits(resetTimezone?: string): UsageLimits {
-  const timezone = resetTimezone?.trim() || process.env.INSTANCE_TIMEZONE?.trim() || 'UTC';
+  const timezone =
+    [resetTimezone?.trim(), process.env.INSTANCE_TIMEZONE?.trim()].find(
+      (zone): zone is string => !!zone && isUsableTimezone(zone),
+    ) ?? 'UTC';
   return { ...DEFAULT_USAGE_LIMITS, resetTimezone: timezone };
 }
 

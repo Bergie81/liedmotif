@@ -535,12 +535,12 @@ export async function listSessionLoopCandidates(
 }
 
 /**
- * The session's EARLIEST fully-ready music task id for `providerKey`, or null
- * while none exists yet. This is the stable rule for which music task feeds a
- * music-task-driven Session Cover (the provider allows one cover per music
- * task): earliest-ready never changes once set, so a safe retry always
- * re-derives the same task. Ordered by creation with an id tie-breaker for
- * determinism under equal timestamps.
+ * The session's EARLIEST-created fully-ready music task id for `providerKey`, or
+ * null while none exists yet: which music task feeds a music-task-driven Session
+ * Cover (the provider allows one cover per music task). An older task can turn
+ * ready later and take over, so the answer can change; cover admission pins the
+ * task it chose and a safe retry reuses that pin. Ordered by creation with an id
+ * tie-breaker for determinism under equal timestamps.
  */
 export async function getEarliestReadySessionMusicTaskId(
   db: DbOrTx,

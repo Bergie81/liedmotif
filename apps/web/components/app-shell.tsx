@@ -189,7 +189,7 @@ export function AppShell({
 
       <main
         className={cn(
-          'relative mx-auto max-w-(--shell-col) space-y-6 px-4 pt-4 desk:mr-auto desk:max-w-[1120px] desk:ml-[max(calc(var(--rail)+24px),calc(50vw-var(--assistant)/2-560px))] desk:px-10 desk:pt-6 rail-anim:transition-[margin-left] rail-anim:duration-150 rail-anim:ease-[ease]',
+          'relative mx-auto max-w-(--shell-col) space-y-6 px-4 pt-4 desk:mr-6 desk:max-w-[1120px] desk:ml-[max(calc(var(--rail)+24px),calc(50vw-var(--assistant)/2-560px))] desk:px-10 desk:pt-6 rail-anim:transition-[margin-left] rail-anim:duration-150 rail-anim:ease-[ease]',
           showMiniPlayer
             ? 'pb-[calc(var(--tab-h)+var(--mini-h)+32px+env(safe-area-inset-bottom,0px))] desk:pb-12'
             : 'pb-[calc(var(--tab-h)+32px+env(safe-area-inset-bottom,0px))] desk:pb-12',

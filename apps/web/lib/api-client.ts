@@ -840,15 +840,28 @@ export async function getAllPlaylists(
   const first = await listPlaylists(pageOptions);
   if (!first.ok) return first;
 
-  const playlists = [...first.data.playlists];
-  let cursor = first.data.nextCursor;
+  if (!first.data.nextCursor) return first;
+
+  const byId = new Map(first.data.playlists.map((playlist) => [playlist.id, playlist]));
+  const collect = (page: ListPlaylistsData) => {
+    for (const playlist of page.playlists) {
+      if (!byId.has(playlist.id)) byId.set(playlist.id, playlist);
+    }
+  };
+  let cursor: string | null = first.data.nextCursor;
   while (cursor) {
     const page = await listPlaylists({ ...pageOptions, cursor });
     if (!page.ok) return page;
-    playlists.push(...page.data.playlists);
+    collect(page.data);
     cursor = page.data.nextCursor;
   }
-  return { ok: true, data: { playlists, nextCursor: null } };
+  // The pages are keyed on activity, which only grows: a Playlist played or
+  // edited while later pages load jumps above the cursor and no later page
+  // holds it. It then sits on the first page, so one re-read catches it.
+  const reread = await listPlaylists(pageOptions);
+  if (!reread.ok) return reread;
+  collect(reread.data);
+  return { ok: true, data: { playlists: [...byId.values()], nextCursor: null } };
 }
 
 /** Create an empty user playlist. */

@@ -8,11 +8,13 @@ const mocks = vi.hoisted(() => ({
   encryptionKey: vi.fn((): Buffer | undefined => undefined),
   storedConfig: vi.fn(async (): Promise<Record<string, unknown> | null> => null),
   credentialStatus: vi.fn(async () => ({ configured: false })),
+  envLayer: vi.fn((): Record<string, string> => ({})),
 }));
 
 vi.mock('@liedmotif/db', () => ({
   getCredentialStatus: mocks.credentialStatus,
   getStoredProviderConfig: mocks.storedConfig,
+  readEnvLayer: mocks.envLayer,
   deleteProviderCredential: mocks.delete,
   upsertProviderCredential: mocks.upsert,
 }));
@@ -37,6 +39,7 @@ describe('provider credential writes', () => {
     mocks.adminSession.mockResolvedValue({ user: { id: 'admin-1' } });
     mocks.encryptionKey.mockReturnValue(undefined);
     mocks.storedConfig.mockResolvedValue(null);
+    mocks.envLayer.mockReturnValue({});
   });
 
   it('refuses a base URL carrying credentials before it can be stored', async () => {
@@ -103,6 +106,64 @@ describe('provider credential writes', () => {
     expect(mocks.upsert).toHaveBeenCalledWith(
       {},
       expect.objectContaining({ config: { model: 'llama3.1' } }),
+    );
+  });
+
+  it('refuses an OpenAI-compatible Writing AI with no base URL anywhere', async () => {
+    // Its builder needs an explicit endpoint, so the row would be the selected LLM
+    // while every Session silently compiled without it.
+    mocks.encryptionKey.mockReturnValue(Buffer.alloc(32));
+    const fresh = await POST(
+      new Request('http://localhost/api/settings/credentials', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          providerType: 'llm',
+          providerKey: 'openai-compatible',
+          secret: 'sk-x',
+          model: 'my-model',
+        }),
+      }),
+    );
+    expect(fresh.status).toBe(400);
+
+    mocks.storedConfig.mockResolvedValue({ baseUrl: 'https://llm.example.org/v1', model: 'm' });
+    const cleared = await POST(
+      new Request('http://localhost/api/settings/credentials', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          providerType: 'llm',
+          providerKey: 'openai-compatible',
+          baseUrl: '',
+        }),
+      }),
+    );
+    expect(cleared.status).toBe(400);
+    expect(mocks.upsert).not.toHaveBeenCalled();
+  });
+
+  it('accepts a Writing AI key-only save whose model comes from .env, storing no model', async () => {
+    mocks.encryptionKey.mockReturnValue(Buffer.alloc(32));
+    mocks.envLayer.mockReturnValue({ model: 'env-model', baseUrl: 'https://llm.example.org/v1' });
+    const response = await POST(
+      new Request('http://localhost/api/settings/credentials', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          providerType: 'llm',
+          providerKey: 'openai-compatible',
+          secret: 'sk-x',
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.upsert).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.not.objectContaining({
+        config: expect.objectContaining({ model: expect.anything() }),
+      }),
     );
   });
 

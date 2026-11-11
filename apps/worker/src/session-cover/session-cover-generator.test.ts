@@ -11,10 +11,13 @@ import {
   sessionCoverGenerations,
   PLACEHOLDER_COVER_ID,
   personReferencePhotos,
+  providerJobs,
   updatePerson,
   withOwnerCoverArtLock,
   updateUsageLimits,
   listenerProfiles,
+  setMemberDisabled,
+  userProfiles,
   type CoverImageRow,
 } from '@liedmotif/db';
 import { seedPlaceholderCover } from '@liedmotif/db/seed';
@@ -1608,6 +1611,175 @@ describeIfDb('SessionCoverGenerator', () => {
     },
   );
 
+  it('leaves sound recovered bytes storing for the next pass when persisting them fails', async () => {
+    const { ownerUserId, sessionId } = await seedSession();
+    const { provider, calls } = fakeCoverArt({
+      error: new GeneratedImageProviderError('unavailable', 'outcome_unknown'),
+    });
+    await generator(ownerUserId, provider).ensureGenerated(sessionId);
+    const [ledger] = await ctx.db
+      .select()
+      .from(sessionCoverGenerations)
+      .where(eq(sessionCoverGenerations.activitySessionId, sessionId));
+    await store.provider.write({
+      key: ledger!.storageKey,
+      body: IMAGE_BYTES,
+      mimeType: 'image/webp',
+    });
+    await ctx.db
+      .update(sessionCoverGenerations)
+      .set({
+        state: 'storing',
+        failureCategory: null,
+        settledAt: null,
+        updatedAt: new Date('2026-07-12T11:00:00.000Z'),
+      })
+      .where(eq(sessionCoverGenerations.id, ledger!.id));
+    let failed = false;
+    const flakyDb = new Proxy(ctx.db, {
+      get(target, prop) {
+        if (prop === 'insert') {
+          return (table: unknown) => {
+            if (table === coverImages && !failed) {
+              failed = true;
+              throw new Error('Connection terminated unexpectedly');
+            }
+            return target.insert(table as typeof coverImages);
+          };
+        }
+        const value = Reflect.get(target, prop, target);
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+    });
+
+    await expect(
+      generator(ownerUserId, provider, { db: flakyDb }).ensureGenerated(sessionId),
+    ).rejects.toBeInstanceOf(SessionCoverRetryableError);
+    const [kept] = await ctx.db
+      .select()
+      .from(sessionCoverGenerations)
+      .where(eq(sessionCoverGenerations.id, ledger!.id));
+    expect(kept!.state).toBe('storing');
+
+    await expect(
+      generator(ownerUserId, provider).ensureGenerated(sessionId),
+    ).resolves.toMatchObject({ status: 'ready', coverImageId: ledger!.coverImageId });
+    expect(calls).toHaveLength(1);
+  });
+
+  it('keeps a possibly-paid submission counted when its safe retry refuses the references', async () => {
+    const { ownerUserId, sessionId } = await seedSession();
+    await ctx.db
+      .insert(listenerProfiles)
+      .values({ ownerUserId, coverReferenceFrequency: 'always' });
+    await seedReference(ownerUserId);
+    const { provider, calls } = fakeCoverArt({
+      idempotency: 'native',
+      error: (attempt) =>
+        attempt === 1
+          ? new GeneratedImageProviderError('unavailable', 'outcome_unknown')
+          : undefined,
+    });
+    await expect(
+      generator(ownerUserId, provider).ensureGenerated(sessionId),
+    ).rejects.toBeInstanceOf(SessionCoverRetryableError);
+    const [retrying] = await ctx.db
+      .select()
+      .from(sessionCoverGenerations)
+      .where(eq(sessionCoverGenerations.activitySessionId, sessionId));
+    expect(retrying).toMatchObject({ state: 'planned', possiblyPaid: true, safeRetryCount: 1 });
+    await ctx.db
+      .update(listenerProfiles)
+      .set({ coverReferenceFrequency: 'never' })
+      .where(eq(listenerProfiles.ownerUserId, ownerUserId));
+
+    await expect(
+      generator(ownerUserId, provider).ensureGenerated(sessionId),
+    ).resolves.toMatchObject({ status: 'fallback', reason: 'privacy_rejected' });
+    expect(calls).toHaveLength(1);
+    const [settled] = await ctx.db
+      .select()
+      .from(sessionCoverGenerations)
+      .where(eq(sessionCoverGenerations.activitySessionId, sessionId));
+    expect(settled).toMatchObject({
+      state: 'privacy_rejected',
+      possiblyPaid: true,
+      submittedAt: retrying!.submittedAt,
+    });
+  });
+
+  it('buys no initial cover for a Session whose delete is pending', async () => {
+    const { ownerUserId, sessionId } = await seedSession();
+    await ctx.db
+      .update(activitySessions)
+      .set({ status: 'stopped', deleteRequestedAt: new Date() })
+      .where(eq(activitySessions.id, sessionId));
+    const { provider, calls } = fakeCoverArt();
+
+    await expect(
+      generator(ownerUserId, provider).ensureGenerated(sessionId),
+    ).resolves.toMatchObject({ status: 'fallback' });
+    expect(calls).toHaveLength(0);
+    expect(await ctx.db.select().from(sessionCoverGenerations)).toHaveLength(0);
+  });
+
+  it('settles a retrying attempt without a second call once the Session delete is pending', async () => {
+    const { ownerUserId, sessionId } = await seedSession();
+    const { provider, calls } = fakeCoverArt({
+      error: (attempt) =>
+        attempt === 1 ? new GeneratedImageProviderError('unavailable', 'not_started') : undefined,
+    });
+    await expect(
+      generator(ownerUserId, provider).ensureGenerated(sessionId),
+    ).rejects.toBeInstanceOf(SessionCoverRetryableError);
+    await ctx.db
+      .update(activitySessions)
+      .set({ status: 'stopped', deleteRequestedAt: new Date() })
+      .where(eq(activitySessions.id, sessionId));
+
+    await expect(
+      generator(ownerUserId, provider).ensureGenerated(sessionId),
+    ).resolves.toMatchObject({ status: 'fallback', reason: 'not_admitted' });
+    expect(calls).toHaveLength(1);
+    const [settled] = await ctx.db
+      .select()
+      .from(sessionCoverGenerations)
+      .where(eq(sessionCoverGenerations.activitySessionId, sessionId));
+    expect(settled).toMatchObject({ state: 'not_admitted', possiblyPaid: false });
+    // Nothing live is left, so the deferred delete can finish.
+    await expect(deleteSession(ctx.db, { ownerUserId, sessionId })).resolves.toMatchObject({
+      ok: true,
+      deferred: false,
+    });
+  });
+
+  it('settles a retrying attempt without a second call once the Member is disabled', async () => {
+    const { ownerUserId, sessionId } = await seedSession();
+    await ctx.db.insert(userProfiles).values({ userId: ownerUserId, role: 'member' });
+    const { provider, calls } = fakeCoverArt({
+      error: (attempt) =>
+        attempt === 1 ? new GeneratedImageProviderError('rate_limit', 'not_started') : undefined,
+    });
+    await expect(
+      generator(ownerUserId, provider).ensureGenerated(sessionId),
+    ).rejects.toBeInstanceOf(SessionCoverRetryableError);
+    await setMemberDisabled(ctx.db, { userId: ownerUserId, disabled: true });
+
+    await expect(
+      generator(ownerUserId, provider).ensureGenerated(sessionId),
+    ).resolves.toMatchObject({ status: 'fallback', reason: 'not_admitted' });
+    expect(calls).toHaveLength(1);
+    const [settled] = await ctx.db
+      .select()
+      .from(sessionCoverGenerations)
+      .where(eq(sessionCoverGenerations.activitySessionId, sessionId));
+    expect(settled).toMatchObject({
+      state: 'not_admitted',
+      possiblyPaid: false,
+      failureCategory: 'account_disabled',
+    });
+  });
+
   it('settles an aged non-idempotent submission as unknown without resubmitting', async () => {
     const { ownerUserId, sessionId } = await seedPlaceholderSession();
     const { provider, calls } = fakeCoverArt({
@@ -1741,6 +1913,43 @@ describeIfDb('SessionCoverGenerator', () => {
       expect(await readAllBytes(await store.provider.readStream(rows[0]!.storageKey))).toEqual(
         finalizedBytes,
       );
+    });
+
+    it('retries with the admitted music task after an older task turns ready', async () => {
+      const { ownerUserId, sessionId } = await seedSession();
+      const olderRequestId = await createGenerationRequest(ctx.db, {
+        ownerUserId,
+        activitySessionId: sessionId,
+        providerKey: 'suno',
+      });
+      const olderJobId = await createProviderJob(ctx.db, {
+        generationRequestId: olderRequestId,
+        providerKey: 'suno',
+        normalizedStatus: 'processing',
+        providerTaskId: 'music-task-older',
+        createdAt: new Date(Date.now() - 60_000),
+      });
+      const taskId = await seedReadyMusicTask(ownerUserId, sessionId);
+      const { provider, calls } = fakeCoverArt({
+        musicTaskSource: SOURCE,
+        idempotency: 'recoverable',
+        error: (attempt) =>
+          attempt === 1
+            ? new GeneratedImageProviderError('unavailable', 'outcome_unknown')
+            : undefined,
+      });
+      await expect(
+        generator(ownerUserId, provider).ensureGenerated(sessionId),
+      ).rejects.toBeInstanceOf(SessionCoverRetryableError);
+      await ctx.db
+        .update(providerJobs)
+        .set({ normalizedStatus: 'ready' })
+        .where(eq(providerJobs.id, olderJobId));
+
+      await expect(
+        generator(ownerUserId, provider).ensureGenerated(sessionId),
+      ).resolves.toMatchObject({ status: 'ready', generatedNow: true });
+      expect(calls.map((call) => call.musicTaskId)).toEqual([taskId, taskId]);
     });
 
     it('generates even when required People references are unsupported by the provider', async () => {

@@ -98,7 +98,7 @@ export function useCoverSwipe({
     const steps =
       !cancelled &&
       Math.abs(dx) > Math.abs(dy) &&
-      current.x.commits(event.clientX, SWIPE_DISTANCE_PX);
+      current.x.commits(event.clientX, SWIPE_DISTANCE_PX, event.timeStamp);
     // A side with no neighbor is a dead end: stepping there would only restart the Track.
     if (!steps || !landing) {
       settle(cover, 0);

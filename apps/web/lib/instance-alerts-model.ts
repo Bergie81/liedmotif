@@ -8,7 +8,6 @@ import {
   accountedStorageBytes,
   isStorageQuotaReached,
   isWorkerHeartbeatFresh,
-  MAX_TRACK_AUDIO_BYTES,
   type InstanceAlertCondition,
   type InstanceAlertSeverity,
   type InstanceAlertsState,
@@ -23,6 +22,11 @@ export interface InstanceAlertsSnapshot {
   failedJobs: number | null;
   storageUsage: StorageUsage | null;
   storageQuotaBytes: number;
+  /**
+   * The room one music call's final downloads reserve: the worker refuses a new
+   * call below it, so that is where new Tracks stop.
+   */
+  generationReserveBytes: number;
 }
 
 interface InstanceAlertThresholds {
@@ -115,12 +119,13 @@ function classifyFailedJobs(failedJobs: number | null): ConditionReading {
 function classifyStorageQuota(
   usage: StorageUsage | null,
   quotaBytes: number,
+  reserveBytes: number,
   warnPercent: number,
 ): ConditionReading {
   if (!usage) return 'unknown';
   const percent = storageUsagePercent(accountedStorageBytes(usage), quotaBytes);
   const used = `${Math.round(percent)}%`;
-  if (isStorageQuotaReached(usage, quotaBytes, MAX_TRACK_AUDIO_BYTES)) {
+  if (isStorageQuotaReached(usage, quotaBytes, reserveBytes)) {
     return {
       severity: 'critical',
       title: 'Liedmotif storage quota reached',
@@ -175,6 +180,7 @@ export function evaluateInstanceAlerts(
       classifyStorageQuota(
         snapshot.storageUsage,
         snapshot.storageQuotaBytes,
+        snapshot.generationReserveBytes,
         thresholds.storageWarnPercent,
       ),
     ],

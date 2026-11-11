@@ -31,6 +31,7 @@ export async function listSessionTracks(
       and(
         eq(activitySessions.id, args.sessionId),
         eq(activitySessions.ownerUserId, args.ownerUserId),
+        sessionNotPendingDelete(),
       ),
     );
   if (!session) return null;

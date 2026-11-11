@@ -3,7 +3,8 @@
 // Repeat-one coordination, split from the
 // controller hook like the feedback actions (`use-track-actions.ts`): this
 // module owns the loop PIN state machine (`loopControlTransition`), the
-// acknowledged generation-hold lease, the queue-snapshot invalidations
+// acknowledged generation-hold lease (which Loop Track also takes before its
+// pin can arm, and which every exit releases), the queue-snapshot invalidations
 // (Change Vibe, stopped session, vanished pin), and the seam-length math.
 // The controller supplies its playback surface through `depsRef` — assigned
 // every render AFTER its own callbacks exist, read only at event time — and
@@ -93,6 +94,8 @@ export function useRepeatOne(
       const next = loopControlTransition(stateRef.current, event);
       stateRef.current = next.state;
       if (next.lease) hold('loop-track', next.lease === 'acquire');
+      // Loop Track holds generation before its pin arms; an exit ends that too.
+      else if (event.type === 'exit') hold('loop-track', false);
       if (next.syncTarget) depsRef.current?.syncPreparedTarget();
       depsRef.current?.patch({ loopActive: loopToggledOn(next.state) });
     },

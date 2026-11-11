@@ -74,6 +74,29 @@ export function MoreLikeThisGlyph({ className }: GlyphProps) {
   );
 }
 
+/** The Assistant: a crew radio whose signal is the sparkle that marks AI. */
+export function AssistantGlyph({ className }: GlyphProps) {
+  return (
+    <Glyph className={className}>
+      <rect x="3" y="8.5" width="9" height="13" rx="2" />
+      <path d="M5.5 8.5V2.5" />
+      <path d="M6 12.5h3" />
+      <path d="M6 15.5h3" />
+      <path d="M7.5 18.5h.01" />
+      <path
+        d="M18.5 0.75Q19.6 4.65 23.5 5.75Q19.6 6.85 18.5 10.75Q17.4 6.85 13.5 5.75Q17.4 4.65 18.5 0.75z"
+        fill="currentColor"
+        strokeWidth={1}
+      />
+      <path
+        d="M17.5 14.5Q18.05 16.45 20 17Q18.05 17.55 17.5 19.5Q16.95 17.55 15 17Q16.95 16.45 17.5 14.5z"
+        fill="currentColor"
+        strokeWidth={1}
+      />
+    </Glyph>
+  );
+}
+
 /** The branching wave leaves more empty space in its box than a Lucide icon
  *  does, so in a menu row it draws larger than the 18px slot, and the negative
  *  margin keeps the label aligned with the other rows. */

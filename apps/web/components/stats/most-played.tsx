@@ -46,14 +46,14 @@ export function MostPlayed({ rows }: { rows: TrackRow[] }) {
   if (rows.length === 0) {
     return <p className={emptyClass}>No plays recorded in this period.</p>;
   }
-  // Lines are drawn against the leader's share, so the ranking stays readable
+  // Lines are drawn against the leader's plays, so the ranking stays readable
   // when every share is small.
-  const topShare = rows[0]?.share ?? 0;
+  const topPlays = rows[0]?.playCount ?? 0;
   return (
     <>
       {playError ? <AlertBanner className="mb-4">{playError}</AlertBanner> : null}
       <ol>
-        {rows.map(({ key, label, coverImageId, plays, share, action }, index) => {
+        {rows.map(({ key, label, coverImageId, plays, playCount, share, action }, index) => {
           const playing =
             action?.kind === 'play' &&
             action.track.id === transportRowPreview.trackId &&
@@ -85,8 +85,8 @@ export function MostPlayed({ rows }: { rows: TrackRow[] }) {
                 </span>
                 <span className="mt-2 flex items-center gap-2">
                   <Meter
-                    value={share}
-                    max={topShare}
+                    value={playCount}
+                    max={topPlays}
                     label={`${label}: ${share}% of your plays`}
                     className="flex-1"
                   />

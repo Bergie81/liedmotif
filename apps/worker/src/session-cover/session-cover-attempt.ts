@@ -25,6 +25,7 @@ import {
   listRecentSessionCoverGenerations,
   replaceInitialSessionCover,
   setSessionCoverStyleHintNormalized,
+  resolveUserProfile,
   updateSessionCoverGeneration,
   withOwnerCoverArtLock,
   type SessionCoverGenerationRow,
@@ -464,9 +465,9 @@ export function frozenAttemptFields(
 
 /**
  * The session's source music task for a music-task-driven provider, or null
- * while none is ready. The earliest fully-ready task is the stable choice —
- * the provider allows one cover per music task, so a safe retry must re-derive
- * the same task.
+ * while none is ready. The answer can change when an older task turns ready
+ * later, and the provider allows one cover per music task, so admission pins
+ * the task it saw on the attempt and every retry submits that one.
  */
 export function readySourceMusicTaskId(
   db: DbOrTx,
@@ -482,15 +483,20 @@ export function readySourceMusicTaskId(
 
 /**
  * The `musicTaskId` a submission must carry: `undefined` for prompt-driven
- * providers. Not ready yet → retryable: the cover job (and later the aged
- * recovery scan) re-drives the attempt once the session's first task lands.
+ * providers, else the task pinned on the attempt at admission. An attempt
+ * without a pin resolves it now; not ready yet → retryable: the cover job (and
+ * later the aged recovery scan) re-drives the attempt once the session's first
+ * task lands.
  */
 async function resolveCoverMusicTaskId(
   db: DbOrTx,
   session: SessionRecord,
+  ledger: SessionCoverGenerationRow,
   capabilities: GeneratedImageCapabilities,
 ): Promise<string | undefined> {
   if (!capabilities.musicTaskSource) return undefined;
+  const pinned = ledger.retryPolicy.sourceMusicTaskId;
+  if (typeof pinned === 'string') return pinned;
   const taskId = await readySourceMusicTaskId(db, session, capabilities.musicTaskSource);
   if (!taskId) throw new SessionCoverRetryableError();
   return taskId;
@@ -553,10 +559,11 @@ export async function generateCoverSubmission(
     musicTaskId?: string;
     mergeDowngrades(codes: GeneratedImageResult['downgradeCodes']): string[];
   },
-): Promise<CoverSubmissionOutcome> {
+): Promise<CoverSubmissionOutcome | { kind: 'pending' }> {
   const { claimed, capabilities, now } = args;
+  let generated: GeneratedImageResult;
   try {
-    const generated = await args.provider.generate({
+    generated = await args.provider.generate({
       purpose: 'session-cover',
       positivePrompt: args.prompt,
       exclusions: claimed.plan.exclusions,
@@ -567,20 +574,6 @@ export async function generateCoverSubmission(
       ...(args.musicTaskId ? { musicTaskId: args.musicTaskId } : {}),
       count: 1,
     });
-    const requestDowngrades = args.mergeDowngrades(generated.downgradeCodes);
-    await updateSessionCoverGeneration(db, {
-      ownerUserId: args.ownerUserId,
-      id: claimed.id,
-      state: 'storing',
-      possiblyPaid: true,
-      providerOperationId: generated.operationId ?? null,
-      submissionDisposition: 'completed',
-      costUsd: generated.reportedCostUsd ?? null,
-      capabilityDowngrades: requestDowngrades,
-      updatedAt: now,
-      expectedStates: ['submitting'],
-    });
-    return { kind: 'generated', generated, requestDowngrades };
   } catch (error) {
     const failure = classifyCoverSubmissionFailure(error, claimed, capabilities.idempotency);
     const state = submitFailureState(failure, capabilities.idempotency);
@@ -598,12 +591,35 @@ export async function generateCoverSubmission(
     });
     return failure.retry ? { kind: 'retry' } : { kind: state };
   }
+  // Outside the provider `try`: a failed write here is a database error, not a
+  // provider outcome, so it propagates as retryable and leaves `submitting` to
+  // the aged recovery.
+  const requestDowngrades = args.mergeDowngrades(generated.downgradeCodes);
+  const stored = await updateSessionCoverGeneration(db, {
+    ownerUserId: args.ownerUserId,
+    id: claimed.id,
+    state: 'storing',
+    possiblyPaid: true,
+    providerOperationId: generated.operationId ?? null,
+    submissionDisposition: 'completed',
+    costUsd: generated.reportedCostUsd ?? null,
+    capabilityDowngrades: requestDowngrades,
+    updatedAt: now,
+    expectedStates: ['submitting'],
+  });
+  // The attempt moved on while the provider ran (a Playlist or Member delete
+  // settled it, or the aged recovery took it over): this run's bytes would have
+  // no row to reclaim them, so none are written.
+  if (!stored) return { kind: 'pending' };
+  return { kind: 'generated', generated, requestDowngrades };
 }
 
 /** An attempt that never reached the provider: another run holds the claim, or
  *  the frozen reference selection could not be honored. */
 export type UnsubmittedCover =
-  { kind: 'pending' } | { kind: 'refused'; reason: CoverReferenceRefusal };
+  | { kind: 'pending' }
+  | { kind: 'refused'; reason: CoverReferenceRefusal }
+  | { kind: 'not_admitted' };
 
 type ClaimedCoverSubmission =
   | {
@@ -633,6 +649,21 @@ async function claimUnderCoverArtLock(
 ): Promise<ClaimedCoverSubmission> {
   const { ownerUserId, ledger, capabilities, storage, now } = args;
   return withOwnerCoverArtLock(db, ownerUserId, async (tx) => {
+    // Admission ran when the attempt was planned; a safe retry re-enters here
+    // without it, so a Disable since then must still stop the paid call.
+    if ((await resolveUserProfile(tx, ownerUserId))?.disabledAt) {
+      const settled = await updateSessionCoverGeneration(tx, {
+        ownerUserId,
+        id: ledger.id,
+        state: 'not_admitted',
+        possiblyPaid: ledger.possiblyPaid,
+        failureCategory: 'account_disabled',
+        settledAt: now,
+        updatedAt: now,
+        expectedStates: ['planned'],
+      });
+      return settled ? { kind: 'not_admitted' } : { kind: 'pending' };
+    }
     const claimed = await claimCoverSubmission(tx, { ownerUserId, id: ledger.id, now });
     if (!claimed) return { kind: 'pending' };
     const current = await getSessionCoverGenerationById(tx, { ownerUserId, id: ledger.id });
@@ -644,13 +675,15 @@ async function claimUnderCoverArtLock(
       storage,
     });
     if (!prepared.ok) {
+      // This claim reached no provider, but a safe retry's earlier submission
+      // may have: that spend keeps counting in its window.
       await updateSessionCoverGeneration(tx, {
         ownerUserId,
         id: ledger.id,
         state: refusedCoverState(prepared.reason),
-        possiblyPaid: false,
+        possiblyPaid: ledger.possiblyPaid,
         submissionDisposition: 'not_started',
-        submittedAt: null,
+        submittedAt: ledger.possiblyPaid ? ledger.submittedAt : null,
         failureCategory: prepared.reason,
         settledAt: now,
         updatedAt: now,
@@ -729,7 +762,7 @@ async function submit(
 ): Promise<CoverSubmissionResult> {
   // Resolved BEFORE the state claim: a not-yet-ready source task must leave the
   // attempt 'planned' (retryable) instead of burning a submitting claim.
-  const musicTaskId = await resolveCoverMusicTaskId(runtime.deps.db, session, capabilities);
+  const musicTaskId = await resolveCoverMusicTaskId(runtime.deps.db, session, ledger, capabilities);
   return claimAndSubmitCover(runtime.deps.db, {
     provider: runtime.deps.imageProvider!,
     ownerUserId: session.ownerUserId,
@@ -865,6 +898,7 @@ export async function recoverStoredCoverBytes<R>(args: {
   settle(state: 'storage_rejected' | 'quality_rejected', failureCategory: string): Promise<R>;
   persist(byteSize: number): Promise<R>;
 }): Promise<R> {
+  let byteSize: number;
   try {
     if (!(await args.storage.stat(args.ledger.storageKey))) {
       return await args.settle('storage_rejected', 'stored_asset_missing');
@@ -874,10 +908,13 @@ export async function recoverStoredCoverBytes<R>(args: {
     if (!quality.ok || quality.width !== quality.height) {
       return await args.settle('quality_rejected', 'stored_asset_invalid');
     }
-    return await args.persist(bytes.byteLength);
+    byteSize = bytes.byteLength;
   } catch {
     return args.settle('storage_rejected', 'storage_recovery_rejected');
   }
+  // Sound bytes are on the key: a failure persisting them is retryable and
+  // leaves the attempt `storing` for the next recovery pass.
+  return args.persist(byteSize);
 }
 
 export async function recoverStoredCover(

@@ -47,6 +47,15 @@ set -o pipefail
 # Who restored media belongs to: the `node` user the app images run as.
 : "${MEDIA_OWNER:=1000:1000}"
 : "${STORAGE_PROVIDER:=local}"
+# The app's own connection string when it uses a database other than the bundled
+# one, so the backup reads the schedule from and dumps the database the app
+# writes; empty, libpq's PG* variables name the bundled one.
+: "${DATABASE_URL:=}"
+# libpq verifies a server certificate only against a root file it is given,
+# where the app's driver trusts the system roots; `system` gives libpq the same.
+case "$DATABASE_URL" in
+  *sslmode=verify-full*) : "${PGSSLROOTCERT:=system}" && export PGSSLROOTCERT ;;
+esac
 
 CHECK_SECONDS=60
 RETRY_CEILING_SECONDS=86400
@@ -113,13 +122,14 @@ read_attempt() {
   attempt_started='' attempt_finished='' attempt_error='' retry_at='' retry_delay=0
   [ -f "$ATTEMPT_FILE" ] || return 0
   read -r attempt_started attempt_finished attempt_error retry_at retry_delay <"$ATTEMPT_FILE"
+  [ "$attempt_finished" = - ] && attempt_finished=''
   [ "$attempt_error" = - ] && attempt_error=''
   [ "$retry_at" = - ] && retry_at=''
   return 0
 }
 
 write_attempt() {
-  echo "$attempt_started $attempt_finished ${attempt_error:--} ${retry_at:--} $retry_delay" \
+  echo "$attempt_started ${attempt_finished:--} ${attempt_error:--} ${retry_at:--} $retry_delay" \
     >"$ATTEMPT_FILE.tmp" && mv "$ATTEMPT_FILE.tmp" "$ATTEMPT_FILE"
 }
 
@@ -274,7 +284,7 @@ make_backup() {
   [ -n "$BACKUP_ENCRYPTION_PASSPHRASE" ] && db_name="db.sql.gz.enc"
   # `--clean --if-exists` so a restore over a populated database replaces it
   # rather than colliding; ownership and grants are the target cluster's.
-  if ! pg_dump --clean --if-exists --no-owner --no-privileges |
+  if ! pg_dump ${DATABASE_URL:+-d "$DATABASE_URL"} --clean --if-exists --no-owner --no-privileges |
     gzip -9 | encrypt_if_configured >"$partial/$db_name"; then
     rm -rf "$partial"
     failure=dump-failed
@@ -350,7 +360,7 @@ check() {
   [ -n "$attempt_error" ] && [ "$now" \< "$retry_at" ] && retry_pending=true
 
   trigger=''
-  if row="$(psql -X -A -t -F '|' -v ON_ERROR_STOP=1 -v now="$now" -f "$DUE_SQL")"; then
+  if row="$(psql ${DATABASE_URL:+-d "$DATABASE_URL"} -X -A -t -F '|' -v ON_ERROR_STOP=1 -v now="$now" -f "$DUE_SQL")"; then
     "$database_down" && log 'database reachable again'
     database_down=false
     IFS='|' read -r enabled frequency _weekday _hour keep include_media _timezone \
@@ -360,6 +370,14 @@ EOF
     next_run_at=''
     [ "$enabled" = t ] && next_run_at="$next_slot"
     assess
+    # An unreachable database is recorded only so a setup that never backed up
+    # shows it. With the schedule off nothing was due, so once the database
+    # answers the record is withdrawn; the start time stays, so a Back up now
+    # request it already covered stays handled.
+    if [ "$attempt_error" = database-unreachable ] && [ "$enabled" != t ]; then
+      attempt_finished='' attempt_error='' retry_at='' retry_delay=0
+      write_attempt
+    fi
 
     # A Back up now request runs once, even with the schedule off, and skips
     # any retry backoff.
@@ -394,8 +412,8 @@ EOF
 # `<archive>` is a backup downloaded from Settings → Backups (`.tar.enc`) or the
 # name of a folder under BACKUP_DIR. Everything that can be checked without
 # touching the target is checked first, and a run without `--yes` stops there
-# having said what it would replace. The target is the database PG* names and
-# MEDIA_DIR.
+# having said what it would replace. The target is the database DATABASE_URL
+# (or else PG*) names and MEDIA_DIR.
 #
 # psql's and rsync's own errors pass through, as in the backup loop: they say
 # which statement or file failed.
@@ -410,7 +428,7 @@ restore_refuse() {
 # table (a fresh target) or out of reach answers no; the replay then reports
 # what is wrong.
 worker_running() {
-  [ "$(psql -X -A -t -c "SELECT (value->>'ts')::timestamptz > now() - interval '30 seconds' FROM app_settings WHERE key = 'workerHeartbeat'" 2>/dev/null)" = t ]
+  [ "$(psql ${DATABASE_URL:+-d "$DATABASE_URL"} -X -A -t -c "SELECT (value->>'ts')::timestamptz > now() - interval '30 seconds' FROM app_settings WHERE key = 'workerHeartbeat'" 2>/dev/null)" = t ]
 }
 
 # SQL that empties every schema the dump `$1` fills, run ahead of it in the
@@ -488,7 +506,13 @@ restore() {
   fi
 
   echo "Restoring ${backup##*/}. This replaces:"
-  echo "  - the database ${PGDATABASE:-?} on ${PGHOST:-localhost}:${PGPORT:-5432}"
+  if [ -n "$DATABASE_URL" ]; then
+    # Host, port and name only: the user, password and query stay out of the output.
+    target="${DATABASE_URL%%\?*}"
+    echo "  - the database ${target##*@}"
+  else
+    echo "  - the database ${PGDATABASE:-?} on ${PGHOST:-localhost}:${PGPORT:-5432}"
+  fi
   if [ "$includes_media" = true ]; then
     echo "  - every file in $MEDIA_DIR"
   else
@@ -518,7 +542,7 @@ restore() {
     replay_into_empty_schemas "$dump" && gunzip -c "$dump" && echo 'COMMIT;'
   } |
     PGOPTIONS="${PGOPTIONS:-} -c client_min_messages=warning" \
-      psql -X -v ON_ERROR_STOP=1 >/dev/null ||
+      psql ${DATABASE_URL:+-d "$DATABASE_URL"} -X -v ON_ERROR_STOP=1 >/dev/null ||
     restore_refuse 'the dump did not replay; the database is unchanged'
 
   # Media after the database, so a replay that fails leaves both untouched.

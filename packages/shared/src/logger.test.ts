@@ -128,6 +128,8 @@ describe('redact', () => {
       hookNote: 'webhook at https://SECRETTOKEN@example.com/hook fired',
       callbackUrl: 'https://user:hunter2@host/p',
       conn: 'postgres://u:p@h:5432/db',
+      // pg splits userinfo at the last `@`, so a raw `@` may sit in the password.
+      rawAt: 'connect postgres://app:hunt@er2secret@db:5432/app',
       // A bare email in prose has no `://` and must be left untouched.
       contact: 'reach a@b.com for help',
       // An `@` in the query is not userinfo: the host survives (the query
@@ -139,6 +141,7 @@ describe('redact', () => {
     expect(out.hookNote).not.toContain('SECRETTOKEN');
     expect(out.callbackUrl).toBe('https://[REDACTED]@host/p');
     expect(out.conn).toBe('postgres://[REDACTED]@h:5432/db');
+    expect(out.rawAt).toBe('connect postgres://[REDACTED]@db:5432/app');
     expect(out.contact).toBe('reach a@b.com for help');
     expect(out.query).toBe('https://api.example.com');
   });
@@ -182,6 +185,42 @@ describe('redact', () => {
     expect(out.author).toBe('Ada Lovelace');
     expect(out.authorName).toBe('Ada Lovelace');
     expect(out.generatedArtistName).toBe('The Focus Collective');
+  });
+
+  // Shaped like Drizzle's `DrizzleQueryError`: the bound values sit in the
+  // message, the database's own error in `cause`.
+  function failedQuery(params: string[], cause: Error): Error {
+    const query = 'insert into x values ($1)';
+    return Object.assign(new Error(`Failed query: ${query}\nparams: ${params.join(',')}`), {
+      query,
+      params,
+      cause,
+    });
+  }
+
+  it("keeps a failed query's database reason while its params stay redacted", () => {
+    const cause = Object.assign(
+      new Error('duplicate key value violates unique constraint "user_email_unique"'),
+      { code: '23505' },
+    );
+    const out = JSON.stringify(redact({ err: failedQuery(['my private prompt'], cause) }));
+
+    expect(out).toContain('duplicate key value violates unique constraint');
+    expect(out).not.toContain('my private prompt');
+  });
+
+  it("cuts a failed query's params when only its message is logged", () => {
+    const error = failedQuery(['my private prompt\nabout my ex'], new Error('boom'));
+    const out = redact({ error: error.message, wrapped: new Error(error.message) }) as {
+      error: string;
+      wrapped: { stack: string };
+    };
+
+    expect(out.error).toBe(`Failed query: insert into x values ($1)\nparams: ${REDACTED}`);
+    expect(JSON.stringify(out)).not.toContain('my private prompt');
+    expect(JSON.stringify(out)).not.toContain('about my ex');
+    // The stack frames after the message survive.
+    expect(out.wrapped.stack).toMatch(/\n\s+at /);
   });
 });
 

@@ -48,12 +48,14 @@ export function SearchResults({
   onScopeChange,
   onSortChange,
   onEngage,
+  onTrackRemoved,
 }: {
   state: SearchState;
   results: SearchQueryState;
   onScopeChange: (scope: SearchScope) => void;
   onSortChange: (sort: SearchSort) => void;
   onEngage: SearchEngagement;
+  onTrackRemoved: () => void;
 }) {
   const { data, loading, error, counts } = results;
 
@@ -69,7 +71,7 @@ export function SearchResults({
     <>
       <SummaryRow data={data} sort={state.sort} onSortChange={onSortChange} />
       {error ? <AlertBanner className="mb-3">{error}</AlertBanner> : null}
-      <GroupSections data={data} onEngage={onEngage} />
+      <GroupSections data={data} onEngage={onEngage} onTrackRemoved={onTrackRemoved} />
     </>
   );
 
@@ -183,9 +185,11 @@ function SummaryRow({
 function GroupSections({
   data,
   onEngage,
+  onTrackRemoved,
 }: {
   data: SearchResponseData;
   onEngage: SearchEngagement;
+  onTrackRemoved: () => void;
 }) {
   const { sessions, tracks, playlists } = data;
   if (totalMatchCount(data) === 0) return <SearchEmptyState data={data} />;
@@ -201,7 +205,12 @@ function GroupSections({
       ) : null}
       {tracks ? (
         <GroupSection kind="tracks" group={tracks} showTruncationNote={showTruncationNote}>
-          <SearchTrackResults items={tracks.items} query={data.query} onEngage={onEngage} />
+          <SearchTrackResults
+            items={tracks.items}
+            query={data.query}
+            onEngage={onEngage}
+            onTrackRemoved={onTrackRemoved}
+          />
         </GroupSection>
       ) : null}
       {playlists ? (

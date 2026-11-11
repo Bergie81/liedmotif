@@ -258,11 +258,13 @@ export async function recordListening(
 /**
  * The owner's preferences row. One that has to be created here belongs to an
  * account made after collection began, so its coverage starts with the account.
+ * `user.created_at` has no time zone and holds UTC wall-clock time, so it is
+ * read as UTC rather than in the database session's time zone.
  */
 export async function ensurePreferences(db: DbOrTx, ownerUserId: string) {
   await db.execute(sql`
     insert into ${listeningPreferences} (owner_user_id, collection_started_at)
-    select ${user.id}, ${user.createdAt} from ${user} where ${user.id} = ${ownerUserId}
+    select ${user.id}, ${user.createdAt} at time zone 'UTC' from ${user} where ${user.id} = ${ownerUserId}
     on conflict do nothing
   `);
 }

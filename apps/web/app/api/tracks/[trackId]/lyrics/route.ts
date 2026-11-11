@@ -26,7 +26,14 @@ import {
   saveTrackTimedLyrics,
   type ReadableTrackLyricsContext,
 } from '@liedmotif/db';
-import { buildLyricLines, uuidSchema, type TimedLyrics, type TrackLyrics } from '@liedmotif/shared';
+import {
+  buildLyricLines,
+  POLL_TERMINAL_PROVIDER_STATUSES,
+  uuidSchema,
+  type ProviderNormalizedStatus,
+  type TimedLyrics,
+  type TrackLyrics,
+} from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
 import { apiError, apiOk, requireOwnerId } from '@/lib/api-response';
 import { getMusicProvider } from '@/lib/providers';
@@ -68,17 +75,33 @@ async function backfillPlainLyrics(ctx: ReadableTrackLyricsContext): Promise<str
  */
 const inFlightTimedFetches = new Map<string, Promise<TimedLyrics | null>>();
 
-function fetchTimedLyricsOnce(ctx: ReadableTrackLyricsContext): Promise<TimedLyrics | null> {
+function fetchTimedLyricsOnce(
+  ctx: ReadableTrackLyricsContext,
+  viewerUserId: string,
+): Promise<TimedLyrics | null> {
   const inFlight = inFlightTimedFetches.get(ctx.trackId);
   if (inFlight) return inFlight;
-  const fetch = fetchTimedLyrics(ctx).finally(() => inFlightTimedFetches.delete(ctx.trackId));
+  const fetch = fetchTimedLyrics(ctx, viewerUserId).finally(() =>
+    inFlightTimedFetches.delete(ctx.trackId),
+  );
   inFlightTimedFetches.set(ctx.trackId, fetch);
   return fetch;
 }
 
 /** Fetch-and-cache word timing; null on failure (nothing persisted → retryable). */
-async function fetchTimedLyrics(ctx: ReadableTrackLyricsContext): Promise<TimedLyrics | null> {
+async function fetchTimedLyrics(
+  ctx: ReadableTrackLyricsContext,
+  viewerUserId: string,
+): Promise<TimedLyrics | null> {
   try {
+    // `ctx` may predate a fetch that persisted and left the in-flight map
+    // while this request was still backfilling; the stored timing is the answer.
+    const fresh = await getReadableTrackLyricsContext(getDb(), {
+      viewerUserId,
+      trackId: ctx.trackId,
+    });
+    if (!fresh) return null;
+    if (fresh.timedLyrics) return fresh.timedLyrics;
     const provider = await providerFor(ctx);
     if (!provider?.getTimestampedLyrics || !ctx.providerTaskId) return null;
     const timed = await provider.getTimestampedLyrics({
@@ -121,7 +144,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ trac
   }
 
   const jobComplete = ctx.providerJobStatus === 'ready';
-  const jobSettled = jobComplete || ctx.providerJobStatus === 'failed_final';
+  const jobSettled = (
+    POLL_TERMINAL_PROVIDER_STATUSES as readonly ProviderNormalizedStatus[]
+  ).includes(ctx.providerJobStatus);
   // Only a COMPLETE job is enriched here, and a `?cached` read never is: an
   // offline sync copies every vocal Track it stores and must not buy timing for
   // Tracks nobody opened.
@@ -139,7 +164,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ trac
     });
   }
 
-  const timed = ctx.timedLyrics ?? (canEnrich ? await fetchTimedLyricsOnce(ctx) : null);
+  const timed =
+    ctx.timedLyrics ?? (canEnrich ? await fetchTimedLyricsOnce(ctx, viewerUserId) : null);
   const { lines, synced } = buildLyricLines(lyrics, timed && timed.words.length > 0 ? timed : null);
   // Unsynced words on a still-rendering job WILL gain timing once it completes
   // — tell the client to keep asking instead of settling for the plain view.

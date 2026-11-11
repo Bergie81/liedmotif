@@ -15,13 +15,15 @@
 //   hung longer than the stale window stops blocking the cadence (its late
 //   response is already sequenced out by latest-wins).
 // - The hold is displayed only as long as one lease TTL from the LAST ack
-//   that confirmed a live own lease: when confirmed renewals stop arriving
+//   that reported it: when confirmed renewals stop arriving
 //   (network gone, tab paused/throttled past the TTL), `held` flips false —
 //   the UI must never imply a server hold that may already have lapsed. The
 //   window is measured from the ack's ARRIVAL on the client clock, never by
 //   parsing the server's `expiresAt` (a skewed phone clock would extend a
 //   stale "Looping" claim arbitrarily). A later confirmed renewal or
-//   re-acquire flips it back.
+//   re-acquire flips it back. A hold only another tab has (reported by a
+//   release ack) gets the same one-TTL window, since this tab no longer
+//   renews and nothing re-confirms it.
 // - `release()` reports un-held immediately (this tab no longer WANTS the
 //   hold; a lost release lapses by TTL — the documented behavior) and the
 //   ack still corrects to the session-level truth (another tab may hold).
@@ -40,7 +42,7 @@ export type LoopLeaseSendResult =
       data: {
         applied: boolean;
         held: boolean;
-        /** The caller's OWN lease row (a live one re-arms the displayed hold). */
+        /** The caller's OWN lease row. */
         lease: { released: boolean } | null;
       };
     }
@@ -142,7 +144,7 @@ export class LoopLeaseProtocol {
       if (this.disposed || seq !== this.opSeq) return;
       if (res.ok) {
         this.onHeldChange(res.data.held);
-        this.armExpiryTimer(res.data.lease);
+        this.armExpiryTimer(res.data.held);
       }
       onAck?.(res.ok ? res.data : null);
     });
@@ -153,12 +155,12 @@ export class LoopLeaseProtocol {
    * side has lapsed or may have — the UI shows the pending state until an ack
    * confirms). Measured entirely on the client clock — parsing the server's
    * `expiresAt` would let a skewed device clock extend a stale claim. */
-  private armExpiryTimer(lease: { released: boolean } | null): void {
+  private armExpiryTimer(held: boolean): void {
     this.clearExpiryTimer();
-    if (!this.wantHold || !lease || lease.released) return;
+    if (!held) return;
     this.expiryTimer = setTimeout(() => {
       this.expiryTimer = null;
-      if (this.wantHold) this.onHeldChange(false);
+      this.onHeldChange(false);
     }, LOOP_LEASE_TTL_SECONDS * 1000);
   }
 

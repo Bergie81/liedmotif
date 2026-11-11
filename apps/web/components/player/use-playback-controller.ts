@@ -218,6 +218,7 @@ export function usePlaybackController(
   // back through `rejectedPlayFallbackStatus`.
   const wantPlayRef = useRef<boolean>(initial?.autoplay ?? false);
   const statusRef = useRef<PlayerStatus>('loading');
+  const playIntentPendingRef = useRef<boolean>(initial?.autoplay ?? false);
   // The previous poll's armed-switch flag: the cutover triggers on its falling
   // edge (armed → cleared), exactly once per switch-now Change Vibe.
   const switchPendingRef = useRef(false);
@@ -237,6 +238,7 @@ export function usePlaybackController(
 
   const patch = useCallback((next: Partial<PlaybackControllerState>) => {
     if (next.status) statusRef.current = next.status;
+    if (next.playIntentPending !== undefined) playIntentPendingRef.current = next.playIntentPending;
     setState((s) => ({ ...s, ...next }));
   }, []);
 
@@ -301,6 +303,14 @@ export function usePlaybackController(
   // A blend handoff starts the incoming Track while the outgoing one is still
   // sounding; its own `ended` follows when the tail runs out.
   const overlapStartMsRef = useRef(0);
+  // A fresh start the browser blocked still owes its `started`: the deck keeps
+  // the Track, so the Play that follows is a resume in shape but the first
+  // audible start of that load.
+  const owedStartRef = useRef<{
+    deck: DeckId;
+    track: PlayableTrack;
+    queueWrapped: boolean;
+  } | null>(null);
 
   const report = useCallback(
     (
@@ -600,23 +610,22 @@ export function usePlaybackController(
   }, [explicitNextTarget, loopPinned, loopSeamTarget, sectionLoopRegion]);
 
   /** Arm Loop Track's seamless pin once `deck` commits a downloaded final (the
-   * pin is restricted to finals). A no-op outside Loop Track, before a final
-   * commits, or while a pin is already live. */
+   * pin is restricted to finals). Before that the mode still holds generation:
+   * new generation waits while Loop Track is on, whatever the Track's source.
+   * A no-op outside Loop Track, with no Track, or while a pin is already live. */
   const armLoopTrackPin = useCallback(
     (deck: DeckId, track: PlayableTrack | null) => {
-      if (
-        playbackTraversalRef.current.mode === 'loop-track' &&
-        track &&
-        !loopPinned() &&
-        deckSources().committedKind(deck) === 'final'
-      ) {
-        applyLoopEvent({
-          type: 'toggle-on',
-          track: { queueItemId: track.queueItemId, trackId: track.trackId },
-        });
+      if (playbackTraversalRef.current.mode !== 'loop-track' || !track || loopPinned()) return;
+      if (deckSources().committedKind(deck) !== 'final') {
+        holdLease('loop-track', true);
+        return;
       }
+      applyLoopEvent({
+        type: 'toggle-on',
+        track: { queueItemId: track.queueItemId, trackId: track.trackId },
+      });
     },
-    [applyLoopEvent, deckSources, loopPinned],
+    [applyLoopEvent, deckSources, holdLease, loopPinned],
   );
 
   /** The logical handoff of a blend transition (the driver calls this at the
@@ -634,6 +643,7 @@ export function usePlaybackController(
       // so `retainOnly` sees the post-pin truth.
       applyLoopEvent({ type: 'committed', queueItemId: track.queueItemId });
       armLoopTrackPin(deck, track);
+      owedStartRef.current = null;
       // The REAL playback position (buffer clock or element): an aligned
       // pre-roll has already advanced past zero — a Stop right after the
       // handoff must resume there, not replay it.
@@ -725,6 +735,10 @@ export function usePlaybackController(
     ) => {
       const stillCurrent = () =>
         activeDeckRef.current === deck && deckTrackRef.current[deck] === track;
+      const owed = owedStartRef.current;
+      const owesStart = !reportStart && owed?.deck === deck && owed.track === track;
+      const freshStart = reportStart || owesStart;
+      const wrapped = reportStart ? queueWrapped : owesStart && owed?.queueWrapped === true;
       const attempt = (src: string): Promise<void> =>
         el.play().then(
           () => {
@@ -734,7 +748,10 @@ export function usePlaybackController(
               wantPlayRef.current = true;
               deadSourcesRef.current.clear();
               patch({ status: 'playing', playIntentPending: false });
-              if (reportStart) report('started', track, el.currentTime, queueWrapped);
+              if (freshStart) {
+                owedStartRef.current = null;
+                report('started', track, el.currentTime, wrapped);
+              }
             }
           },
           () => {
@@ -743,15 +760,16 @@ export function usePlaybackController(
             // rejects this play(): the re-play owns the outcome, and a fresh
             // start still owes its `started` report once it is audible.
             if (el.src !== src) {
-              if (reportStart && wantPlayRef.current) attempt(el.src);
+              if (freshStart && wantPlayRef.current) attempt(el.src);
               return;
             }
-            // A blocked FRESH start (reportStart — including the auto-start) lands
-            // in `ready`: a live Play button, never a stuck
+            // A blocked FRESH start (including the auto-start) lands in
+            // `ready`: a live Play button, never a stuck
             // spinner or a phantom pause. A blocked resume keeps `paused`.
             wantPlayRef.current = false;
+            if (freshStart) owedStartRef.current = { deck, track, queueWrapped: wrapped };
             patch({
-              status: rejectedPlayFallbackStatus(reportStart),
+              status: rejectedPlayFallbackStatus(freshStart),
               playIntentPending: false,
             });
           },
@@ -774,6 +792,7 @@ export function usePlaybackController(
       // qualifying edge via the mixed bootstrap.
       enterElementMode(deck);
       if (!deckSources().begin(deck, track)) return false;
+      owedStartRef.current = null;
       el.playbackRate = 1;
       playAndConfirm(deck, el, track, true, queueWrapped);
       engine?.hardCut(deck, soloLoudnessGainDb(loudnessOf(track)));
@@ -1237,10 +1256,13 @@ export function usePlaybackController(
    * track id; a pinned URL whose asset does not exist 404s and the ladder steps
    * down, so trying it is safe by construction). */
   const restart = useCallback(() => {
-    userStartRef.current = true;
     const el = deckEl(activeDeckRef.current);
     const track = activeTrack();
-    if (!el || !track) return;
+    if (!el || !track) {
+      userStartRef.current = false;
+      return;
+    }
+    userStartRef.current = true;
     const idx = queueRef.current.findIndex((t) => t.queueItemId === track.queueItemId);
     if (idx >= 0) {
       playOnDeck(activeDeckRef.current, idx);
@@ -1325,13 +1347,14 @@ export function usePlaybackController(
 
   const toggle = useCallback(() => {
     // Pause also DISARMS a pending auto-start (armed intent, nothing loaded
-    // yet); with a track loaded the button always plays.
+    // yet) and cancels a start whose play() has not settled, the two states
+    // the button reads Pause in; otherwise, with a track loaded, it plays.
     const intent = toggleIntent(
       statusRef.current,
       wantPlayRef.current,
       deckTrackRef.current[activeDeckRef.current] != null,
     );
-    if (intent === 'pause') pause();
+    if (intent === 'pause' || playIntentPendingRef.current) pause();
     else play();
   }, [pause, play]);
 
@@ -1381,7 +1404,8 @@ export function usePlaybackController(
       },
       resumePlay: (deck, el, track) => playAndConfirm(deck, el, track, false),
       unloadDeck,
-      // A committed final upgrades armed Loop Track mode to its seamless pin.
+      // A committed final upgrades armed Loop Track mode to its seamless pin;
+      // any other source ends a pin (the seam needs the final) and keeps the hold.
       onSourceCommitted: (deck) => {
         if (deck !== activeDeckRef.current) return;
         const sourcePatch = committedSourcePatch(deck);
@@ -1389,10 +1413,10 @@ export function usePlaybackController(
         const track = deckTrackRef.current[deck];
         if (
           playbackTraversalRef.current.mode === 'loop-track' &&
-          sourcePatch.sourceKind !== 'final'
+          sourcePatch.sourceKind !== 'final' &&
+          loopPinned()
         ) {
           applyLoopEvent({ type: 'exit' });
-          return;
         }
         armLoopTrackPin(deck, track);
       },
@@ -1401,7 +1425,7 @@ export function usePlaybackController(
     // ports (one `ended` semantics for both transports).
     lifecyclePortsRef.current = ports;
     // A muted mount (pending handoff host) must be silent BEFORE its first
-    // load; the engine re-applies the level when the graph attaches.
+    // load, while no graph exists and the level rides element volume.
     applyOutputVolume();
     const unbind = bindDeckLifecycle({ a, b }, ports);
     return () => {
@@ -1421,6 +1445,7 @@ export function usePlaybackController(
     deckSources,
     explicitNextTarget,
     isDeadSource,
+    loopPinned,
     patch,
     activeTrack,
     applyLoopEvent,
@@ -1555,6 +1580,8 @@ export function usePlaybackController(
       // the Session shell they drive is not rendered for one.
       const sessionSignals: Partial<PlaybackControllerState> = sessionSnapshot
         ? {
+            sessionMode: sessionSnapshot.sessionMode,
+            targetDurationMinutes: sessionSnapshot.targetDurationMinutes,
             generatedDurationSeconds: sessionSnapshot.generatedDurationSeconds,
             unknownDurationTrackCount: sessionSnapshot.unknownDurationTrackCount,
             generationStatus: sessionSnapshot.generationStatus,

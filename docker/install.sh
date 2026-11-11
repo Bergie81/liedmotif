@@ -113,6 +113,9 @@ parse_args() {
       *) printf 'Unknown option: %s\n\n' "$1" >&2; usage >&2; exit 2 ;;
     esac
   done
+  # Absolute, so the update command printed at the end names this folder from
+  # whatever directory it is run in later.
+  case $DIR in /*) ;; *) DIR=$PWD/${DIR#./} ;; esac
   case $DOMAIN in
     '') ;;
     *[!A-Za-z0-9.-]* | .* | *.)
@@ -670,14 +673,22 @@ migrate_in_maintenance_window() {
 
 move_version() {
   [ "$PREVIOUS_VERSION" != "$VERSION" ] || return 0
+  # The version the app last ran, for migrate_hint on a rerun, when `.env`
+  # already names the new one. An unfinished earlier update's stays: the app
+  # has not run since.
+  if [ -n "$PREVIOUS_VERSION" ] && [ ! -f "$DIR/.previous-version" ]; then
+    printf '%s\n' "$PREVIOUS_VERSION" >"$DIR/.previous-version"
+  fi
   step "Moving LIEDMOTIF_VERSION in .env from ${PREVIOUS_VERSION:-unset} to $VERSION"
   set_env "$DIR/.env" LIEDMOTIF_VERSION "$VERSION"
 }
 
 migrate_hint() {
   local hint="look at '$DOCKER_SHOWN compose logs migrate' in $DIR. If you can fix the cause (a full disk, for example), fix it and run the same command again. If not, restore the last backup from before this update"
-  [ -z "$PREVIOUS_VERSION" ] || [ "$PREVIOUS_VERSION" = "$VERSION" ] ||
-    hint="$hint and go back to $PREVIOUS_VERSION"
+  local back=$PREVIOUS_VERSION
+  if [ -f "$DIR/.previous-version" ]; then back=$(cat "$DIR/.previous-version"); fi
+  [ -z "$back" ] || [ "$back" = "$VERSION" ] ||
+    hint="$hint and go back to $back"
   printf '%s: see https://liedmotif.com/docs/updates/#if-an-update-fails.' "$hint"
 }
 
@@ -740,6 +751,7 @@ rerun_command() {
 finish() {
   say ''
   say "Liedmotif $VERSION is running at https://$APP_DOMAIN"
+  rm -f "$DIR/.previous-version"
   [ -f "$DIR/.first-install" ] || return 0
   say ''
   say 'Open this link to create your Admin account:'
