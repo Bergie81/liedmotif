@@ -48,7 +48,8 @@ export function AssistantToneForm({ initial }: { initial: AssistantTone }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
+      {/* Roadie's own voice on a row of its own; the ready-made tones together below it. */}
+      <div className="flex flex-col items-start gap-2">
         <button
           type="button"
           onClick={() => edit('')}
@@ -57,17 +58,19 @@ export function AssistantToneForm({ initial }: { initial: AssistantTone }) {
         >
           {ASSISTANT_NAME}&apos;s own
         </button>
-        {TONE_PRESETS.map((preset) => (
-          <button
-            key={preset.label}
-            type="button"
-            onClick={() => edit(preset.tone)}
-            disabled={saving}
-            className={secondaryButtonClass}
-          >
-            {preset.label}
-          </button>
-        ))}
+        <div className="flex flex-wrap gap-2">
+          {TONE_PRESETS.map((preset) => (
+            <button
+              key={preset.label}
+              type="button"
+              onClick={() => edit(preset.tone)}
+              disabled={saving}
+              className={secondaryButtonClass}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
       </div>
       <label className={labelClass}>
         <span className="flex items-baseline justify-between gap-2">

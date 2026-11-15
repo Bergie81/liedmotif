@@ -503,6 +503,34 @@ independent blind rating exports and the comparison report are required before
 interpreting a run. A failed gate blocks release rather than weakening thresholds
 or triggering an automatic paid rerun.
 
+## FFmpeg pin and source releases
+
+`NOTICE.md` names the worker image's ffmpeg package and where its source is.
+This keeps that true:
+
+- **Pin.** `docker/ci/ffmpeg-pin.txt` holds the Debian package version. One pin
+  serves amd64 and arm64: Debian builds both from the same source.
+- **Build flags.** Each arch has a reviewed `ffmpeg -buildconf` list:
+  `docker/ci/ffmpeg-buildconf-expected-amd64.txt` and `-arm64.txt`. They differ
+  only in `--arch`, `--libdir`, `--incdir` and arm64's missing
+  `--enable-libmfx`; both are `--enable-gpl` builds of the same source.
+- **Smoke.** `docker/ci/ffmpeg-smoke.mjs` asserts the installed version matches
+  the pin, the build flags match the arch file, and the Debian `copyright` file
+  survived. CI's `worker-image` job runs it on amd64, the release workflow on
+  both arches, before anything is pushed.
+- **Source release.** `.github/workflows/release.yml` publishes the source once
+  per pin, as a prerelease tagged `ffmpeg-source-<version>` (`:` and `+` written
+  as `_`), before it pushes any worker image. It fetches the `.dsc`, the
+  `.orig` tarball with its signature and the `.debian` tarball with
+  `apt-get source`, which verifies them against Debian's signed index. Every
+  release's notes link it. A prerelease never becomes the latest release, so the
+  installer never picks it up.
+- **Self-built images** install ffmpeg unpinned, so they keep Debian's security
+  updates; there Debian is the distributor.
+
+Bumping the pin updates `NOTICE.md`'s version, source URLs and release tag in
+the same change.
+
 ## Common commands
 
 Run these from the repo root.

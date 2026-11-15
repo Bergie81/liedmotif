@@ -83,7 +83,8 @@ it('closes the field when the allowance is used up, and says when it opens again
   );
   expect(field().disabled).toBe(true);
   expect(
-    (screen.getByRole('button', { name: 'What does New music do?' }) as HTMLButtonElement).disabled,
+    (screen.getByRole('button', { name: 'How do I create new music?' }) as HTMLButtonElement)
+      .disabled,
   ).toBe(true);
 });
 

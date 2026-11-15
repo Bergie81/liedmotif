@@ -12,7 +12,7 @@
 //      version, and that source is what the NOTICE names,
 //   2. `ffmpeg -buildconf` matches `ffmpeg-buildconf-expected-<arch>.txt` for
 //      the image's Debian architecture (the exact configuration the licensing
-//      review covered; Debian's flags differ per arch, see NOTICE.md),
+//      review covered; Debian's flags differ per arch, see docker/README.md),
 //   3. the package's Debian `copyright` file is retained in-image,
 //   4. one `loudnorm` measure pass over a synthesized sine fixture lands
 //      within ±0.5 LU / ±0.5 dB of the checked-in expectation,

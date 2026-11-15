@@ -1,7 +1,7 @@
 ---
 title: FAQ and license
 description: Straight answers on costs, providers, rights, downloads, offline use, moving your install and the license.
-checkedOn: 2026-11-08
+checkedOn: 2026-11-15
 faq: true
 ---
 
@@ -92,12 +92,9 @@ If your music is in an S3-compatible bucket, the backup holds only the database,
 
 ## License
 
-Liedmotif is source-available, free for non-commercial use. It isn't open source, because the license restricts commercial use.
+Liedmotif is source-available under PolyForm Noncommercial 1.0.0. It isn't open source, because the license restricts commercial use. The full text is in the app's `LICENSE.md`, and that text is what counts.
 
-- **The license.** PolyForm Noncommercial 1.0.0. The full text is in the app's `LICENSE.md`, and that text is what counts.
 - **What's free.** Running your own instance for yourself, your family and your friends, as long as no business or payment is involved. You can also change the code and share it for non-commercial purposes. Charities, schools, public research bodies and government institutions can use it too.
-- **Commercial use.** Those rights stay with the author, Thomas Bergmann (Bergie81), who holds the copyright and can grant separate terms. Write to [liedmotif@gmail.com](mailto:liedmotif@gmail.com).
-- **What it covers.** Everything in the app's repository, except third-party parts and the Liedmotif name and logo, which you can only show in unchanged copies of the app and in what it produces. Music you make falls under your provider's terms.
-- **Third-party parts.** These keep their own licenses. Every web and worker image carries the full list in `THIRD_PARTY_NOTICES.txt`, and the app's `NOTICE.md` covers the parts that need more than a license text. The worker image includes FFmpeg under the GNU GPL version 2 or later, and the backup image includes rsync under the GNU GPL version 3 or later. Liedmotif runs both as separate programs, so its own license doesn't change. FFmpeg's source for published images is on the app's GitHub releases page, and `NOTICE.md` says where to find rsync's. An image you build yourself gets them from Debian or Alpine. The worker also bundles the DejaVu Sans Bold font, under the Bitstream Vera license.
+- **Commercial use.** The author, Thomas Bergmann (Bergie81), holds the copyright and can grant separate terms. Write to [liedmotif@gmail.com](mailto:liedmotif@gmail.com).
+- **What it doesn't cover.** Third-party parts keep their own licenses: the app's `NOTICE.md` and every image's `THIRD_PARTY_NOTICES.txt` list them. The Liedmotif name and logo may only appear in unchanged copies of the app and in what it produces. Music you make falls under your provider's terms.
 - **Contributions.** Bug reports and ideas are welcome. Outside code isn't accepted for now. To report a security problem, write to [liedmotif@gmail.com](mailto:liedmotif@gmail.com) instead of opening a public issue.
-

@@ -122,7 +122,7 @@ Storage has no per-member limit either. Each track takes about 5 MB and stays un
 
 ## Who may ask Roadie
 
-Roadie, the Assistant, answers questions about your Liedmotif and runs on your writing AI. Every member has it until you say otherwise, with 30 messages a day. You change both under **Settings › Members**.
+Roadie, the AI assistant, answers questions about your Liedmotif and runs on your writing AI. Every member has it until you say otherwise, with 30 messages a day. You change both under **Settings › Members**.
 
 - **For everyone:** the **Assistant** section sets the default. **Assistant for Members** switches Roadie on or off, and **Messages per day** is each member's daily allowance, from 1 to 1,000.
 - **For one member:** their card has its own **Assistant** switch and **Messages per day**. Under each you see `Default` or `Set for this Member`, and **Use default** takes that value back to the default.

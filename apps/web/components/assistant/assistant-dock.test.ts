@@ -87,7 +87,7 @@ function askAndGetReply(events: AssistantStreamEvent[]): void {
     ),
   );
   fireEvent.click(screen.getByRole('button', { name: 'Ask Roadie' }));
-  fireEvent.click(screen.getByRole('button', { name: 'What does New music do?' }));
+  fireEvent.click(screen.getByRole('button', { name: 'How do I create new music?' }));
 }
 
 it('sends what the player has engaged along with a question', () => {
@@ -112,7 +112,7 @@ it('opens from the launcher with a greeting and questions to start from', () => 
 
   const panel = screen.getByRole('dialog', { name: 'Roadie' });
   expect(panel.textContent).toContain("Hi, I'm Roadie. Ask me anything about your Liedmotif.");
-  expect(screen.getByRole('button', { name: 'What does New music do?' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'How do I create new music?' })).toBeTruthy();
 });
 
 it('puts the cursor in the question field when it opens beside the page', () => {
@@ -206,9 +206,9 @@ it('asks a suggested question and can stop the answer from the field', () => {
   renderDock({ desk: true });
   fireEvent.click(screen.getByRole('button', { name: 'Ask Roadie' }));
 
-  fireEvent.click(screen.getByRole('button', { name: 'What does New music do?' }));
+  fireEvent.click(screen.getByRole('button', { name: 'How do I create new music?' }));
 
-  expect(screen.getByRole('log').textContent).toContain('What does New music do?');
+  expect(screen.getByRole('log').textContent).toContain('How do I create new music?');
   expect(screen.getByRole('status').textContent).toContain('Roadie is looking it up');
   expect(screen.queryByRole('button', { name: 'Send' })).toBeNull();
 
@@ -216,7 +216,7 @@ it('asks a suggested question and can stop the answer from the field', () => {
 
   // Nothing was answered: the question is back in the field, ready to send again.
   const field = screen.getByRole('textbox', { name: 'Ask Roadie' }) as HTMLTextAreaElement;
-  expect(field.value).toBe('What does New music do?');
+  expect(field.value).toBe('How do I create new music?');
   expect(document.activeElement).toBe(field);
   expect(screen.getByRole('button', { name: 'Send' })).toBeTruthy();
 });

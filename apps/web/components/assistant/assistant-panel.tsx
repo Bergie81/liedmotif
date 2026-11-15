@@ -28,7 +28,7 @@ import type { AssistantConversation, ConversationMessage } from './conversation'
 const GREETING = `Hi, I'm ${ASSISTANT_NAME}. Ask me anything about your Liedmotif.`;
 
 const SUGGESTED_QUESTIONS = [
-  'What does New music do?',
+  'How do I create new music?',
   'How do I change the vibe of a Session?',
   'How do I keep a Track?',
   'How do I listen offline?',
@@ -71,23 +71,37 @@ export function AssistantPanel({
           <AssistantGlyph className="h-[18px] w-[18px] flex-none text-lamp" />
           {ASSISTANT_NAME}
         </DialogPrimitive.Title>
-        <WithTooltip label="New chat" side="bottom">
-          <button
-            type="button"
-            aria-label="New chat"
-            disabled={messages.length === 0}
-            onClick={() => {
-              conversation.newChat();
-              inputRef.current?.focus();
-            }}
-            className={cn(iconButtonClass, 'disabled:opacity-35 disabled:hover:bg-transparent')}
+        {/* The two buttons are one toolbar, their icons about 12px apart.
+            New chat keeps its full 42px box and slides 12px under Close,
+            which stays at the edge; Close comes later, so it takes the
+            overlap, which holds no icon of either. Only a hovered or
+            pressed button shows its box, and the focus ring is drawn inside
+            the box so it never crosses the other icon. */}
+        <div className="flex flex-none">
+          <WithTooltip label="New chat" side="bottom">
+            <button
+              type="button"
+              aria-label="New chat"
+              disabled={messages.length === 0}
+              onClick={() => {
+                conversation.newChat();
+                inputRef.current?.focus();
+              }}
+              className={cn(
+                iconButtonClass,
+                '-mr-3 focus-visible:outline-offset-[-6px] disabled:opacity-35 disabled:hover:bg-transparent',
+              )}
+            >
+              <SquarePen className="h-[18px] w-[18px]" aria-hidden />
+            </button>
+          </WithTooltip>
+          <DialogPrimitive.Close
+            aria-label={`Close ${ASSISTANT_NAME}`}
+            className={cn(iconButtonClass, 'focus-visible:outline-offset-[-6px]')}
           >
-            <SquarePen className="h-[18px] w-[18px]" aria-hidden />
-          </button>
-        </WithTooltip>
-        <DialogPrimitive.Close aria-label={`Close ${ASSISTANT_NAME}`} className={iconButtonClass}>
-          <X className="h-[19px] w-[19px]" aria-hidden />
-        </DialogPrimitive.Close>
+            <X className="h-[19px] w-[19px]" aria-hidden />
+          </DialogPrimitive.Close>
+        </div>
       </header>
 
       {messages.length === 0 ? (
