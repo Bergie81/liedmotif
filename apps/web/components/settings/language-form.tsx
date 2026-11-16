@@ -7,15 +7,18 @@
 // patch to /api/settings/generation.
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import type { GenerationSettings } from '@liedmotif/shared';
 import { labelClass, primaryButtonClass } from '@/components/ui/form-styles';
 import { SessionLanguageSelect } from '@/components/session-language-select';
 import { updateGenerationSettings } from '@/lib/api-client';
 import type { SessionLanguageChoice } from '@/lib/session-languages';
 import { SettingsFeedback, type SettingsFeedbackState } from './settings-ui';
+import { useStoredValue } from './use-stored-value';
 
 export function LanguageForm({ initial }: { initial: GenerationSettings }) {
-  const [defaultLanguage, setDefaultLanguage] = useState<SessionLanguageChoice>(
+  const router = useRouter();
+  const [defaultLanguage, setDefaultLanguage] = useStoredValue<SessionLanguageChoice>(
     initial.defaultLanguage,
   );
   const [saving, setSaving] = useState(false);
@@ -27,6 +30,7 @@ export function LanguageForm({ initial }: { initial: GenerationSettings }) {
     setSaving(true);
     const result = await updateGenerationSettings({ defaultLanguage });
     setSaving(false);
+    if (result.ok) router.refresh();
     setFeedback(
       result.ok
         ? { kind: 'success', message: 'Language setting saved.' }

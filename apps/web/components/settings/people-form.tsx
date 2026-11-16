@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import type { CoverReferenceFrequency } from '@liedmotif/db';
 import type { PersonSummary } from '@/lib/people';
@@ -11,23 +12,19 @@ import { segmentedListClass, segmentedTriggerClass } from '@/components/ui/desig
 import { PersonEditor } from './person-editor';
 import { PersonFields } from './person-fields';
 import {
+  COVER_FREQUENCY_OPTIONS,
   ownerCoverFallbackReady,
   validatePersonFields,
   type PersonFieldErrors,
 } from './people-form-model';
 import { SettingsCard, SettingsFeedback, SettingsFootnote, SettingsSection } from './settings-ui';
 import { peopleResponseMessage, type PeopleFormProps } from './people-types';
-
-const FREQUENCY_OPTIONS: Array<{ value: CoverReferenceFrequency; label: string }> = [
-  { value: 'always', label: 'Always' },
-  { value: 'regularly', label: 'Regularly' },
-  { value: 'seldom', label: 'Seldom' },
-  { value: 'never', label: 'Never' },
-];
+import { useStoredValue } from './use-stored-value';
 
 export function PeopleForm(props: PeopleFormProps) {
   const [people, setPeople] = useState(props.initialPeople);
-  const [frequency, setFrequency] = useState(props.initialFrequency);
+  const router = useRouter();
+  const [frequency, setFrequency] = useStoredValue(props.initialFrequency);
   const [frequencyBusy, setFrequencyBusy] = useState(false);
   const [adding, setAdding] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -123,6 +120,7 @@ export function PeopleForm(props: PeopleFormProps) {
       return;
     }
     setFrequency(next);
+    router.refresh();
     setFrequencyBusy(false);
     setMessage({ kind: 'success', text: 'Cover fallback saved.' });
   }
@@ -235,7 +233,7 @@ export function PeopleForm(props: PeopleFormProps) {
             className={cn(segmentedListClass, 'mt-3 overflow-x-auto')}
           >
             <legend className="sr-only">Cover reference fallback frequency</legend>
-            {FREQUENCY_OPTIONS.map((option) => (
+            {COVER_FREQUENCY_OPTIONS.map((option) => (
               <label
                 key={option.value}
                 data-state={shownFrequency === option.value ? 'active' : 'inactive'}

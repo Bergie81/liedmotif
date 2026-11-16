@@ -1,6 +1,6 @@
 ---
 title: Help for members
-description: You have an account on someone else's Liedmotif. How to get in, what your budget means, what stays private, and what to do when something doesn't work.
+description: You have an account on a Liedmotif that someone else runs. How to get in, what your budget means, what stays private, and what to do when something fails.
 checkedOn: 2026-11-07
 howTo: true
 ---

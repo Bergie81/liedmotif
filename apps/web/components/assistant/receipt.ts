@@ -1,9 +1,11 @@
 // A receipt in words: the line the chat shows for something the Assistant did
-// in the Library. It is written here from the structured values the server
-// sent; the model's own text is never part of it.
+// in the Library or in the user's settings. It is written here from the
+// structured values the server sent; the model's own text is never part of it.
 
 import type { AssistantActionItem, AssistantReceipt } from '@liedmotif/shared';
 import { trackCount } from '@/lib/assistant/music-names';
+import { APP_ROUTES } from '@/lib/assistant/route-map';
+import { SETTING_NAMES } from '@/lib/assistant/setting-names';
 
 export interface ReceiptLine {
   /** What was done, as the chat shows it. */
@@ -22,9 +24,26 @@ const playlistPage = (playlist: AssistantActionItem) => ({
   place: playlistName(playlist),
 });
 
-/** Whether what was done changed what the Library's pages list. */
-export const receiptChangesLibrary = (receipt: AssistantReceipt) =>
-  receipt.action !== 'newMusicOff';
+/** A settings page, under the name the app shows for it. Every setting's page is listed. */
+const settingsPage = (path: string) => ({
+  path,
+  place: APP_ROUTES.find((route) => route.path === path)!.label,
+});
+
+/**
+ * What the app re-reads after each kind of receipt: the Library's cached pages
+ * and the page on screen, only the page on screen, or nothing (the player
+ * follows on its own).
+ */
+export const RECEIPT_REREADS: Record<AssistantReceipt['action'], 'library' | 'page' | 'nothing'> = {
+  favoriteTrack: 'library',
+  addToPlaylist: 'library',
+  createPlaylist: 'library',
+  renamePlaylist: 'library',
+  pinPlaylist: 'library',
+  newMusicOff: 'nothing',
+  changeSetting: 'page',
+};
 
 export function receiptLine(receipt: AssistantReceipt): ReceiptLine {
   switch (receipt.action) {
@@ -65,5 +84,12 @@ export function receiptLine(receipt: AssistantReceipt): ReceiptLine {
         text: `New music off: ${sessionTitle(receipt.session)}`,
         link: { path: '/player', place: 'Now Playing' },
       };
+    case 'changeSetting': {
+      const { label, page } = SETTING_NAMES[receipt.setting];
+      return {
+        text: `${label}: ${receipt.previous} → ${receipt.value}`,
+        link: settingsPage(page),
+      };
+    }
   }
 }

@@ -1,8 +1,10 @@
 // A receipt as the chat shows it: worded here, from the values the server
 // sent, and from nothing the model wrote.
 
-import type { AssistantReceipt } from '@liedmotif/shared';
+import { ASSISTANT_SETTINGS, type AssistantReceipt } from '@liedmotif/shared';
 import { describe, expect, it } from 'vitest';
+import { APP_ROUTES } from '@/lib/assistant/route-map';
+import { SETTING_NAMES } from '@/lib/assistant/setting-names';
 import { receiptLine } from './receipt';
 
 const TRACK = { id: '0c9d4b7a-8a41-4b0e-b1a3-5a2d9d6c7e22', name: 'Night Drive' };
@@ -62,8 +64,29 @@ describe('a receipt line', () => {
       'New music off: Rainy Window',
       { path: '/player', place: 'Now Playing' },
     ],
+    [
+      'a setting changed',
+      { action: 'changeSetting', setting: 'ownerInCovers', value: 'Seldom', previous: 'Always' },
+      'Include the owner in Covers: Always → Seldom',
+      { path: '/settings/people', place: 'Settings › People' },
+    ],
+    [
+      'a playback setting changed',
+      { action: 'changeSetting', setting: 'crossfadeSeconds', value: '9 s', previous: '6 s' },
+      'Crossfade length: 6 s → 9 s',
+      { path: '/settings/playback', place: 'Settings › Playback' },
+    ],
   ])('for %s says what was done and links to where it is', (_what, receipt, text, link) => {
     expect(receiptLine(receipt)).toEqual({ text, link });
+  });
+
+  it.each(ASSISTANT_SETTINGS)('for %s links to a settings page the app lists', (setting) => {
+    const route = APP_ROUTES.find(({ path }) => path === SETTING_NAMES[setting].page);
+
+    expect(route).toBeDefined();
+    expect(
+      receiptLine({ action: 'changeSetting', setting, value: 'On', previous: 'Off' }).link,
+    ).toEqual({ path: route?.path, place: route?.label });
   });
 
   it('names a Track or Session without a title the way the app does', () => {

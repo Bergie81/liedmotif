@@ -153,6 +153,7 @@ export {
   listMemberAssistantAccess,
   listMemberLimits,
   updateAssistantTone,
+  updateDefaultLanguage,
   updateGenerationSettings,
   updateMemberAssistantAccess,
   updateMemberLimits,

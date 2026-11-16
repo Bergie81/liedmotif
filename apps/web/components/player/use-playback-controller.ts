@@ -167,6 +167,7 @@ export function usePlaybackController(
     blendEnabled,
     blendSettled,
     setBlendEnabled,
+    adoptStoredSettings,
   } = usePlaybackSettings({ read: !offline });
   // The repeat-one loop coordinator: pin state machine, acknowledged
   // generation-hold lease, seam-length math, and queue-snapshot invalidations.
@@ -1177,6 +1178,16 @@ export function usePlaybackController(
     });
   }, [flashActionError, setBlendEnabled, settingsRef, transitions]);
 
+  // Settings saved past the player (by the Assistant): played from the next
+  // transition, and blending turned off strikes the edge in flight as the
+  // toggle does.
+  const adoptStoredPlaybackSettings = useCallback(() => {
+    const wasBlending = settingsRef.current.blendEnabled;
+    void adoptStoredSettings().then(() => {
+      if (wasBlending && !settingsRef.current.blendEnabled) transitions().cancel();
+    });
+  }, [adoptStoredSettings, settingsRef, transitions]);
+
   // The queue poll wake-up, assigned once `usePlaybackSourceQueue` runs below;
   // ref-held so earlier hooks (track actions) can close over it.
   const pollQueueNowRef = useRef<() => void>(() => {});
@@ -1904,6 +1915,7 @@ export function usePlaybackController(
       blendEnabled,
       blendSettled,
       toggleBlend,
+      adoptStoredPlaybackSettings,
       getPlaybackSample,
       seekTo,
       sectionLoopAvailable: canSectionLoop,
@@ -1936,6 +1948,7 @@ export function usePlaybackController(
     blendEnabled,
     blendSettled,
     toggleBlend,
+    adoptStoredPlaybackSettings,
     getPlaybackSample,
     seekTo,
     canSectionLoop,

@@ -5,6 +5,7 @@
 
 import type { AssistantActionItem, AssistantReceipt } from '@liedmotif/shared';
 import { named, quoted, trackCount } from './music-names';
+import { SETTING_NAMES } from './setting-names';
 
 const playlist = ({ name, id }: AssistantActionItem) => `the Playlist ${named(name, id)}`;
 const track = ({ name, id }: AssistantActionItem) => `the Track ${named(name, id)}`;
@@ -28,6 +29,8 @@ export function receiptNote(receipt: AssistantReceipt): string {
       return `pinned ${playlist(receipt.playlist)}`;
     case 'newMusicOff':
       return `switched New music off for the Session ${named(receipt.session.name, receipt.session.id)}`;
+    case 'changeSetting':
+      return `changed the setting ${quoted(SETTING_NAMES[receipt.setting].label)} from ${receipt.previous} to ${receipt.value}`;
   }
 }
 

@@ -8,6 +8,7 @@ import type { LlmTool } from '@liedmotif/providers';
 import { createLogger, type AssistantPlayerState } from '@liedmotif/shared';
 import { createAddToPlaylistTool } from './add-to-playlist-tool';
 import { createBudgetTool } from './budget-tool';
+import { createChangeSettingTool } from './change-setting-tool';
 import { loadDocs, type DocsPage } from './docs';
 import { createFavoriteTrackTool } from './favorite-track-tool';
 import { createFindMusicTool } from './find-music-tool';
@@ -96,6 +97,7 @@ export function createAssistantTools(
       createRenamePlaylistTool(asker, actions),
       createPinPlaylistTool(asker, actions),
       createNewMusicOffTool(asker, actions),
+      createChangeSettingTool(asker, actions),
       createPlayTool(asker, actions),
       createPlayerControlTool(asker, actions),
       createSleepTimerTool(asker, actions),

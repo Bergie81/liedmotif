@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
 // The player after the Assistant changed something it shows: the star and the
-// Add to Playlist control of the Track on the deck, and the New music setting
-// of the engaged Session.
+// Add to Playlist control of the Track on the deck, the New music setting of
+// the engaged Session, and the playback settings the player blends with.
 
 import { renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -161,5 +161,68 @@ describe('the player, after a receipt', () => {
         playlist: FAVORITES,
       }),
     ).not.toThrow();
+  });
+
+  it.each([
+    ['blend', 'Off', 'On'],
+    ['crossfadeSeconds', '9 s', '6 s'],
+  ] as const)(
+    're-reads its playback settings when %s was changed, writing nothing itself',
+    (setting, value, previous) => {
+      playing();
+      const adoptStoredPlaybackSettings = vi.fn();
+      const toggleBlend = vi.fn();
+      Object.assign((player.context as { playback: { player: object } }).playback.player, {
+        adoptStoredPlaybackSettings,
+        toggleBlend,
+      });
+      const { result } = renderHook(() => usePlayerFollowsReceipt(vi.fn()));
+
+      result.current({ action: 'changeSetting', setting, value, previous });
+
+      expect(adoptStoredPlaybackSettings).toHaveBeenCalledTimes(1);
+      expect(toggleBlend).not.toHaveBeenCalled();
+    },
+  );
+
+  it('re-reads the playback settings of a source arming behind the music, too', () => {
+    playing();
+    const playingAdopts = vi.fn();
+    const pendingAdopts = vi.fn();
+    const context = player.context as {
+      playback: { player: object };
+      pending?: unknown;
+    };
+    Object.assign(context.playback.player, { adoptStoredPlaybackSettings: playingAdopts });
+    context.pending = { source: {}, player: { adoptStoredPlaybackSettings: pendingAdopts } };
+    const { result } = renderHook(() => usePlayerFollowsReceipt(vi.fn()));
+
+    result.current({
+      action: 'changeSetting',
+      setting: 'crossfadeSeconds',
+      value: '9 s',
+      previous: '6 s',
+    });
+
+    expect(playingAdopts).toHaveBeenCalledTimes(1);
+    expect(pendingAdopts).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves its playback settings alone when a setting it does not play with changed', () => {
+    playing();
+    const adoptStoredPlaybackSettings = vi.fn();
+    Object.assign((player.context as { playback: { player: object } }).playback.player, {
+      adoptStoredPlaybackSettings,
+    });
+    const { result } = renderHook(() => usePlayerFollowsReceipt(vi.fn()));
+
+    result.current({
+      action: 'changeSetting',
+      setting: 'defaultLanguage',
+      value: 'German',
+      previous: 'Auto Detect',
+    });
+
+    expect(adoptStoredPlaybackSettings).not.toHaveBeenCalled();
   });
 });

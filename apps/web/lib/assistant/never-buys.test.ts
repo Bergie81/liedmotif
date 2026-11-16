@@ -100,6 +100,20 @@ const SERVER_CALLS = [
   'renamePlaylist',
   'setPlaylistLibraryPinned',
   'setTrackFavorited',
+  // The asker's own settings: read, and written one choice at a time. Of the
+  // Generation settings only the language is written, never what a Session
+  // generates ahead.
+  'getCoverReferenceFrequency',
+  'getGenerationSettings',
+  'getPlaybackSettings',
+  'listPeople',
+  'listPersonReferencePhotos',
+  'SESSION_LANGUAGE_CHOICES',
+  'sessionLanguageLabel',
+  'toPersonRoster',
+  'updateCoverReferenceFrequency',
+  'updateDefaultLanguage',
+  'updatePlaybackSettings',
   // The one write to a Session: its mode, and only to Repeat.
   'switchSessionMode',
   // The route itself: who asks, their allowance, and the text LLM.

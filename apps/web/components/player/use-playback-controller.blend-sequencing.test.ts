@@ -170,6 +170,8 @@ interface Harness {
   decks: Record<'a' | 'b', ScriptedDeck>;
   edges: BlendEdgeEventDetail[];
   api(): PlaybackControllerApi;
+  /** Store `patch` past the player, as the Assistant does. */
+  storeSettings(patch: Partial<{ blendEnabled: boolean; crossfadeSeconds: number }>): void;
 }
 
 async function mount(
@@ -218,7 +220,14 @@ async function mount(
   };
   // Settle the playback-settings fetch (the blend gate waits on it).
   await act(async () => {});
-  return { decks, edges, api: () => api };
+  return {
+    decks,
+    edges,
+    api: () => api,
+    storeSettings: (patch) => {
+      settings = { ...settings, ...patch };
+    },
+  };
 }
 
 /** Drive one full blend edge off the audible `out` deck: preparation trigger,
@@ -345,6 +354,45 @@ describe('live blend sequencing (real controller, scripted decks)', () => {
     expect(h.edges.filter((edge) => edge.committed)).toEqual([]);
 
     // The advance lands on `ended` instead — the strictly sequential path.
+    await act(async () => {
+      h.decks.a.end();
+    });
+    expect(h.api().currentTrack?.trackId).toBe('t2');
+  });
+
+  it('strikes the armed edge when blends were switched off past the player, writing nothing', async () => {
+    const h = await mount(['t1', 't2']);
+    await act(async () => {
+      h.api().play();
+    });
+    await act(async () => {
+      h.decks.a.ready();
+    });
+    await act(async () => {
+      h.decks.a.tick(17);
+    });
+    await act(async () => {
+      h.decks.b.ready();
+    });
+
+    h.storeSettings({ blendEnabled: false });
+    const fetches = vi.mocked(fetch).mock.calls.length;
+    const preparedLoads = h.decks.b.loads;
+    await act(async () => {
+      h.api().adoptStoredPlaybackSettings();
+    });
+    expect(h.api().blendEnabled).toBe(false);
+    expect(h.decks.b.loads).toBeGreaterThan(preparedLoads);
+    const sent = vi.mocked(fetch).mock.calls.slice(fetches);
+    expect(sent.map(([url, init]) => [String(url), init?.method ?? 'GET'])).toEqual([
+      ['/api/settings/playback', 'GET'],
+    ]);
+
+    await act(async () => {
+      h.decks.a.tick(24.2);
+    });
+    expect(h.api().currentTrack?.trackId).toBe('t1');
+    expect(h.edges.filter((edge) => edge.committed)).toEqual([]);
     await act(async () => {
       h.decks.a.end();
     });

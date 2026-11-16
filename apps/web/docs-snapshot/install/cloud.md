@@ -1,6 +1,6 @@
 ---
 title: Install Liedmotif on a cloud provider
-description: Rent a small server, point your own domain at it and invite your friends, even if you've never touched a server, DNS or SSH.
+description: Rent a small server, point your own domain at it and invite your friends, even if you have never touched a server, DNS or SSH.
 checkedOn: 2026-11-08
 howTo: true
 ---

@@ -82,8 +82,22 @@ const assistantActionItemSchema = z.strictObject({ id: uuidSchema, name: z.strin
 export type AssistantActionItem = z.infer<typeof assistantActionItemSchema>;
 
 /**
- * What the server did for the user in the Library, as structured values. The
- * chat panel words the receipt from them; no text of the model's is part of it.
+ * The settings the Assistant changes for the asking user. Each is that user's
+ * own, and none can raise what is spent: a setting that can is the user's to
+ * change on its page.
+ */
+export const ASSISTANT_SETTINGS = [
+  'ownerInCovers',
+  'blend',
+  'crossfadeSeconds',
+  'defaultLanguage',
+] as const;
+export type AssistantSetting = (typeof ASSISTANT_SETTINGS)[number];
+
+/**
+ * What the server did for the user, in the Library or in their settings, as
+ * structured values. The chat panel words the receipt from them; no text of
+ * the model's is part of it.
  */
 export const assistantReceiptSchema = z.discriminatedUnion('action', [
   z.strictObject({
@@ -112,6 +126,13 @@ export const assistantReceiptSchema = z.discriminatedUnion('action', [
   }),
   z.strictObject({ action: z.literal('pinPlaylist'), playlist: assistantActionItemSchema }),
   z.strictObject({ action: z.literal('newMusicOff'), session: assistantActionItemSchema }),
+  z.strictObject({
+    action: z.literal('changeSetting'),
+    setting: z.enum(ASSISTANT_SETTINGS),
+    /** The choice now stored and the one it replaced, each as the settings page shows it. */
+    value: z.string(),
+    previous: z.string(),
+  }),
 ]);
 export type AssistantReceipt = z.infer<typeof assistantReceiptSchema>;
 
@@ -388,6 +409,15 @@ export const pinPlaylistInputSchema = z.object({
   playlistId: z.string().describe('The id of the Playlist, as another tool returned it.'),
 });
 export type PinPlaylistInput = z.infer<typeof pinPlaylistInputSchema>;
+
+/** What the model passes to `changeSetting`. */
+export const changeSettingInputSchema = z.object({
+  setting: z.enum(ASSISTANT_SETTINGS).describe('The setting to change.'),
+  value: z
+    .string()
+    .describe('The new choice for it, as the tool description lists the choices of that setting.'),
+});
+export type ChangeSettingInput = z.infer<typeof changeSettingInputSchema>;
 
 /** What the model passes to `playerControl`. */
 export const playerControlInputSchema = z.object({

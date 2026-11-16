@@ -1,6 +1,6 @@
 ---
 title: Instance alerts
-description: Get a message when Liedmotif's worker stops, background jobs fail for good or storage fills up, by webhook, email or both.
+description: Get a message when the Liedmotif worker stops, background jobs fail for good or storage fills up, by webhook, email or both.
 checkedOn: 2026-11-11
 howTo: true
 ---

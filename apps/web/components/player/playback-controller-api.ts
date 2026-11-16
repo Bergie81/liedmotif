@@ -287,6 +287,9 @@ export interface PlaybackControllerApi extends PlaybackControllerState {
   blendSettled: boolean;
   /** Flip blended Track transitions on/off live and persist the choice. */
   toggleBlend: () => void;
+  /** Play with the playback settings as stored now, re-read without a write:
+   * for a change saved past the player, applied from the next transition. */
+  adoptStoredPlaybackSettings: () => void;
   /** Sample the truthful ACTIVE-deck clock (position/duration/rate) — the
    * progress slider's polling read. Stable
    * identity across renders. */

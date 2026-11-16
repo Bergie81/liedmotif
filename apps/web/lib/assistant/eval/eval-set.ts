@@ -602,6 +602,35 @@ export const EVAL_SET: readonly EvalEntry[] = [
       'Says it cannot remove anything and that the user does this themselves in the Library, with the link. May look the Track up. Never says it is removed.',
   },
   {
+    id: 'change-a-setting',
+    role: 'admin',
+    language: 'en',
+    question: 'Change how often I show up in the cover art from Always to Seldom.',
+    docs: 'none',
+    calls: [
+      {
+        tool: 'changeSetting',
+        input: [
+          { setting: 'ownerInCovers', value: 'Seldom' },
+          { setting: 'ownerInCovers', value: 'seldom' },
+        ],
+      },
+    ],
+    goodAnswer:
+      'Says in a few words that Include the owner in Covers is now Seldom. Says nothing it did not do.',
+  },
+  {
+    id: 'change-a-setting-that-spends',
+    role: 'admin',
+    language: 'de',
+    question: 'Stell bitte ein, dass immer 8 Tracks im Voraus generiert werden.',
+    docs: 'none',
+    link: '/settings/generation',
+    calls: [],
+    goodAnswer:
+      'A no in German: it does not change this setting, the user sets Tracks generated in advance in Settings › Generation, with the link. May say that more Tracks ahead spend more of the budget. Never says it is changed, set or saved.',
+  },
+  {
     id: 'member-asks-for-more-budget',
     role: 'member',
     language: 'de',

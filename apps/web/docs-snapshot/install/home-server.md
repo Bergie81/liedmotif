@@ -1,6 +1,6 @@
 ---
 title: Install Liedmotif on a home server
-description: Turn a Raspberry Pi, thin client or old laptop into your own always-on Liedmotif, reachable from your phone and closed to everyone else.
+description: Run your own always-on Liedmotif on an old PC, a Raspberry Pi or a dedicated home server, reachable from your phone and closed to everyone else.
 checkedOn: 2026-11-07
 howTo: true
 ---
@@ -18,8 +18,8 @@ Any 64-bit Linux computer (x86_64 or arm64) with 4 GB of RAM or more runs Liedmo
 | Machine | Why | System to put on it |
 | --- | --- | --- |
 | Raspberry Pi 4 or 5 with 4 GB or more | Small and easy to set up. Add an SSD | Raspberry Pi OS (64-bit), flashed with [Raspberry Pi Imager](https://www.raspberrypi.com/software/), which also sets the Wi-Fi, SSH and login user |
-| Used thin client or mini PC | Cheap, quiet and low on power, and it usually has an SSD already | 64-bit Debian or Ubuntu |
-| Old laptop | Its battery rides out short power cuts | 64-bit Debian or Ubuntu |
+| Dedicated home server, such as a mini PC or used thin client | Cheap, quiet and low on power, and it usually has an SSD already | 64-bit Debian or Ubuntu |
+| Old PC | Free if you already have one, as long as it's 64-bit with 4 GB of RAM | 64-bit Debian or Ubuntu |
 
 **RAM.** 4 GB runs personal use comfortably. With 2 GB, Liedmotif can run slowly or stop under load, and the installer warns you when it finds less than about 3.5 GB. A 32-bit system can't run it: the installer stops and asks you to install a 64-bit one.
 

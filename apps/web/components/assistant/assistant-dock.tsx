@@ -34,7 +34,7 @@ import { createAssistantConversation } from './conversation';
 import type { PlayerChatAction, PlayerCommands } from './player-command';
 import { TapToPlayContext } from './player-command-line';
 import { CardsContext, type Cards } from './proposal-card';
-import { receiptChangesLibrary } from './receipt';
+import { RECEIPT_REREADS } from './receipt';
 import type { CardHost } from './use-card-host';
 
 /** Tailwind's `desk` breakpoint (globals.css). */
@@ -121,15 +121,15 @@ export function AssistantDock({
   useEffect(() => {
     followActionRef.current = (action) => {
       switch (action.status) {
-        case 'done':
-          // What the app's own Library buttons do after a write: the router
-          // drops the pages it cached, and the page on screen reloads.
-          if (receiptChangesLibrary(action.receipt)) {
-            router.refresh();
-            announceOutsideLibraryWrite();
-          }
+        case 'done': {
+          // What the app's own buttons do after a write: the router drops the
+          // pages it cached, and the page on screen reloads.
+          const rereads = RECEIPT_REREADS[action.receipt.action];
+          if (rereads !== 'nothing') router.refresh();
+          if (rereads === 'library') announceOutsideLibraryWrite();
           onReceipt?.(action.receipt);
           break;
+        }
         case 'player':
           void playerCommands
             ?.run(action.command)

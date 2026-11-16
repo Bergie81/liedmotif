@@ -170,6 +170,94 @@ describe('usePlaybackSettings blend toggle', () => {
     expect(result.current.settingsRef.current.blendEnabled).toBe(false);
   });
 
+  it('adopts the settings stored past the player, re-read without a write', async () => {
+    const requests = captureFetches();
+    const { result } = renderHook(() => usePlaybackSettings({ read: true }));
+    await waitFor(() => expect(requests).toHaveLength(1));
+    await act(async () => requests[0]!.respond(ok(SETTINGS)));
+
+    await act(async () => {
+      const pending = result.current.adoptStoredSettings();
+      requests[1]!.respond(ok({ blendEnabled: false, crossfadeSeconds: 9 }));
+      await pending;
+    });
+
+    expect(requests[1]).toMatchObject({ path: '/api/settings/playback', method: 'GET' });
+    expect(result.current.blendEnabled).toBe(false);
+    expect(result.current.settingsRef.current).toEqual({
+      blendEnabled: false,
+      crossfadeSeconds: 9,
+    });
+
+    // The adopted value is the one the server confirmed: a failed toggle falls back to it.
+    await act(async () => {
+      const pending = result.current.setBlendEnabled(true);
+      requests[2]!.respond(failure);
+      await pending;
+    });
+    expect(result.current.blendEnabled).toBe(false);
+    expect(result.current.settingsRef.current.blendEnabled).toBe(false);
+  });
+
+  it('keeps a toggle made while the re-read was out', async () => {
+    const requests = captureFetches();
+    const { result } = renderHook(() => usePlaybackSettings({ read: true }));
+    await waitFor(() => expect(requests).toHaveLength(1));
+    await act(async () => requests[0]!.respond(ok(SETTINGS)));
+
+    await act(async () => {
+      const reread = result.current.adoptStoredSettings();
+      const toggle = result.current.setBlendEnabled(false);
+      requests[2]!.respond(ok({ ...SETTINGS, blendEnabled: false }));
+      requests[1]!.respond(ok(SETTINGS));
+      await Promise.all([reread, toggle]);
+    });
+
+    expect(result.current.blendEnabled).toBe(false);
+    expect(result.current.settingsRef.current.blendEnabled).toBe(false);
+  });
+
+  it('keeps a toggle already out when the re-read starts, taking the rest from the read', async () => {
+    const requests = captureFetches();
+    const { result } = renderHook(() => usePlaybackSettings({ read: true }));
+    await waitFor(() => expect(requests).toHaveLength(1));
+    await act(async () => requests[0]!.respond(ok(SETTINGS)));
+
+    await act(async () => {
+      const toggle = result.current.setBlendEnabled(false);
+      const reread = result.current.adoptStoredSettings();
+      // The read lands before the toggle's write commits, so it still says On.
+      requests[2]!.respond(ok({ blendEnabled: true, crossfadeSeconds: 9 }));
+      requests[1]!.respond(ok({ blendEnabled: false, crossfadeSeconds: 9 }));
+      await Promise.all([reread, toggle]);
+    });
+
+    expect(result.current.blendEnabled).toBe(false);
+    expect(result.current.settingsRef.current).toEqual({
+      blendEnabled: false,
+      crossfadeSeconds: 9,
+    });
+  });
+
+  it('keeps the re-read settings when the mount fetch answers after it', async () => {
+    const requests = captureFetches();
+    const { result } = renderHook(() => usePlaybackSettings({ read: true }));
+    await waitFor(() => expect(requests).toHaveLength(1));
+
+    await act(async () => {
+      const reread = result.current.adoptStoredSettings();
+      requests[1]!.respond(ok({ blendEnabled: false, crossfadeSeconds: 9 }));
+      await reread;
+    });
+    await act(async () => requests[0]!.respond(ok(SETTINGS)));
+
+    expect(result.current.blendEnabled).toBe(false);
+    expect(result.current.settingsRef.current).toEqual({
+      blendEnabled: false,
+      crossfadeSeconds: 9,
+    });
+  });
+
   // The Offline Library cannot read the owner's choice from the server, so it
   // plays the settings this device last read: blending off stays off offline.
   it('plays offline with the settings this device last read, without a request', async () => {

@@ -1,4 +1,16 @@
+import type { CoverReferenceFrequency } from '@liedmotif/db';
 import type { PersonSummary } from '@/lib/people';
+
+/** The choices of "Include the owner in Covers", in the order the page shows them. */
+export const COVER_FREQUENCY_OPTIONS: ReadonlyArray<{
+  value: CoverReferenceFrequency;
+  label: string;
+}> = [
+  { value: 'always', label: 'Always' },
+  { value: 'regularly', label: 'Regularly' },
+  { value: 'seldom', label: 'Seldom' },
+  { value: 'never', label: 'Never' },
+];
 
 /** A roster entry as the fallback rules read it: whose card, and whether it has photos. */
 type PhotographedPerson = Pick<PersonSummary, 'role'> & { photos: readonly unknown[] };

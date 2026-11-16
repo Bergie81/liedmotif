@@ -17,12 +17,14 @@ import { optimisticFavoriteFlags } from '@/components/player/track-retention';
 export function usePlayerFollowsReceipt(
   refreshChrome: () => void,
 ): (receipt: AssistantReceipt) => void {
-  const { playback, engage } = usePlayerContext();
+  const { playback, pending, engage } = usePlayerContext();
   // A receipt arrives long after the render that made this callback.
   const playbackRef = useRef(playback);
+  const pendingRef = useRef(pending);
   useEffect(() => {
     playbackRef.current = playback;
-  }, [playback]);
+    pendingRef.current = pending;
+  }, [playback, pending]);
 
   return useCallback(
     (receipt) => {
@@ -63,6 +65,13 @@ export function usePlayerFollowsReceipt(
           refreshChrome();
           return;
         }
+        case 'changeSetting':
+          if (receipt.setting === 'blend' || receipt.setting === 'crossfadeSeconds') {
+            live?.player.adoptStoredPlaybackSettings();
+            // A source arming behind the music read its settings already and plays on after it.
+            pendingRef.current?.player?.adoptStoredPlaybackSettings();
+          }
+          return;
         default:
           return;
       }

@@ -13,6 +13,8 @@ import {
   type AddToPlaylistInput,
   type AssistantPlayCommand,
   type AssistantPlayerState,
+  type AssistantSetting,
+  type ChangeSettingInput,
   type CreatePlaylistInput,
   type FavoriteTrackInput,
   type FindMusicInput,
@@ -33,6 +35,7 @@ import { notOffered, proposed } from '../proposal';
 import {
   ADD_TO_PLAYLIST_TOOL_NAME,
   BUDGET_TOOL_NAME,
+  CHANGE_SETTING_TOOL_NAME,
   CREATE_PLAYLIST_TOOL_NAME,
   FAVORITE_TRACK_TOOL_NAME,
   FIND_MUSIC_TOOL_NAME,
@@ -315,6 +318,14 @@ function playable({
   return track ? { source, track: item(track) } : { why: 'That Track is not in it.' };
 }
 
+/** The fixture user's settings before a turn, each as its settings page shows it. */
+const SETTINGS: Record<AssistantSetting, string> = {
+  ownerInCovers: 'Always',
+  blend: 'On',
+  crossfadeSeconds: '6 s',
+  defaultLanguage: 'Auto Detect',
+};
+
 /** How a fixture turn answers one tool, in place of that tool's own code. */
 type Answer = (input: never) => Promise<string>;
 
@@ -389,6 +400,11 @@ function fixtureAnswers(role: UserRole, actions: TurnActions): Record<string, An
       }),
     [NEW_MUSIC_OFF_TOOL_NAME]: () =>
       actions.take('done', async () => done({ action: 'newMusicOff', session: item(ACTIVE) })),
+    // Whatever choice the model names is taken as stored: the fixture has no settings to hold it.
+    [CHANGE_SETTING_TOOL_NAME]: ({ setting, value }: ChangeSettingInput) =>
+      actions.take('done', async () =>
+        done({ action: 'changeSetting', setting, value, previous: SETTINGS[setting] }),
+      ),
 
     [PLAY_TOOL_NAME]: (input: PlayInput) =>
       actions.take('player', async () => {

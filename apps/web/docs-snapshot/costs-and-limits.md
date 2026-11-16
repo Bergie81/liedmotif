@@ -1,6 +1,6 @@
 ---
 title: Costs and limits
-description: What you pay for and to whom, what's free, how each action spends, and every limit Liedmotif offers, counted in tracks.
+description: What you pay for and to whom, what is free, how each action spends, and every limit Liedmotif offers, counted in tracks.
 checkedOn: 2026-11-10
 ---
 

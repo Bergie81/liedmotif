@@ -3,6 +3,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { PeopleForm } from './people-form';
 
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+
 describe('People settings form', () => {
   beforeAll(() => vi.stubGlobal('React', React));
   afterAll(() => vi.unstubAllGlobals());

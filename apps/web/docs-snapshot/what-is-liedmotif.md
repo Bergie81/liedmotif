@@ -1,6 +1,6 @@
 ---
 title: What Liedmotif is
-description: How Liedmotif works from your first request to the music you keep, what an instance is made of, and what the app's words mean.
+description: How Liedmotif works from your first request to the music you keep, what an instance is made of, and what the words in the app mean.
 checkedOn: 2026-11-09
 ---
 

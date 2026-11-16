@@ -148,6 +148,19 @@ export async function updateGenerationSettings(
   );
 }
 
+/**
+ * Write the owner's default language and nothing else of their Generation
+ * settings: the Assistant's writer, which must not reach what a Session
+ * generates ahead.
+ */
+export async function updateDefaultLanguage(
+  db: DbOrTx,
+  ownerUserId: string,
+  defaultLanguage: GenerationSettings['defaultLanguage'],
+): Promise<GenerationSettings> {
+  return updateGenerationSettings(db, { ownerUserId, patch: { defaultLanguage } });
+}
+
 /** The tone the owner gave the Assistant; empty until they save one. */
 export async function getAssistantTone(db: DbOrTx, ownerUserId: string): Promise<AssistantTone> {
   return getUserSetting(db, ownerUserId, USER_SETTINGS_KEYS.assistantTone, DEFAULT_ASSISTANT_TONE);

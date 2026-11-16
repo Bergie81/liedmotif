@@ -175,6 +175,7 @@ function stubPlayer(overrides: Partial<PlaybackControllerApi> = {}): PlaybackCon
     playQueueItem: vi.fn(),
     applyTrackTitle: vi.fn(),
     toggleBlend: vi.fn(),
+    adoptStoredPlaybackSettings: vi.fn(),
     seekTo: vi.fn(),
     sectionLoopAvailable: true,
     toggleSectionLoopTool: vi.fn(),

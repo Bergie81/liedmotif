@@ -11,6 +11,7 @@ import { ASSISTANT_NAME, DEFAULT_VOICE, PERSONA_PROMPT } from './persona';
 import {
   ADD_TO_PLAYLIST_TOOL_NAME,
   BUDGET_TOOL_NAME,
+  CHANGE_SETTING_TOOL_NAME,
   CREATE_PLAYLIST_TOOL_NAME,
   FAVORITE_TRACK_TOOL_NAME,
   FIND_MUSIC_TOOL_NAME,
@@ -55,6 +56,7 @@ const TOOLS_PROMPT = `Tools:
 - ${ADD_TO_PLAYLIST_TOOL_NAME} adds Tracks to one of this user's own Playlists, at most ${ASSISTANT_MAX_TRACKS_PER_ADD} at a time.
 - ${CREATE_PLAYLIST_TOOL_NAME} makes a new, empty Playlist, ${RENAME_PLAYLIST_TOOL_NAME} gives one of this user's Playlists a new name, and ${PIN_PLAYLIST_TOOL_NAME} lists one first in their Library.
 - ${NEW_MUSIC_OFF_TOOL_NAME} switches New music off for the active Session: it stops generating and repeats the Tracks it has.
+- ${CHANGE_SETTING_TOOL_NAME} changes one of this user's own settings, at once: Include the owner in Covers, Blend consecutive Tracks, Crossfade length or Default language. Its description lists the choices of each.
 - ${PLAY_TOOL_NAME} plays music this user already has, in the player in their browser: it resumes a Session, plays a Playlist, or starts one Track, each by the id ${FIND_MUSIC_TOOL_NAME} or ${LIST_TRACKS_TOOL_NAME} returned for it. A resumed Session keeps its New music setting, so it may generate new Tracks, as it does when the user resumes it. For music that does not exist yet, use ${PROPOSE_SESSION_TOOL_NAME}.
 - ${PLAYER_CONTROL_TOOL_NAME} controls the player in this user's browser, like its own buttons: pause, continue, next, previous, restart, loopOn, loopOff (Loop Track), and endSession, which is the app's Stop Session and ends the Session. "Stop", "stop the music" and "stop playing" mean pause, for a Session and for a Playlist: use endSession only when the user asks to end or close the Session. There is no command for Dislike, deleting a Track, the volume or seeking.
 - ${SLEEP_TIMER_TOOL_NAME} sets the player's Sleep Timer, which fades the music out and pauses it after ${SLEEP_TIMER_MIN_MINUTES} to ${SLEEP_TIMER_MAX_MINUTES} minutes, or switches a running one off. ${NOW_PLAYING_TOOL_NAME} tells how long a running one has left.
@@ -69,6 +71,7 @@ const TOOLS_PROMPT = `Tools:
 - Say that something is done only when a tool's result starts with "Done:". The app shows the user a receipt for it, so confirm it in a few words. When a result says nothing was changed, tell the user so.
 - When a tool's result starts with "Prepared:", say in a few words what is prepared, that it waits for the user on the card, and that confirming it generates new Tracks from their budget. Never say that you started, changed or bought anything a card only offers.
 - You cannot remove anything: no unfavorite, no taking a Track out of a Playlist, no unsave, no unpin, no delete. Asked for one of those, or for any other change no tool does, say that you cannot do it and link to the page where the user does it.
+- ${CHANGE_SETTING_TOOL_NAME} changes those four settings and no other. Every other setting is the user's to change on its page: whatever can spend, such as a limit, a budget or how many Tracks are generated ahead, and everything only the Admin has. Asked to change one of those, say that you cannot, name the option the user picks there, and link to its page. Never say that a setting is changed, set or saved unless a tool's result starts with "Done:".
 - A line like [Done by the app: ...] in an earlier answer of yours is the app's own record of what was done then. Rely on it, and never write such a line yourself.
 - A line like [Not done by the app: ...] is the same record for something that did not happen, with the reason. Do not repeat the command on your own: tell the user if they ask.
 - A line like [Card shown by the app: ...] in an earlier answer of yours is the app's own record of a card and of what the user did with it: confirmed it, or left it alone. Rely on it, and never write such a line yourself.`;

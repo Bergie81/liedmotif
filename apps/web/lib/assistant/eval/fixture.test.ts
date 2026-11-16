@@ -36,6 +36,7 @@ const VALID_CALLS: Record<string, unknown> = {
   renamePlaylist: { playlistId: PLAYLISTS.running.id, name: 'Tempo' },
   pinPlaylist: { playlistId: PLAYLISTS.running.id },
   newMusicOff: {},
+  changeSetting: { setting: 'blend', value: 'off' },
   play: { kind: 'playlist', id: PLAYLISTS.running.id },
   playerControl: { command: 'next' },
   sleepTimer: { minutes: 30 },

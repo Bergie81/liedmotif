@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   CROSSFADE_SECONDS_MAX,
   CROSSFADE_SECONDS_MIN,
@@ -10,6 +11,7 @@ import {
 import { Switch } from '@/components/ui/controls';
 import { primaryButtonClass } from '@/components/ui/form-styles';
 import { updatePlaybackSettings } from '@/lib/api-client';
+import { useStoredValue } from './use-stored-value';
 import {
   GatedSlider,
   SettingsCard,
@@ -28,9 +30,10 @@ export function PlaybackForm({ initial }: { initial: PlaybackSettings }) {
   // actually moved here. The player's blend toggle writes the same record live
   // and the mini player is on this page — posting the whole form would push a
   // seeded value back over a toggle made since the page rendered.
-  const [persisted, setPersisted] = useState(initial);
-  const [blendEnabled, setBlendEnabled] = useState(initial.blendEnabled);
-  const [crossfadeSeconds, setCrossfadeSeconds] = useState(initial.crossfadeSeconds);
+  const router = useRouter();
+  const [persisted, setPersisted] = useStoredValue(initial);
+  const [blendEnabled, setBlendEnabled] = useStoredValue(initial.blendEnabled);
+  const [crossfadeSeconds, setCrossfadeSeconds] = useStoredValue(initial.crossfadeSeconds);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<SettingsFeedbackState>(null);
 
@@ -49,6 +52,7 @@ export function PlaybackForm({ initial }: { initial: PlaybackSettings }) {
       setPersisted(result.data);
       setBlendEnabled(result.data.blendEnabled);
       setCrossfadeSeconds(result.data.crossfadeSeconds);
+      router.refresh();
     }
     setFeedback(
       result.ok

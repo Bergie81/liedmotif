@@ -318,6 +318,26 @@ it('leaves the Library pages alone when a receipt changed nothing they show', as
   expect(navigation.refresh).not.toHaveBeenCalled();
 });
 
+it('has the page on screen re-read a changed setting, and leaves the Library alone', async () => {
+  const outsideWrites = vi.fn();
+  const stopListening = onOutsideLibraryWrite(outsideWrites);
+  const onReceipt = vi.fn();
+  renderDock({ desk: true, onReceipt });
+  const changed: AssistantReceipt = {
+    action: 'changeSetting',
+    setting: 'ownerInCovers',
+    value: 'Seldom',
+    previous: 'Always',
+  };
+
+  askAndGetReply([receiptFor(changed)]);
+
+  await waitFor(() => expect(onReceipt).toHaveBeenCalledWith(changed));
+  expect(navigation.refresh).toHaveBeenCalledTimes(1);
+  expect(outsideWrites).not.toHaveBeenCalled();
+  stopListening();
+});
+
 /** The app shell's player, as the dock is handed it: every command comes to `outcome`. */
 function playerThat(outcome: PlayerCommandOutcome) {
   return {

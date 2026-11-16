@@ -40,6 +40,10 @@ describe('a receipt as the model reads it', () => {
       `pinned the Playlist "Running" (id ${PLAYLIST.id})`,
     ],
     [
+      { action: 'changeSetting', setting: 'blend', value: 'Off', previous: 'On' },
+      'changed the setting "Blend consecutive Tracks" from On to Off',
+    ],
+    [
       { action: 'newMusicOff', session: SESSION },
       `switched New music off for the Session "Rainy Window" (id ${SESSION.id})`,
     ],
