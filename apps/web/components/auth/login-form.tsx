@@ -5,6 +5,7 @@
 
 import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
+import { MAX_EMAIL_LENGTH } from '@liedmotif/shared';
 import { cn } from '@/lib/cn';
 import { AlertBanner } from '@/components/ui/design-system';
 import { inputClass, labelClass, primaryButtonClass } from '@/components/ui/form-styles';
@@ -49,6 +50,7 @@ export function LoginForm({ canResetByEmail }: { canResetByEmail: boolean }) {
         Email
         <input
           type="email"
+          maxLength={MAX_EMAIL_LENGTH}
           autoComplete="username"
           required
           value={email}

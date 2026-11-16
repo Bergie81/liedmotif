@@ -58,6 +58,7 @@ export function MemberOnboardingWizard({
           <OnboardingProfileStep
             profile={draft.profile}
             avatarUrl={avatar}
+            withDescription
             onChange={(profile) => setDraft((current) => ({ ...current, profile }))}
             onAvatarChange={setAvatar}
             onSaved={advanceFromProfile}

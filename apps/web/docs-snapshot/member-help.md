@@ -1,7 +1,7 @@
 ---
 title: Help for members
 description: You have an account on a Liedmotif that someone else runs. How to get in, what your budget means, what stays private, and what to do when something fails.
-checkedOn: 2026-11-07
+checkedOn: 2026-11-16
 howTo: true
 ---
 
@@ -87,7 +87,7 @@ The first sign-in creates your own free Tailscale network, which is just your de
    - **Confirm password:** the same password again.
 4. Press **Create my account**. Save the email and password in your password manager, or somewhere else safe.
 5. A short first-time setup follows:
-   - **Welcome. What should we call you?** Fill in your **First name**. The rest is optional. Press **Continue**.
+   - **Welcome. What should we call you?** Fill in your **First name**. The rest is optional, including a **Short description** (up to 80 characters) for your profile card in the lounge. Press **Continue**.
    - **Put people on your Covers** is optional, so you can skip it for now. Press **Continue**.
    - **You're on the air!** shows the budget your admin gave you, which is how much new music you can make. Press **Start your first Session**.
 

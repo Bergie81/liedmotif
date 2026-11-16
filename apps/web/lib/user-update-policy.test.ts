@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { MAX_USER_NAME_LENGTH } from '@liedmotif/shared';
 import { refuseUserUpdate } from './user-update-policy';
 
 // What `POST /api/auth/update-user` may write. Better Auth ships that endpoint
@@ -18,8 +19,8 @@ describe('refuseUserUpdate', () => {
     expect(refuseUserUpdate({})).toBeNull();
   });
 
-  it('refuses a name past the profile field cap', () => {
-    expect(refuseUserUpdate({ name: 'x'.repeat(121) })).toMatch(/name/i);
+  it('refuses a name past the user name cap', () => {
+    expect(refuseUserUpdate({ name: 'x'.repeat(MAX_USER_NAME_LENGTH + 1) })).toMatch(/name/i);
   });
 
   it('refuses any image that is not an app avatar URL', () => {

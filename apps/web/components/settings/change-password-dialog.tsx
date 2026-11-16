@@ -8,7 +8,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { KeyRound } from 'lucide-react';
-import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH, validatePassword } from '@liedmotif/shared';
+import { MIN_PASSWORD_LENGTH, validatePassword } from '@liedmotif/shared';
 import {
   Dialog,
   DialogClose,
@@ -179,7 +179,6 @@ function CurrentPasswordChange() {
         label="Current password"
         autoComplete="current-password"
         required
-        maxLength={MAX_PASSWORD_LENGTH}
         value={currentPassword}
         disabled={busy}
         onChange={(event) => setCurrentPassword(event.target.value)}
@@ -189,7 +188,6 @@ function CurrentPasswordChange() {
         autoComplete="new-password"
         required
         minLength={MIN_PASSWORD_LENGTH}
-        maxLength={MAX_PASSWORD_LENGTH}
         value={newPassword}
         disabled={busy}
         onChange={(event) => setNewPassword(event.target.value)}
@@ -199,7 +197,6 @@ function CurrentPasswordChange() {
         label="Confirm new password"
         autoComplete="new-password"
         required
-        maxLength={MAX_PASSWORD_LENGTH}
         disabled={busy}
         {...confirmation.field}
       />

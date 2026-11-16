@@ -13,6 +13,7 @@
 
 import { useState } from 'react';
 import type { ListenerProfile } from '@liedmotif/db';
+import { MAX_EMAIL_LENGTH, MAX_USER_NAME_LENGTH } from '@liedmotif/shared';
 import { AvatarUploader } from '@/components/settings/avatar-uploader';
 import { ProfileField } from '@/components/settings/profile-field';
 import {
@@ -22,7 +23,7 @@ import {
 } from '@/components/settings/profile-form-model';
 import {
   MAX_PROFILE_ARTIST_NAME_LENGTH,
-  MAX_PROFILE_EMAIL_LENGTH,
+  MAX_PROFILE_DESCRIPTION_LENGTH,
   MAX_PROFILE_FIELD_LENGTH,
 } from '@/lib/constants';
 import { TimezoneSelect } from '@/components/timezone-select';
@@ -39,6 +40,7 @@ export function OnboardingProfileStep({
   profile,
   avatarUrl,
   timezone,
+  withDescription = false,
   onChange,
   onAvatarChange,
   onSaved,
@@ -51,6 +53,8 @@ export function OnboardingProfileStep({
    * zone is the Admin's to set.
    */
   timezone?: { value: string; onChange: (timezone: string) => void };
+  /** Asks for the Lounge card's Short description; the Member welcome sets it. */
+  withDescription?: boolean;
   onChange: (profile: ListenerProfile) => void;
   /** The photo uploads on select, so the wizard hears about it as it happens. */
   onAvatarChange: (imageUrl: string | null) => void;
@@ -115,7 +119,7 @@ export function OnboardingProfileStep({
             <ProfileField
               label="First name"
               value={profile.name}
-              maxLength={MAX_PROFILE_FIELD_LENGTH}
+              maxLength={MAX_USER_NAME_LENGTH}
               placeholder="Your first name"
               error={errors.name}
               disabled={saving}
@@ -127,7 +131,7 @@ export function OnboardingProfileStep({
               label="Email"
               type="email"
               value={profile.email}
-              maxLength={MAX_PROFILE_EMAIL_LENGTH}
+              maxLength={MAX_EMAIL_LENGTH}
               readOnly
               error={errors.email}
               onChange={(value) => setField('email', value)}
@@ -184,6 +188,18 @@ export function OnboardingProfileStep({
               The Writing AI can use this to give Sessions a sense of place.
             </p>
           </div>
+          {withDescription ? (
+            <ProfileField
+              label="Short description"
+              optional
+              value={profile.description}
+              maxLength={MAX_PROFILE_DESCRIPTION_LENGTH}
+              hint="Shown on your profile card in the Lounge."
+              error={errors.description}
+              disabled={saving}
+              onChange={(value) => setField('description', value)}
+            />
+          ) : null}
           {timezone ? (
             <label className="flex flex-col gap-2 text-[13px] font-semibold text-paper">
               Timezone

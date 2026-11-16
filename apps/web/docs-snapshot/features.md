@@ -480,7 +480,7 @@ Turn on **Run without my profile details** on **Home** to keep your profile and 
 
 - **City** and **Country** give your sessions a sense of place.
 - **Artist name** is written into downloaded MP3s, up to 80 characters. Without one, your name is used.
-- **Short description** appears on your lounge profile card, up to 160 characters. It's never used for music.
+- **Short description** appears on your lounge profile card, up to 80 characters. It's never used for music.
 - **Change password** is here too.
 
 Only the admin can change their sign-in email. A member's is fixed.

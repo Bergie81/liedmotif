@@ -6,7 +6,12 @@
 // hard navigation lands them in their welcome.
 
 import { useState, type FormEvent } from 'react';
-import { MIN_PASSWORD_LENGTH, validatePassword } from '@liedmotif/shared';
+import {
+  MAX_EMAIL_LENGTH,
+  MAX_USER_NAME_LENGTH,
+  MIN_PASSWORD_LENGTH,
+  validatePassword,
+} from '@liedmotif/shared';
 import { apiFetchJson } from '@/lib/api-fetch';
 import { cn } from '@/lib/cn';
 import { AlertBanner } from '@/components/ui/design-system';
@@ -66,7 +71,7 @@ export function ClaimForm({
           type="text"
           autoComplete="name"
           required
-          maxLength={80}
+          maxLength={MAX_USER_NAME_LENGTH}
           value={name}
           onChange={(e) => setName(e.target.value)}
           className={inputClass}
@@ -77,6 +82,7 @@ export function ClaimForm({
         Email
         <input
           type="email"
+          maxLength={MAX_EMAIL_LENGTH}
           autoComplete="username"
           required
           value={email}

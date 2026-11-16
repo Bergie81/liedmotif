@@ -13,11 +13,17 @@ const linkToken = z.string().min(1).max(256);
 
 const password = passwordSchema;
 
-const email = z.string().trim().max(254).pipe(z.email());
+/** A person's name, wherever one is typed: invite, claim, and profile. */
+export const MAX_USER_NAME_LENGTH = 80;
+
+/** RFC 5321 path limit. */
+export const MAX_EMAIL_LENGTH = 254;
+
+const email = z.string().trim().max(MAX_EMAIL_LENGTH).pipe(z.email());
 
 export const claimInviteRequestSchema = z.strictObject({
   token: linkToken,
-  name: z.string().trim().min(1).max(80),
+  name: z.string().trim().min(1).max(MAX_USER_NAME_LENGTH),
   email,
   password,
 });
@@ -54,7 +60,7 @@ export type ChangePasswordRequest = z.infer<typeof changePasswordRequestSchema>;
  * while it is off — the route decides, since only the server knows the mode.
  */
 export const createMemberInviteRequestSchema = z.strictObject({
-  label: z.string().trim().min(1).max(80),
+  label: z.string().trim().min(1).max(MAX_USER_NAME_LENGTH),
   budget: updateMemberLimitsRequestSchema.optional(),
   email: email.optional(),
 });

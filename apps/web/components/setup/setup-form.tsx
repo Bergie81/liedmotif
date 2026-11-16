@@ -8,6 +8,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { cn } from '@/lib/cn';
+import { MAX_EMAIL_LENGTH } from '@liedmotif/shared';
 import { SETUP_TOKEN_HEADER } from '@/lib/constants';
 import {
   AlertBanner,
@@ -89,6 +90,7 @@ export function SetupForm({ setupToken }: { setupToken?: string }) {
               Email
               <input
                 type="email"
+                maxLength={MAX_EMAIL_LENGTH}
                 autoComplete="username"
                 value={form.email}
                 onChange={(event) => update({ email: event.target.value })}

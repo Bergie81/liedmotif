@@ -200,7 +200,7 @@ Everything outside your shared playlists stays yours: your other playlists, your
 
 Nobody gets told who's listening. You see no play counts, no names and no pins, and listening to someone else's playlist doesn't appear in anyone's stats.
 
-The lounge shows your artist name if you've set one, otherwise your first name, with your picture. You can add a **Short description** of up to 160 characters in **Settings › Profile** for your profile card. It's only shown there, and never reaches the writing AI.
+The lounge shows your artist name if you've set one, otherwise your first name, with your picture. You can add a **Short description** of up to 80 characters in **Settings › Profile** for your profile card. It's only shown there, and never reaches the writing AI.
 
 ### Find something in the lounge
 

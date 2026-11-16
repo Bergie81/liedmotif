@@ -3,13 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ListenerProfile, UserRole } from '@liedmotif/db';
-import { MAX_PASSWORD_LENGTH } from '@liedmotif/shared';
+import { MAX_EMAIL_LENGTH, MAX_USER_NAME_LENGTH } from '@liedmotif/shared';
 import { primaryButtonClass } from '@/components/ui/form-styles';
 import { PasswordField } from '@/components/ui/password-field';
 import {
   MAX_PROFILE_ARTIST_NAME_LENGTH,
   MAX_PROFILE_DESCRIPTION_LENGTH,
-  MAX_PROFILE_EMAIL_LENGTH,
   MAX_PROFILE_FIELD_LENGTH,
 } from '@/lib/constants';
 import { saveListenerProfile } from '@/lib/settings-client';
@@ -113,7 +112,7 @@ export function ProfileForm({
       <ProfileField
         label="First name"
         value={values.name}
-        maxLength={MAX_PROFILE_FIELD_LENGTH}
+        maxLength={MAX_USER_NAME_LENGTH}
         error={fieldErrors.name}
         disabled={saving}
         onChange={(value) => setField('name', value)}
@@ -134,7 +133,7 @@ export function ProfileForm({
           }
           type="email"
           value={values.email}
-          maxLength={MAX_PROFILE_EMAIL_LENGTH}
+          maxLength={MAX_EMAIL_LENGTH}
           hint={emailEditable ? undefined : 'It can’t be changed.'}
           readOnly={!emailEditable}
           error={fieldErrors.email}
@@ -154,7 +153,6 @@ export function ProfileForm({
           label="Current password"
           autoComplete="current-password"
           value={currentPassword}
-          maxLength={MAX_PASSWORD_LENGTH}
           hint="Changing your sign-in address signs you out everywhere else."
           error={fieldErrors.currentPassword}
           disabled={saving}

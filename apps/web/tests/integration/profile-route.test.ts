@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { MAX_PROFILE_DESCRIPTION_LENGTH } from '@/lib/constants';
 
 // Profile route: artistName/description trim/round-trip, cover-reference frequency
 // validation, and the artist-change → MP3 retag fan-out (best-effort enqueue).
@@ -162,7 +163,10 @@ describe('POST /api/settings/profile', () => {
   });
 
   it('refuses an over-long description and writes nothing', async () => {
-    const res = await post({ ...BASE, description: 'x'.repeat(161) });
+    const res = await post({
+      ...BASE,
+      description: 'x'.repeat(MAX_PROFILE_DESCRIPTION_LENGTH + 1),
+    });
     expect(res.status).toBe(400);
     expect(((await res.json()) as { error: string }).error).toMatch(/description/i);
     expect(holder.updates).toEqual([]);

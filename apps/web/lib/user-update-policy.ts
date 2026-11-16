@@ -9,7 +9,7 @@
 
 import type { UserUpdateFields } from '@liedmotif/db/auth';
 import { avatarIdFromUrl } from '@/lib/avatar';
-import { MAX_PROFILE_FIELD_LENGTH } from '@/lib/constants';
+import { MAX_USER_NAME_LENGTH } from '@liedmotif/shared';
 
 /**
  * A user-facing refusal for a `user` row update, or `null` to allow it. Only
@@ -18,8 +18,8 @@ import { MAX_PROFILE_FIELD_LENGTH } from '@/lib/constants';
 export function refuseUserUpdate(update: UserUpdateFields): string | null {
   // The raw length is judged: Better Auth stores `name` untrimmed.
   if (update.name !== undefined) {
-    if (typeof update.name !== 'string' || update.name.length > MAX_PROFILE_FIELD_LENGTH) {
-      return `Name must be text of at most ${MAX_PROFILE_FIELD_LENGTH} characters.`;
+    if (typeof update.name !== 'string' || update.name.length > MAX_USER_NAME_LENGTH) {
+      return `Name must be text of at most ${MAX_USER_NAME_LENGTH} characters.`;
     }
   }
   // `null` clears the avatar; anything else must be an URL this app minted, so

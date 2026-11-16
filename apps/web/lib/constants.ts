@@ -7,17 +7,14 @@
  */
 export const DEFAULT_INSTANCE_NAME = 'Liedmotif';
 
-/** Length caps for the Settings → Profile fields (name, city, country). */
+/** Length cap for the Settings → Profile place fields (city, country). */
 export const MAX_PROFILE_FIELD_LENGTH = 120;
-
-/** Length cap for the profile email (RFC 5321 path limit). */
-export const MAX_PROFILE_EMAIL_LENGTH = 254;
 
 /** Length cap for the optional exported-MP3 Artist Name. */
 export const MAX_PROFILE_ARTIST_NAME_LENGTH = 80;
 
 /** Length cap for the optional Short description on the Lounge profile card. */
-export const MAX_PROFILE_DESCRIPTION_LENGTH = 160;
+export const MAX_PROFILE_DESCRIPTION_LENGTH = 80;
 
 /** The one message every dead invite, reset, or confirm link gets — opaque by design. */
 export const INVALID_LINK_MESSAGE = 'This link is no longer valid.';

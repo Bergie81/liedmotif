@@ -17,6 +17,7 @@ import {
   verifyCredentialPassword,
   type ListenerProfile,
 } from '@liedmotif/db';
+import { MAX_EMAIL_LENGTH, MAX_USER_NAME_LENGTH } from '@liedmotif/shared';
 import { mailConfirmLink, mailEmailChangedNotice } from '@/lib/account-mail';
 import { getDb } from '@/lib/db';
 import { isAccountEmailEnabled } from '@/lib/env';
@@ -29,7 +30,6 @@ import { enqueueEmbedTrackMetadataBatch } from '@/lib/worker-jobs';
 import {
   MAX_PROFILE_ARTIST_NAME_LENGTH,
   MAX_PROFILE_DESCRIPTION_LENGTH,
-  MAX_PROFILE_EMAIL_LENGTH,
   MAX_PROFILE_FIELD_LENGTH,
 } from '@/lib/constants';
 
@@ -54,8 +54,8 @@ export async function POST(request: Request) {
   const body = await readJsonObjectBody(request);
   if (body instanceof NextResponse) return body;
 
-  const name = textField(body.name, MAX_PROFILE_FIELD_LENGTH);
-  const email = textField(body.email, MAX_PROFILE_EMAIL_LENGTH);
+  const name = textField(body.name, MAX_USER_NAME_LENGTH);
+  const email = textField(body.email, MAX_EMAIL_LENGTH);
   const city = textField(body.city, MAX_PROFILE_FIELD_LENGTH);
   const country = textField(body.country, MAX_PROFILE_FIELD_LENGTH);
   const artistName = textField(body.artistName ?? '', MAX_PROFILE_ARTIST_NAME_LENGTH);

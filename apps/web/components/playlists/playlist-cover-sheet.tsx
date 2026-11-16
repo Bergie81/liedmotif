@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import {
   COVER_STYLE_CHOICES,
+  MAX_COVER_GUIDANCE_LENGTH,
   type CoverStyleChoice,
   type PlaylistSummaryItem,
 } from '@liedmotif/shared';
@@ -223,7 +224,7 @@ function CoverSheetContent({
         <input
           className={cn(inputClass, 'mt-2 w-full')}
           value={guidance}
-          maxLength={300}
+          maxLength={MAX_COVER_GUIDANCE_LENGTH}
           placeholder="Optional art direction (e.g. sunset over vinyl)"
           aria-label="Cover art direction"
           disabled={working || status?.generating}

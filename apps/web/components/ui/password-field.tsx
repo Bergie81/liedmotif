@@ -6,6 +6,7 @@
 
 import { useId, useState, type ChangeEvent, type ComponentProps } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
+import { MAX_PASSWORD_LENGTH } from '@liedmotif/shared';
 import { FieldNote, fieldNoteId } from '@/components/ui/field-note';
 import { inputClass, labelClass } from '@/components/ui/form-styles';
 import { cn } from '@/lib/cn';
@@ -27,6 +28,7 @@ export function PasswordField({
       <label htmlFor={inputId}>{label}</label>
       <div className="relative">
         <input
+          maxLength={MAX_PASSWORD_LENGTH}
           {...inputProps}
           id={inputId}
           type={revealed ? 'text' : 'password'}

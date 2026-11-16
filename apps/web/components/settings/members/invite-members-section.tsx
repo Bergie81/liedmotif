@@ -8,7 +8,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserRoundPlus } from 'lucide-react';
-import type { MemberLimits, UnitCosts } from '@liedmotif/shared';
+import {
+  MAX_EMAIL_LENGTH,
+  MAX_USER_NAME_LENGTH,
+  type MemberLimits,
+  type UnitCosts,
+} from '@liedmotif/shared';
 import { apiFetch, apiFetchJson } from '@/lib/api-fetch';
 import {
   compactPrimaryButtonClass,
@@ -114,7 +119,7 @@ export function InviteMembersSection({
         <input
           type="text"
           value={label}
-          maxLength={80}
+          maxLength={MAX_USER_NAME_LENGTH}
           placeholder="Lisa"
           disabled={busy}
           onChange={(event) => setLabel(event.target.value)}
@@ -128,7 +133,7 @@ export function InviteMembersSection({
             type="email"
             autoComplete="off"
             value={email}
-            maxLength={254}
+            maxLength={MAX_EMAIL_LENGTH}
             placeholder="lisa@example.com"
             disabled={busy}
             onChange={(event) => setEmail(event.target.value)}

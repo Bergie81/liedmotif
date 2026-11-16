@@ -6,6 +6,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { CircleCheck } from 'lucide-react';
+import { MAX_EMAIL_LENGTH } from '@liedmotif/shared';
 import { apiFetchJson } from '@/lib/api-fetch';
 import { cn } from '@/lib/cn';
 import { AlertBanner } from '@/components/ui/design-system';
@@ -51,6 +52,7 @@ export function ForgotPasswordForm() {
         Email
         <input
           type="email"
+          maxLength={MAX_EMAIL_LENGTH}
           autoComplete="username"
           required
           value={email}
