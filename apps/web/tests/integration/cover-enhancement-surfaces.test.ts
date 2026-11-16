@@ -7,7 +7,7 @@ import {
   truncateTables,
   type TestDb,
 } from '@liedmotif/db/testing';
-import { getCoverArtSettings, updateCoverArtSettings } from '@liedmotif/db';
+import { getCoverArtSettings, updateCoverArtSettings, updateUsageLimits } from '@liedmotif/db';
 
 // The Settings → Cover Arts custom-style enhance-on-save surface (decision D4).
 
@@ -104,6 +104,61 @@ describe.skipIf(skip)('Settings → Cover Arts enhance-on-save (D4)', () => {
       enhancement: { attempted: boolean; applied: boolean };
     };
     expect(body.enhancement).toEqual({ attempted: true, applied: false });
+    expect(body.settings.customStyleDefinition).toBe('torn paper collage');
+  });
+
+  it('saves the definition as written, without the LLM call, over the cover budget', async () => {
+    // The enhancement is a text-LLM call made before any cover admission, so an
+    // exhausted budget must not buy one per save.
+    holder.ownerUserId = await createUser(testDb.db);
+    let calls = 0;
+    holder.llm = {
+      enhanceCoverDirection: async (input) => {
+        calls += 1;
+        return { text: `ENHANCED ${input.text}`, applied: true };
+      },
+    };
+    await updateUsageLimits(testDb.db, { generatedCoversPerDay: 0 });
+
+    const response = await postJson(coverArtSettingsPost, {
+      customStyleDefinition: 'torn paper collage',
+    });
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      settings: { customStyleDefinition: string };
+      enhancement: { attempted: boolean; applied: boolean };
+    };
+    expect(calls).toBe(0);
+    expect(body.enhancement).toEqual({ attempted: false, applied: false });
+    expect(body.settings.customStyleDefinition).toBe('torn paper collage');
+  });
+
+  it('saves the definition as written, without the LLM call, past the save burst', async () => {
+    // No usage window meters the rewrite, so a save loop must not buy one per save.
+    holder.ownerUserId = await createUser(testDb.db);
+    let calls = 0;
+    holder.llm = {
+      enhanceCoverDirection: async (input) => {
+        calls += 1;
+        return { text: `ENHANCED ${input.text}`, applied: true };
+      },
+    };
+
+    for (let i = 0; i < 10; i += 1) {
+      await postJson(coverArtSettingsPost, { customStyleDefinition: `collage ${i}` });
+    }
+    expect(calls).toBe(10);
+
+    const response = await postJson(coverArtSettingsPost, {
+      customStyleDefinition: 'torn paper collage',
+    });
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      settings: { customStyleDefinition: string };
+      enhancement: { attempted: boolean; applied: boolean };
+    };
+    expect(calls).toBe(10);
+    expect(body.enhancement).toEqual({ attempted: false, applied: false });
     expect(body.settings.customStyleDefinition).toBe('torn paper collage');
   });
 

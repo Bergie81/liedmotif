@@ -708,6 +708,13 @@
       "when": 1794867147888,
       "tag": "0100_per_user_cover_art",
       "breakpoints": true
+    },
+    {
+      "idx": 101,
+      "version": "7",
+      "when": 1794869408267,
+      "tag": "0101_profile_field_caps",
+      "breakpoints": true
     }
   ]
 }

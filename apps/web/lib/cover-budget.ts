@@ -1,4 +1,5 @@
-// The cover-spend admission gate for the web-boundary regenerate routes.
+// The cover-spend admission gate for the web-boundary routes that run the paid
+// cover-text enhancement: the regenerate routes and the Custom style save.
 //
 // The paid LLM cover-text enhancement runs OUTSIDE the owner admission lock (it
 // must — see the paid-cover-calls-outside-the-lock invariant), so a

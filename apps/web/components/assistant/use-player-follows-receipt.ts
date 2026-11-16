@@ -6,7 +6,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import type { AssistantReceipt } from '@liedmotif/shared';
-import { usePlayerContext } from '@/components/player/player-provider';
+import { adoptStoredPlaybackSettings, usePlayerContext } from '@/components/player/player-provider';
 import { optimisticFavoriteFlags } from '@/components/player/track-retention';
 
 /**
@@ -67,9 +67,7 @@ export function usePlayerFollowsReceipt(
         }
         case 'changeSetting':
           if (receipt.setting === 'blend' || receipt.setting === 'crossfadeSeconds') {
-            live?.player.adoptStoredPlaybackSettings();
-            // A source arming behind the music read its settings already and plays on after it.
-            pendingRef.current?.player?.adoptStoredPlaybackSettings();
+            adoptStoredPlaybackSettings({ playback: live, pending: pendingRef.current });
           }
           return;
         default:

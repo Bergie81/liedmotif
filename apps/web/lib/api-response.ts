@@ -155,8 +155,8 @@ export function refuseSetupCrossOrigin(request: Request): NextResponse | null {
  * request, never trusted from the cookie.
  *
  * Boundary rule: content routes use this; instance-configuration routes
- * (settings/credentials, limits, cover-art, voice, diagnostics,
- * members) MUST use `requireAdminOwnerId` instead — the guard choice at the
+ * (settings/credentials, limits, voice, diagnostics, members) MUST use
+ * `requireAdminOwnerId` instead — the guard choice at the
  * route is the whole authorization boundary, so a new settings route must pick
  * the admin gate deliberately, never inherit Member access by copying a
  * content route.

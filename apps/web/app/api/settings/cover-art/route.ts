@@ -8,16 +8,23 @@
 // definition clears it, which makes the `Custom` choice fall back to `auto`.
 
 import { NextResponse } from 'next/server';
-import { getCoverArtSettings, updateCoverArtSettings, type CoverArtSettings } from '@liedmotif/db';
+import {
+  getCoverArtSettings,
+  getUsageLimits,
+  updateCoverArtSettings,
+  type CoverArtSettings,
+} from '@liedmotif/db';
 import {
   COVER_STYLE_CHOICES,
   MAX_COVER_STYLE_HINT_LENGTH,
   sanitizeCoverStyleHint,
   type CoverStyleChoice,
 } from '@liedmotif/shared';
+import { refuseWhenCoverBudgetExhausted } from '@/lib/cover-budget';
 import { enhanceCoverText } from '@/lib/cover-enhancement';
 import { getDb } from '@/lib/db';
 import { badRequest } from '@/lib/http';
+import { coverDefinitionEnhanceLimiter } from '@/lib/request-limits';
 import { readJsonObjectBody, requireOwnerId } from '@/lib/api-response';
 
 export const dynamic = 'force-dynamic';
@@ -76,15 +83,23 @@ export async function POST(request: Request) {
   // text is what gets stored — a visible write-back, so what the user sees is
   // exactly what future generations receive. Failure keeps the raw definition
   // and still saves; an unchanged definition is never re-enhanced (no drift).
+  // The rewrite is a paid call no cover admission meters, so an owner over the
+  // cover budget, or past the save burst, saves the definition as written; the
+  // budget check is the precheck a guided regenerate makes before the same call.
   let enhancement = { attempted: false, applied: false };
+  const definition = patch.customStyleDefinition;
   if (
-    patch.customStyleDefinition &&
-    patch.customStyleDefinition !==
-      (await getCoverArtSettings(db, ownerUserId)).customStyleDefinition
+    definition &&
+    definition !== (await getCoverArtSettings(db, ownerUserId)).customStyleDefinition &&
+    !(await refuseWhenCoverBudgetExhausted({
+      ownerUserId,
+      instanceLimits: await getUsageLimits(db),
+    })) &&
+    coverDefinitionEnhanceLimiter.check(ownerUserId).allowed
   ) {
     const enhanced = await enhanceCoverText(db, {
       ownerUserId,
-      text: patch.customStyleDefinition,
+      text: definition,
       override: patch.promptEnhancementEnabled,
       context: { style: 'custom' },
       clamp: sanitizeCoverStyleHint,

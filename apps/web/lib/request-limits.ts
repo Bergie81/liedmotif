@@ -102,3 +102,10 @@ export const sessionCreateLimiter = createRateLimiter({ limit: 10, windowMs: 60_
  * a real chat: nobody reads twenty answers in five minutes.
  */
 export const assistantLimiter = createRateLimiter({ limit: 20, windowMs: 5 * 60_000 });
+
+/**
+ * Custom cover style rewrites on save, per USER. Each changed definition is a
+ * text-LLM call no usage window meters; past the burst the definition saves as
+ * written. Sized far above human cadence: nobody rewords a style ten times a minute.
+ */
+export const coverDefinitionEnhanceLimiter = createRateLimiter({ limit: 10, windowMs: 60_000 });

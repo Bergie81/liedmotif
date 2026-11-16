@@ -7,8 +7,8 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { cn } from '@/lib/cn';
 import { MAX_EMAIL_LENGTH } from '@liedmotif/shared';
+import { cn } from '@/lib/cn';
 import { SETUP_TOKEN_HEADER } from '@/lib/constants';
 import {
   AlertBanner,

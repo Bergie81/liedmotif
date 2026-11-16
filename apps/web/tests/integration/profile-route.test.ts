@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MAX_PROFILE_DESCRIPTION_LENGTH } from '@/lib/constants';
+import { MAX_PROFILE_DESCRIPTION_LENGTH, MAX_USER_NAME_LENGTH } from '@liedmotif/shared';
 
 // Profile route: artistName/description trim/round-trip, cover-reference frequency
 // validation, and the artist-change → MP3 retag fan-out (best-effort enqueue).
@@ -133,6 +133,15 @@ afterEach(() => {
 });
 
 describe('POST /api/settings/profile', () => {
+  it('names the length limit for an over-long name and writes nothing', async () => {
+    const res = await post({ ...BASE, name: 'x'.repeat(MAX_USER_NAME_LENGTH + 1) });
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error: string }).error).toBe(
+      `Name must be at most ${MAX_USER_NAME_LENGTH} characters.`,
+    );
+    expect(holder.updates).toEqual([]);
+  });
+
   it('trims and round-trips the optional artistName', async () => {
     const res = await post({ ...BASE, artistName: '  DJ John  ' });
     expect(res.status).toBe(200);

@@ -17,6 +17,7 @@ export * from './surprise-me';
 export * from './loop-lease';
 export * from './onboarding';
 export * from './playback-settings';
+export * from './profile-limits';
 export * from './voice';
 export * from './session-covers';
 export * from './session-tracks';

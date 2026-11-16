@@ -3,14 +3,15 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ListenerProfile, UserRole } from '@liedmotif/db';
-import { MAX_EMAIL_LENGTH, MAX_USER_NAME_LENGTH } from '@liedmotif/shared';
-import { primaryButtonClass } from '@/components/ui/form-styles';
-import { PasswordField } from '@/components/ui/password-field';
 import {
+  MAX_EMAIL_LENGTH,
   MAX_PROFILE_ARTIST_NAME_LENGTH,
   MAX_PROFILE_DESCRIPTION_LENGTH,
   MAX_PROFILE_FIELD_LENGTH,
-} from '@/lib/constants';
+  MAX_USER_NAME_LENGTH,
+} from '@liedmotif/shared';
+import { primaryButtonClass } from '@/components/ui/form-styles';
+import { PasswordField } from '@/components/ui/password-field';
 import { saveListenerProfile } from '@/lib/settings-client';
 import { ChangePasswordButton } from './change-password-dialog';
 import { EmailConfirmationStatus, useConfirmLinkRequest } from './email-confirmation';

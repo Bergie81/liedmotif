@@ -1,7 +1,6 @@
--- Cover-art preferences are each User's own. Until now one instance-wide value
--- existed, and only the Admin could write it, so it becomes the Admin's: a
--- Member keeps the shipped defaults. The instance row goes so nothing can read
--- it as a fallback.
+-- Cover-art preferences are each User's own. The instance coverArt row moves to
+-- the Admin, the only User who could write it; Members start on the shipped
+-- defaults; the instance row is removed so nothing falls back to it.
 INSERT INTO "user_settings" ("owner_user_id", "key", "value")
 SELECT "user_profiles"."user_id", 'coverArt', "app_settings"."value"
 FROM "app_settings"

@@ -239,6 +239,30 @@ describe('usePlaybackSettings blend toggle', () => {
     });
   });
 
+  it('keeps the re-read crossfade when an older toggle answers after it', async () => {
+    const requests = captureFetches();
+    const { result } = renderHook(() => usePlaybackSettings({ read: true }));
+    await waitFor(() => expect(requests).toHaveLength(1));
+    await act(async () => requests[0]!.respond(ok(SETTINGS)));
+
+    await act(async () => {
+      const toggle = result.current.setBlendEnabled(false);
+      // The toggle committed at crossfade 6; a save past the player then moved
+      // it to 9, and its re-read lands before the toggle's answer does.
+      const reread = result.current.adoptStoredSettings();
+      requests[2]!.respond(ok({ blendEnabled: false, crossfadeSeconds: 9 }));
+      await reread;
+      requests[1]!.respond(ok({ blendEnabled: false, crossfadeSeconds: 6 }));
+      await toggle;
+    });
+
+    expect(result.current.blendEnabled).toBe(false);
+    expect(result.current.settingsRef.current).toEqual({
+      blendEnabled: false,
+      crossfadeSeconds: 9,
+    });
+  });
+
   it('keeps the re-read settings when the mount fetch answers after it', async () => {
     const requests = captureFetches();
     const { result } = renderHook(() => usePlaybackSettings({ read: true }));
@@ -251,6 +275,26 @@ describe('usePlaybackSettings blend toggle', () => {
     });
     await act(async () => requests[0]!.respond(ok(SETTINGS)));
 
+    expect(result.current.blendEnabled).toBe(false);
+    expect(result.current.settingsRef.current).toEqual({
+      blendEnabled: false,
+      crossfadeSeconds: 9,
+    });
+  });
+
+  it('applies the mount fetch when a re-read made while it was out fails', async () => {
+    const requests = captureFetches();
+    const { result } = renderHook(() => usePlaybackSettings({ read: true }));
+    await waitFor(() => expect(requests).toHaveLength(1));
+
+    await act(async () => {
+      const reread = result.current.adoptStoredSettings();
+      requests[1]!.respond(failure);
+      await reread;
+    });
+    await act(async () => requests[0]!.respond(ok({ blendEnabled: false, crossfadeSeconds: 9 })));
+
+    expect(result.current.blendSettled).toBe(true);
     expect(result.current.blendEnabled).toBe(false);
     expect(result.current.settingsRef.current).toEqual({
       blendEnabled: false,

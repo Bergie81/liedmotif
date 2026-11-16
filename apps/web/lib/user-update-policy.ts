@@ -8,8 +8,8 @@
 // endpoint should it ever be mounted again) is held to it.
 
 import type { UserUpdateFields } from '@liedmotif/db/auth';
-import { avatarIdFromUrl } from '@/lib/avatar';
 import { MAX_USER_NAME_LENGTH } from '@liedmotif/shared';
+import { avatarIdFromUrl } from '@/lib/avatar';
 
 /**
  * A user-facing refusal for a `user` row update, or `null` to allow it. Only

@@ -203,7 +203,7 @@ Tracks crossfade at matched loudness, and the fade lines up with the beat when t
 
 To switch blending on or off at once, use the blend button in the player or the **Blend Tracks** tile. It applies from the next transition. For the length, open **Settings › Playback**, set **Crossfade length** from 2 to 12 seconds, with 6 as the default, and press **Save playback**. **Blend consecutive Tracks** on the same page does the same as the player's button.
 
-Reload the page after saving, because the player reads these settings when it starts. Fades that snap to the beat can run a little shorter or longer than you set.
+The player picks up saved settings right away. Fades that snap to the beat can run a little shorter or longer than you set.
 
 If your browser can't run the blending engine, tracks simply play one after another. Liedmotif also recovers from common audio interruptions on phones.
 

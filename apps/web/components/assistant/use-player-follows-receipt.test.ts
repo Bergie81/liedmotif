@@ -16,7 +16,8 @@ const FAVORITES = { id: '9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f', name: 'Favorites
 const player = vi.hoisted(() => ({
   context: null as unknown,
 }));
-vi.mock('@/components/player/player-provider', () => ({
+vi.mock('@/components/player/player-provider', async (importActual) => ({
+  ...(await importActual<typeof import('@/components/player/player-provider')>()),
   usePlayerContext: () => player.context,
 }));
 

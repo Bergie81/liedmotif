@@ -8,6 +8,7 @@ import {
   type PlaybackSettings,
   type UpdatePlaybackSettingsRequest,
 } from '@liedmotif/shared';
+import { adoptStoredPlaybackSettings, usePlayerContext } from '@/components/player/player-provider';
 import { Switch } from '@/components/ui/controls';
 import { primaryButtonClass } from '@/components/ui/form-styles';
 import { updatePlaybackSettings } from '@/lib/api-client';
@@ -31,6 +32,7 @@ export function PlaybackForm({ initial }: { initial: PlaybackSettings }) {
   // and the mini player is on this page — posting the whole form would push a
   // seeded value back over a toggle made since the page rendered.
   const router = useRouter();
+  const player = usePlayerContext();
   const [persisted, setPersisted] = useStoredValue(initial);
   const [blendEnabled, setBlendEnabled] = useStoredValue(initial.blendEnabled);
   const [crossfadeSeconds, setCrossfadeSeconds] = useStoredValue(initial.crossfadeSeconds);
@@ -52,6 +54,7 @@ export function PlaybackForm({ initial }: { initial: PlaybackSettings }) {
       setPersisted(result.data);
       setBlendEnabled(result.data.blendEnabled);
       setCrossfadeSeconds(result.data.crossfadeSeconds);
+      adoptStoredPlaybackSettings(player);
       router.refresh();
     }
     setFeedback(
@@ -111,10 +114,6 @@ export function PlaybackForm({ initial }: { initial: PlaybackSettings }) {
         >
           {saving ? 'Saving…' : 'Save playback'}
         </button>
-        <SettingsFootnote>
-          The player reads these settings once when it starts. Reload or begin a new browser visit
-          before the saved change affects playback.
-        </SettingsFootnote>
       </SettingsSection>
     </>
   );

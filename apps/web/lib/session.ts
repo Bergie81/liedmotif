@@ -196,8 +196,8 @@ export async function getAppSession(): Promise<ServerSession> {
 /**
  * Admin-only gate for API routes: returns the session only when the request is
  * signed in as the ACTIVE admin, else `null` (the caller returns 401). Instance
- * configuration routes (credentials, limits, cover-art, voice,
- * diagnostics, members) use this; content routes use `getAppSession`.
+ * configuration routes (credentials, limits, voice, diagnostics, members) use
+ * this; content routes use `getAppSession`.
  */
 export async function getAdminSession(): Promise<ServerSession> {
   const access = await resolveAppAccess();

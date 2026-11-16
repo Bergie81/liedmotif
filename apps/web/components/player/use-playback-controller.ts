@@ -1178,9 +1178,9 @@ export function usePlaybackController(
     });
   }, [flashActionError, setBlendEnabled, settingsRef, transitions]);
 
-  // Settings saved past the player (by the Assistant): played from the next
-  // transition, and blending turned off strikes the edge in flight as the
-  // toggle does.
+  // Settings saved past the player (by the Assistant or Settings → Playback):
+  // played from the next transition, and blending turned off strikes the edge
+  // in flight as the toggle does.
   const adoptStoredPlaybackSettings = useCallback(() => {
     const wasBlending = settingsRef.current.blendEnabled;
     void adoptStoredSettings().then(() => {

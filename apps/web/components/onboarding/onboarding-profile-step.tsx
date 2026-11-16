@@ -13,7 +13,13 @@
 
 import { useState } from 'react';
 import type { ListenerProfile } from '@liedmotif/db';
-import { MAX_EMAIL_LENGTH, MAX_USER_NAME_LENGTH } from '@liedmotif/shared';
+import {
+  MAX_EMAIL_LENGTH,
+  MAX_PROFILE_ARTIST_NAME_LENGTH,
+  MAX_PROFILE_DESCRIPTION_LENGTH,
+  MAX_PROFILE_FIELD_LENGTH,
+  MAX_USER_NAME_LENGTH,
+} from '@liedmotif/shared';
 import { AvatarUploader } from '@/components/settings/avatar-uploader';
 import { ProfileField } from '@/components/settings/profile-field';
 import {
@@ -21,11 +27,6 @@ import {
   validateProfile,
   type ProfileFieldErrors,
 } from '@/components/settings/profile-form-model';
-import {
-  MAX_PROFILE_ARTIST_NAME_LENGTH,
-  MAX_PROFILE_DESCRIPTION_LENGTH,
-  MAX_PROFILE_FIELD_LENGTH,
-} from '@/lib/constants';
 import { TimezoneSelect } from '@/components/timezone-select';
 import { saveListenerProfile, saveUsageLimits } from '@/lib/settings-client';
 import {

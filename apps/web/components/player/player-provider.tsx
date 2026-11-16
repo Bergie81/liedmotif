@@ -148,6 +148,19 @@ export function usePlayerContext(): PlayerContextValue {
   return value;
 }
 
+/**
+ * Re-read the stored playback settings in the players that play with them, for
+ * a change saved past the player. A source arming behind the music read its
+ * settings already and plays on after the current one, so it re-reads too.
+ */
+export function adoptStoredPlaybackSettings({
+  playback,
+  pending,
+}: Pick<PlayerContextValue, 'playback' | 'pending'>): void {
+  playback?.player.adoptStoredPlaybackSettings();
+  pending?.player?.adoptStoredPlaybackSettings();
+}
+
 /** The actions alone — subscribe here when a surface never reads playback
  * state, so the volatile state context cannot re-render it. */
 export function usePlayerActions(): PlayerActionsValue {

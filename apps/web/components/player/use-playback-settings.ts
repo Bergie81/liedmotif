@@ -11,11 +11,15 @@
 // persists — a failed write reverts the gate to the last value the server
 // confirmed, so the UI and the engine never disagree with the server.
 //
-// A toggle can outrun both the mount fetch and an earlier toggle, so the blend
-// gate has ONE owner: the newest write. `blendWritesRef` counts writes; the
-// mount fetch and every superseded response defer to it rather than restoring
-// a value the user has already moved past. A write that failed owns nothing:
-// a mount fetch landing after it still applies the saved value.
+// A toggle can outrun both a read and an earlier toggle, so the blend gate has
+// ONE owner: the newest write. `blendWritesRef` counts writes; every read and
+// every superseded response defers to it rather than restoring a value the
+// user has already moved past. A write that failed owns nothing: a read landing
+// after it still applies the saved value.
+//
+// The mount fetch and every re-read take one path (`applyRead`): the newest
+// read that answered OK wins, and a failed read leaves the settings to the
+// others.
 
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import {
@@ -23,7 +27,7 @@ import {
   playbackSettingsSchema,
   type PlaybackSettings,
 } from '@liedmotif/shared';
-import { getPlaybackSettings, updatePlaybackSettings } from '@/lib/api-client';
+import { getPlaybackSettings, updatePlaybackSettings, type ApiResult } from '@/lib/api-client';
 import { readBrowserPreference, writeBrowserPreference } from '@/lib/browser-preferences';
 
 // The owner's settings as this device last had them from the server: what a
@@ -80,12 +84,14 @@ export function usePlaybackSettings({ read }: { read: boolean }): {
   const settledRef = useRef<boolean>(!read);
   const blendWritesRef = useRef(0);
   const blendWritesInFlightRef = useRef(0);
-  // The server's blend value as last confirmed (the mount fetch, or the newest
-  // write that saved), and which write confirmed it (0: none has).
+  // The server's blend value as last confirmed (a read, or the newest write
+  // that saved), and the newest write that saved (0: none has).
   const confirmedBlendRef = useRef<boolean | null>(null);
   const confirmedWriteRef = useRef(0);
-  // Re-reads started for a change saved past the player; only the newest may land.
-  const adoptedReadsRef = useRef(0);
+  // Reads started (the mount fetch and every re-read), and the newest of them
+  // whose answer was applied; an older answer landing later is stale.
+  const readsRef = useRef(0);
+  const appliedReadRef = useRef(0);
   const [blendEnabled, setBlendEnabledState] = useState<boolean>(initial.blendEnabled);
   const [blendSettled, setBlendSettled] = useState(!read);
 
@@ -94,31 +100,44 @@ export function usePlaybackSettings({ read }: { read: boolean }): {
     setBlendEnabledState(enabled);
   }, []);
 
-  useEffect(() => {
-    if (!read) return;
-    let cancelled = false;
-    void fetchPlaybackSettingsShared().then((res) => {
-      if (cancelled) return;
-      // A re-read that answered first is the newer copy of the same settings.
-      if (res.ok && adoptedReadsRef.current === 0) {
-        // A toggle made while this was in flight already owns the gate; take
-        // the rest of the server's answer but leave that choice standing.
-        if (confirmedWriteRef.current === 0) confirmedBlendRef.current = res.data.blendEnabled;
-        if (blendWritesInFlightRef.current > 0 || confirmedWriteRef.current > 0) {
-          settingsRef.current = { ...res.data, blendEnabled: settingsRef.current.blendEnabled };
+  // The read's blend value owns the gate only when no write is out and none
+  // saved while it read: such a write's own answer is the newer word on the
+  // gate. The rest of the answer always lands.
+  const applyRead = useCallback(
+    async (
+      request: Promise<ApiResult<PlaybackSettings>>,
+      cancelled: () => boolean = () => false,
+    ): Promise<void> => {
+      const reading = ++readsRef.current;
+      const confirmedBefore = confirmedWriteRef.current;
+      const result = await request;
+      if (cancelled()) return;
+      if (result.ok && reading > appliedReadRef.current) {
+        appliedReadRef.current = reading;
+        const savedSince = confirmedWriteRef.current !== confirmedBefore;
+        if (!savedSince) confirmedBlendRef.current = result.data.blendEnabled;
+        if (savedSince || blendWritesInFlightRef.current > 0) {
+          settingsRef.current = { ...result.data, blendEnabled: settingsRef.current.blendEnabled };
         } else {
-          settingsRef.current = res.data;
-          setBlendEnabledState(res.data.blendEnabled);
+          settingsRef.current = result.data;
+          setBlendEnabledState(result.data.blendEnabled);
         }
         keepDeviceCopy(settingsRef.current);
       }
       settledRef.current = true;
       setBlendSettled(true);
-    });
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!read) return;
+    let cancelled = false;
+    void applyRead(fetchPlaybackSettingsShared(), () => cancelled);
     return () => {
       cancelled = true;
     };
-  }, [read]);
+  }, [read, applyRead]);
 
   const setBlendEnabled = useCallback(
     async (enabled: boolean): Promise<string | null> => {
@@ -137,9 +156,15 @@ export function usePlaybackSettings({ read }: { read: boolean }): {
           confirmedBlendRef.current = result.data.blendEnabled;
         }
         if (newest) {
-          settingsRef.current = result.data;
+          // The rest of the settings belong to the reads: every save past the
+          // player re-reads, so a write's answer may be older on them. It fills
+          // them only while no read has landed.
+          settingsRef.current =
+            appliedReadRef.current === 0
+              ? result.data
+              : { ...settingsRef.current, blendEnabled: result.data.blendEnabled };
           setBlendEnabledState(result.data.blendEnabled);
-          keepDeviceCopy(result.data);
+          keepDeviceCopy(settingsRef.current);
         }
         return null;
       }
@@ -150,26 +175,10 @@ export function usePlaybackSettings({ read }: { read: boolean }): {
     [applyBlend],
   );
 
-  // The read's blend value owns the gate only when no toggle was out or made
-  // while it read: that toggle's own write answers for the gate.
   const adoptStoredSettings = useCallback(async (): Promise<void> => {
     if (!read) return;
-    const reading = ++adoptedReadsRef.current;
-    const writesBefore = blendWritesRef.current;
-    const toggleOut = blendWritesInFlightRef.current > 0;
-    const result = await getPlaybackSettings();
-    if (!result.ok || reading !== adoptedReadsRef.current) return;
-    if (toggleOut || writesBefore !== blendWritesRef.current) {
-      settingsRef.current = { ...result.data, blendEnabled: settingsRef.current.blendEnabled };
-    } else {
-      confirmedBlendRef.current = result.data.blendEnabled;
-      settingsRef.current = result.data;
-      setBlendEnabledState(result.data.blendEnabled);
-    }
-    keepDeviceCopy(settingsRef.current);
-    settledRef.current = true;
-    setBlendSettled(true);
-  }, [read]);
+    await applyRead(getPlaybackSettings());
+  }, [read, applyRead]);
 
   return {
     settingsRef,

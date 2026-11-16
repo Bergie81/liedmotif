@@ -17,7 +17,13 @@ import {
   verifyCredentialPassword,
   type ListenerProfile,
 } from '@liedmotif/db';
-import { MAX_EMAIL_LENGTH, MAX_USER_NAME_LENGTH } from '@liedmotif/shared';
+import {
+  MAX_EMAIL_LENGTH,
+  MAX_PROFILE_ARTIST_NAME_LENGTH,
+  MAX_PROFILE_DESCRIPTION_LENGTH,
+  MAX_PROFILE_FIELD_LENGTH,
+  MAX_USER_NAME_LENGTH,
+} from '@liedmotif/shared';
 import { mailConfirmLink, mailEmailChangedNotice } from '@/lib/account-mail';
 import { getDb } from '@/lib/db';
 import { isAccountEmailEnabled } from '@/lib/env';
@@ -27,11 +33,6 @@ import { cachedUserProfile } from '@/lib/request-cache';
 import { loginFailureLimiter } from '@/lib/request-limits';
 import { currentLoginToken, refreshSessionCookieCache } from '@/lib/session';
 import { enqueueEmbedTrackMetadataBatch } from '@/lib/worker-jobs';
-import {
-  MAX_PROFILE_ARTIST_NAME_LENGTH,
-  MAX_PROFILE_DESCRIPTION_LENGTH,
-  MAX_PROFILE_FIELD_LENGTH,
-} from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,6 +64,9 @@ export async function POST(request: Request) {
   const description =
     textField(body.description ?? '', MAX_PROFILE_DESCRIPTION_LENGTH)?.replace(/\s+/g, ' ') ?? null;
 
+  if (typeof body.name === 'string' && body.name.trim().length > MAX_USER_NAME_LENGTH) {
+    return badRequest(`Name must be at most ${MAX_USER_NAME_LENGTH} characters.`);
+  }
   if (!name) return badRequest('Enter a name.');
   if (!email || !EMAIL_PATTERN.test(email)) return badRequest('Enter a valid email address.');
   if (city === null || country === null) {

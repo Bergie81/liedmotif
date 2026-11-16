@@ -29,7 +29,7 @@ import {
 import { toPersonRoster } from '@/lib/people';
 import { SESSION_LANGUAGE_CHOICES, sessionLanguageLabel } from '@/lib/session-languages';
 import { done, refused } from './library-action';
-import { SETTING_NAMES } from './setting-names';
+import { orList, SETTING_NAMES } from './setting-names';
 import { CHANGE_SETTING_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 import type { ActionOutcome, TurnActions } from './turn-actions';
@@ -76,10 +76,6 @@ function changeable<Value>(setting: AssistantSetting, spec: Setting<Value>): Cha
     },
   };
 }
-
-/** `words` as one list: "a, b or c". */
-const orList = (words: readonly string[]) =>
-  words.length > 1 ? `${words.slice(0, -1).join(', ')} or ${words.at(-1)}` : (words[0] ?? '');
 
 /** The one of `choices` that `said` names by one of its `names`, whatever its case. */
 const oneOf = <Choice extends string>(
@@ -144,7 +140,7 @@ const SETTINGS: Record<AssistantSetting, Changeable> = {
       updatePlaybackSettings(db, { ownerUserId: userId, patch: { crossfadeSeconds: seconds } }),
   }),
   defaultLanguage: changeable('defaultLanguage', {
-    choices: SESSION_LANGUAGE_CHOICES.map(sessionLanguageLabel).join(', '),
+    choices: orList(SESSION_LANGUAGE_CHOICES.map(sessionLanguageLabel)),
     // By the name the select shows, or by the stored one: "auto", "Chinese".
     parse: (said) =>
       oneOf(SESSION_LANGUAGE_CHOICES, said, (choice) => [choice, sessionLanguageLabel(choice)]),

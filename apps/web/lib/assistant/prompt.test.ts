@@ -85,12 +85,12 @@ describe.each([
     expect(prompt).toMatch(/link to the page where the user does it/i);
   });
 
-  it('names the four settings the model changes, and leaves every other one to the user', () => {
+  it('names the settings the model changes, and leaves every other one to the user', () => {
     const tools = prompt.slice(prompt.indexOf('Tools:'), prompt.indexOf('Links:'));
     expect(tools).toMatch(
       /^- changeSetting .*Include the owner in Covers, Blend consecutive Tracks, Crossfade length or Default language/m,
     );
-    expect(tools).toMatch(/changeSetting changes those four settings and no other/);
+    expect(tools).toMatch(/changeSetting changes those settings and no other/);
     expect(tools).toMatch(/whatever can spend, such as a limit, a budget or how many Tracks/);
     expect(tools).toMatch(
       /never say that a setting is changed, set or saved unless a tool's result starts with "Done:"/i,

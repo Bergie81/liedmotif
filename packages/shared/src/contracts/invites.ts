@@ -7,17 +7,12 @@
 import { z } from 'zod';
 import { MAX_PASSWORD_LENGTH, passwordSchema } from '../password';
 import { updateMemberLimitsRequestSchema } from './member-budgets';
+import { MAX_EMAIL_LENGTH, MAX_USER_NAME_LENGTH } from './profile-limits';
 
 /** Room for 32 random bytes in base64url, with margin for future token shapes. */
 const linkToken = z.string().min(1).max(256);
 
 const password = passwordSchema;
-
-/** A person's name, wherever one is typed: invite, claim, and profile. */
-export const MAX_USER_NAME_LENGTH = 80;
-
-/** RFC 5321 path limit. */
-export const MAX_EMAIL_LENGTH = 254;
 
 const email = z.string().trim().max(MAX_EMAIL_LENGTH).pipe(z.email());
 
