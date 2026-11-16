@@ -306,7 +306,7 @@ export async function startSurprise(
   }
 
   const [coverArtSettings, coverImageId, sessionMode] = await Promise.all([
-    getCoverArtSettings(db),
+    getCoverArtSettings(db, ownerUserId),
     initialSessionCoverId(db),
     startingSessionMode(db, ownerUserId),
   ]);

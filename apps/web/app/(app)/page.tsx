@@ -25,8 +25,8 @@ export default async function HomePage({
   // The search empty state hands its query over as ?intent= — seeded into the
   // Describe field for review, never auto-submitted.
   const initialPrompt = intentFromParam((await searchParams)[INTENT_PARAM]);
-  // The create card preselects the saved defaults (cover style from Settings →
-  // Cover Arts, language from Settings → Generation) and offers the User's
+  // The create card preselects the viewer's saved defaults (cover style from
+  // Settings → Cover art, language from Settings → Generation) and offers the User's
   // For you genres first. All are best-effort cosmetics: a read failure
   // degrades to the `auto` preselects and the default genre shortlist, never a
   // 500.
@@ -41,11 +41,16 @@ export default async function HomePage({
     localHour,
     pendingSurprise,
   ] = await Promise.all([
-    getCoverArtSettings(getDb())
-      .then((settings) => ({
-        defaultCoverStyle: settings.defaultStyle,
-        defaultUseStandardCover: settings.useStandardCoverArt,
-      }))
+    viewer
+      .then((value) => (value ? getCoverArtSettings(getDb(), value.session.user.id) : null))
+      .then((settings) =>
+        settings
+          ? {
+              defaultCoverStyle: settings.defaultStyle,
+              defaultUseStandardCover: settings.useStandardCoverArt,
+            }
+          : undefined,
+      )
       .catch(() => undefined),
     viewer
       .then((value) => (value ? getGenerationSettings(getDb(), value.session.user.id) : null))

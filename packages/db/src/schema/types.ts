@@ -109,11 +109,11 @@ export type InstanceAlertsState = Partial<
 >;
 
 /**
- * Instance-wide generated-cover preferences, stored as one typed object in
- * `app_settings` under the `coverArt` key. `defaultStyle` is what the create
+ * One owner's generated-cover preferences, stored as one typed object in
+ * `user_settings` under the `coverArt` key. `defaultStyle` is what the create
  * card's `Cover style` dropdown preselects (any lane, `auto`, or `custom`);
- * each session can still override it. `customStyleDefinition` is the saved
- * `Custom` cover style (Settings → Cover Arts): a style HINT for the cover
+ * each session can still override it. `customStyleDefinition` is the owner's
+ * `Custom` cover style (Settings → Cover art): a style HINT for the cover
  * pipeline, never the final image prompt. Empty means "not defined" — a session
  * started with the `Custom` choice then falls back to `auto` (covers are
  * cosmetic and never block Start Session).

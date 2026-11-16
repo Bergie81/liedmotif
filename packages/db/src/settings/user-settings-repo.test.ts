@@ -11,10 +11,12 @@ import { defaultUsageLimits, user, userProfiles } from '../schema';
 import { getMembersPool, getUsageLimits, updateMembersPool } from '../setup/settings';
 import {
   completeOnboarding,
+  getCoverArtSettings,
   getMemberLimits,
   getOnboardingState,
   getPlaybackSettings,
   listMemberLimits,
+  updateCoverArtSettings,
   updateMemberLimits,
   updatePlaybackSettings,
 } from './user-settings-repo';
@@ -77,6 +79,66 @@ describeIfDb('user-settings repo — playback', () => {
     await updatePlaybackSettings(ctx.db, { ownerUserId: a, patch: { crossfadeSeconds: 2 } });
 
     expect(await getPlaybackSettings(ctx.db, b)).toEqual(DEFAULT_PLAYBACK_SETTINGS);
+  });
+});
+
+describeIfDb('user-settings repo — cover art', () => {
+  let ctx: TestDb;
+  beforeAll(async () => {
+    ctx = await connectTestDb('liedmotif-user-settings-cover-art-test');
+  }, 60_000);
+  afterAll(async () => {
+    await ctx?.pool.end();
+  });
+  beforeEach(async () => {
+    await truncateTables(ctx.pool, ['user_settings', 'user']);
+  });
+
+  it('answers Artistic, no Custom style, styled covers and Enhance on before anything is stored', async () => {
+    const ownerUserId = await createUser(ctx.db);
+    expect(await getCoverArtSettings(ctx.db, ownerUserId)).toEqual({
+      defaultStyle: 'poster_art',
+      customStyleDefinition: '',
+      useStandardCoverArt: false,
+      promptEnhancementEnabled: true,
+    });
+  });
+
+  it('merges a partial change and keeps the other fields', async () => {
+    const ownerUserId = await createUser(ctx.db);
+    await updateCoverArtSettings(ctx.db, ownerUserId, { defaultStyle: 'photographic' });
+    await updateCoverArtSettings(ctx.db, ownerUserId, { customStyleDefinition: 'Bold comic ink.' });
+
+    const settings = await getCoverArtSettings(ctx.db, ownerUserId);
+    expect(settings.defaultStyle).toBe('photographic');
+    expect(settings.customStyleDefinition).toBe('Bold comic ink.');
+
+    await updateCoverArtSettings(ctx.db, ownerUserId, { customStyleDefinition: '' });
+    expect((await getCoverArtSettings(ctx.db, ownerUserId)).customStyleDefinition).toBe('');
+  });
+
+  it("keeps each user's cover art to themselves", async () => {
+    const admin = await createUser(ctx.db);
+    const member = await createUser(ctx.db);
+    await updateCoverArtSettings(ctx.db, admin, {
+      defaultStyle: 'minimal',
+      customStyleDefinition: 'Admin ink.',
+      promptEnhancementEnabled: false,
+    });
+    await updateCoverArtSettings(ctx.db, member, { customStyleDefinition: 'Member watercolor.' });
+
+    expect(await getCoverArtSettings(ctx.db, admin)).toEqual({
+      defaultStyle: 'minimal',
+      customStyleDefinition: 'Admin ink.',
+      useStandardCoverArt: false,
+      promptEnhancementEnabled: false,
+    });
+    expect(await getCoverArtSettings(ctx.db, member)).toEqual({
+      defaultStyle: 'poster_art',
+      customStyleDefinition: 'Member watercolor.',
+      useStandardCoverArt: false,
+      promptEnhancementEnabled: true,
+    });
   });
 });
 

@@ -407,8 +407,8 @@ describe.skipIf(skip)('POST /api/sessions/cover/regenerate', () => {
         return { text: `ENHANCED ${input.text}`, applied: true };
       },
     };
-    await updateCoverArtSettings(testDb.db, { promptEnhancementEnabled: false });
     const ownerUserId = await createUser(testDb.db);
+    await updateCoverArtSettings(testDb.db, ownerUserId, { promptEnhancementEnabled: false });
     const sessionId = await createSession(testDb.db, { ownerUserId });
     holder.ownerUserId = ownerUserId;
 
@@ -818,7 +818,7 @@ describe.skipIf(skip)('POST /api/sessions/cover/status', () => {
     ).json()) as { data: { promptEnhancement: { llmConfigured: boolean; active: boolean } } };
     expect(withLlm.data.promptEnhancement).toEqual({ llmConfigured: true, active: true });
 
-    await updateCoverArtSettings(testDb.db, { promptEnhancementEnabled: false });
+    await updateCoverArtSettings(testDb.db, ownerUserId, { promptEnhancementEnabled: false });
     const settingOff = (await (
       await postJson(statusPost, { activitySessionId: sessionId })
     ).json()) as { data: { promptEnhancement: { llmConfigured: boolean; active: boolean } } };

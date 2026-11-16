@@ -1,7 +1,7 @@
 // The one effective-rule implementation for cover prompt enhancement, shared by
 // every web-boundary surface (regenerate, status, custom-style save): a
 // configured text LLM is the hard gate, and a per-request override beats the
-// global cover-art setting (the LLM stays optional — with none
+// owner's cover-art setting (the LLM stays optional — with none
 // configured every path stays byte-for-byte deterministic).
 
 import { getCoverArtSettings, type Database } from '@liedmotif/db';
@@ -17,11 +17,15 @@ export interface CoverEnhancementDecision {
 
 export async function resolveCoverEnhancement(
   db: Database,
+  ownerUserId: string,
   override?: boolean,
 ): Promise<CoverEnhancementDecision> {
   const llm = await getLlmProvider().catch(() => null);
   if (!llm) return { llm: null, active: false };
-  return { llm, active: override ?? (await getCoverArtSettings(db)).promptEnhancementEnabled };
+  return {
+    llm,
+    active: override ?? (await getCoverArtSettings(db, ownerUserId)).promptEnhancementEnabled,
+  };
 }
 
 export interface CoverTextEnhancement {
@@ -42,13 +46,14 @@ export interface CoverTextEnhancement {
 export async function enhanceCoverText(
   db: Database,
   args: {
+    ownerUserId: string;
     text: string;
     override?: boolean;
     context: CoverDirectionInput['context'];
     clamp?: (raw: string) => string;
   },
 ): Promise<CoverTextEnhancement> {
-  const { llm, active } = await resolveCoverEnhancement(db, args.override);
+  const { llm, active } = await resolveCoverEnhancement(db, args.ownerUserId, args.override);
   const llmConfigured = llm !== null;
   if (!llm || !active || !args.text) {
     return { text: args.text, applied: false, attempted: false, llmConfigured };

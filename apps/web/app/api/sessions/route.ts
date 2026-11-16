@@ -83,7 +83,7 @@ export async function POST(request: Request) {
     // profile (Settings → Profile) applied inside — the route never handles it.
     // `skipProfile` starts the session without that profile (the home toggle).
     deriveNamedSnapshotForIntent(db, ownerUserId, input, { skipProfile }),
-    getCoverArtSettings(db),
+    getCoverArtSettings(db, ownerUserId),
     initialSessionCoverId(db),
     startingSessionMode(db, ownerUserId),
   ]);

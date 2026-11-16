@@ -397,7 +397,7 @@ A new cover is only a preview until you press **Save Cover Art**, so a cover you
 
 Rerolling needs an image provider, with styled covers turned on and budget left.
 
-The admin sets the defaults in **Settings › Cover art**: **Use Basic Cover Art**, **Default cover style**, **Custom style definition** of up to 240 characters and **Enhance prompts**.
+Everyone sets their own defaults in **Settings › Cover art**: **Use Basic Cover Art**, **Default cover style**, **Custom style definition** of up to 240 characters and **Enhance prompts**.
 
 ### Playlist covers
 
@@ -452,11 +452,11 @@ The controls are in **Settings › Playback › Personalization**. **Personalize
 
 ### People
 
-Add the people in your life, so a song or cover can really be about them. In **Settings › People** you have your own card plus up to five more. Each has a **Name**, an optional **About them** of up to 2,000 characters and up to three **Reference photos**.
+Add the people in your life, so a song or cover can really be about them. In **Settings › People** you have your own card plus up to five more. Each has a **Name**, an optional **About them** (**About you** on your own card) of up to 2,000 characters and up to three **Reference photos**.
 
 To include someone, use their saved name in your request. Capitals don't matter, but the word must match: "Mum" doesn't find someone saved as "Mother", and relationships or translations aren't worked out for you. Choose a distinctive name.
 
-- **Lyrics:** a named person can show up in the words of vocal tracks, and **About them** reaches the lyrics only with a writing AI.
+- **Lyrics:** a named person can show up in the words of vocal tracks, and **About them** / **About you** reaches the lyrics only with a writing AI.
 - **Session covers:** a named person with photos can appear on a styled cover. Basic covers can't include anyone.
 - **Photos:** use JPEG, PNG or WebP. Two or three clear solo portraits work best, without group shots, sunglasses or heavy filters. They go only to your image provider, for covers.
 

@@ -122,12 +122,13 @@ export interface ResolvedCoverArtChoice {
 /**
  * Resolve the create card's cover-style choice into what the session stores.
  * `random` resolves here, at creation, to a persisted concrete style — a
- * uniform roll over the preset lanes plus Custom when a definition is saved —
+ * uniform roll over the preset lanes plus Custom when the owner saved a definition —
  * and an unset Custom definition degrades to Auto, so the persisted state is
  * always authoritative and internally complete.
  */
 export async function resolveCoverArtChoice(
   db: Database,
+  ownerUserId: string,
   choice: CoverStyleChoice | undefined,
   random: () => number = Math.random,
 ): Promise<ResolvedCoverArtChoice> {
@@ -135,7 +136,7 @@ export async function resolveCoverArtChoice(
   // other choice resolves without the settings read.
   const definition =
     choice === 'custom' || choice === 'random'
-      ? (await getCoverArtSettings(db)).customStyleDefinition
+      ? (await getCoverArtSettings(db, ownerUserId)).customStyleDefinition
       : '';
   return resolveCoverArtChoiceFrom(definition, choice, random);
 }

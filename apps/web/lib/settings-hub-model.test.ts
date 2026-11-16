@@ -267,14 +267,16 @@ describe('Settings hub model', () => {
 
 describe('Member settings hub model', () => {
   const memberInput = () => {
-    const { generation, playback, profile, peopleCount, assistantTone } = configuredInput();
-    return { generation, playback, profile, peopleCount, assistantTone };
+    const { generation, playback, coverArt, profile, peopleCount, assistantTone } =
+      configuredInput();
+    return { generation, playback, coverArt, profile, peopleCount, assistantTone };
   };
 
   it('carries exactly the Member-owned entries', () => {
     const result = buildMemberSettingsHubData(memberInput());
     expect(Object.keys(result).sort()).toEqual([
       'assistant',
+      'coverArt',
       'generation',
       'people',
       'playback',
@@ -288,6 +290,17 @@ describe('Member settings hub model', () => {
     // The admin hub's generation line carries Track-ceiling numbers; the
     // Member's must not — those are instance configuration.
     expect(result.generation.text).not.toMatch(/Tracks/);
+  });
+
+  it("names a Member's own default cover style without any instance cover state", () => {
+    const result = buildMemberSettingsHubData(memberInput());
+    expect(result.coverArt.text).toBe('Default Photographic');
+
+    const unreadable = buildMemberSettingsHubData({
+      ...memberInput(),
+      coverArt: { ok: false },
+    });
+    expect(unreadable.coverArt.status.tone).toBe('warn');
   });
 
   it('keeps the admin hub unchanged for the same sources', () => {

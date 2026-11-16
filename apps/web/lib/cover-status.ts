@@ -26,7 +26,7 @@ export async function loadCoverStatusReads<Live, Latest, Generated, Uploaded>(
       limitsRead.then((instanceLimits) =>
         coverUsageView(db, { ownerUserId, instanceLimits, now: new Date() }),
       ),
-      resolveCoverEnhancement(db),
+      resolveCoverEnhancement(db, ownerUserId),
       subject.generatedHistory(),
       subject.uploadedHistory(),
     ]);

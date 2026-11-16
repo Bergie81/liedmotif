@@ -1,4 +1,12 @@
-import { AudioLines, Gauge, HardDrive, ListMusic, UserRound, UsersRound } from 'lucide-react';
+import {
+  AudioLines,
+  Gauge,
+  HardDrive,
+  Image,
+  ListMusic,
+  UserRound,
+  UsersRound,
+} from 'lucide-react';
 import { AssistantGlyph } from '@/components/ui/glyphs';
 import { ASSISTANT_NAME } from '@/lib/assistant/persona';
 import type { MemberSettingsHubData } from '@/lib/settings-hub-data';
@@ -13,8 +21,8 @@ import {
 
 /**
  * The Member's settings hub: only the entries a Member owns. Instance
- * configuration (providers, limits, instance storage, diagnostics, cover-art
- * defaults, Voice, Members) is neither rendered nor present in the payload;
+ * configuration (providers, limits, instance storage, diagnostics, Voice,
+ * Members) is neither rendered nor present in the payload;
  * Storage shows a Member only the offline music on their own device. The
  * Assistant's row is there only for a Member who has the Assistant.
  */
@@ -72,6 +80,12 @@ export function MemberSettingsHub({ data }: { data: MemberSettingsHubData }) {
               icon={<AudioLines />}
               label="Playback"
               summary={data.playback}
+            />
+            <SettingsRow
+              href="/settings/cover-art"
+              icon={<Image />}
+              label="Cover art"
+              summary={data.coverArt}
             />
           </SettingsCard>
         </SettingsSection>

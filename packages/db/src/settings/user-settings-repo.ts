@@ -1,6 +1,6 @@
 // Owner-scoped `user_settings` reads/writes. The table is a typed key/value
-// store (`app_settings`' per-user counterpart); `playback` and `generation` are
-// among its keys. Values are validated at the ROUTE boundary with the
+// store (`app_settings`' per-user counterpart); `playback`, `generation` and
+// `coverArt` are among its keys. Values are validated at the ROUTE boundary with the
 // `@liedmotif/shared` Zod schemas — this repo only merges defaults on read and
 // upserts full, already-validated objects on write.
 
@@ -20,6 +20,7 @@ import {
   type UpdateMemberAssistantAccessRequest,
 } from '@liedmotif/shared';
 import type { DbOrTx } from '../transactions';
+import type { CoverArtSettings } from '../schema/types';
 import { userProfiles, userSettings, USER_SETTINGS_KEYS, type UserSettingKey } from '../schema';
 
 /**
@@ -145,6 +146,36 @@ export async function updateGenerationSettings(
     USER_SETTINGS_KEYS.generation,
     DEFAULT_GENERATION_SETTINGS,
     args.patch,
+  );
+}
+
+/** Artistic covers, no Custom style, styled (not Basic) covers, Enhance on. */
+const DEFAULT_COVER_ART_SETTINGS: CoverArtSettings = {
+  defaultStyle: 'poster_art',
+  customStyleDefinition: '',
+  useStandardCoverArt: false,
+  promptEnhancementEnabled: true,
+};
+
+/** The owner's effective cover-art preferences over the shipped defaults. */
+export async function getCoverArtSettings(
+  db: DbOrTx,
+  ownerUserId: string,
+): Promise<CoverArtSettings> {
+  return getUserSetting(db, ownerUserId, USER_SETTINGS_KEYS.coverArt, DEFAULT_COVER_ART_SETTINGS);
+}
+
+export async function updateCoverArtSettings(
+  db: DbOrTx,
+  ownerUserId: string,
+  patch: Partial<CoverArtSettings>,
+): Promise<CoverArtSettings> {
+  return updateUserSetting(
+    db,
+    ownerUserId,
+    USER_SETTINGS_KEYS.coverArt,
+    DEFAULT_COVER_ART_SETTINGS,
+    patch,
   );
 }
 

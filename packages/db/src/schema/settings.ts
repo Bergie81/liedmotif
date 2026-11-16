@@ -19,8 +19,6 @@ export const APP_SETTINGS_KEYS = {
   unitCosts: 'unitCosts',
   /** Instance configuration recorded at first run (`InstanceSettings`). */
   instance: 'instance',
-  /** Generated-cover preferences, e.g. the saved Custom style (`CoverArtSettings`). */
-  coverArt: 'coverArt',
   /**
    * The periodically measured stored-byte total (`StorageUsage`) the storage
    * quota is compared against — refreshed by the hourly sweep, never per request.
@@ -141,6 +139,8 @@ export const USER_SETTINGS_KEYS = {
    * Admin. Holds only the fields that differ from the instance default.
    */
   assistant: 'assistant',
+  /** The owner's generated-cover preferences (`CoverArtSettings`), e.g. their Custom style. */
+  coverArt: 'coverArt',
   /** The tone the owner gave the Assistant (`AssistantTone`) — written by the owner. */
   assistantTone: 'assistantTone',
   /**

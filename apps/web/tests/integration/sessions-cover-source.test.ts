@@ -115,7 +115,9 @@ describe.skipIf(skip)('POST /api/sessions — cover-source choice', () => {
   });
 
   it('follows the saved Settings → Cover art default for prompt sessions', async () => {
-    await updateCoverArtSettings(testDb.db as Database, { useStandardCoverArt: true });
+    await updateCoverArtSettings(testDb.db as Database, holder.ownerUserId!, {
+      useStandardCoverArt: true,
+    });
     const id = await startSession({ input: { mode: 'prompt', prompt: 'calm focus beats' } });
     await expect(sessionUsesStandardCover(id)).resolves.toBe(true);
   });

@@ -15,13 +15,11 @@ import {
 import {
   getBackupRequest,
   getBackupSchedule,
-  getCoverArtSettings,
   getInstanceSettings,
   getUsageLimits,
   markSetupComplete,
   requestBackup,
   updateBackupSchedule,
-  updateCoverArtSettings,
   updateUsageLimits,
   upsertInstanceSettings,
 } from './settings';
@@ -189,38 +187,6 @@ describeIfDb('settings repository', () => {
     const limits = await getUsageLimits(ctx.db);
     expect(limits.dailyGenerationTasks).toBe(7);
     expect(limits.monthlyGenerationTasks).toBe(70);
-  });
-
-  it('defaults to the poster_art cover style with no custom definition before any write', async () => {
-    const settings = await getCoverArtSettings(ctx.db);
-    expect(settings.customStyleDefinition).toBe('');
-    expect(settings.defaultStyle).toBe('poster_art');
-  });
-
-  it('persists the default cover style and merges partial updates', async () => {
-    await updateCoverArtSettings(ctx.db, { defaultStyle: 'photographic' });
-    expect((await getCoverArtSettings(ctx.db)).defaultStyle).toBe('photographic');
-
-    // A partial update to the definition keeps the chosen default style.
-    await updateCoverArtSettings(ctx.db, { customStyleDefinition: 'Bold comic ink.' });
-    const settings = await getCoverArtSettings(ctx.db);
-    expect(settings.defaultStyle).toBe('photographic');
-    expect(settings.customStyleDefinition).toBe('Bold comic ink.');
-  });
-
-  it('persists the custom cover style definition and reads it back', async () => {
-    await updateCoverArtSettings(ctx.db, {
-      customStyleDefinition: 'Bold comic-book cover art, heavy ink outlines, halftone texture.',
-    });
-
-    const reread = await getCoverArtSettings(ctx.db);
-    expect(reread.customStyleDefinition).toBe(
-      'Bold comic-book cover art, heavy ink outlines, halftone texture.',
-    );
-
-    // Overwriting replaces the stored definition (a cleared definition disables Custom).
-    await updateCoverArtSettings(ctx.db, { customStyleDefinition: '' });
-    expect((await getCoverArtSettings(ctx.db)).customStyleDefinition).toBe('');
   });
 
   it('answers the default backup schedule before any write and merges a saved change', async () => {

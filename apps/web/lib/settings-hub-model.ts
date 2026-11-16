@@ -1,7 +1,8 @@
-import { unitCostsSet, type UnitCosts } from '@liedmotif/shared';
+import { unitCostsSet, type CoverStyleChoice, type UnitCosts } from '@liedmotif/shared';
 import type { CredentialSource, VoiceProfileStatus } from '@liedmotif/db';
 import { ASSISTANT_NAME } from '@/lib/assistant/persona';
 import { coverSource, type CoverSource } from '@/lib/cover-source';
+import { COVER_STYLE_LABELS } from '@/lib/cover-styles';
 import type { DiagnosticHealth } from '@/lib/storage-diagnostics-model';
 import { formatBinaryBytes } from '@/lib/format-bytes';
 import { sessionLanguageLabel, type SessionLanguageChoice } from '@/lib/session-languages';
@@ -91,7 +92,7 @@ export interface SettingsHubInput {
     defaultLanguage: SessionLanguageChoice;
   }>;
   playback: SettingsHubRead<{ blendEnabled: boolean; crossfadeSeconds: number }>;
-  coverArt: SettingsHubRead<{ defaultStyle: string }>;
+  coverArt: SettingsHubRead<{ defaultStyle: CoverStyleChoice }>;
   profile: SettingsHubRead<{
     name: string | null;
     city: string | null;
@@ -122,11 +123,12 @@ export interface MemberSettingsHubData {
   assistant: SettingsHubSummary | null;
   generation: SettingsHubSummary;
   playback: SettingsHubSummary;
+  coverArt: SettingsHubSummary;
 }
 
 export type MemberSettingsHubInput = Pick<
   SettingsHubInput,
-  'generation' | 'playback' | 'profile' | 'peopleCount' | 'assistantTone'
+  'generation' | 'playback' | 'coverArt' | 'profile' | 'peopleCount' | 'assistantTone'
 >;
 
 export function credentialState(input: {
@@ -290,6 +292,11 @@ export function buildMemberSettingsHubData(input: MemberSettingsHubInput): Membe
       ? unhealthy('Generation settings could not be read')
       : configured(`${bufferSummary} · ${languageSummary} language`),
     playback: playbackSummary(input.playback),
+    // Which cover source runs is instance configuration, so a Member's row names
+    // only their own default style.
+    coverArt: !input.coverArt.ok
+      ? unhealthy('Cover-art settings could not be read')
+      : configured(`Default ${COVER_STYLE_LABELS[input.coverArt.value.defaultStyle]}`),
   };
 }
 

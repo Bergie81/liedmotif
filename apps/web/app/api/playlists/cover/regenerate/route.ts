@@ -90,7 +90,9 @@ export async function POST(request: Request) {
 
   // `random` resolves to a concrete style at request time; the pick is frozen
   // into the attempt (a Playlist persists no style of its own).
-  const styleChoice = parsed.coverStyle ? await resolveCoverArtChoice(db, parsed.coverStyle) : null;
+  const styleChoice = parsed.coverStyle
+    ? await resolveCoverArtChoice(db, ownerUserId, parsed.coverStyle)
+    : null;
   const coverStyle = styleChoice?.coverStyle ?? 'auto';
   const guidance = parsed.guidance?.trim() || undefined;
 
@@ -109,6 +111,7 @@ export async function POST(request: Request) {
     });
     if (budgetRefusal) return budgetRefusal;
     const enhancement = await enhanceCoverText(db, {
+      ownerUserId,
       text: guidance,
       override: parsed.enhance,
       context: {

@@ -1,7 +1,7 @@
 ---
 title: Members, invites and the lounge
 description: Bring people onto your Liedmotif, set what they can spend, share playlists with them, and take access back when you need to.
-checkedOn: 2026-11-10
+checkedOn: 2026-11-16
 ---
 
 Your instance can hold your whole household or a group of friends. Each person you invite becomes a member with their own account. Their music is paid from your provider keys, inside a budget you choose, so you always know the most they can cost. As the admin, you run all of this from **Settings › Members**, which only you can see.
@@ -61,9 +61,9 @@ They can check what's left at any time in **Settings › My budget**, which they
 | A member gets | A member doesn't get |
 | --- | --- |
 | Their own sessions, tracks, playlists, Favorites, covers and People | Your provider keys. Their music runs on them, but they never see, test or manage them |
-| Every listening feature, with your writing AI and cover key if you've set them up | **AI Providers**, **Cost limits**, **Diagnostics & worker**, **Backups**, **Members**, **Cover art**, or the instance's storage settings |
+| Every listening feature, with your writing AI and cover key if you've set them up | **AI Providers**, **Cost limits**, **Diagnostics & worker**, **Backups**, **Members**, or the instance's storage settings |
 | Downloads of their own tracks, and their own **Your Stats** | A way to change their sign-in email. They can change their password |
-| **Profile**, **People**, **Generation**, **Playback**, **My budget**, and **Storage** for offline music on their device | Anyone else's private music |
+| **Profile**, **People**, **Generation**, **Playback**, **Cover art**, **My budget**, and **Storage** for offline music on their device | Anyone else's private music |
 | The lounge | |
 
 Things a member can't use are left out of their screens, not greyed out, so they never face a button that goes nowhere.

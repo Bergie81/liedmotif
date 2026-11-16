@@ -85,7 +85,9 @@ export async function POST(request: Request) {
 
   // `random` resolves to a concrete persisted style at request time, exactly
   // like Session creation; the resolved pick becomes the session's style.
-  const styleChange = parsed.coverStyle ? await resolveCoverArtChoice(db, parsed.coverStyle) : null;
+  const styleChange = parsed.coverStyle
+    ? await resolveCoverArtChoice(db, ownerUserId, parsed.coverStyle)
+    : null;
   const guidance = parsed.guidance?.trim() || undefined;
 
   // Enhancement happens HERE, before the attempt's inputs are frozen — the
@@ -103,6 +105,7 @@ export async function POST(request: Request) {
     });
     if (budgetRefusal) return budgetRefusal;
     const enhancement = await enhanceCoverText(db, {
+      ownerUserId,
       text: guidance,
       override: parsed.enhance,
       context: {

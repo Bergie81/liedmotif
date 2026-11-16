@@ -23,7 +23,6 @@ const API_ROOT = join(__dirname, '..', 'app', 'api');
 const ADMIN_ONLY_PREFIXES = [
   'settings/credentials',
   'settings/limits',
-  'settings/cover-art',
   'settings/voice',
   'settings/members',
   'settings/unit-costs',

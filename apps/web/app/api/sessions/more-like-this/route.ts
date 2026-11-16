@@ -93,7 +93,7 @@ export async function POST(request: Request) {
   // only the naming (and a vocal seed's missing lyric context) is replaced.
   const [named, coverArtSettings, coverImageId, sessionMode] = await Promise.all([
     nameSeededSnapshot(db, ownerUserId, snapshot),
-    getCoverArtSettings(db),
+    getCoverArtSettings(db, ownerUserId),
     initialSessionCoverId(db),
     startingSessionMode(db, ownerUserId),
   ]);

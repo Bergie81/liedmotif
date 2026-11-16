@@ -21,6 +21,13 @@ const describeIfDb = testDatabaseUrl ? describe : describe.skip;
 /** The last migration that predates session blending. */
 const PRE_PLAN_LAST_TAG = '0013_striped_celestials';
 const BUFFER_SETTING_MIGRATION_TAG = '0041_buffer-enabled-setting';
+const PER_USER_COVER_ART_MIGRATION_TAG = '0100_per_user_cover_art';
+
+/** The Admin's own default cover style, where 0100 moved the instance value. */
+const ADMIN_DEFAULT_COVER_STYLE_SQL = `select user_settings.value ->> 'defaultStyle' as default_style
+   from user_settings
+   join user_profiles on user_profiles.user_id = user_settings.owner_user_id
+   where user_profiles.role = 'admin' and user_settings.key = 'coverArt'`;
 
 interface JournalEntry {
   tag: string;
@@ -188,6 +195,14 @@ describeIfDb('migration upgrade from the pre-blending schema', () => {
              ('buffer-one', 'generation', '{"bufferAheadTracks":1,"defaultLanguage":"auto"}'),
              ('buffer-five', 'generation', '{"bufferAheadTracks":5,"defaultLanguage":"English"}'),
              ('buffer-missing', 'generation', '{"defaultLanguage":"French"}')`,
+        );
+      }
+      if (tag === PER_USER_COVER_ART_MIGRATION_TAG) {
+        // The instance cover-art value only ever came from the Admin, so the
+        // owner is the Admin when it moves to its per-user home.
+        await pool.query(
+          `insert into user_profiles (user_id, role) values ('owner-1', 'admin')
+           on conflict (user_id) do update set role = 'admin'`,
         );
       }
       await applyMigration(pool, tag);
@@ -473,9 +488,7 @@ describeIfDb('migration upgrade from the pre-blending schema', () => {
     ]);
     expect(session.rows[0]).toEqual({ cover_style: 'photographic' });
 
-    const settings = await pool.query(
-      `select value ->> 'defaultStyle' as default_style from app_settings where key = 'coverArt'`,
-    );
+    const settings = await pool.query(ADMIN_DEFAULT_COVER_STYLE_SQL);
     expect(settings.rows[0]).toEqual({ default_style: 'photographic' });
 
     const enumValues = await pool.query(
@@ -493,9 +506,7 @@ describeIfDb('migration upgrade from the pre-blending schema', () => {
     ]);
     expect(session.rows[0]).toEqual({ cover_style: 'photographic' });
 
-    const settings = await pool.query(
-      `select value ->> 'defaultStyle' as default_style from app_settings where key = 'coverArt'`,
-    );
+    const settings = await pool.query(ADMIN_DEFAULT_COVER_STYLE_SQL);
     expect(settings.rows[0]).toEqual({ default_style: 'photographic' });
 
     const enumValues = await pool.query(

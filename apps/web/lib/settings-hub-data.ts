@@ -117,7 +117,7 @@ async function loadGenerationSection(
   const [generation, playback, coverArt] = await Promise.all([
     read('generation', () => getGenerationSettings(db, ownerUserId)),
     read('playback', () => getPlaybackSettings(db, ownerUserId)),
-    read('cover-art', () => getCoverArtSettings(db)),
+    read('cover-art', () => getCoverArtSettings(db, ownerUserId)),
   ]);
   return { generation, playback, coverArt };
 }
@@ -192,12 +192,20 @@ export async function loadMemberSettingsHubData(
   ownerUserId: string,
 ): Promise<MemberSettingsHubData> {
   const db = getDb();
-  const [generation, playback, profile, peopleCount, assistantTone] = await Promise.all([
+  const [generation, playback, coverArt, profile, peopleCount, assistantTone] = await Promise.all([
     read('generation', () => getGenerationSettings(db, ownerUserId)),
     read('playback', () => getPlaybackSettings(db, ownerUserId)),
+    read('cover-art', () => getCoverArtSettings(db, ownerUserId)),
     read('profile', () => cachedListenerProfile(db, ownerUserId)),
     read('people', () => countPeople(db, ownerUserId)),
     loadAssistantTone(ownerUserId, 'member'),
   ]);
-  return buildMemberSettingsHubData({ generation, playback, profile, peopleCount, assistantTone });
+  return buildMemberSettingsHubData({
+    generation,
+    playback,
+    coverArt,
+    profile,
+    peopleCount,
+    assistantTone,
+  });
 }

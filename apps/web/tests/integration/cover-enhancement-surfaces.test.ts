@@ -84,7 +84,7 @@ describe.skipIf(skip)('Settings → Cover Arts enhance-on-save (D4)', () => {
     expect(body.enhancement).toEqual({ attempted: true, applied: true });
     // Visible write-back: what is stored is exactly what the user sees.
     expect(body.settings.customStyleDefinition).toBe('ENHANCED torn paper collage');
-    expect((await getCoverArtSettings(testDb.db)).customStyleDefinition).toBe(
+    expect((await getCoverArtSettings(testDb.db, holder.ownerUserId!)).customStyleDefinition).toBe(
       'ENHANCED torn paper collage',
     );
   });
@@ -116,7 +116,9 @@ describe.skipIf(skip)('Settings → Cover Arts enhance-on-save (D4)', () => {
         return { text: `ENHANCED ${input.text}`, applied: true };
       },
     };
-    await updateCoverArtSettings(testDb.db, { promptEnhancementEnabled: false });
+    await updateCoverArtSettings(testDb.db, holder.ownerUserId!, {
+      promptEnhancementEnabled: false,
+    });
 
     const offResponse = await postJson(coverArtSettingsPost, {
       customStyleDefinition: 'torn paper collage',
@@ -130,7 +132,9 @@ describe.skipIf(skip)('Settings → Cover Arts enhance-on-save (D4)', () => {
     expect(offBody.settings.customStyleDefinition).toBe('torn paper collage');
 
     // An unchanged definition is never re-enhanced (no drift on repeated saves).
-    await updateCoverArtSettings(testDb.db, { promptEnhancementEnabled: true });
+    await updateCoverArtSettings(testDb.db, holder.ownerUserId!, {
+      promptEnhancementEnabled: true,
+    });
     const unchanged = await postJson(coverArtSettingsPost, {
       customStyleDefinition: 'torn paper collage',
     });

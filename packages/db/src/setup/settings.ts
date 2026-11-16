@@ -3,7 +3,7 @@
 // Each settings object lives under one key as a single typed JSON value, with no
 // dedicated table (see `schema/settings.ts`): `instance` (name / public URL,
 // recorded at first run), `usageLimits` (the Admin's cost-control object),
-// `coverArt`, `memberPool` (the shared Member ceiling), `unitCosts`
+// `memberPool` (the shared Member ceiling), `unitCosts`
 // (the Admin's price per Track / Cover), `backupSchedule` / `backupRequest`
 // (instance backups), `assistant` (the Assistant access every Member starts
 // from), and `instanceAlerts`. Defaults are merged on read. Writes
@@ -26,12 +26,7 @@ import {
 import type { Database } from '../client';
 import type { DbOrTx } from '../transactions';
 import { APP_SETTINGS_KEYS, appSettings, defaultUsageLimits } from '../schema';
-import type {
-  CoverArtSettings,
-  InstanceAlertsState,
-  InstanceSettings,
-  UsageLimits,
-} from '../schema/types';
+import type { InstanceAlertsState, InstanceSettings, UsageLimits } from '../schema/types';
 
 /** Read one settings value by key, or `null` when it has never been written. */
 export async function readSetting<T>(db: DbOrTx, key: string): Promise<T | null> {
@@ -123,27 +118,6 @@ export async function writeInstanceAlertsState(
 /** The effective usage limits — stored values over the documented defaults. */
 export async function getUsageLimits(db: Database): Promise<UsageLimits> {
   return getSetting(db, APP_SETTINGS_KEYS.usageLimits, defaultUsageLimits());
-}
-
-/** An unset `coverArt` key means `poster_art` (Artistic), no Custom style. */
-const DEFAULT_COVER_ART_SETTINGS: CoverArtSettings = {
-  defaultStyle: 'poster_art',
-  customStyleDefinition: '',
-  promptEnhancementEnabled: true,
-  useStandardCoverArt: false,
-};
-
-/** The stored cover-art preferences over the shipped defaults. */
-export async function getCoverArtSettings(db: Database): Promise<CoverArtSettings> {
-  return getSetting(db, APP_SETTINGS_KEYS.coverArt, DEFAULT_COVER_ART_SETTINGS);
-}
-
-/** Merge a partial cover-art change over the current settings and persist it. */
-export async function updateCoverArtSettings(
-  db: Database,
-  patch: Partial<CoverArtSettings>,
-): Promise<CoverArtSettings> {
-  return updateSetting(db, APP_SETTINGS_KEYS.coverArt, DEFAULT_COVER_ART_SETTINGS, patch);
 }
 
 /**

@@ -1,6 +1,6 @@
-// Admin-only: save the cover-art preferences (Settings → Cover Arts) — the
-// default cover style the create card preselects, and the Custom cover style
-// definition.
+// Save the signed-in User's own cover-art preferences (Settings → Cover art),
+// Admin and Member alike — the default cover style the create card preselects,
+// and their Custom cover style definition.
 //
 // The definition is a bounded style HINT for the cover pipeline, never the final
 // image prompt — sessions started with the `Custom` cover choice copy it as their
@@ -18,13 +18,13 @@ import {
 import { enhanceCoverText } from '@/lib/cover-enhancement';
 import { getDb } from '@/lib/db';
 import { badRequest } from '@/lib/http';
-import { readJsonObjectBody, requireAdminOwnerId } from '@/lib/api-response';
+import { readJsonObjectBody, requireOwnerId } from '@/lib/api-response';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
-  const admin = await requireAdminOwnerId(request);
-  if (admin instanceof NextResponse) return admin;
+  const ownerUserId = await requireOwnerId(request);
+  if (ownerUserId instanceof NextResponse) return ownerUserId;
 
   const body = await readJsonObjectBody(request);
   if (body instanceof NextResponse) return body;
@@ -79,9 +79,11 @@ export async function POST(request: Request) {
   let enhancement = { attempted: false, applied: false };
   if (
     patch.customStyleDefinition &&
-    patch.customStyleDefinition !== (await getCoverArtSettings(db)).customStyleDefinition
+    patch.customStyleDefinition !==
+      (await getCoverArtSettings(db, ownerUserId)).customStyleDefinition
   ) {
     const enhanced = await enhanceCoverText(db, {
+      ownerUserId,
       text: patch.customStyleDefinition,
       override: patch.promptEnhancementEnabled,
       context: { style: 'custom' },
@@ -91,6 +93,6 @@ export async function POST(request: Request) {
     if (enhanced.applied) patch.customStyleDefinition = enhanced.text;
   }
 
-  const settings = await updateCoverArtSettings(db, patch);
+  const settings = await updateCoverArtSettings(db, ownerUserId, patch);
   return NextResponse.json({ ok: true, settings, enhancement });
 }

@@ -7,16 +7,16 @@ import {
   SettingsSection,
 } from '@/components/settings/settings-ui';
 import { getDb } from '@/lib/db';
-import { requireAdmin } from '@/lib/session';
+import { requireAppAccess } from '@/lib/session';
 import { getLlmProvider } from '@/lib/providers';
 
 export const dynamic = 'force-dynamic';
 
 export default async function CoverArtPage() {
-  await requireAdmin();
+  const { session } = await requireAppAccess();
   const db = getDb();
   const [settings, llmProvider] = await Promise.all([
-    getCoverArtSettings(db),
+    getCoverArtSettings(db, session.user.id),
     getLlmProvider().catch(() => null),
   ]);
 

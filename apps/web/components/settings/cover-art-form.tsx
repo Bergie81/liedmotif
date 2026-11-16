@@ -1,6 +1,6 @@
 'use client';
 
-// Edit the cover-art preferences (Settings → Cover Arts): the default cover
+// Edit the viewer's own cover-art preferences (Settings → Cover art): the default cover
 // style the create card preselects (each session can still override it), and
 // the Custom cover style definition. The definition is a bounded style HINT for
 // the cover pipeline, never the final image prompt, and is editable only while

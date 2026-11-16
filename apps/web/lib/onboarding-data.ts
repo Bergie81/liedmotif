@@ -151,7 +151,7 @@ export async function loadOnboardingData(ownerUserId: string): Promise<Onboardin
     loadProviderSettingsData(),
     getPlaybackSettings(db, ownerUserId),
     getGenerationSettings(db, ownerUserId),
-    getCoverArtSettings(db),
+    getCoverArtSettings(db, ownerUserId),
     // Admin-only flow (`loadMemberOnboardingData` serves Members), so the
     // admin role is a fact of the caller, not a lookup.
     resolveOwnVoiceOffer(db, { userId: ownerUserId, role: 'admin' }).catch(

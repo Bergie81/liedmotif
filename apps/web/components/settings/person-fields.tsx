@@ -6,6 +6,7 @@ import type { PersonFieldErrors } from './people-form-model';
 export function PersonFields({
   name,
   about,
+  isOwner = false,
   maxNameLength,
   maxAboutLength,
   disabled,
@@ -15,6 +16,7 @@ export function PersonFields({
 }: {
   name: string;
   about: string;
+  isOwner?: boolean;
   maxNameLength: number;
   maxAboutLength: number;
   disabled: boolean;
@@ -46,7 +48,7 @@ export function PersonFields({
       </label>
       <label className={labelClass}>
         <span className="flex items-baseline justify-between gap-2">
-          About them
+          {isOwner ? 'About you' : 'About them'}
           <span className="font-mono text-[11px] font-normal tracking-[0.04em] text-dim">
             {about.length}/{maxAboutLength}
           </span>

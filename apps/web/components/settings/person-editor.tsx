@@ -119,6 +119,7 @@ export function PersonEditor({
         <PersonFields
           name={name}
           about={about}
+          isOwner={person.role === 'owner'}
           maxNameLength={maxNameLength}
           maxAboutLength={maxAboutLength}
           disabled={operationPending}

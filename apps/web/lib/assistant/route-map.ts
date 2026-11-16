@@ -146,8 +146,9 @@ export const APP_ROUTES: readonly AppRoute[] = [
   {
     path: '/settings/cover-art',
     label: 'Settings › Cover art',
-    description: 'Choose the look of generated Session covers.',
-    adminOnly: true,
+    description:
+      'Your default cover style, Basic Cover Art, your own Custom style and whether the Writing AI polishes cover text.',
+    adminOnly: false,
   },
   {
     path: '/settings/backups',
