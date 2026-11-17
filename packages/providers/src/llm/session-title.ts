@@ -18,7 +18,7 @@ export { MAX_SESSION_TITLE_LENGTH };
 
 export { MAX_COVER_CONCEPT_LENGTH };
 
-/** The Writing AI wrote the concept and its prompt already describes named
+/** The text LLM wrote the concept and its prompt already describes named
  *  references visually (ADR 0004), so only syntax and length are bounded here. */
 export function clampCoverConcept(value: string): string {
   return sanitizeCoverConcept(value);

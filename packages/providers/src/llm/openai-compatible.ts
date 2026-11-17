@@ -83,6 +83,10 @@ import type {
   SessionNamingInput,
 } from './index';
 
+/** The Auto cover pick (ADR 0007): one of the six presets, and anything else,
+ *  missing included, is no pick rather than a failed reply. */
+const coverStylePickSchema = z.enum(COVER_STYLE_PRESETS).nullable().catch(null);
+
 /**
  * What an expansion may contain: the snapshot minus the Session Guardrails and
  * the own-voice opt-in. Both are user picks the producer stamps (`applyGuardrails`,
@@ -91,10 +95,6 @@ import type {
  * opt-in the user never gave cannot have it survive the parse, on the structured
  * and the JSON-in-text path alike.
  */
-/** The Auto cover pick (ADR 0007): one of the six presets, and anything else,
- *  missing included, is no pick rather than a failed reply. */
-const coverStylePickSchema = z.enum(COVER_STYLE_PRESETS).nullable().catch(null);
-
 const sessionExpansionSchema = sessionStyleSnapshotSchema
   .omit({ styleStrength: true, novelty: true, userAvoid: true, useOwnVoice: true })
   .extend({

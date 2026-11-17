@@ -135,8 +135,8 @@ function graphemes(value: string): string[] {
 }
 
 /**
- * Session data bounded for the prompt. `wordLists` is true only when no Writing
- * AI is configured (ADR 0004): the English instruction-word list judges meaning,
+ * Session data bounded for the prompt. `wordLists` is true only when no text LLM
+ * is configured (ADR 0004): the English instruction-word list judges meaning,
  * so it never runs beside one.
  */
 function boundedSupportingData(
@@ -163,9 +163,9 @@ function genericCustomDefinition(raw: string, wordLists: boolean): string {
 }
 
 /**
- * The no-Writing-AI judgment for art direction (ADR 0004): the creator, brand,
+ * The no-text-LLM judgment for art direction (ADR 0004): the creator, brand,
  * and style-attribution lists decide meaning from fixed English words, so they
- * run only when no Writing AI is configured. With one, the text reaches the
+ * run only when no text LLM is configured. With one, the text reaches the
  * prompt as written and the prompt's hard exclusions forbid artist imitation.
  */
 function withoutNamedReferences(text: string): string {
@@ -211,10 +211,10 @@ function genericArtDirection(raw: string, max: number, wordLists: boolean): stri
 }
 
 /**
- * The cover scene. Without a Writing AI, fixed English cue words in the Name,
+ * The cover scene. Without a text LLM, fixed English cue words in the Name,
  * then the concept, pick a controlled scene. With one, no word decides: the
- * exact-Name anchor carries the scene, refined by the cover concept the Writing
- * AI wrote, which is already the semantic cue.
+ * exact-Name anchor carries the scene, refined by the cover concept the text LLM
+ * wrote, which is already the semantic cue.
  */
 function semanticCue(
   name: string,

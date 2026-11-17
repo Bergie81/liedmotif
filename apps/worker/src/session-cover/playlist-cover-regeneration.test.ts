@@ -217,6 +217,7 @@ describeIfDb('PlaylistCoverGenerator regeneration', () => {
       measureCover: async () => ({ width: 1024, height: 1024 }),
       logger: { info: () => undefined, warn: () => undefined },
       clock: { now: () => new Date('2026-07-23T12:00:00.000Z') },
+      textLlmConfigured: false,
       ...overrides,
     });
   }

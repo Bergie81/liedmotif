@@ -84,8 +84,9 @@ export interface SessionCoverGeneratorDeps {
   logger: SessionCoverLogger;
   clock: SessionCoverClock;
   /** Whether the worker has a text LLM: with one, no word list judges a cover's
-   *  text (ADR 0004). Omitted means none. */
-  textLlmConfigured?: boolean;
+   *  text (ADR 0004). Required, so no cover job can fall to the word lists by
+   *  forgetting it. */
+  textLlmConfigured: boolean;
 }
 
 export type SessionCoverFallbackReason =

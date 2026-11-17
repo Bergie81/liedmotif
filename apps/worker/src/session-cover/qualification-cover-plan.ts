@@ -58,7 +58,7 @@ export function compileQualificationCoverPlan(
     sessionIntent: input.sessionIntent,
     capabilities: input.capabilities,
     referenceTreatment: input.referencesApplied ? 'controlled synthetic subject identity' : null,
-    // The controlled corpus has no Writing AI, so it qualifies the word-list path.
+    // The controlled corpus has no text LLM, so it qualifies the word-list path.
     textLlmConfigured: false,
   });
   if (!result.ok) {

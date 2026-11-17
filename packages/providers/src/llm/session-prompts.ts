@@ -110,8 +110,8 @@ const NAMED_REFERENCE_RULE =
   'and never put the name in stylePrompt, title, trackTitles, or lyricContext.';
 
 /** The same rule for cover text: the cover-direction rewrite and the cover
- * concept. The worker runs its creator and brand word lists only when no Writing
- * AI is configured, so this rule is what keeps names out of cover text, and an
+ * concept. The worker runs its creator and brand word lists only when no text
+ * LLM is configured, so this rule is what keeps names out of cover text, and an
  * ordinary word ("by the sea", "one red apple") must not be mistaken for one. */
 export const NAMED_VISUAL_REFERENCE_RULE =
   'If the request names an artist, studio, franchise, or brand as a reference, describe ' +

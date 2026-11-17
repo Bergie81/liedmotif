@@ -215,6 +215,7 @@ describeIfDb('SessionCoverGenerator', () => {
         warn: (message, fields) => logs.push({ level: 'warn', message, fields }),
       },
       clock: { now: () => new Date('2026-07-12T12:00:00.000Z') },
+      textLlmConfigured: false,
       ...overrides,
     });
     return Object.assign(instance, { embedded, logs });
@@ -639,6 +640,7 @@ describeIfDb('SessionCoverGenerator', () => {
       metadataQueue: { enqueue: async () => undefined },
       logger: { info: () => undefined, warn: () => undefined },
       clock: { now: () => new Date('2026-07-12T12:00:00.000Z') },
+      textLlmConfigured: false,
     });
 
     const error = await instance.ensureGenerated(crypto.randomUUID()).catch((caught) => caught);
