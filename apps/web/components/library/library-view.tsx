@@ -10,6 +10,7 @@ import { CheckSquare } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { addPlaylistTracks, listPlaylists } from '@/lib/api-client';
 import { cn } from '@/lib/cn';
+import { toast } from '@/lib/toast';
 import { AlertBanner } from '@/components/ui/design-system';
 import { secondaryButtonClass } from '@/components/ui/form-styles';
 import { LoadingRow } from '@/components/ui/loading';
@@ -201,7 +202,7 @@ function LibrarySmartListView({
     onFlagsResolved: resolveFlags,
     onTrackRemoved: query.removeTrack,
   });
-  const playback = useTrackRowPlayback(actions.reportActionError);
+  const playback = useTrackRowPlayback(toast.error);
 
   return (
     <Sheet
@@ -249,14 +250,12 @@ function LibrarySmartListView({
           items={query.items}
           nextCursor={query.nextCursor}
           error={query.error}
-          actionError={selected ? null : actions.actionError}
           loadingMore={query.loadingMore}
           busyTrackId={actions.busyAction?.trackId ?? playback.busyTrackId}
           preview={playback.rowPreview}
           onPreview={playback.playRow}
           onOptions={(track, opener) => {
             optionsOpenerRef.current = opener;
-            actions.clearActionError();
             setSelected(track);
           }}
           onLoadMore={() => void query.loadMore()}
@@ -287,7 +286,7 @@ function LibrarySmartListView({
       {selected ? (
         <TrackOptionsSheet
           track={selected}
-          error={actions.actionError}
+          error={null}
           busyAction={
             actions.busyAction?.trackId === selected.id ? actions.busyAction.action : null
           }

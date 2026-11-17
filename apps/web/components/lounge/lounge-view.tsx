@@ -23,6 +23,7 @@ import {
 } from '@/lib/api-client';
 import { appendUniqueById } from '@/lib/append-unique';
 import { cn } from '@/lib/cn';
+import { toast } from '@/lib/toast';
 import { AvatarBadge } from '@/components/avatar-badge';
 import { LibrarySearchField } from '@/components/library/library-search-field';
 import { MatchContextLine } from '@/components/search/match-context';
@@ -65,6 +66,17 @@ import { LoungeMemberFilter } from './lounge-member-filter';
 /** Every move a tile offers; its menu shows the owner's or the visitor's share. */
 type LoungeTileActions = LoungeOwnerActions & LoungeVisitorActions;
 
+const LOAD_MORE_KEY = 'lounge-load-more';
+const PIN_KEY = 'lounge-pin';
+const PLAY_KEY = 'lounge-play';
+const MORE_LIKE_THIS_KEY = 'lounge-more-like-this';
+const REMOVE_KEY = 'lounge-remove-from-lounge';
+const RETURN_TO_PRIVATE_KEY = 'lounge-return-to-private';
+
+function reportPlayFailure(message: string): void {
+  toast.error(message, { key: PLAY_KEY });
+}
+
 export interface LoungeFirstPage {
   playlists: LoungePlaylistItem[];
   nextCursor: string | null;
@@ -90,10 +102,10 @@ export function LoungeView({
   const [query, setQuery] = useState('');
   /** The single-selected sharer card; null = All. */
   const [member, setMember] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const { loadingMore, beginFirstPage, beginNextPage, settle } = usePageEpoch();
-  const playback = usePlayPlaylist(setError);
-  const visitorPlayback = usePlayPlaylist(setError, { foreign: true });
+  const playback = usePlayPlaylist(reportPlayFailure);
+  const visitorPlayback = usePlayPlaylist(reportPlayFailure, { foreign: true });
   const seedMoreLikeThis = useSeedMoreLikeThis();
   const [seeding, setSeeding] = useState(false);
   /** The foreign share awaiting the Admin's Return to Private confirmation. */
@@ -115,11 +127,11 @@ export function LoungeView({
 
   const load = useCallback(async () => {
     const token = beginFirstPage();
-    setError(null);
+    setLoadError(null);
     const result = await listLoungePlaylists({ query: query || undefined, owner: member });
     if (!settle(token, result.ok)) return;
     if (!result.ok) {
-      setError(`Couldn’t load the Lounge: ${result.error.message}`);
+      setLoadError(`Couldn’t load the Lounge: ${result.error.message}`);
       return;
     }
     setPlaylists(result.data.playlists);
@@ -138,7 +150,6 @@ export function LoungeView({
     if (!nextCursor || loadingMore) return;
     const token = beginNextPage();
     if (token === null) return;
-    setError(null);
     const result = await listLoungePlaylists({
       cursor: nextCursor,
       query: query || undefined,
@@ -146,9 +157,12 @@ export function LoungeView({
     });
     if (!settle(token)) return;
     if (!result.ok) {
-      setError(`Couldn’t load more shared playlists: ${result.error.message}`);
+      toast.error(`Couldn’t load more shared playlists: ${result.error.message}`, {
+        key: LOAD_MORE_KEY,
+      });
       return;
     }
+    toast.dismiss(LOAD_MORE_KEY);
     // A share can move while paging (unshare + re-share): append id-unique so
     // a tile never renders twice.
     setPlaylists((current) => appendUniqueById(current, result.data.playlists));
@@ -162,9 +176,10 @@ export function LoungeView({
     const pinned = !item.pinned;
     const result = await pinLoungePlaylist(item.id, pinned);
     if (!result.ok) {
-      setError(pinToggleFailure(pinned, result.error.message));
+      toast.error(pinToggleFailure(pinned, result.error.message), { key: PIN_KEY });
       return;
     }
+    toast.dismiss(PIN_KEY);
     router.refresh();
     await loadRef.current();
   }
@@ -176,12 +191,13 @@ export function LoungeView({
   async function seedFromShared(item: LoungePlaylistItem) {
     if (seeding) return;
     setSeeding(true);
+    toast.dismiss(MORE_LIKE_THIS_KEY);
     const page = await getLoungePlaylist(item.id, null, LOUNGE_MLT_SEED_TRACKS);
     const failure = !page.ok
       ? `More Like This didn’t start: ${page.error.message}`
       : await seedMoreLikeThis(page.data.items.slice(0, LOUNGE_MLT_SEED_TRACKS).map((m) => m.id));
     setSeeding(false);
-    if (failure) setError(failure);
+    if (failure) toast.error(failure, { key: MORE_LIKE_THIS_KEY });
   }
 
   function leaveRoom(playlistId: string) {
@@ -205,9 +221,10 @@ export function LoungeView({
           getLoungePlaylist(item.id, cursor, limit),
         );
     if (!result.ok) {
-      setError(`Couldn’t load the playlist: ${result.error.message}`);
+      reportPlayFailure(`Couldn’t load the playlist: ${result.error.message}`);
       return;
     }
+    toast.dismiss(PLAY_KEY);
     (item.yours ? playback : visitorPlayback).play(result.data.playlist, result.data.items);
   }
 
@@ -222,7 +239,7 @@ export function LoungeView({
         onSearch={setQuery}
       />
       <LoungeMemberFilter cards={cards} selected={member} onSelect={setMember} />
-      {error ? <AlertBanner className="mt-4">{error}</AlertBanner> : null}
+      {loadError ? <AlertBanner className="mt-4">{loadError}</AlertBanner> : null}
       {playlists.length === 0 ? (
         <NothingSetOut />
       ) : (
@@ -258,8 +275,11 @@ export function LoungeView({
       {removing ? (
         <RemoveFromLoungeDialog
           playlist={removing}
-          onRemoved={onShareChanged}
-          onError={setError}
+          onRemoved={(result) => {
+            toast.dismiss(REMOVE_KEY);
+            onShareChanged(result);
+          }}
+          onError={(message) => toast.error(message, { key: REMOVE_KEY })}
           onClose={() => setRemoving(null)}
         />
       ) : null}
@@ -267,8 +287,11 @@ export function LoungeView({
         <ReturnToPrivateDialog
           playlist={moderating}
           owner={loungeOwnerDisplayName(moderating.ownerArtistName, moderating.ownerName)}
-          onReturned={() => leaveRoom(moderating.id)}
-          onError={setError}
+          onReturned={() => {
+            toast.dismiss(RETURN_TO_PRIVATE_KEY);
+            leaveRoom(moderating.id);
+          }}
+          onError={(message) => toast.error(message, { key: RETURN_TO_PRIVATE_KEY })}
           onClose={() => setModerating(null)}
         />
       ) : null}

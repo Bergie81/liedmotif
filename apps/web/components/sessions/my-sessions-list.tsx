@@ -73,17 +73,7 @@ const MySessionsListContent = memo(function MySessionsListContent({
   engagedSource: EngagedSource | null;
 }) {
   const list = useResumableSessions({ includeActive: true, includePinned: true, initial });
-  const {
-    activeSession,
-    items,
-    error,
-    nextCursor,
-    loadingMore,
-    loadMore,
-    setOperationError,
-    pinned,
-    retry,
-  } = list;
+  const { activeSession, items, error, nextCursor, loadingMore, loadMore, pinned, retry } = list;
   const { engage, beginOtherMusic } = usePlayerActions();
   const [selected, setSelected] = useState<SessionListItem | null>(null);
   const [query, setQuery] = useState('');
@@ -175,7 +165,6 @@ const MySessionsListContent = memo(function MySessionsListContent({
             onClick={(event) => {
               optionsOpenerRef.current = event.currentTarget;
               setSelected(session);
-              setOperationError(null);
             }}
             aria-label={`Options for ${title}`}
           >
@@ -298,7 +287,7 @@ const MySessionsListContent = memo(function MySessionsListContent({
           </>
         )}
 
-        {error && !selected ? (
+        {error ? (
           <AlertBanner className="mt-4">
             <p>{error}</p>
             <button

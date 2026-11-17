@@ -18,7 +18,7 @@ import type {
   TrackFlags,
 } from '@liedmotif/shared';
 import { AvatarBadge } from '@/components/avatar-badge';
-import { AlertBanner } from '@/components/ui/design-system';
+import { toast } from '@/lib/toast';
 import { Sheet } from '@/components/ui/sheet';
 import {
   formatLibraryTrackMetadata,
@@ -102,7 +102,7 @@ export function SearchTrackResults({
       onTrackRemoved();
     },
   });
-  const playback = useTrackRowPlayback(actions.reportActionError);
+  const playback = useTrackRowPlayback(toast.error);
 
   // Playing a result is an act on it, so the play goes out through engagement.
   function playRow(track: SearchTrackItem) {
@@ -121,9 +121,6 @@ export function SearchTrackResults({
       onOpenChange={(open) => !open && !actions.busyAction && closeOptions()}
     >
       <div ref={listRef} tabIndex={-1}>
-        {actions.actionError && !selected ? (
-          <AlertBanner className="mb-3">{actions.actionError}</AlertBanner>
-        ) : null}
         {items
           .filter((item) => !removedIds.has(item.id))
           .map((item) => {
@@ -146,7 +143,6 @@ export function SearchTrackResults({
                 onPreview={() => playRow(track)}
                 onOptions={(opener) => {
                   optionsOpenerRef.current = opener;
-                  actions.clearActionError();
                   onEngage();
                   setSelected(track);
                 }}
@@ -158,7 +154,7 @@ export function SearchTrackResults({
       {selected ? (
         <TrackOptionsSheet
           track={selected}
-          error={actions.actionError}
+          error={null}
           busyAction={
             actions.busyAction?.trackId === selected.id ? actions.busyAction.action : null
           }

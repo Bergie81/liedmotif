@@ -3,10 +3,24 @@
 import { useEffect, useRef, useState } from 'react';
 import type { LibraryTrackItem, LibraryView, TrackFlags } from '@liedmotif/shared';
 import { deleteTrack as deleteTrackApi, favoriteTrack, unsaveTrack } from '@/lib/api-client';
+import { toast } from '@/lib/toast';
 import { useSeedMoreLikeThis } from '@/components/sessions/use-seed-more-like-this';
 
 export type LibraryActionName = 'save' | 'favorite' | 'seed' | 'delete';
 export type BusyAction = { trackId: string; action: LibraryActionName } | null;
+
+/** One toast key per action, so a retry replaces or clears its own earlier failure. */
+function failureKey(action: LibraryActionName): string {
+  return `library-${action}`;
+}
+
+function reportFailure(action: LibraryActionName, message: string): void {
+  toast.error(message, { key: failureKey(action) });
+}
+
+function clearFailure(action: LibraryActionName): void {
+  toast.dismiss(failureKey(action));
+}
 
 export function useLibraryActions({
   view,
@@ -26,7 +40,6 @@ export function useLibraryActions({
   onTrackRemoved: (trackId: string) => void;
 }) {
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
   const mountedRef = useRef(true);
   const seed = useSeedMoreLikeThis();
 
@@ -39,7 +52,6 @@ export function useLibraryActions({
 
   function begin(trackId: string, action: LibraryActionName) {
     setBusyAction({ trackId, action });
-    setActionError(null);
   }
 
   /** Unsave everywhere (retention is membership — removes every playlist
@@ -50,9 +62,10 @@ export function useLibraryActions({
     if (!mountedRef.current) return;
     setBusyAction(null);
     if (!result.ok) {
-      setActionError(`Save change failed: ${result.error.message}`);
+      reportFailure('save', `Save change failed: ${result.error.message}`);
       return;
     }
+    clearFailure('save');
     const remove = view === 'saved' || (view === 'favorites' && !result.data.favoritedAt);
     // Unsave leaves EVERY playlist, so no curated membership survives it.
     onFlagsResolved(track.id, result.data, false, remove);
@@ -72,9 +85,10 @@ export function useLibraryActions({
     if (!mountedRef.current) return;
     setBusyAction(null);
     if (!result.ok) {
-      setActionError(`Favorite change failed: ${result.error.message}`);
+      reportFailure('favorite', `Favorite change failed: ${result.error.message}`);
       return;
     }
+    clearFailure('favorite');
     // The star moves the Save floor, never Playlist membership. Unstarring a
     // Track kept only by Favorites unsaves it, so it leaves Saved too.
     onFlagsResolved(
@@ -94,9 +108,10 @@ export function useLibraryActions({
     if (!mountedRef.current) return false;
     setBusyAction(null);
     if (!result.ok) {
-      setActionError(`Delete failed: ${result.error.message}`);
+      reportFailure('delete', `Delete failed: ${result.error.message}`);
       return false;
     }
+    clearFailure('delete');
     onTrackRemoved(track.id);
     return true;
   }
@@ -106,14 +121,12 @@ export function useLibraryActions({
     const failure = await seed([track.id]);
     if (!mountedRef.current) return;
     setBusyAction(null);
-    if (failure) setActionError(failure);
+    if (failure) reportFailure('seed', failure);
+    else clearFailure('seed');
   }
 
   return {
     busyAction,
-    actionError,
-    clearActionError: () => setActionError(null),
-    reportActionError: setActionError,
     unsave,
     applyPickerFlags,
     toggleFavorite,

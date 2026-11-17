@@ -4,11 +4,14 @@ import { useEffect, useState } from 'react';
 import type { LibraryTrackItem, LibraryView, TrackFlags } from '@liedmotif/shared';
 import { getLibrary } from '@/lib/api-client';
 import { appendUniqueById } from '@/lib/append-unique';
+import { toast } from '@/lib/toast';
 import { usePageEpoch } from '@/components/use-page-epoch';
 import { withSettledRetention } from './library-view-model';
 import { useOutsideLibraryWrite } from './use-outside-library-write';
 
 export type LibraryTab = LibraryView | 'playlists';
+
+const LOAD_MORE_KEY = 'library-load-more';
 
 export function useLibraryQuery(view: LibraryView, search = '') {
   const [items, setItems] = useState<LibraryTrackItem[] | null>(null);
@@ -47,14 +50,14 @@ export function useLibraryQuery(view: LibraryView, search = '') {
     if (!nextCursor || loadingMore) return;
     const token = beginNextPage();
     if (token === null) return;
-    setError(null);
     const result = await getLibrary(view, { cursor: nextCursor, search });
     if (!settle(token)) return;
     if (result.ok) {
+      toast.dismiss(LOAD_MORE_KEY);
       setItems((current) => appendUniqueById(current ?? [], result.data.items));
       setNextCursor(result.data.nextCursor);
     } else {
-      setError(result.error.message);
+      toast.error(`Couldn’t load more Tracks: ${result.error.message}`, { key: LOAD_MORE_KEY });
     }
   }
 

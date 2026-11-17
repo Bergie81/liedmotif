@@ -4,6 +4,7 @@ import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SessionListItem } from '@liedmotif/shared';
 import { announceOutsideLibraryWrite } from '@/lib/offline/library-writes';
+import { shownToasts, toast } from '@/lib/toast';
 import { useResumableSessions } from './use-resumable-sessions';
 
 vi.mock('@/components/player/player-provider', () => ({
@@ -54,6 +55,7 @@ function captureFetches(): PendingRequest[] {
 
 afterEach(() => {
   cleanup();
+  toast.dismiss();
   vi.unstubAllGlobals();
   router.refresh.mockClear();
 });
@@ -202,7 +204,7 @@ describe('useResumableSessions pinning', () => {
     expect(result.current.items?.[0]?.pinned).toBe(false);
   });
 
-  it('keeps the flag and surfaces the message when the pin limit is reached', async () => {
+  it('keeps the flag and reports the pin limit as an error toast', async () => {
     const requests = captureFetches();
     const { result } = renderHook(() =>
       useResumableSessions({
@@ -229,7 +231,10 @@ describe('useResumableSessions pinning', () => {
     expect(await accepted).toBe(false);
     expect(result.current.items).toEqual([FIRST]);
     expect(result.current.pinned).toEqual([]);
-    expect(result.current.error).toBe('You can pin up to 10 Sessions.');
+    expect(shownToasts()).toEqual([
+      expect.objectContaining({ tone: 'error', message: 'You can pin up to 10 Sessions.' }),
+    ]);
+    expect(result.current.error).toBeNull();
     expect(router.refresh).not.toHaveBeenCalled();
   });
 
@@ -272,5 +277,37 @@ describe('useResumableSessions pinning', () => {
 
     expect(result.current.pinned).toEqual([]);
     expect(result.current.items).toEqual([FIRST]);
+  });
+});
+
+describe('useResumableSessions — a failed next page', () => {
+  it('reports it as an error toast and keeps the loaded Sessions', async () => {
+    const first = sessionItem('00000000-0000-4000-8000-000000000001');
+    const requests = captureFetches();
+    const { result } = renderHook(() =>
+      useResumableSessions({
+        initial: { items: [first], activeSession: null, nextCursor: 'page-2', pinned: [] },
+      }),
+    );
+
+    act(() => {
+      void result.current.loadMore();
+    });
+    await waitFor(() => expect(requests).toHaveLength(1));
+    await act(async () =>
+      requests[0]!.respond({
+        ok: false,
+        error: { code: 'internal_error', message: 'Network down.', retryable: true },
+      }),
+    );
+
+    expect(shownToasts()).toEqual([
+      expect.objectContaining({
+        tone: 'error',
+        message: 'Couldn’t load more Sessions: Network down.',
+      }),
+    ]);
+    expect(result.current.error).toBeNull();
+    expect(result.current.items).toEqual([first]);
   });
 });

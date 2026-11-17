@@ -10,6 +10,7 @@ import { createElement as h } from 'react';
 import type { LoungePlaylistItem } from '@liedmotif/shared';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { shownToasts, toast } from '@/lib/toast';
 import { LoungeView } from './lounge-view';
 
 const moderate = vi.hoisted(() => vi.fn());
@@ -63,6 +64,7 @@ vi.mock('@/components/playlists/share-playlist-sheet', () => ({
 
 afterEach(() => {
   cleanup();
+  toast.dismiss();
   moderate.mockReset();
   listLounge.mockReset();
   pinLounge.mockReset();
@@ -241,7 +243,7 @@ describe('LoungeView — Pin toggle', () => {
     expect(listLounge).toHaveBeenLastCalledWith(expect.objectContaining({ query: 'late' }));
   });
 
-  it('keeps the order and names the failure when the pin is refused', async () => {
+  it('keeps the order and names the failure in an error toast when the pin is refused', async () => {
     pinLounge.mockResolvedValue({ ok: false, error: { message: 'Playlist not found.' } });
     render(
       h(LoungeView, {
@@ -254,7 +256,15 @@ describe('LoungeView — Pin toggle', () => {
 
     fireEvent.click(screen.getByTestId(`lounge-pin-${OWN.id}`));
 
-    await waitFor(() => expect(screen.getByText(/Couldn’t pin the playlist/)).toBeTruthy());
+    await waitFor(() =>
+      expect(shownToasts()).toEqual([
+        expect.objectContaining({
+          tone: 'error',
+          message: expect.stringMatching(/^Couldn’t pin the playlist/),
+        }),
+      ]),
+    );
+    expect(screen.queryByRole('alert')).toBeNull();
     expect(listLounge).not.toHaveBeenCalled();
     expect(refresh).not.toHaveBeenCalled();
     expect(tileOrder()).toEqual([`lounge-tile-${FOREIGN.id}`, `lounge-tile-${OWN.id}`]);
@@ -371,15 +381,21 @@ describe('LoungeView — own tile menu', () => {
     expect(refresh).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps the tile and names the failure when removing it from the Lounge fails', async () => {
+  it('keeps the tile and names the failure in an error toast when removing it fails', async () => {
     sharePlaylist.mockResolvedValue({ ok: false, error: { message: 'Network down.' } });
     renderOwn();
     fireEvent.click(screen.getByTestId(`lounge-menu-remove-from-lounge-${OWN.id}`));
     fireEvent.click(screen.getByTestId('confirm-dialog-confirm'));
 
-    expect(
-      await screen.findByText(/Removing it from the Lounge failed: Network down/),
-    ).toBeTruthy();
+    await waitFor(() =>
+      expect(shownToasts()).toEqual([
+        expect.objectContaining({
+          tone: 'error',
+          message: 'Removing it from the Lounge failed: Network down.',
+        }),
+      ]),
+    );
+    expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.getByTestId(`lounge-tile-${OWN.id}`)).toBeTruthy();
   });
 
@@ -433,5 +449,35 @@ describe('LoungeView — playing a foreign share', () => {
     fireEvent.click(screen.getByTestId(`lounge-menu-${FOREIGN.id}`));
     fireEvent.click(screen.getByText('Play'));
     await waitFor(() => expect(engagePlaylist).toHaveBeenCalledTimes(1));
+  });
+});
+
+// Paging on is an act on the room: a page that fails to arrive is reported as a
+// toast, and the tiles already shown stay where they are.
+
+describe('LoungeView — Load more', () => {
+  it('reports a failed page as an error toast and keeps the loaded tiles', async () => {
+    listLounge.mockResolvedValue({ ok: false, error: { message: 'Network down.' } });
+    render(
+      h(LoungeView, {
+        initial: { playlists: [FOREIGN], nextCursor: 'next-page' },
+        sharers: [],
+        viewerUserId: 'u-viewer',
+        viewerIsAdmin: false,
+      }),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Load more' }));
+
+    await waitFor(() =>
+      expect(shownToasts()).toEqual([
+        expect.objectContaining({
+          tone: 'error',
+          message: 'Couldn’t load more shared playlists: Network down.',
+        }),
+      ]),
+    );
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByTestId(`lounge-tile-${FOREIGN.id}`)).toBeTruthy();
   });
 });

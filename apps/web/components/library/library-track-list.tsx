@@ -15,7 +15,6 @@ export function LibraryTrackList({
   items,
   nextCursor,
   error,
-  actionError,
   loadingMore,
   busyTrackId,
   preview,
@@ -30,7 +29,6 @@ export function LibraryTrackList({
   items: LibraryTrackItem[] | null;
   nextCursor: string | null;
   error: string | null;
-  actionError: string | null;
   loadingMore: boolean;
   busyTrackId: string | null;
   preview: { trackId: string | null; state: PreviewState };
@@ -51,7 +49,6 @@ export function LibraryTrackList({
 
   return (
     <>
-      {actionError ? <LibraryError message={actionError} /> : null}
       <div className="@container">
         <section
           className="@pair:grid @pair:grid-cols-[repeat(2,1fr)] @pair:content-start @pair:gap-x-14"

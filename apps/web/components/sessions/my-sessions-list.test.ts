@@ -3,6 +3,7 @@ import { createElement, type FunctionComponent } from 'react';
 import type { SessionListItem } from '@liedmotif/shared';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { shownToasts, toast } from '@/lib/toast';
 import { MySessionsList } from './my-sessions-list';
 import type { ResumableSessionsInitialData } from './use-resumable-sessions';
 
@@ -18,6 +19,7 @@ vi.mock('@/components/player/player-provider', () => ({
 afterEach(() => {
   player.playback = null;
   cleanup();
+  toast.dismiss();
   vi.unstubAllGlobals();
   vi.clearAllMocks();
 });
@@ -91,6 +93,13 @@ function stubApi(hits: SessionListItem[], responses: Record<string, unknown> = {
   }));
   vi.stubGlobal('fetch', fetcher);
   return fetcher;
+}
+
+async function expectErrorToast(message: string) {
+  await waitFor(() =>
+    expect(shownToasts()).toEqual([expect.objectContaining({ tone: 'error', message })]),
+  );
+  expect(screen.queryByRole('alert')).toBeNull();
 }
 
 function type(query: string) {
@@ -174,7 +183,7 @@ describe('My Sessions active card', () => {
 });
 
 describe('My Sessions delete', () => {
-  it('keeps the Session and shows why when the delete fails', async () => {
+  it('keeps the Session and says why in an error toast when the delete fails', async () => {
     stubApi([], {
       '/api/sessions/delete': {
         ok: false,
@@ -185,7 +194,7 @@ describe('My Sessions delete', () => {
     openOptions('Quiet Morning');
     fireEvent.click(await screen.findByTestId('delete-session'));
     fireEvent.click(screen.getByTestId('confirm-dialog-confirm'));
-    await screen.findByText('Could not delete.');
+    await expectErrorToast('Could not delete.');
     expect(screen.queryByTestId('confirm-dialog')).toBeNull();
     expect(screen.getByTestId('delete-session')).toBeTruthy();
   });
@@ -210,7 +219,7 @@ describe('My Sessions Resume', () => {
     await waitFor(() => expect(screen.queryByTestId('delete-session')).toBeNull());
   });
 
-  it('keeps the options open and shows why when the Resume fails', async () => {
+  it('keeps the options open and says why in an error toast when the Resume fails', async () => {
     stubApi([], {
       '/api/sessions/resume': {
         ok: false,
@@ -218,7 +227,7 @@ describe('My Sessions Resume', () => {
       },
     });
     await clickResume();
-    await screen.findByText('Could not resume.');
+    await expectErrorToast('Could not resume.');
     expect(screen.getByTestId('delete-session')).toBeTruthy();
   });
 });
@@ -237,7 +246,7 @@ describe('My Sessions Convert to Playlist', () => {
     );
   });
 
-  it('stays put and shows why when the conversion fails', async () => {
+  it('stays put and says why in an error toast when the conversion fails', async () => {
     stubApi([], {
       '/api/sessions/convert-to-playlist': {
         ok: false,
@@ -251,7 +260,7 @@ describe('My Sessions Convert to Playlist', () => {
     renderList([session(1, { title: 'Quiet Morning' })]);
     openOptions('Quiet Morning');
     fireEvent.click(await screen.findByTestId('convert-session-to-playlist'));
-    await screen.findByText('This Session has no Tracks yet.');
+    await expectErrorToast('This Session has no Tracks yet.');
     expect(navigation.push).not.toHaveBeenCalled();
   });
 });

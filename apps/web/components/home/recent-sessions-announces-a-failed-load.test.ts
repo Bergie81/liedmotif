@@ -33,7 +33,6 @@ function failedToLoad(retry: () => void): ResumableSessionsState {
     removeItem: () => {},
     updateItem: () => {},
     setPinned: async () => false,
-    setOperationError: () => {},
     retry,
   };
 }

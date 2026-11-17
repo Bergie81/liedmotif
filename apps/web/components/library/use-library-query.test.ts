@@ -4,6 +4,7 @@ import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { captureFetches } from '@/tests/helpers/capture-fetches';
 import { announceOutsideLibraryWrite } from '@/lib/offline/library-writes';
+import { shownToasts, toast } from '@/lib/toast';
 import { useLibraryQuery } from './use-library-query';
 
 function libraryTrack(id: string) {
@@ -47,10 +48,44 @@ function libraryPage(
 
 afterEach(() => {
   cleanup();
+  toast.dismiss();
   vi.unstubAllGlobals();
 });
 
 describe('useLibraryQuery', () => {
+  it('reports a failed next page as an error toast and keeps the loaded Tracks', async () => {
+    const TRACK_ID = '123e4567-e89b-12d3-a456-426614174000';
+    const requests = captureFetches();
+    const { result } = renderHook(() => useLibraryQuery('history'));
+    await waitFor(() => expect(requests).toHaveLength(1));
+    await act(async () =>
+      requests[0]!.respond(libraryPage('history', 'page-2', [libraryTrack(TRACK_ID)])),
+    );
+    await waitFor(() => expect(result.current.nextCursor).toBe('page-2'));
+
+    act(() => {
+      void result.current.loadMore();
+    });
+    await waitFor(() => expect(requests).toHaveLength(2));
+    await act(async () =>
+      requests[1]!.respond({
+        ok: false,
+        error: { code: 'internal_error', message: 'Network error.', retryable: true },
+      }),
+    );
+
+    await waitFor(() =>
+      expect(shownToasts()).toEqual([
+        expect.objectContaining({
+          tone: 'error',
+          message: 'Couldn’t load more Tracks: Network error.',
+        }),
+      ]),
+    );
+    expect(result.current.error).toBeNull();
+    expect(result.current.items?.map((track) => track.id)).toEqual([TRACK_ID]);
+  });
+
   it('allows pagination after a search supersedes an in-flight page', async () => {
     const requests = captureFetches();
     const { result, rerender } = renderHook(

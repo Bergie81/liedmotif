@@ -56,6 +56,7 @@ import { Sheet, SheetTrigger } from '@/components/ui/sheet';
 import { LoadMoreButton } from '@/components/ui/load-more-button';
 import { LoadingRow } from '@/components/ui/loading';
 import { RelativeTime } from '@/components/relative-time';
+import { toast } from '@/lib/toast';
 import { OfflineMark } from '@/components/offline/offline-mark';
 import { AddTracksSheet } from './add-tracks-sheet';
 import {
@@ -85,6 +86,12 @@ type PlaylistGridAction =
   | { kind: 'cover'; playlist: PlaylistSummaryItem }
   | { kind: 'share'; playlist: PlaylistSummaryItem }
   | { kind: 'remove-from-lounge'; playlist: PlaylistSummaryItem };
+
+const DELETE_KEY = 'playlists-delete';
+const PIN_KEY = 'playlists-pin';
+const PLAY_KEY = 'playlists-play';
+const LOAD_MORE_KEY = 'playlists-load-more';
+const REMOVE_FROM_LOUNGE_KEY = 'playlists-remove-from-lounge';
 
 /** What a card's menu can start — the grid owns whatever each one opens. */
 export interface PlaylistCardActions {
@@ -123,10 +130,10 @@ export function PlaylistsGrid({
   );
   const [nextCursor, setNextCursor] = useState<string | null>(initialPlaylists?.nextCursor ?? null);
   const [search, setSearch] = useState('');
-  const [actionError, setActionError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [action, setAction] = useState<PlaylistGridAction | null>(null);
   const router = useRouter();
-  const playback = usePlayPlaylist(setActionError);
+  const playback = usePlayPlaylist((message) => toast.error(message, { key: PLAY_KEY }));
   const consumeServerSeed = useServerSeed(initialPlaylists != null);
   const { loadingMore, beginFirstPage, beginNextPage, settle } = usePageEpoch();
   // One curated projection for both the tab count and the rendered grid.
@@ -138,10 +145,10 @@ export function PlaylistsGrid({
     const result = await listPlaylists({ search });
     if (!settle(token, result.ok)) return;
     if (!result.ok) {
-      setActionError(`Couldn’t load playlists: ${result.error.message}`);
+      setLoadError(`Couldn’t load playlists: ${result.error.message}`);
       return;
     }
-    setActionError(null);
+    setLoadError(null);
     setPlaylists(result.data.playlists);
     setNextCursor(result.data.nextCursor);
   }, [search, beginFirstPage, settle]);
@@ -159,13 +166,13 @@ export function PlaylistsGrid({
     if (!nextCursor || loadingMore) return;
     const token = beginNextPage();
     if (token === null) return;
-    setActionError(null);
     const result = await listPlaylists({ search, cursor: nextCursor });
     if (!settle(token)) return;
     if (!result.ok) {
-      setActionError(`Couldn’t load more playlists: ${result.error.message}`);
+      toast.error(`Couldn’t load more playlists: ${result.error.message}`, { key: LOAD_MORE_KEY });
       return;
     }
+    toast.dismiss(LOAD_MORE_KEY);
     // An activity-ordered keyset can hand back a playlist that moved while
     // paging — append id-unique so a card never renders twice.
     setPlaylists((current) => appendUniqueById(current ?? [], result.data.playlists));
@@ -196,9 +203,10 @@ export function PlaylistsGrid({
   async function loadMembers(playlist: PlaylistSummaryItem): Promise<PlaylistMemberItem[] | null> {
     const result = await getAllPlaylistMembers(playlist.id);
     if (!result.ok) {
-      setActionError(`Couldn’t load the playlist: ${result.error.message}`);
+      toast.error(`Couldn’t load the playlist: ${result.error.message}`, { key: PLAY_KEY });
       return null;
     }
+    toast.dismiss(PLAY_KEY);
     return result.data.items;
   }
 
@@ -226,12 +234,12 @@ export function PlaylistsGrid({
    *  replay it. */
   async function togglePin(playlist: PlaylistSummaryItem) {
     const pinned = playlist.pinnedAt === null;
-    setActionError(null);
     const result = await pinLibraryPlaylist(playlist.id, pinned);
     if (!result.ok) {
-      setActionError(pinToggleFailure(pinned, result.error.message));
+      toast.error(pinToggleFailure(pinned, result.error.message), { key: PIN_KEY });
       return;
     }
+    toast.dismiss(PIN_KEY);
     router.refresh();
     await loadRef.current();
   }
@@ -244,18 +252,19 @@ export function PlaylistsGrid({
     const result = await deletePlaylist(playlist.id);
     setAction(null);
     if (!result.ok) {
-      setActionError(`Delete failed: ${result.error.message}`);
+      toast.error(`Delete failed: ${result.error.message}`, { key: DELETE_KEY });
       return;
     }
+    toast.dismiss(DELETE_KEY);
     setPlaylists((all) => all?.filter((p) => p.id !== playlist.id) ?? all);
   }
 
   return (
     <>
       <LibrarySearchField placeholder="Search playlists and their tracks…" onSearch={setSearch} />
-      {actionError ? <AlertBanner className="mt-4">{actionError}</AlertBanner> : null}
+      {loadError ? <AlertBanner className="mt-4">{loadError}</AlertBanner> : null}
       {playlists === null ? (
-        actionError ? null : (
+        loadError ? null : (
           <LoadingRow className="mt-6 py-8" label="Loading Playlists…" />
         )
       ) : (
@@ -321,8 +330,11 @@ export function PlaylistsGrid({
       {action?.kind === 'remove-from-lounge' ? (
         <RemoveFromLoungeDialog
           playlist={action.playlist}
-          onRemoved={applySharedAt}
-          onError={setActionError}
+          onRemoved={(result) => {
+            toast.dismiss(REMOVE_FROM_LOUNGE_KEY);
+            applySharedAt(result);
+          }}
+          onError={(message) => toast.error(message, { key: REMOVE_FROM_LOUNGE_KEY })}
           onClose={() => setAction(null)}
         />
       ) : null}

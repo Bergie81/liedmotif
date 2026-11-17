@@ -13,6 +13,7 @@ import {
   renameSession,
   resumeSession,
 } from '@/lib/api-client';
+import { toast } from '@/lib/toast';
 import { useClientId } from '@/lib/use-client-id';
 import { SessionOptionsSheet } from './session-options-sheet';
 import type { ResumableSessionsState } from './use-resumable-sessions';
@@ -23,6 +24,10 @@ const RegenerateCoverDialog = dynamic(
   () => import('@/components/player/regenerate-cover-dialog').then((m) => m.RegenerateCoverDialog),
   { ssr: false },
 );
+
+const RESUME_KEY = 'session-resume';
+const DELETE_KEY = 'session-delete';
+const CONVERT_KEY = 'session-convert';
 
 /**
  * The My Sessions options menu and what it acts on: each act lands in both the
@@ -54,13 +59,13 @@ export function SessionOptionsFlow({
   async function resume(session: SessionListItem) {
     if (!(await beginOtherMusic())) return;
     setResumingId(session.id);
-    list.setOperationError(null);
     const result = await resumeSession(session.id, clientId);
     setResumingId(null);
     if (!result.ok) {
-      list.setOperationError(result.error.message);
+      toast.error(result.error.message, { key: RESUME_KEY });
       return;
     }
+    toast.dismiss(RESUME_KEY);
     // The page stays put — playback surfaces in the mini player. Refetch the
     // list so the resumed Session moves into the Active now slot (and the
     // previously active one lands under History) without a manual reload.
@@ -71,13 +76,13 @@ export function SessionOptionsFlow({
 
   async function remove(session: SessionListItem) {
     setDeletingId(session.id);
-    list.setOperationError(null);
     const result = await deleteSession(session.id);
     setDeletingId(null);
     if (!result.ok) {
-      list.setOperationError(result.error.message);
+      toast.error(result.error.message, { key: DELETE_KEY });
       return;
     }
+    toast.dismiss(DELETE_KEY);
     list.removeItem(session.id);
     search.removeResult(session.id);
     router.refresh();
@@ -96,13 +101,13 @@ export function SessionOptionsFlow({
 
   async function convertToPlaylist(session: SessionListItem) {
     setConvertingId(session.id);
-    list.setOperationError(null);
     const result = await convertSessionToPlaylist(session.id);
     setConvertingId(null);
     if (!result.ok) {
-      list.setOperationError(result.error.message);
+      toast.error(result.error.message, { key: CONVERT_KEY });
       return;
     }
+    toast.dismiss(CONVERT_KEY);
     onClose();
     // Library would otherwise replay its pre-convert list from the router cache.
     router.refresh();
@@ -129,7 +134,7 @@ export function SessionOptionsFlow({
         {selected ? (
           <SessionOptionsSheet
             session={selected}
-            error={list.error}
+            error={null}
             resuming={resumingId === selected.id}
             deleting={deletingId === selected.id}
             converting={convertingId === selected.id}

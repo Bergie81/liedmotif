@@ -8,6 +8,7 @@ import type { PlaylistSummaryItem } from '@liedmotif/shared';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { announceOutsideLibraryWrite } from '@/lib/offline/library-writes';
+import { shownToasts, toast } from '@/lib/toast';
 import { PlaylistsGrid, type PlaylistsFirstPage } from './playlists-grid';
 
 const listPlaylists = vi.hoisted(() => vi.fn());
@@ -35,6 +36,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh }
 
 afterEach(() => {
   cleanup();
+  toast.dismiss();
   listPlaylists.mockReset();
   pinLibrary.mockReset();
   refresh.mockReset();
@@ -207,13 +209,21 @@ describe('PlaylistsGrid — Library pin', () => {
     expect(screen.queryByTestId(`playlist-pinned-${base.id}`)).toBeNull();
   });
 
-  it('keeps the order and names the failure when the pin is refused', async () => {
+  it('keeps the order and names the failure in an error toast when the pin is refused', async () => {
     pinLibrary.mockResolvedValue({ ok: false, error: { message: 'Playlist not found.' } });
     renderGrid([OTHER, base]);
 
     tapPinRow(base);
 
-    await waitFor(() => expect(screen.getByText(/Couldn’t pin the playlist/)).toBeTruthy());
+    await waitFor(() =>
+      expect(shownToasts()).toEqual([
+        expect.objectContaining({
+          tone: 'error',
+          message: expect.stringMatching(/^Couldn’t pin the playlist/),
+        }),
+      ]),
+    );
+    expect(screen.queryByRole('alert')).toBeNull();
     expect(listPlaylists).not.toHaveBeenCalled();
     expect(refresh).not.toHaveBeenCalled();
     expect(cardOrder()).toEqual([`playlist-card-${OTHER.id}`, `playlist-card-${base.id}`]);

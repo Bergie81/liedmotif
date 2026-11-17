@@ -8,6 +8,10 @@ import { usePageEpoch } from '@/components/use-page-epoch';
 import { useServerSeed } from '@/components/use-server-seed';
 import { appendUniqueById } from '@/lib/append-unique';
 import { listSessions, setSessionPinned } from '@/lib/api-client';
+import { toast } from '@/lib/toast';
+
+const LOAD_MORE_KEY = 'sessions-load-more';
+const PIN_KEY = 'sessions-pin';
 
 export interface ResumableSessionsState {
   items: SessionListItem[] | null;
@@ -15,6 +19,7 @@ export interface ResumableSessionsState {
    * which also keeps them out of `items`. */
   pinned: SessionListItem[];
   activeSession: ActiveSessionOverview | null;
+  /** Why the list failed to load; failed acts on it are reported as toasts. */
   error: string | null;
   nextCursor: string | null;
   loadingMore: boolean;
@@ -22,9 +27,8 @@ export interface ResumableSessionsState {
   removeItem: (id: string) => void;
   /** Patch a loaded row in place after a rename or a cover swap. */
   updateItem: (id: string, patch: Partial<Pick<SessionListItem, 'title' | 'coverImageId'>>) => void;
-  /** Pin/unpin; resolves whether the server accepted it (else `error` says why). */
+  /** Pin/unpin; resolves whether the server accepted it (else a toast says why). */
   setPinned: (id: string, pinned: boolean) => Promise<boolean>;
-  setOperationError: (message: string | null) => void;
   retry: () => void;
 }
 
@@ -100,7 +104,6 @@ export function useResumableSessions({
     if (!nextCursor || loadingMore) return;
     const token = beginNextPage();
     if (token === null) return;
-    setError(null);
     const result = await listSessions({
       limit,
       includeActive,
@@ -108,21 +111,24 @@ export function useResumableSessions({
       cursor: nextCursor,
     });
     if (!settle(token)) return;
-    if (result.ok) {
-      // An activity-ordered keyset can hand back a session that moved while
-      // paging — append id-unique so a row never renders twice.
-      setItems((current) => appendUniqueById(current ?? [], result.data.items));
-      setNextCursor(result.data.nextCursor);
-    } else setError(result.error.message);
+    if (!result.ok) {
+      toast.error(`Couldn’t load more Sessions: ${result.error.message}`, { key: LOAD_MORE_KEY });
+      return;
+    }
+    toast.dismiss(LOAD_MORE_KEY);
+    // An activity-ordered keyset can hand back a session that moved while
+    // paging — append id-unique so a row never renders twice.
+    setItems((current) => appendUniqueById(current ?? [], result.data.items));
+    setNextCursor(result.data.nextCursor);
   }
 
   async function setPinned(id: string, next: boolean): Promise<boolean> {
-    setError(null);
     const result = await setSessionPinned(id, next);
     if (!result.ok) {
-      setError(result.error.message);
+      toast.error(result.error.message, { key: PIN_KEY });
       return false;
     }
+    toast.dismiss(PIN_KEY);
     // Back would otherwise replay the pre-pin lists from the router cache.
     router.refresh();
     const session = [...(items ?? []), ...pinned].find((item) => item.id === id);
@@ -160,7 +166,6 @@ export function useResumableSessions({
       setPinnedItems((current) => current.map(update));
     },
     setPinned,
-    setOperationError: setError,
     retry: () => setReload((value) => value + 1),
   };
 }
