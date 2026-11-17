@@ -13,15 +13,18 @@ import {
 import { primaryButtonClass } from '@/components/ui/form-styles';
 import { PasswordField } from '@/components/ui/password-field';
 import { saveListenerProfile } from '@/lib/settings-client';
+import { toast } from '@/lib/toast';
 import { ChangePasswordButton } from './change-password-dialog';
-import { EmailConfirmationStatus, useConfirmLinkRequest } from './email-confirmation';
+import { EmailConfirmationStatus, requestConfirmLink } from './email-confirmation';
 import { ProfileField } from './profile-field';
 import {
   profileFieldErrorsForServerMessage,
   validateProfile,
   type ProfileFieldErrors,
 } from './profile-form-model';
-import { SettingsFeedback, type SettingsFeedbackState } from './settings-ui';
+
+const SAVE_KEY = 'profile-save';
+const CONFIRM_LINK_KEY = 'profile-confirm-link';
 
 export function ProfileForm({
   initial,
@@ -39,8 +42,7 @@ export function ProfileForm({
   const [currentPassword, setCurrentPassword] = useState('');
   const [fieldErrors, setFieldErrors] = useState<ProfileFieldErrors>({});
   const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState<SettingsFeedbackState>(null);
-  const confirmLink = useConfirmLinkRequest();
+  const [sendingConfirmLink, setSendingConfirmLink] = useState(false);
 
   // Only the Admin moves their sign-in address; the profile route refuses a
   // Member's, so a Member is shown it and never asked to confirm a change.
@@ -68,9 +70,16 @@ export function ProfileForm({
     });
   }
 
+  async function sendConfirmLink() {
+    setSendingConfirmLink(true);
+    const { sent, message } = await requestConfirmLink();
+    setSendingConfirmLink(false);
+    if (sent) toast.success(message, { key: CONFIRM_LINK_KEY });
+    else toast.error(message, { key: CONFIRM_LINK_KEY });
+  }
+
   async function save() {
     if (saving) return;
-    setFeedback(null);
     const errors = validateProfile(values);
     if (emailChanged && !currentPassword) {
       errors.currentPassword = 'Enter your current password to change your sign-in address.';
@@ -87,25 +96,25 @@ export function ProfileForm({
       setSavedEmail(profile.email);
       setCurrentPassword('');
       if (confirmLinkSent === false) {
-        setFeedback({
-          kind: 'info',
-          message:
-            'Profile saved, but the confirm link could not be sent. Use Send confirm link to try again.',
-        });
+        toast.warning(
+          'Profile saved, but the confirm link could not be sent. Use Send confirm link to try again.',
+          { key: SAVE_KEY },
+        );
       } else if (confirmLinkSent) {
-        setFeedback({
-          kind: 'success',
-          message: `Profile saved. A confirm link went to ${profile.email}.`,
-        });
+        toast.success(`Profile saved. A confirm link went to ${profile.email}.`, { key: SAVE_KEY });
       } else {
-        setFeedback({ kind: 'success', message: 'Profile saved.' });
+        toast.success('Profile saved.', { key: SAVE_KEY });
       }
       router.refresh();
       return;
     }
     const serverFieldErrors = profileFieldErrorsForServerMessage(result.error);
-    if (Object.keys(serverFieldErrors).length > 0) setFieldErrors(serverFieldErrors);
-    else setFeedback({ kind: 'error', message: result.error });
+    if (Object.keys(serverFieldErrors).length > 0) {
+      toast.dismiss(SAVE_KEY);
+      setFieldErrors(serverFieldErrors);
+    } else {
+      toast.error(result.error, { key: SAVE_KEY });
+    }
   }
 
   return (
@@ -118,35 +127,28 @@ export function ProfileForm({
         disabled={saving}
         onChange={(value) => setField('name', value)}
       />
-      <div className="space-y-2">
-        <ProfileField
-          label="Email"
-          labelAccessory={
-            // The state describes the saved address, so it steps aside while
-            // an unsaved one is in the field.
-            emailConfirmed !== null && !emailChanged ? (
-              <EmailConfirmationStatus
-                confirmed={emailConfirmed}
-                sending={confirmLink.sending}
-                onSend={confirmLink.send}
-              />
-            ) : null
-          }
-          type="email"
-          value={values.email}
-          maxLength={MAX_EMAIL_LENGTH}
-          hint={emailEditable ? undefined : 'It can’t be changed.'}
-          readOnly={!emailEditable}
-          error={fieldErrors.email}
-          disabled={saving}
-          onChange={(value) => setField('email', value)}
-        />
-        {confirmLink.feedback && !emailChanged ? (
-          <SettingsFeedback kind={confirmLink.feedback.kind}>
-            {confirmLink.feedback.message}
-          </SettingsFeedback>
-        ) : null}
-      </div>
+      <ProfileField
+        label="Email"
+        labelAccessory={
+          // The state describes the saved address, so it steps aside while
+          // an unsaved one is in the field.
+          emailConfirmed !== null && !emailChanged ? (
+            <EmailConfirmationStatus
+              confirmed={emailConfirmed}
+              sending={sendingConfirmLink}
+              onSend={() => void sendConfirmLink()}
+            />
+          ) : null
+        }
+        type="email"
+        value={values.email}
+        maxLength={MAX_EMAIL_LENGTH}
+        hint={emailEditable ? undefined : 'It can’t be changed.'}
+        readOnly={!emailEditable}
+        error={fieldErrors.email}
+        disabled={saving}
+        onChange={(value) => setField('email', value)}
+      />
       {/* The address change's own password check takes the button's place, so a
           Current password field never sits beside a button that reads as its submit. */}
       {asksForPassword ? (
@@ -208,9 +210,6 @@ export function ProfileForm({
         disabled={saving}
         onChange={(value) => setField('description', value)}
       />
-      {feedback ? (
-        <SettingsFeedback kind={feedback.kind}>{feedback.message}</SettingsFeedback>
-      ) : null}
       <button
         type="button"
         onClick={save}

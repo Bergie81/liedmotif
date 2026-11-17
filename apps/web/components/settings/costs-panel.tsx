@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { unitCostsSet, type UnitCosts } from '@liedmotif/shared';
 import { apiFetchJson } from '@/lib/api-fetch';
+import { toast } from '@/lib/toast';
 import { compactPrimaryButtonClass } from '@/components/ui/form-styles';
 import {
   parseUnitCostsForm,
@@ -17,14 +18,10 @@ import {
   type UnitCostsFormValues,
 } from './costs-panel-model';
 import { ProfileField } from './profile-field';
-import {
-  SettingsCard,
-  SettingsFeedback,
-  SettingsFootnote,
-  type SettingsFeedbackState,
-} from './settings-ui';
+import { SettingsCard, SettingsFeedback, SettingsFootnote } from './settings-ui';
 
 export const UNIT_COSTS_HINT = 'Set unit costs to see estimates.';
+const SAVE_KEY = 'unit-costs-save';
 
 export function CostsPanel({ unitCosts }: { unitCosts: UnitCosts }) {
   const router = useRouter();
@@ -32,7 +29,6 @@ export function CostsPanel({ unitCosts }: { unitCosts: UnitCosts }) {
   const [errors, setErrors] = useState<UnitCostsErrors>({});
   const [saved, setSaved] = useState(unitCosts);
   const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState<SettingsFeedbackState>(null);
 
   function change(field: keyof UnitCosts, value: string) {
     setValues((current) => ({ ...current, [field]: value }));
@@ -41,7 +37,6 @@ export function CostsPanel({ unitCosts }: { unitCosts: UnitCosts }) {
 
   async function save() {
     if (busy) return;
-    setFeedback(null);
     const parsed = parseUnitCostsForm(values);
     if (!parsed.ok) {
       setErrors(parsed.errors);
@@ -56,10 +51,10 @@ export function CostsPanel({ unitCosts }: { unitCosts: UnitCosts }) {
     if (result.ok) {
       setSaved(result.data.unitCosts);
       setValues(unitCostsFormValues(result.data.unitCosts));
-      setFeedback({ kind: 'success', message: 'Unit costs saved.' });
+      toast.success('Unit costs saved.', { key: SAVE_KEY });
       router.refresh();
     } else {
-      setFeedback({ kind: 'error', message: result.message });
+      toast.error(result.message, { key: SAVE_KEY });
     }
     setBusy(false);
   }
@@ -91,11 +86,6 @@ export function CostsPanel({ unitCosts }: { unitCosts: UnitCosts }) {
         />
       </div>
 
-      {feedback ? (
-        <div className="mt-4">
-          <SettingsFeedback kind={feedback.kind}>{feedback.message}</SettingsFeedback>
-        </div>
-      ) : null}
       {!unitCostsSet(saved) ? (
         <div className="mt-4">
           <SettingsFeedback kind="info">{UNIT_COSTS_HINT}</SettingsFeedback>

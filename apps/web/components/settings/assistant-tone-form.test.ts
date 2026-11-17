@@ -9,11 +9,13 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ASSISTANT_TONE_MAX_LENGTH, assistantToneSchema, makeApiError } from '@liedmotif/shared';
 import { TONE_PRESETS } from '@/lib/assistant/persona';
+import { shownToasts, toast } from '@/lib/toast';
 import { AssistantToneForm } from './assistant-tone-form';
 
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  toast.dismiss();
 });
 
 /** The settings route: answers every save with the tone it was sent. */
@@ -47,7 +49,11 @@ describe('the tone form', () => {
     expect(field().value).toBe(preset.tone);
     fireEvent.click(screen.getByRole('button', { name: 'Save tone' }));
 
-    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Tone saved.'));
+    await waitFor(() =>
+      expect(shownToasts()).toEqual([
+        expect.objectContaining({ tone: 'success', message: 'Tone saved.' }),
+      ]),
+    );
     expect(server.saved).toEqual([preset.tone]);
   });
 
@@ -105,9 +111,38 @@ describe('the tone form', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save tone' }));
 
     await waitFor(() =>
-      expect(screen.getByRole('status').textContent).toBe('Could not save the tone.'),
+      expect(shownToasts()).toEqual([
+        expect.objectContaining({ tone: 'error', message: 'Could not save the tone.' }),
+      ]),
     );
     expect(field().value).toBe('Talk like a ship captain.');
+  });
+
+  it('clears a failed save once saving again succeeds', async () => {
+    let fail = true;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        fail
+          ? Response.json(makeApiError('internal_error', 'Could not save the tone.'), {
+              status: 500,
+            })
+          : Response.json({ ok: true, data: { tone: 'Calm.' } }),
+      ),
+    );
+    render(h(AssistantToneForm, { initial: { tone: 'Calm.' } }));
+    const save = screen.getByRole('button', { name: 'Save tone' });
+
+    fireEvent.click(save);
+    await waitFor(() => expect(shownToasts()).toHaveLength(1));
+    fail = false;
+    fireEvent.click(save);
+
+    await waitFor(() =>
+      expect(shownToasts()).toEqual([
+        expect.objectContaining({ tone: 'success', message: 'Tone saved.' }),
+      ]),
+    );
   });
 
   it('says how much of the length is used, and takes no more than the longest tone', () => {

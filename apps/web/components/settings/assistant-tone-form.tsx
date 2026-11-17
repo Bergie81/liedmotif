@@ -15,35 +15,30 @@ import {
 } from '@/components/ui/form-styles';
 import { updateAssistantTone } from '@/lib/api-client';
 import { ASSISTANT_NAME, TONE_PRESETS } from '@/lib/assistant/persona';
-import { SettingsFeedback, type SettingsFeedbackState } from './settings-ui';
+import { toast } from '@/lib/toast';
+
+const SAVE_KEY = 'assistant-tone-save';
 
 const PLACEHOLDER = 'Write your own, for example "Talk like a ship captain."';
 
 export function AssistantToneForm({ initial }: { initial: AssistantTone }) {
   const [tone, setTone] = useState(initial.tone);
   const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState<SettingsFeedbackState>(null);
-
-  function edit(next: string) {
-    setTone(next);
-    setFeedback(null);
-  }
 
   // The field and the ready-made tones are held still while a save is on its
   // way: the answer puts the tone as stored into the field, and would otherwise
   // write over what the user typed in the meantime.
   async function save() {
     if (saving) return;
-    setFeedback(null);
     setSaving(true);
     const result = await updateAssistantTone({ tone });
     setSaving(false);
-    if (result.ok) setTone(result.data.tone);
-    setFeedback(
-      result.ok
-        ? { kind: 'success', message: 'Tone saved.' }
-        : { kind: 'error', message: result.error.message },
-    );
+    if (result.ok) {
+      setTone(result.data.tone);
+      toast.success('Tone saved.', { key: SAVE_KEY });
+    } else {
+      toast.error(result.error.message, { key: SAVE_KEY });
+    }
   }
 
   return (
@@ -52,7 +47,7 @@ export function AssistantToneForm({ initial }: { initial: AssistantTone }) {
       <div className="flex flex-col items-start gap-2">
         <button
           type="button"
-          onClick={() => edit('')}
+          onClick={() => setTone('')}
           disabled={saving}
           className={secondaryButtonClass}
         >
@@ -63,7 +58,7 @@ export function AssistantToneForm({ initial }: { initial: AssistantTone }) {
             <button
               key={preset.label}
               type="button"
-              onClick={() => edit(preset.tone)}
+              onClick={() => setTone(preset.tone)}
               disabled={saving}
               className={secondaryButtonClass}
             >
@@ -84,7 +79,7 @@ export function AssistantToneForm({ initial }: { initial: AssistantTone }) {
           rows={5}
           maxLength={ASSISTANT_TONE_MAX_LENGTH}
           value={tone}
-          onChange={(event) => edit(event.target.value)}
+          onChange={(event) => setTone(event.target.value)}
           placeholder={PLACEHOLDER}
           disabled={saving}
           className={`${inputClass} resize-none`}
@@ -94,9 +89,6 @@ export function AssistantToneForm({ initial }: { initial: AssistantTone }) {
           &apos;s own tone. It holds from your next message.
         </span>
       </label>
-      {feedback ? (
-        <SettingsFeedback kind={feedback.kind}>{feedback.message}</SettingsFeedback>
-      ) : null}
       <button
         type="button"
         onClick={save}

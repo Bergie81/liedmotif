@@ -8,6 +8,7 @@ import { TimezoneSelect } from '@/components/timezone-select';
 import { Stepper, Switch } from '@/components/ui/controls';
 import { primaryButtonClass } from '@/components/ui/form-styles';
 import { saveUsageLimits } from '@/lib/settings-client';
+import { toast } from '@/lib/toast';
 import { normalizeTracksPerRequest } from '@/lib/track-units';
 import { PricedQuantity, pricedStepperClass } from './cost-readout';
 import {
@@ -23,14 +24,9 @@ import {
   type LimitFormField,
   type LimitFormValues,
 } from './limits-form-model';
-import {
-  SettingsCard,
-  SettingsControlRow,
-  SettingsFeedback,
-  SettingsFootnote,
-  SettingsSection,
-  type SettingsFeedbackState,
-} from './settings-ui';
+import { SettingsCard, SettingsControlRow, SettingsFootnote, SettingsSection } from './settings-ui';
+
+const SAVE_KEY = 'usage-limits-save';
 
 export function LimitsForm({
   initial,
@@ -44,10 +40,6 @@ export function LimitsForm({
   const [values, setValues] = useState(() => createLimitFormValues(initial, tracksPerRequest));
   const [errors, setErrors] = useState<LimitFieldErrors>({});
   const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState<{
-    at: SaveLocation;
-    state: NonNullable<SettingsFeedbackState>;
-  } | null>(null);
   const { fetchChrome } = useAppChrome();
   const trackYield = normalizeTracksPerRequest(tracksPerRequest);
 
@@ -78,13 +70,12 @@ export function LimitsForm({
     return <PricedQuantity quantity={Number(raw)} unit={unit} costs={unitCosts} />;
   }
 
-  async function save(at: SaveLocation) {
+  async function save() {
     if (saving) return;
-    setFeedback(null);
     const parsed = buildLimitsPatch(values, tracksPerRequest);
     if (!parsed.ok) {
       setErrors(parsed.errors);
-      setFeedback({ at, state: { kind: 'error', message: 'Check the highlighted limit values.' } });
+      toast.error('Check the highlighted limit values.', { key: SAVE_KEY });
       return;
     }
 
@@ -92,26 +83,17 @@ export function LimitsForm({
     setSaving(true);
     const result = await saveUsageLimits(parsed.patch);
     setSaving(false);
-    setFeedback({
-      at,
-      state: result.ok
-        ? { kind: 'success', message: 'Generation and cost limits saved.' }
-        : { kind: 'error', message: result.error },
-    });
+    if (!result.ok) {
+      toast.error(result.error, { key: SAVE_KEY });
+      return;
+    }
+    toast.success('Generation and cost limits saved.', { key: SAVE_KEY });
     // The sidebar headroom chip is shell state that otherwise refreshes only
     // on navigation.
-    if (result.ok) void fetchChrome();
+    void fetchChrome();
   }
 
-  function saveControls(at: SaveLocation) {
-    return (
-      <SaveLimitsControls
-        feedback={feedback?.at === at ? feedback.state : null}
-        saving={saving}
-        onSave={() => save(at)}
-      />
-    );
-  }
+  const saveButton = <SaveLimitsButton saving={saving} onSave={save} />;
 
   return (
     <>
@@ -233,7 +215,7 @@ export function LimitsForm({
             valid limit and deliberately blocks that kind of generation.
           </SettingsFootnote>
         </SettingsCard>
-        {saveControls('costs')}
+        {saveButton}
       </SettingsSection>
 
       <SettingsSection title="Cover art budget">
@@ -287,39 +269,22 @@ export function LimitsForm({
             Tailored Cover Art off.
           </SettingsFootnote>
         </SettingsCard>
-        {saveControls('covers')}
+        {saveButton}
       </SettingsSection>
     </>
   );
 }
 
-type SaveLocation = 'costs' | 'covers';
-
-function SaveLimitsControls({
-  feedback,
-  saving,
-  onSave,
-}: {
-  feedback: SettingsFeedbackState;
-  saving: boolean;
-  onSave: () => void;
-}) {
+function SaveLimitsButton({ saving, onSave }: { saving: boolean; onSave: () => void }) {
   return (
-    <>
-      {feedback ? (
-        <div className="mt-4">
-          <SettingsFeedback kind={feedback.kind}>{feedback.message}</SettingsFeedback>
-        </div>
-      ) : null}
-      <button
-        type="button"
-        onClick={onSave}
-        disabled={saving}
-        className={`${primaryButtonClass} mt-4 w-full`}
-      >
-        {saving ? 'Saving…' : 'Save limits'}
-      </button>
-    </>
+    <button
+      type="button"
+      onClick={onSave}
+      disabled={saving}
+      className={`${primaryButtonClass} mt-4 w-full`}
+    >
+      {saving ? 'Saving…' : 'Save limits'}
+    </button>
   );
 }
 

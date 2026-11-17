@@ -5,9 +5,12 @@ import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Switch } from '@/components/ui/controls';
 import { secondaryButtonClass } from '@/components/ui/form-styles';
 import { resetLearnedTaste, savePersonalization } from '@/lib/api-client';
-import { SettingsCard, SettingsControlRow, SettingsFeedback, SettingsSection } from './settings-ui';
+import { toast } from '@/lib/toast';
+import { SettingsCard, SettingsControlRow, SettingsSection } from './settings-ui';
 
 const PERSONALIZE_DESCRIPTION_ID = 'personalize-suggestions-description';
+const SAVE_KEY = 'personalization-save';
+const RESET_KEY = 'learned-taste-reset';
 
 /**
  * Learned taste's two controls. Neither changes anything Your Stats measures.
@@ -16,25 +19,23 @@ export function PersonalizationSection({ initialEnabled }: { initialEnabled: boo
   const [enabled, setEnabled] = useState(initialEnabled);
   const [busy, setBusy] = useState(false);
   const [confirmingReset, setConfirmingReset] = useState(false);
-  const [feedback, setFeedback] = useState<{ kind: 'success' | 'error'; text: string } | null>(
-    null,
-  );
 
   const toggle = async (next: boolean) => {
     setBusy(true);
     setEnabled(next);
     const saved = await savePersonalization(next);
-    if (!saved.ok) setEnabled(!next);
-    setFeedback(saved.ok ? null : { kind: 'error', text: 'The setting could not be saved.' });
+    if (saved.ok) {
+      toast.dismiss(SAVE_KEY);
+    } else {
+      setEnabled(!next);
+      toast.error('The setting could not be saved.', { key: SAVE_KEY });
+    }
     setBusy(false);
   };
   const reset = async () => {
     const done = await resetLearnedTaste();
-    setFeedback(
-      done.ok
-        ? { kind: 'success', text: 'Learned taste reset.' }
-        : { kind: 'error', text: 'Your learned taste could not be reset.' },
-    );
+    if (done.ok) toast.success('Learned taste reset.', { key: RESET_KEY });
+    else toast.error('Your learned taste could not be reset.', { key: RESET_KEY });
     setConfirmingReset(false);
   };
 
@@ -67,11 +68,6 @@ export function PersonalizationSection({ initialEnabled }: { initialEnabled: boo
           </button>
         </SettingsControlRow>
       </SettingsCard>
-      {feedback ? (
-        <div className="mt-2">
-          <SettingsFeedback kind={feedback.kind}>{feedback.text}</SettingsFeedback>
-        </div>
-      ) : null}
       {confirmingReset ? (
         <ConfirmDialog
           heading="Reset learned taste"

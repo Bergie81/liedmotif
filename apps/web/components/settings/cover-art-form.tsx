@@ -21,7 +21,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { SettingsFeedback, type SettingsFeedbackState } from './settings-ui';
+import { toast } from '@/lib/toast';
+
+const SAVE_KEY = 'cover-art-save';
 
 const PLACEHOLDER =
   'Example: hand-cut woodblock print, bold ink lines, rough paper grain, colors that fit the mood.';
@@ -43,10 +45,8 @@ export function CoverArtForm({
   const [enhancementEnabled, setEnhancementEnabled] = useState(initial.promptEnhancementEnabled);
   const [useStandardCoverArt, setUseStandardCoverArt] = useState(initial.useStandardCoverArt);
   const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState<SettingsFeedbackState>(null);
 
   async function save() {
-    setFeedback(null);
     setSaving(true);
     const res = await fetch('/api/settings/cover-art', {
       method: 'POST',
@@ -67,24 +67,20 @@ export function CoverArtForm({
     setSaving(false);
     if (!(res?.ok && data.ok)) {
       const message = typeof data.error === 'string' ? data.error : data.error?.message;
-      setFeedback({ kind: 'error', message: message ?? 'Could not save.' });
+      toast.error(message ?? 'Could not save.', { key: SAVE_KEY });
       return;
     }
     // Visible write-back (decision D4): the stored definition — enhanced or
     // not — is exactly what the field shows after saving.
     if (data.settings) setDefinition(data.settings.customStyleDefinition);
     if (data.enhancement?.applied) {
-      setFeedback({
-        kind: 'success',
-        message: 'Saved. Your definition was optimized by your Writing AI.',
-      });
+      toast.success('Saved. Your definition was optimized by your Writing AI.', { key: SAVE_KEY });
     } else if (data.enhancement?.attempted) {
-      setFeedback({
-        kind: 'info',
-        message: 'Saved. Enhancement was unavailable, so your definition was kept as written.',
+      toast.warning('Saved. Enhancement was unavailable, so your definition was kept as written.', {
+        key: SAVE_KEY,
       });
     } else {
-      setFeedback({ kind: 'success', message: 'Saved.' });
+      toast.success('Saved.', { key: SAVE_KEY });
     }
   }
 
@@ -92,7 +88,9 @@ export function CoverArtForm({
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-[13px] font-semibold text-paper">Use Tailored Cover Art Generation</div>
+          <div className="text-[13px] font-semibold text-paper">
+            Use Tailored Cover Art Generation
+          </div>
           <p className="mt-1 text-[11.5px] leading-[1.5] text-dim">
             New Sessions get covers in your chosen style from your image provider, which costs per
             cover. Off, they use the basic cover art that comes with the music at no extra cost.
@@ -165,9 +163,6 @@ export function CoverArtForm({
           data-testid="prompt-enhancement-toggle"
         />
       </div>
-      {feedback ? (
-        <SettingsFeedback kind={feedback.kind}>{feedback.message}</SettingsFeedback>
-      ) : null}
       <button
         type="button"
         onClick={save}

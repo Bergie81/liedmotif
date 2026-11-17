@@ -9,33 +9,24 @@ import {
 import { Switch } from '@/components/ui/controls';
 import { primaryButtonClass } from '@/components/ui/form-styles';
 import { updateGenerationSettings } from '@/lib/api-client';
-import {
-  GatedSlider,
-  SettingsControlRow,
-  SettingsFeedback,
-  SettingsFootnote,
-  type SettingsFeedbackState,
-} from './settings-ui';
+import { toast } from '@/lib/toast';
+import { GatedSlider, SettingsControlRow, SettingsFootnote } from './settings-ui';
 
 const BUFFER_ENABLED_DESCRIPTION_ID = 'buffer-enabled-description';
+const SAVE_KEY = 'buffer-save';
 
 export function GenerationForm({ initial }: { initial: GenerationSettings }) {
   const [bufferEnabled, setBufferEnabled] = useState(initial.bufferEnabled);
   const [bufferAheadTracks, setBufferAheadTracks] = useState(initial.bufferAheadTracks);
   const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState<SettingsFeedbackState>(null);
 
   async function save() {
     if (saving) return;
-    setFeedback(null);
     setSaving(true);
     const result = await updateGenerationSettings({ bufferEnabled, bufferAheadTracks });
     setSaving(false);
-    setFeedback(
-      result.ok
-        ? { kind: 'success', message: 'Buffer settings saved.' }
-        : { kind: 'error', message: result.error.message },
-    );
+    if (result.ok) toast.success('Buffer settings saved.', { key: SAVE_KEY });
+    else toast.error(result.error.message, { key: SAVE_KEY });
   }
 
   return (
@@ -70,11 +61,6 @@ export function GenerationForm({ initial }: { initial: GenerationSettings }) {
         maxLabel={BUFFER_AHEAD_TRACKS_MAX}
       />
       <SettingsFootnote>Changes reach a running Session within about a minute.</SettingsFootnote>
-      {feedback ? (
-        <div className="mt-4">
-          <SettingsFeedback kind={feedback.kind}>{feedback.message}</SettingsFeedback>
-        </div>
-      ) : null}
       <button
         type="button"
         onClick={save}

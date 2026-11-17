@@ -20,6 +20,7 @@ import {
 } from '@/lib/offline/device-offline';
 import { offlineSupported } from '@/lib/offline/offline-support';
 import type { OfflineSync } from '@/lib/offline/offline-sync';
+import { toast } from '@/lib/toast';
 import {
   deviceStorage,
   needsHomeScreenHint,
@@ -36,6 +37,8 @@ import {
   SettingsSection,
   SettingsUsageMeter,
 } from './settings-ui';
+
+const CHANGE_KEY = 'device-storage-change';
 
 function standalone(): boolean {
   return (
@@ -116,7 +119,6 @@ function DeviceOfflineCard() {
   const [view, setView] = useState<DeviceView | null>(null);
   const [revision, setRevision] = useState(0);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
   const statuses = useSyncExternalStore(
     subscribeOfflineStatus,
     offlineStatusSnapshot,
@@ -154,14 +156,18 @@ function DeviceOfflineCard() {
     );
   }
 
+  /** `change` resolves to why it was refused, or null once it is made. */
   async function act(change: (offline: OfflineSync) => Promise<string | null>) {
     if (!offline) return;
     setBusy(true);
-    setMessage(null);
     try {
-      setMessage(await change(offline));
+      const refusal = await change(offline);
+      if (refusal) toast.error(refusal, { key: CHANGE_KEY });
+      else toast.dismiss(CHANGE_KEY);
     } catch {
-      setMessage('This device’s offline storage could not be changed. Try again.');
+      toast.error('This device’s offline storage could not be changed. Try again.', {
+        key: CHANGE_KEY,
+      });
     } finally {
       setBusy(false);
       setRevision((value) => value + 1);
@@ -215,11 +221,6 @@ function DeviceOfflineCard() {
           incrementLabel="Raise the cap"
         />
       </SettingsControlRow>
-      {message ? (
-        <div className="my-3">
-          <SettingsFeedback kind="error">{message}</SettingsFeedback>
-        </div>
-      ) : null}
 
       <div>
         {view.items.length === 0 ? (

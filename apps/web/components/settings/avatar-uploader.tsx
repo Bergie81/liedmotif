@@ -12,6 +12,7 @@ import { AvatarBadge } from '@/components/avatar-badge';
 import { useImageCropPicker } from '@/components/media/use-image-crop-picker';
 import { AVATAR_UPLOAD, MAX_IMAGE_UPLOAD_BYTES, megabytes } from '@/lib/image-upload-targets';
 import { secondaryButtonClass } from '@/components/ui/form-styles';
+import { toast } from '@/lib/toast';
 
 type AvatarResponse = {
   ok?: boolean;
@@ -20,6 +21,13 @@ type AvatarResponse = {
 };
 
 const MAX_UPLOAD_MB = megabytes(MAX_IMAGE_UPLOAD_BYTES);
+const ERROR_KEY = 'avatar-update';
+
+/** The picker reports null when a failure clears: a new pick, a retry, a cancel. */
+function report(message: string | null) {
+  if (message) toast.error(message, { key: ERROR_KEY });
+  else toast.dismiss(ERROR_KEY);
+}
 
 export function AvatarUploader({
   name,
@@ -38,7 +46,6 @@ export function AvatarUploader({
   const router = useRouter();
   const [imageUrl, setImageUrl] = useState(initialImageUrl);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   /** Send the request; resolves to an error message, or null on success. */
   async function submitAvatar(init: RequestInit): Promise<string | null> {
@@ -60,7 +67,7 @@ export function AvatarUploader({
   const picker = useImageCropPicker({
     target: AVATAR_UPLOAD,
     heading: 'Profile photo',
-    onError: setError,
+    onError: report,
     onUpload: (file) => {
       const form = new FormData();
       form.set('file', file);
@@ -69,7 +76,7 @@ export function AvatarUploader({
   });
 
   async function removeAvatar() {
-    setError(await submitAvatar({ method: 'DELETE' }));
+    report(await submitAvatar({ method: 'DELETE' }));
   }
 
   const working = busy || picker.busy;
@@ -100,13 +107,9 @@ export function AvatarUploader({
           ) : null}
           {picker.element}
         </div>
-        {error ? (
-          <p className="text-[11.5px] text-warn">{error}</p>
-        ) : (
-          <p className="text-[11.5px] leading-[1.5] text-dim">
-            JPEG, PNG, or WebP, {MAX_UPLOAD_MB} MB max.
-          </p>
-        )}
+        <p className="text-[11.5px] leading-[1.5] text-dim">
+          JPEG, PNG, or WebP, {MAX_UPLOAD_MB} MB max.
+        </p>
       </div>
     </div>
   );

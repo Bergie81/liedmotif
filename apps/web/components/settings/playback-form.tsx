@@ -12,17 +12,17 @@ import { adoptStoredPlaybackSettings, usePlayerContext } from '@/components/play
 import { Switch } from '@/components/ui/controls';
 import { primaryButtonClass } from '@/components/ui/form-styles';
 import { updatePlaybackSettings } from '@/lib/api-client';
+import { toast } from '@/lib/toast';
 import { useStoredValue } from './use-stored-value';
 import {
   GatedSlider,
   SettingsCard,
   SettingsControlRow,
-  SettingsFeedback,
   SettingsFootnote,
   SettingsSection,
-  type SettingsFeedbackState,
 } from './settings-ui';
 
+const SAVE_KEY = 'playback-save';
 const SEAM_PREVIEW_WINDOW_SECONDS = 30;
 const SEAM_FIRST_TRACK_WIDTH_PERCENT = 58;
 
@@ -37,31 +37,27 @@ export function PlaybackForm({ initial }: { initial: PlaybackSettings }) {
   const [blendEnabled, setBlendEnabled] = useStoredValue(initial.blendEnabled);
   const [crossfadeSeconds, setCrossfadeSeconds] = useStoredValue(initial.crossfadeSeconds);
   const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState<SettingsFeedbackState>(null);
 
   async function save() {
     if (saving) return;
-    setFeedback(null);
     setSaving(true);
     const patch: UpdatePlaybackSettingsRequest = {};
     if (blendEnabled !== persisted.blendEnabled) patch.blendEnabled = blendEnabled;
     if (crossfadeSeconds !== persisted.crossfadeSeconds) patch.crossfadeSeconds = crossfadeSeconds;
     const result = await updatePlaybackSettings(patch);
     setSaving(false);
-    if (result.ok) {
-      // The response carries the full effective settings, so the form lands on
-      // the server's truth — including a blend flip made from the player.
-      setPersisted(result.data);
-      setBlendEnabled(result.data.blendEnabled);
-      setCrossfadeSeconds(result.data.crossfadeSeconds);
-      adoptStoredPlaybackSettings(player);
-      router.refresh();
+    if (!result.ok) {
+      toast.error(result.error.message, { key: SAVE_KEY });
+      return;
     }
-    setFeedback(
-      result.ok
-        ? { kind: 'success', message: 'Playback settings saved.' }
-        : { kind: 'error', message: result.error.message },
-    );
+    // The response carries the full effective settings, so the form lands on
+    // the server's truth — including a blend flip made from the player.
+    setPersisted(result.data);
+    setBlendEnabled(result.data.blendEnabled);
+    setCrossfadeSeconds(result.data.crossfadeSeconds);
+    adoptStoredPlaybackSettings(player);
+    router.refresh();
+    toast.success('Playback settings saved.', { key: SAVE_KEY });
   }
 
   return (
@@ -101,11 +97,6 @@ export function PlaybackForm({ initial }: { initial: PlaybackSettings }) {
             Fades snap to the beat, so they can run a little shorter or longer.
           </SettingsFootnote>
         </SettingsCard>
-        {feedback ? (
-          <div className="mt-4">
-            <SettingsFeedback kind={feedback.kind}>{feedback.message}</SettingsFeedback>
-          </div>
-        ) : null}
         <button
           type="button"
           onClick={save}

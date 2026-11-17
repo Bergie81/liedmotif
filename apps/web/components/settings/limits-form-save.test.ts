@@ -11,6 +11,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { defaultUsageLimits } from '@liedmotif/db';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AppChromeContext, type AppChromeContextValue } from '@/components/app-chrome-context';
+import { shownToasts, toast } from '@/lib/toast';
 
 const saveUsageLimits = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/settings-client', () => ({ saveUsageLimits }));
@@ -20,9 +21,10 @@ const { LimitsForm } = await import('./limits-form');
 afterEach(() => {
   cleanup();
   saveUsageLimits.mockReset();
+  toast.dismiss();
 });
 
-function renderForm() {
+function renderForm(initial = defaultUsageLimits()) {
   const fetchChrome = vi.fn(() => new Promise<never>(() => {}));
   const chrome: AppChromeContextValue = {
     listener: { name: 'Admin', email: 'admin@example.test', artistName: null, imageUrl: null },
@@ -37,7 +39,7 @@ function renderForm() {
       AppChromeContext.Provider,
       { value: chrome },
       h(LimitsForm, {
-        initial: defaultUsageLimits(),
+        initial,
         tracksPerRequest: 2,
         unitCosts: { perTrackUsd: 0.07, perCoverUsd: 0.04 },
       }),
@@ -68,9 +70,9 @@ describe('saving generation limits', () => {
     fireEvent.click(within(section('Cost controls')).getByRole('button', { name: 'Save limits' }));
 
     await waitFor(() => expect(fetchChrome).toHaveBeenCalledTimes(1));
-    expect(
-      within(section('Cost controls')).getByText('Generation and cost limits saved.'),
-    ).toBeTruthy();
+    expect(shownToasts()).toEqual([
+      expect.objectContaining({ tone: 'success', message: 'Generation and cost limits saved.' }),
+    ]);
   });
 
   it('leaves the shell alone when the save fails', async () => {
@@ -81,7 +83,44 @@ describe('saving generation limits', () => {
       within(section('Cover art budget')).getByRole('button', { name: 'Save limits' }),
     );
 
-    await screen.findByText('Could not save limits.');
+    await waitFor(() =>
+      expect(shownToasts()).toEqual([
+        expect.objectContaining({ tone: 'error', message: 'Could not save limits.' }),
+      ]),
+    );
     expect(fetchChrome).not.toHaveBeenCalled();
+  });
+
+  it('clears a failed save once saving again succeeds', async () => {
+    saveUsageLimits.mockResolvedValueOnce({ ok: false, error: 'Could not save limits.' });
+    saveUsageLimits.mockResolvedValueOnce({ ok: true, data: defaultUsageLimits() });
+    renderForm();
+    const save = within(section('Cost controls')).getByRole('button', { name: 'Save limits' });
+
+    fireEvent.click(save);
+    await waitFor(() => expect(shownToasts()).toHaveLength(1));
+    await waitFor(() => expect((save as HTMLButtonElement).disabled).toBe(false));
+    fireEvent.click(save);
+
+    await waitFor(() =>
+      expect(shownToasts()).toEqual([
+        expect.objectContaining({ tone: 'success', message: 'Generation and cost limits saved.' }),
+      ]),
+    );
+  });
+
+  it('reports out-of-range values as a toast and keeps the note under the field', async () => {
+    renderForm({ ...defaultUsageLimits(), maxQueuedTracks: 100_000 });
+
+    fireEvent.click(within(section('Cost controls')).getByRole('button', { name: 'Save limits' }));
+
+    await waitFor(() =>
+      expect(shownToasts()).toEqual([
+        expect.objectContaining({ tone: 'error', message: 'Check the highlighted limit values.' }),
+      ]),
+    );
+    expect(saveUsageLimits).not.toHaveBeenCalled();
+    const row = screen.getByText('Max queued Tracks').parentElement!;
+    expect(row.querySelector('.text-warn')?.textContent).toBeTruthy();
   });
 });

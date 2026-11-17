@@ -13,8 +13,10 @@ import { labelClass, primaryButtonClass } from '@/components/ui/form-styles';
 import { SessionLanguageSelect } from '@/components/session-language-select';
 import { updateGenerationSettings } from '@/lib/api-client';
 import type { SessionLanguageChoice } from '@/lib/session-languages';
-import { SettingsFeedback, type SettingsFeedbackState } from './settings-ui';
+import { toast } from '@/lib/toast';
 import { useStoredValue } from './use-stored-value';
+
+const SAVE_KEY = 'language-save';
 
 export function LanguageForm({ initial }: { initial: GenerationSettings }) {
   const router = useRouter();
@@ -22,20 +24,18 @@ export function LanguageForm({ initial }: { initial: GenerationSettings }) {
     initial.defaultLanguage,
   );
   const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState<SettingsFeedbackState>(null);
 
   async function save() {
     if (saving) return;
-    setFeedback(null);
     setSaving(true);
     const result = await updateGenerationSettings({ defaultLanguage });
     setSaving(false);
-    if (result.ok) router.refresh();
-    setFeedback(
-      result.ok
-        ? { kind: 'success', message: 'Language setting saved.' }
-        : { kind: 'error', message: result.error.message },
-    );
+    if (!result.ok) {
+      toast.error(result.error.message, { key: SAVE_KEY });
+      return;
+    }
+    router.refresh();
+    toast.success('Language setting saved.', { key: SAVE_KEY });
   }
 
   return (
@@ -57,9 +57,6 @@ export function LanguageForm({ initial }: { initial: GenerationSettings }) {
           Titles and vocals follow this language. Auto Detect follows the language of your prompt.
         </span>
       </label>
-      {feedback ? (
-        <SettingsFeedback kind={feedback.kind}>{feedback.message}</SettingsFeedback>
-      ) : null}
       <button
         type="button"
         onClick={save}

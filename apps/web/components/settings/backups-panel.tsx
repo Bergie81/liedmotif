@@ -34,6 +34,7 @@ import {
 import { apiFetch, apiFetchJson } from '@/lib/api-fetch';
 import { cn } from '@/lib/cn';
 import { formatBinaryBytes } from '@/lib/format-bytes';
+import { toast } from '@/lib/toast';
 import {
   BACKUP_HOUR_OPTIONS,
   backUpNowButton,
@@ -50,19 +51,18 @@ import {
   SettingsFootnote,
   SettingsSection,
   SettingsStatusBadge,
-  type SettingsFeedbackState,
 } from './settings-ui';
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const FREQUENCY_LABELS: Record<BackupFrequency, string> = { daily: 'Daily', weekly: 'Weekly' };
+const SCHEDULE_KEY = 'backup-schedule-save';
+const REQUEST_KEY = 'backup-request';
 
 export function BackupsPanel({ initial }: { initial: BackupsOverview }) {
   const [overview, setOverview] = useState(initial);
   const [schedule, setSchedule] = useState(initial.schedule);
   const [saving, setSaving] = useState(false);
-  const [scheduleFeedback, setScheduleFeedback] = useState<SettingsFeedbackState>(null);
   const [requesting, setRequesting] = useState(false);
-  const [requestFeedback, setRequestFeedback] = useState<SettingsFeedbackState>(null);
   const downloadReasonId = useId();
 
   const refresh = useCallback(async (signal?: AbortSignal): Promise<BackupsOverview | null> => {
@@ -98,7 +98,6 @@ export function BackupsPanel({ initial }: { initial: BackupsOverview }) {
 
   async function save() {
     if (saving) return;
-    setScheduleFeedback(null);
     setSaving(true);
     const result = await apiFetchJson<{ schedule: BackupSchedule }>(
       '/api/settings/backups',
@@ -106,30 +105,28 @@ export function BackupsPanel({ initial }: { initial: BackupsOverview }) {
       schedule,
     );
     setSaving(false);
-    if (result.ok) {
-      setSchedule(result.data.schedule);
-      void refresh();
+    if (!result.ok) {
+      toast.error(result.message, { key: SCHEDULE_KEY });
+      return;
     }
-    setScheduleFeedback(
-      result.ok
-        ? { kind: 'success', message: 'Backup schedule saved.' }
-        : { kind: 'error', message: result.message },
-    );
+    setSchedule(result.data.schedule);
+    void refresh();
+    toast.success('Backup schedule saved.', { key: SCHEDULE_KEY });
   }
 
   async function backUpNow() {
-    setRequestFeedback(null);
     setRequesting(true);
     const result = await apiFetch('/api/settings/backups/run', { method: 'POST' });
     // A refused request (a run already in progress) refreshes too, so the page shows that run.
     const current = (await refresh()) ?? overview;
     setRequesting(false);
-    if (!result.ok) setRequestFeedback({ kind: 'error', message: result.message });
+    if (!result.ok) toast.error(result.message, { key: REQUEST_KEY });
     else if (current.service === 'not-running') {
-      setRequestFeedback({
-        kind: 'info',
-        message: 'Backup requested. It runs once the backup service is back.',
+      toast.info('Backup requested. It runs once the backup service is back.', {
+        key: REQUEST_KEY,
       });
+    } else {
+      toast.dismiss(REQUEST_KEY);
     }
   }
 
@@ -200,13 +197,6 @@ export function BackupsPanel({ initial }: { initial: BackupsOverview }) {
                 </div>
               ) : null}
             </SettingsCard>
-            {requestFeedback ? (
-              <div className="mt-4">
-                <SettingsFeedback kind={requestFeedback.kind}>
-                  {requestFeedback.message}
-                </SettingsFeedback>
-              </div>
-            ) : null}
             <button
               type="button"
               onClick={() => void backUpNow()}
@@ -333,13 +323,6 @@ export function BackupsPanel({ initial }: { initial: BackupsOverview }) {
                 />
               </SettingsControlRow>
             </SettingsCard>
-            {scheduleFeedback ? (
-              <div className="mt-4">
-                <SettingsFeedback kind={scheduleFeedback.kind}>
-                  {scheduleFeedback.message}
-                </SettingsFeedback>
-              </div>
-            ) : null}
             <button
               type="button"
               onClick={() => void save()}
