@@ -218,6 +218,7 @@ async function planReserved(
       // the association a Session applies to its music prompt applies here.
       userGuidance:
         withOrdinalSubjectNames(guidance, referenceSubjectsForSelection(references)) ?? null,
+      enhancementApplied: current.plan.enhancementApplied === true,
       capabilities,
       referenceTreatment: coverReferenceTreatment(references.selectedReferences),
       referenceSubjectCount: new Set(

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { COVER_STYLES, type CoverStyle } from '@liedmotif/shared';
 import type { GeneratedImageCapabilities } from '@liedmotif/providers';
-import { buildSessionCoverPlan } from './cover-plan';
+import { buildSessionCoverPlan, type BuildSessionCoverPlanInput } from './cover-plan';
 
 const CAPABILITIES: GeneratedImageCapabilities = {
   provider: { providerType: 'image', providerKey: 'test', model: 'portable-model' },
@@ -317,7 +317,6 @@ describe('Session Cover art-direction policy', () => {
     'by picasso --ar 1:1',
     'picasso-inspired masterpiece best quality',
     'by van gogh, Midjourney FLUX.1 ultra-detailed 8k',
-    'by anonymous creator; Stable Diffusion award-winning',
   ])('rejects non-portable lowercase creator and magic-token Custom text: %s', (definition) => {
     const result = buildSessionCoverPlan({
       sessionId: `unsafe-${definition}`,
@@ -336,6 +335,42 @@ describe('Session Cover art-direction policy', () => {
     expect(result.plan.prompt).not.toMatch(
       /picasso|van gogh|anonymous creator|midjourney|flux|stable diffusion|masterpiece|best quality|ultra-detailed|8k|award-winning/i,
     );
+  });
+
+  it('keeps an unlisted creator attribution in Custom text while its magic tokens go', () => {
+    const result = buildSessionCoverPlan({
+      sessionId: 'unlisted-creator-custom',
+      sessionName: 'Paper Current',
+      coverConcept: null,
+      coverStyle: 'custom',
+      customDefinition: 'by anonymous creator; Stable Diffusion award-winning',
+      snapshot: { mood: 'calm', activity: 'focus', energy: 'low', genreTags: ['lofi'] },
+      capabilities: CAPABILITIES,
+      referenceTreatment: null,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.plan.resolvedStyle).toBe('custom');
+    expect(result.plan.customDefinition).toBe('by anonymous creator');
+    expect(result.plan.prompt).not.toMatch(/stable diffusion|award-winning/i);
+  });
+
+  it("keeps a Custom style whose definition is an ordinary 'by …' scene", () => {
+    const result = buildSessionCoverPlan({
+      sessionId: 'by-scene-custom',
+      sessionName: 'Paper Current',
+      coverConcept: null,
+      coverStyle: 'custom',
+      customDefinition: 'by candlelight',
+      snapshot: { mood: 'calm', activity: 'focus', energy: 'low', genreTags: ['lofi'] },
+      capabilities: CAPABILITIES,
+      referenceTreatment: null,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.plan.resolvedStyle).toBe('custom');
+    expect(result.plan.styleFallbackReason).toBeNull();
+    expect(result.plan.customDefinition).toBe('by candlelight');
   });
 
   it('preserves ordinary Custom medium language that is not a named-work shortcut', () => {
@@ -964,18 +999,22 @@ describe('Session Cover art-direction policy', () => {
 
 describe('Session Cover user guidance (regeneration art direction)', () => {
   function planWithGuidance(userGuidance: string | null, maxPromptCharacters = 8_000) {
-    return buildSessionCoverPlan({
+    return buildSessionCoverPlan(guidanceInput(userGuidance, maxPromptCharacters));
+  }
+
+  function guidanceInput(userGuidance: string | null, maxPromptCharacters = 8_000) {
+    return {
       sessionId: '00000000-0000-4000-8000-000000000002',
       sessionName: 'Rain Over São Paulo',
       coverConcept: null,
-      coverStyle: 'minimal',
+      coverStyle: 'minimal' as const,
       customDefinition: null,
       snapshot: { mood: 'calm', activity: 'focus', energy: 'medium', genreTags: ['ambient'] },
       sessionIntent: 'quiet music for reading',
       capabilities: { ...CAPABILITIES, maxPromptCharacters },
       referenceTreatment: null,
       userGuidance,
-    });
+    } satisfies BuildSessionCoverPlanInput;
   }
 
   it('freezes the guidance into a protected data-only prompt section after the style contract', () => {
@@ -997,6 +1036,81 @@ describe('Session Cover user guidance (regeneration art direction)', () => {
     if (!result.ok) return;
     expect(result.plan.prompt).not.toMatch(/picasso|disney|masterpiece|--ar/i);
     expect(result.plan.prompt).toContain('warm dusk light');
+  });
+
+  it.each([
+    'by the sea at dusk',
+    'by a window',
+    'by candlelight',
+    'by moonlight',
+    'by night',
+    'a harbor, by the sea at dusk',
+    'painted by hand',
+    'lit by warm light',
+    'one red apple on a table',
+    'an apple orchard in bloom',
+  ])("keeps ordinary 'by …' scene phrases in the art direction: %s", (guidance) => {
+    const result = planWithGuidance(guidance);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.plan.prompt).toContain(`User art direction: ${JSON.stringify(guidance)}`);
+  });
+
+  it.each([
+    ['by Picasso, a harbor at dusk', /picasso|\bby\b/i],
+    ['a harbor at dusk by van gogh', /van gogh|\bby\b/i],
+    ['Picasso-inspired harbor at dusk', /picasso|inspired/i],
+    ['a Banksy harbor at dusk', /banksy/i],
+    ['Hayao Miyazaki harbor at dusk', /miyazaki|hayao/i],
+    ['a harbor at dusk in the style of Banksy', /banksy|style of/i],
+    ['a harbor at dusk, in style of some unknown painter', /unknown painter|style of/i],
+    ['a harbor at dusk, like the work of Monet', /monet|work of/i],
+  ])(
+    'removes a listed creator or a style attribution from the fallback text: %s',
+    (guidance, gone) => {
+      const result = planWithGuidance(guidance);
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      const direction = result.plan.prompt
+        .split('\n')
+        .find((line) => line.startsWith('User art direction:'));
+      expect(direction).toContain('harbor at dusk');
+      expect(direction).not.toMatch(gone);
+    },
+  );
+
+  it.each(['Apple logo on a desk', 'an Apple Music cover', 'Apple product shot'])(
+    'replaces apple only where it clearly means the brand: %s',
+    (guidance) => {
+      const result = planWithGuidance(guidance);
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.plan.prompt).not.toMatch(/apple/i);
+    },
+  );
+
+  it("keeps a rewritten wish's words as written", () => {
+    const result = buildSessionCoverPlan({
+      ...guidanceInput('one red apple by the sea (texture:1.8) masterpiece'),
+      enhancementApplied: true,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.plan.prompt).toContain('one red apple by the sea');
+    expect(result.plan.prompt).not.toMatch(/texture:1\.8|masterpiece/i);
+  });
+
+  it('leaves names and brands in a rewritten wish to the Writing AI', () => {
+    const guidance = 'a harbor at dusk under an Apple logo, Picasso-inspired';
+    const rewritten = buildSessionCoverPlan({
+      ...guidanceInput(guidance),
+      enhancementApplied: true,
+    });
+    const fallback = buildSessionCoverPlan(guidanceInput(guidance));
+    expect(rewritten.ok && fallback.ok).toBe(true);
+    if (!rewritten.ok || !fallback.ok) return;
+    expect(rewritten.plan.prompt).toContain(JSON.stringify(guidance));
+    expect(fallback.plan.prompt).not.toMatch(/apple|picasso/i);
   });
 
   it('neutralizes instruction-like guidance instead of following it', () => {

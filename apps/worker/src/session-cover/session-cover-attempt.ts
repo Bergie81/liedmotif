@@ -337,6 +337,8 @@ export async function freezePlanInputs(
     forcedTerminalReason?: string;
     /** Effective user art direction for a regeneration attempt. */
     guidance?: string;
+    /** True when `guidance` is the Writing AI's rewrite of the wish. */
+    enhancementApplied?: boolean;
   },
 ): Promise<FrozenPlanInputs> {
   const recentPlans = await listRecentSessionCoverGenerations(tx, {
@@ -371,6 +373,7 @@ export async function freezePlanInputs(
     snapshot: session.sessionStyleSnapshot ?? {},
     sessionIntent: session.userPrompt,
     userGuidance: args.guidance ?? null,
+    enhancementApplied: args.enhancementApplied === true,
     capabilities,
     referenceTreatment: coverReferenceTreatment(referenceSelection.selectedReferences),
     referenceSubjectCount: new Set(

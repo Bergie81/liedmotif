@@ -88,6 +88,16 @@ const NAMED_REFERENCE_RULE =
   'sound in your own words (genre, era, instruments, production, vocal character, mood), ' +
   'and never put the name in stylePrompt, title, trackTitles, or lyricContext.';
 
+/** The cover-direction rewrite's form of the same rule. The worker runs its
+ * creator and brand word lists only on text no rewrite judged, so this rule is
+ * what keeps names out of a rewritten wish, and an ordinary word ("by the sea",
+ * "one red apple") must not be mistaken for one. */
+export const NAMED_VISUAL_REFERENCE_RULE =
+  'If the direction names an artist, studio, franchise, or brand as a reference, describe ' +
+  'its visual qualities in your own words (medium, palette, era, composition, texture, mood), ' +
+  'and never put the name in the rewrite. This holds in any language. Ordinary words keep ' +
+  'their ordinary meaning: "by the sea" is a place and "one red apple" is a fruit.';
+
 /** The same rule for the later calls that reread the request (names, title
  * refills, per-track lyric briefs), so a name the expansion described away
  * doesn't come back in a title or a lyric. */

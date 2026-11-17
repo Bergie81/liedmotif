@@ -56,6 +56,7 @@ import {
   jsonRepairPrompt,
   MAX_SURPRISE_REQUEST_LENGTH,
   namingPrompt,
+  NAMED_VISUAL_REFERENCE_RULE,
   structuredRepairPrompt,
   SURPRISE_MINUTES,
   surpriseRequestPrompt,
@@ -249,6 +250,7 @@ function coverDirectionPrompt(input: CoverDirectionInput): string {
   return (
     `Rewrite the user's cover-art direction into concise, concrete visual language an AI image model follows well: ` +
     `subjects, composition, palette, materials, and lighting. Keep the user's intent and subjects. ` +
+    `${NAMED_VISUAL_REFERENCE_RULE} ` +
     `Never add artist names, brands, quality tokens ("masterpiece", "8k"), or requests for text or lettering. ` +
     `Respond with ONLY the rewritten direction as one short paragraph.\n\n` +
     (context ? `Context (informs, never overrides):\n${context}\n\n` : '') +

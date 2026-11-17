@@ -14,7 +14,7 @@ import {
 import { GRAMMARS } from './cover-grammars';
 
 export const SESSION_COVER_PLAN_VERSION = 'session-cover-plan-v5';
-export const SESSION_COVER_PROMPT_VERSION = 'session-cover-prompt-v13';
+export const SESSION_COVER_PROMPT_VERSION = 'session-cover-prompt-v14';
 
 const MAX_NAME = 240;
 const MAX_CONCEPT = 240;
@@ -150,28 +150,34 @@ function genericCustomDefinition(raw: string): string {
 }
 
 /**
- * Deterministic sanitizer for user-written art direction: strips brands, named
- * creators, provider/magic tokens, weight syntax, and injection phrasing while
- * keeping the descriptive language. Returns '' when nothing survives.
+ * Sanitizer for user-written art direction. Stripping weight and flag syntax,
+ * provider and magic tokens, and injection phrasing is prompt syntax and runs on
+ * all text. The creator, brand, and style-attribution lists judge meaning from
+ * fixed English words, so they are only the fallback for text no Writing AI
+ * rewrote (ADR 0004): a rewrite already described named references as visual
+ * qualities in any language, and its ordinary words stay as written. Returns ''
+ * when nothing survives.
  */
-function genericArtDirection(raw: string, max: number): string {
+function genericArtDirection(raw: string, max: number, rewritten = false): string {
   const sanitized = boundedSupportingData(raw, max);
   if (!sanitized) return '';
+  // `apple` alone is far more often the fruit; only an Apple product noun right
+  // after it makes it the brand.
   const branded =
-    /\b(?:marvel|dc comics?|disney|pixar|ghibli|star wars|pokemon|nike|apple|coca[- ]?cola|netflix|adidas)\b/giu;
+    /\b(?:marvel|dc comics?|disney|pixar|ghibli|star wars|pokemon|nike|apple(?=\s+(?:logo|music|products?)\b)|coca[- ]?cola|netflix|adidas)\b/giu;
   const namedCreator =
     /\b(?:pablo\s+picasso|picasso|vincent\s+van\s+gogh|van\s+gogh|banksy|andy\s+warhol|warhol|salvador\s+dal[ií]|dal[ií]|claude\s+monet|monet|hayao\s+miyazaki|miyazaki)(?![\p{L}\p{N}])/giu;
   const namedStyleAttribution =
     /\b(?:in (?:the )?style of|like the work of)\s+[\p{L}\p{N}][\p{L}\p{N}'’.-]*(?:\s+[\p{L}\p{N}][\p{L}\p{N}'’.-]*){0,3}/giu;
-  const explicitCreatorAttribution =
-    /(^|[,;]\s*)by\s+(?!hand\b)[\p{L}\p{N}][\p{L}\p{N}'’.-]*(?:\s+[\p{L}\p{N}][\p{L}\p{N}'’.-]*){0,3}/giu;
+  const judged = rewritten
+    ? sanitized
+    : sanitized
+        .replace(branded, 'generic editorial visual language')
+        .replace(namedStyleAttribution, '')
+        .replace(new RegExp(`(?:by\\s+)?${namedCreator.source}(?:[- ]inspired)?`, 'giu'), '');
   const providerOrMagicToken =
     /\b(?:midjourney|stable\s+diffusion|dall[-· ]?e|flux(?:\.\d+)?|imagen|openai|openrouter|masterpiece|best\s+quality|ultra[- ]?detailed|award[- ]?winning|trending\s+on\s+artstation|[48]k|uhd)\b/giu;
-  const generic = sanitized
-    .replace(branded, 'generic editorial visual language')
-    .replace(namedStyleAttribution, '')
-    .replace(new RegExp(`(?:by\\s+)?${namedCreator.source}(?:[- ]inspired)?`, 'giu'), '')
-    .replace(explicitCreatorAttribution, '$1')
+  const generic = judged
     .replace(providerOrMagicToken, '')
     .replace(/<[^>]{1,120}>/g, '')
     .replace(/--[\w-]+(?:\s+[^\s,;]+)?/g, '')
@@ -229,6 +235,8 @@ export interface BuildSessionCoverPlanInput {
   sessionIntent?: string | null;
   /** User art direction for a regeneration attempt (already the effective text). */
   userGuidance?: string | null;
+  /** True when `userGuidance` is the Writing AI's rewrite of the wish. */
+  enhancementApplied?: boolean;
   capabilities: GeneratedImageCapabilities;
   referenceTreatment: string | null;
   referenceSubjectCount?: number;
@@ -479,6 +487,7 @@ export function buildSessionCoverPlan(
     ? genericArtDirection(
         withOrdinalSubjectNames(input.userGuidance, input.referenceSubjects ?? []) ?? '',
         MAX_COVER_GUIDANCE_LENGTH,
+        input.enhancementApplied === true,
       )
     : '';
   const sections = promptSections({

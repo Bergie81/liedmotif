@@ -52,7 +52,7 @@ describe('replacement Session Cover qualification composition', () => {
     const compiled = compileQualificationCoverPlan(controlledInput('minimal'));
 
     expect(compiled).toMatchObject({
-      promptVersion: 'session-cover-prompt-v13',
+      promptVersion: 'session-cover-prompt-v14',
       planVersion: 'session-cover-plan-v5',
       resolvedStyle: 'minimal',
       poster: null,

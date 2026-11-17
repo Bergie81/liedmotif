@@ -1432,6 +1432,21 @@ describe('enhanceCoverDirection', () => {
     expect(captured[0]).toContain('minimal');
   });
 
+  it('tells the rewrite to describe named references visually and keep ordinary words', async () => {
+    const captured: string[] = [];
+    const provider = createOpenAiLlmProvider({
+      apiKey: 'k',
+      languageModel: promptCapturingModel(['a red apple on a harbor wall'], captured),
+    });
+    await provider.enhanceCoverDirection({ text: 'one red apple by the sea', context: {} });
+    expect(captured[0]).toMatch(
+      /names an artist, studio, franchise, or brand as a reference, describe its visual qualities in your own words/i,
+    );
+    expect(captured[0]).toMatch(/never put the name in the rewrite/i);
+    expect(captured[0]).toMatch(/in any language/i);
+    expect(captured[0]).toMatch(/ordinary words keep their ordinary meaning/i);
+  });
+
   it('falls back to the raw text without throwing when the model call fails', async () => {
     const provider = createOpenAiLlmProvider({
       apiKey: 'k',
