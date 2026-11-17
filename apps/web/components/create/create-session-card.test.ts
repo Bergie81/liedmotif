@@ -163,7 +163,6 @@ describe('Surprise Me in the creation card', () => {
     expect(onStartSurprise).toHaveBeenCalledExactlyOnceWith({
       proposalId: EMBER.id,
       targetDurationMinutes: 20,
-      coverStyle: 'poster_art',
       useStandardCover: false,
     });
     expect(onStart).not.toHaveBeenCalled();
@@ -273,7 +272,6 @@ describe('Surprise Me in the creation card', () => {
     expect(onStartSurprise).toHaveBeenCalledExactlyOnceWith({
       proposalId: EMBER.id,
       targetDurationMinutes: 45,
-      coverStyle: 'poster_art',
       useStandardCover: false,
     });
     expect(onStart).not.toHaveBeenCalled();

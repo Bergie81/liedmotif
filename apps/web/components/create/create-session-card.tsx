@@ -42,7 +42,7 @@ export function CreateSessionCard({
   onStart,
   llmConfigured,
   initialPrompt,
-  defaultCoverStyle = 'poster_art',
+  defaultCoverStyle = 'auto',
   defaultUseStandardCover = false,
   defaultLanguage = 'auto',
   forYouGenres = [],

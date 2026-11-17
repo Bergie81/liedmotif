@@ -9,6 +9,7 @@ import type { Task } from 'graphile-worker';
 import {
   resolveSessionCoverImageProvider,
   resolveTailoredCoverImageProvider,
+  textLlmConfigured,
   type SessionCoverProviders,
 } from '../session-cover/cover-image-provider';
 import { createPlaylistCoverGenerator } from '../session-cover/playlist-cover-regeneration';
@@ -94,6 +95,7 @@ export function createRecoverSessionCoversTask(
           },
           logger,
           clock: { now: () => now },
+          textLlmConfigured: await textLlmConfigured(deps.getLlm),
         });
         if (trigger === 'user_regenerate') {
           await generator.processRegeneration(activitySessionId, id);

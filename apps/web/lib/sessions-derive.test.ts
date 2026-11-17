@@ -410,11 +410,12 @@ describe('nameSessionSnapshot listener personalization merge', () => {
       'free-text intent',
       snapshot,
       null,
-      'A glass prism holding one cloud.',
+      { coverConcept: 'A glass prism holding one cloud.', autoCoverStyle: 'drawing' },
       false,
     );
     expect(createSessionMetadata).not.toHaveBeenCalled();
     expect(named.coverConcept).toBe('A glass prism holding one cloud.');
+    expect(named.autoCoverStyle).toBe('drawing');
   });
 });
 

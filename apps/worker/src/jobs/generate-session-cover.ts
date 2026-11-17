@@ -4,6 +4,7 @@ import type { StorageProvider } from '@liedmotif/storage';
 import type { Task } from 'graphile-worker';
 import {
   resolveSessionCoverImageProvider,
+  textLlmConfigured,
   type SessionCoverProviders,
 } from '../session-cover/cover-image-provider';
 import {
@@ -79,6 +80,7 @@ export function createGenerateSessionCoverTask(
         warn: (message, fields) => helpers.logger.warn(message, fields),
       },
       clock: { now: () => new Date() },
+      textLlmConfigured: await textLlmConfigured(deps.getLlm),
     });
     if (jobPayload.coverGenerationId) {
       await generator.processRegeneration(

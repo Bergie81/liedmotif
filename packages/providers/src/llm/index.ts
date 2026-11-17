@@ -49,6 +49,8 @@ export interface ExpandedSessionIntent {
   requestedDurationMinutes?: number | null;
   snapshot: SessionStyleSnapshot;
   coverConcept: string;
+  /** The cover preset the model picked for Auto; null when it gave no valid one. */
+  autoCoverStyle: CoverStylePreset | null;
   /**
    * The model's reading of whether the request places the listener themself in
    * its scene ("me, Jonas and Clara on the moon"), as opposed to merely asking
@@ -82,7 +84,7 @@ export interface CoverDirectionEnhancement {
 // and `AssistantMessage` (the request contract's message) live in
 // `@liedmotif/shared`; re-exported so LLM consumers get them with the provider
 // interface.
-import type { AssistantMessage, ListenerContext } from '@liedmotif/shared';
+import type { AssistantMessage, CoverStylePreset, ListenerContext } from '@liedmotif/shared';
 
 export type { AssistantMessage, ListenerContext };
 

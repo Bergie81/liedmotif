@@ -52,6 +52,7 @@ import {
   type BudgetKind,
   type CostBounds,
   type CostLimitDecision,
+  type CoverStylePreset,
   type CreationHeadroomDecision,
   type SessionListItem,
   type SessionMode,
@@ -220,6 +221,7 @@ export type DerivedSnapshotResult =
       ok: true;
       snapshot: SessionStyleSnapshot;
       coverConcept: string;
+      autoCoverStyle: CoverStylePreset | null;
       requestedDurationMinutes?: number | null;
       includesListener: boolean;
     }
@@ -271,21 +273,20 @@ export function toStoredSnapshot(snapshot: SessionStyleSnapshot): StyleSnapshot 
 async function withCreativeNaming(
   userPrompt: string | null,
   snapshot: SessionStyleSnapshot,
-  existingCoverConcept: string,
+  existing: CoverDirection,
   listener?: ListenerContext | null,
   options?: {
     allowNamingCall?: boolean;
     /** Names the proposal must stay clear of (a seeded session's source names). */
     avoidTitles?: string[];
   },
-): Promise<{ snapshot: SessionStyleSnapshot; coverConcept: string }> {
-  if (snapshot.title.trim() && snapshot.trackTitles.length > 0) {
-    return { snapshot, coverConcept: existingCoverConcept };
-  }
-  if (options?.allowNamingCall === false) return { snapshot, coverConcept: existingCoverConcept };
+): Promise<{ snapshot: SessionStyleSnapshot } & CoverDirection> {
+  const unchanged = { snapshot, ...existing };
+  if (snapshot.title.trim() && snapshot.trackTitles.length > 0) return unchanged;
+  if (options?.allowNamingCall === false) return unchanged;
   try {
     const llm = await getLlmProvider();
-    if (!llm) return { snapshot, coverConcept: existingCoverConcept };
+    if (!llm) return unchanged;
     const naming = await llm.createSessionMetadata({
       userPrompt,
       snapshot,
@@ -299,7 +300,8 @@ async function withCreativeNaming(
         trackTitles: snapshot.trackTitles.length > 0 ? snapshot.trackTitles : naming.trackTitles,
         lyricContext: snapshot.lyricContext || naming.lyricContext,
       },
-      coverConcept: existingCoverConcept || naming.coverConcept,
+      coverConcept: existing.coverConcept || naming.coverConcept,
+      autoCoverStyle: existing.autoCoverStyle ?? naming.autoCoverStyle,
     };
   } catch (err) {
     // Naming is cosmetic and must never fail creation — that covers the
@@ -308,15 +310,28 @@ async function withCreativeNaming(
     logger.warn('creative naming unavailable; using deterministic naming', {
       error: err instanceof Error ? err.name : 'unknown',
     });
-    return { snapshot, coverConcept: existingCoverConcept };
+    return unchanged;
   }
 }
+
+/**
+ * What the text LLM wrote for a Session's cover: the visual concept and the
+ * preset Auto resolves to (ADR 0007). Written together by the expansion or the
+ * naming call, and frozen together on the Session.
+ */
+interface CoverDirection {
+  coverConcept: string;
+  autoCoverStyle: CoverStylePreset | null;
+}
+
+const NO_COVER_DIRECTION: CoverDirection = { coverConcept: '', autoCoverStyle: null };
 
 /** A session's stored jsonb snapshot paired with its display Name. */
 export interface NamedSnapshot {
   snapshot: StyleSnapshot;
   title: string;
   coverConcept: string | null;
+  autoCoverStyle: CoverStylePreset | null;
 }
 
 /**
@@ -329,16 +344,17 @@ export async function nameSessionSnapshot(
   userPrompt: string | null,
   snapshot: SessionStyleSnapshot,
   listener?: ListenerContext | null,
-  existingCoverConcept = '',
+  existing: CoverDirection = NO_COVER_DIRECTION,
   allowNamingCall = true,
 ): Promise<NamedSnapshot> {
-  const named = await withCreativeNaming(userPrompt, snapshot, existingCoverConcept, listener, {
+  const named = await withCreativeNaming(userPrompt, snapshot, existing, listener, {
     allowNamingCall,
   });
   return {
     snapshot: toStoredSnapshot(named.snapshot),
     title: deriveSessionTitle({ userPrompt, snapshot: named.snapshot }),
     coverConcept: named.coverConcept || null,
+    autoCoverStyle: named.autoCoverStyle,
   };
 }
 
@@ -393,7 +409,7 @@ export async function deriveNamedSnapshotForIntent(
     userPrompt,
     snapshot,
     listener,
-    derived.coverConcept,
+    { coverConcept: derived.coverConcept, autoCoverStyle: derived.autoCoverStyle },
     input.mode === 'controls',
   );
   return {
@@ -452,13 +468,18 @@ export async function nameSeededSnapshot(
 ): Promise<NamedSnapshot> {
   const parsed = sessionStyleSnapshotSchema.safeParse(seed);
   if (!parsed.success)
-    return { snapshot: seed, title: deriveSessionTitle({ snapshot: seed }), coverConcept: null };
+    return {
+      snapshot: seed,
+      title: deriveSessionTitle({ snapshot: seed }),
+      coverConcept: null,
+      autoCoverStyle: null,
+    };
   const inherited = inheritedGuardrails(parsed.data);
   const listener = await getListenerContext(db, ownerUserId);
   const named = await withCreativeNaming(
     null,
     { ...parsed.data, ...inherited, title: '', trackTitles: [] },
-    '',
+    NO_COVER_DIRECTION,
     listener,
     {
       avoidTitles: [parsed.data.title, ...parsed.data.trackTitles].filter(
@@ -479,6 +500,7 @@ export async function nameSeededSnapshot(
       deriveSessionTitle({ snapshot: parsed.data }),
     ),
     coverConcept: named.coverConcept || null,
+    autoCoverStyle: named.autoCoverStyle,
   };
 }
 

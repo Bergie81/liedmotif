@@ -554,6 +554,28 @@ describe.skipIf(skip)('Surprise Me proposals', () => {
       expect(await pending()).toBeNull();
     });
 
+    it('carries the text LLM’s Auto cover pick from the proposal onto the Session', async () => {
+      const proposal = await proposeOk();
+      const approved = (await getPendingProposal(db(), holder.ownerUserId!))!;
+      expect(approved.autoCoverStyle).toBe('photographic');
+
+      const { session } = await startOk(proposal.id);
+      const stored = await getSessionById(db(), {
+        ownerUserId: holder.ownerUserId!,
+        sessionId: session.id,
+      });
+      expect(stored).toMatchObject({
+        coverConcept: approved.coverConcept,
+        autoCoverStyle: 'photographic',
+      });
+    });
+
+    it('a proposal made without a text LLM carries no Auto cover pick', async () => {
+      holder.llmConfigured = false;
+      await proposeOk();
+      expect((await getPendingProposal(db(), holder.ownerUserId!))!.autoCoverStyle).toBeNull();
+    });
+
     it('starts open-ended when the card clears the proposal’s duration', async () => {
       const proposal = await proposeOk();
       expect(proposal.edit.durationMinutes).not.toBeNull();

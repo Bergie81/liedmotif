@@ -3,7 +3,7 @@
 // the free-text create path can be exercised offline. Expansion derives a snapshot
 // from the intent text; the Assistant's reply follows a script.
 
-import { MAX_COVER_GUIDANCE_LENGTH, tokenize } from '@liedmotif/shared';
+import { MAX_COVER_GUIDANCE_LENGTH, tokenize, type CoverStylePreset } from '@liedmotif/shared';
 import {
   clampLyricContext,
   clampTrackLyricBrief,
@@ -54,6 +54,9 @@ const MOCK_TITLE_NOUNS = [
   'Echoes',
   'Skyline',
 ];
+
+/** The mock's fixed Auto cover pick, so tests exercise the stored-pick path. */
+export const MOCK_AUTO_COVER_STYLE: CoverStylePreset = 'photographic';
 
 // Naive deterministic stand-ins for the real model's vocal/language detection,
 // so dev/manual testing with the mock exercises the vocal-language path at all
@@ -196,6 +199,7 @@ export function mockLlmProvider(
       return {
         snapshot,
         coverConcept: `One concrete visual metaphor for ${deriveSessionTitle({ userPrompt: intent, snapshot })}`,
+        autoCoverStyle: MOCK_AUTO_COVER_STYLE,
         ...(LISTENER_HINT.test(intent) ? { includesListener: true } : {}),
       };
     },
@@ -227,6 +231,7 @@ export function mockLlmProvider(
         trackTitles: ['Dawn', 'Drift', 'Glow', 'Ember'].map((word) => `${title} ${word}`),
         lyricContext,
         coverConcept: `A concrete visual interpretation of ${title}`,
+        autoCoverStyle: MOCK_AUTO_COVER_STYLE,
       };
     },
 

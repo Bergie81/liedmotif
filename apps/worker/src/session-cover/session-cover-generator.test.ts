@@ -1064,6 +1064,23 @@ describeIfDb('SessionCoverGenerator', () => {
     expect(ledger!.plan.selectedPersonIds).toEqual(configuredPeople.map((person) => person.id));
   });
 
+  it('plans an Auto cover in the preset the text LLM picked for the Session', async () => {
+    const { ownerUserId, sessionId } = await seedSession();
+    await ctx.db
+      .update(activitySessions)
+      .set({ coverStyle: 'auto', autoCoverStyle: 'manga' })
+      .where(eq(activitySessions.id, sessionId));
+    const { provider } = fakeCoverArt();
+
+    await generator(ownerUserId, provider, { textLlmConfigured: true }).ensureGenerated(sessionId);
+
+    const [ledger] = await ctx.db
+      .select()
+      .from(sessionCoverGenerations)
+      .where(eq(sessionCoverGenerations.activitySessionId, sessionId));
+    expect(ledger!.plan).toMatchObject({ selectedStyle: 'auto', resolvedStyle: 'manga' });
+  });
+
   it('leaves the owner off a cover whose request names only other People', async () => {
     const { ownerUserId, sessionId, people: configuredPeople } = await seedMultiPersonSession();
     await ctx.db

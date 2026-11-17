@@ -143,6 +143,7 @@ export async function deriveSessionMetadata(
     return {
       snapshot: stamp(compileStructuredControls(input.controls)),
       coverConcept: '',
+      autoCoverStyle: null,
       includesListener: false,
     };
   }
@@ -152,6 +153,7 @@ export async function deriveSessionMetadata(
         compilePromptPassthrough(input.prompt, intentPicks(input), options?.adjustFrom),
       ),
       coverConcept: '',
+      autoCoverStyle: null,
       includesListener: false,
     };
   }

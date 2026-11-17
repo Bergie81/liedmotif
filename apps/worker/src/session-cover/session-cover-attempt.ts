@@ -83,6 +83,9 @@ export interface SessionCoverGeneratorDeps {
   metadataQueue: SessionCoverMetadataQueue;
   logger: SessionCoverLogger;
   clock: SessionCoverClock;
+  /** Whether the worker has a text LLM: with one, Auto never ranks presets by
+   *  keyword (ADR 0004). Omitted means none. */
+  textLlmConfigured?: boolean;
 }
 
 export type SessionCoverFallbackReason =
@@ -339,6 +342,7 @@ export async function freezePlanInputs(
     guidance?: string;
     /** True when `guidance` is the Writing AI's rewrite of the wish. */
     enhancementApplied?: boolean;
+    textLlmConfigured: boolean;
   },
 ): Promise<FrozenPlanInputs> {
   const recentPlans = await listRecentSessionCoverGenerations(tx, {
@@ -369,6 +373,8 @@ export async function freezePlanInputs(
     sessionName: session.title,
     coverConcept: session.coverConcept,
     coverStyle: session.coverStyle,
+    autoCoverStyle: session.autoCoverStyle,
+    textLlmConfigured: args.textLlmConfigured,
     customDefinition,
     snapshot: session.sessionStyleSnapshot ?? {},
     sessionIntent: session.userPrompt,

@@ -94,10 +94,10 @@ describeIfDb('user-settings repo — cover art', () => {
     await truncateTables(ctx.pool, ['user_settings', 'user']);
   });
 
-  it('answers Artistic, no Custom style, styled covers and Enhance on before anything is stored', async () => {
+  it('answers Auto, no Custom style, styled covers and Enhance on before anything is stored', async () => {
     const ownerUserId = await createUser(ctx.db);
     expect(await getCoverArtSettings(ctx.db, ownerUserId)).toEqual({
-      defaultStyle: 'poster_art',
+      defaultStyle: 'auto',
       customStyleDefinition: '',
       useStandardCoverArt: false,
       promptEnhancementEnabled: true,
@@ -134,7 +134,7 @@ describeIfDb('user-settings repo — cover art', () => {
       promptEnhancementEnabled: false,
     });
     expect(await getCoverArtSettings(ctx.db, member)).toEqual({
-      defaultStyle: 'poster_art',
+      defaultStyle: 'auto',
       customStyleDefinition: 'Member watercolor.',
       useStandardCoverArt: false,
       promptEnhancementEnabled: true,

@@ -39,6 +39,7 @@ vi.mock('@/lib/providers', async () => {
 });
 
 const { POST: startRoute } = await import('@/app/api/sessions/route');
+const { POST: changeVibeRoute } = await import('@/app/api/sessions/change-vibe/route');
 
 const skip = !TEST_DATABASE_URL;
 let testDb: TestDb;
@@ -147,5 +148,51 @@ describe.skipIf(skip)('POST /api/sessions — no-LLM prompt passthrough', () => 
       useStandardCover: false,
     });
     await expect(sessionUsesStandardCover(id)).resolves.toBe(false);
+  });
+});
+
+// With a text LLM, the call that writes the cover concept also picks the preset
+// Auto resolves to (ADR 0007, 2026-11-17 Auto amendment); the mock LLM always
+// picks Photographic. The pick is frozen with the Session.
+describe.skipIf(skip)('POST /api/sessions — the Auto cover pick', () => {
+  it('stores the expansion’s pick on a prompt session', async () => {
+    const id = await startSession({ input: { mode: 'prompt', prompt: 'calm focus beats' } });
+    const session = await loadSession(id);
+    expect(session.autoCoverStyle).toBe('photographic');
+    expect(session.coverConcept).toBeTruthy();
+  });
+
+  it('stores the creative naming’s pick on a hand-tuned session', async () => {
+    const id = await startSession({
+      input: { mode: 'controls', controls: {} },
+      useStandardCover: false,
+    });
+    expect((await loadSession(id)).autoCoverStyle).toBe('photographic');
+  });
+
+  it('stores no pick without a text LLM', async () => {
+    holder.llmConfigured = false;
+    const id = await startSession({ input: { mode: 'prompt', prompt: 'warm analog synthwave' } });
+    expect((await loadSession(id)).autoCoverStyle).toBeNull();
+  });
+
+  it('Change Vibe keeps the stored pick', async () => {
+    const id = await startSession({ input: { mode: 'prompt', prompt: 'calm focus beats' } });
+    await testDb.pool.query(
+      `update activity_sessions set auto_cover_style = 'manga' where id = $1`,
+      [id],
+    );
+    const res = await changeVibeRoute(
+      new Request('http://localhost/api/sessions/change-vibe', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: id,
+          input: { mode: 'prompt', prompt: 'more drums' },
+        }),
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect((await loadSession(id)).autoCoverStyle).toBe('manga');
   });
 });

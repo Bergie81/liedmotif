@@ -14,13 +14,29 @@
 // selection can never bypass the spend caps.
 
 import { getUsageLimits, type Database } from '@liedmotif/db';
-import type { GeneratedImageProvider } from '@liedmotif/providers';
+import type { GeneratedImageProvider, LlmProvider } from '@liedmotif/providers';
 
 export interface SessionCoverProviders {
   /** Prompt-driven generated covers (OpenRouter); null when unconfigured. */
   getCoverArt: () => Promise<GeneratedImageProvider | null>;
   /** Music-task-driven standard covers (Suno); null when unbuildable. */
   getSunoCoverArt: () => Promise<GeneratedImageProvider | null>;
+  /** The optional text LLM; omitted means none. Covers only ask whether one is
+   *  configured, never call it. */
+  getLlm?: () => Promise<LlmProvider | null>;
+}
+
+/**
+ * Whether a text LLM is configured, which decides who judges what a Session's
+ * words mean for its cover (ADR 0004). A resolution that fails counts as
+ * configured: something is set up, so keyword rules must not decide.
+ */
+export async function textLlmConfigured(getLlm: SessionCoverProviders['getLlm']): Promise<boolean> {
+  if (!getLlm) return false;
+  return getLlm().then(
+    (llm) => llm !== null,
+    () => true,
+  );
 }
 
 /**

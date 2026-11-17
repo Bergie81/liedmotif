@@ -233,7 +233,13 @@ export async function proposeSurprise(
       ...(derived.snapshot.vocalMode === 'vocal' ? {} : { lyricContext: '' }),
     });
     // Naming here is composition only: the expansion already named the proposal.
-    const named = await nameSessionSnapshot(null, snapshot, null, derived.coverConcept, false);
+    const named = await nameSessionSnapshot(
+      null,
+      snapshot,
+      null,
+      { coverConcept: derived.coverConcept, autoCoverStyle: derived.autoCoverStyle },
+      false,
+    );
 
     const saved = await savePendingProposal(db, {
       ownerUserId,
@@ -248,6 +254,7 @@ export async function proposeSurprise(
         snapshot: named.snapshot,
         title: named.title,
         coverConcept: named.coverConcept,
+        autoCoverStyle: named.autoCoverStyle,
         preview: {
           title: named.title,
           mood: snapshot.mood,

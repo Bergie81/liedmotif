@@ -53,7 +53,7 @@ describe('replacement Session Cover qualification composition', () => {
 
     expect(compiled).toMatchObject({
       promptVersion: 'session-cover-prompt-v14',
-      planVersion: 'session-cover-plan-v6',
+      planVersion: 'session-cover-plan-v7',
       resolvedStyle: 'minimal',
       poster: null,
       count: 1,

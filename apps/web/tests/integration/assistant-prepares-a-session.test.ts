@@ -111,8 +111,9 @@ async function rowsIn(table: 'activity_sessions' | 'generation_requests'): Promi
   return rows[0]!.n;
 }
 
-/** The shipped cover-art settings, which Home's form starts a new Session with. */
-const HOME_COVER = { coverStyle: 'poster_art', useStandardCover: false } as const;
+/** The shipped cover-art settings, which Home's form starts a new Session with.
+ *  Their style, Auto, is the one a request leaves out. */
+const HOME_COVER = { useStandardCover: false } as const;
 
 beforeAll(async () => {
   if (skip) return;

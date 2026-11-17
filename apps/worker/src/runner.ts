@@ -172,6 +172,7 @@ export function buildTaskList(deps: WorkerRunnerDeps): TaskList {
       db: deps.db,
       getCoverArt: deps.getCoverArt,
       getSunoCoverArt: deps.getSunoCoverArt,
+      ...(deps.getLlm ? { getLlm: deps.getLlm } : {}),
       storage: deps.storage,
     }),
     'generate-playlist-cover': createGeneratePlaylistCoverTask({
@@ -183,6 +184,7 @@ export function buildTaskList(deps: WorkerRunnerDeps): TaskList {
       db: deps.db,
       getCoverArt: deps.getCoverArt,
       getSunoCoverArt: deps.getSunoCoverArt,
+      ...(deps.getLlm ? { getLlm: deps.getLlm } : {}),
       storage: deps.storage,
     }),
     'embed-track-metadata': createEmbedTrackMetadataTask({

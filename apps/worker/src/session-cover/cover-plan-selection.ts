@@ -161,23 +161,36 @@ function pick<T>(values: readonly T[], salt: string): T {
   return values[Number.parseInt(stableDigest(salt).slice(0, 8), 16) % values.length]!;
 }
 
+/** `alternatives` as a regex source that matches whole words only, so `rain`
+ *  never matches inside "Brain" and `train` never inside "Training". */
+function wholeWords(alternatives: string): RegExp {
+  return new RegExp(`(?<![\\p{L}\\p{N}])(?:${alternatives})(?![\\p{L}\\p{N}])`, 'iu');
+}
+
+/**
+ * The no-LLM ranking (ADR 0004, 2026-11-17 amendment): fixed English words decide
+ * which presets fit Auto only when no text LLM is configured.
+ */
+const AUTO_KEYWORD_RULES: readonly { pattern: RegExp; styles: readonly PresetStyle[] }[] = [
+  {
+    pattern: wholeWords('retro|vinyl|jazz|(?:19)?[6-9]0s|2000s'),
+    styles: ['record_sleeve', 'drawing', 'photographic'],
+  },
+  { pattern: wholeWords('manga|anime|j-?rock|j-?pop'), styles: ['manga'] },
+  { pattern: wholeWords('dream|moon|surreal|ambient'), styles: ['minimal', 'poster_art'] },
+  { pattern: wholeWords('focus|minimal|quiet|calm'), styles: ['minimal', 'photographic'] },
+  {
+    pattern: wholeWords('cinema|storm|rain|train|dramatic'),
+    styles: ['photographic', 'poster_art'],
+  },
+];
+
 function autoSemanticRank(style: PresetStyle, text: string): number {
-  const matches = (pattern: RegExp, styles: readonly PresetStyle[]) =>
-    pattern.test(text) && styles.includes(style);
-  if (
-    matches(/retro|vinyl|jazz|\b(?:19)?[6-9]0s\b|\b2000s\b/i, [
-      'record_sleeve',
-      'drawing',
-      'photographic',
-    ])
-  ) {
-    return 4;
-  }
-  if (matches(/manga|anime|j-?rock|j-?pop/i, ['manga'])) return 4;
-  if (matches(/dream|moon|surreal|ambient/i, ['minimal', 'poster_art'])) return 4;
-  if (matches(/focus|minimal|quiet|calm/i, ['minimal', 'photographic'])) return 4;
-  if (matches(/cinema|storm|rain|train|dramatic/i, ['photographic', 'poster_art'])) return 4;
-  return 2;
+  return AUTO_KEYWORD_RULES.some(
+    ({ pattern, styles }) => styles.includes(style) && pattern.test(text),
+  )
+    ? 4
+    : 2;
 }
 
 function candidateFingerprint(args: {
@@ -288,8 +301,20 @@ function enumerateStyleCandidates(args: {
   });
 }
 
+/**
+ * The art-direction candidates for a requested style. Auto with the text LLM's
+ * stored pick plans exactly that preset, as if it were chosen by name, so
+ * recent-cover diversity varies the art direction inside it and never swaps the
+ * preset. Auto without a pick offers every preset: ranked by keyword only when
+ * no text LLM is configured (ADR 0004), otherwise left to recent-cover
+ * diversity and the hash.
+ */
 export function enumerateArtDirectionCandidates(args: {
   requestedStyle: CoverStyle;
+  /** The text LLM's preset pick for Auto; ignored by every other style. */
+  autoPick?: PresetStyle | null;
+  /** A configured text LLM judges meaning, so keyword ranking never runs. */
+  textLlmConfigured?: boolean;
   custom: string;
   name: string;
   snapshot: StyleSnapshot;
@@ -298,10 +323,12 @@ export function enumerateArtDirectionCandidates(args: {
   salt: string;
   grammars: Record<PresetStyle, StyleGrammar>;
 }): { candidates: PlannedCandidate[]; explicitPreset: string | null } {
+  const pickedAuto = args.requestedStyle === 'auto' && args.autoPick ? args.autoPick : null;
   const useAuto =
-    args.requestedStyle === 'auto' || (args.requestedStyle === 'custom' && !args.custom);
+    !pickedAuto &&
+    (args.requestedStyle === 'auto' || (args.requestedStyle === 'custom' && !args.custom));
   if (!useAuto) {
-    const style = args.requestedStyle as PresetStyle | 'custom';
+    const style = pickedAuto ?? (args.requestedStyle as PresetStyle | 'custom');
     return {
       candidates: enumerateStyleCandidates({
         style,
@@ -330,7 +357,7 @@ export function enumerateArtDirectionCandidates(args: {
       custom: '',
       cueIds: args.cueIds,
       referenceEnabled: args.referenceEnabled,
-      semanticRank: autoSemanticRank(style, semanticText),
+      semanticRank: args.textLlmConfigured ? 2 : autoSemanticRank(style, semanticText),
       salt: args.salt,
       grammars: args.grammars,
     })

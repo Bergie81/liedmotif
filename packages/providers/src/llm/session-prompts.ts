@@ -1,7 +1,7 @@
 // Session-level text-LLM prompt policy. Provider adapters own transport, retries,
 // and parsing; this module owns the prompts shared by expansion and naming.
 
-import type { ListenerContext } from '@liedmotif/shared';
+import type { CoverStylePreset, ListenerContext } from '@liedmotif/shared';
 import { MAX_LYRIC_CONTEXT_LENGTH, type SessionStyleSnapshot } from './snapshot';
 import type { StylePicks } from './template';
 
@@ -40,6 +40,26 @@ function durationRule(adjust: boolean): string {
   );
 }
 
+/** One short line per cover preset, so the model can pick the one that fits the
+ * Session (ADR 0007, 2026-11-17 Auto amendment). */
+const COVER_STYLE_PRESET_LINES: Record<CoverStylePreset, string> = {
+  record_sleeve:
+    'an album cover made the way covers were in one decade from the 1960s to the 2000s',
+  poster_art: 'bold graphic artwork built on one arresting visual metaphor',
+  photographic: 'a believable real photograph of one honest moment',
+  manga: 'a black-and-white manga ink illustration with expressive characters',
+  drawing: 'a hand-made pencil or ink drawing on paper',
+  minimal: 'one motif in generous empty space with two or three flat colors',
+};
+
+/** What the `coverStyle` answer is: the Auto cover pick, one more answer in a
+ * call that already runs. */
+const COVER_STYLE_ANSWER =
+  'the cover style that best fits this session and the coverConcept, exactly one of: ' +
+  (Object.entries(COVER_STYLE_PRESET_LINES) as [CoverStylePreset, string][])
+    .map(([preset, line]) => `"${preset}": ${line}`)
+    .join('; ');
+
 /** Some models style every title in lowercase for a mellow vibe; titles follow
  * their language's capitalization instead. */
 const TITLE_CASE_RULE =
@@ -53,6 +73,7 @@ function schemaFields(skipProfile: boolean): string {
     'key (one musical key, e.g. "A minor"), titleScheme, ' +
     'title (a short evocative session name, max 60 chars), ' +
     'coverConcept (one concrete visual sentence for cover art, no named artists or brands), ' +
+    `coverStyle (${COVER_STYLE_ANSWER}), ` +
     'requestedDurationMinutes (number or null, explicitly requested total Session duration in minutes), ' +
     `trackTitles (string[], 8-12 short distinct creative track titles fitting the vibe; ${TITLE_CASE_RULE}), ` +
     `lyricContext (string, normally "": ${lyricContextRule(skipProfile)}, ` +
@@ -579,6 +600,7 @@ export function namingPrompt(input: SessionNamingInput): string {
     `Name a generated-music listening session and its tracks. Respond with ONLY JSON: ` +
     `{"title": string (a short evocative session name, max 60 chars), ` +
     `"coverConcept": string (one concrete visual sentence, no named artists, studios, franchises, or brands), ` +
+    `"coverStyle": string (${COVER_STYLE_ANSWER}), ` +
     `"trackTitles": string[] (8-12 short distinct creative track titles fitting the vibe; ${TITLE_CASE_RULE})` +
     (wantsLyricContext
       ? `, "lyricContext": string (max ${MAX_LYRIC_CONTEXT_LENGTH} chars: ${LYRIC_CONTEXT_FORMAT})`

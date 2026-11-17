@@ -6,9 +6,10 @@ import {
   truncateTables,
   type TestDb,
 } from '@liedmotif/db/testing';
-import type { GeneratedImageProvider } from '@liedmotif/providers';
+import type { GeneratedImageProvider, LlmProvider } from '@liedmotif/providers';
 import {
   resolveSessionCoverImageProvider,
+  textLlmConfigured,
   type SessionCoverProviders,
 } from './cover-image-provider';
 
@@ -135,5 +136,15 @@ describeIfDb('resolveSessionCoverImageProvider', () => {
     await expect(
       resolveSessionCoverImageProvider(ctx.db, sources(null, null), standardSession),
     ).resolves.toBeNull();
+  });
+});
+
+describe('textLlmConfigured', () => {
+  it('is true only when a text LLM resolves, or its configuration cannot be read', async () => {
+    const llm = { providerKey: 'openrouter' } as LlmProvider;
+    await expect(textLlmConfigured(undefined)).resolves.toBe(false);
+    await expect(textLlmConfigured(async () => null)).resolves.toBe(false);
+    await expect(textLlmConfigured(async () => llm)).resolves.toBe(true);
+    await expect(textLlmConfigured(unreadable)).resolves.toBe(true);
   });
 });

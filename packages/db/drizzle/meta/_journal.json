@@ -729,6 +729,13 @@
       "when": 1794917178993,
       "tag": "0103_session_includes_listener",
       "breakpoints": true
+    },
+    {
+      "idx": 104,
+      "version": "7",
+      "when": 1794945626680,
+      "tag": "0104_session_auto_cover_style",
+      "breakpoints": true
     }
   ]
 }

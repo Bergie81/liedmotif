@@ -169,6 +169,113 @@ describe('Session Cover art-direction policy', () => {
     expect(selected.plan.semanticCueIds).toEqual(baseline.plan.semanticCueIds);
   });
 
+  it('Auto with a stored pick plans that preset across Session ids and cover history', () => {
+    const sessionIds = Array.from(
+      { length: 12 },
+      (_, index) => `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+    );
+    const mangaHistory = sessionIds.flatMap((sessionId) => {
+      const earlier = withHistory('manga', `earlier-${sessionId}`, []);
+      return earlier.ok ? [earlier.fingerprint] : [];
+    });
+    expect(mangaHistory).toHaveLength(12);
+
+    for (const sessionId of sessionIds) {
+      for (const history of [[], mangaHistory]) {
+        const result = buildSessionCoverPlan({
+          sessionId,
+          sessionName: 'Rain Over São Paulo — 夜の静けさ',
+          coverConcept: 'Rain climbs a worn glass wall toward one amber light.',
+          coverStyle: 'auto',
+          autoCoverStyle: 'manga',
+          customDefinition: null,
+          snapshot: { mood: 'calm', activity: 'focus', energy: 'medium', genreTags: ['ambient'] },
+          capabilities: CAPABILITIES,
+          referenceTreatment: null,
+          recentFingerprints: history,
+        });
+        expect(result.ok).toBe(true);
+        if (!result.ok) continue;
+        expect(result.plan.selectedStyle).toBe('auto');
+        expect(result.plan.resolvedStyle).toBe('manga');
+      }
+    }
+  });
+
+  it('only Auto reads the stored pick', () => {
+    for (const style of ['photographic', 'custom'] as const) {
+      const result = buildSessionCoverPlan({
+        sessionId: 'pick-ignored-session',
+        sessionName: 'Rain Over São Paulo',
+        coverConcept: null,
+        coverStyle: style,
+        autoCoverStyle: 'manga',
+        customDefinition:
+          style === 'custom' ? 'monochrome torn-paper collage with flat ink shapes' : null,
+        snapshot: {},
+        capabilities: CAPABILITIES,
+        referenceTreatment: null,
+      });
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.plan.resolvedStyle).toBe(style);
+    }
+  });
+
+  it('Auto keyword ranking matches whole words only', () => {
+    for (const name of ['Brain Workout', 'Training Montage', 'Focused Dreamers']) {
+      const { candidates } = enumerateArtDirectionCandidates({
+        requestedStyle: 'auto',
+        custom: '',
+        name,
+        snapshot: {},
+        cueIds: ['name:exact'],
+        referenceEnabled: false,
+        salt: `whole-words:${name}`,
+        grammars: GRAMMARS,
+      });
+      expect(new Set(candidates.map((candidate) => candidate.semanticRank))).toEqual(new Set([2]));
+    }
+  });
+
+  it('Auto with a text LLM configured and no pick ignores keyword ranking', () => {
+    const autoPlan = (textLlmConfigured: boolean, sessionId: string) =>
+      buildSessionCoverPlan({
+        sessionId,
+        sessionName: 'Anime Nights',
+        coverConcept: null,
+        coverStyle: 'auto',
+        autoCoverStyle: null,
+        textLlmConfigured,
+        customDefinition: null,
+        snapshot: { mood: 'energetic', energy: 'high', genreTags: ['j-rock'] },
+        capabilities: CAPABILITIES,
+        referenceTreatment: null,
+      });
+    const resolved = { withLlm: new Set<string>(), withoutLlm: new Set<string>() };
+    for (let index = 0; index < 32; index += 1) {
+      const sessionId = `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`;
+      const withLlm = autoPlan(true, sessionId);
+      const withoutLlm = autoPlan(false, sessionId);
+      if (withLlm.ok) resolved.withLlm.add(withLlm.plan.resolvedStyle);
+      if (withoutLlm.ok) resolved.withoutLlm.add(withoutLlm.plan.resolvedStyle);
+    }
+    expect(resolved.withoutLlm).toEqual(new Set(['manga']));
+    expect(resolved.withLlm.size).toBeGreaterThan(2);
+
+    const { candidates } = enumerateArtDirectionCandidates({
+      requestedStyle: 'auto',
+      textLlmConfigured: true,
+      custom: '',
+      name: 'Late Night Jazz',
+      snapshot: { genreTags: ['jazz'] },
+      cueIds: ['name:exact'],
+      referenceEnabled: false,
+      salt: 'llm-no-pick',
+      grammars: GRAMMARS,
+    });
+    expect(new Set(candidates.map((candidate) => candidate.semanticRank)).size).toBe(1);
+  });
+
   it('varies controlled concept, composition, material, and palette axes across seeds', () => {
     const axes = {
       conceptMode: new Set<string>(),

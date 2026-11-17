@@ -107,6 +107,7 @@ async function admit(
       limits,
       withinLimits: decision.admitted,
       ...(forcedTerminalReason ? { forcedTerminalReason } : {}),
+      textLlmConfigured: runtime.deps.textLlmConfigured === true,
     });
 
     const fields = frozenAttemptFields(frozen, frozen.plan, capabilities);

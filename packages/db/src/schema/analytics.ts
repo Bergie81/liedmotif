@@ -19,9 +19,10 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
+import type { CoverStylePreset } from '@liedmotif/shared';
 import { createdAt, ownerUserId, pk, updatedAt } from './_columns';
 import { user } from './auth';
-import { vocalMode } from './enums';
+import { coverStyle, vocalMode } from './enums';
 import { activitySessions } from './sessions';
 import { tracks } from './tracks';
 import type { StyleSnapshot } from './types';
@@ -260,6 +261,8 @@ export const surpriseProposals = pgTable(
     snapshot: jsonb('snapshot').$type<StyleSnapshot>().notNull(),
     title: text('title').notNull(),
     coverConcept: text('cover_concept'),
+    /** The text LLM's Auto cover preset, copied onto the Session with `coverConcept`. */
+    autoCoverStyle: coverStyle('auto_cover_style').$type<CoverStylePreset>(),
     preview: jsonb('preview').$type<SurpriseProposalPreview>().notNull(),
     /**
      * The Session this proposal was started as. Null is pending; set, the row

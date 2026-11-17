@@ -33,6 +33,7 @@ import {
   extendPromptHistory,
   resolveActivePlaybackClient,
   type CoverStyle,
+  type CoverStylePreset,
   type PersistedPlaybackEventType,
   type PlaybackReportType,
   type SessionGenerationStatus,
@@ -63,6 +64,8 @@ export interface SessionRecord {
   ownerUserId: string;
   title: string | null;
   coverConcept: string | null;
+  /** The text LLM's frozen preset pick for an Auto cover; null without one. */
+  autoCoverStyle: CoverStylePreset | null;
   coverStyleFallbackReason: string | null;
   status: 'active' | 'stopped';
   sessionMode: 'keep_going' | 'repeat';
@@ -119,6 +122,7 @@ const sessionColumns = {
   ownerUserId: activitySessions.ownerUserId,
   title: activitySessions.title,
   coverConcept: activitySessions.coverConcept,
+  autoCoverStyle: activitySessions.autoCoverStyle,
   coverStyleFallbackReason: activitySessions.coverStyleFallbackReason,
   status: activitySessions.status,
   sessionMode: activitySessions.sessionMode,
@@ -259,6 +263,8 @@ export interface CreateSessionInput {
   sessionMode: 'keep_going' | 'repeat';
   title?: string | null;
   coverConcept?: string | null;
+  /** The text LLM's Auto cover preset, written with `coverConcept`. */
+  autoCoverStyle?: CoverStylePreset | null;
   userPrompt?: string | null;
   structuredControls?: StructuredControls | null;
   /** Start this session without the owner's own details (profile, About,
@@ -334,6 +340,7 @@ export async function createSessionInTx(
               : null,
           }
         : {}),
+      ...(input.autoCoverStyle !== undefined ? { autoCoverStyle: input.autoCoverStyle } : {}),
       ...(input.userPrompt !== undefined ? { userPrompt: input.userPrompt } : {}),
       ...(input.structuredControls !== undefined
         ? { structuredControls: input.structuredControls }

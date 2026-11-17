@@ -25,6 +25,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
+import type { CoverStylePreset } from '@liedmotif/shared';
 import { createdAt, ownerUserId, pk, updatedAt } from './_columns';
 import { coverImages } from './covers';
 import {
@@ -53,6 +54,10 @@ export const activitySessions = pgTable(
     // session's files across folders. Null until something downloads.
     audioFolderSegment: text('audio_folder_segment'),
     coverConcept: text('cover_concept'),
+    // The text LLM's pick of the cover preset Auto resolves to, written with
+    // `coverConcept` when a Session starts and frozen after (Change Vibe and
+    // Rename keep it). Null when no text LLM answered with a valid preset.
+    autoCoverStyle: coverStyle('auto_cover_style').$type<CoverStylePreset>(),
     // The session's running free-text intent: the creation prompt, extended by
     // each Change Vibe text with an empty line between them. Null for a session
     // that has only ever been steered by structured controls.

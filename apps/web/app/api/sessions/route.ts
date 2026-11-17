@@ -90,7 +90,7 @@ export async function POST(request: Request) {
   if (!derived.ok) {
     return apiError('provider_error', derived.message, { retryable: true });
   }
-  const { snapshot, title, userPrompt, coverConcept } = derived;
+  const { snapshot, title, userPrompt, coverConcept, autoCoverStyle } = derived;
   const resolvedDurationMinutes = targetDurationMinutes ?? derived.requestedDurationMinutes;
   if (
     resolvedDurationMinutes != null &&
@@ -125,6 +125,7 @@ export async function POST(request: Request) {
     sessionMode,
     title,
     coverConcept,
+    autoCoverStyle,
     userPrompt,
     structuredControls: input.mode === 'controls' ? input.controls : null,
     ...(skipProfile ? { skipProfile } : {}),

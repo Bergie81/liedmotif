@@ -97,7 +97,7 @@ export async function POST(request: Request) {
     initialSessionCoverId(db),
     startingSessionMode(db, ownerUserId),
   ]);
-  const { snapshot: stored, title, coverConcept } = named;
+  const { snapshot: stored, title, coverConcept, autoCoverStyle } = named;
 
   const { session: created, supersededSessionId } = await createSession(db, {
     ownerUserId,
@@ -105,6 +105,7 @@ export async function POST(request: Request) {
     sessionMode,
     title,
     coverConcept,
+    autoCoverStyle,
     ...(targetDurationMinutes != null ? { targetDurationMinutes } : {}),
     coverImageId,
     useStandardCover: coverArtSettings.useStandardCoverArt,

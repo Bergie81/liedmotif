@@ -305,14 +305,15 @@ describe('deriveSessionSnapshot Session Guardrails', () => {
     expect(snapshot.styleStrength).toBe(DEFAULT_STYLE_STRENGTH);
   });
 
-  it('serves a no-LLM prompt intent through the metadata twin with no cover concept', async () => {
-    const { snapshot, coverConcept } = await deriveSessionMetadata(
+  it('serves a no-LLM prompt intent through the metadata twin with no cover concept or pick', async () => {
+    const { snapshot, coverConcept, autoCoverStyle } = await deriveSessionMetadata(
       { mode: 'prompt', prompt: 'rainy night drive', novelty: 0.8 },
       null,
     );
     expect(snapshot.stylePrompt).toContain('rainy night drive');
     expect(snapshot.novelty).toBe(0.8);
     expect(coverConcept).toBe('');
+    expect(autoCoverStyle).toBeNull();
   });
 });
 

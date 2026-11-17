@@ -149,9 +149,9 @@ export async function updateGenerationSettings(
   );
 }
 
-/** Artistic covers, no Custom style, styled (not Basic) covers, Enhance on. */
+/** Auto covers, no Custom style, styled (not Basic) covers, Enhance on. */
 const DEFAULT_COVER_ART_SETTINGS: CoverArtSettings = {
-  defaultStyle: 'poster_art',
+  defaultStyle: 'auto',
   customStyleDefinition: '',
   useStandardCoverArt: false,
   promptEnhancementEnabled: true,

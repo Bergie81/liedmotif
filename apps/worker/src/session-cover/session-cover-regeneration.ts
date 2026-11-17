@@ -125,6 +125,7 @@ export async function planAndExecuteRegeneration(
         withinLimits: decision.admitted,
         ...(guidance ? { guidance } : {}),
         enhancementApplied: current.plan.enhancementApplied === true,
+        textLlmConfigured: runtime.deps.textLlmConfigured === true,
       });
       const plan: SessionCoverPlanRecord = {
         ...frozen.plan,

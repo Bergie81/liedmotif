@@ -214,6 +214,7 @@ export async function startProposalSession(
       snapshot: proposal.snapshot,
       title: proposal.title,
       coverConcept: proposal.coverConcept,
+      autoCoverStyle: proposal.autoCoverStyle,
       // Every proposal is prompt-born: its request is the Session's direction.
       userPrompt: proposal.intent,
       structuredControls: null,

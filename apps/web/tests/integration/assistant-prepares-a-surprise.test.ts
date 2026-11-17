@@ -167,8 +167,8 @@ describe.skipIf(skip)('the Assistant asked to surprise the user', () => {
       },
       // The length the app's Surprise Me card prefills.
       targetDurationMinutes: pending!.preview.durationMinutes,
-      // The shipped cover-art settings, which Home's form starts it with.
-      coverStyle: 'poster_art',
+      // The shipped cover-art settings, which Home's form starts it with; their
+      // style, Auto, is the one a request leaves out.
       useStandardCover: false,
     });
     expect(holder.written).toHaveLength(1);

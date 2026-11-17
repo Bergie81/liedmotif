@@ -11,6 +11,7 @@ import {
   MAX_COVER_CONCEPT_LENGTH,
   MAX_SESSION_TITLE_LENGTH,
   sanitizeCoverConcept,
+  type CoverStylePreset,
 } from '@liedmotif/shared';
 
 export { MAX_SESSION_TITLE_LENGTH };
@@ -44,6 +45,8 @@ export interface SessionNamingMetadata {
    *  snapshot without re-checking. */
   lyricContext: string;
   coverConcept: string;
+  /** The cover preset the model picked for Auto; null when it gave no valid one. */
+  autoCoverStyle: CoverStylePreset | null;
 }
 
 /** The snapshot fields a title composes from — a structural subset of both the

@@ -35,6 +35,7 @@ function draft(title: string): SurpriseProposalDraft {
     snapshot: { stylePrompt: `${title} style`, genreTags: ['ambient'] },
     title,
     coverConcept: null,
+    autoCoverStyle: null,
     preview: {
       title,
       mood: 'calm',

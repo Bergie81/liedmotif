@@ -994,6 +994,7 @@ describe('createSessionMetadata (never throws, empty on failure)', () => {
       trackTitles: ['Umbrella Steps', 'Window Fog'],
       lyricContext: '',
       coverConcept: '',
+      autoCoverStyle: null,
     });
   });
 
@@ -1007,7 +1008,13 @@ describe('createSessionMetadata (never throws, empty on failure)', () => {
       userPrompt: 'ambient for reading',
       snapshot,
     });
-    expect(naming).toEqual({ title: '', trackTitles: [], lyricContext: '', coverConcept: '' });
+    expect(naming).toEqual({
+      title: '',
+      trackTitles: [],
+      lyricContext: '',
+      coverConcept: '',
+      autoCoverStyle: null,
+    });
   });
 
   it('returns empty metadata (never throws) when the base URL is blocked by the SSRF guard', async () => {
@@ -1018,7 +1025,13 @@ describe('createSessionMetadata (never throws, empty on failure)', () => {
       languageModel: fakeModel(['{"title":"X","trackTitles":["Y"]}']),
     });
     const naming = await provider.createSessionMetadata({ userPrompt: null, snapshot });
-    expect(naming).toEqual({ title: '', trackTitles: [], lyricContext: '', coverConcept: '' });
+    expect(naming).toEqual({
+      title: '',
+      trackTitles: [],
+      lyricContext: '',
+      coverConcept: '',
+      autoCoverStyle: null,
+    });
   });
 });
 
@@ -1259,6 +1272,102 @@ describe('a request that includes the listener', () => {
   it('reports no answer when the model gives none', async () => {
     const silent = await providerWith([reply()]).expandSessionIntentWithMetadata('for Jonas');
     expect(silent.includesListener).toBeUndefined();
+  });
+});
+
+describe('the Auto cover style pick', () => {
+  function providerWith(texts: string[], supportsStructuredOutputs: boolean, captured?: string[]) {
+    return createOpenRouterLlmProvider({
+      apiKey: 'sk-or-1',
+      model: 'm',
+      supportsStructuredOutputs,
+      languageModel: promptCapturingModel(texts, captured ?? []),
+    });
+  }
+  const expansion = (coverStyle?: unknown) =>
+    JSON.stringify({
+      stylePrompt: 'mellow lofi beats',
+      coverConcept: 'One lamp over an open notebook.',
+      ...(coverStyle === undefined ? {} : { coverStyle }),
+    });
+  const naming = (coverStyle?: unknown) =>
+    JSON.stringify({
+      title: 'Midnight Pages',
+      trackTitles: ['Amber Rain'],
+      coverConcept: 'One lamp over an open notebook.',
+      ...(coverStyle === undefined ? {} : { coverStyle }),
+    });
+  const snapshot = compileStructuredControls({ activity: 'reading', genres: ['lofi'] });
+
+  describe.each([
+    ['structured output', true],
+    ['JSON in text', false],
+  ])('on the %s path', (_path, structured) => {
+    it('an expansion keeps a valid pick', async () => {
+      const expanded = await providerWith(
+        [expansion('photographic')],
+        structured,
+      ).expandSessionIntentWithMetadata('lofi for late reading');
+      expect(expanded.autoCoverStyle).toBe('photographic');
+    });
+
+    it('a naming reply keeps a valid pick', async () => {
+      const named = await providerWith([naming('photographic')], structured).createSessionMetadata({
+        userPrompt: null,
+        snapshot,
+      });
+      expect(named.autoCoverStyle).toBe('photographic');
+    });
+
+    it.each([['watercolor'], ['auto'], [undefined]])(
+      'an answer of %s is no pick, and the reply still counts',
+      async (coverStyle) => {
+        const expanded = await providerWith(
+          [expansion(coverStyle)],
+          structured,
+        ).expandSessionIntentWithMetadata('lofi for late reading');
+        expect(expanded.autoCoverStyle).toBeNull();
+        expect(expanded.coverConcept).toBe('One lamp over an open notebook.');
+        const named = await providerWith([naming(coverStyle)], structured).createSessionMetadata({
+          userPrompt: null,
+          snapshot,
+        });
+        expect(named.autoCoverStyle).toBeNull();
+        expect(named.title).toBe('Midnight Pages');
+      },
+    );
+  });
+
+  it('both prompts ask for one of the six presets, each described', async () => {
+    const captured: string[] = [];
+    await providerWith([expansion('manga')], false, captured).expandSessionIntentWithMetadata(
+      'lofi for late reading',
+    );
+    await providerWith([naming('manga')], false, captured).createSessionMetadata({
+      userPrompt: null,
+      snapshot,
+    });
+    for (const prompt of captured) {
+      expect(prompt).toContain('coverStyle');
+      for (const preset of [
+        'record_sleeve',
+        'poster_art',
+        'photographic',
+        'manga',
+        'drawing',
+        'minimal',
+      ]) {
+        expect(prompt).toMatch(new RegExp(`${preset}[^,;]*:`));
+      }
+    }
+  });
+
+  it('a failed naming call has no pick', async () => {
+    const named = await providerWith(['not json at all'], false).createSessionMetadata({
+      userPrompt: null,
+      snapshot,
+    });
+    expect(named.autoCoverStyle).toBeNull();
   });
 });
 

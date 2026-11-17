@@ -27,6 +27,7 @@ import {
 } from 'ai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import {
+  COVER_STYLE_PRESETS,
   MAX_COVER_GUIDANCE_LENGTH,
   OPENAI_DEFAULT_LLM_MODEL,
   OPENAI_DEFAULT_REASONING_EFFORT,
@@ -90,10 +91,15 @@ import type {
  * opt-in the user never gave cannot have it survive the parse, on the structured
  * and the JSON-in-text path alike.
  */
+/** The Auto cover pick (ADR 0007): one of the six presets, and anything else,
+ *  missing included, is no pick rather than a failed reply. */
+const coverStylePickSchema = z.enum(COVER_STYLE_PRESETS).nullable().catch(null);
+
 const sessionExpansionSchema = sessionStyleSnapshotSchema
   .omit({ styleStrength: true, novelty: true, userAvoid: true, useOwnVoice: true })
   .extend({
     coverConcept: z.string().default('').transform(clampCoverConcept),
+    coverStyle: coverStylePickSchema,
     requestedDurationMinutes: z.number().nullable().optional(),
     includesListener: z.boolean().nullable().optional(),
   });
@@ -288,6 +294,7 @@ const sessionNamingSchema = z.object({
   trackTitles: z.array(z.string()).default([]),
   lyricContext: z.string().default(''),
   coverConcept: z.string().default(''),
+  coverStyle: coverStylePickSchema,
 });
 
 /** A usable naming proposal from a model value, or null. The title is required —
@@ -302,6 +309,7 @@ function normalizeSessionNaming(value: unknown): SessionNamingMetadata | null {
     trackTitles: clampTrackTitles(result.data.trackTitles),
     lyricContext: clampLyricContext(result.data.lyricContext),
     coverConcept: clampCoverConcept(result.data.coverConcept),
+    autoCoverStyle: result.data.coverStyle,
   };
 }
 
@@ -519,7 +527,13 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
         // Sanitize any raw provider/SDK error, keeping loggable non-secret facts.
         throw sanitizedError(err, EXPANSION_FAILED);
       }
-      const { coverConcept, requestedDurationMinutes, includesListener, ...rawSnapshot } = expanded;
+      const {
+        coverConcept,
+        coverStyle: autoCoverStyle,
+        requestedDurationMinutes,
+        includesListener,
+        ...rawSnapshot
+      } = expanded;
       // An adjustment holds the session's frozen blend anchors: a reply that
       // omits bpm/key keeps the CURRENT values instead of re-freezing new ones
       // from energy/genre. The exception is an energy pick that differs from the
@@ -568,6 +582,7 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
       return {
         snapshot: freezeStyleParameters(snapshot),
         coverConcept,
+        autoCoverStyle,
         requestedDurationMinutes: anchor ? null : requestedDurationMinutes,
         includesListener: includesListener ?? undefined,
       };
@@ -635,7 +650,13 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
       // No usable proposal → EMPTY metadata. Deterministic naming has one owner:
       // the consumer's `deriveSessionTitle`, which composes the Name whenever the
       // proposal is empty (per-track titles then use the numbered scheme).
-      return { title: '', trackTitles: [], lyricContext: '', coverConcept: '' };
+      return {
+        title: '',
+        trackTitles: [],
+        lyricContext: '',
+        coverConcept: '',
+        autoCoverStyle: null,
+      };
     },
 
     async createTrackLyricBrief(input: TrackLyricBriefInput): Promise<string> {
