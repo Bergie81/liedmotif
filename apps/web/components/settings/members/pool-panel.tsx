@@ -9,6 +9,7 @@ import type { PoolOverSubscription, UnitCosts } from '@liedmotif/shared';
 import { apiFetchJson } from '@/lib/api-fetch';
 import { compactPrimaryButtonClass } from '@/components/ui/form-styles';
 import type { MembersAdminData } from '@/lib/members-admin-data';
+import { toast } from '@/lib/toast';
 import { BudgetUsageMeters, MEMBER_TRACK_LABELS } from '../budget-meters';
 import { SettingsCard, SettingsFeedback, SettingsFootnote } from '../settings-ui';
 import { MemberBudgetFields } from './member-budget-fields';
@@ -39,9 +40,6 @@ export function PoolPanel({
     memberBudgetFormValues(pool, tracksPerCall),
   );
   const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState<{ kind: 'error' | 'success'; message: string } | null>(
-    null,
-  );
   const [warnings, setWarnings] = useState(overSubscription);
   // A Member budget save or delete elsewhere on the page changes the Pool's
   // over-subscription and arrives here only as a new prop from router.refresh().
@@ -53,7 +51,6 @@ export function PoolPanel({
 
   async function save() {
     if (busy) return;
-    setFeedback(null);
     const parsed = buildMemberBudgetPatch(values, tracksPerCall);
     if (!parsed.ok) {
       setErrors(parsed.errors);
@@ -67,10 +64,11 @@ export function PoolPanel({
     );
     if (result.ok) {
       setWarnings(result.data.overSubscription ?? []);
-      setFeedback({ kind: 'success', message: 'Shared budget saved.' });
+      toast.dismiss('pool-save');
+      toast.success('Shared budget saved.');
       router.refresh();
     } else {
-      setFeedback({ kind: 'error', message: result.message });
+      toast.error(result.message, { key: 'pool-save' });
     }
     setBusy(false);
   }
@@ -101,11 +99,6 @@ export function PoolPanel({
           </SettingsFeedback>
         </div>
       ))}
-      {feedback ? (
-        <div className="mt-3">
-          <SettingsFeedback kind={feedback.kind}>{feedback.message}</SettingsFeedback>
-        </div>
-      ) : null}
 
       <button
         type="button"

@@ -1,9 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { dangerButtonClass } from '@/components/ui/design-system';
-import { SettingsFeedback } from './settings-ui';
+import { toast } from '@/lib/toast';
 import { useCredentialMutationGate } from './credential-mutation-group';
 
 interface StoredLlmCredentialActionProps {
@@ -16,7 +15,6 @@ export function StoredLlmCredentialAction({
   environmentActive,
 }: StoredLlmCredentialActionProps) {
   const gate = useCredentialMutationGate();
-  const [error, setError] = useState<string | null>(null);
   const deleting = gate.pending === 'delete';
   const label = environmentActive ? 'Delete stored fallback' : 'Disable Writing AI';
 
@@ -28,7 +26,6 @@ export function StoredLlmCredentialAction({
         : 'Sessions keep working: your words will reach the music model exactly as written, without AI expansion.';
       if (!window.confirm(`${label}? ${consequence}`)) return;
 
-      setError(null);
       const response = await fetch('/api/settings/credentials', {
         method: 'DELETE',
         headers: { 'content-type': 'application/json' },
@@ -41,11 +38,14 @@ export function StoredLlmCredentialAction({
           })
         : {};
       if (response?.ok && body.ok) {
+        toast.dismiss('stored-llm-delete');
         window.location.reload();
         return;
       }
       const message = typeof body.error === 'string' ? body.error : body.error?.message;
-      setError(message ?? 'Could not remove the stored Writing AI.');
+      toast.error(message ?? 'Could not remove the stored Writing AI.', {
+        key: 'stored-llm-delete',
+      });
     } finally {
       gate.end('delete');
     }
@@ -59,7 +59,6 @@ export function StoredLlmCredentialAction({
           winning.
         </p>
       ) : null}
-      {error ? <SettingsFeedback kind="error">{error}</SettingsFeedback> : null}
       <button
         type="button"
         onClick={remove}

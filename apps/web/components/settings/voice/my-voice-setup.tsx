@@ -19,6 +19,7 @@ import {
 } from '@liedmotif/shared';
 import { requestVoiceProfile } from '@/lib/api-client';
 import { cn } from '@/lib/cn';
+import { toast } from '@/lib/toast';
 import { FAILURE_BACKOFF_JITTER, FAILURE_BACKOFF_MAX_MS, pollBackoffMs } from '@/lib/poll-backoff';
 import type { EncodedVoiceRecording } from '@/lib/voice-recording';
 import { Switch } from '@/components/ui/controls';
@@ -35,7 +36,6 @@ import {
   SettingsControlRow,
   SettingsFeedback,
   SettingsFootnote,
-  type SettingsFeedbackState,
 } from '@/components/settings/settings-ui';
 import { useVoiceRecorder } from './use-voice-recorder';
 
@@ -52,6 +52,9 @@ const LANGUAGE_LABELS: Record<VoiceLanguage, string> = {
   ru: 'Russian',
 };
 
+/** Every step's failure shares one toast, so the next step's success clears it. */
+const FAILURE_KEY = 'voice-setup';
+
 /** Poll cadence while a provider task is in flight (server throttles further). */
 const IN_FLIGHT_POLL_MS = 4_000;
 
@@ -67,15 +70,14 @@ async function voiceApi(
 
 export function MyVoiceSetup({ initial }: { initial: VoiceProfileView }) {
   const [view, setView] = useState<VoiceProfileView>(initial);
-  const [feedback, setFeedback] = useState<SettingsFeedbackState>(null);
   const [busy, setBusy] = useState(false);
 
   const applyResult = useCallback((result: { profile?: VoiceProfileView; error?: string }) => {
     if (result.profile) {
       setView(result.profile);
-      setFeedback(null);
+      toast.dismiss(FAILURE_KEY);
     } else {
-      setFeedback({ kind: 'error', message: result.error ?? 'Something went wrong.' });
+      toast.error(result.error ?? 'Something went wrong.', { key: FAILURE_KEY });
     }
     return result.profile !== undefined;
   }, []);
@@ -154,9 +156,6 @@ export function MyVoiceSetup({ initial }: { initial: VoiceProfileView }) {
           that supports it (Settings → AI Providers) to use it in Sessions. You can still set the
           profile up.
         </SettingsFeedback>
-      ) : null}
-      {feedback ? (
-        <SettingsFeedback kind={feedback.kind}>{feedback.message}</SettingsFeedback>
       ) : null}
 
       {view.status === 'none' ? (

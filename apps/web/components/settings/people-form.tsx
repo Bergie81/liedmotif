@@ -7,6 +7,7 @@ import type { CoverReferenceFrequency } from '@liedmotif/db';
 import type { PersonSummary } from '@/lib/people';
 import type { PersonReferencePhotoSummary } from '@/lib/person-reference-photos';
 import { cn } from '@/lib/cn';
+import { toast } from '@/lib/toast';
 import { primaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
 import { segmentedListClass, segmentedTriggerClass } from '@/components/ui/design-system';
 import { PersonEditor } from './person-editor';
@@ -17,7 +18,7 @@ import {
   validatePersonFields,
   type PersonFieldErrors,
 } from './people-form-model';
-import { SettingsCard, SettingsFeedback, SettingsFootnote, SettingsSection } from './settings-ui';
+import { SettingsCard, SettingsFootnote, SettingsSection } from './settings-ui';
 import { peopleResponseMessage, type PeopleFormProps } from './people-types';
 import { useStoredValue } from './use-stored-value';
 
@@ -31,8 +32,6 @@ export function PeopleForm(props: PeopleFormProps) {
   const [newName, setNewName] = useState('');
   const [newAbout, setNewAbout] = useState('');
   const [creationErrors, setCreationErrors] = useState<PersonFieldErrors>({});
-  const [creationMessage, setCreationMessage] = useState<string | null>(null);
-  const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
   const totalPhotoCount = people.reduce((total, person) => total + person.photos.length, 0);
   // The fallback has nothing to draw until the owner's own card carries a photo, so
   // the frequency stays inert rather than storing a choice that cannot take effect —
@@ -82,14 +81,15 @@ export function PeopleForm(props: PeopleFormProps) {
     setCreationErrors(errors);
     if (Object.keys(errors).length > 0) return;
     setCreating(true);
-    setCreationMessage(null);
     const response = await fetch('/api/settings/people', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ name: newName, about: newAbout }),
     }).catch(() => null);
     if (!response?.ok) {
-      setCreationMessage(await peopleResponseMessage(response, 'Could not add this Person.'));
+      toast.error(await peopleResponseMessage(response, 'Could not add this Person.'), {
+        key: 'person-create',
+      });
       setCreating(false);
       return;
     }
@@ -99,22 +99,21 @@ export function PeopleForm(props: PeopleFormProps) {
     setNewAbout('');
     setAdding(false);
     setCreating(false);
-    setMessage({ kind: 'success', text: `${body.person.name} added.` });
+    toast.dismiss('person-create');
+    toast.success(`${body.person.name} added.`);
   }
 
   async function saveFrequency(next: CoverReferenceFrequency) {
     if (frequencyBusy || next === frequency) return;
     setFrequencyBusy(true);
-    setMessage(null);
     const response = await fetch('/api/settings/people', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ coverReferenceFrequency: next }),
     }).catch(() => null);
     if (!response?.ok) {
-      setMessage({
-        kind: 'error',
-        text: await peopleResponseMessage(response, 'Could not save the cover fallback.'),
+      toast.error(await peopleResponseMessage(response, 'Could not save the cover fallback.'), {
+        key: 'cover-fallback-save',
       });
       setFrequencyBusy(false);
       return;
@@ -122,7 +121,8 @@ export function PeopleForm(props: PeopleFormProps) {
     setFrequency(next);
     router.refresh();
     setFrequencyBusy(false);
-    setMessage({ kind: 'success', text: 'Cover fallback saved.' });
+    toast.dismiss('cover-fallback-save');
+    toast.success('Cover fallback saved.');
   }
 
   // Sections only — the surrounding page owns the column flow, because the same
@@ -177,11 +177,6 @@ export function PeopleForm(props: PeopleFormProps) {
                 }}
               />
             </div>
-            {creationMessage ? (
-              <div className="mt-4">
-                <SettingsFeedback kind="error">{creationMessage}</SettingsFeedback>
-              </div>
-            ) : null}
             <div className="mt-4 flex gap-2">
               <button
                 type="button"
@@ -190,7 +185,6 @@ export function PeopleForm(props: PeopleFormProps) {
                 onClick={() => {
                   setAdding(false);
                   setCreationErrors({});
-                  setCreationMessage(null);
                 }}
               >
                 Cancel
@@ -273,11 +267,6 @@ export function PeopleForm(props: PeopleFormProps) {
           Selected photos go only to the configured image provider for Cover generation; Never keeps
           every personal photo on this instance.
         </SettingsFootnote>
-        {message ? (
-          <div className="mt-4">
-            <SettingsFeedback kind={message.kind}>{message.text}</SettingsFeedback>
-          </div>
-        ) : null}
       </SettingsSection>
     </>
   );

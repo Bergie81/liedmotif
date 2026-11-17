@@ -9,7 +9,6 @@ import { cn } from '@/lib/cn';
 import type { LockedModel } from '@/lib/configurable-providers';
 import { segmentedListClass, segmentedTriggerClass } from '@/components/ui/design-system';
 import { inputClass, labelClass } from '@/components/ui/form-styles';
-import { SettingsFeedback } from './settings-ui';
 import type { CredentialEditorState, ProviderOption } from './use-credential-editor';
 
 export function ProviderChoice({
@@ -135,24 +134,6 @@ export function ModelField({
         ))}
       </datalist>
     </label>
-  );
-}
-
-/** The test result and the last save failure, in the order they happened. */
-export function CredentialFeedback({ editor }: { editor: CredentialEditorState }) {
-  return (
-    <>
-      {editor.testState.status === 'success' || editor.testState.status === 'error' ? (
-        <SettingsFeedback kind={editor.testState.status}>
-          {editor.testState.message}
-        </SettingsFeedback>
-      ) : null}
-      {editor.saveFeedback ? (
-        <SettingsFeedback kind={editor.saveFeedback.kind}>
-          {editor.saveFeedback.message}
-        </SettingsFeedback>
-      ) : null}
-    </>
   );
 }
 

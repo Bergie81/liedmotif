@@ -21,7 +21,8 @@ import {
   secondaryButtonClass,
 } from '@/components/ui/form-styles';
 import type { MembersAdminData } from '@/lib/members-admin-data';
-import { SettingsCard, SettingsFeedback } from '../settings-ui';
+import { toast } from '@/lib/toast';
+import { SettingsCard } from '../settings-ui';
 import { CopyLinkBox } from './copy-link-box';
 import { MemberBudgetKindFields } from './member-budget-fields';
 import {
@@ -58,9 +59,7 @@ export function InviteMembersSection({
     'oneTime',
   );
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [mintedUrl, setMintedUrl] = useState<string | null>(null);
-  const [sentTo, setSentTo] = useState<string | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
 
   const createLabel = inviteByEmail
@@ -69,20 +68,18 @@ export function InviteMembersSection({
 
   async function create() {
     if (busy) return;
-    setError(null);
     setMintedUrl(null);
-    setSentTo(null);
     const parsed = buildMemberBudgetKindPatch(kind, values, tracksPerCall);
     if (!parsed.ok) {
       setErrors(parsed.errors);
       return;
     }
     if (!label.trim()) {
-      setError('Give the invite a name — who is this for?');
+      toast.error('Give the invite a name — who is this for?', { key: 'invite-create' });
       return;
     }
     if (inviteByEmail && !email.trim()) {
-      setError('Enter the email address to send the invite to.');
+      toast.error('Enter the email address to send the invite to.', { key: 'invite-create' });
       return;
     }
     setBusy(true);
@@ -93,11 +90,12 @@ export function InviteMembersSection({
     });
     setBusy(false);
     if (!result.ok) {
-      setError(result.message);
+      toast.error(result.message, { key: 'invite-create' });
       return;
     }
+    toast.dismiss('invite-create');
     if (result.data.url) setMintedUrl(result.data.url);
-    else setSentTo(email.trim());
+    else toast.success(`Invite sent to ${email.trim()}. The link works for 7 days.`);
     setLabel('');
     setEmail('');
     router.refresh();
@@ -108,7 +106,8 @@ export function InviteMembersSection({
     setRevokingId(id);
     const result = await apiFetch(`/api/settings/members/invites/${id}`, { method: 'DELETE' });
     setRevokingId(null);
-    if (!result.ok) setError(result.message);
+    if (result.ok) toast.dismiss('invite-revoke');
+    else toast.error(result.message, { key: 'invite-revoke' });
     router.refresh();
   }
 
@@ -156,11 +155,6 @@ export function InviteMembersSection({
           onChange={change}
         />
       </div>
-      {error ? (
-        <div className="mt-3">
-          <SettingsFeedback kind="error">{error}</SettingsFeedback>
-        </div>
-      ) : null}
       <button
         type="button"
         onClick={() => void create()}
@@ -171,13 +165,6 @@ export function InviteMembersSection({
         {busy ? createLabel.busy : createLabel.idle}
       </button>
       {mintedUrl ? <CopyLinkBox url={mintedUrl} label="Invite link" /> : null}
-      {sentTo ? (
-        <div className="mt-3">
-          <SettingsFeedback kind="success">
-            Invite sent to {sentTo}. The link works for 7 days.
-          </SettingsFeedback>
-        </div>
-      ) : null}
 
       {invites.length > 0 ? (
         <div className="mt-5 border-t border-line pt-4">

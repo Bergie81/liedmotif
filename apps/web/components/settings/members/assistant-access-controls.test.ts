@@ -9,6 +9,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, expect, it, vi } from 'vitest';
 import { DEFAULT_MEMBER_LIMITS, type MemberAssistantAccess } from '@liedmotif/shared';
 import type { MembersAdminMember } from '@/lib/members-admin-data';
+import { shownToasts, toast } from '@/lib/toast';
 import { AssistantDefaultPanel } from './assistant-access-controls';
 import { MemberCards } from './member-cards';
 
@@ -16,6 +17,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: () => {} }) }))
 
 afterEach(() => {
   cleanup();
+  toast.dismiss();
   vi.unstubAllGlobals();
 });
 
@@ -103,15 +105,34 @@ it('saves a change to the default as soon as it is made', async () => {
   );
 });
 
-it('puts the default back and says why when a save fails', async () => {
+it('puts the default back and says why in a toast when a save fails', async () => {
   stubFailingSaves('Could not save.');
   render(h(AssistantDefaultPanel, { access: INSTANCE_DEFAULT }));
   const toggle = screen.getByRole('switch', { name: 'Assistant for Members' });
 
   fireEvent.click(toggle);
 
-  expect(await screen.findByText('Could not save.')).toBeTruthy();
+  await waitFor(() =>
+    expect(shownToasts()).toEqual([
+      expect.objectContaining({ tone: 'error', message: 'Could not save.' }),
+    ]),
+  );
   expect(toggle.getAttribute('aria-checked')).toBe('true');
+  expect(screen.queryByRole('status')).toBeNull();
+});
+
+it("says why in a toast when a Member's save fails", async () => {
+  stubFailingSaves('Member not found.');
+  render(memberCards({}));
+
+  fireEvent.click(memberSwitch());
+
+  await waitFor(() =>
+    expect(shownToasts()).toEqual([
+      expect.objectContaining({ tone: 'error', message: 'Member not found.' }),
+    ]),
+  );
+  expect(memberSwitch().getAttribute('aria-checked')).toBe('true');
 });
 
 it('shows a Member without values of their own on the default, and moves them with it', () => {

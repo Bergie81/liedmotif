@@ -4,13 +4,7 @@ import { cn } from '@/lib/cn';
 import type { LockedModel } from '@/lib/configurable-providers';
 import { compactPrimaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
 import { LiedmotifLoader } from '@/components/ui/loading';
-import {
-  BaseUrlField,
-  CredentialFeedback,
-  ModelField,
-  ProviderChoice,
-  SecretField,
-} from './credential-fields';
+import { BaseUrlField, ModelField, ProviderChoice, SecretField } from './credential-fields';
 import {
   useCredentialEditor,
   type CredentialEditorProps,
@@ -33,7 +27,6 @@ export function CredentialEditor({
       <SecretField editor={editor} currentMasked={props.currentMasked} />
       <BaseUrlField editor={editor} />
       {props.showModel ? <ModelField editor={editor} locked={lockedModel} /> : null}
-      <CredentialFeedback editor={editor} />
 
       <div className="flex gap-2">
         <button

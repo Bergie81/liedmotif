@@ -11,7 +11,6 @@ import type { ReactNode } from 'react';
 import { Check, CircleHelp } from 'lucide-react';
 import {
   BaseUrlField,
-  CredentialFeedback,
   ModelField,
   ProviderChoice,
   SecretField,
@@ -121,8 +120,6 @@ export function OnboardingCredentialFields({
         {editor.testing ? <LiedmotifLoader size="xs" /> : null}
         {editor.testing ? 'Testing…' : testLabel}
       </button>
-
-      <CredentialFeedback editor={editor} />
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { Trash2, Upload } from 'lucide-react';
 import { useImageCropPicker } from '@/components/media/use-image-crop-picker';
 import { REFERENCE_PHOTO_UPLOAD } from '@/lib/image-upload-targets';
 import type { PersonReferencePhotoSummary } from '@/lib/person-reference-photos';
-import { SettingsFeedback } from './settings-ui';
+import { toast } from '@/lib/toast';
 import { peopleErrorMessage, peopleResponseMessage, type PersonEditorValue } from './people-types';
 
 export function PersonPhotos({
@@ -28,7 +28,12 @@ export function PersonPhotos({
   onPhotoRemoved: (personId: string, photoId: string) => void;
 }) {
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const errorKey = `person-photos:${person.id}`;
+  /** The picker reports null when a failure clears: a new pick, a retry, a cancel. */
+  function report(message: string | null) {
+    if (message) toast.error(message, { key: errorKey });
+    else toast.dismiss(errorKey);
+  }
   const atPersonCap = person.photos.length >= maxPhotosPerPerson;
   const atTotalCap = totalPhotoCount >= maxPhotosTotal;
   const blocked = disabled || busy;
@@ -38,11 +43,10 @@ export function PersonPhotos({
   const picker = useImageCropPicker({
     target: REFERENCE_PHOTO_UPLOAD,
     heading: 'Reference photo',
-    onError: setMessage,
+    onError: report,
     onUpload: async (file) => {
       setBusy(true);
       onBusyChange(true);
-      setMessage(null);
       const form = new FormData();
       form.set('file', file);
       const response = await fetch(`/api/settings/people/${person.id}/photos`, {
@@ -70,7 +74,7 @@ export function PersonPhotos({
     if (blocked) return;
     setBusy(true);
     onBusyChange(true);
-    setMessage(null);
+    report(null);
     const response = await fetch(`/api/settings/people/${person.id}/photos/${photo.id}`, {
       method: 'DELETE',
     }).catch(() => null);
@@ -80,7 +84,7 @@ export function PersonPhotos({
       onPhotoRemoved(person.id, photo.id);
       return;
     }
-    setMessage(await peopleResponseMessage(response, 'The reference photo could not be removed.'));
+    report(await peopleResponseMessage(response, 'The reference photo could not be removed.'));
   }
 
   return (
@@ -119,11 +123,6 @@ export function PersonPhotos({
         <p className="mt-2 text-[11.5px] text-dim">
           Photo limit reached. Delete a photo to add another.
         </p>
-      ) : null}
-      {message ? (
-        <div className="mt-3">
-          <SettingsFeedback kind="error">{message}</SettingsFeedback>
-        </div>
       ) : null}
     </div>
   );

@@ -16,12 +16,8 @@ import type {
 } from '@liedmotif/shared';
 import { Switch } from '@/components/ui/controls';
 import { apiFetchJson } from '@/lib/api-fetch';
-import {
-  SettingsCard,
-  SettingsControlRow,
-  SettingsFeedback,
-  SettingsFootnote,
-} from '../settings-ui';
+import { toast } from '@/lib/toast';
+import { SettingsCard, SettingsControlRow, SettingsFootnote } from '../settings-ui';
 import {
   memberAssistantView,
   parseDailyMessages,
@@ -39,7 +35,6 @@ function useSavedAccess<T, P>(stored: T, url: string, preview: (current: T, patc
   const [value, setValue] = useState(stored);
   const [seenStored, setSeenStored] = useState(stored);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   if (seenStored !== stored) {
     setSeenStored(stored);
     setValue(stored);
@@ -48,22 +43,22 @@ function useSavedAccess<T, P>(stored: T, url: string, preview: (current: T, patc
   async function save(patch: P) {
     if (busy) return;
     const before = value;
-    setError(null);
     setBusy(true);
     setValue(preview(before, patch));
     const result = await apiFetchJson<{ access: T }>(url, 'POST', patch);
     setBusy(false);
     if (!result.ok) {
       setValue(before);
-      setError(result.message);
+      toast.error(result.message, { key: url });
       return;
     }
+    toast.dismiss(url);
     setValue(result.data.access);
     // The default reaches every Member card through the page's own data.
     router.refresh();
   }
 
-  return { value, busy, error, save };
+  return { value, busy, save };
 }
 
 /** A typed daily allowance, saved when the field is left or Enter is pressed. */
@@ -129,15 +124,6 @@ function DailyMessagesRow({
   );
 }
 
-function SaveError({ message }: { message: string | null }) {
-  if (!message) return null;
-  return (
-    <div className="mt-3">
-      <SettingsFeedback kind="error">{message}</SettingsFeedback>
-    </div>
-  );
-}
-
 /**
  * The instance default. `access` is null while no Writing AI is connected:
  * there is no Assistant to give access to, so the controls give way to a hint.
@@ -160,7 +146,7 @@ export function AssistantDefaultPanel({ access }: { access: AssistantAccess | nu
 }
 
 function AssistantDefaultControls({ access }: { access: AssistantAccess }) {
-  const { value, busy, error, save } = useSavedAccess(
+  const { value, busy, save } = useSavedAccess(
     access,
     '/api/settings/members/assistant',
     (current: AssistantAccess, patch: UpdateAssistantAccessRequest) => ({ ...current, ...patch }),
@@ -185,7 +171,6 @@ function AssistantDefaultControls({ access }: { access: AssistantAccess }) {
         disabled={busy}
         onCommit={(dailyMessages) => void save({ dailyMessages })}
       />
-      <SaveError message={error} />
       <SettingsFootnote>
         The default for every Member; set one Member&apos;s own on their card. Your own questions
         have no daily allowance.
@@ -250,7 +235,7 @@ export function MemberAssistantControls({
   own: MemberAssistantAccess;
 }) {
   const switchNoteId = useId();
-  const { value, busy, error, save } = useSavedAccess(
+  const { value, busy, save } = useSavedAccess(
     own,
     `/api/settings/members/${memberUserId}/assistant`,
     previewMemberAccess,
@@ -293,7 +278,6 @@ export function MemberAssistantControls({
         disabled={busy}
         onCommit={(dailyMessages) => void save({ dailyMessages })}
       />
-      <SaveError message={error} />
     </div>
   );
 }

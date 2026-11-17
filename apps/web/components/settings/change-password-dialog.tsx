@@ -23,10 +23,18 @@ import { PasswordField, usePasswordConfirmation } from '@/components/ui/password
 import { PasswordRequirements } from '@/components/ui/password-requirements';
 import { apiFetchJson } from '@/lib/api-fetch';
 import { cn } from '@/lib/cn';
-import { useConfirmLinkRequest } from './email-confirmation';
+import { toast } from '@/lib/toast';
+import { requestConfirmLink } from './email-confirmation';
 import { SettingsFeedback } from './settings-ui';
 
 const bodyClass = 'mt-2 text-[13.5px] leading-relaxed text-muted';
+
+/** One key for the dialog: whichever step failed, a retry replaces or clears it. */
+const FAILURE_KEY = 'change-password';
+
+function reportFailure(message: string) {
+  toast.error(message, { key: FAILURE_KEY });
+}
 
 export function ChangePasswordButton({
   email,
@@ -83,19 +91,21 @@ function resetLinkErrorMessage(status: number, serverMessage: string): string {
 function ResetLinkRequest({ email }: { email: string }) {
   const [sending, setSending] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   async function send() {
     setSending(true);
-    setError(null);
     const result = await apiFetchJson<{ sentTo: string }>(
       '/api/settings/profile/reset-link',
       'POST',
       {},
     );
     setSending(false);
-    if (result.ok) setSentTo(result.data.sentTo);
-    else setError(resetLinkErrorMessage(result.status, result.message));
+    if (!result.ok) {
+      reportFailure(resetLinkErrorMessage(result.status, result.message));
+      return;
+    }
+    toast.dismiss(FAILURE_KEY);
+    setSentTo(result.data.sentTo);
   }
 
   if (sentTo) return <Done>Sent to {sentTo}. The link works for 1 hour.</Done>;
@@ -105,7 +115,6 @@ function ResetLinkRequest({ email }: { email: string }) {
         A link to set a new password goes to <Address>{email}</Address>. It works for 1 hour, and
         using it signs you out everywhere.
       </DialogDescription>
-      <ErrorFeedback message={error} />
       <button
         type="button"
         onClick={send}
@@ -119,22 +128,35 @@ function ResetLinkRequest({ email }: { email: string }) {
 }
 
 function ConfirmEmailFirst({ email }: { email: string }) {
-  const confirmLink = useConfirmLinkRequest();
-  if (confirmLink.feedback?.kind === 'success') return <Done>{confirmLink.feedback.message}</Done>;
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState<string | null>(null);
+
+  async function send() {
+    setSending(true);
+    const result = await requestConfirmLink();
+    setSending(false);
+    if (!result.sent) {
+      reportFailure(result.message);
+      return;
+    }
+    toast.dismiss(FAILURE_KEY);
+    setSent(result.message);
+  }
+
+  if (sent) return <Done>{sent}</Done>;
   return (
     <>
       <DialogDescription className={bodyClass}>
         Confirm your email first: a password link only goes to a confirmed address. Send a confirm
         link to <Address>{email}</Address>, open it, then come back here.
       </DialogDescription>
-      <ErrorFeedback message={confirmLink.feedback?.message ?? null} />
       <button
         type="button"
-        onClick={confirmLink.send}
-        disabled={confirmLink.sending}
+        onClick={send}
+        disabled={sending}
         className={cn(primaryButtonClass, 'mt-6 w-full')}
       >
-        {confirmLink.sending ? 'Sending…' : 'Send confirm link'}
+        {sending ? 'Sending…' : 'Send confirm link'}
       </button>
     </>
   );
@@ -146,15 +168,15 @@ function CurrentPasswordChange() {
   const confirmation = usePasswordConfirmation(newPassword);
   const [busy, setBusy] = useState(false);
   const [changed, setChanged] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (busy) return;
     const matches = confirmation.check();
-    const passwordError = validatePassword(newPassword);
-    setError(passwordError);
-    if (passwordError || !matches) return;
+    const broken = validatePassword(newPassword);
+    setPasswordError(broken);
+    if (broken || !matches) return;
     setBusy(true);
     const result = await apiFetchJson('/api/settings/profile/password', 'POST', {
       currentPassword,
@@ -162,10 +184,11 @@ function CurrentPasswordChange() {
     });
     setBusy(false);
     if (result.ok) {
+      toast.dismiss(FAILURE_KEY);
       setChanged(true);
       return;
     }
-    setError(
+    reportFailure(
       result.status === 429
         ? 'Too many attempts. Wait a few minutes, then try again.'
         : result.message,
@@ -190,7 +213,11 @@ function CurrentPasswordChange() {
         minLength={MIN_PASSWORD_LENGTH}
         value={newPassword}
         disabled={busy}
-        onChange={(event) => setNewPassword(event.target.value)}
+        {...(passwordError ? { error: passwordError } : {})}
+        onChange={(event) => {
+          setNewPassword(event.target.value);
+          setPasswordError(null);
+        }}
       />
       <PasswordRequirements password={newPassword} />
       <PasswordField
@@ -200,7 +227,6 @@ function CurrentPasswordChange() {
         disabled={busy}
         {...confirmation.field}
       />
-      {error ? <SettingsFeedback kind="error">{error}</SettingsFeedback> : null}
       <button type="submit" disabled={busy} className={cn(primaryButtonClass, 'mt-2 w-full')}>
         {busy ? 'Changing…' : 'Change password'}
       </button>
@@ -210,15 +236,6 @@ function CurrentPasswordChange() {
 
 function Address({ children }: { children: string }) {
   return <span className="break-words text-paper">{children}</span>;
-}
-
-function ErrorFeedback({ message }: { message: string | null }) {
-  if (!message) return null;
-  return (
-    <div className="mt-4">
-      <SettingsFeedback kind="error">{message}</SettingsFeedback>
-    </div>
-  );
 }
 
 function Done({ children }: { children: ReactNode }) {

@@ -4,13 +4,14 @@ import { useState } from 'react';
 import { AvatarBadge } from '@/components/avatar-badge';
 import { cn } from '@/lib/cn';
 import type { PersonSummary } from '@/lib/people';
+import { toast } from '@/lib/toast';
 import type { PersonReferencePhotoSummary } from '@/lib/person-reference-photos';
 import { compactPrimaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
 import { dangerButtonClass } from '@/components/ui/design-system';
 import { PersonFields } from './person-fields';
 import { validatePersonFields, type PersonFieldErrors } from './people-form-model';
 import { PersonPhotos } from './person-photos';
-import { SettingsCard, SettingsFeedback } from './settings-ui';
+import { SettingsCard } from './settings-ui';
 import { peopleResponseMessage, type PersonEditorValue } from './people-types';
 
 export function PersonEditor({
@@ -44,7 +45,8 @@ export function PersonEditor({
   const [busy, setBusy] = useState<'save' | 'delete' | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<PersonFieldErrors>({});
-  const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
+  const saveKey = `person-save:${person.id}`;
+  const deleteKey = `person-delete:${person.id}`;
 
   async function save() {
     if (busy || photoBusy) return;
@@ -52,16 +54,14 @@ export function PersonEditor({
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) return;
     setBusy('save');
-    setMessage(null);
     const response = await fetch(`/api/settings/people/${person.id}`, {
       method: 'PATCH',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ name, about }),
     }).catch(() => null);
     if (!response?.ok) {
-      setMessage({
-        kind: 'error',
-        text: await peopleResponseMessage(response, 'Could not save this Person.'),
+      toast.error(await peopleResponseMessage(response, 'Could not save this Person.'), {
+        key: saveKey,
       });
       setBusy(null);
       return;
@@ -70,7 +70,8 @@ export function PersonEditor({
     onUpdated(body.person);
     setName(body.person.name);
     setAbout(body.person.about);
-    setMessage({ kind: 'success', text: `${body.person.name} saved.` });
+    toast.dismiss(saveKey);
+    toast.success(`${body.person.name} saved.`);
     setBusy(null);
   }
 
@@ -80,18 +81,17 @@ export function PersonEditor({
       return;
     }
     setBusy('delete');
-    setMessage(null);
     const response = await fetch(`/api/settings/people/${person.id}`, {
       method: 'DELETE',
     }).catch(() => null);
     if (!response?.ok) {
-      setMessage({
-        kind: 'error',
-        text: await peopleResponseMessage(response, 'Could not delete this Person.'),
+      toast.error(await peopleResponseMessage(response, 'Could not delete this Person.'), {
+        key: deleteKey,
       });
       setBusy(null);
       return;
     }
+    toast.dismiss(deleteKey);
     onDeleted(person.id);
   }
 
@@ -144,11 +144,6 @@ export function PersonEditor({
           onPhotoRemoved={onPhotoRemoved}
         />
       </div>
-      {message ? (
-        <div className="mt-4">
-          <SettingsFeedback kind={message.kind}>{message.text}</SettingsFeedback>
-        </div>
-      ) : null}
       <div className="mt-4 flex gap-2">
         {person.role === 'ordinary' ? (
           <button

@@ -20,6 +20,7 @@ import {
   secondaryButtonClass,
 } from '@/components/ui/form-styles';
 import type { MembersAdminData, MembersAdminMember } from '@/lib/members-admin-data';
+import { toast } from '@/lib/toast';
 import { BudgetUsageMeters, MEMBER_TRACK_LABELS } from '../budget-meters';
 import { SettingsCard, SettingsFeedback, SettingsStatusBadge } from '../settings-ui';
 import { MemberAssistantControls } from './assistant-access-controls';
@@ -35,17 +36,8 @@ import {
 } from './members-admin-model';
 import { useMemberBudgetForm } from './use-member-budget-form';
 
-/** What the Reset password button produced: a mail that went out, or a link to copy. */
-function ResetResult({ reset }: { reset: MemberResetPasswordResponse }) {
-  if ('to' in reset) {
-    return (
-      <div className="mt-3">
-        <SettingsFeedback kind="success">
-          Reset mail sent to {reset.to}. The link works for 1 hour.
-        </SettingsFeedback>
-      </div>
-    );
-  }
+/** A reset that came back as a link to copy, and why it was not mailed. */
+function ResetLink({ reset }: { reset: Extract<MemberResetPasswordResponse, { url: string }> }) {
   const line = resetFallbackLine(reset.reason);
   return (
     <>
@@ -77,27 +69,29 @@ function MemberCard({
     member.budget.kind,
   );
   const [busy, setBusy] = useState<null | 'budget' | 'reset' | 'disable' | 'delete'>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState<string | null>(null);
-  const [reset, setReset] = useState<MemberResetPasswordResponse | null>(null);
+  const [resetLink, setResetLink] = useState<Extract<
+    MemberResetPasswordResponse,
+    { url: string }
+  > | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [confirmName, setConfirmName] = useState('');
 
-  /** The shared action choreography: one action at a time, failures into `error`. */
+  /** The shared action choreography: one action at a time, a failure as a toast its retry replaces. */
   async function run<T>(
     tag: NonNullable<typeof busy>,
     call: () => Promise<ApiFetchResult<T>>,
     onSuccess: (data: T) => void,
   ) {
     if (busy) return;
-    setError(null);
+    const key = `member-${tag}:${member.userId}`;
     setBusy(tag);
     const result = await call();
     setBusy(null);
     if (!result.ok) {
-      setError(result.message);
+      toast.error(result.message, { key });
       return;
     }
+    toast.dismiss(key);
     onSuccess(result.data);
   }
 
@@ -109,7 +103,6 @@ function MemberCard({
   }
 
   async function saveBudget() {
-    setSaved(null);
     const parsed = buildMemberBudgetKindPatch(kind, values, tracksPerCall);
     if (!parsed.ok) {
       setErrors(parsed.errors);
@@ -125,11 +118,8 @@ function MemberCard({
         ),
       ({ overSubscription }) => {
         const warning = overSubscription[0];
-        setSaved(
-          warning
-            ? `Saved. ${overSubscriptionMessage(warning, tracksPerCall)}`
-            : 'Budget saved — it applies at the next generation.',
-        );
+        if (warning) toast.warning(`Saved. ${overSubscriptionMessage(warning, tracksPerCall)}`);
+        else toast.success('Budget saved — it applies at the next generation.');
         setEditing(false);
         router.refresh();
       },
@@ -144,7 +134,14 @@ function MemberCard({
           `/api/settings/members/${member.userId}/reset-password`,
           { method: 'POST' },
         ),
-      setReset,
+      (reset) => {
+        if ('url' in reset) {
+          setResetLink(reset);
+          return;
+        }
+        setResetLink(null);
+        toast.success(`Reset mail sent to ${reset.to}. The link works for 1 hour.`);
+      },
     );
 
   const destroy = () =>
@@ -309,17 +306,7 @@ function MemberCard({
         </div>
       ) : null}
 
-      {reset ? <ResetResult reset={reset} /> : null}
-      {error ? (
-        <div className="mt-3">
-          <SettingsFeedback kind="error">{error}</SettingsFeedback>
-        </div>
-      ) : null}
-      {saved ? (
-        <div className="mt-3">
-          <SettingsFeedback kind="success">{saved}</SettingsFeedback>
-        </div>
-      ) : null}
+      {resetLink ? <ResetLink reset={resetLink} /> : null}
     </SettingsCard>
   );
 }

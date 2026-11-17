@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import type { ConfigurableProviderType } from '@/lib/configurable-providers';
 import { llmEffectiveModel, llmModelMissing } from '@/lib/llm-providers';
 import { requiresProviderReplacementConfirmation } from '@/lib/provider-settings-model';
+import { toast } from '@/lib/toast';
 import {
   beginCredentialTest,
   isCredentialTestResultCurrent,
@@ -44,8 +45,6 @@ export interface CredentialEditorProps {
   onSaved: (saved: { providerKey: string; model: string | null }) => void;
 }
 
-type SaveFeedback = { kind: 'success' | 'error'; message: string } | null;
-
 export function useCredentialEditor(props: CredentialEditorProps) {
   const initialSelection = props.options.some((option) => option.value === props.initialProviderKey)
     ? props.initialProviderKey
@@ -60,11 +59,19 @@ export function useCredentialEditor(props: CredentialEditorProps) {
   // suggestion must not take the suggestions away.
   const [discoveredModels, setDiscoveredModels] = useState<string[]>([]);
   const [testState, setTestState] = useState<CredentialTestState>({ status: 'idle' });
-  const [saveFeedback, setSaveFeedback] = useState<SaveFeedback>(null);
+  const testKey = `credential-test:${props.providerType}`;
+  const saveKey = `credential-save:${props.providerType}`;
   const gate = useCredentialMutationGate();
   const selected = props.options.find((option) => option.value === providerKey) ?? props.options[0];
   const operationPending = gate.pending !== null;
   const canTest = Boolean(secret.trim() || baseUrl.trim() || model.trim()) || props.configured;
+
+  /** A finished Test is both the state that gates a wizard step and a toast. */
+  function finishTest(state: CredentialTestState) {
+    setTestState(state);
+    if (state.status === 'success') toast.success(state.message, { key: testKey });
+    if (state.status === 'error') toast.error(state.message, { key: testKey });
+  }
 
   /**
    * Editing any field invalidates the last test result: a "Connection verified"
@@ -74,6 +81,7 @@ export function useCredentialEditor(props: CredentialEditorProps) {
   function invalidateTest() {
     testRequestId.current += 1;
     setTestState({ status: 'idle' });
+    toast.dismiss(testKey);
   }
 
   /**
@@ -130,19 +138,20 @@ export function useCredentialEditor(props: CredentialEditorProps) {
     setBaseUrl(isSaved ? (props.initialBaseUrl ?? '') : '');
     setDiscoveredModels([]);
     setTestState({ status: 'idle' });
-    setSaveFeedback(null);
+    toast.dismiss(testKey);
+    toast.dismiss(saveKey);
   }
 
   async function test() {
     if (!selected || operationPending) return;
     if (props.providerType === 'llm' && !selected.listsModels && llmModelMissing(selected, model)) {
-      setTestState({ status: 'error', message: 'Enter the model for this provider first.' });
+      finishTest({ status: 'error', message: 'Enter the model for this provider first.' });
       return;
     }
     if (!gate.begin('test')) return;
     try {
       setTestState(beginCredentialTest());
-      setSaveFeedback(null);
+      toast.dismiss(saveKey);
       const requestId = ++testRequestId.current;
       const testedProviderKey = providerKey;
       const response = await fetch('/api/setup/validate', {
@@ -162,10 +171,10 @@ export function useCredentialEditor(props: CredentialEditorProps) {
         testedProviderKey,
         currentProviderKey: providerKeyRef.current,
       });
-      if (current && !response) setTestState(resolveCredentialTest(null));
+      if (current && !response) finishTest(resolveCredentialTest(null));
       if (current && response) {
         const body = (await response.json().catch(() => ({}))) as CredentialTestBody;
-        setTestState(resolveCredentialTest({ status: response.status, body }));
+        finishTest(resolveCredentialTest({ status: response.status, body }));
         setDiscoveredModels(listedModels(body));
       }
     } finally {
@@ -192,7 +201,7 @@ export function useCredentialEditor(props: CredentialEditorProps) {
       }
 
       setTestState({ status: 'idle' });
-      setSaveFeedback(null);
+      toast.dismiss(testKey);
       response = await fetch('/api/settings/credentials', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -208,11 +217,12 @@ export function useCredentialEditor(props: CredentialEditorProps) {
       gate.end('save');
     }
     if (response?.ok && body.ok) {
+      toast.dismiss(saveKey);
       props.onSaved({ providerKey, model: llmEffectiveModel(selected, model) });
       return;
     }
     const message = typeof body.error === 'string' ? body.error : body.error?.message;
-    setSaveFeedback({ kind: 'error', message: message ?? 'Could not save.' });
+    toast.error(message ?? 'Could not save.', { key: saveKey });
   }
 
   return {
@@ -226,7 +236,6 @@ export function useCredentialEditor(props: CredentialEditorProps) {
     setModel: editModel,
     discoveredModels,
     testState,
-    saveFeedback,
     operationPending,
     testing: gate.pending === 'test',
     saving: gate.pending === 'save',
