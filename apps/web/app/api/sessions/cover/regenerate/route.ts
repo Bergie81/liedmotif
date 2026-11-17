@@ -73,13 +73,15 @@ export async function POST(request: Request) {
   let effectiveGuidance: string | undefined;
   let enhancementApplied: boolean | undefined;
   if (guidance) {
+    const style = styleChange?.coverStyle ?? session.coverStyle;
     const enhancement = await enhanceCoverText(db, {
       ownerUserId,
       text: guidance,
       override: parsed.enhance,
       context: {
         sessionName: session.title,
-        style: styleChange?.coverStyle ?? session.coverStyle,
+        // Auto plans in the preset the text LLM picked, so the rewrite writes for it.
+        style: style === 'auto' ? (session.autoCoverStyle ?? 'auto') : style,
         mood: session.sessionStyleSnapshot?.mood ?? null,
         genres: session.sessionStyleSnapshot?.genreTags ?? [],
         imageModel: await generatedCoverModel(),

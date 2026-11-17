@@ -169,14 +169,17 @@ export async function POST(request: Request) {
   if (!derived.ok) {
     return apiError('provider_error', derived.message, { retryable: true });
   }
-  const { snapshot, userPrompt, coverConcept } = derived;
+  const { snapshot, userPrompt, coverConcept, autoCoverStyle } = derived;
   const result = await restyleSession(db, {
     ownerUserId,
     sessionId,
     snapshot,
-    // A small adjustment keeps the existing cover concept relevant — carry it
-    // when the derivation produced none (the preserved naming skips the call).
-    coverConcept: coverConcept || current.coverConcept,
+    // The Auto pick follows the concept it was written with (ADR 0007). A reply
+    // without a concept keeps both: a small adjustment leaves the existing cover
+    // direction relevant, and the preserved naming skips the naming call.
+    ...(coverConcept
+      ? { coverConcept, autoCoverStyle: autoCoverStyle ?? current.autoCoverStyle }
+      : {}),
     includesListener: derived.includesListener,
     // Provenance: the message EXTENDS the session's prompt history, which each
     // generation request then freezes for the Tracks it produces.

@@ -9,6 +9,7 @@ import type { GeneratedImageCapabilities } from '@liedmotif/providers';
 import type { SessionCoverPlanRecord, StyleSnapshot } from '@liedmotif/db';
 import {
   enumerateArtDirectionCandidates,
+  plannedStyle,
   selectArtDirection,
   stableDigest,
 } from './cover-plan-selection';
@@ -134,17 +135,39 @@ function graphemes(value: string): string[] {
   );
 }
 
+const PROVIDER_OR_MAGIC_TOKEN =
+  /\b(?:midjourney|stable\s+diffusion|dall[-· ]?e|flux(?:\.\d+)?|imagen|openai|openrouter|masterpiece|best\s+quality|ultra[- ]?detailed|award[- ]?winning|trending\s+on\s+artstation|[48]k|uhd)\b/giu;
+
 /**
- * Session data bounded for the prompt. `wordLists` is true only when no text LLM
- * is configured (ADR 0004): the English instruction-word list judges meaning,
- * so it never runs beside one.
+ * Text with the prompt syntax an image model would read as instructions
+ * removed: weight and flag syntax, provider and magic tokens, and role labels.
+ * This is syntax, not meaning, so it runs with or without a text LLM.
+ */
+function withoutPromptSyntax(text: string): string {
+  return text
+    .replace(PROVIDER_OR_MAGIC_TOKEN, '')
+    .replace(/<[^>]{1,120}>/g, '')
+    .replace(/--[\w-]+(?:\s+[^\s,;]+)?/g, '')
+    .replace(/\(([^()]{1,80}):\s*-?\d+(?:\.\d+)?\)/g, '$1')
+    .replace(/\[([^\]:]{1,80}):\s*-?\d+(?:\.\d+)?\]/g, '$1')
+    .replace(/::\s*-?\d+(?:\.\d+)?/g, '')
+    .replace(/\b(?:negative prompt|prompt|typography|hard constraints|exclude|avoid)\s*:/gi, '')
+    .replace(/\s*[,;:]\s*[,;:]+/g, '; ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Session data bounded for the prompt, its prompt syntax removed. `wordLists`
+ * is true only when no text LLM is configured (ADR 0004): the English
+ * instruction-word list judges meaning, so it never runs beside one.
  */
 function boundedSupportingData(
   value: string | null | undefined,
   max: number,
   wordLists: boolean,
 ): string {
-  const normalized = normalizedData(value);
+  const normalized = withoutPromptSyntax(normalizedData(value));
   const judged = wordLists
     ? normalized.replace(
         /\b(?:ignore|override|disregard|system prompt|developer message|provider fields?|render (?:the )?(?:word|text|logo))\b/gi,
@@ -184,27 +207,19 @@ function withoutNamedReferences(text: string): string {
 }
 
 /**
- * Sanitizer for user-written art direction. Stripping weight and flag syntax,
- * provider and magic tokens, and role labels is prompt syntax and runs on all
- * text; {@link withoutNamedReferences} runs only with `wordLists`. Returns ''
+ * Sanitizer for user-written art direction: the prompt syntax goes from all
+ * text, {@link withoutNamedReferences} runs only with `wordLists`. Returns ''
  * when nothing survives.
  */
 function genericArtDirection(raw: string, max: number, wordLists: boolean): string {
   const sanitized = boundedSupportingData(raw, max, wordLists);
   if (!sanitized) return '';
-  const providerOrMagicToken =
-    /\b(?:midjourney|stable\s+diffusion|dall[-· ]?e|flux(?:\.\d+)?|imagen|openai|openrouter|masterpiece|best\s+quality|ultra[- ]?detailed|award[- ]?winning|trending\s+on\s+artstation|[48]k|uhd)\b/giu;
-  const generic = (wordLists ? withoutNamedReferences(sanitized) : sanitized)
-    .replace(providerOrMagicToken, '')
-    .replace(/<[^>]{1,120}>/g, '')
-    .replace(/--[\w-]+(?:\s+[^\s,;]+)?/g, '')
-    .replace(/\(([^()]{1,80}):\s*-?\d+(?:\.\d+)?\)/g, '$1')
-    .replace(/\[([^\]:]{1,80}):\s*-?\d+(?:\.\d+)?\]/g, '$1')
-    .replace(/::\s*-?\d+(?:\.\d+)?/g, '')
-    .replace(/\b(?:negative prompt|prompt|typography|hard constraints|exclude|avoid)\s*:/gi, '')
-    .replace(/\[instruction removed\]/gi, '')
-    .replace(/\s*[,;:]\s*[,;:]+/g, '; ')
-    .replace(/\s+/g, ' ')
+  const generic = withoutPromptSyntax(
+    (wordLists ? withoutNamedReferences(sanitized) : sanitized).replace(
+      /\[instruction removed\]/gi,
+      '',
+    ),
+  )
     .replace(/^[\s,;:.()-]+|[\s,;:.()-]+$/g, '')
     .trim();
   return /[\p{L}\p{N}]/u.test(generic) ? generic : '';
@@ -280,7 +295,7 @@ export interface BuildSessionCoverPlanInput {
   autoCoverStyle?: CoverStylePreset | null;
   /** Whether the worker has a text LLM. Every word list (Auto keyword ranking,
    *  scene cues, named references, instruction words) runs only without one. */
-  textLlmConfigured?: boolean;
+  textLlmConfigured: boolean;
   customDefinition: string | null;
   snapshot: StyleSnapshot;
   sessionIntent?: string | null;
@@ -453,8 +468,12 @@ export function buildSessionCoverPlan(
 ): BuildSessionCoverPlanResult {
   const name = normalizedData(input.sessionName);
   if (!name || graphemes(name).length > MAX_NAME) return { ok: false, reason: 'invalid_name' };
-  const wordLists = input.textLlmConfigured !== true;
-  const concept = boundedSupportingData(input.coverConcept, MAX_CONCEPT, wordLists);
+  const wordLists = !input.textLlmConfigured;
+  const concept = boundedSupportingData(
+    withOrdinalSubjectNames(input.coverConcept, input.referenceSubjects ?? []),
+    MAX_CONCEPT,
+    wordLists,
+  );
   const custom =
     input.coverStyle === 'custom'
       ? genericCustomDefinition(input.customDefinition ?? '', wordLists)
@@ -463,7 +482,10 @@ export function buildSessionCoverPlan(
     input.persistedStyleFallbackReason ??
     (input.coverStyle === 'custom' && !custom ? 'invalid_custom_fell_back_to_auto' : null);
   const cue = semanticCue(name, concept, input.snapshot, wordLists);
-  const salt = `${input.sessionId}:${name}:${input.coverStyle}`;
+  // Auto with a pick salts with the picked preset, so it plans the very art
+  // direction the preset chosen by name plans.
+  const salted = plannedStyle(input.coverStyle, input.autoCoverStyle, custom) ?? input.coverStyle;
+  const salt = `${input.sessionId}:${name}:${salted}`;
   const enumerated = enumerateArtDirectionCandidates({
     requestedStyle: input.coverStyle,
     autoPick: input.autoCoverStyle ?? null,

@@ -536,6 +536,8 @@ export async function restyleSession(
     snapshot: StyleSnapshot;
     targetDurationMinutes?: number | null;
     coverConcept?: string | null;
+    /** The Auto cover pick written with `coverConcept`; omitted keeps the stored one. */
+    autoCoverStyle?: CoverStylePreset | null;
     /** The re-derivation's answer on whether the request includes the listener. */
     includesListener: boolean;
     /** The change's free text, FOLDED INTO the session's prompt history rather
@@ -614,6 +616,7 @@ export async function restyleSession(
                 : null,
             }
           : {}),
+        ...(args.autoCoverStyle !== undefined ? { autoCoverStyle: args.autoCoverStyle } : {}),
         includesListener: args.includesListener,
         userPrompt,
         ...(args.structuredControls !== undefined

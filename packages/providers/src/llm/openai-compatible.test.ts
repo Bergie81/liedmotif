@@ -1319,6 +1319,23 @@ describe('the Auto cover style pick', () => {
       expect(named.autoCoverStyle).toBe('photographic');
     });
 
+    it.each([
+      ['Record Sleeve', 'record_sleeve'],
+      ['poster-art', 'poster_art'],
+      [' MANGA ', 'manga'],
+    ])('reads a pick of %s, spelled loosely, as its preset', async (coverStyle, preset) => {
+      const expanded = await providerWith(
+        [expansion(coverStyle)],
+        structured,
+      ).expandSessionIntentWithMetadata('lofi for late reading');
+      expect(expanded.autoCoverStyle).toBe(preset);
+      const named = await providerWith([naming(coverStyle)], structured).createSessionMetadata({
+        userPrompt: null,
+        snapshot,
+      });
+      expect(named.autoCoverStyle).toBe(preset);
+    });
+
     it.each([['watercolor'], ['auto'], [undefined]])(
       'an answer of %s is no pick, and the reply still counts',
       async (coverStyle) => {

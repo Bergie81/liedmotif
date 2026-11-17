@@ -46,6 +46,7 @@ import {
   SESSION_COVER_PLAN_VERSION,
   SESSION_COVER_PROMPT_VERSION,
 } from './cover-plan';
+import { storedAutoPick } from './cover-plan-selection';
 import {
   classifyCoverSubmissionFailure,
   type CoverSubmissionFailure,
@@ -395,7 +396,10 @@ export async function freezePlanInputs(
     : emptySessionCoverPlan({
         sessionName: name,
         selectedStyle: session.coverStyle,
-        resolvedStyle: session.coverStyle,
+        resolvedStyle:
+          session.coverStyle === 'auto'
+            ? (storedAutoPick(session.autoCoverStyle) ?? 'auto')
+            : session.coverStyle,
         styleFallbackReason: session.coverStyleFallbackReason,
         conceptMode: 'title symbol',
         selectedPersonIds: referenceSelection.selectedPersonIds,

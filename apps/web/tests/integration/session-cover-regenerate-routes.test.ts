@@ -377,6 +377,33 @@ describe.skipIf(skip)('POST /api/sessions/cover/regenerate', () => {
     });
   });
 
+  it('gives the wish rewrite the preset an Auto cover plans in', async () => {
+    holder.llm = {
+      enhanceCoverDirection: async (input) => {
+        holder.enhanceCalls.push(input);
+        return { text: input.text, applied: true };
+      },
+    };
+    const ownerUserId = await createUser(testDb.db);
+    const sessionId = await createSession(testDb.db, {
+      ownerUserId,
+      title: 'Rain Session',
+      coverStyle: 'auto',
+    });
+    await testDb.pool.query(
+      `update activity_sessions set auto_cover_style = 'manga' where id = $1`,
+      [sessionId],
+    );
+    holder.ownerUserId = ownerUserId;
+
+    const response = await postJson(regeneratePost, {
+      activitySessionId: sessionId,
+      guidance: 'warm dusk skyline',
+    });
+    expect(response.status).toBe(200);
+    expect(holder.enhanceCalls[0]!.context).toMatchObject({ style: 'manga' });
+  });
+
   it('falls back to the raw guidance when enhancement does not apply', async () => {
     holder.llm = {
       enhanceCoverDirection: async (input) => ({ text: input.text, applied: false }),

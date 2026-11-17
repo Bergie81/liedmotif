@@ -22,6 +22,7 @@ const holder = vi.hoisted(() => ({
   db: null as unknown,
   ownerUserId: null as string | null,
   llmConfigured: true,
+  llm: null as import('@liedmotif/providers').LlmProvider | null,
 }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
 vi.mock('@/lib/session', () => ({
@@ -32,6 +33,7 @@ vi.mock('@/lib/providers', async () => {
   const { mockLlmProvider, mockMusicProvider } = await import('@liedmotif/providers');
   const music = mockMusicProvider();
   const llm = mockLlmProvider();
+  holder.llm = llm;
   return {
     getLlmProvider: async () => (holder.llmConfigured ? llm : null),
     getMusicProvider: () => music,
@@ -153,7 +155,7 @@ describe.skipIf(skip)('POST /api/sessions — no-LLM prompt passthrough', () => 
 
 // With a text LLM, the call that writes the cover concept also picks the preset
 // Auto resolves to (ADR 0007, 2026-11-17 Auto amendment); the mock LLM always
-// picks Photographic. The pick is frozen with the Session.
+// picks Photographic. The pick is stored with the concept it was written with.
 describe.skipIf(skip)('POST /api/sessions — the Auto cover pick', () => {
   it('stores the expansion’s pick on a prompt session', async () => {
     const id = await startSession({ input: { mode: 'prompt', prompt: 'calm focus beats' } });
@@ -176,23 +178,51 @@ describe.skipIf(skip)('POST /api/sessions — the Auto cover pick', () => {
     expect((await loadSession(id)).autoCoverStyle).toBeNull();
   });
 
-  it('Change Vibe keeps the stored pick', async () => {
-    const id = await startSession({ input: { mode: 'prompt', prompt: 'calm focus beats' } });
-    await testDb.pool.query(
-      `update activity_sessions set auto_cover_style = 'manga' where id = $1`,
-      [id],
-    );
+  /** Change Vibe with the expansion's cover answer replaced by `direction`. */
+  async function changeVibe(
+    sessionId: string,
+    direction: { coverConcept: string; autoCoverStyle: 'drawing' | null },
+  ) {
+    const llm = holder.llm!;
+    const expand = llm.expandSessionIntentWithMetadata.bind(llm);
+    vi.spyOn(llm, 'expandSessionIntentWithMetadata').mockImplementationOnce(async (...args) => ({
+      ...(await expand(...args)),
+      ...direction,
+    }));
     const res = await changeVibeRoute(
       new Request('http://localhost/api/sessions/change-vibe', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: id,
-          input: { mode: 'prompt', prompt: 'more drums' },
-        }),
+        body: JSON.stringify({ sessionId, input: { mode: 'prompt', prompt: 'more drums' } }),
       }),
     );
     expect(res.status).toBe(200);
-    expect((await loadSession(id)).autoCoverStyle).toBe('manga');
+    return loadSession(sessionId);
+  }
+
+  async function startWithStoredPick(): Promise<string> {
+    const id = await startSession({ input: { mode: 'prompt', prompt: 'calm focus beats' } });
+    await testDb.pool.query(
+      `update activity_sessions set auto_cover_style = 'manga', cover_concept = 'One lamp by a window.' where id = $1`,
+      [id],
+    );
+    return id;
+  }
+
+  it('Change Vibe writes a new pick together with a new concept', async () => {
+    const id = await startWithStoredPick();
+    const session = await changeVibe(id, {
+      coverConcept: 'A drum kit glowing under one spotlight.',
+      autoCoverStyle: 'drawing',
+    });
+    expect(session.coverConcept).toBe('A drum kit glowing under one spotlight.');
+    expect(session.autoCoverStyle).toBe('drawing');
+  });
+
+  it('Change Vibe keeps the stored concept and pick when the reply writes no concept', async () => {
+    const id = await startWithStoredPick();
+    const session = await changeVibe(id, { coverConcept: '', autoCoverStyle: 'drawing' });
+    expect(session.coverConcept).toBe('One lamp by a window.');
+    expect(session.autoCoverStyle).toBe('manga');
   });
 });

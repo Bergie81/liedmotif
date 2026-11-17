@@ -501,6 +501,7 @@ describeIfDb('SessionCoverGenerator', () => {
     for (let index = 0; index < 256 && !collidingSessionIds; index += 1) {
       const sessionId = `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`;
       const planned = buildSessionCoverPlan({
+        textLlmConfigured: false,
         sessionId,
         sessionName: 'Same Rain Name',
         coverConcept: null,
@@ -1075,6 +1076,25 @@ describeIfDb('SessionCoverGenerator', () => {
     const { provider } = fakeCoverArt();
 
     await generator(ownerUserId, provider, { textLlmConfigured: true }).ensureGenerated(sessionId);
+
+    const [ledger] = await ctx.db
+      .select()
+      .from(sessionCoverGenerations)
+      .where(eq(sessionCoverGenerations.activitySessionId, sessionId));
+    expect(ledger!.plan).toMatchObject({ selectedStyle: 'auto', resolvedStyle: 'manga' });
+  });
+
+  it('records the picked preset as an Auto cover’s style when planning fails', async () => {
+    const { ownerUserId, sessionId } = await seedSession();
+    await ctx.db
+      .update(activitySessions)
+      .set({ title: null, coverStyle: 'auto', autoCoverStyle: 'manga' })
+      .where(eq(activitySessions.id, sessionId));
+    const { provider } = fakeCoverArt();
+
+    await expect(
+      generator(ownerUserId, provider, { textLlmConfigured: true }).ensureGenerated(sessionId),
+    ).resolves.toMatchObject({ status: 'fallback', reason: 'invalid_session_name' });
 
     const [ledger] = await ctx.db
       .select()

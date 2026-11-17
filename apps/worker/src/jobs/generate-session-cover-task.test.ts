@@ -19,6 +19,7 @@ describe('generate-session-cover Graphile adapter', () => {
       db: {} as never,
       getCoverArt: async () => null,
       getSunoCoverArt: async () => null,
+      getLlm: async () => null,
       storage: {} as never,
     });
 
@@ -32,6 +33,7 @@ describe('generate-session-cover Graphile adapter', () => {
       db: {} as never,
       getCoverArt: async () => null,
       getSunoCoverArt: async () => null,
+      getLlm: async () => null,
       storage: {} as never,
     });
     const helpers = {

@@ -19,12 +19,17 @@ const openRouter = { providerKey: 'openrouter' } as GeneratedImageProvider;
 const sunoCover = { providerKey: 'suno-cover' } as GeneratedImageProvider;
 const styledSession = { useStandardCover: false };
 const unreadable = () => Promise.reject(new Error('credential cannot be decrypted'));
+const noLlm = async () => null;
 
 function sources(
   coverArt: GeneratedImageProvider | null,
   sunoCoverArt: GeneratedImageProvider | null,
 ): SessionCoverProviders {
-  return { getCoverArt: async () => coverArt, getSunoCoverArt: async () => sunoCoverArt };
+  return {
+    getCoverArt: async () => coverArt,
+    getSunoCoverArt: async () => sunoCoverArt,
+    getLlm: noLlm,
+  };
 }
 const standardSession = { useStandardCover: true };
 
@@ -96,14 +101,14 @@ describeIfDb('resolveSessionCoverImageProvider', () => {
     await expect(
       resolveSessionCoverImageProvider(
         ctx.db,
-        { getCoverArt: async () => openRouter, getSunoCoverArt: unreadable },
+        { getCoverArt: async () => openRouter, getSunoCoverArt: unreadable, getLlm: noLlm },
         null,
       ),
     ).resolves.toBe(openRouter);
     await expect(
       resolveSessionCoverImageProvider(
         ctx.db,
-        { getCoverArt: async () => openRouter, getSunoCoverArt: unreadable },
+        { getCoverArt: async () => openRouter, getSunoCoverArt: unreadable, getLlm: noLlm },
         styledSession,
       ),
     ).resolves.toBe(openRouter);
@@ -113,14 +118,14 @@ describeIfDb('resolveSessionCoverImageProvider', () => {
     await expect(
       resolveSessionCoverImageProvider(
         ctx.db,
-        { getCoverArt: unreadable, getSunoCoverArt: async () => sunoCover },
+        { getCoverArt: unreadable, getSunoCoverArt: async () => sunoCover, getLlm: noLlm },
         styledSession,
       ),
     ).resolves.toBe(sunoCover);
     await expect(
       resolveSessionCoverImageProvider(
         ctx.db,
-        { getCoverArt: async () => openRouter, getSunoCoverArt: unreadable },
+        { getCoverArt: async () => openRouter, getSunoCoverArt: unreadable, getLlm: noLlm },
         standardSession,
       ),
     ).resolves.toBe(openRouter);
@@ -142,7 +147,6 @@ describeIfDb('resolveSessionCoverImageProvider', () => {
 describe('textLlmConfigured', () => {
   it('is true only when a text LLM resolves, or its configuration cannot be read', async () => {
     const llm = { providerKey: 'openrouter' } as LlmProvider;
-    await expect(textLlmConfigured(undefined)).resolves.toBe(false);
     await expect(textLlmConfigured(async () => null)).resolves.toBe(false);
     await expect(textLlmConfigured(async () => llm)).resolves.toBe(true);
     await expect(textLlmConfigured(unreadable)).resolves.toBe(true);

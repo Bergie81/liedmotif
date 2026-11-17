@@ -22,6 +22,7 @@ const deps: WorkerRunnerDeps = {
   encryptionKey: null,
   getCoverArt: async () => null,
   getSunoCoverArt: async () => null,
+  getLlm: async () => null,
 };
 
 describe('worker runner registry', () => {

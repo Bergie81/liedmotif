@@ -1,5 +1,10 @@
 import { createHash } from 'node:crypto';
-import { COVER_STYLE_PRESETS, type CoverStyle, type CoverStylePreset } from '@liedmotif/shared';
+import {
+  COVER_STYLE_PRESETS,
+  narrowTo,
+  type CoverStyle,
+  type CoverStylePreset,
+} from '@liedmotif/shared';
 import type { StyleSnapshot } from '@liedmotif/db';
 
 export interface StyleGrammar {
@@ -301,14 +306,20 @@ function enumerateStyleCandidates(args: {
   });
 }
 
+/** The stored Auto pick when it names a preset, else no pick: the column's enum
+ *  is every cover style, so `auto` or `custom` can sit in it. */
+export function storedAutoPick(pick: string | null | undefined): PresetStyle | null {
+  return narrowTo(COVER_STYLE_PRESETS, pick);
+}
+
 /** The one style a cover plans, or null when it draws from the whole Auto pool:
  *  Auto without a pick, and Custom without a usable definition. */
-function plannedStyle(
+export function plannedStyle(
   requestedStyle: CoverStyle,
-  autoPick: PresetStyle | null,
+  autoPick: string | null | undefined,
   custom: string,
 ): PresetStyle | 'custom' | null {
-  if (requestedStyle === 'auto') return autoPick;
+  if (requestedStyle === 'auto') return storedAutoPick(autoPick);
   if (requestedStyle === 'custom' && !custom) return null;
   return requestedStyle;
 }
@@ -326,7 +337,7 @@ export function enumerateArtDirectionCandidates(args: {
   /** The text LLM's preset pick for Auto; ignored by every other style. */
   autoPick?: PresetStyle | null;
   /** A configured text LLM judges meaning, so keyword ranking never runs. */
-  textLlmConfigured?: boolean;
+  textLlmConfigured: boolean;
   custom: string;
   name: string;
   snapshot: StyleSnapshot;
@@ -335,7 +346,7 @@ export function enumerateArtDirectionCandidates(args: {
   salt: string;
   grammars: Record<PresetStyle, StyleGrammar>;
 }): { candidates: PlannedCandidate[]; explicitPreset: string | null } {
-  const style = plannedStyle(args.requestedStyle, args.autoPick ?? null, args.custom);
+  const style = plannedStyle(args.requestedStyle, args.autoPick, args.custom);
   if (style) {
     return {
       candidates: enumerateStyleCandidates({

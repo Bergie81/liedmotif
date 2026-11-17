@@ -59,8 +59,8 @@ export interface WorkerRunnerDeps {
   getCoverArt: () => Promise<GeneratedImageProvider | null>;
   /** Music-task-driven Suno cover source per job run, or null when unbuildable. */
   getSunoCoverArt: () => Promise<GeneratedImageProvider | null>;
-  /** Resolve the optional text LLM; omitted means "no LLM". */
-  getLlm?: () => Promise<LlmProvider | null>;
+  /** Resolve the optional text LLM, null when none is configured. */
+  getLlm: () => Promise<LlmProvider | null>;
 }
 
 /** The registered task identifiers, exported so tests/tooling can assert coverage. */
@@ -132,7 +132,7 @@ export function buildTaskList(deps: WorkerRunnerDeps): TaskList {
     'ensure-session-buffer': createEnsureSessionBufferTask({
       db: deps.db,
       getMusic: deps.getMusic,
-      ...(deps.getLlm ? { getLlm: deps.getLlm } : {}),
+      getLlm: deps.getLlm,
     }),
     'sweep-active-sessions': createSweepActiveSessionsTask({ db: deps.db }),
     'poll-music-generation': createPollMusicGenerationTask({
@@ -172,20 +172,20 @@ export function buildTaskList(deps: WorkerRunnerDeps): TaskList {
       db: deps.db,
       getCoverArt: deps.getCoverArt,
       getSunoCoverArt: deps.getSunoCoverArt,
-      ...(deps.getLlm ? { getLlm: deps.getLlm } : {}),
+      getLlm: deps.getLlm,
       storage: deps.storage,
     }),
     'generate-playlist-cover': createGeneratePlaylistCoverTask({
       db: deps.db,
       getCoverArt: deps.getCoverArt,
-      ...(deps.getLlm ? { getLlm: deps.getLlm } : {}),
+      getLlm: deps.getLlm,
       storage: deps.storage,
     }),
     'recover-session-covers': createRecoverSessionCoversTask({
       db: deps.db,
       getCoverArt: deps.getCoverArt,
       getSunoCoverArt: deps.getSunoCoverArt,
-      ...(deps.getLlm ? { getLlm: deps.getLlm } : {}),
+      getLlm: deps.getLlm,
       storage: deps.storage,
     }),
     'embed-track-metadata': createEmbedTrackMetadataTask({
@@ -290,7 +290,7 @@ export async function startWorkerRunner(options: StartWorkerRunnerOptions): Prom
       encryptionKey: options.encryptionKey,
       getCoverArt: options.getCoverArt,
       getSunoCoverArt: options.getSunoCoverArt,
-      ...(options.getLlm ? { getLlm: options.getLlm } : {}),
+      getLlm: options.getLlm,
     }),
     crontab: RECURRING_CRONTAB,
   });

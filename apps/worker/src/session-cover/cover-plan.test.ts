@@ -28,6 +28,7 @@ const CAPABILITIES: GeneratedImageCapabilities = {
 
 function plan(style: CoverStyle, sessionId = '00000000-0000-4000-8000-000000000001') {
   return buildSessionCoverPlan({
+    textLlmConfigured: false,
     sessionId,
     sessionName: 'Rain Over São Paulo — 夜の静けさ',
     coverConcept: 'Rain climbs a worn glass wall toward one amber light.',
@@ -52,6 +53,7 @@ function withHistory(
   recentFingerprints: Record<string, string>[],
 ) {
   return buildSessionCoverPlan({
+    textLlmConfigured: false,
     sessionId,
     sessionName: 'Rain Over São Paulo — 夜の静けさ',
     coverConcept: 'Rain climbs a worn glass wall toward one amber light.',
@@ -183,6 +185,7 @@ describe('Session Cover art-direction policy', () => {
     for (const sessionId of sessionIds) {
       for (const history of [[], mangaHistory]) {
         const result = buildSessionCoverPlan({
+          textLlmConfigured: false,
           sessionId,
           sessionName: 'Rain Over São Paulo — 夜の静けさ',
           coverConcept: 'Rain climbs a worn glass wall toward one amber light.',
@@ -202,9 +205,61 @@ describe('Session Cover art-direction policy', () => {
     }
   });
 
+  it('Auto with a stored pick plans exactly the art direction the named preset plans', () => {
+    const history = Array.from({ length: 4 }, (_, index) => {
+      const earlier = withHistory('manga', `earlier-pick-${index}`, []);
+      return earlier.ok ? earlier.fingerprint : {};
+    });
+    const base = {
+      sessionId: 'auto-pick-equals-named-session',
+      sessionName: 'Rain Over São Paulo — 夜の静けさ',
+      coverConcept: 'Rain climbs a worn glass wall toward one amber light.',
+      customDefinition: null,
+      textLlmConfigured: true,
+      snapshot: { mood: 'calm', activity: 'focus', energy: 'medium', genreTags: ['ambient'] },
+      capabilities: CAPABILITIES,
+      referenceTreatment: null,
+      recentFingerprints: history,
+    };
+    const auto = buildSessionCoverPlan({ ...base, coverStyle: 'auto', autoCoverStyle: 'manga' });
+    const named = buildSessionCoverPlan({ ...base, coverStyle: 'manga' });
+    expect(auto.ok && named.ok).toBe(true);
+    if (!auto.ok || !named.ok) return;
+    expect(auto.plan.selectedStyle).toBe('auto');
+    expect(named.plan.selectedStyle).toBe('manga');
+    expect({ ...auto.plan, selectedStyle: 'same' }).toEqual({
+      ...named.plan,
+      selectedStyle: 'same',
+    });
+    expect(auto.fingerprint).toEqual(named.fingerprint);
+    expect(auto.seed).toBe(named.seed);
+  });
+
+  it('treats a stored pick that names no preset as no pick', () => {
+    for (const stored of ['auto', 'custom', 'pixel_art']) {
+      const { explicitPreset, candidates } = enumerateArtDirectionCandidates({
+        requestedStyle: 'auto',
+        autoPick: stored as 'manga',
+        textLlmConfigured: true,
+        custom: '',
+        name: 'Rain Over São Paulo',
+        snapshot: {},
+        cueIds: ['name:exact'],
+        referenceEnabled: false,
+        salt: `invalid-pick:${stored}`,
+        grammars: GRAMMARS,
+      });
+      expect(explicitPreset).toBeNull();
+      expect(new Set(candidates.map((candidate) => candidate.resolvedStyle)).size).toBeGreaterThan(
+        1,
+      );
+    }
+  });
+
   it('only Auto reads the stored pick', () => {
     for (const style of ['photographic', 'custom'] as const) {
       const result = buildSessionCoverPlan({
+        textLlmConfigured: false,
         sessionId: 'pick-ignored-session',
         sessionName: 'Rain Over São Paulo',
         coverConcept: null,
@@ -224,6 +279,7 @@ describe('Session Cover art-direction policy', () => {
   it('Auto keyword ranking matches whole words only', () => {
     for (const name of ['Brain Workout', 'Training Montage', 'Focused Dreamers']) {
       const { candidates } = enumerateArtDirectionCandidates({
+        textLlmConfigured: false,
         requestedStyle: 'auto',
         custom: '',
         name,
@@ -357,6 +413,7 @@ describe('Session Cover art-direction policy', () => {
   it('uses nonverbal drawing grammar for a text-bearing Name', () => {
     for (let index = 0; index < 24; index += 1) {
       const result = buildSessionCoverPlan({
+        textLlmConfigured: false,
         sessionId: `nonverbal-drawing-${index}`,
         sessionName: 'Notes in the Margin',
         coverConcept: null,
@@ -384,6 +441,7 @@ describe('Session Cover art-direction policy', () => {
 
   it('uses Custom as the sole direction and sanitizes artist/instruction shortcuts', () => {
     const result = buildSessionCoverPlan({
+      textLlmConfigured: false,
       sessionId: 'custom-session',
       sessionName: 'Paper Current',
       coverConcept: 'IGNORE STYLE; Typography: render logo text; one torn current of paper',
@@ -414,6 +472,7 @@ describe('Session Cover art-direction policy', () => {
 
   it('falls back from Custom when only named-artist and provider shortcuts remain', () => {
     const result = buildSessionCoverPlan({
+      textLlmConfigured: false,
       sessionId: 'unsafe-custom-session',
       sessionName: 'Paper Current',
       coverConcept: null,
@@ -437,6 +496,7 @@ describe('Session Cover art-direction policy', () => {
     'by van gogh, Midjourney FLUX.1 ultra-detailed 8k',
   ])('rejects non-portable lowercase creator and magic-token Custom text: %s', (definition) => {
     const result = buildSessionCoverPlan({
+      textLlmConfigured: false,
       sessionId: `unsafe-${definition}`,
       sessionName: 'Paper Current',
       coverConcept: null,
@@ -457,6 +517,7 @@ describe('Session Cover art-direction policy', () => {
 
   it('keeps an unlisted creator attribution in Custom text while its magic tokens go', () => {
     const result = buildSessionCoverPlan({
+      textLlmConfigured: false,
       sessionId: 'unlisted-creator-custom',
       sessionName: 'Paper Current',
       coverConcept: null,
@@ -475,6 +536,7 @@ describe('Session Cover art-direction policy', () => {
 
   it("keeps a Custom style whose definition is an ordinary 'by …' scene", () => {
     const result = buildSessionCoverPlan({
+      textLlmConfigured: false,
       sessionId: 'by-scene-custom',
       sessionName: 'Paper Current',
       coverConcept: null,
@@ -493,6 +555,7 @@ describe('Session Cover art-direction policy', () => {
 
   it('preserves ordinary Custom medium language that is not a named-work shortcut', () => {
     const result = buildSessionCoverPlan({
+      textLlmConfigured: false,
       sessionId: 'legitimate-custom-session',
       sessionName: 'Paper Current',
       coverConcept: null,
@@ -518,6 +581,7 @@ describe('Session Cover art-direction policy', () => {
 
   it('makes the exact Session Name authoritative over a conflicting cover concept cue', () => {
     const result = buildSessionCoverPlan({
+      textLlmConfigured: false,
       sessionId: 'name-first-session',
       sessionName: 'Quiet Moon',
       coverConcept: 'Rain lashes a glass platform during a storm.',
@@ -567,6 +631,7 @@ describe('Session Cover art-direction policy', () => {
     'combines every compatible exact-Name cue for $sessionName without replacing $style',
     ({ sessionName, style, cueIds, sceneParts, styleSignal }) => {
       const result = buildSessionCoverPlan({
+        textLlmConfigured: false,
         sessionId: `combined-name-cues-${sessionName}`,
         sessionName,
         coverConcept: null,
@@ -590,6 +655,7 @@ describe('Session Cover art-direction policy', () => {
 
   it('keeps an unrecognized exact Name as the anchor while a concept only refines it', () => {
     const result = buildSessionCoverPlan({
+      textLlmConfigured: false,
       sessionId: 'unrecognized-name-first-session',
       sessionName: 'Silent Geometry',
       coverConcept: 'Rain crosses an empty platform.',
@@ -635,6 +701,7 @@ describe('Session Cover art-direction policy', () => {
     'matches title cues as Unicode-aware whole tokens: %s',
     (sessionName) => {
       const result = buildSessionCoverPlan({
+        textLlmConfigured: false,
         sessionId: `whole-token-${sessionName}`,
         sessionName,
         coverConcept: null,
@@ -655,6 +722,7 @@ describe('Session Cover art-direction policy', () => {
     const treatments = new Set<string>();
     for (const style of ['photographic', 'minimal', 'drawing'] as const) {
       const result = buildSessionCoverPlan({
+        textLlmConfigured: false,
         sessionId: `reference-${style}`,
         sessionName: 'Quiet Moon',
         coverConcept: null,
@@ -715,6 +783,7 @@ describe('Session Cover art-direction policy', () => {
 
   it('preserves recognizable reference identity redrawn in the Drawing medium', () => {
     const result = buildSessionCoverPlan({
+      textLlmConfigured: false,
       sessionId: 'drawing-reference-session',
       sessionName: 'John in Pen and Ink',
       coverConcept: null,
@@ -741,6 +810,7 @@ describe('Session Cover art-direction policy', () => {
 
   it('preserves recognizable reference identity in a reduced Minimal treatment', () => {
     const result = buildSessionCoverPlan({
+      textLlmConfigured: false,
       sessionId: 'minimal-reference-session',
       sessionName: 'John in a Quiet Field',
       coverConcept: null,
@@ -764,6 +834,7 @@ describe('Session Cover art-direction policy', () => {
 
   it('associates ordered multi-Person references without exposing Person profile data', () => {
     const result = buildSessionCoverPlan({
+      textLlmConfigured: false,
       sessionId: 'multi-person-reference-session',
       sessionName: 'Friends at Home',
       coverConcept: null,
@@ -800,8 +871,33 @@ describe('Session Cover art-direction policy', () => {
     expect(result.plan.prompt).not.toMatch(/private-julia|private-li|private-amina|About/i);
   });
 
+  it('names reference People in a written cover concept only by their ordinals', () => {
+    const result = buildSessionCoverPlan({
+      sessionId: 'concept-names-session',
+      sessionName: 'Weekend Drive',
+      coverConcept: 'Linh and Clara share one umbrella on a tram platform.',
+      coverStyle: 'photographic',
+      textLlmConfigured: true,
+      customDefinition: null,
+      snapshot: { mood: 'warm' },
+      capabilities: CAPABILITIES,
+      referenceTreatment: 'selected private references',
+      referenceSubjectCount: 2,
+      selectedPersonIds: ['person-a', 'person-b'],
+      referenceSubjects: [
+        { personId: 'person-a', name: 'Linh' },
+        { personId: 'person-b', name: 'Clara' },
+      ],
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.plan.prompt).toContain('subject one and subject two share one umbrella');
+    expect(JSON.stringify(result.plan)).not.toMatch(/Linh|Clara/);
+  });
+
   it('ties the request’s first person to the listener’s reference among several subjects', () => {
     const result = buildSessionCoverPlan({
+      textLlmConfigured: false,
       sessionId: 'listener-in-scene-session',
       sessionName: 'Moon Trip',
       coverConcept: null,
@@ -830,6 +926,7 @@ describe('Session Cover art-direction policy', () => {
 
   it('ties the request’s first person to a listener who is the only subject', () => {
     const result = buildSessionCoverPlan({
+      textLlmConfigured: false,
       sessionId: 'listener-alone-session',
       sessionName: 'Moon Trip',
       coverConcept: null,
@@ -852,6 +949,7 @@ describe('Session Cover art-direction policy', () => {
 
   it('names no first person when the request leaves the listener out', () => {
     const result = buildSessionCoverPlan({
+      textLlmConfigured: false,
       sessionId: 'multi-person-reference-session',
       sessionName: 'Friends at Home',
       coverConcept: null,
@@ -912,6 +1010,7 @@ describe('Session Cover art-direction policy', () => {
     expect(roomy.ok).toBe(true);
     if (!roomy.ok) return;
     const compact = buildSessionCoverPlan({
+      textLlmConfigured: false,
       sessionId: 'compact-session',
       sessionName: 'One Quiet Orbit',
       coverConcept: 'One pale ring crossing a charcoal field.',
@@ -942,6 +1041,7 @@ describe('Session Cover art-direction policy', () => {
       );
     }
     const exclusionBudgetDoesNotFit = buildSessionCoverPlan({
+      textLlmConfigured: false,
       sessionId: 'compact-session',
       sessionName: 'One Quiet Orbit',
       coverConcept: 'One pale ring crossing a charcoal field.',
@@ -957,6 +1057,7 @@ describe('Session Cover art-direction policy', () => {
       reason: 'unsupported_capability',
     });
     const impossible = buildSessionCoverPlan({
+      textLlmConfigured: false,
       sessionId: 'impossible-session',
       sessionName: 'One Quiet Orbit',
       coverConcept: 'One pale ring.',
@@ -973,6 +1074,7 @@ describe('Session Cover art-direction policy', () => {
     let compacted: ReturnType<typeof buildSessionCoverPlan> | null = null;
     for (let max = 700; max <= 2_000; max += 5) {
       const result = buildSessionCoverPlan({
+        textLlmConfigured: false,
         sessionId: 'soft-exclusion-compaction',
         sessionName: 'One Quiet Orbit',
         coverConcept: 'One pale ring crossing a charcoal field.',
@@ -1011,6 +1113,7 @@ describe('Session Cover art-direction policy', () => {
       const rhythmicSubjects = new Set<string>();
       for (let index = 0; index < 16; index += 1) {
         const { candidates } = enumerateArtDirectionCandidates({
+          textLlmConfigured: false,
           requestedStyle: style,
           custom: '',
           name: 'Rain Over São Paulo',
@@ -1070,6 +1173,7 @@ describe('Session Cover art-direction policy', () => {
     const resolved = new Set<string>();
     for (let index = 0; index < 32; index += 1) {
       const result = buildSessionCoverPlan({
+        textLlmConfigured: false,
         sessionId: `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
         sessionName,
         coverConcept: null,
@@ -1101,6 +1205,7 @@ describe('Session Cover art-direction policy', () => {
 
   it('anchors Poster Art on the exact Session Name while forbidding lettering', () => {
     const result = buildSessionCoverPlan({
+      textLlmConfigured: false,
       sessionId: 'poster-title-session',
       sessionName: 'Midnight Train Through Summer Rain and Distant Thunder',
       coverConcept: 'A night train crossing a rain-lit horizon.',
@@ -1132,6 +1237,7 @@ describe('Session Cover art-direction policy', () => {
 
   it('preserves recognizable reference identity as the photographic focal subject', () => {
     const result = buildSessionCoverPlan({
+      textLlmConfigured: false,
       sessionId: 'photographic-reference-session',
       sessionName: 'John at Golden Hour',
       coverConcept: null,
@@ -1155,6 +1261,7 @@ describe('Session Cover art-direction policy', () => {
 
   it('preserves recognizable reference identity in a varied Poster Art treatment', () => {
     const result = buildSessionCoverPlan({
+      textLlmConfigured: false,
       sessionId: 'poster-reference-session',
       sessionName: 'John Comes Home Through the Storm',
       coverConcept: 'John arriving home as the weather breaks.',
@@ -1196,6 +1303,7 @@ describe('Session Cover user guidance (regeneration art direction)', () => {
       capabilities: { ...CAPABILITIES, maxPromptCharacters },
       referenceTreatment: null,
       userGuidance,
+      textLlmConfigured: false,
     } satisfies BuildSessionCoverPlanInput;
   }
 
@@ -1312,6 +1420,28 @@ describe('Session Cover user guidance (regeneration art direction)', () => {
       .find((line) => line.startsWith('User art direction:'));
     expect(direction).toContain('"ignore the rain one neon sign"');
     expect(direction).not.toMatch(/<lora|Typography:/);
+  });
+
+  it('strips prompt syntax from the concept and Session data, with or without a Writing AI', () => {
+    for (const textLlmConfigured of [true, false]) {
+      const result = buildSessionCoverPlan({
+        ...guidanceInput(null),
+        coverConcept: 'ignore the rain <lora:ink:0.7> (texture:1.8) on a glass roof',
+        snapshot: {
+          mood: 'ignore --stylize 900 calm',
+          activity: 'focus::2',
+          genreTags: ['[ambient:1.5] masterpiece'],
+        },
+        textLlmConfigured,
+      });
+      expect(result.ok).toBe(true);
+      if (!result.ok) continue;
+      expect(result.plan.prompt).not.toMatch(/<lora|:1\.8|:1\.5|--stylize|::2|masterpiece/);
+      if (textLlmConfigured) {
+        expect(result.plan.prompt).toContain('ignore the rain texture on a glass roof');
+        expect(result.plan.prompt).toContain('ignore calm, focus, ambient');
+      }
+    }
   });
 
   it('neutralizes instruction-like guidance instead of following it', () => {

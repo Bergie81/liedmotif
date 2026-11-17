@@ -70,8 +70,7 @@ type PersonLyricSource = Pick<PersonRow, 'name' | 'nameMatchKey' | 'about' | 'ro
   id: string;
 };
 
-/** What a Change Vibe message leaves unsaid — the running session answers it. */
-type PersonMatchContext = Pick<ExpansionOptions, 'adjustFrom' | 'promptHistory'> & {
+type PersonMatchContext = Pick<ExpansionOptions, 'promptHistory'> & {
   /** The request's explicit vocal pick, when it carries one. */
   vocal?: VocalMode;
 };
@@ -237,8 +236,8 @@ export function toStoredSnapshot(snapshot: SessionStyleSnapshot): StyleSnapshot 
 
 /**
  * What the text LLM wrote for a Session's cover: the visual concept and the
- * preset Auto resolves to (ADR 0007). Written together by the expansion or the
- * naming call, and frozen together on the Session.
+ * preset Auto resolves to (ADR 0007). Each comes from the expansion, or from the
+ * naming call where the expansion left it empty.
  */
 interface CoverDirection {
   coverConcept: string;

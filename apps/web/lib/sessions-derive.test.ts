@@ -170,13 +170,9 @@ describe('personLyricContextForRequest', () => {
   // the names the session already sings about, so the prompt history supplies
   // them.
   describe('on a Change Vibe adjustment', () => {
-    const vocalAnchor = compileStructuredControls({ vocal: 'vocal', genres: ['folk'] });
-    const instrumentalAnchor = compileStructuredControls({ genres: ['ambient'] });
-
     it('matches names over the change text AND the session prompt history', () => {
       expect(
         namedPeople('use berlin instead of london', people, {
-          adjustFrom: vocalAnchor,
           promptHistory: 'a song for Julia about her ride from London to Paris',
         }),
       ).toEqual([{ name: 'Julia', about: 'repairs bicycles' }]);
@@ -185,7 +181,6 @@ describe('personLyricContextForRequest', () => {
     it('leaves instrumental change wording to the Writing AI', () => {
       expect(
         namedPeople('instrumental only, no vocals', people, {
-          adjustFrom: vocalAnchor,
           promptHistory: 'a song for Julia',
         }),
       ).toEqual([{ name: 'Julia', about: 'repairs bicycles' }]);
@@ -194,7 +189,6 @@ describe('personLyricContextForRequest', () => {
     it('shuts the gate on an explicit instrumental pick, whatever the text says', () => {
       expect(
         namedPeople('sing a song for Julia', people, {
-          adjustFrom: vocalAnchor,
           vocal: 'instrumental',
         }),
       ).toEqual([]);
@@ -203,7 +197,6 @@ describe('personLyricContextForRequest', () => {
     it('an adjustment of an instrumental Session without a Vocal pick sends the About, leaving the vocal call to the Writing AI', () => {
       expect(
         personLyricContextForRequest('add lyrics about Julia', people, {
-          adjustFrom: instrumentalAnchor,
           promptHistory: 'focus music for Julia',
         }),
       ).toEqual({ people: [{ name: 'Julia', about: 'repairs bicycles' }], about: 'owner details' });
@@ -212,7 +205,6 @@ describe('personLyricContextForRequest', () => {
     it('sends none when the adjustment of an instrumental Session picks Instrumental', () => {
       expect(
         personLyricContextForRequest('add lyrics about Julia', people, {
-          adjustFrom: instrumentalAnchor,
           vocal: 'instrumental',
         }),
       ).toEqual({ people: [], about: '' });
@@ -271,9 +263,9 @@ describe('personLyricContextForRequest for the owner’s own About', () => {
   });
 
   it('keeps supplying it on a Change Vibe of a vocal session', () => {
-    const vocalAnchor = compileStructuredControls({ vocal: 'vocal', genres: ['folk'] });
     expect(
-      personLyricContextForRequest('put me in it too', people, { adjustFrom: vocalAnchor }).about,
+      personLyricContextForRequest('put me in it too', people, { promptHistory: 'a folk song' })
+        .about,
     ).toBe('owner details');
   });
 });

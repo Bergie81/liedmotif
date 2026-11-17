@@ -45,8 +45,8 @@ This is optional, and it's the service `.env` calls the text LLM. If you connect
 - Your request and your fine-tuning picks
 - The earlier requests of a session, when you change its vibe
 - Your profile's name, city and country, if you filled them in
-- For a person you name exactly in a vocal request, their name and About text
-- For any vocal request, your own About text, since every session is about your life
+- For a person you name exactly in your request, their name and About text, unless you picked **Instrumental**
+- Your own About text with every request, unless you picked **Instrumental**, since every session is about your life. The writing AI decides from your words whether the session is sung, and uses About text only in the lyrics of a sung one
 - For **Surprise Me**, your chosen theme, the music your learned taste picked, and your city and country. Vocal proposals may also use your own About text.
 
 About text is only for lyrics. It's never used for style, titles or covers.

@@ -29,8 +29,10 @@ import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import {
   COVER_STYLE_PRESETS,
   MAX_COVER_GUIDANCE_LENGTH,
+  narrowTo,
   OPENAI_DEFAULT_LLM_MODEL,
   OPENAI_DEFAULT_REASONING_EFFORT,
+  type CoverStylePreset,
   type LlmReasoningEffort,
 } from '@liedmotif/shared';
 import { z } from 'zod';
@@ -83,9 +85,26 @@ import type {
   SessionNamingInput,
 } from './index';
 
+/** A pick spelled with other case or separators ("Record Sleeve", "poster-art")
+ *  read as the preset it spells, or null. */
+function looseCoverStylePick(value: unknown): CoverStylePreset | null {
+  if (typeof value !== 'string') return null;
+  return narrowTo(
+    COVER_STYLE_PRESETS,
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, '_'),
+  );
+}
+
 /** The Auto cover pick (ADR 0007): one of the six presets, and anything else,
- *  missing included, is no pick rather than a failed reply. */
-const coverStylePickSchema = z.enum(COVER_STYLE_PRESETS).nullable().catch(null);
+ *  missing included, is no pick rather than a failed reply. The schema sent to
+ *  the model stays the plain enum; the fallback reads only the spelling. */
+const coverStylePickSchema = z
+  .enum(COVER_STYLE_PRESETS)
+  .nullable()
+  .catch((ctx) => looseCoverStylePick(ctx?.input));
 
 /**
  * What an expansion may contain: the snapshot minus the Session Guardrails and

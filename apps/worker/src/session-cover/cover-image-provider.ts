@@ -21,9 +21,10 @@ export interface SessionCoverProviders {
   getCoverArt: () => Promise<GeneratedImageProvider | null>;
   /** Music-task-driven standard covers (Suno); null when unbuildable. */
   getSunoCoverArt: () => Promise<GeneratedImageProvider | null>;
-  /** The optional text LLM; omitted means none. Covers only ask whether one is
-   *  configured, never call it. */
-  getLlm?: () => Promise<LlmProvider | null>;
+  /** The optional text LLM, null when none is configured. Covers only ask
+   *  whether one is configured, never call it; the resolver itself is required,
+   *  so no cover job can fall to the word lists by leaving it out. */
+  getLlm: () => Promise<LlmProvider | null>;
 }
 
 /**
@@ -32,7 +33,6 @@ export interface SessionCoverProviders {
  * configured: something is set up, so keyword rules must not decide.
  */
 export async function textLlmConfigured(getLlm: SessionCoverProviders['getLlm']): Promise<boolean> {
-  if (!getLlm) return false;
   return getLlm().then(
     (llm) => llm !== null,
     () => true,
