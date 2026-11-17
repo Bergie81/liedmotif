@@ -87,11 +87,15 @@ const COVER_BECAME: Record<CoverAttemptState, string> = {
   failed: 'The user confirmed it, but the cover failed to generate, and the card told them why.',
 };
 
+function became(outcome?: CardOutcome, cover?: CoverAttemptState): string {
+  if (!outcome) return LEFT_ALONE;
+  if (outcome === 'confirmed' && cover) return COVER_BECAME[cover];
+  return BECAME[outcome];
+}
+
 /**
  * What a later turn is told about a card: what it offered, and what the user
  * did with it. A confirmed cover card says how its cover is going.
  */
 export const cardRecord = (card: AssistantCard, outcome?: CardOutcome, cover?: CoverAttemptState) =>
-  `[Card shown by the app: ${cardNote(card)}. ${
-    outcome === 'confirmed' && cover ? COVER_BECAME[cover] : outcome ? BECAME[outcome] : LEFT_ALONE
-  }]`;
+  `[Card shown by the app: ${cardNote(card)}. ${became(outcome, cover)}]`;

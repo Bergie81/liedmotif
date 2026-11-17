@@ -68,10 +68,7 @@ export function createProposeCoverTool(
         const subject = await ownSubject(asker, kind, askedId);
         if (!subject) return notOffered(noSuch);
 
-        const gate = await coverAttemptGate(db, {
-          ownerUserId: userId,
-          subject: { kind, id: subject.id },
-        });
+        const gate = await coverAttemptGate(db, { ownerUserId: userId, subject });
         if (gate.outcome === 'refused') return notOffered(gate.message);
         if (gate.outcome === 'pending') {
           return notOffered(

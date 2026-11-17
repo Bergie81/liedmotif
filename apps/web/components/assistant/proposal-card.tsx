@@ -8,7 +8,7 @@
 
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { AlertCircle, Check } from 'lucide-react';
-import type { AssistantCoverCard } from '@liedmotif/shared';
+import type { AssistantCard, AssistantCoverCard } from '@liedmotif/shared';
 import { headroomLine, type GenerationHeadroom } from '@/components/app-shell-model';
 import { CoverArt, CoverFallback } from '@/components/player/cover-art';
 import { coverUsageLine } from '@/components/player/cover-usage-line';
@@ -61,11 +61,7 @@ export function ProposalCard({ action }: { action: ProposedChatAction }) {
         <>
           <p className="text-muted">
             {wording.cost}
-            {action.card.kind === 'cover' ? (
-              <CoverBudget subject={action.card.subject} />
-            ) : cards?.headroom ? (
-              ` ${headroomLine(cards.headroom)}.`
-            ) : null}
+            <CardBudget card={action.card} />
           </p>
           <OnlineOnly>
             <button
@@ -79,15 +75,27 @@ export function ProposalCard({ action }: { action: ProposedChatAction }) {
             </button>
           </OnlineOnly>
         </>
-      ) : outcome === 'confirmed' && action.coverGenerationId ? (
-        <CoverAttemptView action={action} wording={wording} />
       ) : (
-        <CardStatus ok={outcome === 'confirmed'}>
-          {outcome === 'confirmed' ? wording.confirmed : (action.refusal ?? wording.failed)}
-        </CardStatus>
+        <SettledCard action={action} wording={wording} />
       )}
     </div>
   );
+}
+
+/** What is left of the budget a card spends from: the cover budget for a cover card. */
+function CardBudget({ card }: { card: AssistantCard }) {
+  const headroom = useContext(CardsContext)?.headroom;
+  if (card.kind === 'cover') return <CoverBudget subject={card.subject} />;
+  return headroom ? ` ${headroomLine(headroom)}.` : null;
+}
+
+/** A card the user confirmed, by what became of it. */
+function SettledCard({ action, wording }: { action: ProposedChatAction; wording: CardWording }) {
+  if (action.outcome !== 'confirmed') {
+    return <CardStatus ok={false}>{action.refusal ?? wording.failed}</CardStatus>;
+  }
+  if (action.coverGenerationId) return <CoverAttemptView action={action} wording={wording} />;
+  return <CardStatus ok>{wording.confirmed}</CardStatus>;
 }
 
 function CardStatus({ ok, children }: { ok: boolean; children: ReactNode }) {

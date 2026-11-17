@@ -18,8 +18,11 @@ type Unit = 'Tracks' | 'covers';
 const left = ({ remaining, limit }: Pick<BudgetWindow, 'remaining' | 'limit'>, unit: Unit) =>
   `${remaining} of ${limit} ${unit} left`;
 
+const dayAndMonth = (day: BudgetWindow, month: BudgetWindow, unit: Unit) =>
+  `${left(day, unit)} today, ${left(month, unit)} this month.`;
+
 const rolling = (figures: BudgetFigures) =>
-  `${left(figures.tracksDay, 'Tracks')} today, ${left(figures.tracksMonth, 'Tracks')} this month. ${left(figures.coversDay, 'covers')} today, ${left(figures.coversMonth, 'covers')} this month.`;
+  `${dayAndMonth(figures.tracksDay, figures.tracksMonth, 'Tracks')} ${dayAndMonth(figures.coversDay, figures.coversMonth, 'covers')}`;
 
 function ownBudget(yours: BudgetUsage): string {
   return yours.kind === 'oneTime'
@@ -33,6 +36,16 @@ function instanceWindow(used: number, limit: number | null, period: string, unit
     ? `no limit set ${period} (${used} ${unit} generated)`
     : `${left({ remaining: Math.max(0, limit - used), limit }, unit)} ${period}`;
 }
+
+interface InstanceUsage {
+  usedDay: number;
+  limitDay: number | null;
+  usedMonth: number;
+  limitMonth: number | null;
+}
+
+const instanceDayAndMonth = (usage: InstanceUsage, unit: Unit) =>
+  `${instanceWindow(usage.usedDay, usage.limitDay, 'today', unit)}, ${instanceWindow(usage.usedMonth, usage.limitMonth, 'this month', unit)}`;
 
 const sentence = (text: string) => `${text.charAt(0).toUpperCase()}${text.slice(1)}.`;
 
@@ -62,12 +75,16 @@ export function createBudgetTool({ db, userId, role }: AssistantAsker): LlmTool<
           }),
         ),
       ]);
-      return [
-        `Instance limit: ${instanceWindow(tracks.dailyTracksUsed, tracks.dailyTracksLimit, 'today', 'Tracks')}, ${instanceWindow(tracks.monthlyTracksUsed, tracks.monthlyTracksLimit, 'this month', 'Tracks')}.`,
-        sentence(
-          `${instanceWindow(covers.usedDay, covers.limitDay, 'today', 'covers')}, ${instanceWindow(covers.usedMonth, covers.limitMonth, 'this month', 'covers')}`,
-        ),
-      ].join(' ');
+      const trackWindows = instanceDayAndMonth(
+        {
+          usedDay: tracks.dailyTracksUsed,
+          limitDay: tracks.dailyTracksLimit,
+          usedMonth: tracks.monthlyTracksUsed,
+          limitMonth: tracks.monthlyTracksLimit,
+        },
+        'Tracks',
+      );
+      return `Instance limit: ${trackWindows}. ${sentence(instanceDayAndMonth(covers, 'covers'))}`;
     },
   };
 }

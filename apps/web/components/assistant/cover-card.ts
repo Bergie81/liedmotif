@@ -24,20 +24,19 @@ export function coverAttemptFrom(
   held: CoverAttempt | undefined,
 ): CoverAttempt | null {
   const latest = status.latestRegeneration;
-  let coverImageId: string;
   if (latest?.coverGenerationId === attemptId) {
     if (latest.status === 'failed') return { state: 'failed', failure: latest.failureMessageSafe };
     if (latest.status === 'generating') {
       return { state: 'generating', coverImageId: latest.coverImageId };
     }
-    coverImageId = latest.coverImageId;
-  } else if (held?.state === 'failed') {
-    return held;
-  } else if (held) {
-    coverImageId = held.coverImageId;
-  } else {
-    return null;
+    return generatedCover(status, latest.coverImageId);
   }
+  if (!held || held.state === 'failed') return held ?? null;
+  return generatedCover(status, held.coverImageId);
+}
+
+/** Where a generated cover is now: the cover, still in the history, or deleted from it. */
+function generatedCover(status: CoverStatus, coverImageId: string): CoverAttempt {
   if (status.coverImageId === coverImageId) return { state: 'inUse', coverImageId };
   if (status.history.some((entry) => entry.coverImageId === coverImageId)) {
     return { state: 'ready', coverImageId };

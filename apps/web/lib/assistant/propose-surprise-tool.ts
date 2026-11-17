@@ -30,6 +30,7 @@ export function createProposeSurpriseTool(
   asker: AssistantAsker,
   actions: TurnActions,
 ): LlmTool<ProposeSurpriseInput> {
+  const { db, userId } = asker;
   return {
     name: PROPOSE_SURPRISE_TOOL_NAME,
     description:
@@ -37,7 +38,6 @@ export function createProposeSurpriseTool(
     inputSchema: proposeSurpriseInputSchema,
     execute: ({ adventurous, theme, vocal, targetDurationMinutes, noLimit }) =>
       actions.take('proposed', async () => {
-        const { db, userId } = asker;
         if (
           targetDurationMinutes != null &&
           !targetDurationMinutesSchema.safeParse(targetDurationMinutes).success
