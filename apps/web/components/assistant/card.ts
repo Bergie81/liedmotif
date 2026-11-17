@@ -8,6 +8,11 @@ import {
   NEW_MUSIC_SAVING,
   newMusicSaveLabel,
 } from '@/components/player/new-music-choices';
+import {
+  surpriseExploreLabel,
+  surpriseVibeLine,
+  surpriseVocalLine,
+} from '@/components/create/surprise-preview-lines';
 import type { CardOutcome } from '@/lib/assistant/card-note';
 import { sessionTitle, trackTitle } from './receipt';
 
@@ -21,6 +26,8 @@ export type ProposedChatAction = Extract<AssistantAction, { status: 'proposed' }
 export interface CardWording {
   /** What confirming does. */
   title: string;
+  /** The name of what it starts, when it has one before it starts. */
+  name?: string;
   /** The words the request carries, shown as a quote; left out when it carries none. */
   words?: string;
   /** What else the request carries, in the app's own labels. */
@@ -92,6 +99,26 @@ export function cardWording(card: AssistantCard): CardWording {
         confirming: NEW_MUSIC_SAVING,
         confirmed: 'New music is on',
         failed: 'New music was not switched on',
+      };
+    }
+    case 'surprise': {
+      const { suggestion } = card;
+      const minutes = card.targetDurationMinutes;
+      return {
+        title: 'Surprise Me',
+        name: suggestion.title,
+        details: [
+          surpriseExploreLabel(suggestion),
+          surpriseVibeLine(suggestion),
+          surpriseVocalLine(suggestion),
+          minutes === null ? NEW_MUSIC_CHOICES['no-limit'].label : `${minutes} min`,
+        ].join(' · '),
+        cost: 'Starting generates new Tracks from your budget.',
+        // The button of Home's Surprise Me.
+        confirm: 'Start Session',
+        confirming: 'Starting…',
+        confirmed: 'Session started',
+        failed: 'This Session did not start',
       };
     }
   }

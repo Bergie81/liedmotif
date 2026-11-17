@@ -1,10 +1,10 @@
-// The Assistant has no code that can buy music. Four things can spend: a new
-// Session, a More Like This, a Change Vibe, and New music on. Each is written
-// by one function, called from the app's own route, and the only way there
-// from the chat is the user's click on a card: a request the browser sends.
-// This reads the Assistant's own source, so a later tool that reached for one
-// of those functions, or for a route, fails here. The app has more that spends
-// than those four (a Surprise Me start, a resumed Session, a Dislike reroll),
+// The Assistant has no code that can buy music. Five things can spend: a new
+// Session, a Surprise Me start, a More Like This, a Change Vibe, and New music
+// on. Each is written by one function, called from the app's own route, and
+// the only way there from the chat is the user's click on a card: a request
+// the browser sends. This reads the Assistant's own source, so a later tool
+// that reached for one of those functions, or for a route, fails here. The app
+// has more that spends than those five (a resumed Session, a Dislike reroll),
 // so the source is also held to a list: everything the server code calls that
 // can reach the database or a provider, and every route the panel calls.
 
@@ -84,6 +84,7 @@ const SERVER_CALLS = [
   'listPlaylists',
   'listSessionTracks',
   'loadMyBudgetData',
+  'loadPendingSurprise',
   'loadPlaylistSummaries',
   'loadSessionList',
   'requestNow',
@@ -120,6 +121,9 @@ const SERVER_CALLS = [
   'updatePlaybackSettings',
   // The one write to a Session: its mode, and only to Repeat.
   'switchSessionMode',
+  // Surprise Me's suggestion, as Home asks for it: one bounded text-LLM call,
+  // and the user's one pending suggestion. It buys no music.
+  'proposeSurprise',
   // The route itself: who asks, their allowance, and the text LLM.
   'apiError',
   'apiRateLimited',
@@ -134,6 +138,8 @@ const SERVER_CALLS = [
 
 /** The function that creates a Session, by the name the start and More Like This routes call it. */
 const CREATES_A_SESSION = /\bcreateSession\b/;
+/** The function that starts a Surprise Me suggestion, by the name its route and the api client call it. */
+const STARTS_A_SURPRISE = /\bstartSurprise\b/;
 /** The function that gives a Session a new vibe, by the name the Change Vibe route calls it. */
 const CHANGES_THE_VIBE = /\brestyleSession\b/;
 /** The function behind New music on, by the name the duration route and the api client call it. */
@@ -154,6 +160,8 @@ describe('the Assistant’s own code', () => {
     expect(PANEL).toContain(join('components/assistant', 'confirm-card.ts'));
     // What the pins look for is what the routes really call.
     expect(read('app/api/sessions/route.ts')).toMatch(CREATES_A_SESSION);
+    expect(read('app/api/surprise-me/start/route.ts')).toMatch(STARTS_A_SURPRISE);
+    expect(read('lib/api-client.ts')).toMatch(STARTS_A_SURPRISE);
     expect(read('app/api/sessions/more-like-this/route.ts')).toMatch(CREATES_A_SESSION);
     expect(read('app/api/sessions/change-vibe/route.ts')).toMatch(CHANGES_THE_VIBE);
     expect(read('app/api/sessions/duration/route.ts')).toMatch(SETS_THE_DURATION);
@@ -168,6 +176,11 @@ describe('the Assistant’s own code', () => {
 
   it('never references the function that creates a Session', () => {
     expect(mentioning([...SERVER, ...PANEL], CREATES_A_SESSION)).toEqual([]);
+  });
+
+  it('never references the function that starts a Surprise Me suggestion from server code', () => {
+    // The panel's one way there is the card host's client call, listed below.
+    expect(mentioning(SERVER, STARTS_A_SURPRISE)).toEqual([]);
   });
 
   it('never references the function that changes a vibe, or the one that sets New music on', () => {
@@ -191,8 +204,8 @@ describe('the Assistant’s own code', () => {
     const calls = PANEL.map((file) => [file, valuesFrom(file, /^@\/lib\/api-client$/)] as const);
 
     expect(Object.fromEntries(calls.filter(([, names]) => names.length > 0))).toEqual({
-      // The start request, sent from one place: the flows a confirmed card runs.
-      [CARD_HOST]: ['startSession'],
+      // The start requests, sent from one place: the flows a confirmed card runs.
+      [CARD_HOST]: ['startSession', 'startSurprise'],
       // Stop Session, and reading a Playlist to play it. Neither buys.
       [join('components/assistant', 'use-player-commands.ts')]: ['stopSession'],
       [join('components/assistant', 'use-play-command.ts')]: [

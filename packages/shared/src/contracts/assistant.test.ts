@@ -13,6 +13,8 @@ import {
   playerControlInputSchema,
   sessionCardStartRequest,
   startSessionRequestSchema,
+  startSurpriseRequestSchema,
+  surpriseCardStartRequest,
 } from './index';
 
 const user = (content: string) => ({ role: 'user' as const, content });
@@ -314,6 +316,60 @@ describe('assistantStreamEventSchema', () => {
     expect(parses({ kind: 'newMusicOn', session })).toBe(false);
     expect(parses({ ...newMusicOn, targetDurationMinutes: 601 })).toBe(false);
     expect(parses({ ...newMusicOn, sessionMode: 'repeat' })).toBe(false);
+  });
+
+  it('reads a Surprise Me card by its suggestion’s public preview and a length, nothing more', () => {
+    const proposed = (card: unknown) => ({ type: 'action', action: { status: 'proposed', card } });
+    const parses = (card: unknown) => assistantStreamEventSchema.safeParse(proposed(card)).success;
+    const suggestion = {
+      id: '00000000-0000-4000-8000-000000000004',
+      adventurous: false,
+      title: 'Harbor Morning',
+      mood: 'bright and unhurried',
+      genres: ['lofi', 'jazz'],
+      energy: 'low',
+      vocalMode: 'instrumental',
+      voiceGender: null,
+      language: null,
+    };
+    const surprise = { kind: 'surprise', suggestion, targetDurationMinutes: 45 };
+
+    expect(parses(surprise)).toBe(true);
+    expect(parses({ ...surprise, targetDurationMinutes: null })).toBe(true);
+    expect(parses({ kind: 'surprise', suggestion })).toBe(false);
+    expect(parses({ ...surprise, targetDurationMinutes: 601 })).toBe(false);
+    // The stored Style Snapshot and the request it was written from stay on the server.
+    expect(
+      parses({ ...surprise, suggestion: { ...suggestion, stylePrompt: 'lofi, 70 bpm' } }),
+    ).toBe(false);
+    expect(parses({ ...surprise, suggestion: { ...suggestion, edit: {} } })).toBe(false);
+  });
+
+  it('turns a Surprise Me card into the request the Surprise Me start route takes', () => {
+    const suggestion = {
+      id: '00000000-0000-4000-8000-000000000004',
+      adventurous: true,
+      title: 'Harbor Morning',
+      mood: 'bright',
+      genres: ['jazz'],
+      energy: 'low' as const,
+      vocalMode: 'vocal' as const,
+      voiceGender: 'female' as const,
+      language: 'English',
+    };
+
+    const request = surpriseCardStartRequest({
+      kind: 'surprise',
+      suggestion,
+      targetDurationMinutes: 45,
+    });
+
+    expect(request).toEqual({ proposalId: suggestion.id, targetDurationMinutes: 45 });
+    expect(startSurpriseRequestSchema.safeParse(request).success).toBe(true);
+    // No limit is the absence of a target: the start route takes no null.
+    expect(
+      surpriseCardStartRequest({ kind: 'surprise', suggestion, targetDurationMinutes: null }),
+    ).toEqual({ proposalId: suggestion.id });
   });
 
   it('frames an event as one data line, whatever the text holds', () => {

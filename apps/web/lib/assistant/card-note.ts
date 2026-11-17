@@ -28,6 +28,16 @@ export function cardNote(card: AssistantCard): string {
     }
     case 'newMusicOn':
       return `switch New music on for the Session ${quoted(card.session.name)}, ${newMusicLimitNote(card.targetDurationMinutes)}`;
+    case 'surprise': {
+      const { suggestion } = card;
+      const minutes = card.targetDurationMinutes;
+      const details = [
+        `mood ${quoted(suggestion.mood)}`,
+        suggestion.vocalMode === 'vocal' ? 'with vocals' : 'instrumental',
+        minutes === null ? newMusicLimitNote(null) : `${minutes} minutes`,
+      ];
+      return `start the Surprise Me suggestion ${quoted(suggestion.title)} as a new Session, ${details.join(', ')}`;
+    }
   }
 }
 

@@ -107,3 +107,52 @@ describe('a New music card', () => {
     });
   });
 });
+
+describe('a Surprise Me card', () => {
+  const harbor: Extract<AssistantCard, { kind: 'surprise' }> = {
+    kind: 'surprise',
+    suggestion: {
+      id: '00000000-0000-4000-8000-000000000004',
+      adventurous: false,
+      title: 'Harbor Morning',
+      mood: 'hazy',
+      genres: ['lofi', 'jazz'],
+      energy: 'low',
+      vocalMode: 'instrumental',
+      voiceGender: null,
+      language: null,
+    },
+    targetDurationMinutes: 45,
+  };
+
+  it('shows the suggestion as Home’s Surprise Me previews it, with its length and Home’s Start button', () => {
+    expect(cardWording(harbor)).toEqual({
+      title: 'Surprise Me',
+      name: 'Harbor Morning',
+      details: 'Familiar · Lo-fi, Jazz · hazy · Low energy · Instrumental · 45 min',
+      cost: 'Starting generates new Tracks from your budget.',
+      confirm: 'Start Session',
+      confirming: 'Starting…',
+      confirmed: 'Session started',
+      failed: 'This Session did not start',
+    });
+  });
+
+  it('names an adventurous one, its singer, and No limit', () => {
+    expect(
+      cardWording({
+        ...harbor,
+        suggestion: {
+          ...harbor.suggestion,
+          adventurous: true,
+          vocalMode: 'vocal',
+          voiceGender: 'female',
+          language: 'English',
+        },
+        targetDurationMinutes: null,
+      }).details,
+    ).toBe(
+      'Adventurous · Lo-fi, Jazz · hazy · Low energy · Vocals · English · Female voice · No limit',
+    );
+  });
+});

@@ -23,3 +23,4 @@ export const PROPOSE_SESSION_TOOL_NAME = 'proposeSession';
 export const PROPOSE_CHANGE_VIBE_TOOL_NAME = 'proposeChangeVibe';
 export const PROPOSE_MORE_LIKE_THIS_TOOL_NAME = 'proposeMoreLikeThis';
 export const PROPOSE_NEW_MUSIC_ON_TOOL_NAME = 'proposeNewMusicOn';
+export const PROPOSE_SURPRISE_TOOL_NAME = 'proposeSurprise';

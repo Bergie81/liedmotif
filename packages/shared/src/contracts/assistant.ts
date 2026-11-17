@@ -13,6 +13,7 @@ import {
   targetDurationMinutesSchema,
   type StartSessionRequest,
 } from './endpoints';
+import { SURPRISE_THEMES, surpriseProposalSchema, type StartSurpriseRequest } from './surprise-me';
 
 /** How much of a conversation one request carries; the client drops older messages. */
 export const ASSISTANT_MAX_MESSAGES = 12;
@@ -237,6 +238,26 @@ export const assistantCardSchema = z.discriminatedUnion('kind', [
     /** How much music the Session may hold in all; null is No limit. */
     targetDurationMinutes: targetDurationMinutesSchema.nullable(),
   }),
+  z.strictObject({
+    kind: z.literal('surprise'),
+    /**
+     * The pending Surprise Me suggestion the start route is to start, as its
+     * public preview. The Style Snapshot it starts stays on the server.
+     */
+    suggestion: surpriseProposalSchema.pick({
+      id: true,
+      adventurous: true,
+      title: true,
+      mood: true,
+      genres: true,
+      energy: true,
+      vocalMode: true,
+      voiceGender: true,
+      language: true,
+    }),
+    /** How long the Session generates; null is No limit. */
+    targetDurationMinutes: targetDurationMinutesSchema.nullable(),
+  }),
 ]);
 export type AssistantCard = z.infer<typeof assistantCardSchema>;
 
@@ -250,6 +271,22 @@ export function sessionCardStartRequest(
 ): Omit<StartSessionRequest, 'clientId'> {
   return {
     input: { mode: 'prompt', prompt: card.prompt, vocal: card.vocal },
+    ...(card.targetDurationMinutes != null && {
+      targetDurationMinutes: card.targetDurationMinutes,
+    }),
+  };
+}
+
+/**
+ * The Surprise Me start request a Surprise Me card stands for: the
+ * suggestion, and its length. The card's other choices are the start route's
+ * own defaults, as on Home before the user changes them.
+ */
+export function surpriseCardStartRequest(
+  card: Extract<AssistantCard, { kind: 'surprise' }>,
+): StartSurpriseRequest {
+  return {
+    proposalId: card.suggestion.id,
     ...(card.targetDurationMinutes != null && {
       targetDurationMinutes: card.targetDurationMinutes,
     }),
@@ -576,3 +613,39 @@ export const proposeNewMusicOnInputSchema = z.object({
     .describe('true when the user asked for new music without a limit.'),
 });
 export type ProposeNewMusicOnInput = z.infer<typeof proposeNewMusicOnInputSchema>;
+
+/**
+ * What the model passes to `proposeSurprise`: what the user asked of the
+ * suggestion, each left out when they did not say. A length is checked like
+ * the start route's before anything is written. No language and no Start
+ * without profile: those stay on Home.
+ */
+export const proposeSurpriseInputSchema = z.object({
+  adventurous: z
+    .boolean()
+    .nullish()
+    .describe(
+      'true when the user wants something more adventurous: new, different, away from their usual taste. Leave out for familiar.',
+    ),
+  theme: z
+    .enum(SURPRISE_THEMES)
+    .nullish()
+    .describe(
+      'The situation the user named: morning, focus (work, study), movement (a workout, a run, dancing), travel (a trip, a drive), home, friends (a party, company), rest (relaxing, sleep), mood (a feeling), place (somewhere), about-me (a song about the user, always sung). Leave out when they named none.',
+    ),
+  vocal: z
+    .enum(['vocal', 'instrumental'])
+    .nullish()
+    .describe(
+      'Only when the user asked for vocals or for instrumental. Leave out to follow their taste.',
+    ),
+  targetDurationMinutes: z
+    .number()
+    .nullish()
+    .describe('How long the Session should run, in minutes. Only when the user named a length.'),
+  noLimit: z
+    .boolean()
+    .nullish()
+    .describe('true only when the user asked for a Session without a limit.'),
+});
+export type ProposeSurpriseInput = z.infer<typeof proposeSurpriseInputSchema>;

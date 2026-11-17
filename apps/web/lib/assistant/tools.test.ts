@@ -63,6 +63,7 @@ describe("one turn's tools", () => {
       'proposeChangeVibe',
       'proposeMoreLikeThis',
       'proposeNewMusicOn',
+      'proposeSurprise',
     ]);
   });
 

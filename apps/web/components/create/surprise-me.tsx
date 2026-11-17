@@ -35,11 +35,12 @@ import { syntheticProgressFraction } from '@/components/player/cold-start-progre
 import { primaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
 import { LiedmotifLoader } from '@/components/ui/loading';
 import { CreationBlockedDialog } from './creation-blocked-dialog';
-import { genreLabel } from './genre-vocabulary';
 import { SegmentedControl } from './session-start-controls';
-
-const ENERGY_LABELS = { low: 'Low energy', medium: 'Medium energy', high: 'High energy' } as const;
-const VOICE_LABELS = { female: 'Female voice', male: 'Male voice' } as const;
+import {
+  surpriseExploreLabel,
+  surpriseVibeLine,
+  surpriseVocalLine,
+} from './surprise-preview-lines';
 
 const EXPLORE_OPTIONS = [
   { value: 'familiar', label: 'Familiar' },
@@ -111,27 +112,6 @@ function ProposingProgress({ onCancel }: { onCancel: () => void }) {
       </button>
     </div>
   );
-}
-
-function vibeLine(proposal: SurpriseProposal): string {
-  return [
-    proposal.genres.map(genreLabel).join(', '),
-    proposal.mood.trim(),
-    ENERGY_LABELS[proposal.energy],
-  ]
-    .filter(Boolean)
-    .join(' · ');
-}
-
-function vocalLine(proposal: SurpriseProposal): string {
-  if (proposal.vocalMode === 'instrumental') return 'Instrumental';
-  return [
-    'Vocals',
-    proposal.language,
-    proposal.voiceGender ? VOICE_LABELS[proposal.voiceGender] : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
 }
 
 /** The settings step: what to be surprised with, and the button that asks for it. */
@@ -217,12 +197,12 @@ function SurprisePreview({
   return (
     <div data-testid="surprise-preview">
       <div className="rounded-card-sm border border-line-2 bg-paper/[0.03] p-4">
-        <p className={eyebrowClass}>{proposal.adventurous ? 'Adventurous' : 'Familiar'}</p>
+        <p className={eyebrowClass}>{surpriseExploreLabel(proposal)}</p>
         <p className="mt-2 font-display text-[18px] font-bold leading-tight text-paper">
           {proposal.title}
         </p>
-        <p className="mt-2 text-[13.5px] leading-[1.5] text-muted">{vibeLine(proposal)}</p>
-        <p className="mt-1 text-[13.5px] leading-[1.5] text-muted">{vocalLine(proposal)}</p>
+        <p className="mt-2 text-[13.5px] leading-[1.5] text-muted">{surpriseVibeLine(proposal)}</p>
+        <p className="mt-1 text-[13.5px] leading-[1.5] text-muted">{surpriseVocalLine(proposal)}</p>
       </div>
       <button
         type="button"

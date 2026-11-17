@@ -6,14 +6,18 @@
 
 import { useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import type { ChangeVibeIntentInput, StartSessionRequest } from '@liedmotif/shared';
+import type {
+  ChangeVibeIntentInput,
+  StartSessionRequest,
+  StartSurpriseRequest,
+} from '@liedmotif/shared';
 import type { GenerationHeadroom } from '@/components/app-shell-model';
 import { usePlayerContext } from '@/components/player/player-provider';
 import { currentPendingStart } from '@/components/player/session-handoff';
 import { switchNewMusicOn } from '@/components/player/switch-new-music-on';
 import { useHandOffStart } from '@/components/player/use-hand-off-start';
 import { useSeedMoreLikeThis } from '@/components/sessions/use-seed-more-like-this';
-import { startSession } from '@/lib/api-client';
+import { startSession, startSurprise } from '@/lib/api-client';
 import { useClientId } from '@/lib/use-client-id';
 
 /** What one of the app's flows came to. */
@@ -37,6 +41,13 @@ export interface CardHost {
    * the Player.
    */
   startSession: (request: Omit<StartSessionRequest, 'clientId'>) => CardFlow;
+  /**
+   * Starts a Surprise Me suggestion the way Home's Surprise Me does, hand-off
+   * to the Player included. Null when another Start is still in flight. A
+   * refusal shows on the Player, and on the card: a suggestion replaced or
+   * dismissed elsewhere is not one the Player can name.
+   */
+  startSurprise: (request: StartSurpriseRequest) => CardFlow;
   /**
    * Changes the vibe through the player's own Change Vibe request. Null when
    * another change is still in flight. A refusal shows where the player shows
@@ -79,6 +90,10 @@ export function useCardHost(
       startSession: (request) =>
         handOffStart((signal) => startSession({ ...request, clientId }, signal))?.then(
           (result) => ({ carriedOut: result.ok }),
+        ) ?? null,
+      startSurprise: (request) =>
+        handOffStart((signal) => startSurprise(request, signal))?.then((result) =>
+          result.ok ? { carriedOut: true } : { carriedOut: false, refusal: result.error.message },
         ) ?? null,
       changeVibe: (sessionId, input) =>
         submitChangeVibe(sessionId, input, {})?.then((carriedOut) => ({ carriedOut })) ?? null,

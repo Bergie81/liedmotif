@@ -27,6 +27,7 @@ import { createProposeChangeVibeTool } from './propose-change-vibe-tool';
 import { createProposeMoreLikeThisTool } from './propose-more-like-this-tool';
 import { createProposeNewMusicOnTool } from './propose-new-music-on-tool';
 import { createProposeSessionTool } from './propose-session-tool';
+import { createProposeSurpriseTool } from './propose-surprise-tool';
 import { createReadDocsTool } from './read-docs-tool';
 import { createRenameTrackTool } from './rename-track-tool';
 import type { TurnActions } from './turn-actions';
@@ -110,6 +111,7 @@ export function createAssistantTools(
       createProposeChangeVibeTool(asker, actions),
       createProposeMoreLikeThisTool(asker, actions),
       createProposeNewMusicOnTool(asker, actions),
+      createProposeSurpriseTool(asker, actions),
     ].map(failingQuietly(ACTION_FAILED)),
   ];
 }

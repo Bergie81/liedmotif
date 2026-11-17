@@ -36,6 +36,9 @@ export function ProposalCard({ action }: { action: ProposedChatAction }) {
       className="flex flex-col gap-2 rounded-[14px] border border-line-2 bg-panel-2 p-3.5 text-[13.5px] leading-[1.45]"
     >
       <p className="font-display text-[15px] font-bold tracking-[-0.01em]">{wording.title}</p>
+      {wording.name ? (
+        <p className="break-words font-display text-[15px] font-bold text-paper">{wording.name}</p>
+      ) : null}
       {wording.words ? <p className="break-words text-paper">“{wording.words}”</p> : null}
       <p className="break-words text-muted">{wording.details}</p>
       {open ? (

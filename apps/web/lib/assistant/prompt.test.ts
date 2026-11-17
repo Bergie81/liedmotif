@@ -146,15 +146,24 @@ describe.each([
     expect(line).toMatch(/its answer says when the user has to be asked/i);
   });
 
-  it('names the three other things that are only prepared, each on a card the user confirms', () => {
+  it('names the four other things that are only prepared, each on a card the user confirms', () => {
     const tools = prompt.slice(prompt.indexOf('Tools:'), prompt.indexOf('Links:'));
     expect(tools).toMatch(/^- proposeChangeVibe prepares a Change Vibe for the active Session/m);
     expect(tools).toMatch(/^- proposeMoreLikeThis prepares a new Session in the style of Tracks/m);
     expect(tools).toMatch(/^- proposeNewMusicOn prepares switching New music on/m);
     expect(tools).toMatch(/up to a length .* or with no limit/i);
     expect(tools).toMatch(
-      /each of these three only shows the user a card.*nothing happens until they confirm it/i,
+      /each of these four only shows the user a card.*nothing happens until they confirm it/i,
     );
+  });
+
+  it('names Surprise Me next to the other propose tools, with what the user may ask of it', () => {
+    const tools = prompt.slice(prompt.indexOf('Tools:'), prompt.indexOf('Links:'));
+    const line = tools.match(/^- proposeSurprise .*$/m)![0];
+    expect(tools.indexOf(line)).toBeGreaterThan(tools.indexOf('- proposeNewMusicOn'));
+    expect(line).toMatch(/prepares a Surprise Me suggestion/);
+    expect(line).toMatch(/more adventurous/i);
+    expect(line).toMatch(/replaces the suggestion before it/i);
   });
 
   it('tells the model to say a card is prepared and can spend, never that a Session started', () => {

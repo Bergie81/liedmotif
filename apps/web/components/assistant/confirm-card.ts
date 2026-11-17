@@ -4,7 +4,11 @@
 // own button runs. A card is confirmed at most once: the conversation holds
 // what became of it, and only a card it holds without an outcome goes through.
 
-import { sessionCardStartRequest, type AssistantCard } from '@liedmotif/shared';
+import {
+  sessionCardStartRequest,
+  surpriseCardStartRequest,
+  type AssistantCard,
+} from '@liedmotif/shared';
 import type { ProposedChatAction } from './card';
 import type { AssistantConversation } from './conversation';
 import type { CardFlowResult, CardHost } from './use-card-host';
@@ -12,7 +16,10 @@ import type { CardFlowResult, CardHost } from './use-card-host';
 export interface CardConfirmation {
   /** The conversation the card is part of. */
   conversation: Pick<AssistantConversation, 'getState' | 'settleAction'>;
-  host: Pick<CardHost, 'startSession' | 'changeVibe' | 'moreLikeThis' | 'newMusicOn'>;
+  host: Pick<
+    CardHost,
+    'startSession' | 'startSurprise' | 'changeVibe' | 'moreLikeThis' | 'newMusicOn'
+  >;
   /** The card's flow went to the Player: a panel that covers the page gets out of its way. */
   onPlayerShown: () => void;
 }
@@ -29,6 +36,12 @@ function run(
     case 'session': {
       const started = host.startSession(sessionCardStartRequest(card));
       // The start flow goes to the Player whether or not this click sent the request.
+      onPlayerShown();
+      return started;
+    }
+    case 'surprise': {
+      const started = host.startSurprise(surpriseCardStartRequest(card));
+      // Home's Surprise Me start goes to the Player as the Session start does.
       onPlayerShown();
       return started;
     }
