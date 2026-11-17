@@ -13,7 +13,7 @@ import {
   type ProposeSessionInput,
 } from '@liedmotif/shared';
 import { startingSessionMode } from '@/lib/sessions';
-import { newSessionRefusal, notOffered, proposed } from './proposal';
+import { BAD_DURATION, newSessionRefusal, notOffered, proposed } from './proposal';
 import { PROPOSE_SESSION_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 import type { TurnActions } from './turn-actions';
@@ -22,7 +22,6 @@ import type { TurnActions } from './turn-actions';
 const cardRequestSchema = startSessionRequestSchema.omit({ clientId: true });
 
 const NO_DESCRIPTION = `A Session starts from a description of at most ${MAX_USER_PROMPT_LENGTH} characters. Ask the user what they want to hear.`;
-const BAD_DURATION = 'Session duration must be a whole number from 1 to 600 minutes.';
 const HOW_LONG =
   'A new Session keeps generating new Tracks while the user listens, so it needs a length, which is a whole number from 1 to 600 minutes, or no limit. Ask the user how long it should run.';
 const NO_LIMIT_ON_REPEAT =

@@ -279,8 +279,8 @@ export function sessionCardStartRequest(
 
 /**
  * The Surprise Me start request a Surprise Me card stands for: the
- * suggestion, and its length. The card's other choices are the start route's
- * own defaults, as on Home before the user changes them.
+ * suggestion, and its length. The cover choices Home's form adds (cover style,
+ * standard cover) are left to the start route's defaults.
  */
 export function surpriseCardStartRequest(
   card: Extract<AssistantCard, { kind: 'surprise' }>,

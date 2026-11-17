@@ -50,3 +50,6 @@ export async function generationRefusal({ db, userId }: AssistantAsker): Promise
 }
 
 export const NO_ACTIVE_SESSION = 'There is no active Session.';
+
+/** The start route's refusal for a length outside its range. */
+export const BAD_DURATION = 'Session duration must be a whole number from 1 to 600 minutes.';

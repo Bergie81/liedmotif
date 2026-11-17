@@ -15,12 +15,11 @@ import {
 } from '@liedmotif/shared';
 import { startingSessionMode } from '@/lib/sessions';
 import { loadPendingSurprise, proposeSurprise } from '@/lib/surprise-me';
-import { notOffered, proposed } from './proposal';
+import { BAD_DURATION, notOffered, proposed } from './proposal';
 import { PROPOSE_SURPRISE_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 import type { TurnActions } from './turn-actions';
 
-const BAD_DURATION = 'Session duration must be a whole number from 1 to 600 minutes.';
 const NO_LIMIT_ON_REPEAT =
   "This user's new Sessions start with New music off: a new Session generates its first Tracks and then repeats them, so it cannot run with no limit. Offer a length in minutes instead.";
 const BUSY =

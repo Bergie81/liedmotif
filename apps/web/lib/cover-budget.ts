@@ -1,13 +1,13 @@
 // The cover-spend budget precheck for the Custom style save, which runs the paid
-// cover-text enhancement; the regenerate routes get the same precheck from the
-// cover attempt gate (`@/lib/cover-attempt-gate`).
+// cover-text enhancement.
 //
 // The paid LLM cover-text enhancement runs OUTSIDE the owner admission lock (it
 // must — see the paid-cover-calls-outside-the-lock invariant), so a
 // budget-exhausted owner would otherwise burn one unmetered LLM call per save.
 // This advisory, lock-free precheck refuses first, with the exact copy the
-// authoritative in-lock decision produces. It never spends and is racy by design: a race only ever costs one
-// enhancement, and `coverAdmissionDecision` under the lock stays the authority.
+// authoritative in-lock decision produces. It never spends and is racy by
+// design: a race only ever costs one enhancement, and `coverAdmissionDecision`
+// under the lock stays the authority.
 
 import { NextResponse } from 'next/server';
 import { advisoryCoverAdmission, type UsageLimits } from '@liedmotif/db';
