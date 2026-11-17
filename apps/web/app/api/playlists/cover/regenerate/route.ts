@@ -67,8 +67,11 @@ export async function POST(request: Request) {
 
   // Resolved to a concrete style at request time and frozen into the attempt
   // (a Playlist persists no style of its own).
-  const styleChoice = await resolvePlaylistCoverStyle(db, ownerUserId, parsed.coverStyle);
-  const { coverStyle } = styleChoice;
+  const { coverStyle, coverStyleHint } = await resolvePlaylistCoverStyle(
+    db,
+    ownerUserId,
+    parsed.coverStyle,
+  );
   const guidance = parsed.guidance?.trim() || undefined;
 
   // Enhancement happens HERE, before the attempt's inputs are frozen — the
@@ -131,7 +134,7 @@ export async function POST(request: Request) {
         'webp',
       ),
       coverStyle,
-      customDefinition: styleChoice.coverStyleHint ?? null,
+      customDefinition: coverStyleHint ?? null,
       ...(guidance ? { userGuidance: guidance } : {}),
       ...(effectiveGuidance ? { effectiveGuidance } : {}),
       ...(enhancementApplied === undefined ? {} : { enhancementApplied }),

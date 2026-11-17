@@ -229,15 +229,7 @@ function semanticCue(
       scene: nameMatches.map((match) => match.scene).join('; '),
     };
   }
-  const conceptMatch = wordLists ? matchingCues(concept)[0] : undefined;
-  const conceptCue = conceptMatch
-    ? {
-        id: `concept:${conceptMatch.id.replace('title:', '')}`,
-        scene: `the secondary controlled cue ${conceptMatch.scene}`,
-      }
-    : !wordLists && concept
-      ? { id: 'concept:written', scene: `the written cover concept ${JSON.stringify(concept)}` }
-      : null;
+  const conceptCue = conceptCueOf(concept, wordLists);
   const activity = boundedSupportingData(snapshot.activity, 32, wordLists);
   const mood = boundedSupportingData(snapshot.mood, 32, wordLists);
   const genre = boundedSupportingData(snapshot.genreTags?.[0], 32, wordLists);
@@ -249,12 +241,34 @@ function semanticCue(
       ...(conceptCue ? [conceptCue.id] : []),
       ...context.map((_, i) => `context:${i + 1}`),
     ],
-    scene: conceptCue
-      ? `${exactNameAnchor}, refined by ${conceptCue.scene}`
-      : context.length
-        ? `${exactNameAnchor}, informed only by ${context.join(', ')}`
-        : `${exactNameAnchor}, translated into visual rhythm`,
+    scene: anchoredScene(exactNameAnchor, conceptCue, context),
   };
+}
+
+/** The cue the cover concept adds: a controlled scene its words match without a
+ *  text LLM, or the written concept itself with one. */
+function conceptCueOf(concept: string, wordLists: boolean): { id: string; scene: string } | null {
+  if (!wordLists) {
+    return concept
+      ? { id: 'concept:written', scene: `the written cover concept ${JSON.stringify(concept)}` }
+      : null;
+  }
+  const match = matchingCues(concept)[0];
+  if (!match) return null;
+  return {
+    id: `concept:${match.id.replace('title:', '')}`,
+    scene: `the secondary controlled cue ${match.scene}`,
+  };
+}
+
+function anchoredScene(
+  anchor: string,
+  conceptCue: { scene: string } | null,
+  context: readonly string[],
+): string {
+  if (conceptCue) return `${anchor}, refined by ${conceptCue.scene}`;
+  if (context.length > 0) return `${anchor}, informed only by ${context.join(', ')}`;
+  return `${anchor}, translated into visual rhythm`;
 }
 
 export interface BuildSessionCoverPlanInput {

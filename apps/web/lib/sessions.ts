@@ -236,6 +236,18 @@ export function toStoredSnapshot(snapshot: SessionStyleSnapshot): StyleSnapshot 
 }
 
 /**
+ * What the text LLM wrote for a Session's cover: the visual concept and the
+ * preset Auto resolves to (ADR 0007). Written together by the expansion or the
+ * naming call, and frozen together on the Session.
+ */
+interface CoverDirection {
+  coverConcept: string;
+  autoCoverStyle: CoverStylePreset | null;
+}
+
+const NO_COVER_DIRECTION: CoverDirection = { coverConcept: '', autoCoverStyle: null };
+
+/**
  * Fill the snapshot's creative naming (session Name proposal + track-title pool)
  * when a text LLM is configured and the snapshot lacks it — the structured-controls
  * and More Like This paths; the free-text expansion already returns both in its one
@@ -289,18 +301,6 @@ async function withCreativeNaming(
     return unchanged;
   }
 }
-
-/**
- * What the text LLM wrote for a Session's cover: the visual concept and the
- * preset Auto resolves to (ADR 0007). Written together by the expansion or the
- * naming call, and frozen together on the Session.
- */
-interface CoverDirection {
-  coverConcept: string;
-  autoCoverStyle: CoverStylePreset | null;
-}
-
-const NO_COVER_DIRECTION: CoverDirection = { coverConcept: '', autoCoverStyle: null };
 
 /** A session's stored jsonb snapshot paired with its display Name. */
 export interface NamedSnapshot {

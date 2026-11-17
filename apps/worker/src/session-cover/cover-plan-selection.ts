@@ -301,6 +301,18 @@ function enumerateStyleCandidates(args: {
   });
 }
 
+/** The one style a cover plans, or null when it draws from the whole Auto pool:
+ *  Auto without a pick, and Custom without a usable definition. */
+function plannedStyle(
+  requestedStyle: CoverStyle,
+  autoPick: PresetStyle | null,
+  custom: string,
+): PresetStyle | 'custom' | null {
+  if (requestedStyle === 'auto') return autoPick;
+  if (requestedStyle === 'custom' && !custom) return null;
+  return requestedStyle;
+}
+
 /**
  * The art-direction candidates for a requested style. Auto with the text LLM's
  * stored pick plans exactly that preset, as if it were chosen by name, so
@@ -323,12 +335,8 @@ export function enumerateArtDirectionCandidates(args: {
   salt: string;
   grammars: Record<PresetStyle, StyleGrammar>;
 }): { candidates: PlannedCandidate[]; explicitPreset: string | null } {
-  const pickedAuto = args.requestedStyle === 'auto' && args.autoPick ? args.autoPick : null;
-  const useAuto =
-    !pickedAuto &&
-    (args.requestedStyle === 'auto' || (args.requestedStyle === 'custom' && !args.custom));
-  if (!useAuto) {
-    const style = pickedAuto ?? (args.requestedStyle as PresetStyle | 'custom');
+  const style = plannedStyle(args.requestedStyle, args.autoPick ?? null, args.custom);
+  if (style) {
     return {
       candidates: enumerateStyleCandidates({
         style,
