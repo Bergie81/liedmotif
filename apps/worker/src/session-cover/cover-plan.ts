@@ -15,7 +15,7 @@ import {
 import { GRAMMARS } from './cover-grammars';
 
 export const SESSION_COVER_PLAN_VERSION = 'session-cover-plan-v7';
-export const SESSION_COVER_PROMPT_VERSION = 'session-cover-prompt-v14';
+export const SESSION_COVER_PROMPT_VERSION = 'session-cover-prompt-v15';
 
 const MAX_NAME = 240;
 const MAX_CONCEPT = 240;
@@ -134,27 +134,39 @@ function graphemes(value: string): string[] {
   );
 }
 
-function boundedSupportingData(value: string | null | undefined, max: number): string {
-  const normalized = normalizedData(value).replace(
-    /\b(?:ignore|override|disregard|system prompt|developer message|provider fields?|render (?:the )?(?:word|text|logo))\b/gi,
-    '[instruction removed]',
-  );
-  return graphemes(normalized).slice(0, max).join('').trim();
+/**
+ * Session data bounded for the prompt. `wordLists` is true only when no Writing
+ * AI is configured (ADR 0004): the English instruction-word list judges meaning,
+ * so it never runs beside one.
+ */
+function boundedSupportingData(
+  value: string | null | undefined,
+  max: number,
+  wordLists: boolean,
+): string {
+  const normalized = normalizedData(value);
+  const judged = wordLists
+    ? normalized.replace(
+        /\b(?:ignore|override|disregard|system prompt|developer message|provider fields?|render (?:the )?(?:word|text|logo))\b/gi,
+        '[instruction removed]',
+      )
+    : normalized;
+  return graphemes(judged).slice(0, max).join('').trim();
 }
 
 function energyOf(snapshot: StyleSnapshot): 'low' | 'medium' | 'high' {
   return snapshot.energy === 'low' || snapshot.energy === 'high' ? snapshot.energy : 'medium';
 }
 
-function genericCustomDefinition(raw: string): string {
-  return genericArtDirection(sanitizeCoverStyleHint(raw), MAX_CONCEPT);
+function genericCustomDefinition(raw: string, wordLists: boolean): string {
+  return genericArtDirection(sanitizeCoverStyleHint(raw), MAX_CONCEPT, wordLists);
 }
 
 /**
- * The fallback judgment for art direction no Writing AI rewrote (ADR 0004): the
- * creator, brand, and style-attribution lists decide meaning from fixed English
- * words, so a rewrite, which already described named references as visual
- * qualities in any language, never passes through them.
+ * The no-Writing-AI judgment for art direction (ADR 0004): the creator, brand,
+ * and style-attribution lists decide meaning from fixed English words, so they
+ * run only when no Writing AI is configured. With one, the text reaches the
+ * prompt as written and the prompt's hard exclusions forbid artist imitation.
  */
 function withoutNamedReferences(text: string): string {
   // `apple` alone is far more often the fruit; only an Apple product noun right
@@ -173,16 +185,16 @@ function withoutNamedReferences(text: string): string {
 
 /**
  * Sanitizer for user-written art direction. Stripping weight and flag syntax,
- * provider and magic tokens, and injection phrasing is prompt syntax and runs on
- * all text; `rewritten` text skips {@link withoutNamedReferences}. Returns ''
+ * provider and magic tokens, and role labels is prompt syntax and runs on all
+ * text; {@link withoutNamedReferences} runs only with `wordLists`. Returns ''
  * when nothing survives.
  */
-function genericArtDirection(raw: string, max: number, rewritten = false): string {
-  const sanitized = boundedSupportingData(raw, max);
+function genericArtDirection(raw: string, max: number, wordLists: boolean): string {
+  const sanitized = boundedSupportingData(raw, max, wordLists);
   if (!sanitized) return '';
   const providerOrMagicToken =
     /\b(?:midjourney|stable\s+diffusion|dall[-· ]?e|flux(?:\.\d+)?|imagen|openai|openrouter|masterpiece|best\s+quality|ultra[- ]?detailed|award[- ]?winning|trending\s+on\s+artstation|[48]k|uhd)\b/giu;
-  const generic = (rewritten ? sanitized : withoutNamedReferences(sanitized))
+  const generic = (wordLists ? withoutNamedReferences(sanitized) : sanitized)
     .replace(providerOrMagicToken, '')
     .replace(/<[^>]{1,120}>/g, '')
     .replace(/--[\w-]+(?:\s+[^\s,;]+)?/g, '')
@@ -198,32 +210,47 @@ function genericArtDirection(raw: string, max: number, rewritten = false): strin
   return /[\p{L}\p{N}]/u.test(generic) ? generic : '';
 }
 
+/**
+ * The cover scene. Without a Writing AI, fixed English cue words in the Name,
+ * then the concept, pick a controlled scene. With one, no word decides: the
+ * exact-Name anchor carries the scene, refined by the cover concept the Writing
+ * AI wrote, which is already the semantic cue.
+ */
 function semanticCue(
   name: string,
   concept: string,
   snapshot: StyleSnapshot,
+  wordLists: boolean,
 ): { ids: string[]; scene: string } {
-  const nameMatches = matchingCues(name);
+  const nameMatches = wordLists ? matchingCues(name) : [];
   if (nameMatches.length > 0) {
     return {
       ids: nameMatches.map((match) => match.id),
       scene: nameMatches.map((match) => match.scene).join('; '),
     };
   }
-  const conceptMatch = matchingCues(concept)[0];
-  const activity = boundedSupportingData(snapshot.activity, 32);
-  const mood = boundedSupportingData(snapshot.mood, 32);
-  const genre = boundedSupportingData(snapshot.genreTags?.[0], 32);
+  const conceptMatch = wordLists ? matchingCues(concept)[0] : undefined;
+  const conceptCue = conceptMatch
+    ? {
+        id: `concept:${conceptMatch.id.replace('title:', '')}`,
+        scene: `the secondary controlled cue ${conceptMatch.scene}`,
+      }
+    : !wordLists && concept
+      ? { id: 'concept:written', scene: `the written cover concept ${JSON.stringify(concept)}` }
+      : null;
+  const activity = boundedSupportingData(snapshot.activity, 32, wordLists);
+  const mood = boundedSupportingData(snapshot.mood, 32, wordLists);
+  const genre = boundedSupportingData(snapshot.genreTags?.[0], 32, wordLists);
   const context = [activity, mood, genre].filter(Boolean);
   const exactNameAnchor = `one concrete visual metaphor for the exact Session Name ${JSON.stringify(name)}`;
   return {
     ids: [
       'name:exact',
-      ...(conceptMatch ? [`concept:${conceptMatch.id.replace('title:', '')}`] : []),
+      ...(conceptCue ? [conceptCue.id] : []),
       ...context.map((_, i) => `context:${i + 1}`),
     ],
-    scene: conceptMatch
-      ? `${exactNameAnchor}, refined by the secondary controlled cue ${conceptMatch.scene}`
+    scene: conceptCue
+      ? `${exactNameAnchor}, refined by ${conceptCue.scene}`
       : context.length
         ? `${exactNameAnchor}, informed only by ${context.join(', ')}`
         : `${exactNameAnchor}, translated into visual rhythm`,
@@ -237,15 +264,14 @@ export interface BuildSessionCoverPlanInput {
   coverStyle: CoverStyle;
   /** The text LLM's frozen preset pick, read only when `coverStyle` is `auto`. */
   autoCoverStyle?: CoverStylePreset | null;
-  /** Whether the worker has a text LLM; keyword ranking runs only without one. */
+  /** Whether the worker has a text LLM. Every word list (Auto keyword ranking,
+   *  scene cues, named references, instruction words) runs only without one. */
   textLlmConfigured?: boolean;
   customDefinition: string | null;
   snapshot: StyleSnapshot;
   sessionIntent?: string | null;
   /** User art direction for a regeneration attempt (already the effective text). */
   userGuidance?: string | null;
-  /** True when `userGuidance` is the Writing AI's rewrite of the wish. */
-  enhancementApplied?: boolean;
   capabilities: GeneratedImageCapabilities;
   referenceTreatment: string | null;
   referenceSubjectCount?: number;
@@ -413,18 +439,21 @@ export function buildSessionCoverPlan(
 ): BuildSessionCoverPlanResult {
   const name = normalizedData(input.sessionName);
   if (!name || graphemes(name).length > MAX_NAME) return { ok: false, reason: 'invalid_name' };
-  const concept = boundedSupportingData(input.coverConcept, MAX_CONCEPT);
+  const wordLists = input.textLlmConfigured !== true;
+  const concept = boundedSupportingData(input.coverConcept, MAX_CONCEPT, wordLists);
   const custom =
-    input.coverStyle === 'custom' ? genericCustomDefinition(input.customDefinition ?? '') : '';
+    input.coverStyle === 'custom'
+      ? genericCustomDefinition(input.customDefinition ?? '', wordLists)
+      : '';
   const styleFallbackReason =
     input.persistedStyleFallbackReason ??
     (input.coverStyle === 'custom' && !custom ? 'invalid_custom_fell_back_to_auto' : null);
-  const cue = semanticCue(name, concept, input.snapshot);
+  const cue = semanticCue(name, concept, input.snapshot, wordLists);
   const salt = `${input.sessionId}:${name}:${input.coverStyle}`;
   const enumerated = enumerateArtDirectionCandidates({
     requestedStyle: input.coverStyle,
     autoPick: input.autoCoverStyle ?? null,
-    textLlmConfigured: input.textLlmConfigured === true,
+    textLlmConfigured: !wordLists,
     custom,
     name,
     snapshot: input.snapshot,
@@ -472,6 +501,7 @@ export function buildSessionCoverPlan(
       .filter((value): value is string => typeof value === 'string' && Boolean(value.trim()))
       .join(', '),
     MAX_CONTEXT,
+    wordLists,
   );
   const typography = isPoster
     ? 'fill the complete frame and look finished without a title, caption, or empty title panel; image-only artwork with no visible language; render no words, letters, numbers, pseudo-lettering, glyph-like marks, logos, signatures, watermarks, labels, credits, signage, page writing, captions, interface text or UI'
@@ -498,7 +528,7 @@ export function buildSessionCoverPlan(
     ? genericArtDirection(
         withOrdinalSubjectNames(input.userGuidance, input.referenceSubjects ?? []) ?? '',
         MAX_COVER_GUIDANCE_LENGTH,
-        input.enhancementApplied === true,
+        wordLists,
       )
     : '';
   const sections = promptSections({

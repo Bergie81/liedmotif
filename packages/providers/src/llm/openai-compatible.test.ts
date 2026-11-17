@@ -1551,7 +1551,7 @@ describe('enhanceCoverDirection', () => {
     expect(captured[0]).toMatch(
       /names an artist, studio, franchise, or brand as a reference, describe its visual qualities in your own words/i,
     );
-    expect(captured[0]).toMatch(/never put the name in the rewrite/i);
+    expect(captured[0]).toMatch(/never write the name/i);
     expect(captured[0]).toMatch(/in any language/i);
     expect(captured[0]).toMatch(/ordinary words keep their ordinary meaning/i);
   });

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { deriveSessionTitle, MAX_SESSION_TITLE_LENGTH } from './session-title';
+import {
+  clampCoverConcept,
+  deriveSessionTitle,
+  MAX_COVER_CONCEPT_LENGTH,
+  MAX_SESSION_TITLE_LENGTH,
+} from './session-title';
 import { compileStructuredControls } from './template';
 
 describe('deriveSessionTitle', () => {
@@ -56,5 +61,18 @@ describe('deriveSessionTitle', () => {
   it('always returns a non-empty title even for a bare snapshot', () => {
     expect(deriveSessionTitle({ snapshot: {} })).toBe('Instrumental Session');
     expect(deriveSessionTitle({ userPrompt: '   ', snapshot: {} })).toBe('Instrumental Session');
+  });
+});
+
+describe('clampCoverConcept', () => {
+  it("keeps 'by Lake Constance' and 'like Paris at night' in the cover concept", () => {
+    expect(clampCoverConcept('A lone sailboat by Lake Constance, like Paris at night.')).toBe(
+      'A lone sailboat by Lake Constance, like Paris at night.',
+    );
+  });
+
+  it('bounds the concept and collapses control characters and whitespace', () => {
+    expect(clampCoverConcept('  one\u0007lamp \n over   water  ')).toBe('one lamp over water');
+    expect(clampCoverConcept('x'.repeat(500))).toHaveLength(MAX_COVER_CONCEPT_LENGTH);
   });
 });

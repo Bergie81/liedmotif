@@ -123,7 +123,7 @@ describe('replacement qualification harness', () => {
       ).toBe(true);
       expect(manifest).toMatchObject({
         baselineKind: 'replacement',
-        promptVersion: 'session-cover-prompt-v14',
+        promptVersion: 'session-cover-prompt-v15',
         run: {
           scope: 'complete',
           expectedArtifacts: completeCallCount,

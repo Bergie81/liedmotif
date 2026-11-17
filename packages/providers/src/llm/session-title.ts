@@ -18,18 +18,10 @@ export { MAX_SESSION_TITLE_LENGTH };
 
 export { MAX_COVER_CONCEPT_LENGTH };
 
+/** The Writing AI wrote the concept and its prompt already describes named
+ *  references visually (ADR 0004), so only syntax and length are bounded here. */
 export function clampCoverConcept(value: string): string {
-  return sanitizeCoverConcept(value)
-    .replace(
-      /\b(?:marvel|dc comics?|disney|pixar|ghibli|star wars|pokemon|nike|adidas)\b/gi,
-      'generic visual language',
-    )
-    .replace(
-      /\b(?:in the style of|by|like)\s+[A-Z][\p{L}'’-]+(?:\s+[A-Z][\p{L}'’-]+){0,3}/gu,
-      'using generic medium and composition language',
-    )
-    .replace(/\s+/g, ' ')
-    .trim();
+  return sanitizeCoverConcept(value);
 }
 
 /** Creative naming a text LLM proposes for a session (all cosmetic; empty when

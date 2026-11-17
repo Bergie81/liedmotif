@@ -71,6 +71,7 @@ export function createRecoverSessionCoversTask(
             storage: deps.storage,
             logger,
             clock: { now: () => now },
+            textLlmConfigured: await textLlmConfigured(deps.getLlm),
           }).processRegeneration(playlistId, id);
           return;
         }

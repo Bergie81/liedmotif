@@ -178,6 +178,7 @@ export function buildTaskList(deps: WorkerRunnerDeps): TaskList {
     'generate-playlist-cover': createGeneratePlaylistCoverTask({
       db: deps.db,
       getCoverArt: deps.getCoverArt,
+      ...(deps.getLlm ? { getLlm: deps.getLlm } : {}),
       storage: deps.storage,
     }),
     'recover-session-covers': createRecoverSessionCoversTask({

@@ -72,7 +72,7 @@ function schemaFields(skipProfile: boolean): string {
     'energy ("low" | "medium" | "high"), bpm (one tempo in BPM for the whole session), ' +
     'key (one musical key, e.g. "A minor"), titleScheme, ' +
     'title (a short evocative session name, max 60 chars), ' +
-    'coverConcept (one concrete visual sentence for cover art, no named artists or brands), ' +
+    `coverConcept (one concrete visual sentence for cover art; ${NAMED_VISUAL_REFERENCE_RULE}), ` +
     `coverStyle (${COVER_STYLE_ANSWER}), ` +
     'requestedDurationMinutes (number or null, explicitly requested total Session duration in minutes), ' +
     `trackTitles (string[], 8-12 short distinct creative track titles fitting the vibe; ${TITLE_CASE_RULE}), ` +
@@ -109,14 +109,14 @@ const NAMED_REFERENCE_RULE =
   'sound in your own words (genre, era, instruments, production, vocal character, mood), ' +
   'and never put the name in stylePrompt, title, trackTitles, or lyricContext.';
 
-/** The cover-direction rewrite's form of the same rule. The worker runs its
- * creator and brand word lists only on text no rewrite judged, so this rule is
- * what keeps names out of a rewritten wish, and an ordinary word ("by the sea",
- * "one red apple") must not be mistaken for one. */
+/** The same rule for cover text: the cover-direction rewrite and the cover
+ * concept. The worker runs its creator and brand word lists only when no Writing
+ * AI is configured, so this rule is what keeps names out of cover text, and an
+ * ordinary word ("by the sea", "one red apple") must not be mistaken for one. */
 export const NAMED_VISUAL_REFERENCE_RULE =
-  'If the direction names an artist, studio, franchise, or brand as a reference, describe ' +
+  'If the request names an artist, studio, franchise, or brand as a reference, describe ' +
   'its visual qualities in your own words (medium, palette, era, composition, texture, mood), ' +
-  'and never put the name in the rewrite. This holds in any language. Ordinary words keep ' +
+  'and never write the name. This holds in any language. Ordinary words keep ' +
   'their ordinary meaning: "by the sea" is a place and "one red apple" is a fruit.';
 
 /** The same rule for the later calls that reread the request (names, title
@@ -599,7 +599,7 @@ export function namingPrompt(input: SessionNamingInput): string {
   return (
     `Name a generated-music listening session and its tracks. Respond with ONLY JSON: ` +
     `{"title": string (a short evocative session name, max 60 chars), ` +
-    `"coverConcept": string (one concrete visual sentence, no named artists, studios, franchises, or brands), ` +
+    `"coverConcept": string (one concrete visual sentence; ${NAMED_VISUAL_REFERENCE_RULE}), ` +
     `"coverStyle": string (${COVER_STYLE_ANSWER}), ` +
     `"trackTitles": string[] (8-12 short distinct creative track titles fitting the vibe; ${TITLE_CASE_RULE})` +
     (wantsLyricContext

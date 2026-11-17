@@ -83,8 +83,8 @@ export interface SessionCoverGeneratorDeps {
   metadataQueue: SessionCoverMetadataQueue;
   logger: SessionCoverLogger;
   clock: SessionCoverClock;
-  /** Whether the worker has a text LLM: with one, Auto never ranks presets by
-   *  keyword (ADR 0004). Omitted means none. */
+  /** Whether the worker has a text LLM: with one, no word list judges a cover's
+   *  text (ADR 0004). Omitted means none. */
   textLlmConfigured?: boolean;
 }
 
@@ -340,8 +340,6 @@ export async function freezePlanInputs(
     forcedTerminalReason?: string;
     /** Effective user art direction for a regeneration attempt. */
     guidance?: string;
-    /** True when `guidance` is the Writing AI's rewrite of the wish. */
-    enhancementApplied?: boolean;
     textLlmConfigured: boolean;
   },
 ): Promise<FrozenPlanInputs> {
@@ -379,7 +377,6 @@ export async function freezePlanInputs(
     snapshot: session.sessionStyleSnapshot ?? {},
     sessionIntent: session.userPrompt,
     userGuidance: args.guidance ?? null,
-    enhancementApplied: args.enhancementApplied === true,
     capabilities,
     referenceTreatment: coverReferenceTreatment(referenceSelection.selectedReferences),
     referenceSubjectCount: new Set(

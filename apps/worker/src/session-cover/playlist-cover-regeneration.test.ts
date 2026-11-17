@@ -291,6 +291,25 @@ describeIfDb('PlaylistCoverGenerator regeneration', () => {
     expect(settled?.plan.userGuidance).toBe('warm dusk light over a paper skyline');
   });
 
+  it('keeps named references in the art direction only when a Writing AI is configured', async () => {
+    const guidance = 'a harbor at dusk, Picasso-inspired';
+    const prompts: Record<string, string> = {};
+    for (const textLlmConfigured of [true, false]) {
+      const { ownerUserId, playlistId } = await seedPlaylistWithMembers();
+      const attempt = await reserveAttempt(ownerUserId, playlistId, { guidance });
+      const { provider, calls } = fakeCoverArt();
+      await generator(ownerUserId, provider, { textLlmConfigured }).processRegeneration(
+        playlistId,
+        attempt.id,
+      );
+      prompts[String(textLlmConfigured)] = calls[0]!.positivePrompt;
+    }
+
+    expect(prompts.true).toContain(JSON.stringify(guidance));
+    expect(prompts.false).toContain('harbor at dusk');
+    expect(prompts.false).not.toMatch(/picasso/i);
+  });
+
   it('keeps the current cover and settles terminally when the provider rejects', async () => {
     const { ownerUserId, playlistId } = await seedPlaylistWithMembers();
     const attempt = await reserveAttempt(ownerUserId, playlistId);

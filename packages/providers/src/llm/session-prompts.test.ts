@@ -219,6 +219,23 @@ describe('allowsLyricContext for skip-profile sessions', () => {
   });
 });
 
+describe('cover concept named references', () => {
+  const current = sessionStyleSnapshotSchema.parse({ stylePrompt: 'mellow lofi hip hop' });
+
+  it('tells the expansion and naming calls to describe a named visual reference in the cover concept', () => {
+    for (const prompt of [
+      expansionPrompt('rainy harbor in Ghibli style'),
+      namingPrompt({ snapshot: current, userPrompt: 'rainy harbor in Ghibli style' }),
+    ]) {
+      const coverConcept = prompt.slice(prompt.indexOf('coverConcept'));
+      expect(coverConcept).toMatch(
+        /names an artist, studio, franchise, or brand as a reference, describe its visual qualities in your own words/i,
+      );
+      expect(coverConcept).toMatch(/ordinary words keep their ordinary meaning/i);
+    }
+  });
+});
+
 describe('namingPrompt language', () => {
   it('writes titles in the snapshot language when one is set', () => {
     const snapshot = sessionStyleSnapshotSchema.parse({

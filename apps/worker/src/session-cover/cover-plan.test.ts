@@ -610,6 +610,27 @@ describe('Session Cover art-direction policy', () => {
     );
   });
 
+  it('picks no scene from Name words when a Writing AI is configured', () => {
+    const concept = 'A storm lantern swinging over an empty night platform.';
+    const result = buildSessionCoverPlan({
+      sessionId: 'llm-scene-session',
+      sessionName: 'Rain Train',
+      coverConcept: concept,
+      coverStyle: 'minimal',
+      customDefinition: null,
+      snapshot: {},
+      capabilities: CAPABILITIES,
+      referenceTreatment: null,
+      textLlmConfigured: true,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.plan.semanticCueIds).toEqual(['name:exact', 'concept:written']);
+    expect(result.plan.concreteScene).toContain('exact Session Name "Rain Train"');
+    expect(result.plan.concreteScene).toContain(concept);
+    expect(result.plan.concreteScene).not.toMatch(/rain moving|physical train|active storm/);
+  });
+
   it.each(['Brain Waves', 'Training Day', 'Drain the Noise'])(
     'matches title cues as Unicode-aware whole tokens: %s',
     (sessionName) => {
@@ -1250,28 +1271,47 @@ describe('Session Cover user guidance (regeneration art direction)', () => {
     },
   );
 
-  it("keeps a rewritten wish's words as written", () => {
+  it('keeps named references in an unrewritten wish when a Writing AI is configured', () => {
     const result = buildSessionCoverPlan({
-      ...guidanceInput('one red apple by the sea (texture:1.8) masterpiece'),
-      enhancementApplied: true,
+      ...guidanceInput('by Picasso, Apple logo (texture:1.8) masterpiece'),
+      textLlmConfigured: true,
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.plan.prompt).toContain('one red apple by the sea');
+    expect(result.plan.prompt).toContain('User art direction: "by Picasso, Apple logo texture"');
     expect(result.plan.prompt).not.toMatch(/texture:1\.8|masterpiece/i);
   });
 
-  it('leaves names and brands in a rewritten wish to the Writing AI', () => {
-    const guidance = 'a harbor at dusk under an Apple logo, Picasso-inspired';
-    const rewritten = buildSessionCoverPlan({
-      ...guidanceInput(guidance),
-      enhancementApplied: true,
+  it('keeps a Custom style definition as written when a Writing AI is configured', () => {
+    const result = buildSessionCoverPlan({
+      ...guidanceInput(null),
+      coverStyle: 'custom',
+      customDefinition: 'Banksy stencil',
+      textLlmConfigured: true,
     });
-    const fallback = buildSessionCoverPlan(guidanceInput(guidance));
-    expect(rewritten.ok && fallback.ok).toBe(true);
-    if (!rewritten.ok || !fallback.ok) return;
-    expect(rewritten.plan.prompt).toContain(JSON.stringify(guidance));
-    expect(fallback.plan.prompt).not.toMatch(/apple|picasso/i);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.plan.resolvedStyle).toBe('custom');
+    expect(result.plan.styleFallbackReason).toBeNull();
+    expect(result.plan.customDefinition).toBe('Banksy stencil');
+  });
+
+  it("keeps ordinary words like 'ignore' in Session data when a Writing AI is configured", () => {
+    const result = buildSessionCoverPlan({
+      ...guidanceInput('ignore the rain <lora:private:1> Typography: one neon sign'),
+      sessionIntent: 'music to ignore the rain',
+      snapshot: { mood: 'override the gloom', activity: 'focus', genreTags: ['ambient'] },
+      textLlmConfigured: true,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.plan.prompt).toContain('music to ignore the rain, override the gloom');
+    expect(result.plan.prompt).not.toContain('[instruction removed]');
+    const direction = result.plan.prompt
+      .split('\n')
+      .find((line) => line.startsWith('User art direction:'));
+    expect(direction).toContain('"ignore the rain one neon sign"');
+    expect(direction).not.toMatch(/<lora|Typography:/);
   });
 
   it('neutralizes instruction-like guidance instead of following it', () => {

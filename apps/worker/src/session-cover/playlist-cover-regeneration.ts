@@ -81,6 +81,9 @@ export interface PlaylistCoverGeneratorDeps {
   measureCover?: MeasureImage;
   logger: SessionCoverLogger;
   clock: SessionCoverClock;
+  /** Whether the worker has a text LLM: with one, no word list judges a cover's
+   *  text (ADR 0004). Omitted means none. */
+  textLlmConfigured?: boolean;
 }
 
 export type PlaylistCoverResult =
@@ -218,7 +221,7 @@ async function planReserved(
       // the association a Session applies to its music prompt applies here.
       userGuidance:
         withOrdinalSubjectNames(guidance, referenceSubjectsForSelection(references)) ?? null,
-      enhancementApplied: current.plan.enhancementApplied === true,
+      textLlmConfigured: runtime.deps.textLlmConfigured === true,
       capabilities,
       referenceTreatment: coverReferenceTreatment(references.selectedReferences),
       referenceSubjectCount: new Set(

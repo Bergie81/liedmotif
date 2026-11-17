@@ -1,9 +1,12 @@
 import type { Database } from '@liedmotif/db';
 import { uuidSchema } from '@liedmotif/shared';
 import type { StorageProvider } from '@liedmotif/storage';
-import type { GeneratedImageProvider } from '@liedmotif/providers';
 import type { Task } from 'graphile-worker';
-import { resolveTailoredCoverImageProvider } from '../session-cover/cover-image-provider';
+import {
+  resolveTailoredCoverImageProvider,
+  textLlmConfigured,
+  type SessionCoverProviders,
+} from '../session-cover/cover-image-provider';
 import { createPlaylistCoverGenerator } from '../session-cover/playlist-cover-regeneration';
 
 interface GeneratePlaylistCoverPayload {
@@ -37,12 +40,14 @@ function parsePayload(payload: unknown): GeneratePlaylistCoverPayload {
   };
 }
 
-export function createGeneratePlaylistCoverTask(deps: {
-  db: Database;
-  /** Prompt-driven image provider only — a Playlist cover never derives from a music task. */
-  getCoverArt: () => Promise<GeneratedImageProvider | null>;
-  storage: StorageProvider;
-}): Task {
+export function createGeneratePlaylistCoverTask(
+  deps: Pick<SessionCoverProviders, 'getLlm'> & {
+    db: Database;
+    /** Prompt-driven image provider only — a Playlist cover never derives from a music task. */
+    getCoverArt: SessionCoverProviders['getCoverArt'];
+    storage: StorageProvider;
+  },
+): Task {
   return async (payload, helpers) => {
     const jobPayload = parsePayload(payload);
     const generator = createPlaylistCoverGenerator({
@@ -57,6 +62,7 @@ export function createGeneratePlaylistCoverTask(deps: {
         warn: (message, fields) => helpers.logger.warn(message, fields),
       },
       clock: { now: () => new Date() },
+      textLlmConfigured: await textLlmConfigured(deps.getLlm),
     });
     await generator.processRegeneration(jobPayload.playlistId, jobPayload.coverGenerationId);
   };
