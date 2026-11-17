@@ -8,6 +8,7 @@ import { createElement as h } from 'react';
 import type { PlaylistSummaryItem } from '@liedmotif/shared';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { shownToasts, toast } from '@/lib/toast';
 import { PlaylistDetail } from './playlist-detail';
 
 const pinLounge = vi.hoisted(() => vi.fn());
@@ -34,6 +35,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh }
 
 afterEach(() => {
   cleanup();
+  toast.dismiss();
   pinLounge.mockReset();
   refresh.mockReset();
 });
@@ -83,13 +85,36 @@ describe('PlaylistDetail — visitor Pin toggle', () => {
     expect(refresh).toHaveBeenCalledTimes(1);
   });
 
-  it('leaves the cache alone when the pin is refused', async () => {
+  it('leaves the cache alone when the pin is refused, and says so in an error toast', async () => {
     pinLounge.mockResolvedValue({ ok: false, error: { message: 'Playlist not found.' } });
     renderVisitor();
 
     tapPin();
 
-    await waitFor(() => expect(screen.getByText(/Couldn’t pin the playlist/)).toBeTruthy());
+    await waitFor(() =>
+      expect(shownToasts()).toEqual([
+        expect.objectContaining({
+          tone: 'error',
+          message: 'Couldn’t pin the playlist: Playlist not found.',
+        }),
+      ]),
+    );
     expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it('clears a refused pin once a retry lands', async () => {
+    pinLounge.mockResolvedValueOnce({ ok: false, error: { message: 'Offline.' } });
+    pinLounge.mockResolvedValueOnce({
+      ok: true,
+      data: { playlistId: PLAYLIST.id, pinned: true },
+    });
+    renderVisitor();
+
+    tapPin();
+    await waitFor(() => expect(shownToasts()).toHaveLength(1));
+    tapPin();
+
+    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+    expect(shownToasts()).toEqual([]);
   });
 });

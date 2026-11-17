@@ -29,6 +29,7 @@ import {
   type PlaylistPageFetcher,
 } from '@/lib/api-client';
 import { cn } from '@/lib/cn';
+import { toast } from '@/lib/toast';
 import { AvatarBadge } from '@/components/avatar-badge';
 import { ReturnToPrivateDialog } from '@/components/lounge/lounge-confirm-dialogs';
 import {
@@ -59,6 +60,12 @@ import { deletePlaylistConfirmBody, pinToggleFailure, reindexMembers } from './p
 import { usePlaylistMembers, type PlaylistMembership } from './use-playlist-members';
 import { usePlayPlaylist } from './use-play-playlist';
 import { useReorderPlaylist } from './use-reorder-playlist';
+
+// A retry of these acts replaces its earlier failure; a success clears it.
+const TRACK_DELETE_KEY = 'playlist-track-delete';
+const DELETE_KEY = 'playlist-delete';
+const PIN_KEY = 'playlist-pin';
+const MORE_LIKE_THIS_KEY = 'playlist-more-like-this';
 
 /** At most one overlay is up at a time — two sheets never stack. */
 type PlaylistOverlay =
@@ -95,8 +102,6 @@ export function PlaylistDetail({
   visitor?: { owner: LoungePlaylistOwner | null; pinned?: boolean; isAdmin?: boolean };
 }) {
   const isVisitor = visitor != null;
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [pinned, setPinned] = useState(visitor?.pinned ?? false);
   const [seeding, setSeeding] = useState(false);
   const [overlay, setOverlay] = useState<PlaylistOverlay | null>(null);
@@ -119,9 +124,9 @@ export function PlaylistDetail({
     playlistId,
     ...(initial ? { initial } : {}),
     ...(isVisitor ? { fetchPage: fetchLoungePage } : {}),
-    onError: setActionError,
+    onError: toast.error,
     onUnsaved: () =>
-      setNotice(
+      toast.info(
         'Removed — that was its last playlist, so the track left your Library (it stays in History).',
       ),
   });
@@ -132,12 +137,12 @@ export function PlaylistDetail({
     if (trackCount !== undefined) onTrackCountChange?.(trackCount);
   }, [trackCount, onTrackCountChange]);
 
-  const playback = usePlayPlaylist(setActionError, { foreign: isVisitor });
+  const playback = usePlayPlaylist(toast.error, { foreign: isVisitor });
   const reorder = useReorderPlaylist({
     playlistId,
     items,
     setItems,
-    onError: setActionError,
+    onError: toast.error,
     onConflict: () => void members.load(),
   });
   const { holdReloads } = members;
@@ -155,10 +160,10 @@ export function PlaylistDetail({
   async function seedMoreLikeThis(trackIds: string[]) {
     if (seeding) return;
     setSeeding(true);
-    setActionError(null);
+    toast.dismiss(MORE_LIKE_THIS_KEY);
     const failure = await seed(trackIds);
     setSeeding(false);
-    if (failure) setActionError(failure);
+    if (failure) toast.error(failure, { key: MORE_LIKE_THIS_KEY });
   }
 
   // Permanent Track delete (never feedback). Settled before the list changes —
@@ -167,11 +172,12 @@ export function PlaylistDetail({
     const result = await deleteTrack(item.id);
     setOverlay(null);
     if (!result.ok) {
-      setActionError(`Delete failed: ${result.error.message}`);
+      toast.error(`Delete failed: ${result.error.message}`, { key: TRACK_DELETE_KEY });
       return;
     }
     members.dropMember(item);
-    setNotice('Track deleted — its audio is removed and it left every Playlist.');
+    toast.dismiss(TRACK_DELETE_KEY);
+    toast.success('Track deleted — its audio is removed and it left every Playlist.');
   }
 
   // The Pin toggle: pure navigation — lists this live
@@ -183,9 +189,10 @@ export function PlaylistDetail({
     const next = !pinned;
     const result = await pinLoungePlaylist(playlistId, next);
     if (!result.ok) {
-      setActionError(pinToggleFailure(next, result.error.message));
+      toast.error(pinToggleFailure(next, result.error.message), { key: PIN_KEY });
       return;
     }
+    toast.dismiss(PIN_KEY);
     setPinned(result.data.pinned);
     router.refresh();
   }
@@ -193,7 +200,7 @@ export function PlaylistDetail({
   async function confirmDelete() {
     const result = await deletePlaylist(playlistId);
     if (!result.ok) {
-      setActionError(`Delete failed: ${result.error.message}`);
+      toast.error(`Delete failed: ${result.error.message}`, { key: DELETE_KEY });
       setOverlay(null);
       return;
     }
@@ -304,25 +311,6 @@ export function PlaylistDetail({
         }
       />
 
-      {actionError ? <AlertBanner className="mt-4">{actionError}</AlertBanner> : null}
-      {notice ? (
-        <div
-          role="status"
-          data-testid="playlist-notice"
-          className="mt-4 flex items-start justify-between gap-3 rounded-card border border-line bg-panel-2/60 p-3 text-[13px] text-muted"
-        >
-          <span>{notice}</span>
-          <button
-            type="button"
-            aria-label="Dismiss"
-            onClick={() => setNotice(null)}
-            className="text-dim hover:text-fore"
-          >
-            ×
-          </button>
-        </div>
-      ) : null}
-
       {reorder.active ? (
         <div className="mt-5 flex gap-2">
           <button
@@ -410,7 +398,7 @@ export function PlaylistDetail({
             router.refresh();
             router.push('/lounge');
           }}
-          onError={setActionError}
+          onError={toast.error}
           onClose={() => setOverlay(null)}
         />
       ) : null}

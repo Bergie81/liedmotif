@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Bricolage_Grotesque, Instrument_Sans, Space_Mono } from 'next/font/google';
 import type { ReactNode } from 'react';
 import { PortraitGuard } from '@/components/portrait-guard';
+import { Toaster } from '@/components/ui/toast';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import './globals.css';
 
@@ -69,6 +70,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <TooltipProvider delayDuration={350} skipDelayDuration={300}>
           {children}
         </TooltipProvider>
+        <Toaster />
         <PortraitGuard />
       </body>
     </html>

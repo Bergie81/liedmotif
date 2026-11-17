@@ -200,6 +200,8 @@ html.light {
   --animate-pop-in: liedmotif-pop-in 0.14s cubic-bezier(0.2, 0.9, 0.3, 1);
   --animate-dialog-in: liedmotif-dialog-in 0.22s cubic-bezier(0.2, 0.9, 0.3, 1);
   --animate-sheet-up: liedmotif-sheet-up 0.22s cubic-bezier(0.2, 0.9, 0.3, 1);
+  --animate-toast-in: liedmotif-toast-in 0.16s cubic-bezier(0.2, 0.9, 0.3, 1);
+  --animate-toast-out: liedmotif-toast-out 0.14s ease-in forwards;
 }
 
 @custom-variant light (&:where(html.light, html.light *));
@@ -375,6 +377,21 @@ html.light {
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+/* Toasts sit at the top, so they drop in from above and leave upward. */
+@keyframes liedmotif-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes liedmotif-toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
   }
 }
 
