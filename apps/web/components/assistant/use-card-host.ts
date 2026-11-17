@@ -7,7 +7,10 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import type {
+  AssistantCoverCard,
   ChangeVibeIntentInput,
+  CoverCardRegenerateRequest,
+  SessionCoverUsage,
   StartSessionRequest,
   StartSurpriseRequest,
 } from '@liedmotif/shared';
@@ -17,7 +20,14 @@ import { currentPendingStart } from '@/components/player/session-handoff';
 import { switchNewMusicOn } from '@/components/player/switch-new-music-on';
 import { useHandOffStart } from '@/components/player/use-hand-off-start';
 import { useSeedMoreLikeThis } from '@/components/sessions/use-seed-more-like-this';
-import { startSession, startSurprise } from '@/lib/api-client';
+import {
+  getSessionCoverStatus,
+  playlistCoverStatus,
+  regeneratePlaylistCover,
+  regenerateSessionCover,
+  startSession,
+  startSurprise,
+} from '@/lib/api-client';
 import { useClientId } from '@/lib/use-client-id';
 
 /** What one of the app's flows came to. */
@@ -25,6 +35,8 @@ export interface CardFlowResult {
   carriedOut: boolean;
   /** Why not, as the app words it, when the flow has no other place that shows it. */
   refusal?: string;
+  /** The cover attempt a cover flow asked for: the one it started, or the one already running. */
+  coverGenerationId?: string;
 }
 
 /** A flow a click started; null when the click sent nothing and the card may be confirmed again. */
@@ -65,6 +77,17 @@ export interface CardHost {
    * is No limit. The player and the mini player follow.
    */
   newMusicOn: (sessionId: string, targetMinutes: number | null) => CardFlow;
+  /**
+   * Asks for one new cover with the request the cover dialog sends. An
+   * attempt already running is answered with, not paid for twice. A refusal
+   * shows on the card: the app has no other place that shows it here.
+   */
+  generateCover: (generate: CoverCardRegenerateRequest) => CardFlow;
+  /** What the cover dialog reads of the cover budget for a Session or Playlist; null when it cannot be read. */
+  coverUsage: (
+    subject: Pick<AssistantCoverCard['subject'], 'kind' | 'id'>,
+    signal: AbortSignal,
+  ) => Promise<SessionCoverUsage | null>;
 }
 
 export function useCardHost(
@@ -128,6 +151,26 @@ export function useCardHost(
           refreshChrome();
           return { carriedOut: true };
         }),
+      generateCover: (generate) =>
+        (generate.kind === 'session'
+          ? regenerateSessionCover(generate.request.activitySessionId, {
+              ...(generate.request.guidance !== undefined && {
+                guidance: generate.request.guidance,
+              }),
+            })
+          : regeneratePlaylistCover(generate.request)
+        ).then((result) =>
+          result.ok
+            ? { carriedOut: true, coverGenerationId: result.data.coverGenerationId }
+            : { carriedOut: false, refusal: result.error.message },
+        ),
+      coverUsage: async (subject, signal) => {
+        const status =
+          subject.kind === 'session'
+            ? await getSessionCoverStatus(subject.id, signal)
+            : await playlistCoverStatus(subject.id, signal);
+        return status.ok ? status.data.usage : null;
+      },
     }),
     [headroom, refreshChrome, handOffStart, clientId, router, engage, submitChangeVibe],
   );

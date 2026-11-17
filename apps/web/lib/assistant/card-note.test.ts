@@ -96,6 +96,20 @@ describe('a card as the model reads it', () => {
       { kind: 'newMusicOn', session: RAINY, targetDurationMinutes: null },
       'switch New music on for the Session "Rainy Window", with no limit',
     ],
+    [
+      'a cover for a Session, with art direction',
+      {
+        kind: 'cover',
+        subject: { kind: 'session', ...RAINY },
+        guidance: 'darker, neon city',
+      },
+      'generate one new cover for the Session "Rainy Window" with the art direction "darker, neon city"',
+    ],
+    [
+      'a cover for a Playlist, without art direction',
+      { kind: 'cover', subject: { kind: 'playlist', id: TRACK_ID, name: 'Running' } },
+      'generate one new cover for the Playlist "Running"',
+    ],
   ])('names %s by the values the confirmation sends', (_what, card, note) => {
     expect(cardNote(card)).toBe(note);
   });

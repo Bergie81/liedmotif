@@ -4,13 +4,17 @@ import {
   ASSISTANT_MAX_MESSAGES,
   ASSISTANT_MAX_TRACKS_PER_ADD,
   ASSISTANT_PLAYER_CONTROLS,
+  MAX_COVER_GUIDANCE_LENGTH,
   MAX_SEED_TRACKS,
   assistantRequestSchema,
   assistantStreamEventSchema,
+  coverCardRegenerateRequest,
   createAssistantStreamDecoder,
   encodeAssistantStreamEvent,
   makeApiError,
   playerControlInputSchema,
+  regeneratePlaylistCoverRequestSchema,
+  regenerateSessionCoverRequestSchema,
   sessionCardStartRequest,
   startSessionRequestSchema,
   startSurpriseRequestSchema,
@@ -370,6 +374,47 @@ describe('assistantStreamEventSchema', () => {
     expect(
       surpriseCardStartRequest({ kind: 'surprise', suggestion, targetDurationMinutes: null }),
     ).toEqual({ proposalId: suggestion.id });
+  });
+
+  it('reads a cover card by what it is for and the art direction, nothing more', () => {
+    const proposed = (card: unknown) => ({ type: 'action', action: { status: 'proposed', card } });
+    const parses = (card: unknown) => assistantStreamEventSchema.safeParse(proposed(card)).success;
+    const subject = { kind: 'session', id: '00000000-0000-4000-8000-000000000001', name: 'Rain' };
+    const cover = { kind: 'cover', subject, guidance: 'darker, neon city' };
+
+    expect(parses(cover)).toBe(true);
+    expect(parses({ kind: 'cover', subject })).toBe(true);
+    expect(parses({ ...cover, subject: { ...subject, kind: 'playlist' } })).toBe(true);
+    expect(parses({ ...cover, subject: { ...subject, name: null } })).toBe(true);
+    expect(parses({ ...cover, subject: { ...subject, kind: 'track' } })).toBe(false);
+    expect(parses({ ...cover, guidance: '' })).toBe(false);
+    expect(parses({ ...cover, guidance: 'x'.repeat(MAX_COVER_GUIDANCE_LENGTH + 1) })).toBe(false);
+    // Style, the enhancement switch and People reference photos stay the app's own.
+    expect(parses({ ...cover, coverStyle: 'minimal' })).toBe(false);
+    expect(parses({ ...cover, enhance: true })).toBe(false);
+    expect(parses({ ...cover, usePeopleReferences: true })).toBe(false);
+  });
+
+  it('turns a cover card into the request the cover dialog sends for a Session or a Playlist', () => {
+    const id = '00000000-0000-4000-8000-000000000001';
+
+    const forSession = coverCardRegenerateRequest({
+      kind: 'cover',
+      subject: { kind: 'session', id, name: 'Rain' },
+      guidance: 'neon city',
+    });
+    const forPlaylist = coverCardRegenerateRequest({
+      kind: 'cover',
+      subject: { kind: 'playlist', id, name: 'Running' },
+    });
+
+    expect(forSession).toEqual({
+      kind: 'session',
+      request: { activitySessionId: id, guidance: 'neon city' },
+    });
+    expect(regenerateSessionCoverRequestSchema.safeParse(forSession.request).success).toBe(true);
+    expect(forPlaylist).toEqual({ kind: 'playlist', request: { playlistId: id } });
+    expect(regeneratePlaylistCoverRequestSchema.safeParse(forPlaylist.request).success).toBe(true);
   });
 
   it('frames an event as one data line, whatever the text holds', () => {

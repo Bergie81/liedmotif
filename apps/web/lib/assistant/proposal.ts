@@ -10,7 +10,7 @@ import {
   evaluateSessionHeadroom,
   headroomRefusalMessage,
 } from '@/lib/sessions';
-import { cardNote } from './card-note';
+import { cardCost, cardNote } from './card-note';
 import type { AssistantAsker } from './tools';
 import type { ActionOutcome } from './turn-actions';
 
@@ -19,7 +19,7 @@ import type { ActionOutcome } from './turn-actions';
  * shown, so the two cannot say different things.
  */
 export const proposed = (card: AssistantCard): ActionOutcome<'proposed'> => ({
-  told: `Prepared: a card to ${cardNote(card)}. Nothing has started and nothing is spent: the app shows the user the card, and only their confirmation there carries it out. Tell the user it is prepared, and that confirming generates new Tracks from their budget.`,
+  told: `Prepared: a card to ${cardNote(card)}. Nothing has started and nothing is spent: the app shows the user the card, and only their confirmation there carries it out. Tell the user it is prepared, and that ${cardCost(card)}.`,
   action: { status: 'proposed', card },
 });
 

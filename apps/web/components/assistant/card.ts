@@ -19,9 +19,15 @@ import { sessionTitle, trackTitle } from './receipt';
 /** A card as the chat holds it. Without an outcome it is offered and waits for the user. */
 export type ProposedChatAction = Extract<AssistantAction, { status: 'proposed' }> & {
   outcome?: CardOutcome;
+} & CardOutcomeFacts;
+
+/** What the app told of a card's outcome, kept with the card. */
+export interface CardOutcomeFacts {
   /** Why the app did not carry it out, in the app's words, when the card is where that shows. */
   refusal?: string;
-};
+  /** The cover attempt a confirmed cover card asked for, so the card can read how it is going. */
+  coverGenerationId?: string;
+}
 
 export interface CardWording {
   /** What confirming does. */
@@ -119,6 +125,23 @@ export function cardWording(card: AssistantCard): CardWording {
         confirming: 'Starting…',
         confirmed: 'Session started',
         failed: 'This Session did not start',
+      };
+    }
+    case 'cover': {
+      const { subject } = card;
+      return {
+        title: 'New cover',
+        ...(card.guidance === undefined ? {} : { words: card.guidance }),
+        details:
+          subject.kind === 'session'
+            ? `For the Session ${sessionTitle(subject)}`
+            : `For the Playlist ${subject.name ?? 'Untitled Playlist'}`,
+        // The cover dialog's rule: a new cover is previewed, never applied on its own.
+        cost: 'Generating uses one cover from your budget. It becomes the cover only when you pick it.',
+        confirm: 'Generate cover',
+        confirming: 'Generating…',
+        confirmed: 'Generating the new cover. It will be under Previous covers.',
+        failed: 'No cover was generated',
       };
     }
   }

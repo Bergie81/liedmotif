@@ -156,3 +156,34 @@ describe('a Surprise Me card', () => {
     );
   });
 });
+
+describe('a cover card', () => {
+  const rainy: AssistantCard = {
+    kind: 'cover',
+    subject: { kind: 'session', id: '00000000-0000-4000-8000-000000000001', name: 'Rainy Window' },
+    guidance: 'darker, neon city',
+  };
+
+  it('says what the cover is for, quotes the art direction, and what confirming costs', () => {
+    expect(cardWording(rainy)).toEqual({
+      title: 'New cover',
+      words: 'darker, neon city',
+      details: 'For the Session Rainy Window',
+      cost: 'Generating uses one cover from your budget. It becomes the cover only when you pick it.',
+      confirm: 'Generate cover',
+      confirming: 'Generating…',
+      confirmed: 'Generating the new cover. It will be under Previous covers.',
+      failed: 'No cover was generated',
+    });
+  });
+
+  it('names a Playlist, and leaves out the quote without art direction', () => {
+    const wording = cardWording({
+      kind: 'cover',
+      subject: { kind: 'playlist', id: '00000000-0000-4000-8000-000000000002', name: 'Running' },
+    });
+
+    expect(wording.details).toBe('For the Playlist Running');
+    expect(wording.words).toBeUndefined();
+  });
+});

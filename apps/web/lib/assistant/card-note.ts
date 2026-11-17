@@ -38,8 +38,19 @@ export function cardNote(card: AssistantCard): string {
       ];
       return `start the Surprise Me suggestion ${quoted(suggestion.title)} as a new Session, ${details.join(', ')}`;
     }
+    case 'cover': {
+      const { subject, guidance } = card;
+      const direction = guidance === undefined ? '' : ` with the art direction ${quoted(guidance)}`;
+      return `generate one new cover for the ${subject.kind === 'session' ? 'Session' : 'Playlist'} ${quoted(subject.name)}${direction}`;
+    }
   }
 }
+
+/** What confirming the card spends, as the model tells the user. */
+export const cardCost = (card: AssistantCard) =>
+  card.kind === 'cover'
+    ? 'confirming generates one cover from their cover budget'
+    : 'confirming generates new Tracks from their budget';
 
 /**
  * What became of a card once the user confirmed it: `confirming` while the

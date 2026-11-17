@@ -45,7 +45,7 @@ describe.each([
     const tools = prompt.slice(prompt.indexOf('Tools:'), prompt.indexOf('Links:'));
     expect(tools).toMatch(/^- readDocs .*docs/m);
     expect(tools).toMatch(/^- nowPlaying .*listening to/m);
-    expect(tools).toMatch(/^- budget .*Tracks/m);
+    expect(tools).toMatch(/^- budget .*Tracks and covers/m);
     expect(tools).toMatch(/^- findMusic .*Sessions, Playlists and Tracks.*lyrics/m);
     expect(tools).toMatch(/^- listTracks .*Tracks of one Session or Playlist/m);
     // After the rules and before anything that differs by role.
@@ -146,15 +146,25 @@ describe.each([
     expect(line).toMatch(/its answer says when the user has to be asked/i);
   });
 
-  it('names the four other things that are only prepared, each on a card the user confirms', () => {
+  it('names the five other things that are only prepared, each on a card the user confirms', () => {
     const tools = prompt.slice(prompt.indexOf('Tools:'), prompt.indexOf('Links:'));
     expect(tools).toMatch(/^- proposeChangeVibe prepares a Change Vibe for the active Session/m);
     expect(tools).toMatch(/^- proposeMoreLikeThis prepares a new Session in the style of Tracks/m);
     expect(tools).toMatch(/^- proposeNewMusicOn prepares switching New music on/m);
     expect(tools).toMatch(/up to a length .* or with no limit/i);
     expect(tools).toMatch(
-      /each of these four only shows the user a card.*nothing happens until they confirm it/i,
+      /each of these five only shows the user a card.*nothing happens until they confirm it/i,
     );
+  });
+
+  it('names a new cover next to the other propose tools, for "this" too, and that it is only picked by the user', () => {
+    const tools = prompt.slice(prompt.indexOf('Tools:'), prompt.indexOf('Links:'));
+    const line = tools.match(/^- proposeCover .*$/m)![0];
+    expect(tools.indexOf(line)).toBeGreaterThan(tools.indexOf('- proposeSurprise'));
+    expect(line).toMatch(/prepares one new cover for a Session or a Playlist of this user's own/);
+    expect(line).toMatch(/art direction in their own words/i);
+    expect(line).toMatch(/leave out the id .*"this"/i);
+    expect(line).toMatch(/becomes the cover only when the user picks it/i);
   });
 
   it('names Surprise Me next to the other propose tools, with what the user may ask of it', () => {
@@ -169,6 +179,7 @@ describe.each([
   it('tells the model to say a card is prepared and can spend, never that a Session started', () => {
     expect(prompt).toMatch(/when a tool's result starts with "Prepared:"/i);
     expect(prompt).toMatch(/confirming it generates new Tracks from their budget/i);
+    expect(prompt).toMatch(/or, for a cover, one cover from their cover budget/i);
     expect(prompt).toMatch(/never say that you started/i);
   });
 

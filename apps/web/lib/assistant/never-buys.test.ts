@@ -1,12 +1,13 @@
-// The Assistant has no code that can buy music. Five things can spend: a new
-// Session, a Surprise Me start, a More Like This, a Change Vibe, and New music
-// on. Each is written by one function, called from the app's own route, and
-// the only way there from the chat is the user's click on a card: a request
-// the browser sends. This reads the Assistant's own source, so a later tool
-// that reached for one of those functions, or for a route, fails here. The app
-// has more that spends than those five (a resumed Session, a Dislike reroll),
-// so the source is also held to a list: everything the server code calls that
-// can reach the database or a provider, and every route the panel calls.
+// The Assistant has no code that can buy music or a cover. Six things can
+// spend: a new Session, a Surprise Me start, a More Like This, a Change Vibe,
+// New music on, and a new cover. Each is written by one function, called from
+// the app's own route, and the only way there from the chat is the user's
+// click on a card: a request the browser sends. This reads the Assistant's own
+// source, so a later tool that reached for one of those functions, or for a
+// route, fails here. The app has more that spends than those six (a resumed
+// Session, a Dislike reroll), so the source is also held to a list:
+// everything the server code calls that can reach the database or a provider,
+// and every route the panel calls.
 
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -69,6 +70,7 @@ const SERVER_CALLS = [
   'evaluateGenerationBudget',
   'evaluateSessionHeadroom',
   'getActiveSession',
+  'getAdminCoverUsage',
   'getAssistantTone',
   'getLibraryTracks',
   'getLoungePlaylistDetail',
@@ -124,6 +126,8 @@ const SERVER_CALLS = [
   // Surprise Me's suggestion, as Home asks for it: one bounded text-LLM call,
   // and the user's one pending suggestion. It buys no music.
   'proposeSurprise',
+  // Whether the cover regenerate routes would refuse a new cover: read, never reserved.
+  'coverAttemptGate',
   // The route itself: who asks, their allowance, and the text LLM.
   'apiError',
   'apiRateLimited',
@@ -144,6 +148,14 @@ const STARTS_A_SURPRISE = /\bstartSurprise\b/;
 const CHANGES_THE_VIBE = /\brestyleSession\b/;
 /** The function behind New music on, by the name the duration route and the api client call it. */
 const SETS_THE_DURATION = /\bsetSessionDuration\b/;
+/**
+ * What reserves and starts a paid cover attempt, by the names both regenerate
+ * routes call them: the owner's cover lock, the reservation, and the job.
+ */
+const RESERVES_A_COVER =
+  /\b(withOwnerCoverAdmissionLock|reserve(Session|Playlist)CoverRegeneration|enqueueRegenerate(Session|Playlist)Cover)\b/;
+/** The client functions that post to the two regenerate routes. */
+const REGENERATES_A_COVER = /\bregenerate(Session|Playlist)Cover\b/;
 /** The function that writes a Session's mode; towards Keep Going it switches generation on. */
 const SWITCHES_THE_MODE = /\b(switchSessionMode|setSessionMode)\b/;
 
@@ -166,6 +178,18 @@ describe('the Assistant’s own code', () => {
     expect(read('app/api/sessions/change-vibe/route.ts')).toMatch(CHANGES_THE_VIBE);
     expect(read('app/api/sessions/duration/route.ts')).toMatch(SETS_THE_DURATION);
     expect(read('lib/api-client.ts')).toMatch(SETS_THE_DURATION);
+    for (const kind of ['Session', 'Playlist']) {
+      const regenerate = read(`app/api/${kind.toLowerCase()}s/cover/regenerate/route.ts`);
+      for (const name of [
+        'withOwnerCoverAdmissionLock',
+        `reserve${kind}CoverRegeneration`,
+        `enqueueRegenerate${kind}Cover`,
+      ]) {
+        expect(name).toMatch(RESERVES_A_COVER);
+        expect(regenerate).toContain(name);
+      }
+      expect(read('lib/api-client.ts')).toContain(`export function regenerate${kind}Cover(`);
+    }
   });
 
   it('reaches the database and the providers through a fixed list of functions', () => {
@@ -181,6 +205,12 @@ describe('the Assistant’s own code', () => {
   it('never references the function that starts a Surprise Me suggestion from server code', () => {
     // The panel's one way there is the card host's client call, listed below.
     expect(mentioning(SERVER, STARTS_A_SURPRISE)).toEqual([]);
+  });
+
+  it('never references what reserves a cover, and asks for one from the card host only', () => {
+    expect(mentioning([...SERVER, ...PANEL], RESERVES_A_COVER)).toEqual([]);
+    expect(mentioning(SERVER, REGENERATES_A_COVER)).toEqual([]);
+    expect(mentioning(PANEL, REGENERATES_A_COVER)).toEqual([CARD_HOST]);
   });
 
   it('never references the function that changes a vibe, or the one that sets New music on', () => {
@@ -204,8 +234,17 @@ describe('the Assistant’s own code', () => {
     const calls = PANEL.map((file) => [file, valuesFrom(file, /^@\/lib\/api-client$/)] as const);
 
     expect(Object.fromEntries(calls.filter(([, names]) => names.length > 0))).toEqual({
-      // The start requests, sent from one place: the flows a confirmed card runs.
-      [CARD_HOST]: ['startSession', 'startSurprise'],
+      // The start and cover requests, sent from one place: the flows a confirmed
+      // card runs, and the cover budget a cover card shows, read as the cover
+      // dialog reads it.
+      [CARD_HOST]: [
+        'getSessionCoverStatus',
+        'playlistCoverStatus',
+        'regeneratePlaylistCover',
+        'regenerateSessionCover',
+        'startSession',
+        'startSurprise',
+      ],
       // Stop Session, and reading a Playlist to play it. Neither buys.
       [join('components/assistant', 'use-player-commands.ts')]: ['stopSession'],
       [join('components/assistant', 'use-play-command.ts')]: [

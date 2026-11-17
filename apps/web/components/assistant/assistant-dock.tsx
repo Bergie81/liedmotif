@@ -174,7 +174,8 @@ export function AssistantDock({
     [conversation, cardHost, besidePage, setOpen],
   );
   const cards = useMemo<Cards | null>(
-    () => (cardHost ? { headroom: cardHost.headroom, confirm } : null),
+    () =>
+      cardHost ? { headroom: cardHost.headroom, coverUsage: cardHost.coverUsage, confirm } : null,
     [cardHost, confirm],
   );
   const panelRef = useRef<HTMLDivElement>(null);

@@ -51,6 +51,7 @@ import { LiedmotifLoader } from '@/components/ui/loading';
 import { ScrambleText } from './scramble-text';
 import { CoverArt, CoverFallback } from './cover-art';
 import { CoverChip } from './cover-chip';
+import { coverUsageLine } from './cover-usage-line';
 
 const STATUS_POLL_MS = 3000;
 
@@ -87,12 +88,6 @@ function regenerateBlockedReason(
       : 'The cover generation limit is reached. It resets with the usage window.';
   }
   return null;
-}
-
-/** Show the month counter only when the month window is the binding budget. */
-function monthWindowBinds(usage: SessionCoverUsage): boolean {
-  if (usage.limitMonth === null || usage.limitDay === null) return false;
-  return usage.limitMonth - usage.usedMonth < usage.limitDay - usage.usedDay;
 }
 
 export function RegenerateCoverDialog({
@@ -208,6 +203,7 @@ export function RegenerateCoverDialog({
   const shownCoverId = candidateCoverId ?? currentCoverId;
   const errorMessage = submitError ?? attemptFailure ?? null;
   const usage = status?.usage ?? null;
+  const usageLine = usage ? coverUsageLine(usage) : null;
   const historyFull = history.length >= MAX_SESSION_COVER_HISTORY;
   const blockedReason = usage ? regenerateBlockedReason(usage, historyFull, viewerRole) : null;
   const llmConfigured = status?.promptEnhancement.llmConfigured ?? false;
@@ -409,25 +405,12 @@ export function RegenerateCoverDialog({
           </div>
 
           <div className="mt-4 flex flex-col gap-2 desk:mt-0">
-            {/* A bare count with no ceiling tells the user nothing actionable. */}
-            {usage && (usage.oneTime || usage.limitDay !== null) ? (
+            {usageLine ? (
               <p
                 data-testid="cover-usage-indicator"
                 className="text-center font-mono text-[10px] uppercase tracking-[0.08em] text-dim desk:text-left"
               >
-                {usage.oneTime ? (
-                  `Covers: ${usage.usedDay} of ${usage.limitDay} in total`
-                ) : (
-                  <>
-                    Covers today: {usage.usedDay} of {usage.limitDay}
-                    {monthWindowBinds(usage) ? (
-                      <>
-                        {' '}
-                        · This month: {usage.usedMonth} of {usage.limitMonth}
-                      </>
-                    ) : null}
-                  </>
-                )}
+                {usageLine}
               </p>
             ) : null}
 

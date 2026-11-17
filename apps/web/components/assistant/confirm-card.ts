@@ -5,6 +5,7 @@
 // what became of it, and only a card it holds without an outcome goes through.
 
 import {
+  coverCardRegenerateRequest,
   sessionCardStartRequest,
   surpriseCardStartRequest,
   type AssistantCard,
@@ -18,7 +19,12 @@ export interface CardConfirmation {
   conversation: Pick<AssistantConversation, 'getState' | 'settleAction'>;
   host: Pick<
     CardHost,
-    'startSession' | 'startSurprise' | 'changeVibe' | 'moreLikeThis' | 'newMusicOn'
+    | 'startSession'
+    | 'startSurprise'
+    | 'changeVibe'
+    | 'moreLikeThis'
+    | 'newMusicOn'
+    | 'generateCover'
   >;
   /** The card's flow went to the Player: a panel that covers the page gets out of its way. */
   onPlayerShown: () => void;
@@ -59,6 +65,8 @@ function run(
     }
     case 'newMusicOn':
       return host.newMusicOn(card.session.id, card.targetDurationMinutes);
+    case 'cover':
+      return host.generateCover(coverCardRegenerateRequest(card));
   }
 }
 
@@ -73,9 +81,16 @@ export function confirmCard(action: ProposedChatAction, confirmation: CardConfir
   const sent = run(action.card, confirmation);
   if (!sent) return;
   const confirming = conversation.settleAction(action, 'confirming');
-  void sent.then(({ carriedOut, refusal }) => {
+  void sent.then(({ carriedOut, refusal, coverGenerationId }) => {
     if (!confirming) return;
-    if (carriedOut) conversation.settleAction(confirming, 'confirmed');
-    else conversation.settleAction(confirming, 'failed', refusal);
+    if (carriedOut) {
+      conversation.settleAction(confirming, 'confirmed', {
+        ...(coverGenerationId !== undefined && { coverGenerationId }),
+      });
+    } else {
+      conversation.settleAction(confirming, 'failed', {
+        ...(refusal !== undefined && { refusal }),
+      });
+    }
   });
 }

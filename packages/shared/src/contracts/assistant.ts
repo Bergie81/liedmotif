@@ -6,13 +6,15 @@
 
 import { z } from 'zod';
 import { errorResponseSchema, uuidSchema } from './common';
-import { VOCAL_MODES } from './domain';
+import { MAX_COVER_GUIDANCE_LENGTH, VOCAL_MODES } from './domain';
 import {
   MAX_SEED_TRACKS,
   MAX_USER_PROMPT_LENGTH,
   targetDurationMinutesSchema,
   type StartSessionRequest,
 } from './endpoints';
+import type { RegeneratePlaylistCoverRequest } from './playlist-covers';
+import type { RegenerateSessionCoverRequest } from './session-covers';
 import { SURPRISE_THEMES, surpriseProposalSchema, type StartSurpriseRequest } from './surprise-me';
 
 /** How much of a conversation one request carries; the client drops older messages. */
@@ -258,8 +260,20 @@ export const assistantCardSchema = z.discriminatedUnion('kind', [
     /** How long the Session generates; null is No limit. */
     targetDurationMinutes: targetDurationMinutesSchema.nullable(),
   }),
+  z.strictObject({
+    kind: z.literal('cover'),
+    /**
+     * The asker's own Session or Playlist one new cover is generated for. Its
+     * style, the enhancement setting and People reference photos stay as the
+     * app has them: the card carries none of them.
+     */
+    subject: assistantActionItemSchema.extend({ kind: z.enum(['session', 'playlist']) }),
+    /** Art direction in the user's words, as the cover dialog's field takes it; left out for none. */
+    guidance: z.string().min(1).max(MAX_COVER_GUIDANCE_LENGTH).optional(),
+  }),
 ]);
 export type AssistantCard = z.infer<typeof assistantCardSchema>;
+export type AssistantCoverCard = Extract<AssistantCard, { kind: 'cover' }>;
 
 /**
  * The start-Session request a Session card stands for, less the client id only
@@ -291,6 +305,26 @@ export function surpriseCardStartRequest(
       targetDurationMinutes: card.targetDurationMinutes,
     }),
   };
+}
+
+/** The regenerate request a cover card stands for, and which of the two cover routes takes it. */
+export type CoverCardRegenerateRequest =
+  | { kind: 'session'; request: RegenerateSessionCoverRequest }
+  | { kind: 'playlist'; request: RegeneratePlaylistCoverRequest };
+
+/**
+ * The request the cover dialog sends for the card's Session or Playlist, with
+ * the card's art direction and nothing else, so every other choice is the
+ * route's default.
+ */
+export function coverCardRegenerateRequest({
+  subject,
+  guidance,
+}: AssistantCoverCard): CoverCardRegenerateRequest {
+  const words = guidance === undefined ? {} : { guidance };
+  return subject.kind === 'session'
+    ? { kind: 'session', request: { activitySessionId: subject.id, ...words } }
+    : { kind: 'playlist', request: { playlistId: subject.id, ...words } };
 }
 
 /**
@@ -649,3 +683,27 @@ export const proposeSurpriseInputSchema = z.object({
     .describe('true only when the user asked for a Session without a limit.'),
 });
 export type ProposeSurpriseInput = z.infer<typeof proposeSurpriseInputSchema>;
+
+/**
+ * What the model passes to `proposeCover`. The id is any string, and one left
+ * out means the Session or Playlist the player has on. The art direction is
+ * checked like the cover dialog's field before a card is offered.
+ */
+export const proposeCoverInputSchema = z.object({
+  in: z
+    .enum(['session', 'playlist'])
+    .describe('Whether the new cover is for a Session or for a Playlist.'),
+  id: z
+    .string()
+    .nullish()
+    .describe(
+      'The id of the Session or Playlist, as another tool returned it. Leave out for the one that is playing now ("this").',
+    ),
+  guidance: z
+    .string()
+    .nullish()
+    .describe(
+      'Art direction in the user\'s own words, such as "darker, neon city". Leave out when they gave none.',
+    ),
+});
+export type ProposeCoverInput = z.infer<typeof proposeCoverInputSchema>;

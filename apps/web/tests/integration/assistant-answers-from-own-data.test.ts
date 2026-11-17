@@ -4,10 +4,12 @@
 // model stands in for the text LLM, and what each tool returned is read off
 // what that model was sent next.
 
+import { randomUUID } from 'node:crypto';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   addPlaylistTracks,
   createPlaylist,
+  reserveSessionCoverRegeneration,
   setPlaylistShared,
   updateMemberLimits,
   updateUsageLimits,
@@ -97,6 +99,21 @@ async function spendCalls(ownerUserId: string, count: number): Promise<void> {
   for (let i = 0; i < count; i += 1) {
     const generationRequestId = await createGenerationRequest(testDb.db, { ownerUserId });
     await createProviderJob(testDb.db, { generationRequestId });
+  }
+}
+
+/** `count` covers `ownerUserId` has spent today, each a cover attempt for a Session of theirs. */
+async function spendCovers(ownerUserId: string, count: number): Promise<void> {
+  for (let i = 0; i < count; i += 1) {
+    const activitySessionId = await createSession(testDb.db, { ownerUserId, status: 'stopped' });
+    const coverImageId = randomUUID();
+    await reserveSessionCoverRegeneration(testDb.db, {
+      id: randomUUID(),
+      ownerUserId,
+      activitySessionId,
+      coverImageId,
+      storageKey: `covers/generated/${ownerUserId}/${activitySessionId}/${coverImageId}.webp`,
+    });
   }
 }
 
@@ -366,6 +383,7 @@ describe.skipIf(skip)('the Assistant asked what is playing', () => {
 
 // Default budgets, in Tracks at two per call: a Member has 20 a day and 100 a
 // month, the Members' shared budget 50 and 250, the Admin's instance 50 and 250.
+// Covers: a Member 10 and 25, the shared budget 25 and 125, the Admin 25 and 100.
 describe.skipIf(skip)('the Assistant asked what is left of the budget', () => {
   it("gives a Member their own budget and the shared one, never another Member's", async () => {
     const asker = await createProfiledUser('member-1', 'member');
@@ -376,15 +394,20 @@ describe.skipIf(skip)('the Assistant asked what is left of the budget', () => {
     });
     await spendCalls(asker, 2);
     await spendCalls(other, 3);
+    await spendCovers(asker, 1);
+    await spendCovers(other, 2);
 
     const { result } = await askWithTool(asker, 'budget');
 
     expect(result).toContain(
-      'Your budget: 16 of 20 Tracks left today, 96 of 100 Tracks left this month.',
+      'Your budget: 16 of 20 Tracks left today, 96 of 100 Tracks left this month. 9 of 10 covers left today, 24 of 25 covers left this month.',
     );
     // Everything both Members spent counts against the shared budget.
     expect(result).toContain(
-      'Shared budget of all Members: 40 of 50 Tracks left today, 240 of 250 Tracks left this month.',
+      'Shared budget of all Members: 40 of 50 Tracks left today, 240 of 250 Tracks left this month. 22 of 25 covers left today, 122 of 125 covers left this month.',
+    );
+    expect(result).toContain(
+      'New music and covers are generated only while both budgets have some left.',
     );
     // The other Member's own bound: 8 a day, 18 a month, 2 and 12 of them left.
     expect(result).not.toMatch(/of (8|18) Tracks/);
@@ -402,34 +425,39 @@ describe.skipIf(skip)('the Assistant asked what is left of the budget', () => {
       },
     });
     await spendCalls(asker, 1);
+    await spendCovers(asker, 2);
 
     const { result } = await askWithTool(asker, 'budget');
 
-    expect(result).toContain('Your budget: 10 of 12 Tracks left.');
+    expect(result).toContain('Your budget: 10 of 12 Tracks left. 23 of 25 covers left.');
     expect(result).toMatch(/does not refill/);
   });
 
   it('gives the Admin the instance limits, which no Member spends from', async () => {
     const admin = await createProfiledUser('admin-1', 'admin');
+    const member = await createProfiledUser('member-1', 'member');
     await spendCalls(admin, 3);
-    await spendCalls(await createProfiledUser('member-1', 'member'), 4);
+    await spendCalls(member, 4);
+    await spendCovers(admin, 1);
+    await spendCovers(member, 2);
 
     const { result } = await askWithTool(admin, 'budget');
 
     expect(result).toBe(
-      'Instance limit: 44 of 50 Tracks left today, 244 of 250 Tracks left this month.',
+      'Instance limit: 44 of 50 Tracks left today, 244 of 250 Tracks left this month. 24 of 25 covers left today, 99 of 100 covers left this month.',
     );
   });
 
   it('tells the Admin when no limit is set', async () => {
     const admin = await createProfiledUser('admin-1', 'admin');
-    await updateUsageLimits(testDb.db, { trackCeilingEnabled: false });
+    await updateUsageLimits(testDb.db, { trackCeilingEnabled: false, coverCeilingEnabled: false });
     await spendCalls(admin, 3);
+    await spendCovers(admin, 2);
 
     const { result } = await askWithTool(admin, 'budget');
 
     expect(result).toBe(
-      'Instance limit: no limit set today (6 Tracks generated), no limit set this month (6 Tracks generated).',
+      'Instance limit: no limit set today (6 Tracks generated), no limit set this month (6 Tracks generated). No limit set today (2 covers generated), no limit set this month (2 covers generated).',
     );
   });
 });

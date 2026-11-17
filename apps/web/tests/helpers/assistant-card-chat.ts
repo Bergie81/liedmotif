@@ -48,16 +48,21 @@ function serve(events: AssistantStreamEvent[]): Server {
   const reply = [...events, { type: 'done' } as const].map(encodeAssistantStreamEvent).join('');
   vi.stubGlobal(
     'fetch',
-    vi.fn((path: string, init: { body: string; signal?: AbortSignal }) => {
+    vi.fn((path: string, init: { body?: string; signal?: AbortSignal }) => {
       if (path === '/api/assistant') {
-        const { messages } = assistantRequestSchema.parse(JSON.parse(init.body));
+        const { messages } = assistantRequestSchema.parse(JSON.parse(init.body!));
         server.asked.push(messages.map(({ content }) => content));
         return Promise.resolve(
           new Response(reply, { headers: { 'Content-Type': ASSISTANT_STREAM_CONTENT_TYPE } }),
         );
       }
       return new Promise<Response>((answer) => {
-        server.sent.push({ path, body: JSON.parse(init.body), signal: init.signal, answer });
+        server.sent.push({
+          path,
+          body: init.body === undefined ? undefined : JSON.parse(init.body),
+          signal: init.signal,
+          answer,
+        });
       });
     }),
   );

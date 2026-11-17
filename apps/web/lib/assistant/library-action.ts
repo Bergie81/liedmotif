@@ -40,6 +40,10 @@ export const NO_TRACK_PLAYING =
 export const NO_SESSION_PLAYING =
   'No Session is playing, so "this" names nothing. Ask the user which Session they mean.';
 
+/** A tool was given no Playlist, and the player has none on for "this" to mean. */
+export const NO_PLAYLIST_PLAYING =
+  'No Playlist is playing, so "this" names nothing. Ask the user which Playlist they mean.';
+
 export const NO_SUCH_TRACK = 'No Track with that id.';
 export const NO_SUCH_SESSION = 'No Session with that id.';
 export const NO_SUCH_PLAYLIST = 'No Playlist of this user with that id.';
