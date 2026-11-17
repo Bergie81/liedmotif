@@ -93,6 +93,11 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('PlaylistCoverSheet — cover style', () => {
+  // The open Select scrolls its selected option into view, which jsdom lacks.
+  beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
   // A Playlist has no prompt for Auto to pick a style from (ADR 0007).
   it('the Playlist cover sheet offers every style except Auto and opens on Random', async () => {
     await renderSheet();

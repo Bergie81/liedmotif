@@ -152,9 +152,8 @@ export const COVER_STYLE_CHOICES = ['auto', 'random', ...COVER_STYLE_PRESETS, 'c
 export type CoverStyleChoice = (typeof COVER_STYLE_CHOICES)[number];
 
 /**
- * The cover style choices a Playlist cover offers, `random` first as its
- * default. No `auto`: Auto picks from a Session's prompt, and a Playlist has
- * none (ADR 0007).
+ * The cover style choices a Playlist cover offers: every choice but `auto`,
+ * since Auto picks from a Session's prompt and a Playlist has none (ADR 0007).
  */
 export const PLAYLIST_COVER_STYLE_CHOICES = COVER_STYLE_CHOICES.filter(
   (choice): choice is Exclude<CoverStyleChoice, 'auto'> => choice !== 'auto',

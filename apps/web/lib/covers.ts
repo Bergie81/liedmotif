@@ -13,7 +13,12 @@ import {
   type Database,
 } from '@liedmotif/db';
 import { buildGeneratedImageProvider, OPENROUTER_DEFAULT_COVER_MODEL } from '@liedmotif/providers';
-import { COVER_STYLE_PRESETS, type CoverStyle, type CoverStyleChoice } from '@liedmotif/shared';
+import {
+  COVER_STYLE_PRESETS,
+  type CoverStyle,
+  type CoverStyleChoice,
+  type PlaylistCoverStyleChoice,
+} from '@liedmotif/shared';
 import { encryptionKeyIfConfigured } from '@/lib/credentials';
 import { getDb } from '@/lib/db';
 import { getMusicProvider } from '@/lib/providers';
@@ -113,11 +118,14 @@ export async function launchSessionCreationKickoffs(
   ]);
 }
 
-/** The stored cover-art preferences a Start Session request resolves to. */
-export interface ResolvedCoverArtChoice {
-  coverStyle?: CoverStyle;
+/** A concrete cover style, with the Custom definition when it is Custom. */
+export interface ResolvedCoverStyle {
+  coverStyle: CoverStyle;
   coverStyleHint?: string;
 }
+
+/** The stored cover-art preferences a Start Session request resolves to. */
+export type ResolvedCoverArtChoice = Partial<ResolvedCoverStyle>;
 
 /**
  * Resolve the create card's cover-style choice into what the session stores.
@@ -150,7 +158,32 @@ export function resolveCoverArtChoiceFrom(
   choice: CoverStyleChoice | undefined,
   random: () => number = Math.random,
 ): ResolvedCoverArtChoice {
-  if (choice === undefined) return {};
+  return choice === undefined ? {} : resolveStyleChoice(customStyleDefinition, choice, random);
+}
+
+/**
+ * Resolve a Playlist cover's style choice into the style its attempt freezes.
+ * Never Auto: Auto picks from a Session's prompt and a Playlist has none
+ * (ADR 0007), so an omitted choice, and Custom while no definition is saved,
+ * roll Random.
+ */
+export async function resolvePlaylistCoverStyle(
+  db: Database,
+  ownerUserId: string,
+  choice: PlaylistCoverStyleChoice | undefined,
+  random: () => number = Math.random,
+): Promise<ResolvedCoverStyle> {
+  const requested = choice ?? 'random';
+  if (requested !== 'custom' && requested !== 'random') return { coverStyle: requested };
+  const definition = (await getCoverArtSettings(db, ownerUserId)).customStyleDefinition.trim();
+  return resolveStyleChoice(definition, definition ? requested : 'random', random);
+}
+
+function resolveStyleChoice(
+  customStyleDefinition: string,
+  choice: CoverStyleChoice,
+  random: () => number,
+): ResolvedCoverStyle {
   if (choice !== 'custom' && choice !== 'random') return { coverStyle: choice };
   const definition = customStyleDefinition.trim();
   if (choice === 'random') {

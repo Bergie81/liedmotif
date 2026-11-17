@@ -150,17 +150,12 @@ function genericCustomDefinition(raw: string): string {
 }
 
 /**
- * Sanitizer for user-written art direction. Stripping weight and flag syntax,
- * provider and magic tokens, and injection phrasing is prompt syntax and runs on
- * all text. The creator, brand, and style-attribution lists judge meaning from
- * fixed English words, so they are only the fallback for text no Writing AI
- * rewrote (ADR 0004): a rewrite already described named references as visual
- * qualities in any language, and its ordinary words stay as written. Returns ''
- * when nothing survives.
+ * The fallback judgment for art direction no Writing AI rewrote (ADR 0004): the
+ * creator, brand, and style-attribution lists decide meaning from fixed English
+ * words, so a rewrite, which already described named references as visual
+ * qualities in any language, never passes through them.
  */
-function genericArtDirection(raw: string, max: number, rewritten = false): string {
-  const sanitized = boundedSupportingData(raw, max);
-  if (!sanitized) return '';
+function withoutNamedReferences(text: string): string {
   // `apple` alone is far more often the fruit; only an Apple product noun right
   // after it makes it the brand.
   const branded =
@@ -169,15 +164,24 @@ function genericArtDirection(raw: string, max: number, rewritten = false): strin
     /\b(?:pablo\s+picasso|picasso|vincent\s+van\s+gogh|van\s+gogh|banksy|andy\s+warhol|warhol|salvador\s+dal[ií]|dal[ií]|claude\s+monet|monet|hayao\s+miyazaki|miyazaki)(?![\p{L}\p{N}])/giu;
   const namedStyleAttribution =
     /\b(?:in (?:the )?style of|like the work of)\s+[\p{L}\p{N}][\p{L}\p{N}'’.-]*(?:\s+[\p{L}\p{N}][\p{L}\p{N}'’.-]*){0,3}/giu;
-  const judged = rewritten
-    ? sanitized
-    : sanitized
-        .replace(branded, 'generic editorial visual language')
-        .replace(namedStyleAttribution, '')
-        .replace(new RegExp(`(?:by\\s+)?${namedCreator.source}(?:[- ]inspired)?`, 'giu'), '');
+  return text
+    .replace(branded, 'generic editorial visual language')
+    .replace(namedStyleAttribution, '')
+    .replace(new RegExp(`(?:by\\s+)?${namedCreator.source}(?:[- ]inspired)?`, 'giu'), '');
+}
+
+/**
+ * Sanitizer for user-written art direction. Stripping weight and flag syntax,
+ * provider and magic tokens, and injection phrasing is prompt syntax and runs on
+ * all text; `rewritten` text skips {@link withoutNamedReferences}. Returns ''
+ * when nothing survives.
+ */
+function genericArtDirection(raw: string, max: number, rewritten = false): string {
+  const sanitized = boundedSupportingData(raw, max);
+  if (!sanitized) return '';
   const providerOrMagicToken =
     /\b(?:midjourney|stable\s+diffusion|dall[-· ]?e|flux(?:\.\d+)?|imagen|openai|openrouter|masterpiece|best\s+quality|ultra[- ]?detailed|award[- ]?winning|trending\s+on\s+artstation|[48]k|uhd)\b/giu;
-  const generic = judged
+  const generic = (rewritten ? sanitized : withoutNamedReferences(sanitized))
     .replace(providerOrMagicToken, '')
     .replace(/<[^>]{1,120}>/g, '')
     .replace(/--[\w-]+(?:\s+[^\s,;]+)?/g, '')

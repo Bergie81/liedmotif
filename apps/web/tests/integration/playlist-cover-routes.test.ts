@@ -286,6 +286,22 @@ describe.skipIf(skip)('POST /api/playlists/cover/regenerate', () => {
     expect(COVER_STYLE_PRESETS).toContain(attempt?.plan.selectedStyle);
   });
 
+  it('a Playlist cover asking for Custom with no saved definition resolves Random instead of Auto', async () => {
+    const { playlistId } = await seedOwnedPlaylist();
+
+    const body = (await (
+      await postJson(regeneratePost, { playlistId, coverStyle: 'custom' })
+    ).json()) as { data: { outcome: string; coverGenerationId: string } };
+    expect(body.data.outcome).toBe('started');
+
+    const [attempt] = await testDb.db
+      .select()
+      .from(sessionCoverGenerations)
+      .where(eq(sessionCoverGenerations.id, body.data.coverGenerationId));
+    expect(COVER_STYLE_PRESETS).toContain(attempt?.plan.selectedStyle);
+    expect(attempt?.plan.customDefinition ?? null).toBeNull();
+  });
+
   it('a Playlist cover asking for Auto is refused', async () => {
     const { playlistId } = await seedOwnedPlaylist();
 

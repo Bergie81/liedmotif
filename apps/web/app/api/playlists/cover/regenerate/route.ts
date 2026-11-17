@@ -30,7 +30,7 @@ import {
 } from '@/lib/cover-attempt-gate';
 import { COVER_LIMIT_REACHED_MESSAGE } from '@/lib/cover-budget';
 import { enhanceCoverText } from '@/lib/cover-enhancement';
-import { generatedCoverModel, resolveCoverArtChoice } from '@/lib/covers';
+import { generatedCoverModel, resolvePlaylistCoverStyle } from '@/lib/covers';
 import { getDb } from '@/lib/db';
 import { enqueueRegeneratePlaylistCover } from '@/lib/worker-jobs';
 
@@ -65,11 +65,10 @@ export async function POST(request: Request) {
   }
   const limits = gate.instanceLimits;
 
-  // An omitted style is Random: a Playlist has no prompt for Auto to pick from
-  // (ADR 0007). `random` resolves to a concrete style at request time and the
-  // pick is frozen into the attempt (a Playlist persists no style of its own).
-  const styleChoice = await resolveCoverArtChoice(db, ownerUserId, parsed.coverStyle ?? 'random');
-  const coverStyle = styleChoice.coverStyle ?? 'auto';
+  // Resolved to a concrete style at request time and frozen into the attempt
+  // (a Playlist persists no style of its own).
+  const styleChoice = await resolvePlaylistCoverStyle(db, ownerUserId, parsed.coverStyle);
+  const { coverStyle } = styleChoice;
   const guidance = parsed.guidance?.trim() || undefined;
 
   // Enhancement happens HERE, before the attempt's inputs are frozen — the
