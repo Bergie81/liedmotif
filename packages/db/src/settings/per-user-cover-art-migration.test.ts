@@ -77,7 +77,7 @@ describeIfDb('per-user cover art (migration 0100)', () => {
     await ctx.pool.query(MIGRATION_SQL);
 
     expect(await getCoverArtSettings(ctx.db, admin)).toEqual({
-      defaultStyle: 'poster_art',
+      defaultStyle: 'auto',
       customStyleDefinition: '',
       useStandardCoverArt: false,
       promptEnhancementEnabled: true,
