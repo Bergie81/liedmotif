@@ -15,7 +15,8 @@ import { useClientId } from '@/lib/use-client-id';
 import { primaryButtonClass } from '@/components/ui/form-styles';
 import { LiedmotifLoader } from '@/components/ui/loading';
 import { OnlineOnly } from '@/components/ui/online-only';
-import { AlertBanner, sectionHeadingClass } from '@/components/ui/design-system';
+import { sectionHeadingClass } from '@/components/ui/design-system';
+import { toast } from '@/lib/toast';
 import { DescribeFineTuneSection, DescribeSessionPanel } from './describe-session-panel';
 import { SessionDurationControl } from './session-duration-control';
 import { useSeededPrompt } from './use-seeded-prompt';
@@ -30,6 +31,8 @@ import {
   type DescribeFineTune,
   type GuardrailDraft,
 } from './create-session-model';
+
+const START_ERROR_KEY = 'create-session-start';
 
 /** Everything the card holds for the next Session beyond the prompt text: the
  * fine-tune picks and the Guardrails fold. It IS the pick set `buildPromptIntent`
@@ -97,7 +100,6 @@ export function CreateSessionCard({
   // Start-without-profile (default off): reset by the card's unmount on
   // navigation — a fresh visit always personalizes again.
   const [skipProfile, setSkipProfile] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   // A handed-off start navigates to /player, which unmounts this card; until
   // that lands the button must show the click was taken.
   const [starting, setStarting] = useState(false);
@@ -115,10 +117,10 @@ export function CreateSessionCard({
 
   function startSession() {
     if (starting) return;
-    setError(null);
+    toast.dismiss(START_ERROR_KEY);
     const result = buildPromptIntent(prompt, draft);
     if (!result.ok) {
-      setError(result.error);
+      toast.error(result.error, { key: START_ERROR_KEY });
       return;
     }
     // The untouched proposal starts from its stored Style Snapshot, so the
@@ -164,6 +166,7 @@ export function CreateSessionCard({
   // own request built from that prefill, with the User's own Guardrails.
   function startFromModal(next: SurpriseProposal) {
     if (starting) return;
+    toast.dismiss(START_ERROR_KEY);
     const minutes = formHoldsProposal ? targetDurationMinutes : next.edit.durationMinutes;
     if (next.skipProfile === skipProfile) {
       startProposal(next, minutes);
@@ -174,7 +177,7 @@ export function CreateSessionCard({
       ...surpriseFineTune(next.edit, defaultLanguage),
     });
     if (result.ok) startOwnRequest(result.intent, minutes);
-    else setError(result.error);
+    else toast.error(result.error, { key: START_ERROR_KEY });
   }
 
   // A proposal's words, picks and length land in the form as a plain prefill;
@@ -183,7 +186,7 @@ export function CreateSessionCard({
     setProposal(next);
     if (!next) return;
     setFormHoldsProposal(true);
-    setError(null);
+    toast.dismiss(START_ERROR_KEY);
     setPrompt(next.edit.prompt);
     setDraft((current) => ({ ...current, ...surpriseFineTune(next.edit, defaultLanguage) }));
     setTargetDurationMinutes(next.edit.durationMinutes);
@@ -257,12 +260,6 @@ export function CreateSessionCard({
           </button>
         </OnlineOnly>
       </div>
-
-      {error ? (
-        <AlertBanner data-testid="create-error" className="mt-4">
-          {error}
-        </AlertBanner>
-      ) : null}
     </section>
   );
 }

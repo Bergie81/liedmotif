@@ -15,10 +15,10 @@ import {
 } from '@liedmotif/shared';
 import { dismissSurprise, proposeSurprise } from '@/lib/api-client';
 import { cn } from '@/lib/cn';
+import { toast } from '@/lib/toast';
 import type { SessionLanguageChoice } from '@/lib/session-languages';
 import { SessionLanguageSelect } from '@/components/session-language-select';
 import {
-  AlertBanner,
   chipClass,
   eyebrowClass,
   meterBarClass,
@@ -77,6 +77,8 @@ interface SurpriseSettings {
 /** A proposal is two text-LLM calls (write, then expand): the synthetic bar's time base, not a promise. */
 const EXPECTED_PROPOSAL_MS = 25_000;
 const PROGRESS_TICK_MS = 250;
+/** One key for the modal's requests, so the next one clears the last one's failure. */
+const REQUEST_ERROR_KEY = 'surprise-me-request';
 
 /** The wait for a proposal, with a time-based bar (the call reports no progress). */
 function ProposingProgress({ onCancel }: { onCancel: () => void }) {
@@ -285,16 +287,14 @@ export function SurpriseMe({
   // The proposal request in flight; Cancel aborts it and nothing it answers lands.
   const [proposing, setProposing] = useState<AbortController | null>(null);
   const [dismissing, setDismissing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [blockedMessage, setBlockedMessage] = useState<string | null>(null);
 
   const busy = proposing !== null || dismissing;
   const step = proposing ? 'proposing' : proposal && !editingSettings ? 'preview' : 'settings';
 
-  /** Opening and closing both start over from the first step with no error. */
+  /** Opening and closing both start over from the first step. */
   function setDialogOpen(next: boolean) {
     setEditingSettings(false);
-    setError(null);
     setOpen(next);
   }
 
@@ -302,7 +302,7 @@ export function SurpriseMe({
     if (busy) return;
     const request = new AbortController();
     setProposing(request);
-    setError(null);
+    toast.dismiss(REQUEST_ERROR_KEY);
     const { theme, vocal, language, adventurous } = settings;
     const result = await proposeSurprise(
       {
@@ -325,7 +325,7 @@ export function SurpriseMe({
     } else if (result.error.code === 'session_headroom_blocked') {
       setOpen(false);
       setBlockedMessage(result.error.message);
-    } else setError(result.error.message);
+    } else toast.error(result.error.message, { key: REQUEST_ERROR_KEY });
   }
 
   function cancelProposing() {
@@ -337,7 +337,7 @@ export function SurpriseMe({
   async function dismiss() {
     if (busy || !proposal) return;
     setDismissing(true);
-    setError(null);
+    toast.dismiss(REQUEST_ERROR_KEY);
     const result = await dismissSurprise(proposal.id);
     setDismissing(false);
     // Already gone elsewhere is the outcome the User asked for.
@@ -345,7 +345,7 @@ export function SurpriseMe({
       setProposal(null);
       setEditingSettings(false);
       onProposalChange?.(null);
-    } else setError(result.error.message);
+    } else toast.error(result.error.message, { key: REQUEST_ERROR_KEY });
   }
 
   function changeOpen(next: boolean) {
@@ -418,8 +418,6 @@ export function SurpriseMe({
               />
             ) : null}
           </div>
-
-          {error ? <AlertBanner className="mt-4">{error}</AlertBanner> : null}
         </DialogContent>
       </Dialog>
 

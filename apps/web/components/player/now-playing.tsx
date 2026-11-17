@@ -15,11 +15,7 @@ import {
   renameTrack,
   stopSession,
 } from '@/lib/api-client';
-import {
-  AlertBanner,
-  nowPlayingDetailsClass,
-  nowPlayingLayoutClass,
-} from '@/components/ui/design-system';
+import { nowPlayingDetailsClass, nowPlayingLayoutClass } from '@/components/ui/design-system';
 import { OnlineOnly } from '@/components/ui/online-only';
 import { cn } from '@/lib/cn';
 import { coldStartStagedCopy } from './cold-start-progress';
@@ -59,6 +55,7 @@ import { SectionLoopBar } from './section-loop-bar';
 import { OfflineMark } from '@/components/offline/offline-mark';
 import { TransportControls } from './transport-controls';
 import { useLyricsSurfaces } from './use-lyrics-surfaces';
+import { usePlayerErrorToast } from './use-player-error-toast';
 import { usePlayerSessionActions } from './use-player-session-actions';
 import {
   presentVibeChangeCaption,
@@ -267,8 +264,8 @@ export function NowPlaying({
   const changeVibeAvailable =
     player.styleRevision != null && !vibeChangePending && sessionActions.busyAction === null;
   // Failures of the destructive Session/Track actions — the sheet (or the
-  // banner's confirm) has closed by the time they land, so they surface on the
-  // player error surface.
+  // banner's confirm) has closed by the time they land, so they surface in the
+  // player's error toast.
   const [optionsError, setOptionsError] = useState<string | null>(null);
   const [deletingSession, setDeletingSession] = useState(false);
   // The policy is only this player's to write while the Session it is showing
@@ -295,6 +292,7 @@ export function NowPlaying({
   ]
     .filter(Boolean)
     .join(' ');
+  usePlayerErrorToast(surfaceError);
 
   const { lyricsAvailable, lyricsSheetOpen, setLyricsSheetOpen } = useLyricsSurfaces(track);
   // Track Data is parent-owned for the same never-stack reason as Lyrics; it
@@ -445,12 +443,6 @@ export function NowPlaying({
             <DeleteSessionAction sessionTitle={sessionTitle} onDelete={deleteCurrentSession} />
           }
         />
-
-        {surfaceError ? (
-          <AlertBanner data-testid="player-error" className="mt-4">
-            {surfaceError}
-          </AlertBanner>
-        ) : null}
 
         <PlayerCoverSleeve
           player={player}

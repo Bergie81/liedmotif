@@ -26,11 +26,7 @@ import {
   SaveToPlaylistSheet,
   type SavePickerTrack,
 } from '@/components/playlists/save-to-playlist-sheet';
-import {
-  AlertBanner,
-  nowPlayingDetailsClass,
-  nowPlayingLayoutClass,
-} from '@/components/ui/design-system';
+import { nowPlayingDetailsClass, nowPlayingLayoutClass } from '@/components/ui/design-system';
 import { CoverArt, CoverFallback } from './cover-art';
 import { PlayerCoverSleeve } from './player-cover-sleeve';
 import { PlayerHeader } from './player-header';
@@ -51,6 +47,7 @@ import { SectionLoopBar } from './section-loop-bar';
 import { TransportControls } from './transport-controls';
 import { PlaylistQueueSheet } from './playlist-queue-sheet';
 import { useLyricsSurfaces } from './use-lyrics-surfaces';
+import { usePlayerErrorToast } from './use-player-error-toast';
 
 export function PlaylistNowPlaying({
   playback,
@@ -100,6 +97,7 @@ export function PlaylistNowPlaying({
   // refused one is announced here as well as a refused curation write. Every
   // current failure shows, so an older one never hides a newer one.
   const surfaceError = [player.actionError, actionError].filter(Boolean).join(' ');
+  usePlayerErrorToast(surfaceError);
   useEffect(() => {
     if (!hasTrack) {
       setSavePickerTrack(null);
@@ -271,7 +269,6 @@ export function PlaylistNowPlaying({
           title={foreign ? 'Now Playing from the Lounge' : 'Now Playing your Playlist'}
           action={playlistOptions}
         />
-        {surfaceError ? <AlertBanner className="mt-4">{surfaceError}</AlertBanner> : null}
         <PlayerCoverSleeve
           player={player}
           session={null}

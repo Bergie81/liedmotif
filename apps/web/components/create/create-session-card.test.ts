@@ -4,6 +4,7 @@ import { createElement } from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SurpriseProposal } from '@liedmotif/shared';
+import { shownToasts, toast } from '@/lib/toast';
 
 const api = vi.hoisted(() => ({ proposeSurprise: vi.fn(), dismissSurprise: vi.fn() }));
 vi.mock('@/lib/api-client', () => api);
@@ -46,6 +47,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  toast.dismiss();
 });
 
 describe('Start Session duration controls', () => {
@@ -133,9 +135,23 @@ describe('Start Session button', () => {
     fireEvent.click(button);
 
     expect(onStart).not.toHaveBeenCalled();
-    expect(screen.getByTestId('create-error')).toBeTruthy();
+    expect(shownToasts()).toEqual([
+      expect.objectContaining({ tone: 'error', message: 'Describe a vibe first.' }),
+    ]);
     expect(button.disabled).toBe(false);
     expect(button.textContent).toBe('Start Session');
+  });
+
+  it('clears a refused start once the next start is handed off', () => {
+    const onStart = vi.fn();
+    render(createElement(CreateSessionCard, { onStart, llmConfigured: false }));
+    fireEvent.click(screen.getByTestId('start-vibe'));
+
+    fireEvent.change(screen.getByTestId('vibe-prompt'), { target: { value: 'Quiet music' } });
+    fireEvent.click(screen.getByTestId('start-vibe'));
+
+    expect(onStart).toHaveBeenCalledOnce();
+    expect(shownToasts()).toEqual([]);
   });
 });
 

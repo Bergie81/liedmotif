@@ -5,6 +5,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SurpriseProposal } from '@liedmotif/shared';
 import { AppChromeContext, type AppChromeContextValue } from '@/components/app-chrome-context';
+import { shownToasts, toast } from '@/lib/toast';
 
 const api = vi.hoisted(() => ({ proposeSurprise: vi.fn(), dismissSurprise: vi.fn() }));
 vi.mock('@/lib/api-client', () => api);
@@ -47,7 +48,10 @@ beforeEach(() => {
   onProposalChange.mockReset();
   onStart.mockReset();
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  toast.dismiss();
+});
 
 const onProposalChange = vi.fn();
 const onStart = vi.fn();
@@ -191,7 +195,7 @@ describe('Surprise Me', () => {
     await Promise.resolve();
     const reopened = await openModal();
     expect(within(reopened).getByText('Low Tide Radio')).toBeTruthy();
-    expect(screen.queryByRole('alert')).toBeNull();
+    expect(shownToasts()).toEqual([]);
     expect(onProposalChange).not.toHaveBeenCalled();
   });
 
@@ -231,14 +235,51 @@ describe('Surprise Me', () => {
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Try another' }));
 
-    expect((await screen.findByRole('alert')).textContent).toContain(
-      'The text LLM did not answer.',
+    await waitFor(() =>
+      expect(shownToasts()).toEqual([
+        expect.objectContaining({ tone: 'error', message: 'The text LLM did not answer.' }),
+      ]),
     );
     expect(api.proposeSurprise).toHaveBeenCalledWith(
       expect.objectContaining({ replaces: TIDE.id }),
       expect.any(AbortSignal),
     );
     expect(screen.getByText('Low Tide Radio')).toBeTruthy();
+  });
+
+  it('clears a failed request once the next one starts', async () => {
+    api.proposeSurprise.mockResolvedValueOnce({
+      ok: false,
+      error: { code: 'provider_error', message: 'The text LLM did not answer.', retryable: true },
+    });
+    api.proposeSurprise.mockReturnValueOnce(new Promise(() => {}));
+    mount({ initialProposal: TIDE });
+    const dialog = await openModal();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Try another' }));
+    await waitFor(() => expect(shownToasts()).toHaveLength(1));
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Try another' }));
+
+    expect(shownToasts()).toEqual([]);
+  });
+
+  it('a failed Dismiss keeps the proposal and says why', async () => {
+    api.dismissSurprise.mockResolvedValue({
+      ok: false,
+      error: { code: 'internal', message: 'The server is away.', retryable: true },
+    });
+    mount({ initialProposal: TIDE });
+    const dialog = await openModal();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Dismiss' }));
+
+    await waitFor(() =>
+      expect(shownToasts()).toEqual([
+        expect.objectContaining({ tone: 'error', message: 'The server is away.' }),
+      ]),
+    );
+    expect(within(dialog).getByText('Low Tide Radio')).toBeTruthy();
+    expect(onProposalChange).not.toHaveBeenCalled();
   });
 
   it('explains missing headroom and points at existing music', async () => {

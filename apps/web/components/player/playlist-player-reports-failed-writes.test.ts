@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-// A write that did not land says so on the Playlist surface, the way it does on
-// the Session surface, and stops saying so once a retry lands.
+// A write that did not land says so in a toast from the Playlist surface, the
+// way it does from the Session surface, and stops saying so once a retry lands.
 
 import { createElement as h, type ReactNode } from 'react';
 import type { PlaylistMemberItem, PlaylistSummaryItem } from '@liedmotif/shared';
@@ -9,6 +9,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { afterEach, beforeAll, expect, it, vi } from 'vitest';
 import { AppChromeContext, type AppChromeContextValue } from '@/components/app-chrome-context';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { shownToasts, toast } from '@/lib/toast';
 import type { PlayableTrack } from './playable-track';
 import {
   initialPlaybackControllerState,
@@ -60,6 +61,7 @@ beforeAll(() => {
 afterEach(() => {
   cleanup();
   api.removePlaylistTrack.mockReset();
+  toast.dismiss();
 });
 
 const TIMESTAMP = '2026-11-07T10:00:00.000Z';
@@ -139,14 +141,18 @@ function openOptions() {
 
 const FAILED_FAVORITE = 'Favorite failed — this track was not starred. Try again.';
 
-it('shows a player write that did not land, on the page and over it in the options', () => {
+const shownErrors = () =>
+  shownToasts().flatMap((shown) => (shown.tone === 'error' ? [shown.message] : []));
+
+it('shows a player write that did not land as an error toast, which stays up over the options', () => {
   showPlaylist(FAILED_FAVORITE);
 
-  expect(screen.getByRole('alert').textContent).toContain(FAILED_FAVORITE);
+  expect(shownErrors()).toEqual([FAILED_FAVORITE]);
+  expect(screen.queryByRole('alert')).toBeNull();
 
-  const sheet = openOptions();
+  openOptions();
 
-  expect(sheet.getByRole('alert').textContent).toContain(FAILED_FAVORITE);
+  expect(shownErrors()).toEqual([FAILED_FAVORITE]);
 });
 
 it('shows a refused Remove beside a player notice that is still up', async () => {
@@ -159,9 +165,9 @@ it('shows a refused Remove beside a player notice that is still up', async () =>
   fireEvent.click(openOptions().getByTestId('player-remove-from-playlist'));
   await act(async () => {});
 
-  const failure = screen.getByRole('alert').textContent;
-  expect(failure).toContain(FAILED_FAVORITE);
-  expect(failure).toContain('Remove failed');
+  expect(shownErrors()).toEqual([
+    `${FAILED_FAVORITE} Remove failed — the track stays in the playlist. The server is away.`,
+  ]);
 });
 
 it('drops a failed Remove once the retry lands', async () => {
@@ -176,10 +182,12 @@ it('drops a failed Remove once the retry lands', async () => {
 
   fireEvent.click(removeRow());
   await act(async () => {});
-  expect(screen.getByRole('alert').textContent).toContain('Remove failed');
+  expect(shownErrors()).toEqual([
+    'Remove failed — the track stays in the playlist. The server is away.',
+  ]);
 
   fireEvent.click(removeRow());
   await act(async () => {});
 
-  expect(screen.queryByRole('alert')).toBeNull();
+  expect(shownErrors()).toEqual([]);
 });
