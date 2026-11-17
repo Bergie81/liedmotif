@@ -9,13 +9,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { MAX_PLAYLIST_NAME_LENGTH, type PlaylistSummaryItem } from '@liedmotif/shared';
 import { Armchair, ListMusic, Plus, Star } from 'lucide-react';
-import { createPlaylist, getAllPlaylists } from '@/lib/api-client';
+import {
+  type AddPlaylistTracksData,
+  type ApiResult,
+  createPlaylist,
+  getAllPlaylists,
+} from '@/lib/api-client';
 import { cn } from '@/lib/cn';
 import { toast } from '@/lib/toast';
 import { RenameDialog } from '@/components/rename-dialog';
 import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { AlertBanner, menuRowClass } from '@/components/ui/design-system';
 import { LoadingRow } from '@/components/ui/loading';
+import { addedToPlaylistMessage } from './playlist-view-model';
 
 const ADD_FAILED_KEY = 'choose-playlist-add';
 
@@ -29,8 +35,8 @@ export function ChoosePlaylistSheet({
   /** How many tracks the commit will add (the header copy). */
   trackCount: number;
   onClose: () => void;
-  /** Commit the add into the chosen playlist; resolve an error message or null. */
-  onChoose: (playlistId: string) => Promise<string | null>;
+  /** Commit the add into the chosen playlist. */
+  onChoose: (playlistId: string) => Promise<ApiResult<AddPlaylistTracksData>>;
 }) {
   return (
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
@@ -48,7 +54,7 @@ function ChooseContent({
 }: {
   trackCount: number;
   onClose: () => void;
-  onChoose: (playlistId: string) => Promise<string | null>;
+  onChoose: (playlistId: string) => Promise<ApiResult<AddPlaylistTracksData>>;
 }) {
   const [playlists, setPlaylists] = useState<PlaylistSummaryItem[] | null>(null);
   const [creating, setCreating] = useState(false);
@@ -70,20 +76,18 @@ function ChooseContent({
   async function choose(playlist: PlaylistSummaryItem) {
     if (busy) return;
     setBusy(true);
-    const failure = await onChoose(playlist.id);
+    const result = await onChoose(playlist.id);
     setBusy(false);
-    if (failure) {
-      toast.error(failure, { key: ADD_FAILED_KEY });
+    if (!result.ok) {
+      toast.error(result.error.message, { key: ADD_FAILED_KEY });
       return;
     }
-    landed(playlist.name);
+    confirmAdded(playlist.name, result.data);
   }
 
-  function landed(playlistName: string) {
+  function confirmAdded(playlistName: string, data: AddPlaylistTracksData) {
     toast.dismiss(ADD_FAILED_KEY);
-    toast.success(
-      `Added ${trackCount} ${trackCount === 1 ? 'track' : 'tracks'} to ${playlistName}`,
-    );
+    toast.success(addedToPlaylistMessage(data.added.length, playlistName));
     onClose();
   }
 
@@ -99,9 +103,10 @@ function ChooseContent({
       playlistId = result.data.playlist.id;
       created.current = { name, playlistId };
     }
-    const failure = await onChoose(playlistId);
-    if (!failure) landed(name);
-    return failure;
+    const result = await onChoose(playlistId);
+    if (!result.ok) return result.error.message;
+    confirmAdded(name, result.data);
+    return null;
   }
 
   return (

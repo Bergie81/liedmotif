@@ -162,13 +162,14 @@ function LibrarySmartListView({
     setChoosingPlaylist(false);
   }
 
-  async function addSelectionTo(playlistId: string): Promise<string | null> {
+  async function addSelectionTo(playlistId: string) {
     const result = await addPlaylistTracks(playlistId, [...selectedIds]);
-    if (!result.ok) return result.error.message;
-    router.refresh();
-    query.reload();
-    exitSelectMode();
-    return null;
+    if (result.ok) {
+      router.refresh();
+      query.reload();
+      exitSelectMode();
+    }
+    return result;
   }
   const optionsOpenerRef = useRef<HTMLButtonElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);

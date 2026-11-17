@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 
 // Adding a Library selection closes the sheet, so a toast says how many Tracks
-// went into which Playlist — a chosen one or one made on the way.
+// went into which Playlist — a chosen one or one made on the way. The count is
+// what the add appended: a selected Track already in the Playlist adds nothing.
 
 import { createElement as h } from 'react';
 import type { PlaylistSummaryItem } from '@liedmotif/shared';
@@ -34,9 +35,20 @@ const BEACH = {
   sharedAt: null,
 } as PlaylistSummaryItem;
 
-function openSheet(trackCount: number) {
+function landed(added: number) {
+  return {
+    ok: true as const,
+    data: {
+      playlistId: 'beach-id',
+      added: Array.from({ length: added }, (_, i) => `track-${i}`),
+      refused: [],
+    },
+  };
+}
+
+function openSheet(trackCount: number, added = trackCount) {
   const onClose = vi.fn();
-  const onChoose = vi.fn(async () => null);
+  const onChoose = vi.fn(async () => landed(added));
   render(h(ChoosePlaylistSheet, { open: true, trackCount, onClose, onChoose }));
   return { onClose, onChoose };
 }
@@ -62,6 +74,26 @@ describe('choose playlist sheet — a landed add', () => {
 
     expect(shownToasts()).toEqual([
       expect.objectContaining({ tone: 'success', message: 'Added 1 track to Beach' }),
+    ]);
+  });
+
+  it('counts only the Tracks the add appended', async () => {
+    openSheet(3, 1);
+
+    await click(await screen.findByRole('button', { name: /Beach/ }));
+
+    expect(shownToasts()).toEqual([
+      expect.objectContaining({ tone: 'success', message: 'Added 1 track to Beach' }),
+    ]);
+  });
+
+  it('says the Tracks were already there when the add appended none', async () => {
+    openSheet(2, 0);
+
+    await click(await screen.findByRole('button', { name: /Beach/ }));
+
+    expect(shownToasts()).toEqual([
+      expect.objectContaining({ tone: 'success', message: 'Already in Beach' }),
     ]);
   });
 

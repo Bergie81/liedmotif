@@ -21,6 +21,7 @@ import { LoadingRow, LiedmotifLoader } from '@/components/ui/loading';
 import { formatTrackDuration } from '@/components/library/library-view-model';
 import { appendUniqueById } from '@/lib/append-unique';
 import { toast } from '@/lib/toast';
+import { addedToPlaylistMessage } from './playlist-view-model';
 
 /** The most Track ids one `addPlaylistTracks` request takes. */
 const ADD_BATCH = 100;
@@ -134,9 +135,7 @@ function AddTracksContent({
     }
     setBusy(false);
     toast.dismiss(ADD_FAILED_KEY);
-    toast.success(
-      `Added ${trackIds.length} ${trackIds.length === 1 ? 'track' : 'tracks'} to ${playlistName}`,
-    );
+    toast.success(addedToPlaylistMessage(trackIds.length, playlistName));
     router.refresh();
     onAdded();
     onClose();

@@ -88,6 +88,12 @@ export function formatPlaylistTrackCount(count: number): string {
   return `${count} ${count === 1 ? 'Track' : 'Tracks'}`;
 }
 
+/** The toast that confirms an add into one Playlist, counting what it appended. */
+export function addedToPlaylistMessage(added: number, playlistName: string): string {
+  if (added === 0) return `Already in ${playlistName}`;
+  return `Added ${added} ${added === 1 ? 'track' : 'tracks'} to ${playlistName}`;
+}
+
 /**
  * A card's first meta line: member count, then total playtime. An empty playlist
  * claims no playtime at all.

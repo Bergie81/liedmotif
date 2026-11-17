@@ -4,7 +4,7 @@
 // above the sheet, which stays open on its list for another try, while the
 // list itself failing to load stays in the sheet where the list would be.
 
-import { createElement as h } from 'react';
+import { createElement as h, type ComponentProps } from 'react';
 import type { PlaylistSummaryItem } from '@liedmotif/shared';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -35,7 +35,18 @@ const BEACH = {
   sharedAt: null,
 } as PlaylistSummaryItem;
 
-function openSheet(onChoose: (playlistId: string) => Promise<string | null>) {
+type AddResult = Awaited<ReturnType<ComponentProps<typeof ChoosePlaylistSheet>['onChoose']>>;
+
+const failed = (message: string): AddResult => ({
+  ok: false,
+  error: { code: 'internal_error', message, retryable: false },
+});
+const landed: AddResult = {
+  ok: true,
+  data: { playlistId: 'beach-id', added: ['a', 'b', 'c'], refused: [] },
+};
+
+function openSheet(onChoose: (playlistId: string) => Promise<AddResult>) {
   const onClose = vi.fn();
   render(h(ChoosePlaylistSheet, { open: true, trackCount: 3, onClose, onChoose }));
   return { onClose };
@@ -48,7 +59,7 @@ const choose = async () => {
 
 describe('choose playlist sheet', () => {
   it('floats a failed add above the sheet and keeps the list open', async () => {
-    const { onClose } = openSheet(async () => 'Playlist is full.');
+    const { onClose } = openSheet(async () => failed('Playlist is full.'));
 
     await choose();
 
@@ -61,8 +72,8 @@ describe('choose playlist sheet', () => {
   });
 
   it('clears the failure once a retry lands', async () => {
-    const answers = ['Playlist is full.', null];
-    const { onClose } = openSheet(async () => answers.shift() ?? null);
+    const answers = [failed('Playlist is full.'), landed];
+    const { onClose } = openSheet(async () => answers.shift() ?? landed);
 
     await choose();
     await choose();
@@ -75,7 +86,7 @@ describe('choose playlist sheet', () => {
 
   it('keeps a list that failed to load in the sheet, not in a toast', async () => {
     holder.loadFails = true;
-    openSheet(async () => null);
+    openSheet(async () => landed);
 
     expect((await screen.findByRole('alert')).textContent).toBe(
       'Couldn’t load your playlists: Offline.',

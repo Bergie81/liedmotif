@@ -125,17 +125,18 @@ describe('save picker — a landed save', () => {
     ]);
   });
 
-  it('says the Track left the Library when the save emptied every Playlist', async () => {
+  // An unsave shows itself the way the Unsave action does: the Track leaves
+  // the Saved view.
+  it('stays silent when the save emptied every Playlist', async () => {
     holder.playlists = [playlist('Night Drive', true), playlist('Focus', true)];
-    openPicker('2026-11-01T10:00:00.000Z');
+    const { onClose } = openPicker('2026-11-01T10:00:00.000Z');
 
     await toggle('Night Drive');
     await toggle('Focus');
     await save();
 
-    expect(shownToasts()).toEqual([
-      expect.objectContaining({ tone: 'success', message: 'Removed from Library' }),
-    ]);
+    expect(onClose).toHaveBeenCalled();
+    expect(shownToasts()).toEqual([]);
   });
 
   it('stays silent when the save changed nothing', async () => {

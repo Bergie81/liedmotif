@@ -149,9 +149,10 @@ function PickerContent({
   }
 
   /** What the commit changed, in one line: where the Track went if it went
-   *  anywhere new, else what it left; null when it changed nothing. */
+   *  anywhere new, else what it left. Null when it changed nothing, and for an
+   *  unsave, which shows itself the way the Unsave action does. */
   function savedMessage(): string | null {
-    if (!willBeSaved) return 'Removed from Library';
+    if (!willBeSaved) return null;
     const curated = (playlists ?? []).filter(isCuratedPlaylist);
     const added = curated.filter((p) => checked.has(p.id) && !p.containsTrack).map((p) => p.name);
     if (trimmedNewName) added.push(trimmedNewName);
