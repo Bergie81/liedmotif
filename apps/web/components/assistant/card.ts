@@ -36,10 +36,16 @@ export interface CardOutcomeFacts {
  * first read, so the card still finds it once a later attempt is the latest.
  */
 export type CoverAttempt =
-  | { state: Exclude<CoverAttemptState, 'ready' | 'failed'>; coverImageId: string }
+  | {
+      state: Exclude<CoverAttemptState, 'ready' | 'failed' | 'unknown' | 'gone'>;
+      coverImageId: string;
+    }
   /** `refusal`: why the cover select request did not make it the cover, in the app's words. */
   | { state: 'ready'; coverImageId: string; refusal?: string }
-  | { state: 'failed'; failure: string | null };
+  | { state: 'failed'; failure: string | null }
+  | { state: 'unknown' }
+  /** `refusal`: why the cover status route will not answer, in the app's words. */
+  | { state: 'gone'; refusal: string };
 
 export interface CardWording {
   /** What confirming does. */

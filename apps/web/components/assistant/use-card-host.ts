@@ -95,8 +95,15 @@ export interface CardHost {
    * shows on the card: the app has no other place that shows it here.
    */
   generateCover: (generate: CoverCardRegenerateRequest) => CardFlow;
-  /** Reads the cover status of a Session or Playlist; null when it cannot be read. */
-  coverStatus: (subject: CoverSubject, signal: AbortSignal) => Promise<CoverStatus | null>;
+  /**
+   * Reads the cover status of a Session or Playlist. Null when it cannot be
+   * read right now; the route's refusal when no later read can answer either:
+   * the Session or Playlist is gone, or the user is signed out.
+   */
+  coverStatus: (
+    subject: CoverSubject,
+    signal: AbortSignal,
+  ) => Promise<CoverStatus | { refusal: string } | null>;
   /**
    * Makes a cover from the history the cover with the select request the
    * cover dialog's save sends. It costs nothing. The app's views read their
@@ -183,7 +190,9 @@ export function useCardHost(
           subject.kind === 'session'
             ? await getSessionCoverStatus(subject.id, signal)
             : await playlistCoverStatus(subject.id, signal);
-        return status.ok ? status.data : null;
+        if (status.ok) return status.data;
+        const { code, message } = status.error;
+        return code === 'not_found' || code === 'unauthorized' ? { refusal: message } : null;
       },
       selectCover: async (subject, coverImageId) => {
         const selected =

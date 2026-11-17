@@ -51,7 +51,7 @@ This is optional, and it's the service `.env` calls the text LLM. If you connect
 
 About text is only for lyrics. It's never used for style, titles or covers.
 
-**When you ask Roadie,** the AI assistant inside the app, the writing AI receives your question and the last few messages of that conversation. What Roadie looks up for you to answer, such as the names of your sessions, playlists and tracks, a matching line of lyrics, what is playing or how many tracks and covers you have left, goes to the writing AI provider with the conversation. So does the tone you gave Roadie under **Settings › Roadie**, which your instance stores. Nothing from your profile or your people is sent. The conversation lives in your browser tab only: your instance doesn't store it or write it to its logs, and it's gone when you reload the page.
+**When you ask Roadie,** the AI assistant inside the app, the writing AI receives your question and the last few messages of that conversation. What Roadie looks up for you to answer, such as the names of your sessions, playlists and tracks, a matching line of lyrics, what is playing or how many tracks and covers you have left, goes to the writing AI provider with the conversation. So does the tone you gave Roadie under **Settings › Roadie**, which your instance stores. Nothing from your profile or your people is sent, except that a Surprise Me you ask Roadie for sends what **Surprise Me** sends, listed above. The conversation lives in your browser tab only: your instance doesn't store it or write it to its logs, and it's gone when you reload the page.
 
 With no writing AI, none of this leaves your instance. With a local Ollama, it stays on your own machine.
 

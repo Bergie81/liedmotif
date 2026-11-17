@@ -4,6 +4,7 @@
 // data, and the user's confirmation in the browser is the one thing that
 // reaches the app's own route.
 
+import { getCoverArtSettings } from '@liedmotif/db';
 import type { AssistantCard } from '@liedmotif/shared';
 import {
   evaluateGenerationBudget,
@@ -47,6 +48,24 @@ export async function newSessionRefusal({ db, userId }: AssistantAsker): Promise
 export async function generationRefusal({ db, userId }: AssistantAsker): Promise<string | null> {
   const budget = await evaluateGenerationBudget(db, userId);
   return budget.withinLimits ? null : headroomRefusalMessage(db, budget);
+}
+
+/**
+ * The cover choices Home's form starts `asker`'s new Session with when they
+ * change none: their Default cover style, left out for Auto, and their
+ * Standard covers setting.
+ */
+export async function homeCoverChoices({
+  db,
+  userId,
+}: AssistantAsker): Promise<
+  Pick<Extract<AssistantCard, { kind: 'session' }>, 'coverStyle' | 'useStandardCover'>
+> {
+  const { defaultStyle, useStandardCoverArt } = await getCoverArtSettings(db, userId);
+  return {
+    ...(defaultStyle !== 'auto' && { coverStyle: defaultStyle }),
+    useStandardCover: useStandardCoverArt,
+  };
 }
 
 export const NO_ACTIVE_SESSION = 'There is no active Session.';

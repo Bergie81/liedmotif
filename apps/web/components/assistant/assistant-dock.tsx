@@ -138,6 +138,9 @@ export function AssistantDock({
           break;
         case 'proposed':
           cardHost?.refreshHeadroom();
+          // Preparing a Surprise Me replaced the pending suggestion on the
+          // server, which Home shows too.
+          if (action.card.kind === 'surprise') router.refresh();
           break;
       }
     };

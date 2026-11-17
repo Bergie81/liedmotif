@@ -125,7 +125,7 @@ export async function POST(request: Request) {
       llm,
       { role, tone },
       createAssistantTools(
-        { db, ...asker, player: body.player ?? null },
+        { db, ...asker, player: body.player ?? null, signal: stopped },
         createTurnActions(report),
       ),
       body.messages,

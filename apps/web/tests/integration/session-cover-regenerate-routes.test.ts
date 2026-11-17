@@ -26,7 +26,7 @@ import {
   withTransaction,
   type SessionCoverPlanRecord,
 } from '@liedmotif/db';
-import { MAX_SESSION_COVER_HISTORY } from '@liedmotif/shared';
+import { COVER_STYLE_PRESETS, MAX_SESSION_COVER_HISTORY } from '@liedmotif/shared';
 
 // Owner-scoped Session Cover regeneration routes: reserving exactly one
 // live attempt, pending on double-tap, cross-owner rejection, and the sanitized
@@ -321,9 +321,8 @@ describe.skipIf(skip)('POST /api/sessions/cover/regenerate', () => {
       .from(activitySessions)
       .where(eq(activitySessions.id, sessionId));
     expect(session!.coverStyle).not.toBe('auto');
-    expect(['photographic', 'minimal', 'drawing', 'poster_art', 'custom']).toContain(
-      session!.coverStyle,
-    );
+    // No Custom definition is saved, so the roll is over the preset lanes alone.
+    expect(COVER_STYLE_PRESETS).toContain(session!.coverStyle);
   });
 
   it('rejects over-long guidance', async () => {

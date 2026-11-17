@@ -13,7 +13,13 @@ import {
   type ProposeSessionInput,
 } from '@liedmotif/shared';
 import { startingSessionMode } from '@/lib/sessions';
-import { BAD_DURATION, newSessionRefusal, notOffered, proposed } from './proposal';
+import {
+  BAD_DURATION,
+  homeCoverChoices,
+  newSessionRefusal,
+  notOffered,
+  proposed,
+} from './proposal';
 import { PROPOSE_SESSION_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 import type { TurnActions } from './turn-actions';
@@ -43,6 +49,7 @@ export function createProposeSessionTool(
           prompt: prompt.trim(),
           vocal: vocal ? 'vocal' : 'instrumental',
           ...(targetDurationMinutes != null && { targetDurationMinutes }),
+          ...(await homeCoverChoices(asker)),
         };
         const request = cardRequestSchema.safeParse(sessionCardStartRequest(card));
         if (!request.success) {

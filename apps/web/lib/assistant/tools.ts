@@ -46,6 +46,8 @@ export interface AssistantAsker {
    * when nothing is. Ids a browser sent: a tool looks them up as `userId`.
    */
   player: AssistantPlayerState | null;
+  /** Aborts once the reader stops the answer; an action still under way then keeps nothing. */
+  signal?: AbortSignal;
 }
 
 const LOOKUP_FAILED = 'That could not be looked up right now. Answer from what you have.';

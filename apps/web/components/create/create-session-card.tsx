@@ -101,6 +101,14 @@ export function CreateSessionCard({
   // A handed-off start navigates to /player, which unmounts this card; until
   // that lands the button must show the click was taken.
   const [starting, setStarting] = useState(false);
+  // A suggestion made elsewhere (Roadie) reaches the page as a new pending one
+  // on its next render, and replaces the one shown.
+  const pendingId = surprise?.pending?.id ?? null;
+  const [seenPendingId, setSeenPendingId] = useState(pendingId);
+  if (pendingId !== seenPendingId) {
+    setSeenPendingId(pendingId);
+    if (surprise?.pending && pendingId !== proposal?.id) showProposal(surprise.pending);
+  }
   function durationOf(minutes: number | null) {
     return minutes != null ? { targetDurationMinutes: minutes } : {};
   }

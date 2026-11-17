@@ -110,6 +110,7 @@ const SERVER_CALLS = [
   // The asker's own settings: read, and written one choice at a time. Of the
   // Generation settings only the language is written, never what a Session
   // generates ahead.
+  'getCoverArtSettings',
   'getCoverReferenceFrequency',
   'getGenerationSettings',
   'getPlaybackSettings',
@@ -123,8 +124,9 @@ const SERVER_CALLS = [
   'updatePlaybackSettings',
   // The one write to a Session: its mode, and only to Repeat.
   'switchSessionMode',
-  // Surprise Me's suggestion, as Home asks for it: one bounded text-LLM call,
-  // and the user's one pending suggestion. It buys no music.
+  // Surprise Me's suggestion, as Home asks for it: the same Writing AI calls
+  // the app's own Surprise Me button makes, and the user's one pending
+  // suggestion. It buys no music.
   'proposeSurprise',
   // Whether the cover regenerate routes would refuse a new cover: read, never reserved.
   'coverAttemptGate',

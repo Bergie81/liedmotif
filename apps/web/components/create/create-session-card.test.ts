@@ -279,6 +279,39 @@ describe('Surprise Me in the creation card', () => {
     expect(onStart).not.toHaveBeenCalled();
   });
 
+  it('shows a suggestion made elsewhere once the page re-reads it, and tries another from it', async () => {
+    const harbor: SurpriseProposal = {
+      ...EMBER,
+      id: '33333333-3333-4333-8333-333333333333',
+      title: 'Harbor Morning',
+      edit: { ...EMBER.edit, prompt: 'Surprise me with a slow harbor morning.' },
+    };
+    const props = { onStart: vi.fn(), llmConfigured: true };
+    const onStartSurprise = vi.fn();
+    const { rerender } = render(
+      createElement(CreateSessionCard, {
+        ...props,
+        surprise: { pending: EMBER, onStart: onStartSurprise },
+      }),
+    );
+
+    rerender(
+      createElement(CreateSessionCard, {
+        ...props,
+        surprise: { pending: harbor, onStart: onStartSurprise },
+      }),
+    );
+
+    expect((screen.getByTestId('vibe-prompt') as HTMLTextAreaElement).value).toBe(
+      harbor.edit.prompt,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Surprise Me' }));
+    expect(await screen.findByText('Harbor Morning')).toBeTruthy();
+    api.proposeSurprise.mockResolvedValue({ ok: true, data: { proposal: EMBER } });
+    fireEvent.click(screen.getByRole('button', { name: 'Try another' }));
+    expect(api.proposeSurprise.mock.calls.at(-1)![0]).toMatchObject({ replaces: harbor.id });
+  });
+
   it('the modal’s Start starts the previewed proposal, never a search hand-off’s words', async () => {
     function mountHandOff() {
       const onStart = vi.fn();

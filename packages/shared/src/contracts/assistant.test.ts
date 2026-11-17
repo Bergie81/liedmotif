@@ -295,6 +295,42 @@ describe('assistantStreamEventSchema', () => {
     ).toEqual({ input: { mode: 'prompt', prompt: 'calm piano', vocal: 'instrumental' } });
   });
 
+  it('starts a Session or Surprise Me card with the cover choices the card carries, as Home sends them', () => {
+    const cover = { coverStyle: 'manga', useStandardCover: true } as const;
+    const session = { kind: 'session', prompt: 'calm piano', vocal: 'instrumental' } as const;
+    const suggestion = {
+      id: '00000000-0000-4000-8000-000000000004',
+      adventurous: false,
+      title: 'Harbor Morning',
+      mood: 'bright',
+      genres: ['jazz'],
+      energy: 'low' as const,
+      vocalMode: 'instrumental' as const,
+      voiceGender: null,
+      language: null,
+    };
+    const surprise = { kind: 'surprise', suggestion, targetDurationMinutes: 45 } as const;
+    const proposed = (card: unknown) => ({ type: 'action', action: { status: 'proposed', card } });
+    const parses = (card: unknown) => assistantStreamEventSchema.safeParse(proposed(card)).success;
+
+    expect(parses({ ...session, ...cover })).toBe(true);
+    expect(parses({ ...surprise, ...cover })).toBe(true);
+    expect(sessionCardStartRequest({ ...session, ...cover })).toEqual({
+      input: { mode: 'prompt', prompt: 'calm piano', vocal: 'instrumental' },
+      ...cover,
+    });
+    expect(surpriseCardStartRequest({ ...surprise, ...cover })).toEqual({
+      proposalId: suggestion.id,
+      targetDurationMinutes: 45,
+      ...cover,
+    });
+    // Auto is the start routes' own default, so Home leaves it out.
+    expect(sessionCardStartRequest({ ...session, useStandardCover: false })).toEqual({
+      input: { mode: 'prompt', prompt: 'calm piano', vocal: 'instrumental' },
+      useStandardCover: false,
+    });
+  });
+
   it('reads a card for each other thing that can spend, by the values its confirmation sends', () => {
     const proposed = (card: unknown) => ({ type: 'action', action: { status: 'proposed', card } });
     const parses = (card: unknown) => assistantStreamEventSchema.safeParse(proposed(card)).success;

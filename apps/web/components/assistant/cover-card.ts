@@ -15,14 +15,15 @@ export interface CoverCardFollowing {
 
 /**
  * What `status` tells of the attempt `attemptId`, knowing what an earlier read
- * of it told (`held`). Null when it tells nothing: a later attempt is the
- * latest, and no read ever saw this one.
+ * of it told (`held`). Once a later attempt is the latest, the route tells
+ * only where a cover generated earlier is now; an attempt no read saw
+ * generated may as well have failed, so it is `unknown`, never `deleted`.
  */
 export function coverAttemptFrom(
   status: CoverStatus,
   attemptId: string,
   held: CoverAttempt | undefined,
-): CoverAttempt | null {
+): CoverAttempt {
   const latest = status.latestRegeneration;
   if (latest?.coverGenerationId === attemptId) {
     if (latest.status === 'failed') return { state: 'failed', failure: latest.failureMessageSafe };
@@ -31,7 +32,11 @@ export function coverAttemptFrom(
     }
     return generatedCover(status, latest.coverImageId);
   }
-  if (!held || held.state === 'failed') return held ?? null;
+  if (!held || held.state === 'generating') {
+    const found = held && generatedCover(status, held.coverImageId);
+    return found && found.state !== 'deleted' ? found : { state: 'unknown' };
+  }
+  if (!('coverImageId' in held)) return held;
   return generatedCover(status, held.coverImageId);
 }
 
@@ -62,8 +67,10 @@ export async function followCover(
   if (card.kind !== 'cover' || !coverGenerationId) return 'settled';
   const status = await host.coverStatus(card.subject, signal);
   if (!status) return 'unread';
-  const read = coverAttemptFrom(status, coverGenerationId, cover);
-  if (!read) return 'settled';
+  const read: CoverAttempt =
+    'refusal' in status
+      ? { state: 'gone', refusal: status.refusal }
+      : coverAttemptFrom(status, coverGenerationId, cover);
   // A tap on "Use this cover" still on its way is what the card shows until it answers.
   if (cover?.state !== 'using' && !sameAttempt(cover, read)) {
     conversation.settleAction(action, 'confirmed', { cover: read });

@@ -338,6 +338,35 @@ it('has the page on screen re-read a changed setting, and leaves the Library alo
   stopListening();
 });
 
+it('has the page on screen re-read a Surprise Me suggestion Roadie prepared, so Home shows it', async () => {
+  renderDock({ desk: true });
+  const surprise: AssistantStreamEvent = {
+    type: 'action',
+    action: {
+      status: 'proposed',
+      card: {
+        kind: 'surprise',
+        suggestion: {
+          id: '00000000-0000-4000-8000-000000000004',
+          adventurous: false,
+          title: 'Harbor Morning',
+          mood: 'bright',
+          genres: ['jazz'],
+          energy: 'low',
+          vocalMode: 'instrumental',
+          voiceGender: null,
+          language: null,
+        },
+        targetDurationMinutes: 45,
+      },
+    },
+  };
+
+  askAndGetReply([surprise]);
+
+  await waitFor(() => expect(navigation.refresh).toHaveBeenCalledTimes(1));
+});
+
 /** The app shell's player, as the dock is handed it: every command comes to `outcome`. */
 function playerThat(outcome: PlayerCommandOutcome) {
   return {

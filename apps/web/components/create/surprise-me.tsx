@@ -271,6 +271,16 @@ export function SurpriseMe({
   });
   // The preview is shown over the settings until the User asks to change them.
   const [editingSettings, setEditingSettings] = useState(false);
+  // A suggestion made elsewhere (Roadie) arrives as a new pending one on the
+  // page's next render, and replaces the one shown.
+  const [seenInitial, setSeenInitial] = useState(initialProposal);
+  if (initialProposal?.id !== seenInitial?.id) {
+    setSeenInitial(initialProposal);
+    if (initialProposal && initialProposal.id !== proposal?.id) {
+      setProposal(initialProposal);
+      setEditingSettings(false);
+    }
+  }
   // The proposal request in flight; Cancel aborts it and nothing it answers lands.
   const [proposing, setProposing] = useState<AbortController | null>(null);
   const [dismissing, setDismissing] = useState(false);

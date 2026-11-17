@@ -4,7 +4,13 @@
 // stands in for the text LLM.
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { updateGenerationSettings, updateUsageLimits, user, userProfiles } from '@liedmotif/db';
+import {
+  updateCoverArtSettings,
+  updateGenerationSettings,
+  updateUsageLimits,
+  user,
+  userProfiles,
+} from '@liedmotif/db';
 import {
   connectTestDb,
   createGenerationRequest,
@@ -105,6 +111,9 @@ async function rowsIn(table: 'activity_sessions' | 'generation_requests'): Promi
   return rows[0]!.n;
 }
 
+/** The shipped cover-art settings, which Home's form starts a new Session with. */
+const HOME_COVER = { coverStyle: 'poster_art', useStandardCover: false } as const;
+
 beforeAll(async () => {
   if (skip) return;
   testDb = await connectTestDb('assistant-prepares-a-session-test');
@@ -141,6 +150,7 @@ describe.skipIf(skip)('the Assistant asked to start a Session', () => {
         prompt: 'calm piano for reading',
         vocal: 'instrumental',
         targetDurationMinutes: 45,
+        ...HOME_COVER,
       },
     ]);
     expect(turn.results[0]).toMatch(/^Prepared: /);
@@ -148,6 +158,28 @@ describe.skipIf(skip)('the Assistant asked to start a Session', () => {
     expect(turn.events.at(-1)).toEqual({ type: 'done' });
     expect(await rowsIn('activity_sessions')).toBe(0);
     expect(await rowsIn('generation_requests')).toBe(0);
+  });
+
+  it('carries the cover choices Home’s form starts with: the user’s Default cover style and Standard covers', async () => {
+    const asker = await createAdmin();
+    await updateCoverArtSettings(testDb.db, asker, {
+      defaultStyle: 'manga',
+      useStandardCoverArt: true,
+    });
+    const card = { prompt: 'calm piano', targetDurationMinutes: 30 };
+
+    expect(cards(await propose(asker, card))).toMatchObject([
+      { coverStyle: 'manga', useStandardCover: true },
+    ]);
+
+    // Auto is the start route's own default, so Home sends no style for it.
+    await updateCoverArtSettings(testDb.db, asker, {
+      defaultStyle: 'auto',
+      useStandardCoverArt: false,
+    });
+    const [auto] = cards(await propose(asker, card));
+    expect(auto).toMatchObject({ useStandardCover: false });
+    expect(auto).not.toHaveProperty('coverStyle');
   });
 
   it('asks how long when the user named no length and new Sessions keep generating', async () => {
@@ -175,6 +207,7 @@ describe.skipIf(skip)('the Assistant asked to start a Session', () => {
         prompt: 'a sea shanty about deploys',
         vocal: 'vocal',
         targetDurationMinutes: 30,
+        ...HOME_COVER,
       },
     ]);
   });
@@ -190,6 +223,7 @@ describe.skipIf(skip)('the Assistant asked to start a Session', () => {
         prompt: 'calm piano for reading',
         vocal: 'instrumental',
         targetDurationMinutes: null,
+        ...HOME_COVER,
       },
     ]);
     expect(turn.results[0]).toMatch(/^Prepared: .*with no limit/);
@@ -205,7 +239,7 @@ describe.skipIf(skip)('the Assistant asked to start a Session', () => {
     const turn = await propose(asker, { prompt: 'calm piano for reading' });
 
     expect(cards(turn)).toEqual([
-      { kind: 'session', prompt: 'calm piano for reading', vocal: 'instrumental' },
+      { kind: 'session', prompt: 'calm piano for reading', vocal: 'instrumental', ...HOME_COVER },
     ]);
   });
 
@@ -246,7 +280,13 @@ describe.skipIf(skip)('the Assistant asked to start a Session', () => {
     );
 
     expect(cards(turn)).toEqual([
-      { kind: 'session', prompt: 'calm piano', vocal: 'instrumental', targetDurationMinutes: 30 },
+      {
+        kind: 'session',
+        prompt: 'calm piano',
+        vocal: 'instrumental',
+        targetDurationMinutes: 30,
+        ...HOME_COVER,
+      },
     ]);
     expect(turn.results[1]).toMatch(/only one card can be prepared.*no second card/i);
   });

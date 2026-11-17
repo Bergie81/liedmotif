@@ -149,6 +149,15 @@ function CoverAttemptView({
   if (cover.state === 'failed') {
     return <CardStatus ok={false}>{cover.failure ?? wording.failed}</CardStatus>;
   }
+  if (cover.state === 'unknown') {
+    return (
+      <CardStatus ok>
+        This card can no longer tell how the cover went. If it was generated, it is under Previous
+        covers.
+      </CardStatus>
+    );
+  }
+  if (cover.state === 'gone') return <CardStatus ok={false}>{cover.refusal}</CardStatus>;
   if (cover.state === 'deleted') {
     return <CardStatus ok={false}>This cover was deleted from Previous covers.</CardStatus>;
   }
@@ -197,7 +206,9 @@ function CoverBudget({ subject }: { subject: AssistantCoverCard['subject'] }) {
     if (!read) return;
     const reading = new AbortController();
     void read({ kind, id }, reading.signal).then((status) => {
-      if (!reading.signal.aborted) setLine(status && coverUsageLine(status.usage));
+      if (!reading.signal.aborted) {
+        setLine(status && !('refusal' in status) ? coverUsageLine(status.usage) : null);
+      }
     });
     return () => reading.abort();
   }, [read, kind, id]);

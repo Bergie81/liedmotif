@@ -5,7 +5,7 @@
 // changed is brought in line here: the same state those buttons would have set.
 
 import { useCallback, useEffect, useRef } from 'react';
-import type { AssistantReceipt } from '@liedmotif/shared';
+import type { AssistantReceipt, SessionSummary } from '@liedmotif/shared';
 import { adoptStoredPlaybackSettings, usePlayerContext } from '@/components/player/player-provider';
 import { optimisticFavoriteFlags } from '@/components/player/track-retention';
 
@@ -21,14 +21,26 @@ export function usePlayerFollowsReceipt(
   // A receipt arrives long after the render that made this callback.
   const playbackRef = useRef(playback);
   const pendingRef = useRef(pending);
+  // The engaged Session as last set: receipts of one answer arrive together,
+  // before the player re-renders with what the first of them engaged.
+  const sessionRef = useRef(playback?.session);
   useEffect(() => {
     playbackRef.current = playback;
     pendingRef.current = pending;
+    sessionRef.current = playback?.session;
   }, [playback, pending]);
 
   return useCallback(
     (receipt) => {
       const live = playbackRef.current;
+      // The same Session engaged again is its summary refreshed in place.
+      const refreshSession = (id: string, patch: Partial<SessionSummary>) => {
+        const session = sessionRef.current;
+        if (session?.id !== id) return;
+        const next = { ...session, ...patch };
+        sessionRef.current = next;
+        engage(next, { autoplay: false });
+      };
       switch (receipt.action) {
         case 'favoriteTrack': {
           const track = live?.player.currentTrack;
@@ -56,23 +68,14 @@ export function usePlayerFollowsReceipt(
           );
           return;
         }
-        case 'newMusicOff': {
-          const session = live?.session;
-          // The same Session engaged again is its summary refreshed in place.
-          if (session?.id === receipt.session.id) {
-            engage({ ...session, sessionMode: 'repeat' }, { autoplay: false });
-          }
+        case 'newMusicOff':
+          refreshSession(receipt.session.id, { sessionMode: 'repeat' });
           refreshChrome();
           return;
-        }
-        case 'renameSession': {
-          const session = live?.session;
-          if (session?.id === receipt.session.id) {
-            engage({ ...session, title: receipt.session.name }, { autoplay: false });
-          }
+        case 'renameSession':
+          refreshSession(receipt.session.id, { title: receipt.session.name });
           refreshChrome();
           return;
-        }
         case 'renameTrack':
           // The Rename in the player's own menu applies a title the same way.
           if (receipt.track.name !== null) {

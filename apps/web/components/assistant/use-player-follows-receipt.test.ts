@@ -172,6 +172,23 @@ describe('the player, after a receipt', () => {
     expect(refreshChrome).toHaveBeenCalledTimes(1);
   });
 
+  it('keeps both changes when a rename and New music off arrive together, before the player re-renders', () => {
+    const { engage, session } = playing();
+    const { result } = renderHook(() => usePlayerFollowsReceipt(vi.fn()));
+
+    result.current({
+      action: 'renameSession',
+      session: { id: SESSION_ID, name: 'Sunday Coffee' },
+      previousName: 'Rainy Window',
+    });
+    result.current({ action: 'newMusicOff', session: { id: SESSION_ID, name: 'Sunday Coffee' } });
+
+    expect(engage).toHaveBeenLastCalledWith(
+      { ...session, title: 'Sunday Coffee', sessionMode: 'repeat' },
+      { autoplay: false },
+    );
+  });
+
   it('leaves the engaged Session alone when another one was renamed, and re-reads the shell', () => {
     const { engage } = playing();
     const refreshChrome = vi.fn();

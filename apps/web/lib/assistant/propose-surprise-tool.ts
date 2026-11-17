@@ -1,9 +1,9 @@
 // `proposeSurprise`: prepares a Surprise Me suggestion the way Home's Surprise
 // Me does, and starts nothing. Preparing one is the app's own propose
-// function, run as the asker: its gates, its one bounded text-LLM call and
-// its pending suggestion, which Home then shows too. Starting it buys music,
-// so the chat gets a card, and only the user's click on that card reaches the
-// start route.
+// function, run as the asker: its gates, the same Writing AI calls the app's
+// own Surprise Me button makes, and its pending suggestion, which Home then
+// shows too. Starting it buys music, so the chat gets a card, and only the
+// user's click on that card reaches the start route.
 
 import type { LlmTool } from '@liedmotif/providers';
 import {
@@ -15,7 +15,7 @@ import {
 } from '@liedmotif/shared';
 import { startingSessionMode } from '@/lib/sessions';
 import { loadPendingSurprise, proposeSurprise } from '@/lib/surprise-me';
-import { BAD_DURATION, notOffered, proposed } from './proposal';
+import { BAD_DURATION, homeCoverChoices, notOffered, proposed } from './proposal';
 import { PROPOSE_SURPRISE_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 import type { TurnActions } from './turn-actions';
@@ -30,7 +30,7 @@ export function createProposeSurpriseTool(
   asker: AssistantAsker,
   actions: TurnActions,
 ): LlmTool<ProposeSurpriseInput> {
-  const { db, userId } = asker;
+  const { db, userId, signal } = asker;
   return {
     name: PROPOSE_SURPRISE_TOOL_NAME,
     description:
@@ -58,6 +58,7 @@ export function createProposeSurpriseTool(
           ...(theme ? { theme } : {}),
           vocal: theme && isSungTheme(theme) ? 'vocal' : (vocal ?? 'taste'),
           replaces: pending?.id ?? null,
+          ...(signal ? { signal } : {}),
         });
         if (!result.ok) {
           switch (result.reason) {
@@ -86,6 +87,7 @@ export function createProposeSurpriseTool(
           },
           targetDurationMinutes:
             targetDurationMinutes ?? (noLimit ? null : proposal.edit.durationMinutes),
+          ...(await homeCoverChoices(asker)),
         };
         return proposed(card);
       }),

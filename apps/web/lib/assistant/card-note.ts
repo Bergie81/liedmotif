@@ -69,9 +69,12 @@ const BECAME: Record<CardOutcome, string> = {
 
 /**
  * How the cover a confirmed cover card asked for is going: generated, offered
- * on the card, being made the cover, the cover, or gone from the history.
+ * on the card, being made the cover, the cover, or gone from the history. Or
+ * that the app no longer tells: a later attempt came first (`unknown`), or the
+ * Session or Playlist can no longer be read (`gone`).
  */
-export type CoverAttemptState = 'generating' | 'ready' | 'using' | 'inUse' | 'deleted' | 'failed';
+export type CoverAttemptState =
+  'generating' | 'ready' | 'using' | 'inUse' | 'deleted' | 'failed' | 'unknown' | 'gone';
 
 // A generated cover is never applied on its own: only the card's second tap makes it the cover.
 const COVER_BECAME: Record<CoverAttemptState, string> = {
@@ -85,6 +88,9 @@ const COVER_BECAME: Record<CoverAttemptState, string> = {
   deleted:
     'The user confirmed it, and the new cover was generated but has since been deleted from the cover history.',
   failed: 'The user confirmed it, but the cover failed to generate, and the card told them why.',
+  unknown:
+    'The user confirmed it, but a later cover attempt came after it, so the app no longer tells how this one went. If it was generated, it is in the cover history.',
+  gone: 'The user confirmed it, but the app can no longer read the covers it was for, and the card told them why.',
 };
 
 function became(outcome?: CardOutcome, cover?: CoverAttemptState): string {

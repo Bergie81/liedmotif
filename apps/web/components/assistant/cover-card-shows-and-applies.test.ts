@@ -48,6 +48,7 @@ const ATTEMPT_ID = '00000000-0000-4000-8000-000000000009';
 const OTHER_ATTEMPT_ID = '00000000-0000-4000-8000-000000000008';
 const CURRENT_COVER = '00000000-0000-4000-8000-0000000000c1';
 const NEW_COVER = '00000000-0000-4000-8000-0000000000c2';
+const OTHER_COVER = '00000000-0000-4000-8000-0000000000c3';
 
 const RAINY: AssistantCard = {
   kind: 'cover',
@@ -286,6 +287,79 @@ describe('following a cover attempt', () => {
   });
 });
 
+describe('a cover attempt the status route no longer tells of', () => {
+  const NO_LONGER_TOLD =
+    'This card can no longer tell how the cover went. If it was generated, it is under Previous covers.';
+
+  it('settles on a line pointing to Previous covers when a later attempt came first', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { server } = await confirmCover(RAINY);
+
+    (await attemptReads(server.sent, 1))[0]!.answer(
+      coverStatus('session', {
+        latest: attempt('ready', { coverGenerationId: OTHER_ATTEMPT_ID }),
+        history: [NEW_COVER, CURRENT_COVER],
+      }),
+    );
+
+    await waitFor(() => expect(coverCard().textContent).toContain(NO_LONGER_TOLD));
+    expect(within(coverCard()).queryByRole('button')).toBeNull();
+    await act(() => vi.advanceTimersByTimeAsync(30_000));
+    expect(statusReads(server.sent)).toHaveLength(2);
+  });
+
+  it('does not call a cover deleted that a later attempt replaced while it was generating', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { server } = await confirmCover(RAINY);
+    (await attemptReads(server.sent, 1))[0]!.answer(
+      coverStatus('session', { latest: attempt('generating') }),
+    );
+    await waitFor(() => expect(coverCard().textContent).toContain('Generating the new cover.'));
+
+    await act(() => vi.advanceTimersByTimeAsync(3000));
+    (await attemptReads(server.sent, 2))[1]!.answer(
+      coverStatus('session', {
+        latest: attempt('generating', {
+          coverGenerationId: OTHER_ATTEMPT_ID,
+          coverImageId: OTHER_COVER,
+        }),
+      }),
+    );
+
+    await waitFor(() => expect(coverCard().textContent).toContain(NO_LONGER_TOLD));
+    expect(coverCard().textContent).not.toContain('deleted');
+  });
+
+  it('shows the app’s refusal and stops reading when the Session is gone', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { server } = await confirmCover(RAINY);
+
+    (await attemptReads(server.sent, 1))[0]!.answer(
+      Response.json(makeApiError('not_found', 'Session not found.'), { status: 404 }),
+    );
+
+    await waitFor(() => expect(coverCard().textContent).toContain('Session not found.'));
+    expect(within(coverCard()).queryByRole('button')).toBeNull();
+    await act(() => vi.advanceTimersByTimeAsync(30_000));
+    expect(statusReads(server.sent)).toHaveLength(2);
+  });
+
+  it('tells the next request what the card says', async () => {
+    const { server } = await confirmCover(RAINY);
+    (await attemptReads(server.sent, 1))[0]!.answer(
+      Response.json(makeApiError('not_found', 'Session not found.'), { status: 404 }),
+    );
+    await waitFor(() => expect(coverCard().textContent).toContain('Session not found.'));
+
+    askAgain('Where is it?');
+
+    await waitFor(() => expect(server.asked).toHaveLength(2));
+    expect(server.asked[1]![1]).toBe(
+      '[Card shown by the app: generate one new cover for the Session "Rainy Window". The user confirmed it, but the app can no longer read the covers it was for, and the card told them why.]',
+    );
+  });
+});
+
 describe('a cover card shown again', () => {
   /** Closes the chat and opens it again: the card comes back from the conversation. */
   function reopen() {
@@ -362,6 +436,23 @@ describe('what the next request is told of a cover card', () => {
     await waitFor(() => expect(server.asked).toHaveLength(2));
     expect(server.asked[1]![1]).toBe(
       '[Card shown by the app: generate one new cover for the Session "Rainy Window". The user confirmed it, and the new cover is ready on the card. The user has not used it, so the current cover stays and the new one is in the cover history.]',
+    );
+  });
+
+  it('says the card no longer tells how the cover went', async () => {
+    const { server } = await confirmCover(RAINY);
+    (await attemptReads(server.sent, 1))[0]!.answer(
+      coverStatus('session', {
+        latest: attempt('failed', { coverGenerationId: OTHER_ATTEMPT_ID }),
+      }),
+    );
+    await waitFor(() => expect(coverCard().textContent).toContain('Previous covers'));
+
+    askAgain('And?');
+
+    await waitFor(() => expect(server.asked).toHaveLength(2));
+    expect(server.asked[1]![1]).toBe(
+      '[Card shown by the app: generate one new cover for the Session "Rainy Window". The user confirmed it, but a later cover attempt came after it, so the app no longer tells how this one went. If it was generated, it is in the cover history.]',
     );
   });
 

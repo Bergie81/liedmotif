@@ -8,6 +8,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getPendingProposal,
+  updateCoverArtSettings,
   updateGenerationSettings,
   updateUsageLimits,
   user,
@@ -24,6 +25,8 @@ import {
 } from '@liedmotif/db/testing';
 import { mockLlmProvider, type SurpriseRequestInput } from '@liedmotif/providers';
 import type { AssistantCard } from '@liedmotif/shared';
+import { createAssistantTools } from '@/lib/assistant/tools';
+import { createTurnActions } from '@/lib/assistant/turn-actions';
 import { askWithToolCalls, type ToolCallsTurn } from '../helpers/assistant-tool-turn';
 
 const holder = vi.hoisted(() => ({
@@ -164,6 +167,9 @@ describe.skipIf(skip)('the Assistant asked to surprise the user', () => {
       },
       // The length the app's Surprise Me card prefills.
       targetDurationMinutes: pending!.preview.durationMinutes,
+      // The shipped cover-art settings, which Home's form starts it with.
+      coverStyle: 'poster_art',
+      useStandardCover: false,
     });
     expect(holder.written).toHaveLength(1);
     // The model is told what it prepared, and what confirming costs.
@@ -173,6 +179,19 @@ describe.skipIf(skip)('the Assistant asked to surprise the user', () => {
     expect(turn.results[0]).toMatch(/confirming generates new Tracks from their budget/);
     expect(await rowsIn('activity_sessions')).toBe(0);
     expect(await rowsIn('generation_requests')).toBe(0);
+  });
+
+  it('carries the cover choices Home’s form starts with: the user’s Default cover style and Standard covers', async () => {
+    const asker = await createAdmin();
+    await updateCoverArtSettings(testDb.db, asker, {
+      defaultStyle: 'manga',
+      useStandardCoverArt: true,
+    });
+
+    expect(surpriseCard(await askForSurprise(asker, {}))).toMatchObject({
+      coverStyle: 'manga',
+      useStandardCover: true,
+    });
   });
 
   it('asks the app for what the user named: adventurous, a theme, vocals, a length', async () => {
@@ -248,6 +267,31 @@ describe.skipIf(skip)('the Assistant asked to surprise the user', () => {
     expect(turn.results[0]).toMatch(/no card was shown/i);
     expect(holder.written).toEqual([]);
     expect(await getPendingProposal(testDb.db, asker)).toBeNull();
+  });
+
+  it('keeps nothing when the user stops the answer while the suggestion is being written', async () => {
+    const asker = await createAdmin();
+    const first = surpriseCard(await askForSurprise(asker, {}));
+    const stop = new AbortController();
+    const writer = mockLlmProvider();
+    holder.llm = {
+      ...writer,
+      async createSurpriseRequest(input: SurpriseRequestInput) {
+        stop.abort();
+        return writer.createSurpriseRequest(input);
+      },
+    };
+    const reported: unknown[] = [];
+    const proposeTool = createAssistantTools(
+      { db: testDb.db, userId: asker, role: 'admin', player: null, signal: stop.signal },
+      createTurnActions((action) => reported.push(action)),
+      [],
+    ).find((tool) => tool.name === 'proposeSurprise')!;
+
+    await proposeTool.execute({});
+
+    expect(reported).toEqual([]);
+    expect((await getPendingProposal(testDb.db, asker))?.id).toBe(first.suggestion.id);
   });
 
   it('prepares one card per message: a second ask writes nothing', async () => {

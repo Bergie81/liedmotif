@@ -6,7 +6,7 @@
 
 import { z } from 'zod';
 import { errorResponseSchema, uuidSchema } from './common';
-import { MAX_COVER_GUIDANCE_LENGTH, VOCAL_MODES } from './domain';
+import { COVER_STYLE_CHOICES, MAX_COVER_GUIDANCE_LENGTH, VOCAL_MODES } from './domain';
 import {
   MAX_SEED_TRACKS,
   MAX_USER_PROMPT_LENGTH,
@@ -188,6 +188,16 @@ const assistantPlaySourceSchema = z.discriminatedUnion('kind', [
 ]);
 
 /**
+ * The cover choices Home's form starts a new Session with by default: the
+ * asker's Default cover style, left out for Auto as the start routes' own
+ * default, and their Standard covers setting.
+ */
+const cardCoverChoicesShape = {
+  coverStyle: z.enum(COVER_STYLE_CHOICES).exclude(['auto']).optional(),
+  useStandardCover: z.boolean().optional(),
+};
+
+/**
  * What the browser's player is to do, as structured values: the chat panel
  * runs it through the player's own actions and words its line from it.
  */
@@ -220,6 +230,7 @@ export const assistantCardSchema = z.discriminatedUnion('kind', [
     vocal: z.enum(VOCAL_MODES),
     /** How long the Session generates; null is No limit. Left out when it starts on Repeat and the user named no length. */
     targetDurationMinutes: targetDurationMinutesSchema.nullable().optional(),
+    ...cardCoverChoicesShape,
   }),
   z.strictObject({
     kind: z.literal('changeVibe'),
@@ -259,6 +270,7 @@ export const assistantCardSchema = z.discriminatedUnion('kind', [
     }),
     /** How long the Session generates; null is No limit. */
     targetDurationMinutes: targetDurationMinutesSchema.nullable(),
+    ...cardCoverChoicesShape,
   }),
   z.strictObject({
     kind: z.literal('cover'),
@@ -288,13 +300,13 @@ export function sessionCardStartRequest(
     ...(card.targetDurationMinutes != null && {
       targetDurationMinutes: card.targetDurationMinutes,
     }),
+    ...cardCoverChoices(card),
   };
 }
 
 /**
  * The Surprise Me start request a Surprise Me card stands for: the
- * suggestion, and its length. The cover choices Home's form adds (cover style,
- * standard cover) are left to the start route's defaults.
+ * suggestion, its length, and the cover choices Home's form sends by default.
  */
 export function surpriseCardStartRequest(
   card: Extract<AssistantCard, { kind: 'surprise' }>,
@@ -304,6 +316,17 @@ export function surpriseCardStartRequest(
     ...(card.targetDurationMinutes != null && {
       targetDurationMinutes: card.targetDurationMinutes,
     }),
+    ...cardCoverChoices(card),
+  };
+}
+
+function cardCoverChoices({
+  coverStyle,
+  useStandardCover,
+}: Extract<AssistantCard, { kind: 'session' | 'surprise' }>) {
+  return {
+    ...(coverStyle !== undefined && { coverStyle }),
+    ...(useStandardCover !== undefined && { useStandardCover }),
   };
 }
 
