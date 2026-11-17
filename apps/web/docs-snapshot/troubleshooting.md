@@ -1,10 +1,10 @@
 ---
 title: Troubleshooting
 description: Real Liedmotif problems with the exact message, the reason and the fix, plus how to read logs and check health.
-checkedOn: 2026-11-11
+checkedOn: 2026-11-17
 ---
 
-Find your message or symptom below. Most fixes are one line. Run every command in your install folder: `/opt/liedmotif` from the installer, or your `liedmotif` folder on a laptop. If your user isn't in the `docker` group, write `sudo docker` for `docker`.
+Find your message or symptom below. A message about something you just did, such as a failed save or a **Test** result, shows as a notification at the top of the screen; an error stays there until you close it. A problem that lasts shows where it is, such as the banner in the player or a page that couldn't load. Most fixes are one line. Run every command in your install folder: `/opt/liedmotif` from the installer, or your `liedmotif` folder on a laptop. If your user isn't in the `docker` group, write `sudo docker` for `docker`.
 
 Running Liedmotif on a laptop? [The laptop guide](/docs/install/local#troubleshooting) has the problems specific to it, such as ports already in use and signing in at `localhost:2206`.
 
@@ -248,7 +248,7 @@ The key is wrong, was revoked, or your provider account has a problem. Create a 
 
 ### "... rejected this API key." on the writing AI or image key
 
-This comes from the **Test** button, with your provider's name at the start. The key is wrong for that provider. A message that starts "Key works, but" and goes on to say the provider has no such model means the key is fine and the model ID has a typo.
+This comes from the **Test** button, as a notification at the top of the screen, with your provider's name at the start. The key is wrong for that provider. A message that starts "Key works, but" and goes on to say the provider has no such model means the key is fine and the model ID has a typo.
 
 ### Generation paused: out of credits
 
@@ -282,7 +282,7 @@ That's a budget, not a fault. A running session replays its own tracks for free 
 
 ### A session looks stuck on generating
 
-Read the banner in the player first, because it names most problems. Then, in order:
+Read the banner in the player first, because it names most problems. If the problem started while you were on another page, the same message showed once as a notification at the top of the screen. Then, in order:
 
 1. **Give it time.** The first track can take a minute or more, and longer when the provider has no early stream and the file has to finish first. "Generation is catching up" clears by itself.
 2. **Check the worker.** Run `docker compose ps` and `docker compose logs worker --tail 50`, or open **Settings › Diagnostics & worker**. The app can look fine while the worker is down, and then no track will arrive.

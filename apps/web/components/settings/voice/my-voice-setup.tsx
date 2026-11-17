@@ -513,11 +513,6 @@ function RecorderPanel({
           <span className="text-[12.5px] text-dim">Processing…</span>
         ) : null}
       </div>
-      {recorder.error ? (
-        <p className="mt-2 text-[12.5px] text-warn" role="alert">
-          {recorder.error}
-        </p>
-      ) : null}
 
       {take ? (
         <div className="mt-4 rounded-card-sm border border-line-2 bg-paper/[0.02] p-3">

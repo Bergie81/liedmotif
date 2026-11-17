@@ -7,6 +7,7 @@
 // user compares takes by ear.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from '@/lib/toast';
 import { processCapturedAudio, type EncodedVoiceRecording } from '@/lib/voice-recording';
 
 export type VoiceRecorderState = 'idle' | 'requesting' | 'recording' | 'processing';
@@ -15,11 +16,13 @@ export interface UseVoiceRecorderResult {
   state: VoiceRecorderState;
   /** Seconds since recording started (1s resolution, for the live counter). */
   elapsedSeconds: number;
-  error: string | null;
   start: (options: { cleanup: boolean }) => Promise<void>;
   /** Stop and resolve the processed take; null when nothing was captured. */
   stop: () => Promise<EncodedVoiceRecording | null>;
 }
+
+/** A failed take is one toast, so the next attempt to record clears it. */
+const FAILURE_KEY = 'voice-recorder';
 
 const MIC_DENIED_MESSAGE =
   'Microphone access was blocked — allow it in the browser settings and try again.';
@@ -27,7 +30,6 @@ const MIC_DENIED_MESSAGE =
 export function useVoiceRecorder(): UseVoiceRecorderResult {
   const [state, setState] = useState<VoiceRecorderState>('idle');
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [error, setError] = useState<string | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
@@ -56,7 +58,7 @@ export function useVoiceRecorder(): UseVoiceRecorderResult {
   const start = useCallback(
     async ({ cleanup }: { cleanup: boolean }) => {
       if (state !== 'idle') return;
-      setError(null);
+      toast.dismiss(FAILURE_KEY);
       setState('requesting');
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -83,7 +85,7 @@ export function useVoiceRecorder(): UseVoiceRecorderResult {
         setState('recording');
       } catch {
         teardown();
-        setError(MIC_DENIED_MESSAGE);
+        toast.error(MIC_DENIED_MESSAGE, { key: FAILURE_KEY });
         setState('idle');
       }
     },
@@ -107,12 +109,12 @@ export function useVoiceRecorder(): UseVoiceRecorderResult {
     try {
       return await processCapturedAudio(captured);
     } catch {
-      setError('Could not process the recording — try again.');
+      toast.error('Could not process the recording — try again.', { key: FAILURE_KEY });
       return null;
     } finally {
       setState('idle');
     }
   }, [state, teardown]);
 
-  return { state, elapsedSeconds, error, start, stop };
+  return { state, elapsedSeconds, start, stop };
 }

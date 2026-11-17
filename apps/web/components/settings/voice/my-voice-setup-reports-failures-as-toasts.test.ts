@@ -85,6 +85,24 @@ describe('MyVoiceSetup — failures as toasts', () => {
     expect(shown()).toEqual([]);
   });
 
+  it('reports a recording that could not start as an error toast', async () => {
+    stubAnswers();
+    render(createElement(MyVoiceSetup, { initial: { ...NONE, status: 'draft' } }));
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Start recording' })[0]!);
+
+    await waitFor(() =>
+      expect(shown()).toEqual([
+        {
+          tone: 'error',
+          message:
+            'Microphone access was blocked — allow it in the browser settings and try again.',
+        },
+      ]),
+    );
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('keeps a failed setup on its card', () => {
     stubAnswers();
     render(

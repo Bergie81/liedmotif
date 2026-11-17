@@ -15,11 +15,6 @@ import {
 import { Slider } from '@/components/ui/slider';
 import type { SettingsStatus } from '@/lib/settings-hub-model';
 
-export type SettingsFeedbackState = {
-  kind: 'success' | 'error' | 'info';
-  message: string;
-} | null;
-
 export function SettingsPageHeader({
   title,
   description,

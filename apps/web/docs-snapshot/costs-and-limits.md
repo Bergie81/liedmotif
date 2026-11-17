@@ -158,6 +158,8 @@ Reaching a limit never ends a session. It stays active and replays what it has, 
 | The storage quota | New tracks and uploads stop, with a message naming the quota. Playing and deleting still work | When you raise it or delete tracks |
 | Provider credit | **Generation paused**, and the session plays what it has | When you [top up with the provider](/docs/providers-and-keys) |
 
+On the player, a banner above the cover says what is holding new music. If it happens while you're on another page, the same message shows once as a notification at the top of the screen. For a reached limit it links to **Settings › Cost limits**, or for a member to **Settings › My budget**.
+
 ### Starting something new
 
 New sessions and **More Like This** need more room than a running session, so that a new one has enough tracks to loop. With less room than **Headroom to start**, you see **No generation headroom right now** and no session is created. You're offered **Resume a Session** or your library instead. A member with 4 tracks left in a one-time budget can't start something new, but can resume a session and use them there.

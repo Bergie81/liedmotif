@@ -18,6 +18,8 @@ Look up any feature here to see what it does, where to find it and what its limi
 
 Tap your avatar for **Profile**, **Your Stats**, **Settings**, **Mode** and **Sign out**. The full player opens when you start music or tap the mini player.
 
+When something you do succeeds or fails, such as saving a setting or deleting a track, a short notification shows at the top of the screen, or top right on a wide screen. It floats over the page, so nothing moves, and it stays above an open menu or dialog. A success fades after a few seconds and a warning after a few more. An error stays until you close it, swipe it up, try again or go to another page. Problems that last show where they are instead: a page or list that couldn't load, with **Try again**, the banner in the player, or a note under a field.
+
 ## Ask Roadie
 
 Roadie is the AI assistant inside the app. Ask it how something in Liedmotif works, such as "How do I listen offline?", and it answers from these docs and says where in the app to look. Roadie can also play your music and control the player, do a few things in your library for you, change a few of your own settings, and prepare anything that costs for you to confirm: a new session, a Surprise Me, a change of vibe, more like a track, New music on, or a new cover. It never removes anything.
@@ -67,7 +69,7 @@ While the field is empty, it cycles through worked examples of good requests. Th
 
 A writing AI is optional. It's a text service that turns your words into one steady direction for the whole session, and gives sessions and tracks creative names. `.env` calls it a text LLM. Without one, your words reach the music model exactly as written, and your fine-tune picks apply either way. The admin connects one in **Settings › AI Providers**, and [providers and keys](/docs/providers-and-keys#writing-ai) compares the two in full.
 
-Without one, **Home** says **No Writing AI connected**. If a connected writing AI fails, the session doesn't quietly start without it: you get an error and can try again.
+Without one, **Home** says **No Writing AI connected**. If a connected writing AI fails, the session doesn't quietly start without it: a notification at the top of the screen says why, and you can try again.
 
 ### Fine-tune picks
 
@@ -239,6 +241,8 @@ Real problems get a banner above the cover:
 
 If a session is blocked before its first track and nothing will fix that by itself, the banner offers **Delete Session**.
 
+If one of these starts while you're on another page, the same message shows once as a notification at the top of the screen.
+
 ### The mini player
 
 Music keeps playing while you browse, with a small player in the bottom bar on a phone or the sidebar on a computer. It has the basic controls and opens the full player.
@@ -349,7 +353,7 @@ Tap the star in the player, or pick **Add to Favorites** in a track's menu. Favo
 
 ### Playlists
 
-Press **New playlist** in the **Playlists** tab, or file a track from the player with the plus button. **Save to Playlists** shows a checklist, so one track can join several playlists at once. It can also create a new one. Unchecking everything turns the button into **Remove from Library**. A playlist that's shared shows **In the Lounge**, because anything you add is heard there at once.
+Press **New playlist** in the **Playlists** tab, or file a track from the player with the plus button. **Save to Playlists** shows a checklist, so one track can join several playlists at once. It can also create a new one. Unchecking everything turns the button into **Remove from Library**. A playlist that's shared shows **In the Lounge**, because anything you add is heard there at once. When the sheet closes, a notification says where the track went, such as "Saved to Running".
 
 A playlist's own menu has **Add Tracks**, **Rename Playlist**, **Reorder Tracks**, the cover, **Download all Playlist Tracks** and **Delete Playlist**. Each track's menu has **Remove from Playlist**, **Add to Playlist**, **More Like This**, **Track Data**, **Download Track** and **Delete Track**.
 
@@ -360,7 +364,7 @@ A playlist's own menu has **Add Tracks**, **Rename Playlist**, **Reorder Tracks*
 
 ### Add many tracks at once
 
-There are two ways, and each takes up to 100 tracks at a time. In a playlist, **Add Tracks** lists your full history: tick the tracks and press **Add**. Tracks already in it are locked. Or in **Saved** or **History**, press **Select**, tap the tracks, press the **Add to playlist** button that shows your count and choose a playlist. For more than 100, repeat in batches.
+There are two ways, and each takes up to 100 tracks at a time. In a playlist, **Add Tracks** lists your full history: tick the tracks and press **Add**. Tracks already in it are locked. Or in **Saved** or **History**, press **Select**, tap the tracks, press the **Add to playlist** button that shows your count and choose a playlist. A notification then says how many went in, such as "Added 12 tracks to Running". For more than 100, repeat in batches.
 
 ### Turn a session into a playlist
 
