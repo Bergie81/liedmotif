@@ -13,27 +13,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Armchair, ArrowRight, EllipsisVertical, Lock, Pin } from 'lucide-react';
-import { MenuMoreLikeThisGlyph } from '@/components/ui/glyphs';
+import { Armchair, ArrowRight, EllipsisVertical, Pin } from 'lucide-react';
 import type { LoungePlaylistItem } from '@liedmotif/shared';
 import {
   getAllPlaylistMembers,
   getLoungePlaylist,
   listLoungePlaylists,
-  moderateLoungePlaylist,
   pinLoungePlaylist,
 } from '@/lib/api-client';
 import { appendUniqueById } from '@/lib/append-unique';
 import { cn } from '@/lib/cn';
 import { AvatarBadge } from '@/components/avatar-badge';
-import { ConfirmDialog } from '@/components/confirm-dialog';
 import { LibrarySearchField } from '@/components/library/library-search-field';
 import { MatchContextLine } from '@/components/search/match-context';
 import { usePageEpoch } from '@/components/use-page-epoch';
 import { useServerSeed } from '@/components/use-server-seed';
 import { AlertBanner, menuTriggerClass } from '@/components/ui/design-system';
 import { LoadMoreButton } from '@/components/ui/load-more-button';
-import { MenuRow } from '@/components/ui/menu-row';
 import { OnlineOnly } from '@/components/ui/online-only';
 import { Sheet, SheetTrigger } from '@/components/ui/sheet';
 import {
@@ -42,6 +38,7 @@ import {
   playlistCardPinFlagClass,
 } from '@/components/playlists/playlist-card-shell';
 import { PlaylistOptionsSheetContent } from '@/components/playlists/playlist-options-sheet-content';
+import { SharePlaylistSheet, type ShareResult } from '@/components/playlists/share-playlist-sheet';
 import {
   formatPlaylistCardMeta,
   pinToggleFailure,
@@ -50,17 +47,28 @@ import { usePlayPlaylist } from '@/components/playlists/use-play-playlist';
 import { OfflineMark } from '@/components/offline/offline-mark';
 import { RelativeTime } from '@/components/relative-time';
 import { useSeedMoreLikeThis } from '@/components/sessions/use-seed-more-like-this';
-import { buildSharerCards, loungeOwnerDisplayName, type LoungeSharer } from './lounge-view-model';
+import {
+  buildSharerCards,
+  LOUNGE_MLT_SEED_TRACKS,
+  loungeOwnerDisplayName,
+  type LoungeSharer,
+} from './lounge-view-model';
+import { RemoveFromLoungeDialog, ReturnToPrivateDialog } from './lounge-confirm-dialogs';
+import {
+  LoungeOwnerRows,
+  LoungeVisitorRows,
+  type LoungeOwnerActions,
+  type LoungeVisitorActions,
+} from './lounge-menu-rows';
 import { LoungeMemberFilter } from './lounge-member-filter';
+
+/** Every move a tile offers; its menu shows the owner's or the visitor's share. */
+type LoungeTileActions = LoungeOwnerActions & LoungeVisitorActions;
 
 export interface LoungeFirstPage {
   playlists: LoungePlaylistItem[];
   nextCursor: string | null;
 }
-
-/** How many members seed a playlist-level More Like This — the seed route's
- *  request cap, and the same count the playlist player seeds with. */
-const MLT_SEED_TRACKS = 10;
 
 export function LoungeView({
   initial,
@@ -80,15 +88,20 @@ export function LoungeView({
   const [nextCursor, setNextCursor] = useState(initial.nextCursor);
   /** Applied (debounced, trimmed) query — what the shown list was narrowed by. */
   const [query, setQuery] = useState('');
-  /** The single-selected sharer card; null = Everyone. */
+  /** The single-selected sharer card; null = All. */
   const [member, setMember] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { loadingMore, beginFirstPage, beginNextPage, settle } = usePageEpoch();
   const playback = usePlayPlaylist(setError);
+  const visitorPlayback = usePlayPlaylist(setError, { foreign: true });
   const seedMoreLikeThis = useSeedMoreLikeThis();
   const [seeding, setSeeding] = useState(false);
   /** The foreign share awaiting the Admin's Return to Private confirmation. */
   const [moderating, setModerating] = useState<LoungePlaylistItem | null>(null);
+  /** The viewer's own share whose audience sheet is open. */
+  const [sharing, setSharing] = useState<LoungePlaylistItem | null>(null);
+  /** The viewer's own share awaiting the Remove from Lounge confirmation. */
+  const [removing, setRemoving] = useState<LoungePlaylistItem | null>(null);
   const consumeServerSeed = useServerSeed(true);
   const router = useRouter();
   const cards = useMemo(() => buildSharerCards(sharers, viewerUserId), [sharers, viewerUserId]);
@@ -163,38 +176,39 @@ export function LoungeView({
   async function seedFromShared(item: LoungePlaylistItem) {
     if (seeding) return;
     setSeeding(true);
-    const page = await getLoungePlaylist(item.id, null, MLT_SEED_TRACKS);
+    const page = await getLoungePlaylist(item.id, null, LOUNGE_MLT_SEED_TRACKS);
     const failure = !page.ok
       ? `More Like This didn’t start: ${page.error.message}`
-      : await seedMoreLikeThis(page.data.items.slice(0, MLT_SEED_TRACKS).map((m) => m.id));
+      : await seedMoreLikeThis(page.data.items.slice(0, LOUNGE_MLT_SEED_TRACKS).map((m) => m.id));
     setSeeding(false);
     if (failure) setError(failure);
   }
 
-  /** The Admin's single cross-owner write: return a foreign share
-   *  to Private through the owner's own unshare path — references and Pins
-   *  purge with it, the owner keeps the playlist and can re-share. */
-  async function returnToPrivate(item: LoungePlaylistItem) {
-    const result = await moderateLoungePlaylist(item.id);
-    setModerating(null);
-    if (!result.ok) {
-      setError(`Couldn’t return the playlist to Private: ${result.error.message}`);
-      return;
-    }
-    setPlaylists((current) => current.filter((p) => p.id !== item.id));
+  function leaveRoom(playlistId: string) {
+    setPlaylists((current) => current.filter((p) => p.id !== playlistId));
     // The sharer cards and their counts are server-rendered.
     router.refresh();
   }
 
-  /** Own tiles only: playlist playback through the generic transport. Foreign
-   *  playback arrives with the visitor view. */
-  async function playOwn(item: LoungePlaylistItem) {
-    const result = await getAllPlaylistMembers(item.id);
+  /** A share made Private leaves the room; an audience change keeps the tile. */
+  function onShareChanged({ playlistId, sharedAt }: ShareResult) {
+    if (sharedAt === null) leaveRoom(playlistId);
+  }
+
+  /** Playlist playback through the generic transport. A foreign share reads
+   *  through the Lounge, since the owner's playlist route refuses a visitor, and
+   *  plays in the visitor scope, which leaves the owner's play stamp alone. */
+  async function play(item: LoungePlaylistItem) {
+    const result = item.yours
+      ? await getAllPlaylistMembers(item.id)
+      : await getAllPlaylistMembers(item.id, (cursor, limit) =>
+          getLoungePlaylist(item.id, cursor, limit),
+        );
     if (!result.ok) {
       setError(`Couldn’t load the playlist: ${result.error.message}`);
       return;
     }
-    playback.play(result.data.playlist, result.data.items);
+    (item.yours ? playback : visitorPlayback).play(result.data.playlist, result.data.items);
   }
 
   if (roomEmpty) {
@@ -221,10 +235,14 @@ export function LoungeView({
               key={item.id}
               item={item}
               query={query}
-              onPlayOwn={() => void playOwn(item)}
-              onTogglePin={() => void togglePin(item)}
-              onMoreLikeThis={() => void seedFromShared(item)}
-              onReturnToPrivate={viewerIsAdmin ? () => setModerating(item) : undefined}
+              actions={{
+                play: () => void play(item),
+                togglePin: () => void togglePin(item),
+                moreLikeThis: () => void seedFromShared(item),
+                editSharing: () => setSharing(item),
+                removeFromLounge: () => setRemoving(item),
+                returnToPrivate: viewerIsAdmin ? () => setModerating(item) : undefined,
+              }}
             />
           ))}
         </div>
@@ -232,16 +250,25 @@ export function LoungeView({
       {nextCursor ? (
         <LoadMoreButton loading={loadingMore} onClick={() => void loadMore()} className="mt-4" />
       ) : null}
-      <p className="mt-6 font-mono text-[10.5px] uppercase leading-[1.7] tracking-[0.05em] text-dim">
-        Shared music stays its owner&rsquo;s · making it Private again removes it from everyone
-        else&rsquo;s Library
-      </p>
+      <SharePlaylistSheet
+        playlist={sharing}
+        onClose={() => setSharing(null)}
+        onShared={onShareChanged}
+      />
+      {removing ? (
+        <RemoveFromLoungeDialog
+          playlist={removing}
+          onRemoved={onShareChanged}
+          onError={setError}
+          onClose={() => setRemoving(null)}
+        />
+      ) : null}
       {moderating ? (
-        <ConfirmDialog
-          heading="Return to Private"
-          body={returnToPrivateModerationBody(moderating)}
-          confirmLabel="Return to Private"
-          onConfirm={() => returnToPrivate(moderating)}
+        <ReturnToPrivateDialog
+          playlist={moderating}
+          owner={loungeOwnerDisplayName(moderating.ownerArtistName, moderating.ownerName)}
+          onReturned={() => leaveRoom(moderating.id)}
+          onError={setError}
           onClose={() => setModerating(null)}
         />
       ) : null}
@@ -249,29 +276,14 @@ export function LoungeView({
   );
 }
 
-/** The purge is irreversible for everyone but the owner: a re-share restores
- *  the playlist's Lounge presence, never the Members' Pins or Shared
- *  references — so the confirmation says so before it runs. */
-function returnToPrivateModerationBody(item: LoungePlaylistItem): string {
-  const owner = loungeOwnerDisplayName(item.ownerArtistName, item.ownerName);
-  return `“${item.name}” by ${owner} leaves the Lounge. Other Members lose their Pins of it and any saved Shared references to its Tracks that no other shared playlist of ${owner}’s still holds — sharing it again won’t bring them back. ${owner} keeps the playlist and its Tracks.`;
-}
-
 function LoungeTile({
   item,
   query,
-  onPlayOwn,
-  onTogglePin,
-  onMoreLikeThis,
-  onReturnToPrivate,
+  actions,
 }: {
   item: LoungePlaylistItem;
   query: string;
-  onPlayOwn: () => void;
-  onTogglePin: () => void;
-  onMoreLikeThis: () => void;
-  /** Set only for the Admin — the moderation row is member-invisible. */
-  onReturnToPrivate?: () => void;
+  actions: LoungeTileActions;
 }) {
   const ownerLabel = item.yours
     ? 'you'
@@ -283,7 +295,7 @@ function LoungeTile({
       openLabel={`Open ${item.name} by ${ownerLabel}`}
       coverImageId={item.coverImageId}
       mosaicCoverImageIds={item.mosaicCoverImageIds}
-      onPlay={item.yours ? onPlayOwn : undefined}
+      onPlay={actions.play}
       playLabel={`Play ${item.name}`}
       playTestId={`lounge-play-${item.id}`}
       testId={`lounge-tile-${item.id}`}
@@ -294,7 +306,7 @@ function LoungeTile({
             aria-pressed={item.pinned}
             aria-label={item.pinned ? `Unpin ${item.name}` : `Pin ${item.name} in the Lounge`}
             data-testid={`lounge-pin-${item.id}`}
-            onClick={onTogglePin}
+            onClick={actions.togglePin}
             className={cn(
               playlistCardPinFlagClass,
               'z-20 transition',
@@ -305,16 +317,7 @@ function LoungeTile({
           </button>
         </OnlineOnly>
       }
-      trailing={
-        item.yours ? undefined : (
-          <LoungeTileMenu
-            item={item}
-            onTogglePin={onTogglePin}
-            onMoreLikeThis={onMoreLikeThis}
-            onReturnToPrivate={onReturnToPrivate}
-          />
-        )
-      }
+      trailing={<LoungeTileMenu item={item} actions={actions} />}
     >
       <div className="truncate text-[14px] font-semibold">{item.name}</div>
       <div className={cn('mt-1', playlistCardMetaLineClass)}>
@@ -353,24 +356,19 @@ function LoungeTile({
   );
 }
 
-/** The foreign tile's options sheet — the same sheet model as the Library's
- *  playlist card menu. Available offline, the Pin toggle and More Like This (on
- *  the VIEWER's budget); for the Admin only, the Return to
- *  Private moderation row (the one cross-owner write — foreign tiles only, on
- *  their own shares the Admin unshares through the normal owner row). */
+/** A tile's options sheet — the same sheet model as the Library's playlist
+ *  card menu. The viewer's own share gets the owner rows; someone else's gets
+ *  the visitor rows the visitor view's header offers too. On their own shares
+ *  the Admin unshares through the owner rows, never the moderation one. */
 function LoungeTileMenu({
   item,
-  onTogglePin,
-  onMoreLikeThis,
-  onReturnToPrivate,
+  actions,
 }: {
   item: LoungePlaylistItem;
-  onTogglePin: () => void;
-  onMoreLikeThis: () => void;
-  onReturnToPrivate?: () => void;
+  actions: LoungeTileActions;
 }) {
   const [open, setOpen] = useState(false);
-  const ownerLabel = loungeOwnerDisplayName(item.ownerArtistName, item.ownerName);
+  const close = () => setOpen(false);
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger
@@ -380,43 +378,27 @@ function LoungeTileMenu({
       >
         <EllipsisVertical className="h-[17px] w-[17px]" aria-hidden />
       </SheetTrigger>
-      <PlaylistOptionsSheetContent playlist={item} owner={ownerLabel}>
-        <MenuRow
-          onlineOnly
-          icon={<Pin className={cn(item.pinned && 'fill-current')} />}
-          label={item.pinned ? 'Unpin Playlist' : 'Pin in the Lounge'}
-          description={item.pinned ? 'Stop listing it first' : 'List it first in your lounge'}
-          data-testid={`lounge-menu-pin-${item.id}`}
-          onClick={() => {
-            setOpen(false);
-            onTogglePin();
-          }}
-        />
-        <MenuRow
-          onlineOnly
-          icon={<MenuMoreLikeThisGlyph />}
-          label="More Like This"
-          description="Start a new session in this style, on your own budget"
-          data-testid={`lounge-menu-more-like-this-${item.id}`}
-          onClick={() => {
-            setOpen(false);
-            onMoreLikeThis();
-          }}
-        />
-        {onReturnToPrivate ? (
-          <MenuRow
-            onlineOnly
-            icon={<Lock />}
-            label="Return to Private"
-            description="Admin: make it private and remove it from everyone else's library"
-            tone="danger"
-            data-testid={`lounge-menu-return-to-private-${item.id}`}
-            onClick={() => {
-              setOpen(false);
-              onReturnToPrivate();
-            }}
+      <PlaylistOptionsSheetContent
+        playlist={item}
+        owner={
+          item.yours ? undefined : loungeOwnerDisplayName(item.ownerArtistName, item.ownerName)
+        }
+      >
+        {item.yours ? (
+          <LoungeOwnerRows
+            playlistId={item.id}
+            pinned={item.pinned}
+            actions={actions}
+            close={close}
           />
-        ) : null}
+        ) : (
+          <LoungeVisitorRows
+            playlistId={item.id}
+            pinned={item.pinned}
+            actions={actions}
+            close={close}
+          />
+        )}
       </PlaylistOptionsSheetContent>
     </Sheet>
   );

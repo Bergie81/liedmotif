@@ -1,9 +1,8 @@
 // @vitest-environment jsdom
 
 // Available offline is the first thing the Playlist's menu offers, on the
-// listener's own Playlist and on a Lounge visitor's alike: it is the only row a
-// visitor has, so the menu exists for them only when this page can store music
-// at all.
+// listener's own Playlist and on a Lounge visitor's alike. A header with no
+// other rows has the menu only when this page can store music at all.
 
 import { createElement as h } from 'react';
 import type { PlaylistSummaryItem } from '@liedmotif/shared';
@@ -65,7 +64,7 @@ describe('the Playlist menu', () => {
     expect(toggle.compareDocumentPosition(firstAct)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
-  it('holds only Available offline for a Lounge visitor', () => {
+  it('holds only Available offline when there are no other rows', () => {
     render(h(PlaylistHeader, { playlist: PLAYLIST, reordering: false }));
     fireEvent.click(screen.getByTestId('playlist-menu'));
 
@@ -73,7 +72,7 @@ describe('the Playlist menu', () => {
     expect(screen.queryByTestId('playlist-menu-add-tracks')).toBeNull();
   });
 
-  it('is absent for a Lounge visitor where the page cannot store music', () => {
+  it('is absent with no other rows where the page cannot store music', () => {
     supported.current = false;
     render(h(PlaylistHeader, { playlist: PLAYLIST, reordering: false }));
 

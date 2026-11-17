@@ -24,7 +24,8 @@ const LYRIC_EDIT_RULE =
  * session sources it from the request alone (the request is declared complete). */
 function lyricContextRule(skipProfile: boolean): string {
   return skipProfile
-    ? 'ONLY when vocals are wanted, built solely from details the request itself provides'
+    ? 'ONLY when vocals are wanted, built solely from details the request itself provides ' +
+        'and the People it names'
     : 'ONLY when vocals are wanted AND a listener profile is given';
 }
 
@@ -57,6 +58,11 @@ function schemaFields(skipProfile: boolean): string {
     `lyricContext (string, normally "": ${lyricContextRule(skipProfile)}, ` +
     `compact labeled creative notes — max ${MAX_LYRIC_CONTEXT_LENGTH} chars — that ` +
     `${LYRIC_CONTEXT_PURPOSE}), ` +
+    'includesListener (boolean: true ONLY when the request places the listener themself in ' +
+    'its scene or story as a participant, in any language — "me and Jonas on the moon", ' +
+    '"my friends and I", or implied as in "with Jonas on the road to Lisbon"; false when the ' +
+    'listener only asks for the music ("I want", "play me", "give us") or the scene belongs ' +
+    'to other people), ' +
     `language (string, REQUIRED whenever vocals are wanted: the language the request's own ` +
     `words are written in, as an English name, e.g. "French", so the lyrics are sung in it; ` +
     `may be "" for instrumental), ` +
@@ -115,54 +121,109 @@ const NAME_MENTION_RULE =
   'light personal touch — never the hook, chorus refrain, or opening, and not ' +
   'in every track.';
 
-const LYRIC_CONTEXT_GUIDANCE = [
-  'For vocal lyricContext: The listening request is the primary creative direction.',
-  THEME_FIDELITY_RULE,
-  'Pick only the FEW profile details (roughly 2-4) that genuinely serve the request and DEVELOP them into one scene or story; every other profile fact stays out.',
-  'The selected details are raw material to extend creatively, never lines to quote; do not try to maximize profile coverage.',
-  `${NAME_MENTION_RULE} Neither belongs at the start of the notes.`,
-  'Lead the notes with the central theme or story moment, then imagery; people and setting come last and only when they serve the theme.',
-  'Write lyricContext as compact, labeled creative notes instead of prose sentences.',
-  'Use semicolons between categories and commas within categories.',
-  'Include only useful categories from: central theme, story moments, imagery, emotional arc, people/relationships, setting.',
-  'Omit categories that add no value.',
-  'Do not produce a biography, resume, or unstructured inventory of profile facts.',
-  'If nothing in the profile fits, build the notes from the listening request without forced personalization.',
-  'Return only the labeled notes, with no selection rationale.',
-].join(' ');
+/** How lyric notes are selected and written. With the listener's own About in
+ * hand, the About block sets the one fact it always contributes; beyond that,
+ * personalization is never forced. */
+const lyricContextGuidance = (ownAbout: boolean): string =>
+  [
+    'For vocal lyricContext: The listening request is the primary creative direction.',
+    THEME_FIDELITY_RULE,
+    'Pick only the FEW profile details (roughly 2-4) that genuinely serve the request and DEVELOP them into one scene or story; every other profile fact stays out.',
+    'The selected details are raw material to extend creatively, never lines to quote; do not try to maximize profile coverage.',
+    `${NAME_MENTION_RULE} Neither belongs at the start of the notes.`,
+    'Lead the notes with the central theme or story moment, then imagery; people and setting come last and only when they serve the theme.',
+    'Write lyricContext as compact, labeled creative notes instead of prose sentences.',
+    'Use semicolons between categories and commas within categories.',
+    'Include only useful categories from: central theme, story moments, imagery, emotional arc, people/relationships, setting.',
+    'Omit categories that add no value.',
+    'Do not produce a biography, resume, or unstructured inventory of profile facts.',
+    ownAbout
+      ? "Beyond the one fact from the listener's own About, force no personalization."
+      : 'If nothing in the profile fits, build the notes from the listening request without forced personalization.',
+    'Return only the labeled notes, with no selection rationale.',
+  ].join(' ');
+
+/** Liedmotif is the soundtrack of the listener's own life, so a request is
+ * theirs even when it is about someone else: a birthday song for Clara is the
+ * listener singing to Clara. Without this a model treats a request that names
+ * other people as having nothing to do with the profile. */
+const LISTENER_PERSPECTIVE_RULE =
+  "Every session is part of the soundtrack of the listener's own life: for vocal " +
+  'lyricContext, relate the request to the listener even when it names other people. The ' +
+  'listener is the voice of the song (its "I"), singing to, about, or with the people it ' +
+  'names, so the notes say what the listener shares with them or brings to the moment, ' +
+  'built on a request-relevant profile or About detail whenever one fits.';
+
+/** What the model's own `includesListener` answer changes in the lyric notes.
+ * A listener the request puts in the scene is a character in it, so the
+ * light-touch limit on their name (which keeps a profile from being sung into
+ * every request) gives way. The lead sentence exists because a model otherwise
+ * reads "no listener" as "no notes" and returns none for a request about nobody
+ * in particular. */
+const LISTENER_IN_SCENE_RULE =
+  'includesListener decides only whether the listener is a named participant, never whether ' +
+  'lyricContext is written or whether the profile may inform it. ' +
+  'When includesListener is true, the listener is a participant in the scene like any named ' +
+  'Person: for vocal lyricContext, list them among the people (by their profile name when ' +
+  "one is given) with a part in the story, and the limit on the listener's name does not " +
+  'apply. When includesListener is false: that limit holds.';
 
 const LYRIC_CONTEXT_EXAMPLE =
   'Example lyricContext: "theme: strain turning to pride; scene: rainy mountain climb, ' +
   'jokes on steep turns; imagery: spinning wheels, distant bells, thin air; ' +
   'people: John + Tina, parent/child".';
 
-/** The skip-profile counterpart of `listenerBlock`: no profile is sent at all,
- * and vocal lyricContext is sourced from the request alone — never invented. An
- * adjustment counts the running session's own context as request-provided;
- * without that, this stricter sourcing rule would fight the lyric-edit rule and
- * collapse the notes to the change fragment. */
-function requestLyricContextBlock(isAdjustment: boolean): string {
+/** The People a request names, with their About — lyric material only. */
+function namedPeopleBlock(listener: ListenerContext | null | undefined): string {
+  const people = (listener?.people ?? []).flatMap((person, index) => {
+    const name = person.name.trim();
+    const about = person.about.trim();
+    return name && about ? [`Person ${index + 1}: name: ${name}; About: ${about}`] : [];
+  });
+  return people.length
+    ? `\n\nNamed People private context (use only for lyricContext when vocals are selected): ${people.join(' | ')}\n` +
+        `This Person context must not affect stylePrompt, title, trackTitles, coverConcept, or any image prompt. ` +
+        `Select only request-relevant facts for lyricContext; never copy a complete About value unconditionally.`
+    : '';
+}
+
+/** The skip-profile counterpart of `listenerBlock`: nothing of the listener's
+ * own is sent, and vocal lyricContext is sourced from the request — never
+ * invented. The People the request names belong to the request, so their About
+ * still rides along. An adjustment counts the running session's own context as
+ * request-provided; without that, this stricter sourcing rule would fight the
+ * lyric-edit rule and collapse the notes to the change fragment. */
+function requestLyricContextBlock(
+  isAdjustment: boolean,
+  listener: ListenerContext | null | undefined,
+): string {
   const adjustmentSourcing = isAdjustment
     ? "On an adjustment the current lyricContext and the earlier requests count as the request's own details. "
+    : '';
+  const people = namedPeopleBlock(listener);
+  const peopleSourcing = people
+    ? "A Person the request names counts as the request's own detail: develop the notes from their private context below as well, selecting the facts that serve the request. "
     : '';
   return (
     '\n\nThis session deliberately uses no listener profile; the request is the complete ' +
     'creative direction. For vocal lyricContext: build the notes ONLY from people, places, ' +
     'story moments, imagery, theme, or emotion the request itself provides — never invent ' +
-    `personal details the request does not contain. ${adjustmentSourcing}` +
+    `personal details the request does not contain. ${adjustmentSourcing}${peopleSourcing}` +
     'Write lyricContext as compact, labeled creative notes; use semicolons between categories ' +
     'and commas within categories. Lead the notes with the central theme or story moment; ' +
     'people and setting come last. Leave lyricContext "" when the request offers no such ' +
     'details.\n' +
-    LYRIC_CONTEXT_EXAMPLE
+    LYRIC_CONTEXT_EXAMPLE +
+    people
   );
 }
 
 /** Per-session personalization policy for expansion prompts and their enforcement. */
 export interface ExpansionOptions {
-  /** The session deliberately runs WITHOUT the listener profile: any supplied
-   * listener is ignored, and vocal lyricContext may be built from details the
-   * request itself provides (normally it requires a listener profile). */
+  /** The session deliberately runs WITHOUT the listener's own details: a
+   * supplied profile and own About are ignored, the People the request names
+   * still inform the lyrics, and vocal lyricContext may be built from details
+   * the request itself provides (normally it requires a listener profile). */
   skipProfile?: boolean;
   /** A Change Vibe adjustment: the running session's current Style Snapshot.
    * The expansion becomes an ADJUSTMENT of it — only what the request (and
@@ -175,6 +236,10 @@ export interface ExpansionOptions {
    * an edit can recover names, places, and story details the bounded lyric notes
    * dropped. Already bounded where it is stored (the API edge's prompt limit). */
   promptHistory?: string;
+  /** A Change Vibe adjustment: whether the running session's request includes
+   * the listener. Held unless the change request itself adds the listener to
+   * the scene or takes them out. */
+  includesListener?: boolean;
   /** The caller gave up (a cancelled Surprise Me): the model call stops, so the
    * answer nobody waits for is not paid for. */
   signal?: AbortSignal;
@@ -201,6 +266,7 @@ function hasListener(listener: ListenerContext | null | undefined): listener is 
   return (
     listener != null &&
     (LISTENER_FIELDS.some((key) => listener[key]?.trim()) ||
+      Boolean(listener.about?.trim()) ||
       listener.people?.some((person) => person.name.trim() && person.about.trim()) === true)
   );
 }
@@ -209,11 +275,21 @@ function hasGeneralListener(listener: ListenerContext | null | undefined): boole
   return listener != null && LISTENER_FIELDS.some((key) => listener[key]?.trim());
 }
 
-/** Render volunteered listener data plus request-scoped Person lyric context. */
-function listenerBlock(
-  listener: ListenerContext | null | undefined,
-  includePeople: boolean,
-): string {
+/** The listener's own About — lyric material only, and the one place its rule is stated. */
+function ownAboutBlock(about: string): string {
+  return about
+    ? `\n\nThe listener's own private About (when the request speaks in the first person, that is the listener; this alone does not make includesListener true): ${about}\n` +
+        `It is profile material for lyricContext only, when vocals are selected: every vocal ` +
+        `session carries at least one fact from it, chosen to suit the request and woven into ` +
+        `the scene (the listener's place, a habit, a relationship); never copy the complete About. ` +
+        `It must not affect stylePrompt, title, trackTitles, coverConcept, or any image prompt.`
+    : '';
+}
+
+/** Render volunteered listener data plus request-scoped Person lyric context.
+ * `withAbout` is the expansion: only it writes lyric direction from the request,
+ * so only it sees About text (the named People's and the listener's own). */
+function listenerBlock(listener: ListenerContext | null | undefined, withAbout: boolean): string {
   if (!hasListener(listener)) return '';
   const parts = LISTENER_FIELDS.flatMap((key) => {
     const value = listener[key]?.trim();
@@ -221,23 +297,15 @@ function listenerBlock(
   });
   const general = parts.length
     ? `\n\nListener profile (volunteered by the listener): ${parts.join('; ')}\n` +
-      `The general profile may lightly inspire title and trackTitles. ${LYRIC_CONTEXT_GUIDANCE}\n` +
-      LYRIC_CONTEXT_EXAMPLE
+      'The general profile may lightly inspire title and trackTitles.'
     : '';
-  const people = includePeople
-    ? (listener.people ?? []).flatMap((person, index) => {
-        const name = person.name.trim();
-        const about = person.about.trim();
-        return name && about ? [`Person ${index + 1}: name: ${name}; About: ${about}`] : [];
-      })
-    : [];
-  const personContext = people.length
-    ? `\n\nNamed People private context (use only for lyricContext when vocals are selected): ${people.join(' | ')}\n` +
-      `This Person context must not affect stylePrompt, title, trackTitles, coverConcept, or any image prompt. ` +
-      `Select only request-relevant facts for lyricContext; never copy a complete About value unconditionally.\n` +
-      LYRIC_CONTEXT_GUIDANCE
-    : '';
-  return general + personContext;
+  const about = withAbout ? (listener.about?.trim() ?? '') : '';
+  const facts = withAbout
+    ? `${general}${namedPeopleBlock(listener)}${ownAboutBlock(about)}`
+    : general;
+  if (!facts) return '';
+  const block = `${facts}\n${lyricContextGuidance(Boolean(about))}\n${LYRIC_CONTEXT_EXAMPLE}`;
+  return withAbout ? `${block}\n\n${LISTENER_PERSPECTIVE_RULE} ${LISTENER_IN_SCENE_RULE}` : block;
 }
 
 export function allowsLyricContext(
@@ -350,6 +418,16 @@ function promptHistoryBlock(history: string | undefined, intent: string): string
   );
 }
 
+/** The running session's answer an adjustment starts from: a change message
+ *  speaks only of what changes, so on its own it would read as "no listener". */
+function runningIncludesListenerRule(options: ExpansionOptions | undefined): string {
+  if (options?.skipProfile === true || options?.includesListener === undefined) return '';
+  return (
+    `includesListener is currently ${options.includesListener}: keep it unless the change ` +
+    `request itself adds the listener to the scene or takes them out. `
+  );
+}
+
 export function expansionPrompt(
   intent: string,
   listener?: ListenerContext | null,
@@ -359,7 +437,7 @@ export function expansionPrompt(
   const skipProfile = options?.skipProfile === true;
   const adjust = options?.adjustFrom;
   const personalization = skipProfile
-    ? requestLyricContextBlock(adjust !== undefined)
+    ? requestLyricContextBlock(adjust !== undefined, listener)
     : listenerBlock(listener, true);
   // Both framings answer with the same snapshot under the same rules — only the
   // task sentence and the request block differ.
@@ -376,7 +454,8 @@ export function expansionPrompt(
       `current snapshot as possible — same genres, instrumentation, mood, vocal mode, and ` +
       `language unless the request changes them. Keep bpm and key IDENTICAL unless the ` +
       `request asks for a tempo or key change; a word like "faster" or "slower" shifts bpm ` +
-      `moderately from the current value. ${LYRIC_EDIT_RULE} ${rules}` +
+      `moderately from the current value. ${LYRIC_EDIT_RULE} ` +
+      `${runningIncludesListenerRule(options)}${rules}` +
       `\n\nCurrent Style Snapshot:\n${adjustmentContext(adjust)}` +
       promptHistoryBlock(options?.promptHistory, intent) +
       `\n\nChange request: ${intent}`
@@ -385,7 +464,7 @@ export function expansionPrompt(
   return (
     `Turn this listening request into a music Style Snapshot. Default to instrumental ` +
     `unless vocals are clearly wanted. Pick ONE bpm and key for the whole session so its ` +
-    `tracks beat-match. ${rules}\n\nRequest: ${intent}`
+    `tracks beat-match. ${runningIncludesListenerRule(options)}${rules}\n\nRequest: ${intent}`
   );
 }
 

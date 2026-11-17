@@ -1,7 +1,7 @@
 ---
 title: Providers and keys
 description: Which AI services Liedmotif uses, how to get a key for each, where to enter it, and what changes with and without the optional ones.
-checkedOn: 2026-11-11
+checkedOn: 2026-11-17
 ---
 
 Liedmotif doesn't make music itself. It sends your requests to AI services you choose, on your own accounts, and you pay them directly. There's one you need and two you can add later, and you can change any of them at any time. Only the admin can see or change provider keys. Members create music on the admin's keys, within [the budgets the admin sets](/docs/costs-and-limits).
@@ -43,7 +43,8 @@ The writing AI is a text service that works on your words. The app calls it the 
 | --- | --- | --- |
 | Your request | Becomes a stable, detailed musical direction | Reaches the music provider exactly as you wrote it, with your genre, energy, vocals and language picks applied |
 | Names | Creative session names and track titles, topped up before a long session runs out | A session name built from your request, and numbered track titles built from your first genre or your request's first words |
-| Lyrics | A fresh angle for each new vocal pair when the session has lyric notes, and the About text of your people | No About text and no fresh angles |
+| Lyrics | A fresh angle for each new vocal pair when the session has lyric notes, your own About text in every vocal session, and the About text of people you name | No About text and no fresh angles |
+| You in a request | Understood from what you mean, such as "With Jonas and Clara on the way back to Berlin": you're in the lyrics and on the cover with them. See [You in your own songs](/docs/features#you-in-your-own-songs) | Only saved names count |
 | Session length | Can come from your request's words, like "40 minutes" | Comes only from the slider |
 | Cost | A little text usage with your provider, or nothing with Ollama | Nothing extra |
 
@@ -136,7 +137,7 @@ Every session gets a cover, and you never need a key for that. Three sources can
 | Basic cover art | Your music provider's key | No extra cost | The provider's own art, drawn from the finished music alone, with no style choice and no people |
 | Liedmotif cover | Nothing | Free | The built-in placeholder, used when neither source above can paint |
 
-Each session can choose **Use Basic Cover Art** on the start card, and **Settings › Cover art** sets the default. If tailored art is off, or no image key exists, covers come from the music provider. Uploading your own image is free and works with every source.
+Each session can switch **Use Tailored Cover Art Generation** on or off on the start card, and **Settings › Cover art** sets the default. If tailored art is off, or no image key exists, covers come from the music provider. Uploading your own image is free and works with every source.
 
 Generated covers can be limited, in [the cover budget](/docs/costs-and-limits). That budget counts tailored and basic covers alike. Covers are only decoration, so a failed one never holds up your music: the session just keeps the cover it has.
 

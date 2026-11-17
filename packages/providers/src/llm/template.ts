@@ -19,6 +19,7 @@ import {
   sanitizeUserAvoid,
   DEFAULT_BASE_SEED,
   ENERGY_LEVELS,
+  MAX_DESCRIPTION_LYRIC_LENGTH,
   MAX_STYLE_PROMPT_LENGTH,
   sanitizeVoiceGender,
   sessionStyleSnapshotSchema,
@@ -793,7 +794,8 @@ function vocalDescriptionTail(snapshot: SessionStyleSnapshot): string {
   if (snapshot.vocalMode !== 'vocal') return '';
   const voice = [snapshot.voiceGender, snapshot.language].filter(Boolean).join(' ');
   const voiceTag = voice ? `, ${voice} vocals` : '';
-  const lyricTag = snapshot.lyricContext ? `. Lyric brief: ${snapshot.lyricContext}` : '';
+  const lyric = snapshot.lyricContext.slice(0, MAX_DESCRIPTION_LYRIC_LENGTH).trimEnd();
+  const lyricTag = lyric ? `. Lyric brief: ${lyric}` : '';
   return voiceTag + lyricTag;
 }
 

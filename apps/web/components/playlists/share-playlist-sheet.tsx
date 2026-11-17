@@ -29,6 +29,12 @@ import {
   type ShareSelection,
 } from './share-playlist-view-model';
 
+/** What the sheet shows of the playlist — any playlist listing can open it. */
+type SharedPlaylist = Pick<
+  PlaylistSummaryItem,
+  'id' | 'name' | 'coverImageId' | 'mosaicCoverImageIds'
+>;
+
 export interface ShareResult {
   playlistId: string;
   sharedAt: string | null;
@@ -40,7 +46,7 @@ export function SharePlaylistSheet({
   onShared,
 }: {
   /** The playlist being shared; null keeps the sheet closed/unmounted. */
-  playlist: PlaylistSummaryItem | null;
+  playlist: SharedPlaylist | null;
   onClose: () => void;
   /** The write landed — the new share state for the caller to sync its UI. */
   onShared: (result: ShareResult) => void;
@@ -57,7 +63,7 @@ function ShareContent({
   onClose,
   onShared,
 }: {
-  playlist: PlaylistSummaryItem;
+  playlist: SharedPlaylist;
   onClose: () => void;
   onShared: (result: ShareResult) => void;
 }) {

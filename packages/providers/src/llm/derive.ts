@@ -114,15 +114,37 @@ export async function deriveSessionSnapshot(
   return stamp(snapshot);
 }
 
+/** A derived Session's metadata, with whether its request includes the listener settled. */
+export type DerivedSessionIntent = ExpandedSessionIntent & { includesListener: boolean };
+
+/**
+ * Whether an expanded request includes the listener. The model's answer
+ * decides; where it gave none, an adjustment keeps the running Session's answer
+ * and a new Session has none. A Session started without the profile never
+ * includes the listener.
+ */
+function resolveIncludesListener(
+  options: ExpansionOptions | undefined,
+  answer: boolean | undefined,
+): boolean {
+  if (options?.skipProfile === true) return false;
+  return answer ?? options?.includesListener ?? false;
+}
+
 export async function deriveSessionMetadata(
   input: SessionIntentInput,
   llm: LlmProvider | null,
   listener?: ListenerContext | null,
   options?: ExpansionOptions,
-): Promise<ExpandedSessionIntent> {
+): Promise<DerivedSessionIntent> {
   const stamp = guardrailStamp(input, options);
+  // Without a text LLM nothing reads the request, so it never includes the listener.
   if (input.mode === 'controls') {
-    return { snapshot: stamp(compileStructuredControls(input.controls)), coverConcept: '' };
+    return {
+      snapshot: stamp(compileStructuredControls(input.controls)),
+      coverConcept: '',
+      includesListener: false,
+    };
   }
   if (!llm) {
     return {
@@ -130,6 +152,7 @@ export async function deriveSessionMetadata(
         compilePromptPassthrough(input.prompt, intentPicks(input), options?.adjustFrom),
       ),
       coverConcept: '',
+      includesListener: false,
     };
   }
   const expanded = await llm.expandSessionIntentWithMetadata(
@@ -138,5 +161,9 @@ export async function deriveSessionMetadata(
     intentPicks(input),
     options,
   );
-  return { ...expanded, snapshot: stamp(expanded.snapshot) };
+  return {
+    ...expanded,
+    snapshot: stamp(expanded.snapshot),
+    includesListener: resolveIncludesListener(options, expanded.includesListener),
+  };
 }

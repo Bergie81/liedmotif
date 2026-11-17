@@ -181,6 +181,16 @@ describe('Session Cover art-direction policy', () => {
     ['photographic', 'believable single-exposure photograph', 'polished CGI or composite sheen'],
     ['minimal', 'generous negative space', 'detailed scenery'],
     ['drawing', 'real hand-made drawing', 'uniform vector line weight'],
+    [
+      'manga',
+      'black-and-white manga composition',
+      'speech bubbles, sound-effect lettering, or captions',
+    ],
+    [
+      'record_sleeve',
+      'album cover artwork in the style of one decade',
+      'a photographed vinyl record, CD, sleeve mockup, or packaging shot',
+    ],
     ['poster_art', 'strong graphic hierarchy', 'tiny fake credits'],
   ] as const)('%s preserves its required and forbidden signals', (style, required, forbidden) => {
     const result = plan(style);
@@ -616,6 +626,79 @@ describe('Session Cover art-direction policy', () => {
     expect(result.plan.prompt).not.toMatch(/private-julia|private-li|private-amina|About/i);
   });
 
+  it('ties the request’s first person to the listener’s reference among several subjects', () => {
+    const result = buildSessionCoverPlan({
+      sessionId: 'listener-in-scene-session',
+      sessionName: 'Moon Trip',
+      coverConcept: null,
+      coverStyle: 'photographic',
+      customDefinition: null,
+      snapshot: { mood: 'joyful', energy: 'medium' },
+      sessionIntent: 'Me, Julia and Amina on a trip to the moon',
+      capabilities: CAPABILITIES,
+      referenceTreatment: 'selected private references',
+      referenceSubjectCount: 3,
+      selectedPersonIds: ['private-owner', 'private-julia', 'private-amina'],
+      referenceSubjects: [
+        { personId: 'private-owner', name: 'John', isListener: true },
+        { personId: 'private-julia', name: 'Julia' },
+        { personId: 'private-amina', name: 'Amina' },
+      ],
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.plan.referenceTreatment).toContain(
+      'subject one is also the request\'s own "I", "me" or "we"',
+    );
+    expect(result.plan.prompt).toContain('me, subject two and subject three on a trip to the moon');
+    expect(result.plan.prompt).not.toMatch(/John|Julia|Amina/);
+  });
+
+  it('ties the request’s first person to a listener who is the only subject', () => {
+    const result = buildSessionCoverPlan({
+      sessionId: 'listener-alone-session',
+      sessionName: 'Moon Trip',
+      coverConcept: null,
+      coverStyle: 'photographic',
+      customDefinition: null,
+      snapshot: { mood: 'joyful', energy: 'medium' },
+      sessionIntent: 'Me on a trip to the moon',
+      capabilities: CAPABILITIES,
+      referenceTreatment: 'selected private references',
+      referenceSubjectCount: 1,
+      selectedPersonIds: ['private-owner'],
+      referenceSubjects: [{ personId: 'private-owner', name: 'John', isListener: true }],
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.plan.referenceTreatment).toMatch(
+      /^the referenced person is the request's own "I", "me" or "we"; /,
+    );
+  });
+
+  it('names no first person when the request leaves the listener out', () => {
+    const result = buildSessionCoverPlan({
+      sessionId: 'multi-person-reference-session',
+      sessionName: 'Friends at Home',
+      coverConcept: null,
+      coverStyle: 'photographic',
+      customDefinition: null,
+      snapshot: { mood: 'joyful', energy: 'medium' },
+      sessionIntent: 'Julia and Amina dance nearby',
+      capabilities: CAPABILITIES,
+      referenceTreatment: 'selected private references',
+      referenceSubjectCount: 2,
+      selectedPersonIds: ['private-julia', 'private-amina'],
+      referenceSubjects: [
+        { personId: 'private-julia', name: 'Julia' },
+        { personId: 'private-amina', name: 'Amina' },
+      ],
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.plan.referenceTreatment).not.toContain("request's own");
+  });
+
   it('preserves the exact normalized Unicode Name and required section order', () => {
     const result = plan('drawing');
     expect(result.ok).toBe(true);
@@ -762,9 +845,40 @@ describe('Session Cover art-direction policy', () => {
     expect(fingerprints.size).toBeGreaterThan(1);
   });
 
+  it.each([
+    ['record_sleeve', 'Late Night Jazz', ['jazz']],
+    ['record_sleeve', 'Rainy 80s Drive', ['synth-pop']],
+    ['manga', 'Anime Rain', ['j-rock']],
+  ] as const)('lets Auto pick %s when the Session evokes it (%s)', (style, sessionName, genres) => {
+    const resolved = new Set<string>();
+    for (let index = 0; index < 32; index += 1) {
+      const result = buildSessionCoverPlan({
+        sessionId: `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+        sessionName,
+        coverConcept: null,
+        coverStyle: 'auto',
+        customDefinition: null,
+        snapshot: { mood: 'energetic', energy: 'high', genreTags: [...genres] },
+        capabilities: CAPABILITIES,
+        referenceTreatment: null,
+      });
+      if (result.ok) resolved.add(result.plan.resolvedStyle);
+    }
+    expect(resolved).toContain(style);
+  });
+
   it('covers every persisted style choice', () => {
     expect(new Set(COVER_STYLES)).toEqual(
-      new Set(['auto', 'photographic', 'minimal', 'drawing', 'poster_art', 'custom']),
+      new Set([
+        'auto',
+        'record_sleeve',
+        'photographic',
+        'minimal',
+        'drawing',
+        'manga',
+        'poster_art',
+        'custom',
+      ]),
     );
   });
 

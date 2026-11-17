@@ -37,11 +37,17 @@ export function sanitizeVoiceGender(value: string): VoiceGender | '' {
 /** Generous cap; the music provider enforces its own (tighter) style length. */
 export const MAX_STYLE_PROMPT_LENGTH = 1000;
 
-/** Cap on the LLM-produced personal lyric notes. Kept compact deliberately: it
- *  rides every vocal track's compiled description TAIL (the part `styleWithTail`
- *  guarantees survives a provider clamp), so it must leave the non-custom prompt
- *  cap (Suno: 500) enough room for the style base. */
-export const MAX_LYRIC_CONTEXT_LENGTH = 240;
+/** Cap on the LLM-produced personal lyric notes: the Session's base lyric
+ *  direction, which the per-generation brief call reads. Sized so six People
+ *  can each have a part in the scene beside theme, imagery, and arc. */
+export const MAX_LYRIC_CONTEXT_LENGTH = 500;
+
+/** How much lyric direction rides a vocal track's compiled description TAIL
+ *  (the part `styleWithTail` guarantees survives a provider clamp): it must
+ *  leave the non-custom prompt cap (Suno: 500) enough room for the style base.
+ *  A per-track brief always fits; base notes submitted in a brief's place keep
+ *  their head, where the theme leads. */
+export const MAX_DESCRIPTION_LYRIC_LENGTH = 240;
 
 /** Bounds on the LLM-proposed track-title pool, applied wherever a pool enters the
  *  system (schema parse of a model reply / stored jsonb, and the naming call's
@@ -90,11 +96,11 @@ export function clampLyricContext(value: string): string {
 }
 
 /** Hard cap on a per-generation track lyric brief. Tighter than
- *  `MAX_LYRIC_CONTEXT_LENGTH` (which still backstops the snapshot slot the brief
- *  rides in). The own-voice path sends "Write the lyrics in <language>. " + brief
- *  into Suno's 200-char lyrics-brief cap, which keeps the leading directive and
- *  cuts the brief's tail; the room for the directive comes from the prompt's
- *  soft target (`TRACK_LYRIC_BRIEF_TARGET_CHARS`), not from this cap. */
+ *  `MAX_DESCRIPTION_LYRIC_LENGTH`, so a brief reaches the provider whole. The
+ *  own-voice path sends "Write the lyrics in <language>. " + brief into Suno's
+ *  200-char lyrics-brief cap, which keeps the leading directive and cuts the
+ *  brief's tail; the room for the directive comes from the prompt's soft target
+ *  (`TRACK_LYRIC_BRIEF_TARGET_CHARS`), not from this cap. */
 export const MAX_TRACK_LYRIC_BRIEF_LENGTH = 200;
 
 /** Clamp a proposed track lyric brief where it enters the system (the adapter's

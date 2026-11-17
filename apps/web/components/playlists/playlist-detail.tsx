@@ -19,7 +19,7 @@ import {
   type LoungePlaylistOwner,
   type PlaylistMemberItem,
 } from '@liedmotif/shared';
-import { Check, ListMusic, Pin, Play } from 'lucide-react';
+import { Check, ListMusic, Play } from 'lucide-react';
 import {
   deletePlaylist,
   deleteTrack,
@@ -30,7 +30,11 @@ import {
 } from '@/lib/api-client';
 import { cn } from '@/lib/cn';
 import { AvatarBadge } from '@/components/avatar-badge';
-import { loungeOwnerDisplayName } from '@/components/lounge/lounge-view-model';
+import { ReturnToPrivateDialog } from '@/components/lounge/lounge-confirm-dialogs';
+import {
+  LOUNGE_MLT_SEED_TRACKS,
+  loungeOwnerDisplayName,
+} from '@/components/lounge/lounge-view-model';
 import { playlistDownloadUrl, startFileDownload } from '@/lib/downloads';
 import { RenameDialog } from '@/components/rename-dialog';
 import { ConfirmDialog } from '@/components/confirm-dialog';
@@ -60,6 +64,7 @@ import { useReorderPlaylist } from './use-reorder-playlist';
 type PlaylistOverlay =
   | { kind: 'rename' }
   | { kind: 'delete' }
+  | { kind: 'return-to-private' }
   | { kind: 'add-tracks' }
   | { kind: 'cover' }
   | { kind: 'track-options'; item: PlaylistMemberItem }
@@ -85,8 +90,9 @@ export function PlaylistDetail({
    * read-only — attribution instead of the curation menu, listening only.
    * `owner` is null only when the server render found nothing (the client's
    * own load then surfaces the uniform not-found). `pinned` seeds the Pin
-   * toggle from the server render. */
-  visitor?: { owner: LoungePlaylistOwner | null; pinned?: boolean };
+   * toggle from the server render. `isAdmin` unlocks the Return to Private
+   * moderation row; the route refuses a Member regardless. */
+  visitor?: { owner: LoungePlaylistOwner | null; pinned?: boolean; isAdmin?: boolean };
 }) {
   const isVisitor = visitor != null;
   const [actionError, setActionError] = useState<string | null>(null);
@@ -144,13 +150,13 @@ export function PlaylistDetail({
     return null;
   }
 
-  // More Like This: a NEW Session seeded from the tapped member's Track (the
-  // only "more music" path out of a Playlist).
-  async function seedMoreLikeThis(trackId: string) {
+  // More Like This: a NEW Session seeded from a member's Track, or from the
+  // playlist's first members (the only "more music" path out of a Playlist).
+  async function seedMoreLikeThis(trackIds: string[]) {
     if (seeding) return;
     setSeeding(true);
     setActionError(null);
-    const failure = await seed([trackId]);
+    const failure = await seed(trackIds);
     setSeeding(false);
     if (failure) setActionError(failure);
   }
@@ -266,6 +272,24 @@ export function PlaylistDetail({
             </p>
           ) : undefined
         }
+        visitor={
+          isVisitor
+            ? {
+                pinned,
+                actions: {
+                  play: () => void playAll(),
+                  togglePin: () => void togglePin(),
+                  moreLikeThis: () =>
+                    void seedMoreLikeThis(
+                      items.slice(0, LOUNGE_MLT_SEED_TRACKS).map((item) => item.id),
+                    ),
+                  returnToPrivate: visitor.isAdmin
+                    ? () => setOverlay({ kind: 'return-to-private' })
+                    : undefined,
+                },
+              }
+            : undefined
+        }
         actions={
           isVisitor
             ? undefined
@@ -324,23 +348,6 @@ export function PlaylistDetail({
         </div>
       ) : null}
 
-      {isVisitor ? (
-        <div className="mt-4">
-          <OnlineOnly>
-            <button
-              type="button"
-              data-testid="playlist-pin-toggle"
-              aria-pressed={pinned}
-              onClick={() => void togglePin()}
-              className={cn(secondaryButtonClass, 'flex items-center justify-center gap-2')}
-            >
-              <Pin className={cn('h-4 w-4', pinned && 'fill-current text-lamp')} aria-hidden />
-              {pinned ? 'Unpin Playlist' : 'Pin in the Lounge'}
-            </button>
-          </OnlineOnly>
-        </div>
-      ) : null}
-
       <section className="mt-7">
         <div className={cn(cardClass, 'p-3')}>
           {items.length === 0 ? (
@@ -388,7 +395,22 @@ export function PlaylistDetail({
           heading="Delete Playlist"
           body={deletePlaylistConfirmBody(playlist)}
           confirmLabel="Delete"
-          onConfirm={() => void confirmDelete()}
+          onConfirm={confirmDelete}
+          onClose={() => setOverlay(null)}
+        />
+      ) : null}
+
+      {overlay?.kind === 'return-to-private' ? (
+        <ReturnToPrivateDialog
+          playlist={playlist}
+          owner={ownerDisplayName ?? 'the owner'}
+          // The share left the Lounge, so the visitor view has nothing left to
+          // show and goes back to the room.
+          onReturned={() => {
+            router.refresh();
+            router.push('/lounge');
+          }}
+          onError={setActionError}
           onClose={() => setOverlay(null)}
         />
       ) : null}
@@ -419,7 +441,7 @@ export function PlaylistDetail({
         onAddToPlaylist={(track) => setOverlay({ kind: 'track-memberships', track })}
         onMoreLikeThis={(item) => {
           setOverlay(null);
-          void seedMoreLikeThis(item.id);
+          void seedMoreLikeThis([item.id]);
         }}
         onOpenTrackData={(item) => setOverlay({ kind: 'track-data', trackId: item.id })}
         onDelete={deleteMemberEverywhere}

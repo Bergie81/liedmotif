@@ -1230,6 +1230,38 @@ describe('listener-profile personalization (LLM-gated)', () => {
   });
 });
 
+describe('a request that includes the listener', () => {
+  const reply = (includesListener?: boolean) =>
+    JSON.stringify({
+      stylePrompt: 'bright synth-pop',
+      vocalMode: 'vocal',
+      lyricContext: 'theme: moon trip; people: Emma + Jonas',
+      ...(includesListener === undefined ? {} : { includesListener }),
+    });
+
+  function providerWith(texts: string[], captured: string[] = []) {
+    return createOpenRouterLlmProvider({
+      apiKey: 'sk-or-1',
+      model: 'm',
+      languageModel: promptCapturingModel(texts, captured),
+    });
+  }
+
+  it('reports the model’s answer on whether the request includes the listener', async () => {
+    const included = await providerWith([reply(true)]).expandSessionIntentWithMetadata(
+      'Me and Jonas on a trip to the moon',
+    );
+    const left = await providerWith([reply(false)]).expandSessionIntentWithMetadata('for Jonas');
+    expect(included.includesListener).toBe(true);
+    expect(left.includesListener).toBe(false);
+  });
+
+  it('reports no answer when the model gives none', async () => {
+    const silent = await providerWith([reply()]).expandSessionIntentWithMetadata('for Jonas');
+    expect(silent.includesListener).toBeUndefined();
+  });
+});
+
 describe('createSessionMetadata enforces the lyric-context rule on its output', () => {
   const reply = JSON.stringify({ title: 'T', trackTitles: ['A'], lyricContext: 'made up' });
   const LISTENER = { name: 'John' };

@@ -68,6 +68,7 @@ describe('single-Person cover reference selection', () => {
         { id: 'julia-2', personId: 'julia-person', role: 'subject' },
         { id: 'julia-3', personId: 'julia-person', role: 'subject' },
       ],
+      listenerPersonId: null,
       terminalReason: null,
     });
   });
@@ -124,6 +125,7 @@ describe('single-Person cover reference selection', () => {
         selectedPersonIds: ['julia-person'],
         selectedPersonNames: ['Julia'],
         selectedReferences: [],
+        listenerPersonId: null,
         terminalReason: null,
       },
     );

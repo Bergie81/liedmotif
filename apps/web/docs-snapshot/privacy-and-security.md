@@ -1,7 +1,7 @@
 ---
 title: Privacy and security
 description: What stays on your own Liedmotif instance, what each provider sees, what an admin can see, and how the instance protects itself.
-checkedOn: 2026-11-10
+checkedOn: 2026-11-17
 ---
 
 Everything on this page is about your own instance: the copy of Liedmotif you run on your laptop, your server or your cloud provider. There's no Liedmotif-run service behind it. This website, liedmotif.com, has no accounts and no connection to your instance, so we can't see your music, your prompts or even that you exist.
@@ -46,6 +46,7 @@ This is optional, and it's the service `.env` calls the text LLM. If you connect
 - The earlier requests of a session, when you change its vibe
 - Your profile's name, city and country, if you filled them in
 - For a person you name exactly in a vocal request, their name and About text
+- For any vocal request, your own About text, since every session is about your life
 - For **Surprise Me**, your chosen theme, the music your learned taste picked, and your city and country. Vocal proposals may also use your own About text.
 
 About text is only for lyrics. It's never used for style, titles or covers.
@@ -62,11 +63,11 @@ This is optional too, and it's what makes tailored covers. If you add an image k
 - The mood, activity and genres
 - Reference photos of people, when a cover uses them
 
-A photo is sent only in these cases: you name that person exactly in your request, you ask for people on a playlist cover, or your own photo fits the frequency you set in **Settings › People**. One named person sends up to three photos, and several named people send one each. **Never** switches off all your reference photos, named people included, and refuses a cover that asks for them. When a cover uses photos of several people, their names in your request are swapped for neutral labels such as "subject one". With one person, their name stays in the request. The session name and the cover idea aren't changed, so a name in either one reaches the provider. Without an image key, the music provider makes a standard cover from a finished track, or your session keeps the free cover, and no photo is sent.
+A photo is sent only in these cases: you name that person exactly in your request, the writing AI reads your request as putting you in the scene ("me", "we"), you ask for people on a playlist cover, or your own photo fits the frequency you set in **Settings › People**. One named person sends up to three photos, and several named people send one each. **Never** switches off all your reference photos, named people included, and refuses a cover that asks for them. When a cover uses photos of several people, their names in your request are swapped for neutral labels such as "subject one". With one person, their name stays in the request. The session name and the cover idea aren't changed, so a name in either one reaches the provider. Without an image key, the music provider makes a standard cover from a finished track, or your session keeps the free cover, and no photo is sent.
 
 ### Run without my profile details
 
-Turn on **Run without my profile details** when you start a session to keep your profile and people out of that session's AI prompts and its cover references. The lyric brief is then built from your request alone. **More Like This** starts a new session with personalization back on.
+Turn on **Run without my profile details** when you start a session to keep your own details out of that session's AI prompts and its cover references: your profile, your own About text and your photos. People you name exactly in the request are still used, with their About text and photos. The lyric brief is then built from your request and those people alone. **More Like This** starts a new session with personalization back on.
 
 ### Other services you may connect
 

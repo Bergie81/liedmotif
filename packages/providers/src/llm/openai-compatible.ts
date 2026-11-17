@@ -94,6 +94,7 @@ const sessionExpansionSchema = sessionStyleSnapshotSchema
   .extend({
     coverConcept: z.string().default('').transform(clampCoverConcept),
     requestedDurationMinutes: z.number().nullable().optional(),
+    includesListener: z.boolean().nullable().optional(),
   });
 
 /**
@@ -516,7 +517,7 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
         // Sanitize any raw provider/SDK error, keeping loggable non-secret facts.
         throw sanitizedError(err, EXPANSION_FAILED);
       }
-      const { coverConcept, requestedDurationMinutes, ...rawSnapshot } = expanded;
+      const { coverConcept, requestedDurationMinutes, includesListener, ...rawSnapshot } = expanded;
       // An adjustment holds the session's frozen blend anchors: a reply that
       // omits bpm/key keeps the CURRENT values instead of re-freezing new ones
       // from energy/genre. The exception is an energy pick that differs from the
@@ -566,6 +567,7 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
         snapshot: freezeStyleParameters(snapshot),
         coverConcept,
         requestedDurationMinutes: anchor ? null : requestedDurationMinutes,
+        includesListener: includesListener ?? undefined,
       };
     },
 

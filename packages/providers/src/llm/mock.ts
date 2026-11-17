@@ -61,6 +61,11 @@ const MOCK_TITLE_NOUNS = [
 const VOCAL_HINT =
   /\b(vocals?|sing(?:ing|er)?|song|lyrics|aria|choir|choral|gesang|singen|lied)\b/i;
 const GERMAN_HINT = /\b(der|die|das|ein|eine|für|über|mit|und|gesang|singen|lied)\b/i;
+// The same kind of stand-in for the real model's reading of whether the
+// request puts the listener in its scene: "me" as a participant ("about me",
+// "me and Jonas", "put me in it"), not as whoever the music is for ("play me").
+const LISTENER_HINT =
+  /\b(?:about|with|and|put)\s+(?:me|myself|us)\b|\b(?:me|I|we)\s*(?:,|and\b)|\bmyself\b/i;
 
 function relevantAbout(about: string, requestContext: string): string {
   const requestTerms = new Set(tokenize(requestContext).filter((term) => term.length >= 4));
@@ -88,6 +93,8 @@ function mockLyricContext(
     .join(', ');
   if (setting) notes.push(`setting: ${setting}`);
   if (includePeople) {
+    const ownAbout = relevantAbout(listener.about?.trim() ?? '', requestContext);
+    if (ownAbout) notes.push(`listener: ${ownAbout}`);
     for (const person of listener.people ?? []) {
       const name = person.name.trim();
       const about = relevantAbout(person.about.trim(), requestContext);
@@ -189,6 +196,7 @@ export function mockLlmProvider(
       return {
         snapshot,
         coverConcept: `One concrete visual metaphor for ${deriveSessionTitle({ userPrompt: intent, snapshot })}`,
+        ...(LISTENER_HINT.test(intent) ? { includesListener: true } : {}),
       };
     },
 

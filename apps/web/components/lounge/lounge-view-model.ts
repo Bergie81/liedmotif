@@ -49,3 +49,7 @@ export function buildSharerCards(sharers: LoungeSharer[], viewerUserId: string):
     ...cards.filter((c) => c.userId !== viewerUserId),
   ];
 }
+
+/** How many members seed a playlist-level More Like This — the seed route's
+ *  request cap, and the same count the playlist player seeds with. */
+export const LOUNGE_MLT_SEED_TRACKS = 10;

@@ -74,6 +74,20 @@ export function MoreLikeThisGlyph({ className }: GlyphProps) {
   );
 }
 
+/** Remove from Lounge: the Lounge's armchair with an X on its backrest. */
+export function LeaveLoungeGlyph({ className }: GlyphProps) {
+  return (
+    <Glyph className={className}>
+      <path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3" />
+      <path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v1.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V11a2 2 0 0 0-4 0z" />
+      <path d="M5 18v2" />
+      <path d="M19 18v2" />
+      <path d="m10.25 6.75 3.5 3.5" />
+      <path d="m13.75 6.75-3.5 3.5" />
+    </Glyph>
+  );
+}
+
 /** The Assistant: a crew radio whose signal is the sparkle that marks AI. */
 export function AssistantGlyph({ className }: GlyphProps) {
   return (

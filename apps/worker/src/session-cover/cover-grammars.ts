@@ -12,6 +12,63 @@ const PRESERVED_IDENTITY =
   'preserve recognizable facial structure, hairstyle, age, and salient identity features';
 
 export const GRAMMARS: Record<PresetStyle, StyleGrammar> = {
+  record_sleeve: {
+    required:
+      'album cover artwork in the style of one decade between the 1960s and the 2000s, full-bleed. Take the decade from the Session Name, scene, or music context: a named decade or year, or an era-rooted genre or sound, in any language; only when none evokes one, use the fallback decade from the concept treatment. Make it the way covers were made then, not a modern pastiche: 1960s spot-color inks, mod or psychedelic forms; 1970s warm saturated film, airbrush, soft focus; 1980s glossy flash, neon and pastel, chrome, grids; 1990s grainy flash, photocopy collage, grunge or rave color; 2000s slick digital compositing, high gloss, lens flare. One decade carried through every element; the image is the artwork itself, never a physical record, border, or frame',
+    forbidden: [
+      'a photographed vinyl record, CD, sleeve mockup, or packaging shot',
+      'mixing the looks of several decades in one image',
+      'a recreation of a specific existing album cover',
+      'a white or colored border, frame, paper margin, or rounded corners around the artwork',
+      'a timeless modern look with no clear decade',
+      'empty title panels, blank text areas, or monogram letters',
+      'anonymous silhouette when a subject reference is supplied',
+    ],
+    modes: [
+      'fallback decade 1960s, used only when nothing evokes another',
+      'fallback decade 1970s, used only when nothing evokes another',
+      'fallback decade 1980s, used only when nothing evokes another',
+      'fallback decade 1990s, used only when nothing evokes another',
+      'fallback decade 2000s, used only when nothing evokes another',
+    ],
+    subjects: [
+      'a theme-derived focal subject staged the way a cover of that decade would show it',
+      'a recognizable human figure engaged with the theme, posed and photographed or painted as a period cover subject',
+      'a theme-charged object or place treated as a period cover image',
+    ],
+    compositions: [
+      'one full-bleed period image with a single dominant focal subject',
+      'a centered figure or object on a period-typical ground',
+      "a bold off-center crop typical of that decade's cover design",
+    ],
+    palettes: [
+      "a theme-derived palette true to the chosen decade's printing",
+      'a softened period palette',
+      'a saturated period palette with one strong accent',
+      'a restrained period palette with deep blacks',
+    ],
+    materials: [
+      'the film grain or print texture of that decade',
+      'period photo grain or paint texture',
+      'visible halftone or print texture true to the chosen decade',
+      "the color response of that decade's film stock or inks",
+    ],
+    lighting: [
+      'lighting true to the photography or illustration of the chosen decade',
+      'period studio lighting',
+      'natural light captured with a period photo process',
+      'flat graphic light for an illustrated cover',
+    ],
+    referenceTreatments: [
+      `${PRESERVED_IDENTITY}; portray the person as the cover subject of an album from the chosen decade, styled, lit, and printed in that era, making them the focal portrait subject when the theme centers them`,
+      'preserve recognizable identity as a figure within the period cover scene; the chosen decade controls styling, photo process, and print without erasing facial likeness',
+    ],
+    energy: {
+      low: 'a calm, unhurried cover with room to breathe',
+      medium: 'confident period styling with one clear focal pull',
+      high: 'bold, loud period energy with strong contrast and movement',
+    },
+  },
   photographic: {
     required:
       'a believable single-exposure photograph with explicit optics, physical light, natural imperfections, and one honest moment — an album cover photograph, not a stock image, rendering, or composite',
@@ -198,6 +255,65 @@ export const GRAMMARS: Record<PresetStyle, StyleGrammar> = {
       low: 'spare deliberate strokes with closed confident contours',
       medium: 'varied pressure and rhythmic hatching',
       high: 'urgent overlapping strokes and dry-brush speed without losing the single dominant motif',
+    },
+  },
+  manga: {
+    required:
+      'a dynamic black-and-white manga composition featuring expressive characters — bold, fluid ink lines with tapered pressure, dramatic shading in solid blacks and screentone, and stark positive and negative space driving a high-contrast visual flow; one finished full-bleed splash image holding a single dominant focal figure or motif, not a comic page',
+    forbidden: [
+      'speech bubbles, sound-effect lettering, or captions',
+      'multi-panel comic page layout or panel borders',
+      'color, tinted washes, or soft airbrushed gradients',
+      'polished 3D render or cel-shaded CGI',
+      'muddy gray midtones without solid blacks',
+      'anonymous silhouette when a subject reference is supplied',
+    ],
+    modes: [
+      'expressive character close-up',
+      'dynamic action pose with speed lines',
+      'quiet atmospheric splash panel',
+      'dramatic low-angle character shot',
+      'wind-swept figure against open sky',
+      'intimate reflective character moment',
+    ],
+    subjects: [
+      'a theme-derived expressive character drawn in ink as the single dominant figure',
+      'a recognizable human figure engaged with the theme, inked as the clear focal character',
+      'a theme-charged object or place drawn at splash scale with one small expressive figure',
+    ],
+    compositions: [
+      'one full-bleed splash composition with a single dominant figure',
+      'a dramatic diagonal with speed lines converging on the focal subject',
+      'an extreme close crop on an expressive face and eyes',
+      'a small figure set against a vast field of solid black or open white',
+    ],
+    palettes: [
+      'a theme-derived balance of solid ink black and clean paper white',
+      'pure ink black on bright paper white',
+      'ink black and white with one layer of fine dot screentone',
+      'large solid-black fields with white-line reversal',
+      'black and white with a gradient screentone sky',
+    ],
+    materials: [
+      'G-pen ink lines with tapered stroke ends on smooth manuscript paper',
+      'brush-pen ink with dry-brush breakup in the shadows',
+      'hand-cut dot screentone layered over crisp linework',
+      'scratched-in screentone highlights and white-ink accents',
+    ],
+    lighting: [
+      'hard rim light carved out of solid black',
+      'stark chiaroscuro built from solid black shadow shapes',
+      'high-key white with ink-only modeling',
+      'backlit glow rendered with radiating lines and screentone',
+    ],
+    referenceTreatments: [
+      `${PRESERVED_IDENTITY}; redraw the person entirely as a black-and-white manga character so nothing photographic remains — likeness carried by facial structure, hairstyle, and proportions in confident ink lines — making them the focal figure when the theme centers them`,
+      'preserve recognizable identity as an inked manga figure within the scene; ink line, solid blacks, and screentone control every tone without erasing facial likeness',
+    ],
+    energy: {
+      low: 'a still, contemplative frame with wide breathing space and fine lines',
+      medium: 'flowing hair, cloth, and line rhythm guiding the eye through the frame',
+      high: 'explosive speed lines, dynamic foreshortening, and impact framing without clutter',
     },
   },
   poster_art: {

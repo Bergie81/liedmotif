@@ -16,24 +16,50 @@ const moderate = vi.hoisted(() => vi.fn());
 const listLounge = vi.hoisted(() => vi.fn());
 const pinLounge = vi.hoisted(() => vi.fn());
 const refresh = vi.hoisted(() => vi.fn());
+const getAllMembers = vi.hoisted(() => vi.fn());
+const getLounge = vi.hoisted(() => vi.fn());
+const engagePlaylist = vi.hoisted(() => vi.fn());
+const sharePlaylist = vi.hoisted(() => vi.fn());
 
 vi.mock('@/lib/api-client', () => ({
-  getAllPlaylistMembers: vi.fn(),
-  getLoungePlaylist: vi.fn(),
+  getAllPlaylistMembers: getAllMembers,
+  getLoungePlaylist: getLounge,
   listLoungePlaylists: listLounge,
   pinLoungePlaylist: pinLounge,
   markPlaylistPlayed: vi.fn(),
   moreLikeThis: vi.fn(),
   moderateLoungePlaylist: moderate,
+  sharePlaylist,
 }));
 vi.mock('@/components/player/player-provider', () => ({
   usePlayerActions: () => ({
     engage: vi.fn(),
-    engagePlaylist: vi.fn(),
-    beginOtherMusic: vi.fn(),
+    engagePlaylist,
+    beginOtherMusic: () => Promise.resolve(true),
   }),
 }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh }) }));
+// The share sheet's own picker is covered by its tests; here it stands in as
+// the seam that reports a landed share write back to the Lounge.
+vi.mock('@/components/playlists/share-playlist-sheet', () => ({
+  SharePlaylistSheet: ({
+    playlist,
+    onShared,
+  }: {
+    playlist: { id: string } | null;
+    onShared: (result: { playlistId: string; sharedAt: string | null }) => void;
+  }) =>
+    playlist
+      ? h(
+          'button',
+          {
+            'data-testid': 'share-sheet-make-private',
+            onClick: () => onShared({ playlistId: playlist.id, sharedAt: null }),
+          },
+          'Make Private',
+        )
+      : null,
+}));
 
 afterEach(() => {
   cleanup();
@@ -41,6 +67,10 @@ afterEach(() => {
   listLounge.mockReset();
   pinLounge.mockReset();
   refresh.mockReset();
+  getAllMembers.mockReset();
+  getLounge.mockReset();
+  engagePlaylist.mockReset();
+  sharePlaylist.mockReset();
 });
 
 const FOREIGN: LoungePlaylistItem = {
@@ -82,7 +112,7 @@ describe('LoungeView — Admin Return to Private', () => {
     expect(moderate).not.toHaveBeenCalled();
     const dialog = screen.getByTestId('confirm-dialog');
     expect(dialog.textContent).toContain('Nightowl');
-    expect(dialog.textContent).toContain('Pins');
+    expect(dialog.textContent).toContain('Every Pin of it');
     expect(dialog.textContent).toContain('Shared references');
   });
 
@@ -278,23 +308,130 @@ describe('LoungeView — sharer cards', () => {
     );
     fireEvent.click(card);
     expect(card.getAttribute('aria-pressed')).toBe('false');
-    expect(screen.getByRole('button', { name: 'Everyone' }).getAttribute('aria-pressed')).toBe(
-      'true',
-    );
+    expect(screen.getByRole('button', { name: 'All' }).getAttribute('aria-pressed')).toBe('true');
     await waitFor(() =>
       expect(listLounge).toHaveBeenLastCalledWith({ query: undefined, owner: null }),
     );
   });
 
-  it('falls back to Everyone when the selected sharer drops out of a refreshed list', async () => {
+  it('falls back to All when the selected sharer drops out of a refreshed list', async () => {
     const { rerender } = renderWithSharer();
     fireEvent.click(screen.getByRole('button', { name: 'Nightowl' }));
     rerender(viewWith([]));
-    expect(screen.getByRole('button', { name: 'Everyone' }).getAttribute('aria-pressed')).toBe(
-      'true',
-    );
+    expect(screen.getByRole('button', { name: 'All' }).getAttribute('aria-pressed')).toBe('true');
     await waitFor(() =>
       expect(listLounge).toHaveBeenLastCalledWith({ query: undefined, owner: null }),
     );
+  });
+});
+
+// Your own share's menu carries the owner moves that make sense from the
+// Lounge: play it, pin it, and change who it reaches.
+
+describe('LoungeView — own tile menu', () => {
+  const OWN: LoungePlaylistItem = {
+    ...FOREIGN,
+    id: '33333333-3333-4333-8333-333333333333',
+    name: 'My Mix',
+    yours: true,
+  };
+
+  function renderOwn() {
+    render(
+      h(LoungeView, {
+        initial: { playlists: [OWN, FOREIGN], nextCursor: null },
+        sharers: [],
+        viewerUserId: 'u-me',
+        viewerIsAdmin: false,
+      }),
+    );
+    fireEvent.click(screen.getByTestId(`lounge-menu-${OWN.id}`));
+  }
+
+  it('offers Play, Pin and Edit Sharing on your own tile', () => {
+    renderOwn();
+    expect(screen.getByText('Play')).toBeTruthy();
+    expect(screen.getByTestId(`lounge-menu-pin-${OWN.id}`)).toBeTruthy();
+    expect(screen.getByTestId(`lounge-menu-share-${OWN.id}`)).toBeTruthy();
+    expect(screen.queryByTestId(`lounge-menu-more-like-this-${OWN.id}`)).toBeNull();
+  });
+
+  it('removes it from the Lounge only after a confirm, then drops the tile', async () => {
+    sharePlaylist.mockResolvedValue({ ok: true, data: { playlistId: OWN.id, sharedAt: null } });
+    renderOwn();
+    fireEvent.click(screen.getByTestId(`lounge-menu-remove-from-lounge-${OWN.id}`));
+    expect(sharePlaylist).not.toHaveBeenCalled();
+    expect(screen.getByTestId('confirm-dialog').textContent).toContain('My Mix');
+
+    fireEvent.click(screen.getByTestId('confirm-dialog-confirm'));
+
+    await waitFor(() => expect(screen.queryByTestId(`lounge-tile-${OWN.id}`)).toBeNull());
+    expect(sharePlaylist).toHaveBeenCalledWith(OWN.id, null);
+    expect(screen.getByTestId(`lounge-tile-${FOREIGN.id}`)).toBeTruthy();
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the tile and names the failure when removing it from the Lounge fails', async () => {
+    sharePlaylist.mockResolvedValue({ ok: false, error: { message: 'Network down.' } });
+    renderOwn();
+    fireEvent.click(screen.getByTestId(`lounge-menu-remove-from-lounge-${OWN.id}`));
+    fireEvent.click(screen.getByTestId('confirm-dialog-confirm'));
+
+    expect(
+      await screen.findByText(/Removing it from the Lounge failed: Network down/),
+    ).toBeTruthy();
+    expect(screen.getByTestId(`lounge-tile-${OWN.id}`)).toBeTruthy();
+  });
+
+  it('drops the tile and refreshes the sharer cards when sharing returns it to Private', () => {
+    renderOwn();
+    fireEvent.click(screen.getByTestId(`lounge-menu-share-${OWN.id}`));
+    fireEvent.click(screen.getByTestId('share-sheet-make-private'));
+    expect(screen.queryByTestId(`lounge-tile-${OWN.id}`)).toBeNull();
+    expect(screen.getByTestId(`lounge-tile-${FOREIGN.id}`)).toBeTruthy();
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Someone else's share plays from its Lounge tile like your own does, read
+// through the Lounge (the owner's playlist route refuses a visitor) and in
+// the visitor scope, so the owner's play stamp stays untouched.
+
+describe('LoungeView — playing a foreign share', () => {
+  const MEMBER = { id: 't-1', audioUrl: '/api/tracks/t-1/audio' };
+  const SUMMARY = { id: FOREIGN.id, name: FOREIGN.name };
+
+  function renderForeign() {
+    getLounge.mockResolvedValue({
+      ok: true,
+      data: { playlist: SUMMARY, items: [MEMBER], nextCursor: null },
+    });
+    getAllMembers.mockImplementation(
+      async (_id: string, fetchPage: (cursor: null, limit: number) => Promise<unknown>) =>
+        fetchPage(null, 100),
+    );
+    render(
+      h(LoungeView, {
+        initial: { playlists: [FOREIGN], nextCursor: null },
+        sharers: [],
+        viewerUserId: 'u-me',
+        viewerIsAdmin: false,
+      }),
+    );
+  }
+
+  it('plays it from the tile through the Lounge read, in the visitor scope', async () => {
+    renderForeign();
+    fireEvent.click(screen.getByTestId(`lounge-play-${FOREIGN.id}`));
+    await waitFor(() => expect(engagePlaylist).toHaveBeenCalledTimes(1));
+    expect(getLounge).toHaveBeenCalledWith(FOREIGN.id, null, 100);
+    expect(engagePlaylist).toHaveBeenCalledWith(SUMMARY, [MEMBER], null, { foreign: true });
+  });
+
+  it('offers Play in its options menu', async () => {
+    renderForeign();
+    fireEvent.click(screen.getByTestId(`lounge-menu-${FOREIGN.id}`));
+    fireEvent.click(screen.getByText('Play'));
+    await waitFor(() => expect(engagePlaylist).toHaveBeenCalledTimes(1));
   });
 });

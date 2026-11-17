@@ -8,9 +8,11 @@ import type { CoverStyleChoice } from '@liedmotif/shared';
 export const COVER_STYLE_LABELS: Record<CoverStyleChoice, string> = {
   auto: 'Auto',
   random: 'Random',
+  record_sleeve: 'Record Sleeve',
   poster_art: 'Artistic',
   photographic: 'Photographic',
-  minimal: 'Minimal',
+  manga: 'Manga',
   drawing: 'Drawing',
+  minimal: 'Minimal',
   custom: 'Custom',
 };

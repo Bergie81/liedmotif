@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-// The visitor view's Pin toggle: the Lounge it leads back to
+// The visitor view's Pin toggle, in its options menu: the Lounge it leads back to
 // lists Pins first, and back-navigation replays the router cache's pre-pin seed
 // until the toggle drops it.
 
@@ -66,16 +66,20 @@ function renderVisitor() {
   );
 }
 
+function tapPin() {
+  fireEvent.click(screen.getByTestId('playlist-menu'));
+  fireEvent.click(screen.getByTestId(`lounge-menu-pin-${PLAYLIST.id}`));
+}
+
 describe('PlaylistDetail — visitor Pin toggle', () => {
   it('drops the cached Lounge once the pin lands', async () => {
     pinLounge.mockResolvedValue({ ok: true, data: { playlistId: PLAYLIST.id, pinned: true } });
     renderVisitor();
 
-    fireEvent.click(screen.getByTestId('playlist-pin-toggle'));
+    tapPin();
 
-    await waitFor(() =>
-      expect(screen.getByTestId('playlist-pin-toggle').getAttribute('aria-pressed')).toBe('true'),
-    );
+    fireEvent.click(screen.getByTestId('playlist-menu'));
+    await waitFor(() => expect(screen.getByText('Unpin Playlist')).toBeTruthy());
     expect(refresh).toHaveBeenCalledTimes(1);
   });
 
@@ -83,7 +87,7 @@ describe('PlaylistDetail — visitor Pin toggle', () => {
     pinLounge.mockResolvedValue({ ok: false, error: { message: 'Playlist not found.' } });
     renderVisitor();
 
-    fireEvent.click(screen.getByTestId('playlist-pin-toggle'));
+    tapPin();
 
     await waitFor(() => expect(screen.getByText(/Couldn’t pin the playlist/)).toBeTruthy());
     expect(refresh).not.toHaveBeenCalled();

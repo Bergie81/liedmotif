@@ -225,7 +225,8 @@ export function SkipProfileToggle({
           Run without my profile details
         </p>
         <p className="text-[11.5px] leading-[1.1] text-dim">
-          Your profile and people data is not used for this Session&rsquo;s lyrics and cover art.
+          Your own details are not used for this Session&rsquo;s lyrics and cover art. People you
+          name still are.
         </p>
       </div>
       <Switch
@@ -297,17 +298,17 @@ export function SessionExtras({
         <div className="mt-4 flex items-center justify-between gap-3">
           <div>
             <p className="text-[13px] font-semibold leading-tight text-paper">
-              Use Basic Cover Art
+              Use Tailored Cover Art Generation
             </p>
             <p className="text-[11.5px] leading-[1.4] text-dim">
-              Comes by default with the music — no additional costs.
+              Off uses the basic art that comes with the music, at no extra cost.
             </p>
           </div>
           <Switch
-            checked={useStandardCover}
-            onCheckedChange={onUseStandardCoverChange}
-            aria-label="Use Basic Cover Art"
-            data-testid="use-standard-cover"
+            checked={!useStandardCover}
+            onCheckedChange={(on) => onUseStandardCoverChange(!on)}
+            aria-label="Use Tailored Cover Art Generation"
+            data-testid="use-tailored-cover"
           />
         </div>
       </FoldSection>

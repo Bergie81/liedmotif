@@ -147,7 +147,7 @@ export const APP_ROUTES: readonly AppRoute[] = [
     path: '/settings/cover-art',
     label: 'Settings › Cover art',
     description:
-      'Your default cover style, Basic Cover Art, your own Custom style and whether the Writing AI polishes cover text.',
+      'Your default cover style, Tailored Cover Art, your own Custom style and whether the Writing AI polishes cover text.',
     adminOnly: false,
   },
   {

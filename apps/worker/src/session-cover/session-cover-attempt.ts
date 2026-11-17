@@ -349,6 +349,7 @@ export async function freezePlanInputs(
     promptText: coverReferenceContext(session),
     capabilities,
     skipProfile: session.skipProfile,
+    includesListener: session.includesListener,
   });
   const customDefinition =
     session.coverStyle === 'custom'

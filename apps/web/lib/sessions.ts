@@ -70,7 +70,9 @@ const EXPLICIT_INSTRUMENTAL_REQUEST =
 const EXPLICIT_VOCAL_REQUEST =
   /(?:\b(?:vocals?|lyrics?|sing|sings|singing|singer|song|duet|aria|choir|choral|opera|rap|rapping|chant|spoken\s+word|gesang|singen|lied|coro|cantar|canción|chant(?:er|é)|chanson|cantare|canzone)\b|歌詞|歌词|歌声|歌聲|歌う|歌って|ボーカル)/iu;
 
-type PersonLyricSource = Pick<PersonRow, 'name' | 'nameMatchKey' | 'about'> & { id: string };
+type PersonLyricSource = Pick<PersonRow, 'name' | 'nameMatchKey' | 'about' | 'role'> & {
+  id: string;
+};
 
 /** What a Change Vibe message leaves unsaid — the running session answers it. */
 type PersonMatchContext = Pick<ExpansionOptions, 'adjustFrom' | 'promptHistory'> & {
@@ -85,7 +87,7 @@ type PersonMatchContext = Pick<ExpansionOptions, 'adjustFrom' | 'promptHistory'>
  *  wording, shuts the gate either way: nothing will be sung, so no About may be
  *  consumed. */
 function mayUsePersonLyricContext(prompt: string, context?: PersonMatchContext): boolean {
-  if (context?.vocal === 'instrumental' || EXPLICIT_INSTRUMENTAL_REQUEST.test(prompt)) return false;
+  if (vocalsRuledOut(prompt, context)) return false;
   return (
     context?.vocal === 'vocal' ||
     EXPLICIT_VOCAL_REQUEST.test(prompt) ||
@@ -93,40 +95,81 @@ function mayUsePersonLyricContext(prompt: string, context?: PersonMatchContext):
   );
 }
 
-/** Supply exact-name About only when vocals are wanted. An adjustment matches
- *  names over the change message AND the session's prompt history, so People
- *  named only in an earlier request keep informing the edited lyric notes.
- *  Matched About may reach the lyric notes and nothing else. */
+/** Nothing will be sung: an instrumental pick or wording, or a running
+ *  instrumental session whose change message asks for no vocals. */
+function vocalsRuledOut(prompt: string, context?: PersonMatchContext): boolean {
+  if (context?.vocal === 'instrumental' || EXPLICIT_INSTRUMENTAL_REQUEST.test(prompt)) return true;
+  return (
+    context?.adjustFrom?.vocalMode === 'instrumental' &&
+    context.vocal !== 'vocal' &&
+    !EXPLICIT_VOCAL_REQUEST.test(prompt)
+  );
+}
+
+/**
+ * The About text a request's lyric notes may draw on. The owner's own About
+ * (`about`) goes with every request that may turn out vocal, since each Session
+ * is part of the listener's own soundtrack, whoever it names; on Auto vocals the
+ * expansion makes the vocal call, so no word list may withhold it. The other
+ * People's About (`people`) needs vocals clearly wanted and an exact name. An
+ * adjustment matches names over the change message AND the session's prompt
+ * history, so People named only in an earlier request keep informing the edited
+ * lyric notes. This About may reach the lyric notes and nothing else.
+ */
 export function personLyricContextForRequest(
   prompt: string,
   people: readonly PersonLyricSource[],
   context?: PersonMatchContext,
-): NonNullable<ListenerContext['people']> {
-  if (!mayUsePersonLyricContext(prompt, context)) return [];
+): { people: NonNullable<ListenerContext['people']>; about: string } {
+  if (vocalsRuledOut(prompt, context)) return { people: [], about: '' };
+  const owner = people.find((person) => person.role === 'owner');
+  const about = owner ? clippedAbout(owner) : '';
+  if (!mayUsePersonLyricContext(prompt, context)) return { people: [], about };
   const named = context?.promptHistory ? `${prompt}\n${context.promptHistory}` : prompt;
-  return matchConfiguredPeople(named, people).flatMap((person) => {
-    const about = person.about.trim().slice(0, MAX_PERSON_ABOUT_LENGTH);
-    return about ? [{ name: person.name, about }] : [];
-  });
+  return {
+    people: matchConfiguredPeople(named, people).flatMap((person) => {
+      const personAbout = clippedAbout(person);
+      return person.role !== 'owner' && personAbout
+        ? [{ name: person.name, about: personAbout }]
+        : [];
+    }),
+    about,
+  };
 }
 
+function clippedAbout(person: PersonLyricSource): string {
+  return person.about.trim().slice(0, MAX_PERSON_ABOUT_LENGTH);
+}
+
+/**
+ * What the expansion may know about the listener and the People the request
+ * names. A Session run without the profile leaves out everything that is the
+ * owner's own — their profile, their About, their Person — and keeps the other
+ * People it names: those are the request's, not the profile's.
+ */
 async function listenerContextForIntent(
   db: Database,
   ownerUserId: string,
   input: SessionIntentInput,
   options?: ExpansionOptions,
 ): Promise<ListenerContext | null> {
-  const general = await getListenerContext(db, ownerUserId);
+  const skipProfile = options?.skipProfile === true;
+  const general = skipProfile ? null : await getListenerContext(db, ownerUserId);
   if (input.mode !== 'prompt') return general;
   const context: PersonMatchContext = { ...options, vocal: input.vocal };
-  if (!mayUsePersonLyricContext(input.prompt, context)) return general;
-  const matchedPeople = personLyricContextForRequest(
+  if (vocalsRuledOut(input.prompt, context)) return general;
+  const everyone = await listPeople(db, ownerUserId);
+  const { people, about } = personLyricContextForRequest(
     input.prompt,
-    await listPeople(db, ownerUserId),
+    skipProfile ? everyone.filter((person) => person.role !== 'owner') : everyone,
     context,
   );
-  if (matchedPeople.length === 0) return general;
-  return { ...(general ?? {}), people: matchedPeople };
+  if (people.length === 0 && !about) return general;
+  return {
+    ...(general ?? {}),
+    ...(people.length > 0 ? { people } : {}),
+    ...(about ? { about } : {}),
+  };
 }
 
 /**
@@ -178,6 +221,7 @@ export type DerivedSnapshotResult =
       snapshot: SessionStyleSnapshot;
       coverConcept: string;
       requestedDurationMinutes?: number | null;
+      includesListener: boolean;
     }
   | { ok: false; reason: 'llm_expansion_failed'; message: string };
 
@@ -310,6 +354,8 @@ export type DerivedNamedSnapshot =
       ok: true;
       userPrompt: string | null;
       requestedDurationMinutes?: number | null;
+      /** The request puts the listener in its scene; the Session's cover reads it. */
+      includesListener: boolean;
     } & NamedSnapshot)
   | Extract<DerivedSnapshotResult, { ok: false }>;
 
@@ -336,12 +382,7 @@ export async function deriveNamedSnapshotForIntent(
   input: SessionIntentInput,
   options?: ExpansionOptions,
 ): Promise<DerivedNamedSnapshot> {
-  // Start-without-profile: the listener context is never even loaded, and the
-  // expansion is told the request alone may source vocal lyricContext.
-  const skipProfile = options?.skipProfile === true;
-  const listener = skipProfile
-    ? null
-    : await listenerContextForIntent(db, ownerUserId, input, options);
+  const listener = await listenerContextForIntent(db, ownerUserId, input, options);
   const derived = await deriveSnapshotForIntentSafe(input, listener, options);
   if (!derived.ok) return derived;
   const userPrompt = input.mode === 'prompt' ? input.prompt : null;
@@ -360,6 +401,7 @@ export async function deriveNamedSnapshotForIntent(
     userPrompt,
     ...named,
     requestedDurationMinutes: derived.requestedDurationMinutes,
+    includesListener: derived.includesListener,
   };
 }
 

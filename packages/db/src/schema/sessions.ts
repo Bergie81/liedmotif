@@ -92,10 +92,16 @@ export const activitySessions = pgTable(
     // styled image-provider pipeline. Set at creation only; `coverStyle` stays
     // stored regardless so a later user regeneration can still style.
     useStandardCover: boolean('use_standard_cover').notNull().default(false),
-    // Start-without-profile: the owner's listener profile and People stay out of
-    // this session's LLM prompts AND its generated cover's person references.
-    // Set at creation only; Change Vibe re-derivations read it from this row.
+    // Start-without-profile: the owner's own details (listener profile, own
+    // About, owner Person and photos) stay out of this session's LLM prompts AND
+    // its generated cover; the other People its request names stay in. Set at
+    // creation only; Change Vibe re-derivations read it from this row.
     skipProfile: boolean('skip_profile').notNull().default(false),
+    // The text LLM read the request as putting the listener in its own scene
+    // ("me, Jonas and Clara on the moon"), so the generated cover treats the
+    // owner Person as named. Only an expansion can say so; Change Vibe may
+    // revise it.
+    includesListener: boolean('includes_listener').notNull().default(false),
     status: activitySessionStatus('status').notNull().default('active'),
     // Generation policy — the sole authority over
     // automatic top-ups. Creation seeds it from the owner's Buffer default;

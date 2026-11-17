@@ -1,7 +1,7 @@
 ---
 title: Members, invites and the lounge
 description: Bring people onto your Liedmotif, set what they can spend, share playlists with them, and take access back when you need to.
-checkedOn: 2026-11-16
+checkedOn: 2026-11-17
 ---
 
 Your instance can hold your whole household or a group of friends. Each person you invite becomes a member with their own account. Their music is paid from your provider keys, inside a budget you choose, so you always know the most they can cost. As the admin, you run all of this from **Settings › Members**, which only you can see.
@@ -175,7 +175,9 @@ The lounge is where people on your instance share playlists with each other, and
 
 If you're the only one on your instance, **Share** reaches everyone, including people you invite later.
 
-To change your mind, open the same menu, now called **Edit Sharing**. Change the ticks and press **Save**, or press **None** and then **Return to Private**. If you're the only one on your instance, the button is simply **Return to Private**.
+To change your mind, open the same menu, now called **Edit Sharing**. Your own cards in the lounge have it too, in their **⋮** menu next to **Play** and **Pin in the Lounge**. Change the ticks and press **Save**, or press **None** and then **Return to Private**. If you're the only one on your instance, the button is simply **Return to Private**.
+
+To stop sharing in one step, pick **Remove from Lounge** in the same **⋮** menu, on the playlist's card or on your own card in the lounge, and press **Remove**. The playlist is Private again.
 
 A shared playlist is the real one, not a copy, so people hear it as you keep curating it. Adding a track makes it audible right away, and the **Add to Playlist** picker marks shared playlists with **In the Lounge** to remind you. Favorites can't be shared, and an empty playlist stays out of sight until it has tracks.
 
@@ -204,7 +206,7 @@ The lounge shows your artist name if you've set one, otherwise your first name, 
 
 ### Find something in the lounge
 
-Your pins come first, then whatever was shared most recently. The search box looks through playlist names, track titles, genres and sharers' names, but not lyrics. The cards above the list narrow it to one person.
+Your pins come first, then whatever was shared most recently. The search box looks through playlist names, track titles, genres and sharers' names, but not lyrics. The cards above the list narrow it to one person, and **All** shows everyone again.
 
 ### Take it back
 
@@ -215,7 +217,7 @@ Returning a playlist to Private works straight away. Anyone listening hears the 
 
 ### The admin's one extra power
 
-On someone else's playlist in your lounge, the **⋮** menu has **Return to Private**. It's the only thing an admin can change on another person's content, and it's for when something shouldn't be shared. The owner keeps the playlist and can share it again, but other people's pins and saved tracks don't come back.
+On someone else's playlist in your lounge, the **⋮** menu on its card or its page has **Return to Private**. It's the only thing an admin can change on another person's content, and it's for when something shouldn't be shared. The owner keeps the playlist and can share it again, but other people's pins and saved tracks don't come back.
 
 You only have this for playlists in your own lounge. If someone shares with selected people and leaves you out, you won't see that playlist at all.
 

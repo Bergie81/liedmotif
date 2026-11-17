@@ -320,7 +320,9 @@ export function RegenerateCoverDialog({
                     clipped by the scroll container. */}
                 <div className="-mx-1 mt-1 flex snap-x gap-2 overflow-x-auto px-1 pb-2 pt-1">
                   {history.map((entry) => {
-                    const isPicked = entry.coverImageId === pickedCoverId;
+                    // The ring follows the big preview, so a fresh attempt
+                    // shown there is highlighted like a tapped entry.
+                    const isPicked = entry.coverImageId === candidateCoverId;
                     return (
                       <div
                         key={entry.coverImageId}
@@ -329,17 +331,22 @@ export function RegenerateCoverDialog({
                         <button
                           type="button"
                           disabled={historyBusyId !== null}
-                          aria-pressed={entry.isCurrent ? pickedCoverId === null : isPicked}
+                          aria-pressed={entry.isCurrent ? candidateCoverId === null : isPicked}
                           aria-label={
                             entry.isCurrent
                               ? 'Show the current cover'
                               : `Preview this earlier ${entry.style.replace('_', ' ')} cover`
                           }
-                          onClick={() =>
-                            setSelectedCoverId(
-                              entry.isCurrent || isPicked ? null : entry.coverImageId,
-                            )
-                          }
+                          onClick={() => {
+                            if (entry.isCurrent || isPicked) {
+                              // Back to the current cover; a fresh attempt stays
+                              // in the history, one tap away.
+                              setDismissed(true);
+                              setSelectedCoverId(null);
+                            } else {
+                              setSelectedCoverId(entry.coverImageId);
+                            }
+                          }}
                           className={cn(
                             'absolute inset-0 overflow-hidden rounded-[10px] border border-line transition-opacity',
                             entry.isCurrent

@@ -3185,12 +3185,12 @@ describeIfDb('ensure-session-buffer controller', () => {
     it("clamps an overlong brief at the snapshot slot's boundary — stored and submitted agree", async () => {
       const { sessionId } = await seedVocalSession();
       const { provider, inputs } = capturingMusic('long-brief');
-      const { llm } = capturingLlm(async () => 'x'.repeat(300));
+      const { llm } = capturingLlm(async () => 'x'.repeat(600));
 
       const result = await runEnsureSessionBuffer(briefDeps(provider, llm), { sessionId });
 
       expect(result.action).toBe('generate');
-      const clamped = 'x'.repeat(240);
+      const clamped = 'x'.repeat(500);
       expect(inputs[0]?.lyricBrief).toBe(clamped);
       expect(await frozenLyricContext(sessionId)).toBe(clamped);
     });

@@ -837,7 +837,7 @@ describeIfDb('SessionCoverGenerator', () => {
     ]);
   });
 
-  it('skip-profile session: People stay out even when named and the frequency allows them', async () => {
+  it('skip-profile session: the owner stays out even when named and the frequency allows them', async () => {
     const ownerUserId = await createUser(ctx.db, { id: 'reference-frequency-owner' });
     const sessionId = '00000000-0000-4000-8000-000000000000';
     await seedReference(ownerUserId);
@@ -864,6 +864,25 @@ describeIfDb('SessionCoverGenerator', () => {
     expect(calls[0]!.positivePrompt).not.toContain('Reference treatment:');
     expect(readSpy).not.toHaveBeenCalled();
     readSpy.mockRestore();
+  });
+
+  it('skip-profile session: a named Person other than the owner still appears', async () => {
+    const { ownerUserId, sessionId, referenceIds } = await seedMultiPersonSession();
+    await ctx.db
+      .update(activitySessions)
+      // Even a stored "includes the listener" cannot bring the owner back.
+      .set({
+        userPrompt: 'A birthday song for Julia, from John',
+        skipProfile: true,
+        includesListener: true,
+      })
+      .where(eq(activitySessions.id, sessionId));
+    const { provider, calls } = fakeCoverArt();
+
+    await generator(ownerUserId, provider).ensureGenerated(sessionId);
+
+    // John is the owner Person: named, with a photo, and still left out.
+    expect(calls[0]!.references.map((reference) => reference.id)).toEqual([referenceIds[1]]);
   });
 
   it('settles without spending when the configured model cannot accept references', async () => {
@@ -1019,6 +1038,49 @@ describeIfDb('SessionCoverGenerator', () => {
     expect(ledger!.plan.selectedPersonIds).toEqual(configuredPeople.map((person) => person.id));
     expect(ledger!.selectedReferences.map((reference) => reference.personId)).toEqual(
       configuredPeople.map((person) => person.id),
+    );
+  });
+
+  it('puts the owner beside the named People when the request includes the listener', async () => {
+    const { ownerUserId, sessionId, people: configuredPeople } = await seedMultiPersonSession();
+    // The request says "me", never the owner's name: only the stored answer of
+    // the text LLM can put them on the cover.
+    await ctx.db
+      .update(activitySessions)
+      .set({ userPrompt: 'Me, Julia and Amina on a trip to the moon', includesListener: true })
+      .where(eq(activitySessions.id, sessionId));
+    const { provider, calls } = fakeCoverArt({ maxReferences: 3 });
+
+    await generator(ownerUserId, provider).ensureGenerated(sessionId);
+
+    expect(calls[0]!.references).toHaveLength(3);
+    expect(calls[0]!.positivePrompt).toContain(
+      'subject one is also the request\'s own "I", "me" or "we"',
+    );
+    const [ledger] = await ctx.db
+      .select()
+      .from(sessionCoverGenerations)
+      .where(eq(sessionCoverGenerations.activitySessionId, sessionId));
+    expect(ledger!.plan.selectedPersonIds).toEqual(configuredPeople.map((person) => person.id));
+  });
+
+  it('leaves the owner off a cover whose request names only other People', async () => {
+    const { ownerUserId, sessionId, people: configuredPeople } = await seedMultiPersonSession();
+    await ctx.db
+      .update(activitySessions)
+      .set({ userPrompt: 'Julia and Amina on a trip to the moon' })
+      .where(eq(activitySessions.id, sessionId));
+    const { provider, calls } = fakeCoverArt({ maxReferences: 3 });
+
+    await generator(ownerUserId, provider).ensureGenerated(sessionId);
+
+    expect(calls[0]!.references).toHaveLength(2);
+    const [ledger] = await ctx.db
+      .select()
+      .from(sessionCoverGenerations)
+      .where(eq(sessionCoverGenerations.activitySessionId, sessionId));
+    expect(ledger!.plan.selectedPersonIds).toEqual(
+      configuredPeople.slice(1).map((person) => person.id),
     );
   });
 

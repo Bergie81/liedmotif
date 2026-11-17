@@ -315,3 +315,51 @@ describe('deriveSessionSnapshot Session Guardrails', () => {
     expect(coverConcept).toBe('');
   });
 });
+
+// Whether a request includes the listener is the text LLM's reading of it; the
+// derivation settles what the Session stores from that answer.
+describe('deriveSessionMetadata settles whether the request includes the listener', () => {
+  function answering(includesListener: boolean | undefined): LlmProvider {
+    return {
+      expandSessionIntentWithMetadata: async () => ({
+        snapshot: FREE_TEXT_SNAPSHOT,
+        coverConcept: '',
+        ...(includesListener === undefined ? {} : { includesListener }),
+      }),
+    } as unknown as LlmProvider;
+  }
+  const prompt: SessionIntentInput = { mode: 'prompt', prompt: 'me and Jonas on the moon' };
+
+  it('takes the model’s answer, and no answer as no for a new Session', async () => {
+    expect((await deriveSessionMetadata(prompt, answering(true))).includesListener).toBe(true);
+    expect((await deriveSessionMetadata(prompt, answering(false))).includesListener).toBe(false);
+    expect((await deriveSessionMetadata(prompt, answering(undefined))).includesListener).toBe(
+      false,
+    );
+  });
+
+  it('keeps the running answer on an adjustment the model leaves it out of', async () => {
+    const adjustment = { adjustFrom: FREE_TEXT_SNAPSHOT, includesListener: true };
+    const silent = await deriveSessionMetadata(prompt, answering(undefined), null, adjustment);
+    const removed = await deriveSessionMetadata(prompt, answering(false), null, adjustment);
+    expect(silent.includesListener).toBe(true);
+    expect(removed.includesListener).toBe(false);
+  });
+
+  it('never includes the listener in a Session started without the profile', async () => {
+    const result = await deriveSessionMetadata(prompt, answering(true), null, {
+      skipProfile: true,
+    });
+    expect(result.includesListener).toBe(false);
+  });
+
+  it('answers no without a text LLM, a Change Vibe included', async () => {
+    const created = await deriveSessionMetadata(prompt, null);
+    const changed = await deriveSessionMetadata(prompt, null, null, {
+      adjustFrom: FREE_TEXT_SNAPSHOT,
+      includesListener: true,
+    });
+    expect(created.includesListener).toBe(false);
+    expect(changed.includesListener).toBe(false);
+  });
+});

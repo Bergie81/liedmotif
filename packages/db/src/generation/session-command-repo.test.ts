@@ -181,6 +181,24 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
       expect(skipped.session.skipProfile).toBe(true);
     });
 
+    it('persists whether the request includes the listener, defaulting to no', async () => {
+      const ownerUserId = await createUser(ctx.db);
+      const defaulted = await createSessionCmd(ctx.db, {
+        ownerUserId,
+        sessionMode: 'keep_going',
+        snapshot: snapshot(),
+      });
+      expect(defaulted.session.includesListener).toBe(false);
+
+      const included = await createSessionCmd(ctx.db, {
+        ownerUserId,
+        sessionMode: 'keep_going',
+        snapshot: snapshot(),
+        includesListener: true,
+      });
+      expect(included.session.includesListener).toBe(true);
+    });
+
     it('supersedes the prior active session (endReason=superseded) — one active per owner', async () => {
       const ownerUserId = await createUser(ctx.db);
       const priorId = await createSession(ctx.db, { ownerUserId, status: 'active' });
@@ -973,12 +991,38 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
         ownerUserId,
         sessionId,
         snapshot: snapshot('new vibe'),
+        includesListener: false,
       });
       expect(result.ok).toBe(true);
       if (!result.ok) throw new Error('unreachable');
       expect(result.session.id).toBe(sessionId);
       expect(result.session.status).toBe('active');
       expect(result.session.sessionStyleSnapshot?.stylePrompt).toBe('new vibe');
+    });
+
+    it('stores the change’s answer on whether the request includes the listener', async () => {
+      const ownerUserId = await createUser(ctx.db);
+      const { session } = await createSessionCmd(ctx.db, {
+        ownerUserId,
+        sessionMode: 'keep_going',
+        snapshot: snapshot('old vibe'),
+      });
+
+      const added = await restyleSession(ctx.db, {
+        ownerUserId,
+        sessionId: session.id,
+        snapshot: snapshot('new vibe'),
+        includesListener: true,
+      });
+      expect(added.ok && added.session.includesListener).toBe(true);
+
+      const removed = await restyleSession(ctx.db, {
+        ownerUserId,
+        sessionId: session.id,
+        snapshot: snapshot('newer vibe'),
+        includesListener: false,
+      });
+      expect(removed.ok && removed.session.includesListener).toBe(false);
     });
 
     it('leaves the Name untouched, named or not (nothing re-derives over a Name)', async () => {
@@ -1001,6 +1045,7 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
         ownerUserId: namedOwner,
         sessionId: namedId,
         snapshot: snapshot('new vibe'),
+        includesListener: false,
       });
       if (!named.ok) throw new Error('unreachable');
       expect(named.session.title).toBe('Given Name');
@@ -1009,6 +1054,7 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
         ownerUserId: unnamedOwner,
         sessionId: unnamedId,
         snapshot: snapshot('new vibe'),
+        includesListener: false,
       });
       if (!unnamed.ok) throw new Error('unreachable');
       expect(unnamed.session.title).toBeNull();
@@ -1026,6 +1072,7 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
         ownerUserId,
         sessionId,
         snapshot: { ...snapshot('new vibe'), trackTitles: ['Amber Rain'] },
+        includesListener: false,
       });
       if (!result.ok) throw new Error('unreachable');
       expect(result.session.sessionStyleSnapshot).toMatchObject({
@@ -1041,6 +1088,7 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
         ownerUserId,
         sessionId,
         snapshot: snapshot(),
+        includesListener: false,
       });
       expect(result).toEqual({ ok: false, reason: 'not_active' });
     });
@@ -1063,6 +1111,7 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
         ownerUserId,
         sessionId,
         snapshot: snapshot('new vibe'),
+        includesListener: false,
       });
       if (!first.ok) throw new Error('unreachable');
       expect(first.session.styleRevision).toBe(2);
@@ -1072,6 +1121,7 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
         ownerUserId,
         sessionId,
         snapshot: snapshot('third vibe'),
+        includesListener: false,
       });
       if (!second.ok) throw new Error('unreachable');
       expect(second.session.styleRevision).toBe(3);
@@ -1080,7 +1130,12 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
     it('a refused restyle leaves styleRevision untouched', async () => {
       const ownerUserId = await createUser(ctx.db);
       const sessionId = await createSession(ctx.db, { ownerUserId, status: 'stopped' });
-      await restyleSession(ctx.db, { ownerUserId, sessionId, snapshot: snapshot() });
+      await restyleSession(ctx.db, {
+        ownerUserId,
+        sessionId,
+        snapshot: snapshot(),
+        includesListener: false,
+      });
       const after = await getSessionById(ctx.db, { ownerUserId, sessionId });
       expect(after?.styleRevision).toBe(1);
     });
@@ -1097,6 +1152,7 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
         ownerUserId,
         sessionId,
         snapshot: snapshot('new vibe'),
+        includesListener: false,
         switchImmediately: true,
       });
       if (!armed.ok) throw new Error('unreachable');
@@ -1109,6 +1165,7 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
         ownerUserId,
         sessionId,
         snapshot: snapshot('third vibe'),
+        includesListener: false,
         switchImmediately: true,
       });
       if (!rearmed.ok) throw new Error('unreachable');
@@ -1119,6 +1176,7 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
         ownerUserId,
         sessionId,
         snapshot: snapshot('fourth vibe'),
+        includesListener: false,
       });
       if (!cleared.ok) throw new Error('unreachable');
       expect(cleared.session.vibeSwitchRevision).toBeNull();
@@ -1135,6 +1193,7 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
         ownerUserId,
         sessionId,
         snapshot: snapshot('new vibe'),
+        includesListener: false,
         switchImmediately: true,
       });
 
@@ -1356,6 +1415,7 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
         ownerUserId,
         sessionId,
         snapshot: snapshot('death metal'),
+        includesListener: false,
       });
       expect(restyled.ok).toBe(true);
 

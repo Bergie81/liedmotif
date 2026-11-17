@@ -3,6 +3,7 @@ import {
   listPeople,
   listPersonReferencePhotos,
   selectPersonCoverReferences,
+  type CoverReferenceOwner,
   type CoverReferenceRefusal,
   type DbOrTx,
   type PersonReferencePhotoRow,
@@ -25,6 +26,8 @@ export interface CoverReferencePlanSelection {
   selectedPersonIds: string[];
   selectedPersonNames: string[];
   selectedReferences: SelectedCoverReference[];
+  /** The selected owner Person, when the Session's request includes the listener. */
+  listenerPersonId: string | null;
   capabilityDowngrades: string[];
   /** Only an explicit reference request can be refused for privacy at plan
    *  time; a frequency-driven selection degrades to a prompt-only cover. */
@@ -35,12 +38,19 @@ export type PreparedCoverReferences =
   | { ok: true; references: GeneratedImageReference[]; referencesOmitted: false }
   | { ok: false; reason: CoverReferenceRefusal };
 
+export interface CoverReferenceSubject {
+  personId: string;
+  name: string;
+  /** This subject is the listener the request puts in its scene. */
+  isListener: boolean;
+}
+
 export function referenceSubjectsForSelection(
   selection: Pick<
     CoverReferencePlanSelection,
-    'selectedPersonIds' | 'selectedPersonNames' | 'selectedReferences'
+    'selectedPersonIds' | 'selectedPersonNames' | 'selectedReferences' | 'listenerPersonId'
   >,
-): Array<{ personId: string; name: string }> {
+): CoverReferenceSubject[] {
   const referenceBearing = new Set(
     selection.selectedReferences.flatMap((reference) =>
       reference.personId ? [reference.personId] : [],
@@ -48,7 +58,9 @@ export function referenceSubjectsForSelection(
   );
   return selection.selectedPersonIds.flatMap((personId, index) => {
     const name = selection.selectedPersonNames[index];
-    return referenceBearing.has(personId) && name ? [{ personId, name }] : [];
+    return referenceBearing.has(personId) && name
+      ? [{ personId, name, isListener: personId === selection.listenerPersonId }]
+      : [];
   });
 }
 
@@ -71,6 +83,7 @@ export const EMPTY_COVER_REFERENCE_SELECTION: CoverReferencePlanSelection = {
   selectedPersonIds: [],
   selectedPersonNames: [],
   selectedReferences: [],
+  listenerPersonId: null,
   capabilityDowngrades: [],
   terminalReason: null,
 };
@@ -82,9 +95,12 @@ export async function selectCoverReferencesForPlan(
     contextId: string;
     promptText: string;
     capabilities: GeneratedImageCapabilities;
-    /** A skip-profile session is a per-session hard opt-out — same contract as
-     *  the owner-level `never` frequency: no People, no photo reads. */
+    /** A skip-profile session runs without the owner's own details: the owner
+     *  Person is never selected, while other People the request names are. */
     skipProfile?: boolean;
+    /** The Session's request includes the listener: the owner Person is named
+     *  beside the People matched by name. */
+    includesListener?: boolean;
     /** The owner asked this attempt for reference photos (see
      *  `selectPersonCoverReferences` for what the mode changes). */
     explicitOptIn?: boolean;
@@ -95,7 +111,6 @@ export async function selectCoverReferencesForPlan(
   // required person is worse than no generated cover) it must never refuse the
   // attempt.
   if (args.capabilities.musicTaskSource) return EMPTY_COVER_REFERENCE_SELECTION;
-  if (args.skipProfile) return EMPTY_COVER_REFERENCE_SELECTION;
   const frequency = await getCoverReferenceFrequency(db, args.ownerUserId);
   if (frequency === 'never') {
     // The `never` answer, reached without loading a single Person row — what
@@ -110,9 +125,28 @@ export async function selectCoverReferencesForPlan(
     listPersonReferencePhotos(db, { ownerUserId: args.ownerUserId }),
   ]);
   return {
-    ...selectPersonCoverReferences({ frequency, people, photos, ...args }),
+    ...selectPersonCoverReferences({
+      frequency,
+      people,
+      photos,
+      ownerUserId: args.ownerUserId,
+      contextId: args.contextId,
+      promptText: args.promptText,
+      capabilities: args.capabilities,
+      explicitOptIn: args.explicitOptIn,
+      owner: coverReferenceOwner(args),
+    }),
     capabilityDowngrades: [],
   };
+}
+
+function coverReferenceOwner(args: {
+  skipProfile?: boolean;
+  includesListener?: boolean;
+}): CoverReferenceOwner {
+  if (args.skipProfile) return 'exclude';
+  if (args.includesListener) return 'include';
+  return 'fallback';
 }
 
 const COVER_IMAGE_MEDIA_TYPE_VALUES: readonly string[] = COVER_IMAGE_MEDIA_TYPES;

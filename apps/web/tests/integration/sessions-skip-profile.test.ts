@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runMigrations } from 'graphile-worker';
 import { startSessionResponseSchema } from '@liedmotif/shared';
-import { getSessionById, type Database } from '@liedmotif/db';
+import { createPerson, getSessionById, type Database } from '@liedmotif/db';
 import {
   connectTestDb,
   createUser,
@@ -11,9 +11,10 @@ import {
   type TestDb,
 } from '@liedmotif/db/testing';
 
-// Start-without-profile (the home-page toggle): the owner's listener profile and
-// People stay OUT of the session's LLM prompts — the request alone is the
-// creative direction, including request-derived lyricContext for vocal sessions.
+// Start-without-profile (the home-page toggle): everything that is the owner's
+// own — their listener profile, their About, their Person — stays OUT of the
+// session's LLM prompts. The request is the creative direction, including
+// request-derived lyricContext for vocal sessions and the People it names.
 // The flag persists on the session row, so Change Vibe re-derivations keep
 // honoring it without the client resending anything.
 
@@ -117,6 +118,25 @@ describe.skipIf(skip)('POST /api/sessions — start without profile', () => {
     // Request-derived lyric notes — never the profile ('Test Admin').
     expect(session.sessionStyleSnapshot?.lyricContext).toContain(VOCAL_PROMPT);
     expect(session.sessionStyleSnapshot?.lyricContext).not.toContain('Test Admin');
+  });
+
+  it('keeps the People the request names, without anything of the owner’s own', async () => {
+    await createPerson(testDb.db as Database, {
+      ownerUserId: holder.ownerUserId!,
+      name: 'Julia',
+      about: 'repairs bicycles',
+    });
+
+    await post(startRoute, {
+      input: { mode: 'prompt', prompt: 'sing a birthday song for Julia' },
+      clientId: 'skip-profile-test',
+      skipProfile: true,
+    });
+
+    expect(holder.expansions.at(-1)).toEqual({
+      listener: { people: [{ name: 'Julia', about: 'repairs bicycles' }] },
+      skipProfile: true,
+    });
   });
 
   it('personalizes from the listener profile by default', async () => {

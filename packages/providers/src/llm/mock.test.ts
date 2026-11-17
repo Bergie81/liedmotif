@@ -161,6 +161,16 @@ describe('mockLlmProvider listener personalization', () => {
     expect(naming.lyricContext).toBe('people: John; setting: Riverton');
   });
 
+  it("weaves a fitting fact from the listener's own About into a vocal expansion", async () => {
+    await expect(
+      provider.expandSessionIntent('sing about me running beside the river', {
+        about: 'weekend trail runs beside the river. restores vintage radios',
+      }),
+    ).resolves.toMatchObject({
+      lyricContext: 'listener: weekend trail runs beside the river',
+    });
+  });
+
   it('uses matched Person context only in a vocal expansion', async () => {
     const listener = {
       people: [
@@ -359,4 +369,25 @@ describe('mock streamAssistantReply', () => {
     expect(asked).toEqual([{ topic: 'invites' }]);
     expect(chunks.join('')).toBe('The docs say: Invites are made under Members.');
   });
+});
+
+describe('mockLlmProvider reading whether a request includes the listener', () => {
+  const provider = mockLlmProvider();
+  const answer = async (intent: string) =>
+    (await provider.expandSessionIntentWithMetadata(intent)).includesListener;
+
+  it.each([
+    'Me, Jonas and Clara on a trip to the moon',
+    'sing a song about me',
+    'put me in it too',
+  ])('puts the listener in the scene of %j', async (intent) => {
+    expect(await answer(intent)).toBe(true);
+  });
+
+  it.each(['play me something calm', 'give me focus music', 'sing a gentle song about the sea'])(
+    'gives no answer for %j, which only asks for music',
+    async (intent) => {
+      expect(await answer(intent)).toBeUndefined();
+    },
+  );
 });

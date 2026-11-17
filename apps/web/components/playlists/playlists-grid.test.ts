@@ -42,6 +42,7 @@ function renderGrid(curatedPlaylists: PlaylistSummaryItem[]): string {
         onRename: () => undefined,
         onDelete: () => undefined,
         onShare: () => undefined,
+        onRemoveFromLounge: () => undefined,
         onTogglePin: () => undefined,
       },
     }),

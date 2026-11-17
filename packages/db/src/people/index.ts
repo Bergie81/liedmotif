@@ -23,6 +23,7 @@ export {
 export {
   selectPersonCoverReferences,
   type CoverReferenceEndpointCapabilities,
+  type CoverReferenceOwner,
   type CoverSelectablePerson,
   type CoverSelectablePhoto,
   type PersonCoverReferenceSelection,

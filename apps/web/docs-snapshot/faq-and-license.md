@@ -1,7 +1,7 @@
 ---
 title: FAQ and license
 description: Straight answers on costs, providers, rights, downloads, offline use, moving your install and the license.
-checkedOn: 2026-11-15
+checkedOn: 2026-11-17
 faq: true
 ---
 
@@ -50,6 +50,10 @@ Yes. **Download Track** gives you a finished track as an MP3. **Download Session
 Only your own finished tracks are included. A track still in progress, a track you disliked and a track someone shared with you in the lounge are left out. There's no button for your whole library at once. A [backup](/docs/backups) holds the whole instance, but only the admin can download one and it opens only with the passphrase from `.env`, so it isn't a way to export your music.
 
 ## Using it
+
+### Do I have to type my own name to be in my songs?
+
+No. With a text LLM, your **About you** shapes the lyrics of every vocal session, and a request that puts you in the scene names you in the lyrics and puts you on the cover. It goes by what you mean: "With Jonas and Clara on the way back to Berlin" includes you, and so does "Auf dem Weg mit Jonas und Clara nach Berlin". Other people need their saved name. [You in your own songs](/docs/features#you-in-your-own-songs) has examples, and **Run without my profile details** on **Home** leaves you out of one session.
 
 ### Does it work offline?
 

@@ -126,16 +126,33 @@ describe('expansionPrompt skip-profile sessions', () => {
     expect(prompt).not.toContain('the request itself provides');
   });
 
-  it('drops a supplied listener profile entirely when the session skips it', () => {
+  it("drops the listener's own details and keeps the People the request names", () => {
     const prompt = expansionPrompt(
       'a song for Mia',
-      { name: 'Ana', city: 'Berlin', people: [{ name: 'Mia', about: 'loves rain' }] },
+      {
+        name: 'Ana',
+        city: 'Berlin',
+        about: 'OWN_ABOUT',
+        people: [{ name: 'Mia', about: 'loves rain' }],
+      },
       undefined,
       { skipProfile: true },
     );
     expect(prompt).not.toContain('Listener profile');
     expect(prompt).not.toContain('Ana');
-    expect(prompt).not.toContain('loves rain');
+    expect(prompt).not.toContain('Berlin');
+    expect(prompt).not.toContain('OWN_ABOUT');
+    expect(prompt).toContain('Person 1: name: Mia; About: loves rain');
+    expect(prompt).toContain(
+      "A Person the request names counts as the request's own detail: develop the notes from " +
+        'their private context below as well',
+    );
+  });
+
+  it('says nothing about named People when a skip-profile request names none', () => {
+    const prompt = expansionPrompt('a song about rain', null, undefined, { skipProfile: true });
+    expect(prompt).not.toContain('Named People');
+    expect(prompt).not.toContain('A Person the request names');
   });
 });
 
@@ -430,5 +447,128 @@ describe('trackLyricBriefPrompt', () => {
     const prompt = trackLyricBriefPrompt({ ...input, userPrompt: 'a song about our night rides' });
     expect(prompt).toContain('a song about our night rides');
     expect(trackLyricBriefPrompt(input)).not.toMatch(/listening request/i);
+  });
+});
+
+// The writing AI, not a word list, decides whether "me"/"we" puts the listener
+// in the scene — in any language. The listener's own About rides along so the
+// same call can use it once it has decided.
+describe('expansionPrompt for a request that may include the listener', () => {
+  const ABOUT = 'Runs along the Elbe in the rain, cooks for friends on Fridays.';
+  const LISTENER = { name: 'Emma', city: 'Hamburg', about: ABOUT };
+  const current = sessionStyleSnapshotSchema.parse({
+    stylePrompt: 'bright german synth-pop',
+    vocalMode: 'vocal',
+  });
+
+  it('asks whether the request places the listener in its scene, not merely asks for music', () => {
+    const prompt = expansionPrompt('Me, Jonas and Clara on a trip to the moon', LISTENER);
+    expect(prompt).toContain('includesListener (boolean');
+    expect(prompt).toContain('in any language');
+    expect(prompt).toMatch(/false when the listener only asks for the music/);
+  });
+
+  it("sends the listener's own About as lyric material for any vocal request, never for naming or the cover", () => {
+    const prompt = expansionPrompt('A birthday song for Clara', LISTENER);
+    expect(prompt).toContain(ABOUT);
+    expect(prompt).toMatch(/own private About[^\n]*\n[^\n]*profile material for lyricContext only/);
+    expect(prompt).toContain('every vocal session carries at least one fact from it');
+    expect(prompt).toMatch(/must not affect stylePrompt, title, trackTitles, coverConcept/);
+    expect(prompt).not.toMatch(/ONLY when includesListener is true/);
+  });
+
+  it('never lets "nothing fits" excuse leaving the About out, and keeps that excuse for a bare profile', () => {
+    const withAbout = expansionPrompt('A birthday song for Clara', LISTENER);
+    expect(withAbout).not.toContain('If nothing in the profile fits');
+    expect(withAbout).toContain(
+      "Beyond the one fact from the listener's own About, force no personalization.",
+    );
+
+    const bare = expansionPrompt('A birthday song for Clara', { name: 'Emma', city: 'Hamburg' });
+    expect(bare).toContain(
+      'If nothing in the profile fits, build the notes from the listening request without forced personalization.',
+    );
+  });
+
+  it('relates every request to the listener, also one that names other people', () => {
+    const prompt = expansionPrompt('A birthday song for Clara', LISTENER);
+    expect(prompt).toContain("part of the soundtrack of the listener's own life");
+    expect(prompt).toContain('even when it names other people');
+    expect(prompt).toContain('what the listener shares with them or brings to the moment');
+  });
+
+  it('makes an included listener a named participant, lifting the verse-line name limit', () => {
+    const prompt = expansionPrompt('Me, Jonas and Clara on a trip to the moon', LISTENER);
+    expect(prompt).toMatch(
+      /When includesListener is true, the listener is a participant in the scene like any named Person/,
+    );
+    expect(prompt).toContain('When includesListener is false: ');
+  });
+
+  it('still asks for lyric notes, with the profile, when the listener is not a named participant', () => {
+    const prompt = expansionPrompt('Running through the waves at the beach', LISTENER);
+    expect(prompt).toContain(
+      'includesListener decides only whether the listener is a named participant, never ' +
+        'whether lyricContext is written or whether the profile may inform it',
+    );
+  });
+
+  it('still makes an included listener a participant when they have written no About', () => {
+    const prompt = expansionPrompt('Me and Jonas on the moon', { name: 'Emma' });
+    expect(prompt).toContain('When includesListener is true, the listener is a participant');
+    expect(prompt).not.toContain('own private About');
+  });
+
+  it('sends the About alone when the profile holds nothing else', () => {
+    const prompt = expansionPrompt('Me and Jonas on the moon', { about: ABOUT });
+    expect(prompt).toContain(ABOUT);
+    expect(prompt).toContain('For vocal lyricContext: The listening request');
+  });
+
+  it('states the lyric guidance and example once, whatever the profile holds', () => {
+    const prompt = expansionPrompt('A birthday song for Clara', {
+      ...LISTENER,
+      people: [{ name: 'Clara', about: 'plays the cello' }],
+    });
+    const count = (text: string) => prompt.split(text).length - 1;
+    expect(count('For vocal lyricContext: The listening request')).toBe(1);
+    expect(count('Example lyricContext:')).toBe(1);
+    expect(count('at least one fact')).toBe(1);
+  });
+
+  it('withholds the About from a session started without the profile', () => {
+    const prompt = expansionPrompt('Me and Jonas on the moon', LISTENER, undefined, {
+      skipProfile: true,
+    });
+    expect(prompt).not.toContain(ABOUT);
+  });
+
+  it('keeps the About out of the naming prompt', () => {
+    const prompt = namingPrompt({ userPrompt: null, snapshot: current, listener: LISTENER });
+    expect(prompt).not.toContain(ABOUT);
+    expect(prompt).not.toContain('includesListener');
+  });
+
+  it('states the running answer on an adjustment, to be held unless the change says otherwise', () => {
+    const prompt = expansionPrompt('a bit faster', LISTENER, undefined, {
+      adjustFrom: current,
+      includesListener: true,
+    });
+    expect(prompt).toMatch(
+      /includesListener is currently true: keep it unless the change request itself/,
+    );
+  });
+
+  it('states the running answer on a Change Vibe whose anchor fell back to a fresh expansion', () => {
+    const prompt = expansionPrompt('a bit faster', LISTENER, undefined, {
+      includesListener: true,
+    });
+    expect(prompt).toMatch(/includesListener is currently true/);
+  });
+
+  it('states no running answer on a new session', () => {
+    expect(expansionPrompt('Me and Jonas on the moon', LISTENER)).not.toContain(
+      'includesListener is currently',
+    );
   });
 });

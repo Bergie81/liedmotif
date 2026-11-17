@@ -39,6 +39,8 @@ export interface PersonCoverReferenceSelection {
   selectedPersonIds: string[];
   selectedPersonNames: string[];
   selectedReferences: SelectedPersonCoverReference[];
+  /** The selected owner Person, when the request includes the listener. */
+  listenerPersonId: string | null;
   terminalReason: CoverReferenceRefusal | null;
 }
 
@@ -180,6 +182,17 @@ function multiPersonReferences(
   };
 }
 
+/**
+ * How the owner Person takes part in a selection:
+ * - `exclude`: never selected, named or not (a Session run without the owner's
+ *   own details); the other People the request names still are.
+ * - `fallback`: selected when named by exact name, or as the no-name fallback.
+ * - `include`: the request puts the listener in its own scene ("me, Julia and
+ *   Amina"), so the owner is a named subject beside the People matched by name,
+ *   with no frequency roll.
+ */
+export type CoverReferenceOwner = 'exclude' | 'fallback' | 'include';
+
 export interface SelectPersonCoverReferencesInput {
   frequency: CoverReferenceFrequency;
   ownerUserId: string;
@@ -194,6 +207,8 @@ export interface SelectPersonCoverReferencesInput {
    * reference refuses instead of degrading to a prompt-only cover.
    */
   explicitOptIn?: boolean;
+  /** How the owner Person takes part; omitted means `fallback`. */
+  owner?: CoverReferenceOwner;
 }
 
 export function selectPersonCoverReferences(
@@ -207,10 +222,15 @@ export function selectPersonCoverReferences(
       selectedPersonIds: [],
       selectedPersonNames: [],
       selectedReferences: [],
+      listenerPersonId: null,
       terminalReason: args.explicitOptIn ? 'privacy_rejected' : null,
     };
   }
-  const selection = matchedOrOwnerReferences(args);
+  const selection = matchedOrOwnerReferences(
+    args.owner === 'exclude'
+      ? { ...args, people: args.people.filter((person) => person.role !== 'owner') }
+      : args,
+  );
   return args.explicitOptIn && selection.selectedReferences.length === 0
     ? { ...selection, terminalReason: 'references_unsupported' }
     : selection;
@@ -224,20 +244,33 @@ function ownerFallbackPeople(args: SelectPersonCoverReferencesInput): CoverSelec
   return admitted ? args.people.filter((person) => person.role === 'owner') : [];
 }
 
+/** The People the request names, in configured order: exact names, plus the owner when the request includes the listener. */
+function mentionedPeople(args: SelectPersonCoverReferencesInput): CoverSelectablePerson[] {
+  const named = new Set(matchConfiguredPeople(args.promptText, args.people));
+  return args.people.filter(
+    (person) => named.has(person) || (args.owner === 'include' && person.role === 'owner'),
+  );
+}
+
 /** References for the People named in the context, or the owner as the fallback. */
 function matchedOrOwnerReferences(
   args: SelectPersonCoverReferencesInput,
 ): PersonCoverReferenceSelection {
-  const mentioned = matchConfiguredPeople(args.promptText, args.people);
+  const mentioned = mentionedPeople(args);
   const selectedPeople = mentioned.length > 0 ? mentioned : ownerFallbackPeople(args);
   const selectedPersonIds = selectedPeople.map((person) => person.id);
   const selectedPersonNames = selectedPeople.map((person) => person.name);
+  const listenerPersonId =
+    args.owner === 'include'
+      ? (selectedPeople.find((person) => person.role === 'owner')?.id ?? null)
+      : null;
   if (selectedPeople.length === 0) {
     return {
       selectedPersonId: null,
       selectedPersonIds,
       selectedPersonNames,
       selectedReferences: [],
+      listenerPersonId,
       terminalReason: null,
     };
   }
@@ -246,6 +279,7 @@ function matchedOrOwnerReferences(
       selectedPersonId: selectedPeople[0]!.id,
       selectedPersonIds,
       selectedPersonNames,
+      listenerPersonId,
       ...multiPersonReferences(args.contextId, selectedPeople, args.photos, args.capabilities),
     };
   }
@@ -257,6 +291,7 @@ function matchedOrOwnerReferences(
       selectedPersonIds,
       selectedPersonNames,
       selectedReferences: [],
+      listenerPersonId,
       terminalReason: null,
     };
   }
@@ -270,6 +305,7 @@ function matchedOrOwnerReferences(
       personId: selectedPerson.id,
       role: 'subject',
     })),
+    listenerPersonId,
     terminalReason: subset ? null : 'references_unsupported',
   };
 }

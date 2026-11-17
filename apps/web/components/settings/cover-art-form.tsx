@@ -24,7 +24,12 @@ import {
 import { SettingsFeedback, type SettingsFeedbackState } from './settings-ui';
 
 const PLACEHOLDER =
-  'Example: hand-cut woodblock print, bold ink lines, rough paper grain, limited rust-and-black palette.';
+  'Example: hand-cut woodblock print, bold ink lines, rough paper grain, colors that fit the mood.';
+
+// A definition naming fixed colors or objects repeats them on every cover;
+// technique-only wording lets each Session's theme pick color and subject.
+const CUSTOM_STYLE_TIP =
+  'Describe medium, line, texture and contrast, not fixed colors or objects. Phrases like "colors that fit the mood" keep each cover different.';
 
 export function CoverArtForm({
   initial,
@@ -87,18 +92,18 @@ export function CoverArtForm({
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-[13px] font-semibold text-paper">Use Basic Cover Art</div>
+          <div className="text-[13px] font-semibold text-paper">Use Tailored Cover Art Generation</div>
           <p className="mt-1 text-[11.5px] leading-[1.5] text-dim">
-            New Sessions use the basic cover art delivered with the music — no additional costs.
-            Turn off for styled covers via your image provider; every Session can override this on
-            the create card.
+            New Sessions get covers in your chosen style from your image provider, which costs per
+            cover. Off, they use the basic cover art that comes with the music at no extra cost.
+            Every Session can override this on the create card.
           </p>
         </div>
         <Switch
-          checked={useStandardCoverArt}
-          onCheckedChange={setUseStandardCoverArt}
-          aria-label="Use Basic Cover Art"
-          data-testid="use-standard-cover-art"
+          checked={!useStandardCoverArt}
+          onCheckedChange={(on) => setUseStandardCoverArt(!on)}
+          aria-label="Use Tailored Cover Art Generation"
+          data-testid="use-tailored-cover-art"
         />
       </div>
       <label className={`${labelClass} ${useStandardCoverArt ? 'opacity-40' : ''}`}>
@@ -140,7 +145,7 @@ export function CoverArtForm({
           className={`${inputClass} resize-none disabled:cursor-not-allowed`}
         />
         <span className="text-[11.5px] font-normal leading-[1.5] text-dim">
-          Select Custom to edit your definition.
+          {defaultStyle === 'custom' ? CUSTOM_STYLE_TIP : 'Select Custom to edit your definition.'}
         </span>
       </label>
       <div className="flex items-center justify-between gap-3">

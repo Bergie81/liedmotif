@@ -1,9 +1,11 @@
 'use client';
 
-// The Lounge member filter: an "Everyone" card plus one profile card per
-// sharer, single-select. Tapping the lit card again lifts the narrowing.
-// The strip scrolls sideways on phones and wraps from `desk` up, where a
-// mouse has no swipe to reach the cards past the edge.
+// The Lounge member filter: an "All" card plus one profile card per sharer,
+// single-select. Tapping the lit card again lifts the narrowing. The strip
+// scrolls sideways on phones and wraps from `desk` up, where a mouse has no
+// swipe to reach the cards past the edge. Once the column is wide enough,
+// sharer cards size to fit four per row beside the "All" card: the strip's
+// `--all-card` and `--filter-gap` variables are the widths that row shares.
 
 import { useId } from 'react';
 import { Users } from 'lucide-react';
@@ -20,30 +22,36 @@ export function LoungeMemberFilter({
   onSelect,
 }: {
   cards: SharerCard[];
-  /** The selected sharer's user id; null = Everyone. */
+  /** The selected sharer's user id; null = All. */
   selected: string | null;
   onSelect: (userId: string | null) => void;
 }) {
   return (
-    <div
-      role="group"
-      aria-label="Filter by sharing member"
-      className="flex gap-3 overflow-x-auto pb-2 pt-6 desk:flex-wrap desk:overflow-visible"
-    >
-      <FilterCard on={selected === null} onClick={() => onSelect(null)} className="w-[150px]">
-        <span className={cn(roundChipClass, 'h-12 w-12 text-lamp')}>
-          <Users className="h-5 w-5" aria-hidden />
-        </span>
-        <span className="block text-[14.5px] font-semibold">Everyone</span>
-      </FilterCard>
-      {cards.map((card) => (
-        <SharerFilterCard
-          key={card.userId}
-          card={card}
-          on={selected === card.userId}
-          onClick={() => onSelect(selected === card.userId ? null : card.userId)}
-        />
-      ))}
+    <div className="@container">
+      <div
+        role="group"
+        aria-label="Filter by sharing member"
+        className="flex gap-(--filter-gap) overflow-x-auto pb-2 pt-6 [--all-card:104px] [--filter-gap:0.75rem] desk:flex-wrap desk:overflow-visible"
+      >
+        <FilterCard
+          on={selected === null}
+          onClick={() => onSelect(null)}
+          className="w-(--all-card) items-center justify-center text-center"
+        >
+          <span className={cn(roundChipClass, 'h-12 w-12 text-lamp')}>
+            <Users className="h-5 w-5" aria-hidden />
+          </span>
+          <span className="block text-[14.5px] font-semibold">All</span>
+        </FilterCard>
+        {cards.map((card) => (
+          <SharerFilterCard
+            key={card.userId}
+            card={card}
+            on={selected === card.userId}
+            onClick={() => onSelect(selected === card.userId ? null : card.userId)}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -66,7 +74,8 @@ function SharerFilterCard({
     <FilterCard
       on={on}
       onClick={onClick}
-      className="w-[224px]"
+      // The extra pixel keeps sub-pixel rounding from wrapping the fourth card.
+      className="w-[224px] items-start text-left @min-[880px]:w-[calc((100%-var(--all-card)-4*var(--filter-gap)-1px)/4)]"
       labelledBy={nameId}
       describedBy={card.description ? `${countId} ${descriptionId}` : countId}
     >
@@ -118,7 +127,7 @@ function FilterCard({
       aria-describedby={describedBy}
       onClick={onClick}
       className={cn(
-        'flex flex-none flex-col items-start gap-3 rounded-card border p-4 text-left transition',
+        'flex flex-none flex-col gap-3 rounded-card border p-4 transition',
         on
           ? 'border-lamp/55 bg-lamp/10 text-lamp shadow-[0_0_14px_-4px_var(--lamp-glow)]'
           : 'border-line text-paper [background:var(--gradient-card)] shadow-[var(--shadow-card)] hover:border-line-2',

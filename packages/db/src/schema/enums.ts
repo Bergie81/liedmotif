@@ -159,10 +159,12 @@ export const coverReferenceFrequency = pgEnum('cover_reference_frequency', [
  */
 export const coverStyle = pgEnum('cover_style', [
   'auto',
+  'record_sleeve',
   'poster_art',
   'photographic',
-  'minimal',
+  'manga',
   'drawing',
+  'minimal',
   'custom',
 ]);
 

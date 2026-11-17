@@ -81,9 +81,13 @@ export interface SessionRecord {
   userPrompt: string | null;
   /** The stored structured controls, when the session came from the controls path. */
   structuredControls: StructuredControls | null;
-  /** Start-without-profile: listener profile/People stay out of this session's
-   *  LLM prompts and generated-cover person references. */
+  /** Start-without-profile: the owner's own details (listener profile, own
+   *  About, owner Person and photos) stay out of this session's LLM prompts and
+   *  generated cover; the other People its request names stay in. */
   skipProfile: boolean;
+  /** The request puts the listener in its own scene: the generated cover
+   *  treats the owner Person as named. */
+  includesListener: boolean;
   statusMessageSafe: string | null;
   /** Which bound a Member's cost-limit names (member/pool); null otherwise. */
   generationStatusScope: 'member' | 'pool' | null;
@@ -127,6 +131,7 @@ const sessionColumns = {
   userPrompt: activitySessions.userPrompt,
   structuredControls: activitySessions.structuredControls,
   skipProfile: activitySessions.skipProfile,
+  includesListener: activitySessions.includesListener,
   statusMessageSafe: activitySessions.statusMessageSafe,
   generationStatusScope: activitySessions.generationStatusScope,
   endReason: activitySessions.endReason,
@@ -256,8 +261,12 @@ export interface CreateSessionInput {
   coverConcept?: string | null;
   userPrompt?: string | null;
   structuredControls?: StructuredControls | null;
-  /** Start this session without the owner's listener profile/People. */
+  /** Start this session without the owner's own details (profile, About,
+   *  owner Person); the other People its request names stay in. */
   skipProfile?: boolean;
+  /** The text LLM read the request as putting the listener in its scene;
+   *  omitted (More Like This, Surprise Me) is no. */
+  includesListener?: boolean;
   targetDurationMinutes?: number | null;
   /** The immediate cover (the built-in placeholder); the async generated cover
    *  replaces it when ready. */
@@ -330,6 +339,7 @@ export async function createSessionInTx(
         ? { structuredControls: input.structuredControls }
         : {}),
       ...(input.skipProfile !== undefined ? { skipProfile: input.skipProfile } : {}),
+      ...(input.includesListener !== undefined ? { includesListener: input.includesListener } : {}),
       ...(input.useStandardCover !== undefined ? { useStandardCover: input.useStandardCover } : {}),
       ...(input.targetDurationMinutes != null
         ? { targetDurationMinutes: input.targetDurationMinutes }
@@ -519,6 +529,8 @@ export async function restyleSession(
     snapshot: StyleSnapshot;
     targetDurationMinutes?: number | null;
     coverConcept?: string | null;
+    /** The re-derivation's answer on whether the request includes the listener. */
+    includesListener: boolean;
     /** The change's free text, FOLDED INTO the session's prompt history rather
      *  than replacing it (`extendPromptHistory`). Null/omitted — a controls
      *  change — leaves the history exactly as it is. */
@@ -595,6 +607,7 @@ export async function restyleSession(
                 : null,
             }
           : {}),
+        includesListener: args.includesListener,
         userPrompt,
         ...(args.structuredControls !== undefined
           ? { structuredControls: args.structuredControls }

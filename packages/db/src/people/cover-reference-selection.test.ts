@@ -64,6 +64,7 @@ describe('explicit opt-in cover reference selection', () => {
         { id: 'owner-1', personId: 'owner-person', role: 'subject' },
         { id: 'owner-2', personId: 'owner-person', role: 'subject' },
       ],
+      listenerPersonId: null,
       terminalReason: null,
     });
   });
@@ -85,6 +86,7 @@ describe('explicit opt-in cover reference selection', () => {
       selectedPersonIds: [],
       selectedPersonNames: [],
       selectedReferences: [],
+      listenerPersonId: null,
       terminalReason: 'privacy_rejected',
     });
   });
@@ -148,5 +150,76 @@ describe('explicit opt-in cover reference selection', () => {
 
     expect(chosen(UNROLLED_CONTEXT)).toEqual(['owner-1']);
     expect(chosen(OTHER_CONTEXT)).toEqual(['owner-2']);
+  });
+});
+
+// The Session's request put the listener in its scene ("me, Julia and Amina"):
+// the owner Person is a named subject like the others, not the no-name fallback.
+describe('cover reference selection for a request that includes the listener', () => {
+  it('adds the owner to the named People, one photo each in configured order', () => {
+    const result = select({ owner: 'include', promptText: 'Me, Amina and Julia at the beach' });
+    expect(result.selectedPersonIds).toEqual(['owner-person', 'julia-person', 'amina-person']);
+    expect(result.selectedPersonNames).toEqual(['John', 'Julia', 'Amina']);
+    expect(result.selectedReferences.map((reference) => reference.personId)).toEqual([
+      'owner-person',
+      'julia-person',
+      'amina-person',
+    ]);
+    expect(result.listenerPersonId).toBe('owner-person');
+    expect(result.terminalReason).toBeNull();
+  });
+
+  it('selects the owner without a frequency roll when no other name matches', () => {
+    expect(select({ owner: 'include', promptText: 'Me on a trip to the moon' })).toMatchObject({
+      selectedPersonIds: ['owner-person'],
+      selectedReferences: [
+        { id: 'owner-1', personId: 'owner-person', role: 'subject' },
+        { id: 'owner-2', personId: 'owner-person', role: 'subject' },
+      ],
+      terminalReason: null,
+    });
+  });
+
+  it('counts an owner named by name once', () => {
+    const result = select({ owner: 'include', promptText: 'John and Julia at the beach' });
+    expect(result.selectedPersonIds).toEqual(['owner-person', 'julia-person']);
+  });
+
+  it('keeps named People without the owner when the request leaves the listener out', () => {
+    const result = select({ promptText: 'Amina and Julia at the beach' });
+    expect(result.selectedPersonIds).toEqual(['julia-person', 'amina-person']);
+    expect(result.listenerPersonId).toBeNull();
+  });
+
+  it('marks no listener for an owner chosen by name alone', () => {
+    expect(select({ promptText: 'John and Julia at the beach' }).listenerPersonId).toBeNull();
+  });
+
+  it('lets never outrank it: no Person selected, nothing refused', () => {
+    expect(
+      select({ owner: 'include', frequency: 'never', promptText: 'Me and Julia at the beach' }),
+    ).toMatchObject({ selectedPersonIds: [], selectedReferences: [], terminalReason: null });
+  });
+});
+
+// "Run without my profile details" removes the owner's own details from one
+// Session. The People the request names are the request's, so they stay.
+describe('cover reference selection for a Session run without the owner’s profile', () => {
+  it('keeps the named People and leaves the owner out, named or not', () => {
+    const result = select({
+      owner: 'exclude',
+      promptText: 'John, Amina and Julia at the beach',
+    });
+    expect(result.selectedPersonIds).toEqual(['julia-person', 'amina-person']);
+    expect(result.selectedReferences.map((reference) => reference.personId)).toEqual([
+      'julia-person',
+      'amina-person',
+    ]);
+  });
+
+  it('never falls back to the owner when nobody else is named', () => {
+    expect(
+      select({ owner: 'exclude', frequency: 'always', promptText: 'Late night drive' }),
+    ).toMatchObject({ selectedPersonIds: [], selectedReferences: [], terminalReason: null });
   });
 });

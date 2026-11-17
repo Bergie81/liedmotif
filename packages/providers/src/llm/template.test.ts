@@ -778,6 +778,34 @@ describe('buildTrackPrompt lyric personalization (vocal sessions only)', () => {
   });
 });
 
+// A brief written for one track is short. Base notes submitted in its place
+// (the brief call failed) can be much longer, and the description they share
+// with the style has a provider cap: the notes give way, not the style.
+describe('buildTrackPrompt with long base lyric notes', () => {
+  const vocal = compileStructuredControls({ vocal: 'vocal', genres: ['pop'] });
+  const longNotes = `theme: moon trip; ${'scene detail, '.repeat(34)}people: Emma`;
+
+  it('sends the head of the notes and leaves the style its room in a tight provider cap', () => {
+    const style = 'bright german synth-pop with a female lead, punchy bass and bold hooks';
+    const params = buildTrackPrompt(
+      { ...vocal, stylePrompt: style, lyricContext: longNotes },
+      0,
+      500,
+    );
+    expect(longNotes.length).toBeGreaterThan(480);
+    expect(params.prompt.length).toBeLessThanOrEqual(500);
+    expect(params.prompt.startsWith(style)).toBe(true);
+    expect(params.prompt).toContain(`Lyric brief: ${longNotes.slice(0, 240)}`);
+    expect(params.prompt).not.toContain(longNotes.slice(0, 241));
+  });
+
+  it('sends a per-track brief whole', () => {
+    const brief = `theme: launch; ${'b'.repeat(180)}`;
+    const params = buildTrackPrompt({ ...vocal, lyricContext: brief }, 0, 500);
+    expect(params.prompt.endsWith(`Lyric brief: ${brief}`)).toBe(true);
+  });
+});
+
 describe('buildTrackPrompt vocal language tag (sing in the request language)', () => {
   const vocal = compileStructuredControls({ vocal: 'vocal', genres: ['pop'] });
 

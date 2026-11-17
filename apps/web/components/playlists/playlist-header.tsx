@@ -5,8 +5,8 @@
 // name, count, duration — because every act that curates rather than plays sits
 // behind the `⋯`. The cover is artwork here, not a control: it is managed from
 // that menu like everything else, so there is one place to look for a change.
-// Available offline leads that menu, for a Lounge visitor too: it is the only row
-// a visitor has.
+// Available offline leads that menu, for a Lounge visitor too, whose rows are
+// the same ones the playlist's Lounge tile offers.
 
 import {
   ArrowLeft,
@@ -28,6 +28,7 @@ import { MenuRow } from '@/components/ui/menu-row';
 import { Sheet, SheetTrigger } from '@/components/ui/sheet';
 import { OfflineMark } from '@/components/offline/offline-mark';
 import { useOfflineSupported } from '@/components/offline/offline-menu-row';
+import { LoungeVisitorRows, type LoungeVisitorActions } from '@/components/lounge/lounge-menu-rows';
 import { PlaylistCover } from './playlist-cover';
 import { PlaylistOptionsSheetContent } from './playlist-options-sheet-content';
 import {
@@ -35,6 +36,12 @@ import {
   playlistMenuRows,
   type PlaylistMenuRowId,
 } from './playlist-view-model';
+
+/** The Lounge visitor view's rows: listening moves on someone else's share. */
+interface VisitorMenu {
+  pinned: boolean;
+  actions: LoungeVisitorActions;
+}
 
 const MENU_ICONS: Record<PlaylistMenuRowId, LucideIcon> = {
   'add-tracks': Plus,
@@ -50,6 +57,7 @@ export function PlaylistHeader({
   back,
   reordering,
   actions,
+  visitor,
   eyebrow,
   attribution,
   play,
@@ -64,10 +72,11 @@ export function PlaylistHeader({
   /** The page's primary control, under the menu. */
   play?: ReactNode;
   /** Every row that can be reached needs a handler, so a shipped row with no
-   *  wiring is a type error rather than a dead tap. Omitted on a read-only
-   *  surface (the Lounge visitor view): the menu then holds only Available
-   *  offline, and is absent, not empty, where the page cannot store music. */
+   *  wiring is a type error rather than a dead tap. Omitted on a surface
+   *  that cannot curate: the menu then holds only Available offline and the
+   *  visitor rows, and is absent, not empty, when it would hold nothing. */
   actions?: Record<PlaylistMenuRowId, () => void>;
+  visitor?: VisitorMenu;
   /** Replaces the standing "Playlist" eyebrow (the visitor view names the room). */
   eyebrow?: string;
   /** Who this playlist belongs to, under the meta line — the visitor view's
@@ -117,7 +126,9 @@ export function PlaylistHeader({
             with the artwork. */}
         <div className="-mt-1.5 flex flex-none flex-col items-center justify-between self-stretch">
           <div className="h-[42px] w-[42px]">
-            {reordering ? null : <PlaylistMenu playlist={playlist} actions={actions} />}
+            {reordering ? null : (
+              <PlaylistMenu playlist={playlist} actions={actions} visitor={visitor} />
+            )}
           </div>
           <div className="h-[52px] w-[52px]">{reordering ? null : play}</div>
         </div>
@@ -129,13 +140,15 @@ export function PlaylistHeader({
 function PlaylistMenu({
   playlist,
   actions,
+  visitor,
 }: {
   playlist: PlaylistSummaryItem;
   actions: Record<PlaylistMenuRowId, () => void> | undefined;
+  visitor: VisitorMenu | undefined;
 }) {
   const [open, setOpen] = useState(false);
   const offlineSupported = useOfflineSupported();
-  if (!actions && !offlineSupported) return null;
+  if (!actions && !visitor && !offlineSupported) return null;
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger
@@ -146,6 +159,14 @@ function PlaylistMenu({
         <MoreHorizontal className="h-[22px] w-[22px]" aria-hidden />
       </SheetTrigger>
       <PlaylistOptionsSheetContent playlist={playlist}>
+        {visitor ? (
+          <LoungeVisitorRows
+            playlistId={playlist.id}
+            pinned={visitor.pinned}
+            actions={visitor.actions}
+            close={() => setOpen(false)}
+          />
+        ) : null}
         {actions
           ? playlistMenuRows(playlist).map((row) => {
               const Icon = MENU_ICONS[row.id];

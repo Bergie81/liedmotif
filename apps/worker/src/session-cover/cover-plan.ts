@@ -14,7 +14,7 @@ import {
 import { GRAMMARS } from './cover-grammars';
 
 export const SESSION_COVER_PLAN_VERSION = 'session-cover-plan-v5';
-export const SESSION_COVER_PROMPT_VERSION = 'session-cover-prompt-v12';
+export const SESSION_COVER_PROMPT_VERSION = 'session-cover-prompt-v13';
 
 const MAX_NAME = 240;
 const MAX_CONCEPT = 240;
@@ -233,7 +233,9 @@ export interface BuildSessionCoverPlanInput {
   referenceTreatment: string | null;
   referenceSubjectCount?: number;
   selectedPersonIds?: string[];
-  referenceSubjects?: Array<{ personId: string; name: string }>;
+  /** `isListener` marks the subject the request puts in its scene as its own
+   *  "me": nothing else ties that word to a reference image. */
+  referenceSubjects?: Array<{ personId: string; name: string; isListener?: boolean }>;
   persistedStyleFallbackReason?: string | null;
   recentFingerprints?: readonly Record<string, string>[];
 }
@@ -249,14 +251,25 @@ export type BuildSessionCoverPlanResult =
 
 const REFERENCE_ORDINALS = ['one', 'two', 'three', 'four', 'five', 'six'] as const;
 
+const FIRST_PERSON = `the request's own "I", "me" or "we"`;
+
 function associatedReferenceTreatment(
   treatment: string | null,
   subjectCount: number,
+  subjects: readonly { isListener?: boolean }[],
 ): string | null {
-  if (!treatment || subjectCount < 2) return treatment;
+  if (!treatment) return treatment;
+  const listenerIndex = subjects.findIndex((subject) => subject.isListener === true);
+  if (subjectCount < 2) {
+    return listenerIndex === 0
+      ? `the referenced person is ${FIRST_PERSON}; ${treatment}`
+      : treatment;
+  }
   const associations = REFERENCE_ORDINALS.slice(0, subjectCount).map(
     (ordinal) => `subject ${ordinal} is the person from reference image ${ordinal}`,
   );
+  const listener = REFERENCE_ORDINALS[listenerIndex];
+  if (listener) associations.push(`subject ${listener} is also ${FIRST_PERSON}`);
   return `${associations.join('; ')}; these are distinct subjects in the requested scene; ${treatment}`;
 }
 
@@ -420,6 +433,7 @@ export function buildSessionCoverPlan(
   const selectedReferenceTreatment = associatedReferenceTreatment(
     selected.referenceTreatment,
     input.referenceSubjectCount ?? 0,
+    input.referenceSubjects ?? [],
   );
   const energy =
     grammar?.energy[energyOf(input.snapshot)] ??

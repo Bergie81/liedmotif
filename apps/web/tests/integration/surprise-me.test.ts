@@ -361,7 +361,8 @@ describe.skipIf(skip)('Surprise Me proposals', () => {
       expect(proposal.vocalMode).toBe('vocal');
       expect(proposal.language).toBe('German');
       const [expansion] = holder.expansions;
-      expect(expansion!.listener?.people).toEqual([{ name: expect.any(String), about: OWN_ABOUT }]);
+      expect(expansion!.listener?.about).toBe(OWN_ABOUT);
+      expect(expansion!.listener?.people).toBeUndefined();
       expect((expansion!.picks as { ownVoice?: boolean }).ownVoice).toBeUndefined();
       // The request writer, the request text and the preview carry no About content.
       expect(JSON.stringify(holder.requests)).not.toMatch(/Baltic|Anna/);

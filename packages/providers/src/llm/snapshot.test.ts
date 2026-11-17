@@ -105,6 +105,22 @@ describe('lyricContext (personal lyric details, LLM-selected)', () => {
     });
     expect(parsed.lyricContext).toHaveLength(MAX_LYRIC_CONTEXT_LENGTH);
   });
+
+  it('keeps notes that give each of six People a part in the scene', () => {
+    const notes = [
+      'theme: six friends on a moon adventure',
+      'scene: Emma plots a calm crater route, Linh maps the terrain in light, ' +
+        "Clara's alto answers Jonas's portable speaker, Kai fixes the rover radio, " +
+        'Ana sings in Portuguese over the comms',
+      'imagery: silver dust, blue Earth, bootprints circling a crater, neon visor glow',
+      'arc: nervous countdown to weightless joy',
+      'people: Emma, Jonas, Linh, Clara, Kai, Ana',
+    ].join('; ');
+    expect(notes.length).toBeGreaterThan(350);
+    expect(
+      sessionStyleSnapshotSchema.parse({ stylePrompt: 'x', lyricContext: notes }).lyricContext,
+    ).toBe(notes);
+  });
 });
 
 describe('voiceGender (explicit Voice pick for vocal sessions)', () => {

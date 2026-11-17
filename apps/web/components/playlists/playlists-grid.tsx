@@ -65,7 +65,7 @@ import {
 } from './playlist-card-shell';
 import { PlaylistCoverSheet } from './playlist-cover-sheet';
 import { PlaylistOptionsSheetContent } from './playlist-options-sheet-content';
-import { SharePlaylistSheet } from './share-playlist-sheet';
+import { SharePlaylistSheet, type ShareResult } from './share-playlist-sheet';
 import {
   canDownloadPlaylist,
   deletePlaylistConfirmBody,
@@ -73,6 +73,8 @@ import {
   pinToggleFailure,
 } from './playlist-view-model';
 import { MENU_COPY } from '@/components/ui/menu-copy';
+import { RemoveFromLoungeRow } from '@/components/lounge/lounge-menu-rows';
+import { RemoveFromLoungeDialog } from '@/components/lounge/lounge-confirm-dialogs';
 import { usePlayPlaylist } from './use-play-playlist';
 
 type PlaylistGridAction =
@@ -81,7 +83,8 @@ type PlaylistGridAction =
   | { kind: 'delete'; playlist: PlaylistSummaryItem }
   | { kind: 'add-tracks'; playlist: PlaylistSummaryItem; memberIds: string[] }
   | { kind: 'cover'; playlist: PlaylistSummaryItem }
-  | { kind: 'share'; playlist: PlaylistSummaryItem };
+  | { kind: 'share'; playlist: PlaylistSummaryItem }
+  | { kind: 'remove-from-lounge'; playlist: PlaylistSummaryItem };
 
 /** What a card's menu can start — the grid owns whatever each one opens. */
 export interface PlaylistCardActions {
@@ -92,6 +95,8 @@ export interface PlaylistCardActions {
   onDelete: (playlist: PlaylistSummaryItem) => void;
   /** Open the Lounge share picker — who the playlist reaches, or Private. */
   onShare: (playlist: PlaylistSummaryItem) => void;
+  /** Return an In-Lounge playlist to Private, after a confirm. */
+  onRemoveFromLounge: (playlist: PlaylistSummaryItem) => void;
   /** Pin it first in this list, or take it back out. */
   onTogglePin: (playlist: PlaylistSummaryItem) => void;
 }
@@ -231,6 +236,10 @@ export function PlaylistsGrid({
     await loadRef.current();
   }
 
+  function applySharedAt({ playlistId, sharedAt }: ShareResult) {
+    setPlaylists((all) => all?.map((p) => (p.id === playlistId ? { ...p, sharedAt } : p)) ?? all);
+  }
+
   async function confirmDelete(playlist: PlaylistSummaryItem) {
     const result = await deletePlaylist(playlist.id);
     setAction(null);
@@ -262,6 +271,7 @@ export function PlaylistsGrid({
               onRename: (playlist) => setAction({ kind: 'rename', playlist }),
               onDelete: (playlist) => setAction({ kind: 'delete', playlist }),
               onShare: (playlist) => setAction({ kind: 'share', playlist }),
+              onRemoveFromLounge: (playlist) => setAction({ kind: 'remove-from-lounge', playlist }),
               onTogglePin: (playlist) => void togglePin(playlist),
             }}
           />
@@ -306,12 +316,16 @@ export function PlaylistsGrid({
       <SharePlaylistSheet
         playlist={action?.kind === 'share' ? action.playlist : null}
         onClose={() => setAction(null)}
-        onShared={({ playlistId, sharedAt }) =>
-          setPlaylists(
-            (all) => all?.map((p) => (p.id === playlistId ? { ...p, sharedAt } : p)) ?? all,
-          )
-        }
+        onShared={applySharedAt}
       />
+      {action?.kind === 'remove-from-lounge' ? (
+        <RemoveFromLoungeDialog
+          playlist={action.playlist}
+          onRemoved={applySharedAt}
+          onError={setActionError}
+          onClose={() => setAction(null)}
+        />
+      ) : null}
       {action?.kind === 'add-tracks' ? (
         <AddTracksSheet
           open
@@ -526,6 +540,12 @@ function PlaylistCardMenu({
           data-testid={`playlist-menu-share-${playlist.id}`}
           onClick={() => pick(actions.onShare)}
         />
+        {playlist.sharedAt ? (
+          <RemoveFromLoungeRow
+            testId={`playlist-menu-remove-from-lounge-${playlist.id}`}
+            onClick={() => pick(actions.onRemoveFromLounge)}
+          />
+        ) : null}
         <MenuRow
           onlineOnly
           icon={<Download />}

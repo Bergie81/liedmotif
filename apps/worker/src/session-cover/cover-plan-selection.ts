@@ -164,7 +164,16 @@ function pick<T>(values: readonly T[], salt: string): T {
 function autoSemanticRank(style: PresetStyle, text: string): number {
   const matches = (pattern: RegExp, styles: readonly PresetStyle[]) =>
     pattern.test(text) && styles.includes(style);
-  if (matches(/retro|vinyl|jazz/i, ['drawing', 'photographic'])) return 4;
+  if (
+    matches(/retro|vinyl|jazz|\b(?:19)?[6-9]0s\b|\b2000s\b/i, [
+      'record_sleeve',
+      'drawing',
+      'photographic',
+    ])
+  ) {
+    return 4;
+  }
+  if (matches(/manga|anime|j-?rock|j-?pop/i, ['manga'])) return 4;
   if (matches(/dream|moon|surreal|ambient/i, ['minimal', 'poster_art'])) return 4;
   if (matches(/focus|minimal|quiet|calm/i, ['minimal', 'photographic'])) return 4;
   if (matches(/cinema|storm|rain|train|dramatic/i, ['photographic', 'poster_art'])) return 4;

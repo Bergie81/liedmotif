@@ -128,6 +128,7 @@ export async function POST(request: Request) {
     userPrompt,
     structuredControls: input.mode === 'controls' ? input.controls : null,
     ...(skipProfile ? { skipProfile } : {}),
+    includesListener: derived.includesListener,
     useStandardCover,
     ...(resolvedDurationMinutes != null ? { targetDurationMinutes: resolvedDurationMinutes } : {}),
     coverImageId,

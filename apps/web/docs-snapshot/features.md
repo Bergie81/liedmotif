@@ -1,7 +1,7 @@
 ---
 title: Every feature, and how to use it
 description: The reference for using Liedmotif day to day, with what each feature does, where it is in the app and what to watch out for.
-checkedOn: 2026-11-16
+checkedOn: 2026-11-17
 ---
 
 Look up any feature here to see what it does, where to find it and what its limits are. Buttons and menus appear in bold, exactly as the app shows them.
@@ -388,8 +388,8 @@ Only finished tracks can be downloaded, so a track reads "Still generating" unti
 
 Every session has one cover, shared by all its tracks. It starts on built-in placeholder art until its own cover lands. Choose in the **Cover art** fold on **Home**:
 
-- **Use Basic Cover Art** uses the cover that comes with the music, at no additional cost.
-- **Cover style** asks your image provider for **Auto**, **Random**, **Artistic**, **Photographic**, **Minimal**, **Drawing** or **Custom**. Styled covers need an image provider and cover budget.
+- **Use Tailored Cover Art Generation** asks your image provider for a cover in your chosen style. Turn it off to use the cover that comes with the music, at no additional cost.
+- **Cover style** asks your image provider for **Auto**, **Random**, **Record Sleeve**, **Artistic**, **Photographic**, **Manga**, **Drawing**, **Minimal** or **Custom**. Styled covers need an image provider and cover budget. **Record Sleeve** paints an album cover from one decade between the 1960s and the 2000s: name a decade or an era's sound in your prompt ("80s synthwave", in any language), or it picks one for you.
 
 To change it later, use the **Session Cover** tile in the player, or **Change Cover Art** in a session's options. You can set a **Cover style**, write up to 500 characters of **Art direction** or press **Use session prompt**. With a writing AI, a switch lets it polish your direction first. Press **Reroll Cover Art**, or **Upload your own**, which costs nothing.
 
@@ -397,7 +397,9 @@ A new cover is only a preview until you press **Save Cover Art**, so a cover you
 
 Rerolling needs an image provider, with styled covers turned on and budget left.
 
-Everyone sets their own defaults in **Settings › Cover art**: **Use Basic Cover Art**, **Default cover style**, **Custom style definition** of up to 240 characters and **Enhance prompts**.
+Everyone sets their own defaults in **Settings › Cover art**: **Use Tailored Cover Art Generation**, **Default cover style**, **Custom style definition** of up to 240 characters and **Enhance prompts**.
+
+A good **Custom style definition** describes the medium, line, texture and contrast, not fixed colors or objects. Whatever you name shows up on every cover, so write "colors that fit the mood" instead of naming colors, and each session's theme picks the colors and subject. For example: *A risograph print look: two or three bold overlapping inks chosen to fit the mood, visible grain, slight misregistration and halftone dots, flat graphic shapes on uncoated paper.*
 
 ### Playlist covers
 
@@ -454,7 +456,7 @@ The controls are in **Settings › Playback › Personalization**. **Personalize
 
 Add the people in your life, so a song or cover can really be about them. In **Settings › People** you have your own card plus up to five more. Each has a **Name**, an optional **About them** (**About you** on your own card) of up to 2,000 characters and up to three **Reference photos**.
 
-To include someone, use their saved name in your request. Capitals don't matter, but the word must match: "Mum" doesn't find someone saved as "Mother", and relationships or translations aren't worked out for you. Choose a distinctive name.
+To include someone else, use their saved name in your request. Capitals don't matter, but the word must match: "Mum" doesn't find someone saved as "Mother", and relationships or translations aren't worked out for you. Choose a distinctive name. You yourself don't need your name: see [You in your own songs](#you-in-your-own-songs).
 
 - **Lyrics:** a named person can show up in the words of vocal tracks, and **About them** / **About you** reaches the lyrics only with a writing AI.
 - **Session covers:** a named person with photos can appear on a styled cover. Basic covers can't include anyone.
@@ -462,9 +464,36 @@ To include someone, use their saved name in your request. Capitals don't matter,
 
 Names and notes stay private on your instance unless a request needs them. Your own card can't be deleted.
 
+### You in your own songs
+
+Liedmotif is the soundtrack of your life, so you're part of your music without typing your name. This needs a text LLM.
+
+- **Your details are in the lyrics of every vocal session.** **About you** shapes them, also when the song is about someone else: a birthday song for Clara is you singing to Clara.
+- **You're in the scene when your request says so.** Then the lyrics name you next to the others, and you're on the cover with them. The text LLM goes by what you mean, not by particular words, in the language you write in. You don't need "me" or "I".
+
+These examples have **Vocals** picked:
+
+| Your request | Are you in the scene? | Lyrics | Cover |
+| --- | --- | --- | --- |
+| "Me, Jonas, Linh and Clara on a trip to the moon" | Yes | You and the three of them, each with a part | You and the three of them |
+| "With Jonas and Clara on the way back to Berlin" | Yes, "with" means you're there | You, Jonas and Clara | You, Jonas and Clara |
+| "Auf dem Weg mit Jonas und Clara nach Berlin" | Yes | The same, in German | You, Jonas and Clara |
+| "A birthday song for Clara" | No | You sing to Clara, with a touch of your own life | Clara |
+| "Running through the waves at the beach" | No | From your point of view, with a touch of your own life | Your setting under [Your likeness on covers](#your-likeness-on-covers) decides |
+
+Good to know:
+
+- **It's the text LLM's call.** A wording that could mean either can go either way. To be sure, say "me" or use your saved name.
+- **Instrumental sessions** have no lyrics, but a request that puts you in the scene still puts you on the cover.
+- **The cover** needs a photo on your own card and a tailored cover, see [Session covers](#session-covers). **Never** under [Your likeness on covers](#your-likeness-on-covers) keeps you off.
+- **Change Vibe** keeps the answer. You can change it there: "put me in it too" or "without me".
+- **More Like This** and **Surprise Me** don't start from a request of yours, so nobody is read into the scene. Their cover follows your setting under [Your likeness on covers](#your-likeness-on-covers).
+- **Without a text LLM,** nothing is read into your request. Only saved names count, and About text doesn't reach the lyrics.
+- **To leave yourself out** of one session, turn on [Run without my profile details](#run-without-my-profile-details).
+
 ### Your likeness on covers
 
-Under **When nobody is named in the music prompt**, **Include the owner in Covers** sets how often your own photo may appear: **Always**, **Regularly**, **Seldom** or **Never**. It needs a photo on your own card, and it saves as soon as you pick.
+Under **When nobody is named in the music prompt**, **Include the owner in Covers** sets how often your own photo may appear: **Always**, **Regularly**, **Seldom** or **Never**. It needs a photo on your own card, and it saves as soon as you pick. A request that includes you counts as naming you, so your photo is used whatever you picked here, except **Never**.
 
 **Never** keeps every personal photo on your instance, so no cover uses a photo of anyone, named or not. It doesn't stop a named person's notes from reaching the lyrics.
 
@@ -472,7 +501,7 @@ Until your own card has a photo, the setting is locked and shows **Never**, but 
 
 ### Run without my profile details
 
-Turn on **Run without my profile details** on **Home** to keep your profile and people out of one session's lyrics and cover. It's off again on your next visit. A later Change Vibe respects it, and More Like This starts with personalization back on.
+Turn on **Run without my profile details** on **Home** to keep your own details out of one session's lyrics and cover: your profile, your **About you** and your photos. That holds even if you type your own name or say "me". People you name in the request are still used, so "a birthday song for Clara" is then about Clara alone. It's off again on your next visit. A later Change Vibe respects it, and More Like This starts with personalization back on.
 
 ### Profile and artist name
 

@@ -100,7 +100,14 @@ export type ProviderType = (typeof PROVIDER_TYPES)[number];
  * Both `auto` (vibe-matched pick) and `random` (uniform roll) resolve onto
  * this pool, so it is the single list to grow when a new lane ships.
  */
-export const COVER_STYLE_PRESETS = ['poster_art', 'photographic', 'minimal', 'drawing'] as const;
+export const COVER_STYLE_PRESETS = [
+  'record_sleeve',
+  'poster_art',
+  'photographic',
+  'manga',
+  'drawing',
+  'minimal',
+] as const;
 export type CoverStylePreset = (typeof COVER_STYLE_PRESETS)[number];
 
 /** The OpenRouter image model a generated cover uses when neither `IMAGE_MODEL`
@@ -181,4 +188,6 @@ export interface ListenerContext {
   country?: string;
   /** Exactly named People whose About may inform lyricContext only. */
   people?: Array<{ name: string; about: string }>;
+  /** The listener's own Person About. May inform lyricContext only. */
+  about?: string;
 }

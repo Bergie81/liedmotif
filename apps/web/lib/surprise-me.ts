@@ -102,9 +102,8 @@ const inFlight = new Set<string>();
 
 /**
  * The profile context a proposal's expansion may see. The general profile is
- * what any Session gets; the owner's own Person About joins it for a vocal
- * proposal only — without the exact-name request ordinary Sessions need, and
- * never another Person's.
+ * what any Session gets; the owner's own About joins it for a vocal proposal,
+ * as it does for every vocal Session, and never another Person's.
  */
 async function surpriseListener(
   db: Database,
@@ -115,7 +114,7 @@ async function surpriseListener(
   if (plan.picks.vocal !== 'vocal') return general;
   const self = (await listPeople(db, ownerUserId)).find((person) => person.role === 'owner');
   if (!self?.about.trim()) return general;
-  return { ...(general ?? {}), people: [{ name: self.name, about: self.about }] };
+  return { ...(general ?? {}), about: self.about };
 }
 
 /** Start Session's budget gate: proposing and starting both refuse without headroom. */

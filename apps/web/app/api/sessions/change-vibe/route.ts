@@ -150,6 +150,9 @@ export async function POST(request: Request) {
   // client resend, is authoritative).
   const derived = await deriveNamedSnapshotForIntent(db, ownerUserId, input, {
     skipProfile: current.skipProfile,
+    // A change message says only what changes: whether the request includes the
+    // listener starts from the stored answer, anchored or not.
+    includesListener: current.includesListener,
     // The prompt history rides only WITH the anchor: it is background context for
     // the wording those facets were distilled from, so an edit can recover names and
     // story details the bounded lyric notes dropped — and with nothing to edit it
@@ -174,6 +177,7 @@ export async function POST(request: Request) {
     // A small adjustment keeps the existing cover concept relevant — carry it
     // when the derivation produced none (the preserved naming skips the call).
     coverConcept: coverConcept || current.coverConcept,
+    includesListener: derived.includesListener,
     // Provenance: the message EXTENDS the session's prompt history, which each
     // generation request then freezes for the Tracks it produces.
     userPromptAddition: userPrompt,

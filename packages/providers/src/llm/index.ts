@@ -49,6 +49,13 @@ export interface ExpandedSessionIntent {
   requestedDurationMinutes?: number | null;
   snapshot: SessionStyleSnapshot;
   coverConcept: string;
+  /**
+   * The model's reading of whether the request places the listener themself in
+   * its scene ("me, Jonas and Clara on the moon"), as opposed to merely asking
+   * for music; absent when it gave no answer. `deriveSessionMetadata` turns it
+   * into the Session's answer.
+   */
+  includesListener?: boolean;
 }
 
 /** User-written cover art direction plus its safe, non-personal context. */
@@ -151,7 +158,8 @@ export interface LlmProvider extends BaseProvider {
   /**
    * Per-generation track lyric brief: one bounded
    * best-effort call that writes a fresh compact lyric direction differing from
-   * the session's recent briefs.
+   * the session's recent briefs, at most `MAX_TRACK_LYRIC_BRIEF_LENGTH` characters
+   * (`clampTrackLyricBrief`).
    * NEVER throws — any failure returns '', and the caller falls back to the
    * static session `lyricContext`; generation never blocks on the brief.
    */

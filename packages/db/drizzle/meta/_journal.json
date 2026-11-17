@@ -715,6 +715,20 @@
       "when": 1794869408267,
       "tag": "0101_profile_field_caps",
       "breakpoints": true
+    },
+    {
+      "idx": 102,
+      "version": "7",
+      "when": 1794913277404,
+      "tag": "0102_add-manga-and-record-sleeve-cover-styles",
+      "breakpoints": true
+    },
+    {
+      "idx": 103,
+      "version": "7",
+      "when": 1794917178993,
+      "tag": "0103_session_includes_listener",
+      "breakpoints": true
     }
   ]
 }

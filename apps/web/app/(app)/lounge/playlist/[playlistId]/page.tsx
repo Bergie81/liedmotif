@@ -20,7 +20,7 @@ export default async function LoungePlaylistPage({
   params: Promise<{ playlistId: string }>;
 }) {
   const { playlistId } = await params;
-  const { session } = await requireAppAccess();
+  const { session, role } = await requireAppAccess();
   const initial = uuidSchema.safeParse(playlistId).success
     ? await loadLoungePlaylistDetailPage(getDb(), session.user.id, {
         playlistId,
@@ -32,7 +32,11 @@ export default async function LoungePlaylistPage({
       <PlaylistDetail
         playlistId={playlistId}
         back={{ href: '/lounge', label: 'Lounge' }}
-        visitor={{ owner: initial?.owner ?? null, pinned: initial?.pinned ?? false }}
+        visitor={{
+          owner: initial?.owner ?? null,
+          pinned: initial?.pinned ?? false,
+          isAdmin: role === 'admin',
+        }}
         {...(initial ? { initial: { playlist: initial.playlist, items: initial.items } } : {})}
       />
     </div>
