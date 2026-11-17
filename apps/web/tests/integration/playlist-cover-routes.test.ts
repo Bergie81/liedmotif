@@ -24,7 +24,7 @@ import {
   updateSessionCoverGeneration,
   updateUsageLimits,
 } from '@liedmotif/db';
-import { MAX_PLAYLIST_COVER_HISTORY } from '@liedmotif/shared';
+import { COVER_STYLE_PRESETS, MAX_PLAYLIST_COVER_HISTORY } from '@liedmotif/shared';
 import { multipartRequest } from '../helpers/multipart-request';
 
 // Owner-scoped Playlist cover routes (the same machinery as
@@ -267,6 +267,40 @@ describe.skipIf(skip)('POST /api/playlists/cover/regenerate', () => {
     expect(holder.enqueued).toEqual([
       { playlistId, ownerUserId, coverGenerationId: body.data.coverGenerationId },
     ]);
+  });
+
+  // A Playlist has no prompt for Auto to pick a style from (ADR 0007): no style
+  // means Random, rolled now so the attempt freezes a concrete preset.
+  it('a Playlist cover with no style resolves Random to a concrete style', async () => {
+    const { playlistId } = await seedOwnedPlaylist();
+
+    const body = (await (await postJson(regeneratePost, { playlistId })).json()) as {
+      data: { outcome: string; coverGenerationId: string };
+    };
+    expect(body.data.outcome).toBe('started');
+
+    const [attempt] = await testDb.db
+      .select()
+      .from(sessionCoverGenerations)
+      .where(eq(sessionCoverGenerations.id, body.data.coverGenerationId));
+    expect(COVER_STYLE_PRESETS).toContain(attempt?.plan.selectedStyle);
+  });
+
+  it('a Playlist cover asking for Auto is refused', async () => {
+    const { playlistId } = await seedOwnedPlaylist();
+
+    const auto = await postJson(regeneratePost, { playlistId, coverStyle: 'auto' });
+    const unknown = await postJson(regeneratePost, { playlistId, coverStyle: 'watercolor' });
+    expect(auto.status).toBe(400);
+    const message = ((await auto.json()) as { error: { message: string } }).error.message;
+    expect(message).toBe(((await unknown.json()) as { error: { message: string } }).error.message);
+
+    const rows = await testDb.db
+      .select()
+      .from(sessionCoverGenerations)
+      .where(eq(sessionCoverGenerations.playlistId, playlistId));
+    expect(rows).toHaveLength(0);
+    expect(holder.enqueued).toHaveLength(0);
   });
 
   it('returns the live attempt as pending on a double-tap instead of spending again', async () => {

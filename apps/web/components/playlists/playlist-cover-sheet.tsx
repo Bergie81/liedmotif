@@ -10,9 +10,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import {
-  COVER_STYLE_CHOICES,
   MAX_COVER_GUIDANCE_LENGTH,
-  type CoverStyleChoice,
+  PLAYLIST_COVER_STYLE_CHOICES,
+  type PlaylistCoverStyleChoice,
   type PlaylistSummaryItem,
 } from '@liedmotif/shared';
 import { Check, ImageUp, Sparkles, Trash2, X } from 'lucide-react';
@@ -79,8 +79,8 @@ function CoverSheetContent({
 }) {
   const { viewerRole } = useAppChrome();
   const [status, setStatus] = useState<PlaylistCoverStatusData | null>(null);
-  /** A Playlist persists no style of its own, so every sheet opens on Auto. */
-  const [styleChoice, setStyleChoice] = useState<CoverStyleChoice>('auto');
+  /** A Playlist persists no style of its own, so every sheet opens on Random. */
+  const [styleChoice, setStyleChoice] = useState<PlaylistCoverStyleChoice>('random');
   const [guidance, setGuidance] = useState('');
   /** Per attempt, never persisted: every open starts without People. */
   const [usePeople, setUsePeople] = useState(false);
@@ -203,7 +203,7 @@ function CoverSheetContent({
         </h3>
         <Select
           value={styleChoice}
-          onValueChange={(value) => setStyleChoice(value as CoverStyleChoice)}
+          onValueChange={(value) => setStyleChoice(value as PlaylistCoverStyleChoice)}
           disabled={working || status?.generating}
         >
           <SelectTrigger
@@ -214,7 +214,7 @@ function CoverSheetContent({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {COVER_STYLE_CHOICES.map((value) => (
+            {PLAYLIST_COVER_STYLE_CHOICES.map((value) => (
               <SelectItem key={value} value={value}>
                 {COVER_STYLE_LABELS[value]}
               </SelectItem>

@@ -65,12 +65,11 @@ export async function POST(request: Request) {
   }
   const limits = gate.instanceLimits;
 
-  // `random` resolves to a concrete style at request time; the pick is frozen
-  // into the attempt (a Playlist persists no style of its own).
-  const styleChoice = parsed.coverStyle
-    ? await resolveCoverArtChoice(db, ownerUserId, parsed.coverStyle)
-    : null;
-  const coverStyle = styleChoice?.coverStyle ?? 'auto';
+  // An omitted style is Random: a Playlist has no prompt for Auto to pick from
+  // (ADR 0007). `random` resolves to a concrete style at request time and the
+  // pick is frozen into the attempt (a Playlist persists no style of its own).
+  const styleChoice = await resolveCoverArtChoice(db, ownerUserId, parsed.coverStyle ?? 'random');
+  const coverStyle = styleChoice.coverStyle ?? 'auto';
   const guidance = parsed.guidance?.trim() || undefined;
 
   // Enhancement happens HERE, before the attempt's inputs are frozen — the
@@ -133,7 +132,7 @@ export async function POST(request: Request) {
         'webp',
       ),
       coverStyle,
-      customDefinition: styleChoice?.coverStyleHint ?? null,
+      customDefinition: styleChoice.coverStyleHint ?? null,
       ...(guidance ? { userGuidance: guidance } : {}),
       ...(effectiveGuidance ? { effectiveGuidance } : {}),
       ...(enhancementApplied === undefined ? {} : { enhancementApplied }),

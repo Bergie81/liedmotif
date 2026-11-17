@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 
-// The cover sheet's per-attempt "Use People reference photos" switch: it rides
-// one Generate press, never persists, and is only offered when the owner has a
-// Person who could actually appear.
+// The cover sheet's style list, and its per-attempt "Use People reference
+// photos" switch: it rides one Generate press, never persists, and is only
+// offered when the owner has a Person who could actually appear.
 
 import { createElement as h } from 'react';
 import type { SessionCoverGenerationRow } from '@liedmotif/db';
-import type { PlaylistSummaryItem } from '@liedmotif/shared';
+import { COVER_STYLE_CHOICES, type PlaylistSummaryItem } from '@liedmotif/shared';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -15,6 +15,7 @@ import {
   type PlaylistCoverStatusData,
 } from '@/lib/api-client';
 import { coverFailureMessage } from '@/lib/cover-regeneration';
+import { COVER_STYLE_LABELS } from '@/lib/cover-styles';
 import { AppChromeContext, type AppChromeContextValue } from '@/components/app-chrome-context';
 import { PlaylistCoverSheet } from './playlist-cover-sheet';
 
@@ -91,6 +92,30 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
+describe('PlaylistCoverSheet — cover style', () => {
+  // A Playlist has no prompt for Auto to pick a style from (ADR 0007).
+  it('the Playlist cover sheet offers every style except Auto and opens on Random', async () => {
+    await renderSheet();
+    const trigger = screen.getByTestId('playlist-cover-style');
+    expect(trigger.textContent).toContain(COVER_STYLE_LABELS.random);
+    fireEvent.click(screen.getByTestId('playlist-cover-generate'));
+    await waitFor(() =>
+      expect(regeneratePlaylistCover).toHaveBeenCalledWith({
+        playlistId: PLAYLIST.id,
+        coverStyle: 'random',
+      }),
+    );
+
+    fireEvent.keyDown(trigger, { key: 'Enter' });
+    const options = (await screen.findAllByRole('option')).map((option) => option.textContent);
+    expect(options).toEqual(
+      COVER_STYLE_CHOICES.filter((choice) => choice !== 'auto').map(
+        (choice) => COVER_STYLE_LABELS[choice],
+      ),
+    );
+  });
+});
+
 describe('PlaylistCoverSheet — People reference photos', () => {
   it('starts off and sends the request flag only for that Generate press', async () => {
     await renderSheet();
@@ -101,7 +126,7 @@ describe('PlaylistCoverSheet — People reference photos', () => {
     await waitFor(() =>
       expect(regeneratePlaylistCover).toHaveBeenCalledWith({
         playlistId: PLAYLIST.id,
-        coverStyle: 'auto',
+        coverStyle: 'random',
       }),
     );
 
@@ -111,7 +136,7 @@ describe('PlaylistCoverSheet — People reference photos', () => {
     await waitFor(() =>
       expect(regeneratePlaylistCover).toHaveBeenLastCalledWith({
         playlistId: PLAYLIST.id,
-        coverStyle: 'auto',
+        coverStyle: 'random',
         usePeopleReferences: true,
       }),
     );
@@ -143,7 +168,7 @@ describe('PlaylistCoverSheet — People reference photos', () => {
     await waitFor(() =>
       expect(regeneratePlaylistCover).toHaveBeenCalledWith({
         playlistId: PLAYLIST.id,
-        coverStyle: 'auto',
+        coverStyle: 'random',
       }),
     );
   });

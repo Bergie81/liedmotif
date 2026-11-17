@@ -8,7 +8,7 @@
 
 import { z } from 'zod';
 import { apiResponse, uuidSchema } from './common';
-import { COVER_STYLE_CHOICES, MAX_COVER_GUIDANCE_LENGTH } from './domain';
+import { MAX_COVER_GUIDANCE_LENGTH, PLAYLIST_COVER_STYLE_CHOICES } from './domain';
 import {
   sessionCoverAttemptSchema,
   sessionCoverHistoryEntrySchema,
@@ -26,9 +26,10 @@ export type UploadPlaylistCoverResponse = z.infer<typeof uploadPlaylistCoverResp
 
 export const regeneratePlaylistCoverRequestSchema = z.strictObject({
   playlistId: uuidSchema,
-  /** Per-attempt style lane; `random` resolves at request time. Unlike a
-   *  Session, a Playlist persists no style — each attempt chooses its own. */
-  coverStyle: z.enum(COVER_STYLE_CHOICES).optional(),
+  /** Per-attempt style lane; `random` (also when omitted) resolves at request
+   *  time. Unlike a Session, a Playlist persists no style — each attempt
+   *  chooses its own. */
+  coverStyle: z.enum(PLAYLIST_COVER_STYLE_CHOICES).optional(),
   /** Free-text art direction, frozen privately into the attempt's plan. */
   guidance: z.string().max(MAX_COVER_GUIDANCE_LENGTH).optional(),
   /** Per-generation LLM-enhancement override; absent → the global setting. */
