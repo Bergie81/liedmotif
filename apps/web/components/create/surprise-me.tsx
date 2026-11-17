@@ -78,7 +78,7 @@ interface SurpriseSettings {
 const EXPECTED_PROPOSAL_MS = 25_000;
 const PROGRESS_TICK_MS = 250;
 /** One key for the modal's requests, so the next one clears the last one's failure. */
-const REQUEST_ERROR_KEY = 'surprise-me-request';
+const REQUEST_KEY = 'surprise-me-request';
 
 /** The wait for a proposal, with a time-based bar (the call reports no progress). */
 function ProposingProgress({ onCancel }: { onCancel: () => void }) {
@@ -302,7 +302,7 @@ export function SurpriseMe({
     if (busy) return;
     const request = new AbortController();
     setProposing(request);
-    toast.dismiss(REQUEST_ERROR_KEY);
+    toast.dismiss(REQUEST_KEY);
     const { theme, vocal, language, adventurous } = settings;
     const result = await proposeSurprise(
       {
@@ -325,7 +325,7 @@ export function SurpriseMe({
     } else if (result.error.code === 'session_headroom_blocked') {
       setOpen(false);
       setBlockedMessage(result.error.message);
-    } else toast.error(result.error.message, { key: REQUEST_ERROR_KEY });
+    } else toast.error(result.error.message, { key: REQUEST_KEY });
   }
 
   function cancelProposing() {
@@ -337,7 +337,7 @@ export function SurpriseMe({
   async function dismiss() {
     if (busy || !proposal) return;
     setDismissing(true);
-    toast.dismiss(REQUEST_ERROR_KEY);
+    toast.dismiss(REQUEST_KEY);
     const result = await dismissSurprise(proposal.id);
     setDismissing(false);
     // Already gone elsewhere is the outcome the User asked for.
@@ -345,7 +345,7 @@ export function SurpriseMe({
       setProposal(null);
       setEditingSettings(false);
       onProposalChange?.(null);
-    } else toast.error(result.error.message, { key: REQUEST_ERROR_KEY });
+    } else toast.error(result.error.message, { key: REQUEST_KEY });
   }
 
   function changeOpen(next: boolean) {

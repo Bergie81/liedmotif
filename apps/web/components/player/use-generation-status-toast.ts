@@ -11,7 +11,7 @@ import { toast, type ToastTone } from '@/lib/toast';
 import { presentGenerationBanner, type GenerationBannerPlayer } from './generation-banner';
 
 /** One key for every status, so a newer status replaces the older toast. */
-const TOAST_KEY = 'generation-status';
+const STATUS_KEY = 'generation-status';
 
 const TOAST_TONE: Record<GenerationStatusTone, ToastTone | null> = {
   ok: null,
@@ -32,7 +32,7 @@ export function useGenerationStatusToast(
     // would say the same thing twice.
     if (onPlayerPage) {
       lastStatus.current = status;
-      toast.dismiss(TOAST_KEY);
+      toast.dismiss(STATUS_KEY);
       return;
     }
     if (lastStatus.current === status) return;
@@ -41,11 +41,11 @@ export function useGenerationStatusToast(
     const tone = banner ? TOAST_TONE[banner.tone] : null;
     // With nothing for the banner to say, an older toast describes a stale status.
     if (!banner?.message || !tone) {
-      toast.dismiss(TOAST_KEY);
+      toast.dismiss(STATUS_KEY);
       return;
     }
     toast[tone](banner.message, {
-      key: TOAST_KEY,
+      key: STATUS_KEY,
       ...(banner.title ? { title: banner.title } : {}),
       ...(banner.showCostSettingsLink
         ? { link: { label: banner.costSettingsLabel, href: banner.costSettingsPath } }

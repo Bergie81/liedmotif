@@ -21,12 +21,12 @@ type AvatarResponse = {
 };
 
 const MAX_UPLOAD_MB = megabytes(MAX_IMAGE_UPLOAD_BYTES);
-const ERROR_KEY = 'avatar-update';
+const FAILURE_KEY = 'avatar-update';
 
 /** The picker reports null when a failure clears: a new pick, a retry, a cancel. */
 function report(message: string | null) {
-  if (message) toast.error(message, { key: ERROR_KEY });
-  else toast.dismiss(ERROR_KEY);
+  if (message) toast.error(message, { key: FAILURE_KEY });
+  else toast.dismiss(FAILURE_KEY);
 }
 
 export function AvatarUploader({

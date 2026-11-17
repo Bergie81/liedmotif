@@ -57,11 +57,11 @@ import { coverUsageLine } from './cover-usage-line';
 const STATUS_POLL_MS = 3000;
 
 /** Every cover action in the dialog, the upload included, shares one failure. */
-const COVER_FAILED_KEY = 'session-cover';
+const COVER_KEY = 'session-cover';
 
 function reportCoverFailure(message: string | null) {
-  if (message) toast.error(message, { key: COVER_FAILED_KEY });
-  else toast.dismiss(COVER_FAILED_KEY);
+  if (message) toast.error(message, { key: COVER_KEY });
+  else toast.dismiss(COVER_KEY);
 }
 
 /**

@@ -93,7 +93,16 @@ export function LimitsForm({
     void fetchChrome();
   }
 
-  const saveButton = <SaveLimitsButton saving={saving} onSave={save} />;
+  const saveButton = (
+    <button
+      type="button"
+      onClick={() => void save()}
+      disabled={saving}
+      className={`${primaryButtonClass} mt-4 w-full`}
+    >
+      {saving ? 'Saving…' : 'Save limits'}
+    </button>
+  );
 
   return (
     <>
@@ -272,19 +281,6 @@ export function LimitsForm({
         {saveButton}
       </SettingsSection>
     </>
-  );
-}
-
-function SaveLimitsButton({ saving, onSave }: { saving: boolean; onSave: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onSave}
-      disabled={saving}
-      className={`${primaryButtonClass} mt-4 w-full`}
-    >
-      {saving ? 'Saving…' : 'Save limits'}
-    </button>
   );
 }
 

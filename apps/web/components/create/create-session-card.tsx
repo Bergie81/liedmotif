@@ -32,7 +32,7 @@ import {
   type GuardrailDraft,
 } from './create-session-model';
 
-const START_ERROR_KEY = 'create-session-start';
+const START_KEY = 'create-session-start';
 
 /** Everything the card holds for the next Session beyond the prompt text: the
  * fine-tune picks and the Guardrails fold. It IS the pick set `buildPromptIntent`
@@ -117,10 +117,10 @@ export function CreateSessionCard({
 
   function startSession() {
     if (starting) return;
-    toast.dismiss(START_ERROR_KEY);
+    toast.dismiss(START_KEY);
     const result = buildPromptIntent(prompt, draft);
     if (!result.ok) {
-      toast.error(result.error, { key: START_ERROR_KEY });
+      toast.error(result.error, { key: START_KEY });
       return;
     }
     // The untouched proposal starts from its stored Style Snapshot, so the
@@ -166,7 +166,7 @@ export function CreateSessionCard({
   // own request built from that prefill, with the User's own Guardrails.
   function startFromModal(next: SurpriseProposal) {
     if (starting) return;
-    toast.dismiss(START_ERROR_KEY);
+    toast.dismiss(START_KEY);
     const minutes = formHoldsProposal ? targetDurationMinutes : next.edit.durationMinutes;
     if (next.skipProfile === skipProfile) {
       startProposal(next, minutes);
@@ -177,7 +177,7 @@ export function CreateSessionCard({
       ...surpriseFineTune(next.edit, defaultLanguage),
     });
     if (result.ok) startOwnRequest(result.intent, minutes);
-    else toast.error(result.error, { key: START_ERROR_KEY });
+    else toast.error(result.error, { key: START_KEY });
   }
 
   // A proposal's words, picks and length land in the form as a plain prefill;
@@ -186,7 +186,7 @@ export function CreateSessionCard({
     setProposal(next);
     if (!next) return;
     setFormHoldsProposal(true);
-    toast.dismiss(START_ERROR_KEY);
+    toast.dismiss(START_KEY);
     setPrompt(next.edit.prompt);
     setDraft((current) => ({ ...current, ...surpriseFineTune(next.edit, defaultLanguage) }));
     setTargetDurationMinutes(next.edit.durationMinutes);

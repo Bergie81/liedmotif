@@ -30,7 +30,7 @@ import { inputClass, primaryButtonClass, secondaryButtonClass } from '@/componen
 import { LoadingRow, LiedmotifLoader } from '@/components/ui/loading';
 import { CoverThumb } from '@/components/player/cover-art';
 
-const SAVE_FAILED_KEY = 'save-to-playlist';
+const SAVE_KEY = 'save-to-playlist';
 
 /** One Playlist by name; several by count, since names run to 60 characters. */
 function playlistsPhrase(names: string[]): string {
@@ -137,10 +137,10 @@ function PickerContent({
     });
     setBusy(false);
     if (!result.ok) {
-      toast.error(`Saving failed: ${result.error.message}`, { key: SAVE_FAILED_KEY });
+      toast.error(`Saving failed: ${result.error.message}`, { key: SAVE_KEY });
       return;
     }
-    toast.dismiss(SAVE_FAILED_KEY);
+    toast.dismiss(SAVE_KEY);
     const confirmation = savedMessage();
     if (confirmation) toast.success(confirmation);
     router.refresh();

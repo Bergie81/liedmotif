@@ -26,7 +26,7 @@ import { addedToPlaylistMessage } from './playlist-view-model';
 /** The most Track ids one `addPlaylistTracks` request takes. */
 const ADD_BATCH = 100;
 
-const ADD_FAILED_KEY = 'add-tracks';
+const ADD_KEY = 'add-tracks';
 const LOAD_MORE_KEY = 'add-tracks-load-more';
 
 export function AddTracksSheet({
@@ -125,7 +125,7 @@ function AddTracksContent({
       const result = await addPlaylistTracks(playlistId, trackIds.slice(start, start + ADD_BATCH));
       if (!result.ok) {
         setBusy(false);
-        toast.error(`Adding failed: ${result.error.message}`, { key: ADD_FAILED_KEY });
+        toast.error(`Adding failed: ${result.error.message}`, { key: ADD_KEY });
         if (start > 0) {
           router.refresh();
           onAdded();
@@ -134,7 +134,7 @@ function AddTracksContent({
       }
     }
     setBusy(false);
-    toast.dismiss(ADD_FAILED_KEY);
+    toast.dismiss(ADD_KEY);
     toast.success(addedToPlaylistMessage(trackIds.length, playlistName));
     router.refresh();
     onAdded();

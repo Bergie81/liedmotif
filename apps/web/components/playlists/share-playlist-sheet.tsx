@@ -30,7 +30,7 @@ import {
   type ShareSelection,
 } from './share-playlist-view-model';
 
-const SHARE_FAILED_KEY = 'share-playlist';
+const SHARE_KEY = 'share-playlist';
 
 /** What the sheet shows of the playlist — any playlist listing can open it. */
 type SharedPlaylist = Pick<
@@ -102,11 +102,11 @@ function ShareContent({
     if (!result.ok) {
       toast.error(
         `${commit.audience ? 'Sharing' : 'Returning to Private'} failed: ${result.error.message}`,
-        { key: SHARE_FAILED_KEY },
+        { key: SHARE_KEY },
       );
       return;
     }
-    toast.dismiss(SHARE_FAILED_KEY);
+    toast.dismiss(SHARE_KEY);
     onShared({ playlistId: result.data.playlistId, sharedAt: result.data.sharedAt });
     onClose();
   }

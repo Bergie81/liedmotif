@@ -23,7 +23,7 @@ import { AlertBanner, menuRowClass } from '@/components/ui/design-system';
 import { LoadingRow } from '@/components/ui/loading';
 import { addedToPlaylistMessage } from './playlist-view-model';
 
-const ADD_FAILED_KEY = 'choose-playlist-add';
+const ADD_KEY = 'choose-playlist-add';
 
 export function ChoosePlaylistSheet({
   open,
@@ -79,14 +79,14 @@ function ChooseContent({
     const result = await onChoose(playlist.id);
     setBusy(false);
     if (!result.ok) {
-      toast.error(result.error.message, { key: ADD_FAILED_KEY });
+      toast.error(result.error.message, { key: ADD_KEY });
       return;
     }
     confirmAdded(playlist.name, result.data);
   }
 
   function confirmAdded(playlistName: string, data: AddPlaylistTracksData) {
-    toast.dismiss(ADD_FAILED_KEY);
+    toast.dismiss(ADD_KEY);
     toast.success(addedToPlaylistMessage(data.added.length, playlistName));
     onClose();
   }

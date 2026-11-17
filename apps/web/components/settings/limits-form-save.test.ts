@@ -24,6 +24,11 @@ afterEach(() => {
   toast.dismiss();
 });
 
+/** Waits until the one toast on screen is this one. */
+async function expectToast(tone: string, message: string) {
+  await waitFor(() => expect(shownToasts()).toEqual([expect.objectContaining({ tone, message })]));
+}
+
 function renderForm(initial = defaultUsageLimits()) {
   const fetchChrome = vi.fn(() => new Promise<never>(() => {}));
   const chrome: AppChromeContextValue = {
@@ -83,11 +88,7 @@ describe('saving generation limits', () => {
       within(section('Cover art budget')).getByRole('button', { name: 'Save limits' }),
     );
 
-    await waitFor(() =>
-      expect(shownToasts()).toEqual([
-        expect.objectContaining({ tone: 'error', message: 'Could not save limits.' }),
-      ]),
-    );
+    await expectToast('error', 'Could not save limits.');
     expect(fetchChrome).not.toHaveBeenCalled();
   });
 
@@ -102,11 +103,7 @@ describe('saving generation limits', () => {
     await waitFor(() => expect((save as HTMLButtonElement).disabled).toBe(false));
     fireEvent.click(save);
 
-    await waitFor(() =>
-      expect(shownToasts()).toEqual([
-        expect.objectContaining({ tone: 'success', message: 'Generation and cost limits saved.' }),
-      ]),
-    );
+    await expectToast('success', 'Generation and cost limits saved.');
   });
 
   it('reports out-of-range values as a toast and keeps the note under the field', async () => {
@@ -114,11 +111,7 @@ describe('saving generation limits', () => {
 
     fireEvent.click(within(section('Cost controls')).getByRole('button', { name: 'Save limits' }));
 
-    await waitFor(() =>
-      expect(shownToasts()).toEqual([
-        expect.objectContaining({ tone: 'error', message: 'Check the highlighted limit values.' }),
-      ]),
-    );
+    await expectToast('error', 'Check the highlighted limit values.');
     expect(saveUsageLimits).not.toHaveBeenCalled();
     const row = screen.getByText('Max queued Tracks').parentElement!;
     expect(row.querySelector('.text-warn')?.textContent).toBeTruthy();

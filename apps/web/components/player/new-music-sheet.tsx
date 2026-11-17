@@ -35,7 +35,7 @@ const MIN_TARGET_MINUTES = 5;
 
 const CHOICE_ORDER: readonly NewMusicChoice[] = ['off', 'target', 'no-limit'];
 
-const SAVE_FAILED_KEY = 'new-music-save';
+const SAVE_KEY = 'new-music-save';
 
 function choiceInForce(session: SessionSummary): NewMusicChoice {
   if (session.sessionMode === 'repeat') return 'off';
@@ -95,11 +95,11 @@ function NewMusicPanel({
     if (!mounted.current) return;
     onSavingChange(false);
     if (!result.ok) {
-      toast.error(result.error.message, { key: SAVE_FAILED_KEY });
+      toast.error(result.error.message, { key: SAVE_KEY });
       setChoice(inForce);
       return;
     }
-    toast.dismiss(SAVE_FAILED_KEY);
+    toast.dismiss(SAVE_KEY);
     onSessionChange(result.data.session);
     onClose();
   }

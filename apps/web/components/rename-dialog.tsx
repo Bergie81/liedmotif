@@ -22,7 +22,7 @@ import { cn } from '@/lib/cn';
 import { toast } from '@/lib/toast';
 
 /** One naming dialog is open at a time, so its failures share one key. */
-const RENAME_FAILED_KEY = 'rename';
+const RENAME_KEY = 'rename';
 
 export function RenameDialog({
   heading,
@@ -55,10 +55,10 @@ export function RenameDialog({
     const failure = await onRename(trimmed);
     setBusy(false);
     if (failure) {
-      toast.error(failure, { key: RENAME_FAILED_KEY });
+      toast.error(failure, { key: RENAME_KEY });
       return;
     }
-    toast.dismiss(RENAME_FAILED_KEY);
+    toast.dismiss(RENAME_KEY);
     onClose();
   }
 

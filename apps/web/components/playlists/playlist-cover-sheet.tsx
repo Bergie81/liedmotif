@@ -49,11 +49,11 @@ import { PlaylistCover } from './playlist-cover';
 const STATUS_POLL_MS = 2500;
 
 /** Every cover action in the sheet, the upload included, shares one failure. */
-const COVER_FAILED_KEY = 'playlist-cover';
+const COVER_KEY = 'playlist-cover';
 
 function reportCoverFailure(message: string | null) {
-  if (message) toast.error(message, { key: COVER_FAILED_KEY });
-  else toast.dismiss(COVER_FAILED_KEY);
+  if (message) toast.error(message, { key: COVER_KEY });
+  else toast.dismiss(COVER_KEY);
 }
 
 export function PlaylistCoverSheet({

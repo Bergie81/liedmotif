@@ -46,6 +46,11 @@ function renderForm(emailConfirmed: boolean | null = null) {
 
 const saveButton = () => screen.getByRole('button', { name: 'Save profile' }) as HTMLButtonElement;
 
+/** Waits until the one toast on screen is this one. */
+async function expectToast(tone: string, message: string) {
+  await waitFor(() => expect(shownToasts()).toEqual([expect.objectContaining({ tone, message })]));
+}
+
 describe('saving the profile', () => {
   it('says the profile was saved', async () => {
     serve(saved());
@@ -53,11 +58,7 @@ describe('saving the profile', () => {
 
     fireEvent.click(saveButton());
 
-    await waitFor(() =>
-      expect(shownToasts()).toEqual([
-        expect.objectContaining({ tone: 'success', message: 'Profile saved.' }),
-      ]),
-    );
+    await expectToast('success', 'Profile saved.');
   });
 
   it('says where the confirm link went when the address moved', async () => {
@@ -66,14 +67,7 @@ describe('saving the profile', () => {
 
     fireEvent.click(saveButton());
 
-    await waitFor(() =>
-      expect(shownToasts()).toEqual([
-        expect.objectContaining({
-          tone: 'success',
-          message: 'Profile saved. A confirm link went to thomas@example.test.',
-        }),
-      ]),
-    );
+    await expectToast('success', 'Profile saved. A confirm link went to thomas@example.test.');
   });
 
   it('warns when the profile saved but the confirm link could not be sent', async () => {
@@ -82,14 +76,9 @@ describe('saving the profile', () => {
 
     fireEvent.click(saveButton());
 
-    await waitFor(() =>
-      expect(shownToasts()).toEqual([
-        expect.objectContaining({
-          tone: 'warning',
-          message:
-            'Profile saved, but the confirm link could not be sent. Use Send confirm link to try again.',
-        }),
-      ]),
+    await expectToast(
+      'warning',
+      'Profile saved, but the confirm link could not be sent. Use Send confirm link to try again.',
     );
   });
 
@@ -98,19 +87,11 @@ describe('saving the profile', () => {
     renderForm();
 
     fireEvent.click(saveButton());
-    await waitFor(() =>
-      expect(shownToasts()).toEqual([
-        expect.objectContaining({ tone: 'error', message: 'Could not save profile.' }),
-      ]),
-    );
+    await expectToast('error', 'Could not save profile.');
     await waitFor(() => expect(saveButton().disabled).toBe(false));
     fireEvent.click(saveButton());
 
-    await waitFor(() =>
-      expect(shownToasts()).toEqual([
-        expect.objectContaining({ tone: 'success', message: 'Profile saved.' }),
-      ]),
-    );
+    await expectToast('success', 'Profile saved.');
   });
 
   it('keeps a refusal about a field under that field', async () => {
@@ -131,14 +112,7 @@ describe('sending a confirm link', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Send confirm link' }));
 
-    await waitFor(() =>
-      expect(shownToasts()).toEqual([
-        expect.objectContaining({
-          tone: 'success',
-          message: 'Confirm link sent. Open it within 24 hours.',
-        }),
-      ]),
-    );
+    await expectToast('success', 'Confirm link sent. Open it within 24 hours.');
   });
 
   it('says to wait when too many links went out', async () => {
@@ -147,13 +121,6 @@ describe('sending a confirm link', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Send confirm link' }));
 
-    await waitFor(() =>
-      expect(shownToasts()).toEqual([
-        expect.objectContaining({
-          tone: 'error',
-          message: 'Too many confirm links. Wait a few minutes, then try again.',
-        }),
-      ]),
-    );
+    await expectToast('error', 'Too many confirm links. Wait a few minutes, then try again.');
   });
 });

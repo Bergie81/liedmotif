@@ -63,6 +63,14 @@ function failed(message: string): ApiResult<never> {
   return { ok: false, error: { code: 'internal_error', message, retryable: false } };
 }
 
+/** The settings routes, answering each request with the next of `answers`. */
+function serve(...answers: Response[]) {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => answers.shift()!),
+  );
+}
+
 const button = (name: string) => screen.getByRole('button', { name }) as HTMLButtonElement;
 
 async function expectToasts(...expected: { tone: string; message: string }[]) {
@@ -119,16 +127,12 @@ describe('Language', () => {
 
 describe('Unit costs', () => {
   it('reports a failed save, clears it once saving again succeeds, and keeps the hint', async () => {
-    const answers = [
+    serve(
       Response.json(
         { ok: false, error: { message: 'Could not save unit costs.' } },
         { status: 500 },
       ),
       Response.json({ ok: true, data: { unitCosts: { perTrackUsd: 0, perCoverUsd: 0 } } }),
-    ];
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => answers.shift()!),
     );
     render(h(CostsPanel, { unitCosts: { perTrackUsd: 0, perCoverUsd: 0 } }));
 
@@ -138,17 +142,11 @@ describe('Unit costs', () => {
 });
 
 describe('Cover art', () => {
-  function serveCoverArt(...answers: Response[]) {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => answers.shift()!),
-    );
-  }
   const saved = (enhancement?: { attempted: boolean; applied: boolean }) =>
     Response.json({ ok: true, settings: COVER_ART, enhancement });
 
   it('says the definition was optimized when the Writing AI rewrote it', async () => {
-    serveCoverArt(saved({ attempted: true, applied: true }));
+    serve(saved({ attempted: true, applied: true }));
     render(h(CoverArtForm, { initial: COVER_ART, llmConfigured: true }));
 
     fireEvent.click(button('Save cover art'));
@@ -160,7 +158,7 @@ describe('Cover art', () => {
   });
 
   it('warns when it saved but enhancement was unavailable', async () => {
-    serveCoverArt(saved({ attempted: true, applied: false }));
+    serve(saved({ attempted: true, applied: false }));
     render(h(CoverArtForm, { initial: COVER_ART, llmConfigured: true }));
 
     fireEvent.click(button('Save cover art'));
@@ -172,7 +170,7 @@ describe('Cover art', () => {
   });
 
   it('reports a failed save, and clears it once saving again succeeds', async () => {
-    serveCoverArt(
+    serve(
       Response.json({ ok: false, error: 'Could not save cover art.' }, { status: 500 }),
       saved(),
     );
