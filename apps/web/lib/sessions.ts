@@ -66,11 +66,6 @@ import { providerTasksToTracks } from './track-units';
 
 const logger = createLogger({ name: 'sessions' });
 
-const EXPLICIT_INSTRUMENTAL_REQUEST =
-  /\b(?:instrumental|no\s+(?:vocals?|lyrics?|singing)|without\s+(?:vocals?|lyrics?|singing))\b/iu;
-const EXPLICIT_VOCAL_REQUEST =
-  /(?:\b(?:vocals?|lyrics?|sing|sings|singing|singer|song|duet|aria|choir|choral|opera|rap|rapping|chant|spoken\s+word|gesang|singen|lied|coro|cantar|canción|chant(?:er|é)|chanson|cantare|canzone)\b|歌詞|歌词|歌声|歌聲|歌う|歌って|ボーカル)/iu;
-
 type PersonLyricSource = Pick<PersonRow, 'name' | 'nameMatchKey' | 'about' | 'role'> & {
   id: string;
 };
@@ -81,38 +76,20 @@ type PersonMatchContext = Pick<ExpansionOptions, 'adjustFrom' | 'promptHistory'>
   vocal?: VocalMode;
 };
 
-/** Whether vocals are wanted at all — the gate on consuming Person About. An
- *  explicit Vocals pick or the request's own words may say so; on an adjustment
- *  the running session's vocal mode says so for it, since a change message
- *  speaks only of what changes. An explicit instrumental pick, or instrumental
- *  wording, shuts the gate either way: nothing will be sung, so no About may be
- *  consumed. */
-function mayUsePersonLyricContext(prompt: string, context?: PersonMatchContext): boolean {
-  if (vocalsRuledOut(prompt, context)) return false;
-  return (
-    context?.vocal === 'vocal' ||
-    EXPLICIT_VOCAL_REQUEST.test(prompt) ||
-    context?.adjustFrom?.vocalMode === 'vocal'
-  );
-}
-
-/** Nothing will be sung: an instrumental pick or wording, or a running
- *  instrumental session whose change message asks for no vocals. */
-function vocalsRuledOut(prompt: string, context?: PersonMatchContext): boolean {
-  if (context?.vocal === 'instrumental' || EXPLICIT_INSTRUMENTAL_REQUEST.test(prompt)) return true;
-  return (
-    context?.adjustFrom?.vocalMode === 'instrumental' &&
-    context.vocal !== 'vocal' &&
-    !EXPLICIT_VOCAL_REQUEST.test(prompt)
-  );
+/** Nothing will be sung, so no About may go out: only an explicit Instrumental
+ *  pick says so. The gate never reads the request's words, and a running
+ *  instrumental Session does not shut it either: whether the words, in any
+ *  language, ask for singing is the expansion's call, and it writes lyric notes
+ *  only for a vocal Session (ADR 0004, ADR 0007). */
+function vocalsRuledOut(context?: PersonMatchContext): boolean {
+  return context?.vocal === 'instrumental';
 }
 
 /**
- * The About text a request's lyric notes may draw on. The owner's own About
- * (`about`) goes with every request that may turn out vocal, since each Session
- * is part of the listener's own soundtrack, whoever it names; on Auto vocals the
- * expansion makes the vocal call, so no word list may withhold it. The other
- * People's About (`people`) needs vocals clearly wanted and an exact name. An
+ * The About text a request's lyric notes may draw on, unless vocals are ruled
+ * out. The owner's own About (`about`) goes with every such request, since each
+ * Session is part of the listener's own soundtrack, whoever it names; the other
+ * People's About (`people`) goes for each Person named by exact name. An
  * adjustment matches names over the change message AND the session's prompt
  * history, so People named only in an earlier request keep informing the edited
  * lyric notes. This About may reach the lyric notes and nothing else.
@@ -122,10 +99,9 @@ export function personLyricContextForRequest(
   people: readonly PersonLyricSource[],
   context?: PersonMatchContext,
 ): { people: NonNullable<ListenerContext['people']>; about: string } {
-  if (vocalsRuledOut(prompt, context)) return { people: [], about: '' };
+  if (vocalsRuledOut(context)) return { people: [], about: '' };
   const owner = people.find((person) => person.role === 'owner');
   const about = owner ? clippedAbout(owner) : '';
-  if (!mayUsePersonLyricContext(prompt, context)) return { people: [], about };
   const named = context?.promptHistory ? `${prompt}\n${context.promptHistory}` : prompt;
   return {
     people: matchConfiguredPeople(named, people).flatMap((person) => {
@@ -158,7 +134,7 @@ async function listenerContextForIntent(
   const general = skipProfile ? null : await getListenerContext(db, ownerUserId);
   if (input.mode !== 'prompt') return general;
   const context: PersonMatchContext = { ...options, vocal: input.vocal };
-  if (vocalsRuledOut(input.prompt, context)) return general;
+  if (vocalsRuledOut(context)) return general;
   const everyone = await listPeople(db, ownerUserId);
   const { people, about } = personLyricContextForRequest(
     input.prompt,

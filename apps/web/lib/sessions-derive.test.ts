@@ -88,6 +88,9 @@ describe('deriveSnapshotForIntentSafe', () => {
   });
 });
 
+// Only an explicit Instrumental pick shuts the gate on About. Whether the words
+// ask for singing is the Writing AI's call, in any language, also on a Change
+// Vibe of an instrumental Session; it writes lyric notes only for a vocal one.
 describe('personLyricContextForRequest', () => {
   const people = [
     { id: 'owner', role: 'owner', name: 'John', nameMatchKey: 'john', about: 'owner details' },
@@ -97,6 +100,13 @@ describe('personLyricContextForRequest', () => {
       name: 'Julia',
       nameMatchKey: 'julia',
       about: 'repairs bicycles',
+    },
+    {
+      id: 'clara',
+      role: 'ordinary',
+      name: 'Clara',
+      nameMatchKey: 'clara',
+      about: 'keeps bees on the roof',
     },
     {
       id: 'li',
@@ -110,44 +120,37 @@ describe('personLyricContextForRequest', () => {
   /** The named People's half of the answer. */
   const namedPeople = (...args: Parameters<typeof personLyricContextForRequest>) =>
     personLyricContextForRequest(...args).people;
+  const clara = [{ name: 'Clara', about: 'keeps bees on the roof' }];
 
-  it('returns only exactly named People for an explicit vocal request', () => {
+  it('returns only exactly named People', () => {
     expect(namedPeople('Sing a duet about Julia and 李小龍', people)).toEqual([
       { name: 'Julia', about: 'repairs bicycles' },
       { name: '李小龍', about: 'collects old film cameras' },
     ]);
   });
 
-  it.each(['An aria for Julia', 'A choir piece celebrating Julia'])(
-    'makes named About available for vocal phrasing outside a fixed keyword list: %j',
+  it.each(['ein Ständchen für Clara', 'something Clara can hum along to'])(
+    "a request naming a Person in words no list knows still sends that Person's About: %j",
     (prompt) => {
-      expect(namedPeople(prompt, people)).toEqual([{ name: 'Julia', about: 'repairs bicycles' }]);
+      expect(namedPeople(prompt, people)).toEqual(clara);
     },
   );
 
-  it.each([
-    'Instrumental focus music for Julia',
-    'Rainy focus music with no vocals for Julia',
-    'Quiet focus music for Julia',
-    'A quiet focus session for my wife',
-  ])('does not consume Person About for %j', (prompt) => {
-    expect(namedPeople(prompt, people)).toEqual([]);
+  it('instrumental wording does not shut out the About; an Instrumental pick does', () => {
+    expect(namedPeople('instrumental music for Clara', people)).toEqual(clara);
+    expect(namedPeople('instrumental music for Clara', people, { vocal: 'instrumental' })).toEqual(
+      [],
+    );
   });
 
-  it('treats an explicit Vocals pick as a vocal request even when the words do not say so', () => {
-    expect(namedPeople('birthday party music for Julia', people, { vocal: 'vocal' })).toEqual([
-      { name: 'Julia', about: 'repairs bicycles' },
-    ]);
+  it('sends no About for a Person the request names only by relationship', () => {
+    expect(namedPeople('A quiet focus session for my wife', people)).toEqual([]);
+  });
+
+  it('sends the named About on a Vocals pick, whatever the words say', () => {
     expect(
-      namedPeople('instrumental birthday music for Julia', people, {
-        vocal: 'vocal',
-      }),
-    ).toEqual([]);
-    expect(
-      namedPeople('birthday party music for my sister', people, {
-        vocal: 'vocal',
-      }),
-    ).toEqual([]);
+      namedPeople('instrumental birthday music for Julia', people, { vocal: 'vocal' }),
+    ).toEqual([{ name: 'Julia', about: 'repairs bicycles' }]);
   });
 
   it('does not select the owner merely because cover fallback could select them', () => {
@@ -163,19 +166,12 @@ describe('personLyricContextForRequest', () => {
     expect(frozen).toEqual([{ name: 'Julia', about: 'repairs bicycles' }]);
   });
 
-  // A Change Vibe message is a fragment, not a full request: it neither repeats
-  // the vocal keywords nor the names the session already sings about, so the
-  // running session answers both questions instead.
+  // A Change Vibe message is a fragment, not a full request: it does not repeat
+  // the names the session already sings about, so the prompt history supplies
+  // them.
   describe('on a Change Vibe adjustment', () => {
     const vocalAnchor = compileStructuredControls({ vocal: 'vocal', genres: ['folk'] });
     const instrumentalAnchor = compileStructuredControls({ genres: ['ambient'] });
-
-    it('takes "vocals are wanted" from the running session, not the change text', () => {
-      expect(namedPeople('a verse about Julia', people)).toEqual([]);
-      expect(namedPeople('a verse about Julia', people, { adjustFrom: vocalAnchor })).toEqual([
-        { name: 'Julia', about: 'repairs bicycles' },
-      ]);
-    });
 
     it('matches names over the change text AND the session prompt history', () => {
       expect(
@@ -186,13 +182,13 @@ describe('personLyricContextForRequest', () => {
       ).toEqual([{ name: 'Julia', about: 'repairs bicycles' }]);
     });
 
-    it('loads none when the change turns the session instrumental', () => {
+    it('leaves instrumental change wording to the Writing AI', () => {
       expect(
         namedPeople('instrumental only, no vocals', people, {
           adjustFrom: vocalAnchor,
           promptHistory: 'a song for Julia',
         }),
-      ).toEqual([]);
+      ).toEqual([{ name: 'Julia', about: 'repairs bicycles' }]);
     });
 
     it('shuts the gate on an explicit instrumental pick, whatever the text says', () => {
@@ -204,24 +200,28 @@ describe('personLyricContextForRequest', () => {
       ).toEqual([]);
     });
 
-    it('still needs an explicit vocal ask when the running session is instrumental', () => {
+    it('an adjustment of an instrumental Session without a Vocal pick sends the About, leaving the vocal call to the Writing AI', () => {
       expect(
-        namedPeople('a bit faster', people, {
+        personLyricContextForRequest('add lyrics about Julia', people, {
           adjustFrom: instrumentalAnchor,
           promptHistory: 'focus music for Julia',
         }),
-      ).toEqual([]);
+      ).toEqual({ people: [{ name: 'Julia', about: 'repairs bicycles' }], about: 'owner details' });
+    });
+
+    it('sends none when the adjustment of an instrumental Session picks Instrumental', () => {
       expect(
-        namedPeople('add lyrics about Julia', people, {
+        personLyricContextForRequest('add lyrics about Julia', people, {
           adjustFrom: instrumentalAnchor,
+          vocal: 'instrumental',
         }),
-      ).toEqual([{ name: 'Julia', about: 'repairs bicycles' }]);
+      ).toEqual({ people: [], about: '' });
     });
   });
 });
 
 // Every Session is part of the listener's own soundtrack, so their own About is
-// lyric material for every vocal request, whoever else it names.
+// lyric material for every request that may be sung, whoever else it names.
 describe('personLyricContextForRequest for the owner’s own About', () => {
   const people = [
     { id: 'owner', role: 'owner', name: 'John', nameMatchKey: 'john', about: ' owner details ' },
@@ -234,7 +234,7 @@ describe('personLyricContextForRequest for the owner’s own About', () => {
     },
   ];
 
-  it("supplies the owner's About for a vocal request that never names them", () => {
+  it("supplies the owner's About for a request that never names them", () => {
     expect(personLyricContextForRequest('Sing about me and Julia on the moon', people)).toEqual({
       people: [{ name: 'Julia', about: 'repairs bicycles' }],
       about: 'owner details',
@@ -242,20 +242,20 @@ describe('personLyricContextForRequest for the owner’s own About', () => {
   });
 
   it('supplies it on Auto vocals whatever words the request uses, leaving the vocal call to the expansion', () => {
-    const request = 'A cappella harmonies about me running by the river';
-    expect(personLyricContextForRequest(request, people)).toEqual({
-      people: [],
-      about: 'owner details',
-    });
+    for (const request of [
+      'A cappella harmonies about me running by the river',
+      'Instrumental focus music for me',
+    ]) {
+      expect(personLyricContextForRequest(request, people).about).toBe('owner details');
+    }
   });
 
-  it('supplies none when the request is instrumental', () => {
+  it('supplies none on an Instrumental pick', () => {
     expect(
       personLyricContextForRequest('Focus music for me and Julia', people, {
         vocal: 'instrumental',
       }).about,
     ).toBe('');
-    expect(personLyricContextForRequest('Instrumental focus music for me', people).about).toBe('');
   });
 
   it('sends a named owner once, as the own About and not among the named People', () => {
@@ -270,7 +270,7 @@ describe('personLyricContextForRequest for the owner’s own About', () => {
     expect(personLyricContextForRequest('Sing about me and Julia', blank).about).toBe('');
   });
 
-  it('takes "vocals are wanted" from the running session on a Change Vibe', () => {
+  it('keeps supplying it on a Change Vibe of a vocal session', () => {
     const vocalAnchor = compileStructuredControls({ vocal: 'vocal', genres: ['folk'] });
     expect(
       personLyricContextForRequest('put me in it too', people, { adjustFrom: vocalAnchor }).about,
@@ -356,6 +356,38 @@ describe('deriveNamedSnapshotForIntent for a request that includes the listener'
     expect(expand.mock.calls[0]?.[1]).toEqual({
       people: [{ name: 'Julia', about: 'repairs bicycles' }],
     });
+  });
+
+  it('hands the expansion the About of a Person named in words no list knows, unless Instrumental is picked', async () => {
+    const expand = stubExpansion(false);
+    peopleHolder.people = [
+      { id: 'owner', role: 'owner', name: 'John', nameMatchKey: 'john', about: 'owner details' },
+      {
+        id: 'clara',
+        role: 'ordinary',
+        name: 'Clara',
+        nameMatchKey: 'clara',
+        about: 'keeps bees on the roof',
+      },
+    ];
+    try {
+      await deriveNamedSnapshotForIntent({} as never, 'owner', {
+        mode: 'prompt',
+        prompt: 'ein Ständchen für Clara',
+      });
+      await deriveNamedSnapshotForIntent({} as never, 'owner', {
+        mode: 'prompt',
+        prompt: 'ein Ständchen für Clara',
+        vocal: 'instrumental',
+      });
+    } finally {
+      peopleHolder.people = [];
+    }
+    expect(expand.mock.calls[0]?.[1]).toEqual({
+      people: [{ name: 'Clara', about: 'keeps bees on the roof' }],
+      about: 'owner details',
+    });
+    expect(expand.mock.calls[1]?.[1]).toBeNull();
   });
 
   it('answers no for a request no text LLM reads', async () => {
