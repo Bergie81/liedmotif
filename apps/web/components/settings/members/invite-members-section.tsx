@@ -33,6 +33,9 @@ import {
 } from './members-admin-model';
 import { useMemberBudgetForm } from './use-member-budget-form';
 
+const CREATE_KEY = 'invite-create';
+const REVOKE_KEY = 'invite-revoke';
+
 export function InviteMembersSection({
   invites,
   inviteByEmail,
@@ -75,11 +78,11 @@ export function InviteMembersSection({
       return;
     }
     if (!label.trim()) {
-      toast.error('Give the invite a name — who is this for?', { key: 'invite-create' });
+      toast.error('Give the invite a name — who is this for?', { key: CREATE_KEY });
       return;
     }
     if (inviteByEmail && !email.trim()) {
-      toast.error('Enter the email address to send the invite to.', { key: 'invite-create' });
+      toast.error('Enter the email address to send the invite to.', { key: CREATE_KEY });
       return;
     }
     setBusy(true);
@@ -90,10 +93,10 @@ export function InviteMembersSection({
     });
     setBusy(false);
     if (!result.ok) {
-      toast.error(result.message, { key: 'invite-create' });
+      toast.error(result.message, { key: CREATE_KEY });
       return;
     }
-    toast.dismiss('invite-create');
+    toast.dismiss(CREATE_KEY);
     if (result.data.url) setMintedUrl(result.data.url);
     else toast.success(`Invite sent to ${email.trim()}. The link works for 7 days.`);
     setLabel('');
@@ -106,8 +109,8 @@ export function InviteMembersSection({
     setRevokingId(id);
     const result = await apiFetch(`/api/settings/members/invites/${id}`, { method: 'DELETE' });
     setRevokingId(null);
-    if (result.ok) toast.dismiss('invite-revoke');
-    else toast.error(result.message, { key: 'invite-revoke' });
+    if (result.ok) toast.dismiss(REVOKE_KEY);
+    else toast.error(result.message, { key: REVOKE_KEY });
     router.refresh();
   }
 

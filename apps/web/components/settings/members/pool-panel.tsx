@@ -20,6 +20,8 @@ import {
 } from './members-admin-model';
 import { useMemberBudgetForm } from './use-member-budget-form';
 
+const SAVE_KEY = 'pool-save';
+
 export function PoolPanel({
   pool,
   poolFigures,
@@ -64,11 +66,11 @@ export function PoolPanel({
     );
     if (result.ok) {
       setWarnings(result.data.overSubscription ?? []);
-      toast.dismiss('pool-save');
+      toast.dismiss(SAVE_KEY);
       toast.success('Shared budget saved.');
       router.refresh();
     } else {
-      toast.error(result.message, { key: 'pool-save' });
+      toast.error(result.message, { key: SAVE_KEY });
     }
     setBusy(false);
   }

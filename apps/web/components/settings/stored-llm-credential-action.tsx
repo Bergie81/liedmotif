@@ -5,6 +5,8 @@ import { dangerButtonClass } from '@/components/ui/design-system';
 import { toast } from '@/lib/toast';
 import { useCredentialMutationGate } from './credential-mutation-group';
 
+const DELETE_KEY = 'stored-llm-delete';
+
 interface StoredLlmCredentialActionProps {
   providerKey: string;
   environmentActive: boolean;
@@ -38,13 +40,13 @@ export function StoredLlmCredentialAction({
           })
         : {};
       if (response?.ok && body.ok) {
-        toast.dismiss('stored-llm-delete');
+        toast.dismiss(DELETE_KEY);
         window.location.reload();
         return;
       }
       const message = typeof body.error === 'string' ? body.error : body.error?.message;
       toast.error(message ?? 'Could not remove the stored Writing AI.', {
-        key: 'stored-llm-delete',
+        key: DELETE_KEY,
       });
     } finally {
       gate.end('delete');

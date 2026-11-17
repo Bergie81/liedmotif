@@ -10,6 +10,13 @@ import { toast } from '@/lib/toast';
 import { emptyClass } from './stats-parts';
 import type { TrackRow } from './your-stats-model';
 
+/** One key for every row's play, so the next tap clears an earlier failure. */
+const PLAY_KEY = 'most-played-play';
+
+function reportPlayFailure(message: string): void {
+  toast.error(message, { key: PLAY_KEY });
+}
+
 const rowClass = 'group flex w-full items-center gap-2 py-2 text-left';
 
 /** A row a tap does nothing on reads quieter than one that leads somewhere. */
@@ -41,7 +48,8 @@ function Cover({ coverImageId }: { coverImageId: string | null }) {
  * a line. A row plays its Track in the Session it came from.
  */
 export function MostPlayed({ rows }: { rows: TrackRow[] }) {
-  const { playViaSession, busyTrackId, transportRowPreview } = usePlaySessionTrack(toast.error);
+  const { playViaSession, busyTrackId, transportRowPreview } =
+    usePlaySessionTrack(reportPlayFailure);
   if (rows.length === 0) {
     return <p className={emptyClass}>No plays recorded in this period.</p>;
   }
@@ -105,7 +113,10 @@ export function MostPlayed({ rows }: { rows: TrackRow[] }) {
                 className={rowClass}
                 disabled={busyTrackId !== null}
                 aria-label={`Play ${label}`}
-                onClick={() => void playViaSession(action.track)}
+                onClick={() => {
+                  toast.dismiss(PLAY_KEY);
+                  void playViaSession(action.track);
+                }}
               >
                 {body}
               </button>

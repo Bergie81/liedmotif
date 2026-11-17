@@ -10,10 +10,12 @@ import { shownToasts, toast } from '@/lib/toast';
 import { MostPlayed } from './most-played';
 import type { TrackRow } from './your-stats-model';
 
+const play = vi.hoisted(() => ({ fails: true }));
+
 vi.mock('@/components/player/use-play-session-track', () => ({
   usePlaySessionTrack: (onError: (message: string) => void) => ({
     playViaSession: async () => {
-      onError('Couldn’t load that Track. Please retry.');
+      if (play.fails) onError('Couldn’t load that Track. Please retry.');
       return true;
     },
     busyTrackId: null,
@@ -25,6 +27,7 @@ vi.mock('@/components/player/cover-art', () => ({ CoverArt: () => null }));
 afterEach(() => {
   cleanup();
   toast.dismiss();
+  play.fails = true;
 });
 
 const ROW: TrackRow = {
@@ -52,4 +55,15 @@ it('reports a failed play as an error toast and keeps the ranking', async () => 
   );
   expect(screen.queryByRole('alert')).toBeNull();
   expect(screen.getByRole('button', { name: 'Play Nachtfahrt' })).toBeTruthy();
+});
+
+it('clears the failure when the next play is tapped', async () => {
+  render(h(MostPlayed, { rows: [ROW] }));
+  fireEvent.click(screen.getByRole('button', { name: 'Play Nachtfahrt' }));
+  await waitFor(() => expect(shownToasts()).toHaveLength(1));
+
+  play.fails = false;
+  fireEvent.click(screen.getByRole('button', { name: 'Play Nachtfahrt' }));
+
+  await waitFor(() => expect(shownToasts()).toEqual([]));
 });

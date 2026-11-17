@@ -36,8 +36,11 @@ import {
 } from './members-admin-model';
 import { useMemberBudgetForm } from './use-member-budget-form';
 
-/** A reset that came back as a link to copy, and why it was not mailed. */
-function ResetLink({ reset }: { reset: Extract<MemberResetPasswordResponse, { url: string }> }) {
+/** A reset that came back as a link to copy, because it was not mailed. */
+type MemberResetLink = Extract<MemberResetPasswordResponse, { url: string }>;
+
+/** The reset link to copy, and why it was not mailed. */
+function ResetLink({ reset }: { reset: MemberResetLink }) {
   const line = resetFallbackLine(reset.reason);
   return (
     <>
@@ -69,10 +72,7 @@ function MemberCard({
     member.budget.kind,
   );
   const [busy, setBusy] = useState<null | 'budget' | 'reset' | 'disable' | 'delete'>(null);
-  const [resetLink, setResetLink] = useState<Extract<
-    MemberResetPasswordResponse,
-    { url: string }
-  > | null>(null);
+  const [resetLink, setResetLink] = useState<MemberResetLink | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [confirmName, setConfirmName] = useState('');
 

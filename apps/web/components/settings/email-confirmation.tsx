@@ -3,9 +3,8 @@
 // The sign-in address's Confirmed email state, with the way to confirm it.
 // Rendered only while account email is on.
 
-import { useState } from 'react';
 import { apiFetchJson } from '@/lib/api-fetch';
-import { SettingsStatusBadge, type SettingsFeedbackState } from './settings-ui';
+import { SettingsStatusBadge } from './settings-ui';
 
 /** Mails a confirm link to the saved sign-in address; resolves to what to tell the user. */
 export async function requestConfirmLink(): Promise<{ sent: boolean; message: string }> {
@@ -18,22 +17,6 @@ export async function requestConfirmLink(): Promise<{ sent: boolean; message: st
         ? 'Too many confirm links. Wait a few minutes, then try again.'
         : result.message,
   };
-}
-
-/** `requestConfirmLink` with its answer held as feedback, for a surface that shows it in place. */
-export function useConfirmLinkRequest() {
-  const [sending, setSending] = useState(false);
-  const [feedback, setFeedback] = useState<SettingsFeedbackState>(null);
-
-  async function send() {
-    setSending(true);
-    setFeedback(null);
-    const { sent, message } = await requestConfirmLink();
-    setSending(false);
-    setFeedback({ kind: sent ? 'success' : 'error', message });
-  }
-
-  return { sending, feedback, send };
 }
 
 /** On the Email label row: the badge, and the send action while unconfirmed. */

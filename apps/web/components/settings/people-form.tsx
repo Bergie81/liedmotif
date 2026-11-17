@@ -22,6 +22,9 @@ import { SettingsCard, SettingsFootnote, SettingsSection } from './settings-ui';
 import { peopleResponseMessage, type PeopleFormProps } from './people-types';
 import { useStoredValue } from './use-stored-value';
 
+const CREATE_KEY = 'person-create';
+const FREQUENCY_KEY = 'cover-fallback-save';
+
 export function PeopleForm(props: PeopleFormProps) {
   const [people, setPeople] = useState(props.initialPeople);
   const router = useRouter();
@@ -88,7 +91,7 @@ export function PeopleForm(props: PeopleFormProps) {
     }).catch(() => null);
     if (!response?.ok) {
       toast.error(await peopleResponseMessage(response, 'Could not add this Person.'), {
-        key: 'person-create',
+        key: CREATE_KEY,
       });
       setCreating(false);
       return;
@@ -99,7 +102,7 @@ export function PeopleForm(props: PeopleFormProps) {
     setNewAbout('');
     setAdding(false);
     setCreating(false);
-    toast.dismiss('person-create');
+    toast.dismiss(CREATE_KEY);
     toast.success(`${body.person.name} added.`);
   }
 
@@ -113,7 +116,7 @@ export function PeopleForm(props: PeopleFormProps) {
     }).catch(() => null);
     if (!response?.ok) {
       toast.error(await peopleResponseMessage(response, 'Could not save the cover fallback.'), {
-        key: 'cover-fallback-save',
+        key: FREQUENCY_KEY,
       });
       setFrequencyBusy(false);
       return;
@@ -121,7 +124,7 @@ export function PeopleForm(props: PeopleFormProps) {
     setFrequency(next);
     router.refresh();
     setFrequencyBusy(false);
-    toast.dismiss('cover-fallback-save');
+    toast.dismiss(FREQUENCY_KEY);
     toast.success('Cover fallback saved.');
   }
 
