@@ -25,6 +25,7 @@ import { HeadroomLink, PrimaryNavigation } from './app-navigation';
 import { MobileHeader } from './mobile-header';
 import { usePlayerContext } from './player/player-provider';
 import { useTrackPreviewAnnouncement } from './player/preview-announcer';
+import { useGenerationStatusToast } from './player/use-generation-status-toast';
 
 /** The shell's chrome state: usage is `null` until its streamed read resolves. */
 type ChromeState = {
@@ -66,6 +67,7 @@ export function AppShell({
   const [themeMode, setThemeMode] = useState<'night' | 'light'>('night');
   const { playback, sleepTimer } = usePlayerContext();
   const isPlayer = pathname === '/player' || pathname.startsWith('/player/');
+  useGenerationStatusToast(playback?.player ?? null, isPlayer);
   const hasSettingsDetailHeader = isSettingsDetailRoute(pathname);
   // The live cross-route controller outranks the server-known active session:
   // it exists the moment playback starts, without waiting for a diagnostics

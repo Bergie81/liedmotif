@@ -45,6 +45,17 @@ export type GenerationBannerPlayer = Pick<
   | 'pendingGeneration'
 >;
 
+/** What the banner says for this controller state. Every surface that reports
+ *  the generation status off the banner reads it here, so it says the same. */
+export function presentGenerationBanner(player: GenerationBannerPlayer) {
+  return presentGenerationStatus(
+    player.generationStatus,
+    player.statusMessageSafe,
+    player.generationStatusScope,
+    { readyTrackCount: player.queueLength, generationInFlight: player.pendingGeneration != null },
+  );
+}
+
 export function GenerationBanner({
   player,
   action,
@@ -54,12 +65,7 @@ export function GenerationBanner({
    *  never offers one. */
   action?: ReactNode;
 }) {
-  const p = presentGenerationStatus(
-    player.generationStatus,
-    player.statusMessageSafe,
-    player.generationStatusScope,
-    { readyTrackCount: player.queueLength, generationInFlight: player.pendingGeneration != null },
-  );
+  const p = presentGenerationBanner(player);
   if (!p.message) return null;
 
   const Icon = p.isSessionRepeat
