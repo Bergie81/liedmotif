@@ -69,6 +69,15 @@ describe('new music paused, seen off the Player', () => {
     expect(shownToasts()).toEqual([]);
   });
 
+  it('closes its toast when the Player opens, where the banner says the same', () => {
+    const view = mount(player());
+    view.rerender({ current: player({ generationStatus: 'provider_credits' }), onPlayer: false });
+
+    view.rerender({ current: player({ generationStatus: 'provider_credits' }), onPlayer: true });
+
+    expect(shownToasts()).toEqual([]);
+  });
+
   it('shows nothing when generation is back to ok', () => {
     const view = mount(player({ generationStatus: 'provider_error' }), true);
 

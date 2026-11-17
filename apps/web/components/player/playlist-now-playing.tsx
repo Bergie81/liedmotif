@@ -96,8 +96,8 @@ export function PlaylistNowPlaying({
   // The player's own writes (the star, the blend toggle) report through it, so a
   // refused one is announced here as well as a refused curation write. Every
   // current failure shows, so an older one never hides a newer one.
-  const surfaceError = [player.actionError, actionError].filter(Boolean).join(' ');
-  usePlayerErrorToast(surfaceError);
+  usePlayerErrorToast('playback', player.actionError);
+  usePlayerErrorToast('options', actionError);
   useEffect(() => {
     if (!hasTrack) {
       setSavePickerTrack(null);

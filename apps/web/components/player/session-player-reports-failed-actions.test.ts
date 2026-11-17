@@ -9,7 +9,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { afterEach, beforeAll, expect, it, vi } from 'vitest';
 import { AppChromeContext, type AppChromeContextValue } from '@/components/app-chrome-context';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { shownToasts, toast } from '@/lib/toast';
+import { closeToast, shownToasts, toast } from '@/lib/toast';
 import { NowPlaying } from './now-playing';
 import type { PlayableTrack } from './playable-track';
 import {
@@ -105,7 +105,7 @@ function AppShell({ children }: { children?: ReactNode }) {
   return h(TooltipProvider, null, h(AppChromeContext.Provider, { value: CHROME }, children));
 }
 
-function showSession(actionError: string | null = null) {
+function nowPlayingFor(actionError: string | null) {
   const player = {
     ...initialPlaybackControllerState(),
     status: 'playing',
@@ -122,15 +122,18 @@ function showSession(actionError: string | null = null) {
     player,
     coldStartBeganAt: TIMESTAMP,
   };
-  render(
-    h(NowPlaying, {
-      playback,
-      session: SESSION,
-      onSessionChange: () => {},
-      onStopped: () => {},
-    }),
-    { wrapper: AppShell },
-  );
+  return h(NowPlaying, {
+    playback,
+    session: SESSION,
+    onSessionChange: () => {},
+    onStopped: () => {},
+  });
+}
+
+/** Renders the Session surface; the returned function hands it a new controller notice. */
+function showSession(actionError: string | null = null) {
+  const view = render(nowPlayingFor(actionError), { wrapper: AppShell });
+  return (next: string | null) => view.rerender(nowPlayingFor(next));
 }
 
 const shownErrors = () =>
@@ -161,5 +164,19 @@ it('shows a refused Delete Track, and drops it once the retry lands', async () =
 
   await deleteTrackFromOptions();
 
+  expect(shownErrors()).toEqual([]);
+});
+
+it('keeps a closed failure closed when a different one comes and goes', async () => {
+  api.deleteTrack.mockResolvedValueOnce({ ok: false, error: { message: 'The server is away.' } });
+  const notice = showSession();
+  await deleteTrackFromOptions();
+  closeToast(shownToasts()[0]!.id);
+
+  const favoriteFailed = 'Favorite failed — this track was not starred. Try again.';
+  notice(favoriteFailed);
+  expect(shownErrors()).toEqual([favoriteFailed]);
+
+  notice(null);
   expect(shownErrors()).toEqual([]);
 });

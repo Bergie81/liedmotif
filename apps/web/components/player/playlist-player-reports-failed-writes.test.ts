@@ -166,7 +166,8 @@ it('shows a refused Remove beside a player notice that is still up', async () =>
   await act(async () => {});
 
   expect(shownErrors()).toEqual([
-    `${FAILED_FAVORITE} Remove failed — the track stays in the playlist. The server is away.`,
+    FAILED_FAVORITE,
+    'Remove failed — the track stays in the playlist. The server is away.',
   ]);
 });
 

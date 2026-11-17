@@ -284,15 +284,10 @@ export function NowPlaying({
   // and the header open this one sheet.
   const [newMusicOpen, setNewMusicOpen] = useState(false);
   // Every current failure shows, so an older one never hides a newer one.
-  const surfaceError = [
-    player.actionError,
-    optionsError,
-    vibeChangeError,
-    sessionActions.error?.message,
-  ]
-    .filter(Boolean)
-    .join(' ');
-  usePlayerErrorToast(surfaceError);
+  usePlayerErrorToast('playback', player.actionError);
+  usePlayerErrorToast('options', optionsError);
+  usePlayerErrorToast('change-vibe', vibeChangeError);
+  usePlayerErrorToast('session-action', sessionActions.error?.message);
 
   const { lyricsAvailable, lyricsSheetOpen, setLyricsSheetOpen } = useLyricsSurfaces(track);
   // Track Data is parent-owned for the same never-stack reason as Lyrics; it

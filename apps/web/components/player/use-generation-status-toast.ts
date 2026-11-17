@@ -28,13 +28,19 @@ export function useGenerationStatusToast(
   const lastStatus = useRef<typeof status>('ok');
 
   useEffect(() => {
+    // On the Player the banner is in sight, so a toast from another page
+    // would say the same thing twice.
+    if (onPlayerPage) {
+      lastStatus.current = status;
+      toast.dismiss(TOAST_KEY);
+      return;
+    }
     if (lastStatus.current === status) return;
     lastStatus.current = status;
     const banner = player ? presentGenerationBanner(player) : null;
     const tone = banner ? TOAST_TONE[banner.tone] : null;
-    // The toast speaks for the banner only while the banner is out of sight
-    // and has something to say; past that it would describe a stale status.
-    if (onPlayerPage || !banner?.message || !tone) {
+    // With nothing for the banner to say, an older toast describes a stale status.
+    if (!banner?.message || !tone) {
       toast.dismiss(TOAST_KEY);
       return;
     }
