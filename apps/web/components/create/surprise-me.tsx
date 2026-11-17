@@ -278,6 +278,7 @@ export function SurpriseMe({
     setSeenInitial(initialProposal);
     if (initialProposal && initialProposal.id !== proposal?.id) {
       setProposal(initialProposal);
+      setSettings((current) => ({ ...current, adventurous: initialProposal.adventurous }));
       setEditingSettings(false);
     }
   }

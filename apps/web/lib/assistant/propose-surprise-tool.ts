@@ -50,6 +50,9 @@ export function createProposeSurpriseTool(
           return notOffered(NO_LIMIT_ON_REPEAT);
         }
 
+        // Read before the suggestion is replaced: a card that then fails to
+        // arrive would leave Home showing one the server no longer holds.
+        const covers = await homeCoverChoices(asker);
         const pending = await loadPendingSurprise(db, userId);
         const result = await proposeSurprise(db, {
           ownerUserId: userId,
@@ -87,7 +90,7 @@ export function createProposeSurpriseTool(
           },
           targetDurationMinutes:
             targetDurationMinutes ?? (noLimit ? null : proposal.edit.durationMinutes),
-          ...(await homeCoverChoices(asker)),
+          ...covers,
         };
         return proposed(card);
       }),

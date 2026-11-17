@@ -142,6 +142,37 @@ describe('Surprise Me', () => {
     expect(api.proposeSurprise).not.toHaveBeenCalled();
   });
 
+  it('tries another from a suggestion made elsewhere with that suggestion’s adventurous setting', async () => {
+    const wild: SurpriseProposal = {
+      ...EMBER,
+      id: '33333333-3333-4333-8333-333333333333',
+      adventurous: true,
+    };
+    const { rerender } = mount({ initialProposal: TIDE });
+    rerender(
+      createElement(
+        AppChromeContext.Provider,
+        { value: CHROME },
+        createElement(SurpriseMe, {
+          skipProfile: false,
+          starting: false,
+          onProposalChange,
+          onStart,
+          initialProposal: wild,
+        }),
+      ),
+    );
+    api.proposeSurprise.mockResolvedValue({ ok: true, data: { proposal: EMBER } });
+    await openModal();
+    fireEvent.click(screen.getByRole('button', { name: 'Try another' }));
+
+    await waitFor(() => expect(api.proposeSurprise).toHaveBeenCalledOnce());
+    expect(api.proposeSurprise.mock.calls[0]![0]).toMatchObject({
+      adventurous: true,
+      replaces: wild.id,
+    });
+  });
+
   it('Cancel closes the modal and drops the request', async () => {
     let answer!: (value: unknown) => void;
     api.proposeSurprise.mockReturnValue(new Promise((resolve) => (answer = resolve)));
