@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 
 // The player after the Assistant changed something it shows: the star and the
-// Add to Playlist control of the Track on the deck, the New music setting of
-// the engaged Session, and the playback settings the player blends with.
+// Add to Playlist control of the Track on the deck, the title of a Track it
+// holds, the name and New music setting of the engaged Session, and the
+// playback settings the player blends with.
 
 import { renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -24,6 +25,7 @@ vi.mock('@/components/player/player-provider', async (importActual) => ({
 /** A Session playing `TRACK_ID`, saved long ago and in a hand-picked Playlist, unless `track` says otherwise. */
 function playing(track: Record<string, unknown> = {}) {
   const applyRetentionFlags = vi.fn();
+  const applyTrackTitle = vi.fn();
   const engage = vi.fn();
   const session = { id: SESSION_ID, title: 'Rainy Window', sessionMode: 'keep_going' };
   player.context = {
@@ -39,10 +41,11 @@ function playing(track: Record<string, unknown> = {}) {
           ...track,
         },
         applyRetentionFlags,
+        applyTrackTitle,
       },
     },
   };
-  return { applyRetentionFlags, engage, session };
+  return { applyRetentionFlags, applyTrackTitle, engage, session };
 }
 
 afterEach(() => {
@@ -151,6 +154,52 @@ describe('the player, after a receipt', () => {
     expect(refreshChrome).toHaveBeenCalledTimes(1);
   });
 
+  it('shows the new name of the engaged Session without restarting it, and re-reads the shell', () => {
+    const { engage, session } = playing();
+    const refreshChrome = vi.fn();
+    const { result } = renderHook(() => usePlayerFollowsReceipt(refreshChrome));
+
+    result.current({
+      action: 'renameSession',
+      session: { id: SESSION_ID, name: 'Sunday Coffee' },
+      previousName: 'Rainy Window',
+    });
+
+    expect(engage).toHaveBeenCalledWith(
+      { ...session, title: 'Sunday Coffee' },
+      { autoplay: false },
+    );
+    expect(refreshChrome).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves the engaged Session alone when another one was renamed, and re-reads the shell', () => {
+    const { engage } = playing();
+    const refreshChrome = vi.fn();
+    const { result } = renderHook(() => usePlayerFollowsReceipt(refreshChrome));
+
+    result.current({
+      action: 'renameSession',
+      session: { id: OTHER_ID, name: 'Sunday Coffee' },
+      previousName: 'Elsewhere',
+    });
+
+    expect(engage).not.toHaveBeenCalled();
+    expect(refreshChrome).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows a renamed Track under its new title wherever the player holds it', () => {
+    const { applyTrackTitle } = playing();
+    const { result } = renderHook(() => usePlayerFollowsReceipt(vi.fn()));
+
+    result.current({
+      action: 'renameTrack',
+      track: { id: TRACK_ID, name: 'Harbor Lights' },
+      previousName: 'Night Drive',
+    });
+
+    expect(applyTrackTitle).toHaveBeenCalledWith(TRACK_ID, 'Harbor Lights');
+  });
+
   it('does nothing to a player that has nothing engaged', () => {
     player.context = { engage: vi.fn(), playback: null };
     const { result } = renderHook(() => usePlayerFollowsReceipt(vi.fn()));
@@ -160,6 +209,13 @@ describe('the player, after a receipt', () => {
         action: 'favoriteTrack',
         track: { id: TRACK_ID, name: 'Night Drive' },
         playlist: FAVORITES,
+      }),
+    ).not.toThrow();
+    expect(() =>
+      result.current({
+        action: 'renameTrack',
+        track: { id: TRACK_ID, name: 'Harbor Lights' },
+        previousName: 'Night Drive',
       }),
     ).not.toThrow();
   });

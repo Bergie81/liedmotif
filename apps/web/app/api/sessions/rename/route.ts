@@ -8,12 +8,11 @@
 // untouched.
 
 import { NextResponse } from 'next/server';
-import { listFinalMp3TrackIdsForSession, renameSession } from '@liedmotif/db';
 import { renameSessionRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
 import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/api-response';
+import { giveSessionName } from '@/lib/given-names';
 import { toSessionSummary } from '@/lib/sessions';
-import { enqueueEmbedTrackMetadataBatch } from '@/lib/worker-jobs';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,15 +27,11 @@ export async function POST(request: Request) {
   );
   if (parsed instanceof NextResponse) return parsed;
 
-  const db = getDb();
-  const session = await renameSession(db, {
+  const session = await giveSessionName(getDb(), {
     ownerUserId,
     sessionId: parsed.sessionId,
     title: parsed.title,
   });
   if (!session) return apiError('not_found', 'Session not found.');
-
-  const trackIds = await listFinalMp3TrackIdsForSession(db, session.id);
-  await enqueueEmbedTrackMetadataBatch(db, trackIds);
   return apiOk({ session: toSessionSummary(session) });
 }

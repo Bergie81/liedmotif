@@ -127,6 +127,21 @@ export const assistantReceiptSchema = z.discriminatedUnion('action', [
   z.strictObject({ action: z.literal('pinPlaylist'), playlist: assistantActionItemSchema }),
   z.strictObject({ action: z.literal('newMusicOff'), session: assistantActionItemSchema }),
   z.strictObject({
+    action: z.literal('renameSession'),
+    /** Under its new name. */
+    session: assistantActionItemSchema,
+    /** Null for a Session that had no name. */
+    previousName: z.string().nullable(),
+  }),
+  z.strictObject({ action: z.literal('pinSession'), session: assistantActionItemSchema }),
+  z.strictObject({
+    action: z.literal('renameTrack'),
+    /** Under its new name. */
+    track: assistantActionItemSchema,
+    /** Null for a Track that had no title. */
+    previousName: z.string().nullable(),
+  }),
+  z.strictObject({
     action: z.literal('changeSetting'),
     setting: z.enum(ASSISTANT_SETTINGS),
     /** The choice now stored and the one it replaced, each as the settings page shows it. */
@@ -409,6 +424,44 @@ export const pinPlaylistInputSchema = z.object({
   playlistId: z.string().describe('The id of the Playlist, as another tool returned it.'),
 });
 export type PinPlaylistInput = z.infer<typeof pinPlaylistInputSchema>;
+
+/**
+ * What the model passes to `renameSession`. The id is any string, and one left
+ * out means the Session the player has on.
+ */
+export const renameSessionInputSchema = z.object({
+  sessionId: z
+    .string()
+    .nullish()
+    .describe(
+      'The id of the Session, as another tool returned it. Leave out for the Session that is playing now ("this").',
+    ),
+  name: z.string().describe('The new name, as the user said it.'),
+});
+export type RenameSessionInput = z.infer<typeof renameSessionInputSchema>;
+
+/** What the model passes to `pinSession`. An id left out means the Session the player has on. */
+export const pinSessionInputSchema = z.object({
+  sessionId: z
+    .string()
+    .nullish()
+    .describe(
+      'The id of the Session, as another tool returned it. Leave out for the Session that is playing now ("this").',
+    ),
+});
+export type PinSessionInput = z.infer<typeof pinSessionInputSchema>;
+
+/** What the model passes to `renameTrack`. An id left out means the Track on the player's deck. */
+export const renameTrackInputSchema = z.object({
+  trackId: z
+    .string()
+    .nullish()
+    .describe(
+      'The id of the Track, as another tool returned it. Leave out for the Track that is playing now ("this").',
+    ),
+  name: z.string().describe('The new title, as the user said it.'),
+});
+export type RenameTrackInput = z.infer<typeof renameTrackInputSchema>;
 
 /** What the model passes to `changeSetting`. */
 export const changeSettingInputSchema = z.object({

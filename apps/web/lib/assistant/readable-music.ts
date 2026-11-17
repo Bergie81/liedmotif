@@ -1,14 +1,18 @@
-// Which Playlists and Tracks the asking user may read, and which Playlists are
-// theirs to change. Every tool that takes the id of one asks through here, so
+// Which Playlists and Tracks the asking user may read, and which Sessions,
+// Playlists and Tracks are theirs to change. Every tool that takes the id of one asks through here, so
 // such an id is only ever a question to the database, asked as that user.
 
 import {
   getLoungePlaylistDetail,
+  getOwnedTrackSummary,
   getPlaylistDetail,
   getReadableTrackDetails,
+  getSessionById,
   listPlaylists,
+  type OwnedTrackSummary,
   type PlaylistDetailResult,
   type PlaylistSummary,
+  type SessionRecord,
 } from '@liedmotif/db';
 import { uuidSchema } from '@liedmotif/shared';
 import type { AssistantAsker } from './tools';
@@ -28,6 +32,25 @@ export async function readablePlaylist(
   const own = await getPlaylistDetail(db, { ownerUserId: userId, playlistId, limit });
   if (own) return own;
   return getLoungePlaylistDetail(db, { viewerUserId: userId, playlistId, limit });
+}
+
+/** One of the asker's Sessions; one being deleted is gone to them, as it is in My Sessions. */
+export async function ownSession(
+  { db, userId }: AssistantAsker,
+  sessionId: string,
+): Promise<SessionRecord | null> {
+  if (!isId(sessionId)) return null;
+  const session = await getSessionById(db, { ownerUserId: userId, sessionId });
+  return session && !session.deleteRequestedAt ? session : null;
+}
+
+/** One of the asker's own Tracks; null for every other id, a Track shared with them included. */
+export async function ownTrack(
+  { db, userId }: AssistantAsker,
+  trackId: string,
+): Promise<OwnedTrackSummary | null> {
+  if (!isId(trackId)) return null;
+  return getOwnedTrackSummary(db, { ownerUserId: userId, trackId });
 }
 
 /** One of the asker's own Playlists, Favorites included; null for every other id. */

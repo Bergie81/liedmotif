@@ -74,8 +74,10 @@ describe.each([
     expect(tools).toMatch(/^- favoriteTrack .*Favorites/m);
     expect(tools).toMatch(/^- addToPlaylist .*at most 20/m);
     expect(tools).toMatch(/^- createPlaylist .*renamePlaylist .*pinPlaylist /m);
+    expect(tools).toMatch(/^- renameSession .*pinSession .*Sessions.*renameTrack /m);
     expect(tools).toMatch(/^- newMusicOff .*New music off.*active Session/m);
     expect(tools).toMatch(/leave out the Track id.*"this"/i);
+    expect(tools).toMatch(/^- For renameSession and pinSession, leave out the Session id.*"this"/m);
   });
 
   it('tells the model it cannot remove anything and to link to the page instead', () => {

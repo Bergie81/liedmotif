@@ -5,7 +5,7 @@
 
 import { NextResponse } from 'next/server';
 import { setSessionPinned } from '@liedmotif/db';
-import { MAX_PINNED_SESSIONS, setSessionPinnedRequestSchema } from '@liedmotif/shared';
+import { SESSION_PIN_LIMIT_MESSAGE, setSessionPinnedRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
 import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/api-response';
 
@@ -25,10 +25,7 @@ export async function POST(request: Request) {
   const result = await setSessionPinned(getDb(), { ownerUserId, ...parsed });
   if (result === 'not_found') return apiError('not_found', 'Session not found.');
   if (result === 'limit_reached') {
-    return apiError(
-      'limit_reached',
-      `You can pin up to ${MAX_PINNED_SESSIONS} Sessions. Unpin one to pin another.`,
-    );
+    return apiError('limit_reached', SESSION_PIN_LIMIT_MESSAGE);
   }
   return apiOk({ id: parsed.sessionId, pinned: parsed.pinned });
 }

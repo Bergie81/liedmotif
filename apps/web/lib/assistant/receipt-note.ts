@@ -9,6 +9,7 @@ import { SETTING_NAMES } from './setting-names';
 
 const playlist = ({ name, id }: AssistantActionItem) => `the Playlist ${named(name, id)}`;
 const track = ({ name, id }: AssistantActionItem) => `the Track ${named(name, id)}`;
+const session = ({ name, id }: AssistantActionItem) => `the Session ${named(name, id)}`;
 
 /** What was done, to what: each thing by its name and the id the tools take for it. */
 export function receiptNote(receipt: AssistantReceipt): string {
@@ -28,7 +29,13 @@ export function receiptNote(receipt: AssistantReceipt): string {
     case 'pinPlaylist':
       return `pinned ${playlist(receipt.playlist)}`;
     case 'newMusicOff':
-      return `switched New music off for the Session ${named(receipt.session.name, receipt.session.id)}`;
+      return `switched New music off for ${session(receipt.session)}`;
+    case 'renameSession':
+      return `renamed the Session ${quoted(receipt.previousName)} to ${named(receipt.session.name, receipt.session.id)}`;
+    case 'pinSession':
+      return `pinned ${session(receipt.session)}`;
+    case 'renameTrack':
+      return `renamed the Track ${quoted(receipt.previousName)} to ${named(receipt.track.name, receipt.track.id)}`;
     case 'changeSetting':
       return `changed the setting ${quoted(SETTING_NAMES[receipt.setting].label)} from ${receipt.previous} to ${receipt.value}`;
   }

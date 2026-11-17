@@ -3,6 +3,7 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SessionListItem } from '@liedmotif/shared';
+import { announceOutsideLibraryWrite } from '@/lib/offline/library-writes';
 import { useResumableSessions } from './use-resumable-sessions';
 
 vi.mock('@/components/player/player-provider', () => ({
@@ -127,6 +128,31 @@ describe('useResumableSessions paging', () => {
     await act(async () => requests[0]!.respond(sessionsPage([THIRD, FIRST], 'after-first')));
     expect(result.current.items?.map((item) => item.id)).toEqual([THIRD.id, FIRST.id]);
     expect(result.current.nextCursor).toBe('after-first');
+  });
+});
+
+describe('useResumableSessions after a write from outside the page', () => {
+  it('reads the list again, so a Session renamed or pinned elsewhere shows as it now is', async () => {
+    const requests = captureFetches();
+    const { result } = renderHook(() =>
+      useResumableSessions({
+        includePinned: true,
+        initial: { items: [FIRST], activeSession: null, nextCursor: null, pinned: [] },
+      }),
+    );
+
+    act(() => announceOutsideLibraryWrite());
+    await waitFor(() => expect(requests).toHaveLength(1));
+    const renamed = { ...FIRST, title: 'Sunday Coffee', pinned: true };
+    await act(async () =>
+      requests[0]!.respond({
+        ok: true,
+        data: { items: [], nextCursor: null, activeSession: null, pinned: [renamed] },
+      }),
+    );
+
+    expect(result.current.pinned).toEqual([renamed]);
+    expect(result.current.items).toEqual([]);
   });
 });
 

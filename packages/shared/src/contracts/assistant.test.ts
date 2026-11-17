@@ -118,6 +118,13 @@ const RECEIPTS = [
   { action: 'renamePlaylist', playlist: PLAYLIST, previousName: 'Jogging' },
   { action: 'pinPlaylist', playlist: PLAYLIST },
   { action: 'newMusicOff', session: SESSION },
+  { action: 'renameSession', session: { ...SESSION, name: 'Sunday Coffee' }, previousName: null },
+  { action: 'pinSession', session: SESSION },
+  {
+    action: 'renameTrack',
+    track: { ...TRACK, name: 'Harbor Lights' },
+    previousName: 'Night Drive',
+  },
 ];
 
 const done = (receipt: unknown) => ({ type: 'action', action: { status: 'done', receipt } });

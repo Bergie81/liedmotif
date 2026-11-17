@@ -65,6 +65,32 @@ describe('a receipt line', () => {
       { path: '/player', place: 'Now Playing' },
     ],
     [
+      'a renamed Session',
+      {
+        action: 'renameSession',
+        session: { ...SESSION, name: 'Sunday Coffee' },
+        previousName: 'Rainy Window',
+      },
+      'Renamed Session: Rainy Window → Sunday Coffee',
+      { path: '/sessions', place: 'Sessions' },
+    ],
+    [
+      'a pinned Session',
+      { action: 'pinSession', session: SESSION },
+      'Pinned Session: Rainy Window',
+      { path: '/sessions', place: 'Sessions' },
+    ],
+    [
+      'a renamed Track',
+      {
+        action: 'renameTrack',
+        track: { ...TRACK, name: 'Harbor Lights' },
+        previousName: 'Night Drive',
+      },
+      'Renamed Track: Night Drive → Harbor Lights',
+      { path: '/library', place: 'Library' },
+    ],
+    [
       'a setting changed',
       { action: 'changeSetting', setting: 'ownerInCovers', value: 'Seldom', previous: 'Always' },
       'Include the owner in Covers: Always → Seldom',
@@ -99,6 +125,12 @@ describe('a receipt line', () => {
     ).toBe('Added to Favorites: Untitled Track');
     expect(receiptLine({ action: 'newMusicOff', session: { ...SESSION, name: null } }).text).toBe(
       'New music off: Untitled Session',
+    );
+    expect(
+      receiptLine({ action: 'renameSession', session: SESSION, previousName: null }).text,
+    ).toBe('Renamed Session: Untitled Session → Rainy Window');
+    expect(receiptLine({ action: 'renameTrack', track: TRACK, previousName: null }).text).toBe(
+      'Renamed Track: Untitled Track → Night Drive',
     );
   });
 });

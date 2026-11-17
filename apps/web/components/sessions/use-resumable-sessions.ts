@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { ActiveSessionOverview, SessionListItem } from '@liedmotif/shared';
+import { useOutsideLibraryWrite } from '@/components/library/use-outside-library-write';
 import { usePageEpoch } from '@/components/use-page-epoch';
 import { useServerSeed } from '@/components/use-server-seed';
 import { appendUniqueById } from '@/lib/append-unique';
@@ -90,6 +91,10 @@ export function useResumableSessions({
     beginFirstPage,
     settle,
   ]);
+
+  // A rename or pin from outside this page, such as the Assistant's, is one
+  // these rows can only show by reading the list again.
+  useOutsideLibraryWrite(() => setReload((value) => value + 1));
 
   async function loadMore() {
     if (!nextCursor || loadingMore) return;

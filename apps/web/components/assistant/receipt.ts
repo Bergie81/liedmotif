@@ -24,6 +24,9 @@ const playlistPage = (playlist: AssistantActionItem) => ({
   place: playlistName(playlist),
 });
 
+/** My Sessions, where a Session is listed under its name and its pin. */
+const SESSIONS_PAGE = { path: '/sessions', place: 'Sessions' };
+
 /** A settings page, under the name the app shows for it. Every setting's page is listed. */
 const settingsPage = (path: string) => ({
   path,
@@ -43,6 +46,9 @@ export const RECEIPT_REREADS: Record<AssistantReceipt['action'], 'library' | 'pa
   pinPlaylist: 'library',
   newMusicOff: 'nothing',
   changeSetting: 'page',
+  renameSession: 'library',
+  pinSession: 'library',
+  renameTrack: 'library',
 };
 
 export function receiptLine(receipt: AssistantReceipt): ReceiptLine {
@@ -83,6 +89,18 @@ export function receiptLine(receipt: AssistantReceipt): ReceiptLine {
       return {
         text: `New music off: ${sessionTitle(receipt.session)}`,
         link: { path: '/player', place: 'Now Playing' },
+      };
+    case 'renameSession':
+      return {
+        text: `Renamed Session: ${sessionTitle({ ...receipt.session, name: receipt.previousName })} → ${sessionTitle(receipt.session)}`,
+        link: SESSIONS_PAGE,
+      };
+    case 'pinSession':
+      return { text: `Pinned Session: ${sessionTitle(receipt.session)}`, link: SESSIONS_PAGE };
+    case 'renameTrack':
+      return {
+        text: `Renamed Track: ${trackTitle({ ...receipt.track, name: receipt.previousName })} → ${trackTitle(receipt.track)}`,
+        link: { path: '/library', place: 'Library' },
       };
     case 'changeSetting': {
       const { label, page } = SETTING_NAMES[receipt.setting];

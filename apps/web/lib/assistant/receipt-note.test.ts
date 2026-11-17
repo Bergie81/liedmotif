@@ -47,6 +47,26 @@ describe('a receipt as the model reads it', () => {
       { action: 'newMusicOff', session: SESSION },
       `switched New music off for the Session "Rainy Window" (id ${SESSION.id})`,
     ],
+    [
+      {
+        action: 'renameSession',
+        session: { ...SESSION, name: 'Sunday Coffee' },
+        previousName: 'Rainy Window',
+      },
+      `renamed the Session "Rainy Window" to "Sunday Coffee" (id ${SESSION.id})`,
+    ],
+    [
+      { action: 'pinSession', session: SESSION },
+      `pinned the Session "Rainy Window" (id ${SESSION.id})`,
+    ],
+    [
+      {
+        action: 'renameTrack',
+        track: { ...TRACK, name: 'Harbor Lights' },
+        previousName: 'Night Drive',
+      },
+      `renamed the Track "Night Drive" to "Harbor Lights" (id ${TRACK.id})`,
+    ],
   ])('says what was done to what, with the id the tools take: $0.action', (receipt, note) => {
     expect(receiptNote(receipt)).toBe(note);
   });

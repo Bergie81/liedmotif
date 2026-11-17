@@ -4,12 +4,7 @@
 // hands the browser a command. The browser then runs the app's own play flow
 // for it, so resuming a Session is the same request the Resume button sends.
 
-import {
-  getOwnedTrackSummary,
-  getPlayableTrackSession,
-  getSessionById,
-  listSessionTracks,
-} from '@liedmotif/db';
+import { getOwnedTrackSummary, getPlayableTrackSession, listSessionTracks } from '@liedmotif/db';
 import type { LlmTool } from '@liedmotif/providers';
 import {
   MAX_PLAYLIST_PAGE_LIMIT,
@@ -18,10 +13,10 @@ import {
   type PlayInput,
 } from '@liedmotif/shared';
 import { toPlaylistMemberItem } from '@/lib/playlists';
-import { NO_SUCH_TRACK } from './library-action';
+import { NO_SUCH_SESSION, NO_SUCH_TRACK } from './library-action';
 import { quoted } from './music-names';
 import { handedOver, refused } from './player-tools';
-import { isId, readablePlaylist, readableTrackTitle } from './readable-music';
+import { isId, ownSession, readablePlaylist, readableTrackTitle } from './readable-music';
 import { PLAY_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 import type { TurnActions } from './turn-actions';
@@ -29,15 +24,7 @@ import type { TurnActions } from './turn-actions';
 /** What a command plays, or the reason there is nothing to hand over. */
 type Checked = Pick<AssistantPlayCommand, 'source' | 'track'> | { why: string };
 
-const NO_SUCH_SESSION = 'No Session with that id.';
 const NO_SUCH_PLAYLIST = 'No Playlist with that id.';
-
-/** One of the asker's Sessions; one being deleted is gone to them, as it is in My Sessions. */
-async function ownSession({ db, userId }: AssistantAsker, sessionId: string) {
-  if (!isId(sessionId)) return null;
-  const session = await getSessionById(db, { ownerUserId: userId, sessionId });
-  return session && !session.deleteRequestedAt ? session : null;
-}
 
 /**
  * One of the asker's own Tracks with the Session it plays through, which is

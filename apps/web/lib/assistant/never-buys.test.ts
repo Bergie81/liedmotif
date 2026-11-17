@@ -93,12 +93,16 @@ const SERVER_CALLS = [
   'searchTracks',
   'startingSessionMode',
   'toPlaylistMemberItem',
-  // Library writes: they add and rename.
+  // Library writes: they add, rename and pin. A Session or Track rename also
+  // retags the downloaded files, as the app's own rename does.
   'addPlaylistTracks',
   'createPlaylist',
   'ensureFavoritesPlaylist',
+  'giveSessionName',
+  'giveTrackName',
   'renamePlaylist',
   'setPlaylistLibraryPinned',
+  'setSessionPinned',
   'setTrackFavorited',
   // The asker's own settings: read, and written one choice at a time. Of the
   // Generation settings only the language is written, never what a Session

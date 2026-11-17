@@ -18,6 +18,7 @@ import {
   createPinPlaylistTool,
   createRenamePlaylistTool,
 } from './manage-playlist-tools';
+import { createPinSessionTool, createRenameSessionTool } from './manage-session-tools';
 import { createNewMusicOffTool } from './new-music-off-tool';
 import { createNowPlayingTool } from './now-playing-tool';
 import { createPlayTool } from './play-tool';
@@ -27,6 +28,7 @@ import { createProposeMoreLikeThisTool } from './propose-more-like-this-tool';
 import { createProposeNewMusicOnTool } from './propose-new-music-on-tool';
 import { createProposeSessionTool } from './propose-session-tool';
 import { createReadDocsTool } from './read-docs-tool';
+import { createRenameTrackTool } from './rename-track-tool';
 import type { TurnActions } from './turn-actions';
 import { withinTurnBudget } from './turn-budget';
 
@@ -96,6 +98,9 @@ export function createAssistantTools(
       createCreatePlaylistTool(asker, actions),
       createRenamePlaylistTool(asker, actions),
       createPinPlaylistTool(asker, actions),
+      createRenameSessionTool(asker, actions),
+      createPinSessionTool(asker, actions),
+      createRenameTrackTool(asker, actions),
       createNewMusicOffTool(asker, actions),
       createChangeSettingTool(asker, actions),
       createPlayTool(asker, actions),

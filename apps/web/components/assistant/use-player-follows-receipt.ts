@@ -65,6 +65,20 @@ export function usePlayerFollowsReceipt(
           refreshChrome();
           return;
         }
+        case 'renameSession': {
+          const session = live?.session;
+          if (session?.id === receipt.session.id) {
+            engage({ ...session, title: receipt.session.name }, { autoplay: false });
+          }
+          refreshChrome();
+          return;
+        }
+        case 'renameTrack':
+          // The Rename in the player's own menu applies a title the same way.
+          if (receipt.track.name !== null) {
+            live?.player.applyTrackTitle(receipt.track.id, receipt.track.name);
+          }
+          return;
         case 'changeSetting':
           if (receipt.setting === 'blend' || receipt.setting === 'crossfadeSeconds') {
             adoptStoredPlaybackSettings({ playback: live, pending: pendingRef.current });

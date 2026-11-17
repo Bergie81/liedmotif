@@ -8,11 +8,10 @@
 // never touches the storage key — that keeps the slug captured at download time.
 
 import { NextResponse } from 'next/server';
-import { renameTrack } from '@liedmotif/db';
 import { renameTrackRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
 import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/api-response';
-import { enqueueEmbedTrackMetadataBatch } from '@/lib/worker-jobs';
+import { giveTrackName } from '@/lib/given-names';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,14 +22,11 @@ export async function POST(request: Request) {
   const parsed = await parseJsonBody(request, renameTrackRequestSchema, 'Invalid rename request.');
   if (parsed instanceof NextResponse) return parsed;
 
-  const db = getDb();
-  const renamed = await renameTrack(db, {
+  const renamed = await giveTrackName(getDb(), {
     ownerUserId,
     trackId: parsed.trackId,
     title: parsed.title,
   });
   if (!renamed) return apiError('not_found', 'Track not found.');
-
-  await enqueueEmbedTrackMetadataBatch(db, [renamed.trackId]);
   return apiOk(renamed);
 }

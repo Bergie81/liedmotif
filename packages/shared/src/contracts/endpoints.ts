@@ -435,6 +435,9 @@ export type ConvertSessionToPlaylistResponse = z.infer<
 
 export const MAX_PINNED_SESSIONS = 10;
 
+/** The refusal for a pin past the cap, wherever a pin is asked for. */
+export const SESSION_PIN_LIMIT_MESSAGE = `You can pin up to ${MAX_PINNED_SESSIONS} Sessions. Unpin one to pin another.`;
+
 export const setSessionPinnedRequestSchema = z.strictObject({
   sessionId: uuidSchema,
   pinned: z.boolean(),
