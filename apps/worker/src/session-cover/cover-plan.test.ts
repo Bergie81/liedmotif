@@ -2,6 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { COVER_STYLES, type CoverStyle } from '@liedmotif/shared';
 import type { GeneratedImageCapabilities } from '@liedmotif/providers';
 import { buildSessionCoverPlan, type BuildSessionCoverPlanInput } from './cover-plan';
+import { GRAMMARS } from './cover-grammars';
+import { enumerateArtDirectionCandidates } from './cover-plan-selection';
+
+const CONCEPT_MODES = [
+  'title symbol',
+  'title narrative',
+  'material transformation',
+  'environmental metaphor',
+  'impossible scale',
+  'rhythmic abstraction',
+];
 
 const CAPABILITIES: GeneratedImageCapabilities = {
   provider: { providerType: 'image', providerKey: 'test', model: 'portable-model' },
@@ -780,9 +791,9 @@ describe('Session Cover art-direction policy', () => {
       customDefinition: null,
       snapshot: { mood: 'calm', activity: 'focus', energy: 'low', genreTags: ['ambient'] },
       sessionIntent: 'a very long supporting context '.repeat(20),
-      // Brackets the minimal grammar's protected-section minimum (~1.85k chars):
-      // 1_900 must fit after dropping optional sections, 1_800 must not.
-      capabilities: { ...CAPABILITIES, maxPromptCharacters: 1_900 },
+      // Brackets the minimal grammar's protected-section minimum (~1.92k chars):
+      // 2_000 must fit after dropping optional sections, 1_800 must not.
+      capabilities: { ...CAPABILITIES, maxPromptCharacters: 2_000 },
       referenceTreatment: null,
     });
     expect(compact.ok).toBe(true);
@@ -863,6 +874,49 @@ describe('Session Cover art-direction policy', () => {
     expect(compacted.plan.exclusions).toContain(
       'named brands, studios, franchises, or artist imitation',
     );
+  });
+
+  it.each(['minimal', 'drawing', 'manga'] as const)(
+    'explicit %s reaches every concept mode across Session ids',
+    (style) => {
+      const reached = new Set<string>();
+      const rhythmicSubjects = new Set<string>();
+      for (let index = 0; index < 16; index += 1) {
+        const { candidates } = enumerateArtDirectionCandidates({
+          requestedStyle: style,
+          custom: '',
+          name: 'Rain Over São Paulo',
+          snapshot: { mood: 'calm', activity: 'focus', energy: 'medium', genreTags: ['ambient'] },
+          cueIds: [],
+          referenceEnabled: false,
+          salt: `concept-reach-${index}:Rain Over São Paulo:${style}`,
+          grammars: GRAMMARS,
+        });
+        expect(candidates.length).toBeLessThanOrEqual(64);
+        for (const candidate of candidates) {
+          reached.add(candidate.conceptMode);
+          if (candidate.conceptMode === 'rhythmic abstraction') {
+            rhythmicSubjects.add(candidate.subject);
+          }
+        }
+      }
+      expect([...reached].sort()).toEqual([...CONCEPT_MODES].sort());
+      if (style === 'manga') {
+        expect(
+          [...rhythmicSubjects].some((subject) => subject !== GRAMMARS.manga.subjects[0]),
+        ).toBe(true);
+      }
+    },
+  );
+
+  it('plans an explicit Minimal cover in a late concept mode for some Session ids', () => {
+    const modes = new Set<string>();
+    for (let index = 0; index < 32; index += 1) {
+      const result = plan('minimal', `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`);
+      expect(result.ok).toBe(true);
+      if (result.ok) modes.add(result.fingerprint.conceptMode!);
+    }
+    expect(modes.has('impossible scale') || modes.has('rhythmic abstraction')).toBe(true);
   });
 
   it('Auto always resolves to a real preset and Session IDs exercise varied fingerprints', () => {

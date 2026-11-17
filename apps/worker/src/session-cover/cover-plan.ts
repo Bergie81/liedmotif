@@ -13,7 +13,7 @@ import {
 } from './cover-plan-selection';
 import { GRAMMARS } from './cover-grammars';
 
-export const SESSION_COVER_PLAN_VERSION = 'session-cover-plan-v5';
+export const SESSION_COVER_PLAN_VERSION = 'session-cover-plan-v6';
 export const SESSION_COVER_PROMPT_VERSION = 'session-cover-prompt-v14';
 
 const MAX_NAME = 240;

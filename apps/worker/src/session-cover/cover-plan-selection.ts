@@ -311,7 +311,11 @@ export function enumerateArtDirectionCandidates(args: {
         semanticRank: 4,
         salt: args.salt,
         grammars: args.grammars,
-      }).slice(0, CANDIDATE_BUDGET),
+      })
+        // Sorting by stable key before the cut keeps every concept mode
+        // reachable for a style with more candidates than the budget.
+        .sort((a, b) => a.stableKey.localeCompare(b.stableKey))
+        .slice(0, CANDIDATE_BUDGET),
       explicitPreset: style,
     };
   }
