@@ -5,12 +5,20 @@
 // a call differs: a tool that would read the asking user's data answers from
 // the Library below, and one that would change it, command the player or
 // prepare a card reports what a real turn would report and changes nothing.
+// The player has the active Session on, unless a question is asked with
+// nothing playing.
 
 import type { Database, UserRole } from '@liedmotif/db';
 import type { LlmTool } from '@liedmotif/providers';
 import {
   assistantCardSchema,
+  isSungTheme,
+  MAX_COVER_GUIDANCE_LENGTH,
+  renameSessionRequestSchema,
+  renameTrackRequestSchema,
+  targetDurationMinutesSchema,
   type AddToPlaylistInput,
+  type AssistantCard,
   type AssistantPlayCommand,
   type AssistantPlayerState,
   type AssistantSetting,
@@ -20,18 +28,35 @@ import {
   type FindMusicInput,
   type ListTracksInput,
   type PinPlaylistInput,
+  type PinSessionInput,
   type PlayInput,
   type ProposeChangeVibeInput,
+  type ProposeCoverInput,
   type ProposeMoreLikeThisInput,
   type ProposeNewMusicOnInput,
   type ProposeSessionInput,
+  type ProposeSurpriseInput,
   type RenamePlaylistInput,
+  type RenameSessionInput,
+  type RenameTrackInput,
 } from '@liedmotif/shared';
 import { LIST_NAMES } from '../find-music-tool';
-import { askedTracks, done, NO_SUCH_PLAYLIST, NO_SUCH_TRACK, refused } from '../library-action';
+import {
+  askedTracks,
+  done,
+  NO_PLAYLIST_PLAYING,
+  NO_SESSION_PLAYING,
+  NO_SUCH_PLAYLIST,
+  NO_SUCH_SESSION,
+  NO_SUCH_TRACK,
+  NO_TRACK_PLAYING,
+  refused,
+} from '../library-action';
+import { BAD_SESSION_NAME } from '../manage-session-tools';
 import { named, quoted, trackCount } from '../music-names';
 import { handedOver, refused as leftAsItIs } from '../player-tools';
-import { notOffered, proposed } from '../proposal';
+import { BAD_DURATION, notOffered, proposed } from '../proposal';
+import { BAD_TRACK_NAME } from '../rename-track-tool';
 import {
   ADD_TO_PLAYLIST_TOOL_NAME,
   BUDGET_TOOL_NAME,
@@ -43,12 +68,17 @@ import {
   NEW_MUSIC_OFF_TOOL_NAME,
   NOW_PLAYING_TOOL_NAME,
   PIN_PLAYLIST_TOOL_NAME,
+  PIN_SESSION_TOOL_NAME,
   PLAY_TOOL_NAME,
   PROPOSE_CHANGE_VIBE_TOOL_NAME,
+  PROPOSE_COVER_TOOL_NAME,
   PROPOSE_MORE_LIKE_THIS_TOOL_NAME,
   PROPOSE_NEW_MUSIC_ON_TOOL_NAME,
   PROPOSE_SESSION_TOOL_NAME,
+  PROPOSE_SURPRISE_TOOL_NAME,
   RENAME_PLAYLIST_TOOL_NAME,
+  RENAME_SESSION_TOOL_NAME,
+  RENAME_TRACK_TOOL_NAME,
 } from '../tool-names';
 import { createAssistantTools } from '../tools';
 import type { TurnActions } from '../turn-actions';
@@ -146,7 +176,7 @@ const ACTIVE_GENERATED_MINUTES = 40;
 const CREATED_PLAYLIST_ID = id(399);
 
 /** What the browser's player has engaged when a question is asked: "this" is Neon Rain. */
-const PLAYER: AssistantPlayerState = {
+const PLAYING: AssistantPlayerState = {
   source: { kind: 'session', id: ACTIVE.id },
   trackId: TRACKS.neonRain.id,
   playing: true,
@@ -172,21 +202,30 @@ const item = ({ id: itemId, title }: { id: string; title: string }) => ({
 
 const BUDGET: Record<UserRole, string> = {
   member: [
-    'Your budget: 12 of 20 Tracks left today, 68 of 100 Tracks left this month.',
-    'Shared budget of all Members: 41 of 60 Tracks left today, 230 of 300 Tracks left this month.',
-    'New music is generated only while both have Tracks left.',
+    'Your budget: 12 of 20 Tracks left today, 68 of 100 Tracks left this month. 7 of 10 covers left today, 19 of 25 covers left this month.',
+    'Shared budget of all Members: 41 of 60 Tracks left today, 230 of 300 Tracks left this month. 22 of 30 covers left today, 81 of 100 covers left this month.',
+    'New music and covers are generated only while both budgets have some left.',
   ].join('\n'),
-  admin: 'Instance limit: 34 of 50 Tracks left today, 412 of 500 Tracks left this month.',
+  admin:
+    'Instance limit: 34 of 50 Tracks left today, 412 of 500 Tracks left this month. 9 of 10 covers left today, 37 of 60 covers left this month.',
 };
 
-function nowPlaying(): string {
-  const track = trackById(PLAYER.trackId ?? '');
+function nowPlaying(player: AssistantPlayerState | null): string {
+  const newMusic = `New music: on, duration target ${ACTIVE_TARGET_MINUTES} min (${ACTIVE_GENERATED_MINUTES} min generated)`;
+  if (!player) {
+    return [
+      'Nothing is playing in this browser. The active Session:',
+      `Session: ${named(ACTIVE.title, ACTIVE.id)}`,
+      newMusic,
+    ].join('\n');
+  }
+  const track = trackById(player.trackId ?? '');
   return [
     `Session: ${named(ACTIVE.title, ACTIVE.id)}`,
     ...(track ? [`Track: ${named(track.title, track.id)}`] : []),
-    `Player: ${PLAYER.playing ? 'playing' : 'paused'}`,
+    `Player: ${player.playing ? 'playing' : 'paused'}`,
     'Sleep Timer: off',
-    `New music: on, duration target ${ACTIVE_TARGET_MINUTES} min (${ACTIVE_GENERATED_MINUTES} min generated)`,
+    newMusic,
   ].join('\n');
 }
 
@@ -318,6 +357,40 @@ function playable({
   return track ? { source, track: item(track) } : { why: 'That Track is not in it.' };
 }
 
+/** The Session or Playlist a call names, or the one of that kind the player has on: "this". */
+const askedSource = (
+  kind: 'session' | 'playlist',
+  given: string | null | undefined,
+  player: AssistantPlayerState | null,
+) => given || (player?.source.kind === kind ? player.source.id : undefined);
+
+/**
+ * The Surprise Me suggestion a fixture turn prepares, whatever was asked of
+ * it but its vocals: the app's comes from the text LLM and the user's taste,
+ * which the fixture has neither of.
+ */
+function surpriseSuggestion({
+  adventurous,
+  theme,
+  vocal,
+}: ProposeSurpriseInput): Extract<AssistantCard, { kind: 'surprise' }>['suggestion'] {
+  const sung = (theme != null && isSungTheme(theme)) || vocal === 'vocal';
+  return {
+    id: id(401),
+    adventurous: adventurous ?? false,
+    title: 'Open Windows',
+    mood: 'bright and unhurried',
+    genres: ['downtempo', 'nu jazz'],
+    energy: 'medium',
+    vocalMode: sung ? 'vocal' : 'instrumental',
+    voiceGender: sung ? 'female' : null,
+    language: sung ? 'English' : null,
+  };
+}
+
+/** How long a Surprise Me suggestion runs when the user named no length. */
+const SURPRISE_MINUTES = 45;
+
 /** The fixture user's settings before a turn, each as its settings page shows it. */
 const SETTINGS: Record<AssistantSetting, string> = {
   ownerInCovers: 'Always',
@@ -334,16 +407,22 @@ type Answer = (input: never) => Promise<string>;
  * left out answer as in the app: the docs tool reads the real docs snapshot,
  * and the two player tools decide from the player state alone.
  */
-function fixtureAnswers(role: UserRole, actions: TurnActions): Record<string, Answer> {
+function fixtureAnswers(
+  role: UserRole,
+  actions: TurnActions,
+  player: AssistantPlayerState | null,
+): Record<string, Answer> {
   return {
-    [NOW_PLAYING_TOOL_NAME]: async () => nowPlaying(),
+    [NOW_PLAYING_TOOL_NAME]: async () => nowPlaying(player),
     [BUDGET_TOOL_NAME]: async () => BUDGET[role],
     [FIND_MUSIC_TOOL_NAME]: async (input: FindMusicInput) => findMusic(input),
     [LIST_TRACKS_TOOL_NAME]: async (input: ListTracksInput) => listTracks(input),
 
     [FAVORITE_TRACK_TOOL_NAME]: ({ trackId }: FavoriteTrackInput) =>
       actions.take('done', async () => {
-        const track = trackById(trackId || PLAYER.trackId || '');
+        const askedId = trackId || player?.trackId;
+        if (!askedId) return refused(NO_TRACK_PLAYING);
+        const track = trackById(askedId);
         if (!track) return refused(NO_SUCH_TRACK);
         const { id: playlistId, name } = PLAYLISTS.favorites;
         return done({
@@ -356,7 +435,7 @@ function fixtureAnswers(role: UserRole, actions: TurnActions): Record<string, An
       actions.take('done', async () => {
         const playlist = playlistById(playlistId);
         if (!playlist) return refused(NO_SUCH_PLAYLIST);
-        const added = askedTracks(trackIds, PLAYER).flatMap((trackId) => trackById(trackId) ?? []);
+        const added = askedTracks(trackIds, player).flatMap((trackId) => trackById(trackId) ?? []);
         if (added.length === 0) {
           return refused(`No Track was added to ${named(playlist.name, playlist.id)}.`);
         }
@@ -396,6 +475,42 @@ function fixtureAnswers(role: UserRole, actions: TurnActions): Record<string, An
         return done({
           action: 'pinPlaylist',
           playlist: { id: playlist.id, name: playlist.name },
+        });
+      }),
+    [RENAME_SESSION_TOOL_NAME]: ({ sessionId, name }: RenameSessionInput) =>
+      actions.take('done', async () => {
+        const title = renameSessionRequestSchema.shape.title.safeParse(name);
+        if (!title.success) return refused(BAD_SESSION_NAME);
+        const askedId = askedSource('session', sessionId, player);
+        if (!askedId) return refused(NO_SESSION_PLAYING);
+        const session = sessionById(askedId);
+        if (!session) return refused(NO_SUCH_SESSION);
+        return done({
+          action: 'renameSession',
+          session: { id: session.id, name: title.data },
+          previousName: session.title,
+        });
+      }),
+    [PIN_SESSION_TOOL_NAME]: ({ sessionId }: PinSessionInput) =>
+      actions.take('done', async () => {
+        const askedId = askedSource('session', sessionId, player);
+        if (!askedId) return refused(NO_SESSION_PLAYING);
+        const session = sessionById(askedId);
+        if (!session) return refused(NO_SUCH_SESSION);
+        return done({ action: 'pinSession', session: item(session) });
+      }),
+    [RENAME_TRACK_TOOL_NAME]: ({ trackId, name }: RenameTrackInput) =>
+      actions.take('done', async () => {
+        const title = renameTrackRequestSchema.shape.title.safeParse(name);
+        if (!title.success) return refused(BAD_TRACK_NAME);
+        const askedId = trackId || player?.trackId;
+        if (!askedId) return refused(NO_TRACK_PLAYING);
+        const track = trackById(askedId);
+        if (!track) return refused(NO_SUCH_TRACK);
+        return done({
+          action: 'renameTrack',
+          track: { id: track.id, name: title.data },
+          previousName: track.title,
         });
       }),
     [NEW_MUSIC_OFF_TOOL_NAME]: () =>
@@ -447,7 +562,7 @@ function fixtureAnswers(role: UserRole, actions: TurnActions): Record<string, An
       }),
     [PROPOSE_MORE_LIKE_THIS_TOOL_NAME]: ({ trackIds }: ProposeMoreLikeThisInput) =>
       actions.take('proposed', async () => {
-        const asked = askedTracks(trackIds, PLAYER);
+        const asked = askedTracks(trackIds, player);
         const seeds = asked.flatMap((trackId) => trackById(trackId) ?? []);
         const card = assistantCardSchema.safeParse({
           kind: 'moreLikeThis',
@@ -473,6 +588,37 @@ function fixtureAnswers(role: UserRole, actions: TurnActions): Record<string, An
               'New music is switched on up to a length in minutes, or with no limit: one of the two. Ask the user which they want.',
             );
       }),
+    // The fixture user's new Sessions start with New music on, so no limit is always offered.
+    [PROPOSE_SURPRISE_TOOL_NAME]: (input: ProposeSurpriseInput) =>
+      actions.take('proposed', async () => {
+        const minutes = input.targetDurationMinutes;
+        if (minutes != null && !targetDurationMinutesSchema.safeParse(minutes).success) {
+          return notOffered(BAD_DURATION);
+        }
+        return proposed({
+          kind: 'surprise',
+          suggestion: surpriseSuggestion(input),
+          targetDurationMinutes: minutes ?? (input.noLimit ? null : SURPRISE_MINUTES),
+        });
+      }),
+    [PROPOSE_COVER_TOOL_NAME]: ({ in: kind, id: givenId, guidance }: ProposeCoverInput) =>
+      actions.take('proposed', async () => {
+        const words = guidance?.trim() || undefined;
+        if (words && words.length > MAX_COVER_GUIDANCE_LENGTH) {
+          return notOffered(`Art direction has at most ${MAX_COVER_GUIDANCE_LENGTH} characters.`);
+        }
+        const askedId = askedSource(kind, givenId, player);
+        if (!askedId) {
+          return notOffered(kind === 'session' ? NO_SESSION_PLAYING : NO_PLAYLIST_PLAYING);
+        }
+        const session = kind === 'session' ? sessionById(askedId) : undefined;
+        const playlist = kind === 'playlist' ? playlistById(askedId) : undefined;
+        const subject = session
+          ? { kind, ...item(session) }
+          : playlist && { kind, id: playlist.id, name: playlist.name };
+        if (!subject) return notOffered(kind === 'session' ? NO_SUCH_SESSION : NO_SUCH_PLAYLIST);
+        return proposed({ kind: 'cover', subject, ...(words ? { guidance: words } : {}) });
+      }),
   };
 }
 
@@ -484,9 +630,14 @@ function fixtureAnswers(role: UserRole, actions: TurnActions): Record<string, An
  * answer does not count against the turn's read budget, which the docs tool
  * keeps: the whole Library reads in under a thousand characters.
  */
-export function fixtureTools(role: UserRole, actions: TurnActions): LlmTool[] {
-  const answers = fixtureAnswers(role, actions);
-  const asker = { db: null as unknown as Database, userId: id(1), role, player: PLAYER };
+export function fixtureTools(
+  role: UserRole,
+  actions: TurnActions,
+  { nothingPlaying = false }: { nothingPlaying?: boolean } = {},
+): LlmTool[] {
+  const player = nothingPlaying ? null : PLAYING;
+  const answers = fixtureAnswers(role, actions, player);
+  const asker = { db: null as unknown as Database, userId: id(1), role, player };
   return createAssistantTools(asker, actions).map((tool) => {
     const answer = answers[tool.name];
     return answer ? { ...tool, execute: answer as LlmTool['execute'] } : tool;

@@ -12,9 +12,11 @@ import {
   LIST_TRACKS_TOOL_NAME,
   NOW_PLAYING_TOOL_NAME,
   PROPOSE_CHANGE_VIBE_TOOL_NAME,
+  PROPOSE_COVER_TOOL_NAME,
   PROPOSE_MORE_LIKE_THIS_TOOL_NAME,
   PROPOSE_NEW_MUSIC_ON_TOOL_NAME,
   PROPOSE_SESSION_TOOL_NAME,
+  PROPOSE_SURPRISE_TOOL_NAME,
   READ_DOCS_TOOL_NAME,
 } from '../tool-names';
 import { APP_ROUTES } from '../route-map';
@@ -175,6 +177,8 @@ const CARD_OF: Record<string, Extract<AssistantAction, { status: 'proposed' }>['
   [PROPOSE_CHANGE_VIBE_TOOL_NAME]: 'changeVibe',
   [PROPOSE_MORE_LIKE_THIS_TOOL_NAME]: 'moreLikeThis',
   [PROPOSE_NEW_MUSIC_ON_TOOL_NAME]: 'newMusicOn',
+  [PROPOSE_SURPRISE_TOOL_NAME]: 'surprise',
+  [PROPOSE_COVER_TOOL_NAME]: 'cover',
 };
 
 /** How a model leaves a field out: not at all, null, an empty string, an empty list, or false. */
@@ -263,9 +267,9 @@ const pattern = (source: string) => new RegExp(source, 'iu');
 
 // What the Assistant can do or is asked to do, in the form that says it happened.
 const DID = {
-  en: 'added|removed|deleted|started|created|renamed|pinned|unpinned|favorited|unfavorited|changed|raised|increased|switched|set(?! up)|saved|updated|stopped|resumed|cancell?ed',
-  de: 'hinzugefügt|entfernt|gelöscht|gestartet|erstellt|angelegt|umbenannt|angepinnt|angeheftet|geändert|erhöht|gesetzt|gestellt|eingestellt|eingeschaltet|ausgeschaltet|gespeichert|gestoppt|fortgesetzt',
-  fr: 'ajoutée?s?|supprimée?s?|retirée?s?|lancée?s?|créée?s?|renommée?s?|épinglée?s?|modifiée?s?|changée?s?|augmentée?s?|activée?s?|désactivée?s?|démarrée?s?|arrêtée?s?|enregistrée?s?',
+  en: 'added|removed|deleted|started|created|renamed|pinned|unpinned|favorited|unfavorited|changed|raised|increased|switched|set(?! up)|saved|updated|stopped|resumed|cancell?ed|generated|applied',
+  de: 'hinzugefügt|entfernt|gelöscht|gestartet|erstellt|angelegt|umbenannt|angepinnt|angeheftet|geändert|erhöht|gesetzt|gestellt|eingestellt|eingeschaltet|ausgeschaltet|gespeichert|gestoppt|fortgesetzt|generiert|angewendet|übernommen',
+  fr: 'ajoutée?s?|supprimée?s?|retirée?s?|lancée?s?|créée?s?|renommée?s?|épinglée?s?|modifiée?s?|changée?s?|augmentée?s?|activée?s?|désactivée?s?|démarrée?s?|arrêtée?s?|enregistrée?s?|générée?s?|appliquée?s?',
 };
 
 /** The word a sentence claims with, marked: what stands before it can still deny the claim. */

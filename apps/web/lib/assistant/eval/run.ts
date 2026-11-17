@@ -63,6 +63,7 @@ async function ask(llm: LlmProvider, entry: EvalEntry, timeoutMs: number): Promi
     const tools = fixtureTools(
       entry.role,
       createTurnActions((action) => actions.push(action)),
+      { nothingPlaying: entry.nothingPlaying },
     );
     for await (const chunk of streamAssistantAnswer(
       observed.llm,

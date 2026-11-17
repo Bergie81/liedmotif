@@ -21,7 +21,8 @@ import { PIN_SESSION_TOOL_NAME, RENAME_SESSION_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 import type { TurnActions } from './turn-actions';
 
-const BAD_NAME = `A Session name has 1 to ${MAX_SESSION_TITLE_LENGTH} characters.`;
+/** The rename's refusal for a name the Sessions page would not take. */
+export const BAD_SESSION_NAME = `A Session name has 1 to ${MAX_SESSION_TITLE_LENGTH} characters.`;
 
 /** The Session a call names, or the one the player has on when it names none: "this". */
 const askedSession = (given: string | null | undefined, player: AssistantPlayerState | null) =>
@@ -40,7 +41,7 @@ export function createRenameSessionTool(
     execute: (input) =>
       actions.take('done', async () => {
         const parsed = renameSessionRequestSchema.shape.title.safeParse(input.name);
-        if (!parsed.success) return refused(BAD_NAME);
+        if (!parsed.success) return refused(BAD_SESSION_NAME);
         const sessionId = askedSession(input.sessionId, player);
         if (!sessionId) return refused(NO_SESSION_PLAYING);
         const session = await ownSession(asker, sessionId);

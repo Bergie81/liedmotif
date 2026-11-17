@@ -172,6 +172,16 @@ describe('the eval report', () => {
     expect(markdown).not.toContain('- [ ] The answer agrees with the docs');
   });
 
+  it('says which questions were asked with nothing playing', async () => {
+    const [playing] = pick('favorite-this');
+    const llm = mockLlmProvider({ assistantScript: { toolCalls: [], reply: () => 'Which one?' } });
+    const results = await runEval(llm, [playing!, { ...playing!, nothingPlaying: true }]);
+
+    const markdown = report(results);
+
+    expect(markdown.match(/- \*\*Player:\*\* nothing playing/g)).toHaveLength(1);
+  });
+
   it('counts the checks on what a turn did', async () => {
     // "Done." with no call made: right to do nothing for the removal, a false
     // claim in both, and the favorite never happened.

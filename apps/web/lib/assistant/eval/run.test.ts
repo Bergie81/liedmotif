@@ -161,6 +161,26 @@ describe('an eval run', () => {
     ]);
   });
 
+  it('asks a question with nothing playing against a player that has nothing on', async () => {
+    const llm = mockLlmProvider({
+      assistantScript: {
+        toolCalls: [
+          { name: 'nowPlaying', input: {} },
+          { name: 'renameTrack', input: { name: 'Harbor Lights' } },
+        ],
+        reply: () => 'Which Track do you mean?',
+      },
+    });
+
+    const [result] = await runEval(llm, [{ ...entry('favorite-this'), nothingPlaying: true }]);
+
+    expect(result?.turn.actions).toEqual([]);
+    expect(result?.turn.toolCalls.map(({ result: told }) => told)).toEqual([
+      expect.stringMatching(/^Nothing is playing in this browser\./),
+      expect.stringMatching(/^No Track is playing/),
+    ]);
+  });
+
   it('gives every question a turn of its own: its actions and its caps start over', async () => {
     const llm = mockLlmProvider({
       assistantScript: {

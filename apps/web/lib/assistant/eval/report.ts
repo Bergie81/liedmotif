@@ -115,6 +115,7 @@ function answerSection(result: EvalResult, index: number): string {
       : []),
     [
       `- **Question** (${ROLE_NAME[entry.role]}, ${entry.language}): ${entry.question}`,
+      ...(entry.nothingPlaying ? ['- **Player:** nothing playing'] : []),
       entry.calls === undefined
         ? `- **Expected section:** ${expectedSection(entry)}`
         : `- **Expected calls:** ${expectedCalls(entry.calls)}`,

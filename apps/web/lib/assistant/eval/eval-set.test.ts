@@ -115,9 +115,9 @@ describe('the eval set', () => {
   });
 
   describe("the entries about the user's own music", () => {
-    it('are about 25, at least 3 in German and 1 in French', () => {
-      expect(ABOUT_MUSIC.length).toBeGreaterThanOrEqual(20);
-      expect(ABOUT_MUSIC.length).toBeLessThanOrEqual(30);
+    it('are about 35, at least 3 in German and 1 in French', () => {
+      expect(ABOUT_MUSIC.length).toBeGreaterThanOrEqual(30);
+      expect(ABOUT_MUSIC.length).toBeLessThanOrEqual(40);
       expect(ABOUT_MUSIC.filter(({ language }) => language === 'de').length).toBeGreaterThanOrEqual(
         3,
       );
@@ -171,6 +171,30 @@ describe('the eval set', () => {
     it('have a request that says "this" about the Track that is playing', () => {
       // Left out, the Track is the one on the deck.
       expect(forms('favoriteTrack')).toContainEqual({ trackId: undefined });
+    });
+
+    it('rename and pin the Session that is on and rename the Track on the deck for "this"', () => {
+      expect(forms('renameSession')).toContainEqual(
+        expect.objectContaining({ sessionId: undefined }),
+      );
+      expect(forms('pinSession')).toContainEqual({ sessionId: undefined });
+      expect(forms('renameTrack')).toContainEqual(expect.objectContaining({ trackId: undefined }));
+    });
+
+    it('prepare a new cover for a Session and for a Playlist, and Surprise Me as asked', () => {
+      expect(new Set(forms('proposeCover').map((form) => form.in))).toEqual(
+        new Set(['session', 'playlist']),
+      );
+      expect(forms('proposeSurprise')).toContainEqual(
+        expect.objectContaining({ adventurous: true, theme: 'morning' }),
+      );
+    });
+
+    it('have a request about "this" with nothing playing, which ends in no call', () => {
+      expect(
+        ABOUT_MUSIC.filter(({ nothingPlaying, calls }) => nothingPlaying && calls?.length === 0)
+          .length,
+      ).toBeGreaterThanOrEqual(1);
     });
 
     it('have a request to remove something, which ends in a link and no call', () => {

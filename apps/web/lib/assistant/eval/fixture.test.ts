@@ -9,11 +9,12 @@ import { createTurnActions } from '../turn-actions';
 import { fixtureTools, PLAYLISTS, SESSIONS, TRACKS } from './fixture';
 
 /** One fixture turn: its tools by name, and the actions it reported. */
-function openTurn(role: 'admin' | 'member' = 'member') {
+function openTurn(role: 'admin' | 'member' = 'member', options?: { nothingPlaying?: boolean }) {
   const reported: AssistantAction[] = [];
   const tools = fixtureTools(
     role,
     createTurnActions((action) => reported.push(action)),
+    options,
   );
   const call = (name: string, input: unknown = {}) => {
     const tool = tools.find((candidate) => candidate.name === name);
@@ -35,6 +36,9 @@ const VALID_CALLS: Record<string, unknown> = {
   createPlaylist: { name: 'Gym' },
   renamePlaylist: { playlistId: PLAYLISTS.running.id, name: 'Tempo' },
   pinPlaylist: { playlistId: PLAYLISTS.running.id },
+  renameSession: { name: 'Sunday Coffee' },
+  pinSession: {},
+  renameTrack: { name: 'Harbor Lights' },
   newMusicOff: {},
   changeSetting: { setting: 'blend', value: 'off' },
   play: { kind: 'playlist', id: PLAYLISTS.running.id },
@@ -44,6 +48,8 @@ const VALID_CALLS: Record<string, unknown> = {
   proposeChangeVibe: { prompt: 'slower' },
   proposeMoreLikeThis: {},
   proposeNewMusicOn: { noLimit: true },
+  proposeSurprise: { adventurous: true, theme: 'morning' },
+  proposeCover: { in: 'session', guidance: 'darker' },
 };
 
 describe('the tools of a fixture turn', () => {
@@ -86,6 +92,13 @@ describe('the read tools of a fixture turn', () => {
   it("tell a Member their own budget and the Admin the instance's", async () => {
     expect(await openTurn('member').call('budget')).toMatch(/^Your budget: \d+ of \d+ Tracks left/);
     expect(await openTurn('admin').call('budget')).toMatch(/^Instance limit: \d+ of \d+ Tracks/);
+  });
+
+  it('tell the budget in covers too, as the real tool does', async () => {
+    expect(await openTurn('member').call('budget')).toMatch(
+      /^Your budget: .* \d+ of \d+ covers left today/,
+    );
+    expect(await openTurn('admin').call('budget')).toMatch(/\d+ of \d+ covers left today/);
   });
 
   it('find a Playlist by a word of its name, with the id the other tools take', async () => {
@@ -280,6 +293,104 @@ describe('the tools of a fixture turn that act', () => {
         card: { kind: 'newMusicOn', session: active, targetDurationMinutes: null },
       },
     ]);
+  });
+
+  it('rename and pin the Session that is on for "this", and rename the Track on the deck', async () => {
+    const { call, reported } = openTurn();
+
+    expect(await call('renameSession', { name: ' Sunday Coffee ' })).toMatch(/^Done: /);
+    await call('pinSession', {});
+    await call('renameTrack', { name: 'Harbor Lights' });
+
+    expect(reported).toEqual([
+      {
+        status: 'done',
+        receipt: {
+          action: 'renameSession',
+          session: { id: SESSIONS.nightDrive.id, name: 'Sunday Coffee' },
+          previousName: 'Night Drive',
+        },
+      },
+      {
+        status: 'done',
+        receipt: {
+          action: 'pinSession',
+          session: { id: SESSIONS.nightDrive.id, name: 'Night Drive' },
+        },
+      },
+      {
+        status: 'done',
+        receipt: {
+          action: 'renameTrack',
+          track: { id: TRACKS.neonRain.id, name: 'Harbor Lights' },
+          previousName: 'Neon Rain',
+        },
+      },
+    ]);
+  });
+
+  it('prepare a card for a new cover and for a Surprise Me suggestion, and generate nothing', async () => {
+    const cover = openTurn();
+    const told = await cover.call('proposeCover', { in: 'session', guidance: ' darker ' });
+    const playlistCover = openTurn();
+    await playlistCover.call('proposeCover', { in: 'playlist', id: PLAYLISTS.running.id });
+
+    expect(told).toMatch(
+      /^Prepared: a card to generate one new cover for the Session "Night Drive"/,
+    );
+    expect(cover.reported).toEqual([
+      {
+        status: 'proposed',
+        card: {
+          kind: 'cover',
+          subject: { kind: 'session', id: SESSIONS.nightDrive.id, name: 'Night Drive' },
+          guidance: 'darker',
+        },
+      },
+    ]);
+    expect(playlistCover.reported).toEqual([
+      {
+        status: 'proposed',
+        card: {
+          kind: 'cover',
+          subject: { kind: 'playlist', id: PLAYLISTS.running.id, name: 'Running' },
+        },
+      },
+    ]);
+
+    const surprise = openTurn();
+    expect(
+      await surprise.call('proposeSurprise', { adventurous: true, targetDurationMinutes: 30 }),
+    ).toMatch(/^Prepared: a card to start the Surprise Me suggestion "/);
+    expect(surprise.reported).toMatchObject([
+      {
+        status: 'proposed',
+        card: {
+          kind: 'surprise',
+          suggestion: { adventurous: true, vocalMode: 'instrumental' },
+          targetDurationMinutes: 30,
+        },
+      },
+    ]);
+  });
+
+  it('turn down a cover for a Playlist that is not playing when the call names none', async () => {
+    const { call, reported } = openTurn();
+
+    expect(await call('proposeCover', { in: 'playlist' })).toMatch(/No Playlist is playing/);
+    expect(reported).toEqual([]);
+  });
+
+  it('refuse "this" when nothing is playing, and say so when asked what is', async () => {
+    const { call, reported } = openTurn('member', { nothingPlaying: true });
+
+    expect(await call('nowPlaying')).toMatch(/^Nothing is playing in this browser\./);
+    expect(await call('renameTrack', { name: 'Harbor Lights' })).toMatch(/No Track is playing/);
+    expect(await call('renameSession', { name: 'Sunday Coffee' })).toMatch(/No Session is playing/);
+    expect(await call('proposeCover', { in: 'session' })).toMatch(/No Session is playing/);
+    expect(await call('favoriteTrack')).toMatch(/No Track is playing/);
+    expect(await call('playerControl', { command: 'pause' })).not.toMatch(/^Done/);
+    expect(reported).toEqual([]);
   });
 
   it('hold a turn to the caps of a real one', async () => {

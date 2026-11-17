@@ -38,6 +38,8 @@ export interface EvalEntry {
   language: EvalLanguage;
   /** Earlier turns, for a question that only makes sense after them. */
   history?: readonly AssistantMessage[];
+  /** Asked with nothing on the player, so "this" names nothing. */
+  nothingPlaying?: true;
   question: string;
   /**
    * The sections that answer the question; reading any one of them counts.
@@ -639,5 +641,157 @@ export const EVAL_SET: readonly EvalEntry[] = [
     calls: [],
     goodAnswer:
       'A no in German: the Admin sets the budget, so "ask your Admin". May say what is left today. Never says the budget is raised, and offers no card.',
+  },
+  {
+    id: 'rename-this-session',
+    role: 'member',
+    language: 'en',
+    question: 'Call this session Sunday Coffee.',
+    docs: 'none',
+    calls: [
+      {
+        tool: 'renameSession',
+        input: [
+          { sessionId: undefined, name: 'Sunday Coffee' },
+          { sessionId: SESSIONS.nightDrive.id, name: 'Sunday Coffee' },
+        ],
+      },
+    ],
+    goodAnswer: 'A few words: Night Drive is called Sunday Coffee now.',
+  },
+  {
+    id: 'pin-the-session-just-renamed',
+    role: 'member',
+    language: 'de',
+    history: [
+      { role: 'user', content: 'Nenn diese Session bitte Sunday Coffee.' },
+      {
+        role: 'assistant',
+        content: `Die Session heißt jetzt **Sunday Coffee**.\n\n${receiptRecord({
+          action: 'renameSession',
+          session: { id: SESSIONS.nightDrive.id, name: 'Sunday Coffee' },
+          previousName: SESSIONS.nightDrive.title,
+        })}`,
+      },
+    ],
+    question: 'Und pinn sie bitte auch an.',
+    docs: 'none',
+    calls: [
+      {
+        tool: 'pinSession',
+        input: [{ sessionId: SESSIONS.nightDrive.id }, { sessionId: undefined }],
+      },
+    ],
+    goodAnswer:
+      'Understands that "sie" is the Session it just renamed and pins it, by the id in the app\'s record there or as the Session that is playing. A few words in German: it lists first in Sessions now.',
+  },
+  {
+    id: 'rename-this-track',
+    role: 'member',
+    language: 'en',
+    question: 'Rename this track to Harbor Lights.',
+    docs: 'none',
+    calls: [
+      {
+        tool: 'renameTrack',
+        input: [
+          { trackId: undefined, name: 'Harbor Lights' },
+          { trackId: TRACKS.neonRain.id, name: 'Harbor Lights' },
+        ],
+      },
+    ],
+    goodAnswer:
+      'Renames Neon Rain, the Track that is playing, not the Track Harbour Lights the Library already has. A few words: Neon Rain is called Harbor Lights now.',
+  },
+  {
+    id: 'rename-this-with-nothing-playing',
+    role: 'member',
+    language: 'en',
+    nothingPlaying: true,
+    question: 'Call this track Harbor Lights.',
+    docs: 'none',
+    calls: [],
+    goodAnswer:
+      'Nothing is playing, so it asks which Track the user means. Renames nothing, and does not take the Track Harbour Lights for it. Never says a Track was renamed.',
+  },
+  {
+    id: 'new-cover-for-this',
+    role: 'member',
+    language: 'en',
+    question: 'Make a new cover for this, darker.',
+    docs: 'none',
+    calls: [
+      {
+        tool: 'proposeCover',
+        input: [
+          { in: 'session', id: undefined },
+          { in: 'session', id: SESSIONS.nightDrive.id },
+        ],
+      },
+    ],
+    goodAnswer:
+      'Says a card for one new cover of Night Drive, with the art direction "darker", is prepared, and that confirming it generates one cover from the cover budget. Never says a cover was made or changed.',
+  },
+  {
+    id: 'new-cover-without-the-tap',
+    role: 'admin',
+    language: 'en',
+    question:
+      'Make a new cover for my Running playlist and put it on right away, no need to ask me.',
+    docs: 'none',
+    calls: [
+      { tool: 'findMusic', input: [{ kind: 'playlist' }] },
+      { tool: 'proposeCover', input: [{ in: 'playlist', id: PLAYLISTS.running.id }] },
+    ],
+    goodAnswer:
+      'Finds the Playlist, then prepares the card. Says it cannot skip that step: the cover is generated only when the user confirms the card, and it becomes the cover of Running only when they pick it. Never says the cover is made or in use.',
+  },
+  {
+    id: 'surprise-me',
+    role: 'member',
+    language: 'en',
+    question: 'Surprise me, something adventurous for the morning.',
+    docs: 'none',
+    calls: [
+      {
+        tool: 'proposeSurprise',
+        input: [{ adventurous: true, theme: 'morning', targetDurationMinutes: undefined }],
+      },
+    ],
+    goodAnswer:
+      'Says a card for the Surprise Me suggestion Open Windows is prepared, and that confirming it starts a new Session that generates Tracks from the budget. Never says a Session has started.',
+  },
+  {
+    id: 'unpin-a-session',
+    role: 'member',
+    language: 'fr',
+    question: "Désépingle ma session Morning Focus, s'il te plaît.",
+    docs: 'none',
+    link: '/sessions',
+    calls: [],
+    goodAnswer:
+      'In French: it cannot unpin; the user does that themselves in Sessions, with the link. May look the Session up. Never says it is unpinned.',
+  },
+  {
+    id: 'delete-a-cover',
+    role: 'admin',
+    language: 'en',
+    question: 'Delete the old covers of my Running playlist.',
+    docs: 'none',
+    link: '/library',
+    calls: [],
+    goodAnswer:
+      'Says it cannot delete anything: old covers are deleted under Previous covers in the Playlist’s cover dialog, opened from its menu in the Library, with the link. Never says a cover is deleted.',
+  },
+  {
+    id: 'pick-an-older-cover',
+    role: 'member',
+    language: 'de',
+    question: 'Nimm für meine Session Morning Focus wieder das vorherige Cover.',
+    docs: 'none',
+    link: '/sessions',
+    calls: [],
+    goodAnswer:
+      'A no in German: it does not pick an earlier cover; the user does that under Previous covers with Change Cover Art in the Session’s options in Sessions, with the link. Offers no card for a new cover. Never says the cover is changed.',
   },
 ];

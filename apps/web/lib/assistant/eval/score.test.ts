@@ -193,6 +193,7 @@ describe('scoring an answer', () => {
 });
 
 const NEON_RAIN = { id: '00000000-0000-4000-8000-000000000201', name: 'Neon Rain' };
+const NIGHT_DRIVE = { id: '00000000-0000-4000-8000-000000000101', name: 'Night Drive' };
 const RUNNING = { id: '00000000-0000-4000-8000-000000000302', name: 'Running' };
 
 const receipt: AssistantAction = {
@@ -386,6 +387,59 @@ describe('scoring what a turn did', () => {
     });
   });
 
+  describe('where a card for a new cover or a Surprise Me suggestion is expected', () => {
+    const coverCard: AssistantAction = {
+      status: 'proposed',
+      card: { kind: 'cover', subject: { kind: 'session', ...NIGHT_DRIVE }, guidance: 'darker' },
+    };
+    const surpriseCard: AssistantAction = {
+      status: 'proposed',
+      card: {
+        kind: 'surprise',
+        suggestion: {
+          id: '00000000-0000-4000-8000-000000000401',
+          adventurous: true,
+          title: 'Open Windows',
+          mood: 'bright',
+          genres: ['downtempo'],
+          energy: 'medium',
+          vocalMode: 'instrumental',
+          voiceGender: null,
+          language: null,
+        },
+        targetDurationMinutes: 45,
+      },
+    };
+    const newCover = request([{ tool: 'proposeCover' }], {
+      question: 'Make a new cover for this, darker.',
+    });
+    const surprise = request([{ tool: 'proposeSurprise' }], { question: 'Surprise me.' });
+
+    it('wants the card, and an answer that says it is prepared', () => {
+      const prepared = 'I have prepared a card for a darker cover. Confirm it to generate it.';
+
+      expect(
+        scoreAnswer(newCover, turn({ answer: prepared, actions: [coverCard] }), MEMBER),
+      ).toMatchObject({ card: 'pass', noFalseClaim: 'pass' });
+      expect(scoreAnswer(surprise, turn({ actions: [surpriseCard] }), MEMBER).card).toBe('pass');
+      expect(scoreAnswer(newCover, turn({ actions: [surpriseCard] }), MEMBER).card).toBe('fail');
+      expect(scoreAnswer(surprise, turn({ actions: [coverCard] }), MEMBER).card).toBe('fail');
+    });
+
+    it('fails the claim of a turn that says the cover is made or in use', () => {
+      for (const answer of [
+        'I generated a darker cover for Night Drive.',
+        'The new cover has been applied.',
+        'Das neue Cover wurde generiert.',
+      ]) {
+        expect(
+          scoreAnswer(newCover, turn({ answer, actions: [coverCard] }), MEMBER).noFalseClaim,
+          answer,
+        ).toBe('fail');
+      }
+    });
+  });
+
   it('does not judge a claim in an answer about the docs', () => {
     expect(scoreAnswer(INVITE, turn({ answer: 'I have added her.' }), ADMIN).noFalseClaim).toBe(
       'n/a',
@@ -460,6 +514,7 @@ describe('a claim that something was done', () => {
     "I've created a card for a calm Session.",
     'Ich habe eine Karte für eine ruhige Session erstellt.',
     'Prepared: the card to keep this Session generating new music with no limit is waiting for you.',
+    'Nothing is generated until you confirm, and the cover is only applied when you pick it.',
   ])('is not seen in: %s', (answer) => {
     expect(claimsDone(answer)).toBe(false);
   });

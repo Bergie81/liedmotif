@@ -16,7 +16,8 @@ import { RENAME_TRACK_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 import type { TurnActions } from './turn-actions';
 
-const BAD_NAME = `A Track title has 1 to ${MAX_TRACK_TITLE_LENGTH} characters.`;
+/** The rename's refusal for a title the Track menus would not take. */
+export const BAD_TRACK_NAME = `A Track title has 1 to ${MAX_TRACK_TITLE_LENGTH} characters.`;
 
 export function createRenameTrackTool(
   asker: AssistantAsker,
@@ -31,7 +32,7 @@ export function createRenameTrackTool(
     execute: (input) =>
       actions.take('done', async () => {
         const parsed = renameTrackRequestSchema.shape.title.safeParse(input.name);
-        if (!parsed.success) return refused(BAD_NAME);
+        if (!parsed.success) return refused(BAD_TRACK_NAME);
         const trackId = input.trackId || player?.trackId;
         if (!trackId) return refused(NO_TRACK_PLAYING);
         const track = await ownTrack(asker, trackId);
