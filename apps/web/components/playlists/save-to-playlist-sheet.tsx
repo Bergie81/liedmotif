@@ -32,6 +32,11 @@ import { CoverThumb } from '@/components/player/cover-art';
 
 const SAVE_FAILED_KEY = 'save-to-playlist';
 
+/** One Playlist by name; several by count, since names run to 60 characters. */
+function playlistsPhrase(names: string[]): string {
+  return names.length === 1 ? names[0]! : `${names.length} playlists`;
+}
+
 export interface SavePickerTrack {
   id: string;
   title: string | null;
@@ -136,9 +141,24 @@ function PickerContent({
       return;
     }
     toast.dismiss(SAVE_FAILED_KEY);
+    const confirmation = savedMessage();
+    if (confirmation) toast.success(confirmation);
     router.refresh();
     onApplied(result.data);
     onClose();
+  }
+
+  /** What the commit changed, in one line: where the Track went if it went
+   *  anywhere new, else what it left; null when it changed nothing. */
+  function savedMessage(): string | null {
+    if (!willBeSaved) return 'Removed from Library';
+    const curated = (playlists ?? []).filter(isCuratedPlaylist);
+    const added = curated.filter((p) => checked.has(p.id) && !p.containsTrack).map((p) => p.name);
+    if (trimmedNewName) added.push(trimmedNewName);
+    if (added.length > 0) return `Saved to ${playlistsPhrase(added)}`;
+    const removed = curated.filter((p) => p.containsTrack && !checked.has(p.id)).map((p) => p.name);
+    if (removed.length > 0) return `Removed from ${playlistsPhrase(removed)}`;
+    return null;
   }
 
   return (

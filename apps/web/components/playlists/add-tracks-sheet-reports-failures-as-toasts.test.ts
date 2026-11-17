@@ -53,6 +53,7 @@ function openSheet() {
     h(AddTracksSheet, {
       open: true,
       playlistId: 'beach-id',
+      playlistName: 'Beach',
       existingTrackIds: [],
       onClose,
       onAdded,
@@ -89,7 +90,9 @@ describe('add tracks sheet', () => {
     await click(screen.getByTestId('add-tracks-commit'));
     await click(screen.getByTestId('add-tracks-commit'));
 
-    expect(shownToasts()).toEqual([]);
+    expect(shownToasts()).toEqual([
+      expect.objectContaining({ tone: 'success', message: 'Added 1 track to Beach' }),
+    ]);
     expect(onClose).toHaveBeenCalled();
   });
 

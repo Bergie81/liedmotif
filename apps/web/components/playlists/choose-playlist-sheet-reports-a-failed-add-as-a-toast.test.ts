@@ -67,7 +67,9 @@ describe('choose playlist sheet', () => {
     await choose();
     await choose();
 
-    expect(shownToasts()).toEqual([]);
+    expect(shownToasts()).toEqual([
+      expect.objectContaining({ tone: 'success', message: 'Added 3 tracks to Beach' }),
+    ]);
     expect(onClose).toHaveBeenCalled();
   });
 

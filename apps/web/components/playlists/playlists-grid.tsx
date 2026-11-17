@@ -342,6 +342,7 @@ export function PlaylistsGrid({
         <AddTracksSheet
           open
           playlistId={action.playlist.id}
+          playlistName={action.playlist.name}
           existingTrackIds={action.memberIds}
           onClose={() => setAction(null)}
           onAdded={() => void load()}

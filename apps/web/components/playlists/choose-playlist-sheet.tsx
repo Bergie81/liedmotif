@@ -67,16 +67,23 @@ function ChooseContent({
     };
   }, []);
 
-  async function choose(playlistId: string) {
+  async function choose(playlist: PlaylistSummaryItem) {
     if (busy) return;
     setBusy(true);
-    const failure = await onChoose(playlistId);
+    const failure = await onChoose(playlist.id);
     setBusy(false);
     if (failure) {
       toast.error(failure, { key: ADD_FAILED_KEY });
       return;
     }
+    landed(playlist.name);
+  }
+
+  function landed(playlistName: string) {
     toast.dismiss(ADD_FAILED_KEY);
+    toast.success(
+      `Added ${trackCount} ${trackCount === 1 ? 'track' : 'tracks'} to ${playlistName}`,
+    );
     onClose();
   }
 
@@ -93,7 +100,7 @@ function ChooseContent({
       created.current = { name, playlistId };
     }
     const failure = await onChoose(playlistId);
-    if (!failure) onClose();
+    if (!failure) landed(name);
     return failure;
   }
 
@@ -115,7 +122,7 @@ function ChooseContent({
               key={playlist.id}
               type="button"
               disabled={busy}
-              onClick={() => void choose(playlist.id)}
+              onClick={() => void choose(playlist)}
               className={cn(menuRowClass, 'w-full')}
             >
               {playlist.kind === 'favorites' ? (

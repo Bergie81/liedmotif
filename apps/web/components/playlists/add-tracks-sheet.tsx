@@ -31,12 +31,15 @@ const LOAD_MORE_KEY = 'add-tracks-load-more';
 export function AddTracksSheet({
   open,
   playlistId,
+  playlistName,
   existingTrackIds,
   onClose,
   onAdded,
 }: {
   open: boolean;
   playlistId: string;
+  /** Names the Playlist in the toast that confirms the add. */
+  playlistName: string;
   existingTrackIds: string[];
   onClose: () => void;
   /** The commit landed — the caller reloads its membership. */
@@ -47,6 +50,7 @@ export function AddTracksSheet({
       {open ? (
         <AddTracksContent
           playlistId={playlistId}
+          playlistName={playlistName}
           existingTrackIds={existingTrackIds}
           onClose={onClose}
           onAdded={onAdded}
@@ -58,11 +62,13 @@ export function AddTracksSheet({
 
 function AddTracksContent({
   playlistId,
+  playlistName,
   existingTrackIds,
   onClose,
   onAdded,
 }: {
   playlistId: string;
+  playlistName: string;
   existingTrackIds: string[];
   onClose: () => void;
   onAdded: () => void;
@@ -128,6 +134,9 @@ function AddTracksContent({
     }
     setBusy(false);
     toast.dismiss(ADD_FAILED_KEY);
+    toast.success(
+      `Added ${trackIds.length} ${trackIds.length === 1 ? 'track' : 'tracks'} to ${playlistName}`,
+    );
     router.refresh();
     onAdded();
     onClose();

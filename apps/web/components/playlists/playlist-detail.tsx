@@ -406,6 +406,7 @@ export function PlaylistDetail({
       <AddTracksSheet
         open={overlay?.kind === 'add-tracks'}
         playlistId={playlistId}
+        playlistName={playlist.name}
         existingTrackIds={items.map((item) => item.id)}
         onClose={() => setOverlay(null)}
         onAdded={() => void members.load()}

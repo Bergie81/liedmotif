@@ -114,7 +114,9 @@ describe('save picker — a refused save', () => {
     await pickFocusAndSave();
     await act(async () => fireEvent.click(screen.getByTestId('picker-commit')));
 
-    expect(shownToasts()).toEqual([]);
+    expect(shownToasts()).toEqual([
+      expect.objectContaining({ tone: 'success', message: 'Saved to Focus' }),
+    ]);
     expect(onClose).toHaveBeenCalled();
   });
 
