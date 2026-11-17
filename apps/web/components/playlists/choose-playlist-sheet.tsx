@@ -11,10 +11,13 @@ import { MAX_PLAYLIST_NAME_LENGTH, type PlaylistSummaryItem } from '@liedmotif/s
 import { Armchair, ListMusic, Plus, Star } from 'lucide-react';
 import { createPlaylist, getAllPlaylists } from '@/lib/api-client';
 import { cn } from '@/lib/cn';
+import { toast } from '@/lib/toast';
 import { RenameDialog } from '@/components/rename-dialog';
 import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { AlertBanner, menuRowClass } from '@/components/ui/design-system';
 import { LoadingRow } from '@/components/ui/loading';
+
+const ADD_FAILED_KEY = 'choose-playlist-add';
 
 export function ChoosePlaylistSheet({
   open,
@@ -50,13 +53,13 @@ function ChooseContent({
   const [playlists, setPlaylists] = useState<PlaylistSummaryItem[] | null>(null);
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     void getAllPlaylists().then((result) => {
       if (cancelled) return;
-      if (!result.ok) setError(`Couldn’t load your playlists: ${result.error.message}`);
+      if (!result.ok) setLoadError(`Couldn’t load your playlists: ${result.error.message}`);
       else setPlaylists(result.data.playlists);
     });
     return () => {
@@ -67,11 +70,14 @@ function ChooseContent({
   async function choose(playlistId: string) {
     if (busy) return;
     setBusy(true);
-    setError(null);
     const failure = await onChoose(playlistId);
     setBusy(false);
-    if (failure) setError(failure);
-    else onClose();
+    if (failure) {
+      toast.error(failure, { key: ADD_FAILED_KEY });
+      return;
+    }
+    toast.dismiss(ADD_FAILED_KEY);
+    onClose();
   }
 
   // A create that succeeded before its add failed: retrying the same name adds
@@ -98,8 +104,8 @@ function ChooseContent({
         closeDisabled={busy}
         description={`${trackCount} ${trackCount === 1 ? 'track' : 'tracks'} — adding keeps them in your Library.`}
       />
-      {error ? <AlertBanner className="mt-4">{error}</AlertBanner> : null}
-      {playlists === null && !error ? (
+      {loadError ? <AlertBanner className="mt-4">{loadError}</AlertBanner> : null}
+      {playlists === null && !loadError ? (
         <LoadingRow className="mt-6 py-6" label="Loading Playlists…" />
       ) : null}
       {playlists ? (

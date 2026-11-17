@@ -12,7 +12,6 @@
 import { useState } from 'react';
 import Cropper, { type Area } from 'react-easy-crop';
 import { RotateCw } from 'lucide-react';
-import { AlertBanner } from '@/components/ui/design-system';
 import { Dialog, DialogCloseButton, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { primaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
 import { Slider } from '@/components/ui/slider';
@@ -29,7 +28,6 @@ export function ImageCropDialog({
   heading,
   confirmLabel = 'Use photo',
   busy,
-  error,
   onConfirm,
   onCancel,
 }: {
@@ -40,7 +38,6 @@ export function ImageCropDialog({
   confirmLabel?: string;
   /** The caller's upload is running; the dialog stays open until it settles. */
   busy: boolean;
-  error: string | null;
   onConfirm: (crop: PixelRect, rotation: Rotation) => void;
   onCancel: () => void;
 }) {
@@ -128,8 +125,6 @@ export function ImageCropDialog({
           Drag to move, pinch or zoom to fill the frame. Only this crop is uploaded — the original
           is not kept, so re-cropping later means uploading again.
         </p>
-
-        {error ? <AlertBanner className="mt-4">{error}</AlertBanner> : null}
 
         <div className="mt-4 flex items-stretch gap-2">
           <button

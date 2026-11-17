@@ -5,7 +5,6 @@ import type { TrackSummary } from '@liedmotif/shared';
 import { Bookmark, Disc3, Download, Play, Plus, Star } from 'lucide-react';
 import { MenuMoreLikeThisGlyph } from '@/components/ui/glyphs';
 import { coverArtSrc } from '@/components/player/player-presentation';
-import { AlertBanner } from '@/components/ui/design-system';
 import { SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { MenuRow } from '@/components/ui/menu-row';
 import { startFileDownload, trackDownloadUrl } from '@/lib/downloads';
@@ -15,7 +14,6 @@ import type { LibraryActionName } from './use-library-actions';
 
 export function TrackOptionsSheet({
   track,
-  error,
   busyAction,
   onUnsave,
   onOpenSavePicker,
@@ -25,7 +23,6 @@ export function TrackOptionsSheet({
   onDelete,
 }: {
   track: TrackSummary & { originSessionTitle: string | null };
-  error: string | null;
   busyAction: LibraryActionName | null;
   /** Remove from the Library (every playlist) — the saved-track row. */
   onUnsave: () => void;
@@ -64,7 +61,6 @@ export function TrackOptionsSheet({
           </div>
         }
       />
-      {error ? <AlertBanner className="mt-4">{error}</AlertBanner> : null}
       <div className="mt-4">
         <MenuRow
           icon={<Play className="fill-current" />}

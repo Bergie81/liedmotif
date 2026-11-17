@@ -233,7 +233,6 @@ export function PlaylistNowPlaying({
     <PlaylistOptions
       playlist={playlist}
       visitor={foreign}
-      actionError={surfaceError}
       coverImageId={coverId}
       track={optionsTrackOf(track)}
       lyricsAvailable={lyricsAvailable}

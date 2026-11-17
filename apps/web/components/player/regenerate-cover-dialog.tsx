@@ -41,6 +41,7 @@ import {
 } from '@/lib/api-client';
 import { useImageCropPicker } from '@/components/media/use-image-crop-picker';
 import { cn } from '@/lib/cn';
+import { toast } from '@/lib/toast';
 import { COVER_STYLE_LABELS } from '@/lib/cover-styles';
 import { COVER_UPLOAD } from '@/lib/image-upload-targets';
 import { coverSetupMessage } from '@/lib/cover-setup-copy';
@@ -54,6 +55,14 @@ import { CoverChip } from './cover-chip';
 import { coverUsageLine } from './cover-usage-line';
 
 const STATUS_POLL_MS = 3000;
+
+/** Every cover action in the dialog, the upload included, shares one failure. */
+const COVER_FAILED_KEY = 'session-cover';
+
+function reportCoverFailure(message: string | null) {
+  if (message) toast.error(message, { key: COVER_FAILED_KEY });
+  else toast.dismiss(COVER_FAILED_KEY);
+}
 
 /**
  * The plain-language reason rerolling is disabled, or null when it may run.
@@ -115,7 +124,6 @@ export function RegenerateCoverDialog({
   const [dismissed, setDismissed] = useState(false);
   /** A tapped history entry, previewed as the candidate until saved. */
   const [selectedCoverId, setSelectedCoverId] = useState<string | null>(null);
-  const [submitError, setSubmitError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [historyBusyId, setHistoryBusyId] = useState<string | null>(null);
   /** null = untouched — the select then mirrors the session's stored style. */
@@ -141,7 +149,6 @@ export function RegenerateCoverDialog({
     setRequestedId(null);
     setDismissed(false);
     setSelectedCoverId(null);
-    setSubmitError(null);
     setStyleChoice(null);
     setGuidance('');
     setEnhanceChoice(null);
@@ -164,9 +171,8 @@ export function RegenerateCoverDialog({
     target: COVER_UPLOAD,
     heading: 'Session cover',
     confirmLabel: 'Use this cover',
-    onError: setSubmitError,
+    onError: reportCoverFailure,
     onUpload: async (file) => {
-      setSubmitError(null);
       const result = await uploadSessionCover(sessionId, file);
       if (!result.ok) return result.error.message;
       await refresh();
@@ -201,7 +207,6 @@ export function RegenerateCoverDialog({
       : null;
   const candidateCoverId = pickedCoverId ?? pendingCoverId;
   const shownCoverId = candidateCoverId ?? currentCoverId;
-  const errorMessage = submitError ?? attemptFailure ?? null;
   const usage = status?.usage ?? null;
   const usageLine = usage ? coverUsageLine(usage) : null;
   const historyFull = history.length >= MAX_SESSION_COVER_HISTORY;
@@ -211,7 +216,6 @@ export function RegenerateCoverDialog({
 
   async function start() {
     setBusy(true);
-    setSubmitError(null);
     setDismissed(false);
     setSelectedCoverId(null);
     const result = await regenerateSessionCover(sessionId, {
@@ -221,10 +225,8 @@ export function RegenerateCoverDialog({
       ...(enhanceChoice === null ? {} : { enhance: enhanceChoice }),
     });
     setBusy(false);
-    if (!result.ok) {
-      setSubmitError(result.error.message);
-      return;
-    }
+    reportCoverFailure(result.ok ? null : result.error.message);
+    if (!result.ok) return;
     setRequestedId(result.data.coverGenerationId);
     void refresh();
   }
@@ -232,13 +234,10 @@ export function RegenerateCoverDialog({
   async function applyCover(historyCoverImageId: string) {
     if (historyBusyId) return;
     setHistoryBusyId(historyCoverImageId);
-    setSubmitError(null);
     const result = await selectSessionCover(sessionId, historyCoverImageId);
     setHistoryBusyId(null);
-    if (!result.ok) {
-      setSubmitError(result.error.message);
-      return;
-    }
+    reportCoverFailure(result.ok ? null : result.error.message);
+    if (!result.ok) return;
     if (historyCoverImageId === pendingCoverId) setRequestedId(null);
     setSelectedCoverId(null);
     onCoverChanged?.(historyCoverImageId);
@@ -248,13 +247,10 @@ export function RegenerateCoverDialog({
   async function deleteFromHistory(historyCoverImageId: string) {
     if (historyBusyId) return;
     setHistoryBusyId(historyCoverImageId);
-    setSubmitError(null);
     const result = await deleteSessionCover(sessionId, historyCoverImageId);
     setHistoryBusyId(null);
-    if (!result.ok) {
-      setSubmitError(result.error.message);
-      return;
-    }
+    reportCoverFailure(result.ok ? null : result.error.message);
+    if (!result.ok) return;
     if (historyCoverImageId === pendingCoverId) setRequestedId(null);
     if (historyCoverImageId === selectedCoverId) setSelectedCoverId(null);
     void refresh();
@@ -530,8 +526,8 @@ export function RegenerateCoverDialog({
                 {blockedReason}
               </p>
             ) : null}
-            {errorMessage ? (
-              <AlertBanner data-testid="regenerate-cover-error">{errorMessage}</AlertBanner>
+            {attemptFailure ? (
+              <AlertBanner data-testid="regenerate-cover-error">{attemptFailure}</AlertBanner>
             ) : null}
           </div>
         </div>

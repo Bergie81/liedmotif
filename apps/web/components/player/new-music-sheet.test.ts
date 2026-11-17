@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SessionSummary } from '@liedmotif/shared';
 import { AppChromeContext, type AppChromeContextValue } from '@/components/app-chrome-context';
 import type { ChromeData } from '@/lib/api-client';
+import { shownToasts, toast } from '@/lib/toast';
 import { NewMusicSheet } from './new-music-sheet';
 import { presentNewMusicStatus } from './new-music-status';
 
@@ -35,6 +36,7 @@ const BOUNDED_USAGE: ChromeData['usage'] = {
 };
 
 afterEach(() => {
+  toast.dismiss();
   cleanup();
   vi.unstubAllGlobals();
 });
@@ -225,16 +227,31 @@ describe('choosing how much new music a Session may buy', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it('shows a refused Off in the open sheet and goes back to what is in force', async () => {
+  it('floats a refused Off above the open sheet and goes back to what is in force', async () => {
     stubWrites(refused);
     const { onSessionChange, onOpenChange } = await openSheet();
 
     await press(choice(OFF));
 
-    expect(screen.getByRole('alert').textContent).toBe('Could not save.');
+    expect(shownToasts()).toEqual([
+      expect.objectContaining({ tone: 'error', message: 'Could not save.' }),
+    ]);
+    expect(screen.queryByRole('alert')).toBeNull();
     expect(onSessionChange).not.toHaveBeenCalled();
     expect(onOpenChange).not.toHaveBeenCalled();
     expect(choice(UP_TO).getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('clears the refusal once a retry lands', async () => {
+    const stopped = { ...session, sessionMode: 'repeat' as const };
+    stubWrites(refused, accepted(stopped));
+    const { onSessionChange } = await openSheet();
+
+    await press(choice(OFF));
+    await press(choice(OFF));
+
+    expect(shownToasts()).toEqual([]);
+    expect(onSessionChange).toHaveBeenCalledWith(stopped);
   });
 
   it('keeps an exact target the slider cannot show, until it is deliberately moved', async () => {

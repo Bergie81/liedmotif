@@ -40,7 +40,6 @@ function renderSheet(onDelete = vi.fn(), track = TRACK) {
       { open: true },
       h(TrackOptionsSheet, {
         track,
-        error: null,
         busyAction: null,
         onUnsave: vi.fn(),
         onOpenSavePicker: vi.fn(),

@@ -55,8 +55,8 @@ export function useImageCropPicker({
   /** Send the finished bytes; resolve to an error message, or null on success. */
   onUpload: (file: File) => Promise<string | null>;
   /**
-   * Every failure the picker sees, and null when one clears. The surface owns
-   * ONE error state — the picker never keeps a second one for it to merge.
+   * Every failure the picker sees, and null when one clears. The surface says
+   * it, as a toast above the crop dialog; the dialog itself never repeats it.
    */
   onError: (message: string | null) => void;
 }): ImageCropPicker {
@@ -67,17 +67,7 @@ export function useImageCropPicker({
    * original must stay reachable for as long as the dialog is open.
    */
   const [picked, setPicked] = useState<{ file: File; source: CropSource } | null>(null);
-  /** The dialog's copy of the current failure; the surface gets `onError`. */
-  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-
-  const report = useCallback(
-    (message: string | null) => {
-      setError(message);
-      onError(message);
-    },
-    [onError],
-  );
 
   const closeSource = useCallback(() => {
     setPicked((current) => {
@@ -92,33 +82,33 @@ export function useImageCropPicker({
   const upload = useCallback(
     async (file: File): Promise<void> => {
       if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
-        report(`The image is too large (${megabytes(MAX_IMAGE_UPLOAD_BYTES)} MB max).`);
+        onError(`The image is too large (${megabytes(MAX_IMAGE_UPLOAD_BYTES)} MB max).`);
         return;
       }
       setBusy(true);
       const failure = await onUpload(file);
       setBusy(false);
-      report(failure);
+      onError(failure);
       if (!failure) closeSource();
     },
-    [closeSource, onUpload, report],
+    [closeSource, onUpload, onError],
   );
 
   const onPicked = useCallback(
     async (file: File | undefined): Promise<void> => {
       if (!file || busy) return;
-      report(null);
+      onError(null);
       if (!isSupportedImageMimeType(file.type)) {
-        report('Use a JPEG, PNG, or WebP image.');
+        onError('Use a JPEG, PNG, or WebP image.');
         return;
       }
       if (file.size > MAX_PICKED_IMAGE_BYTES) {
-        report(`That file is too large to process (${megabytes(MAX_PICKED_IMAGE_BYTES)} MB max).`);
+        onError(`That file is too large to process (${megabytes(MAX_PICKED_IMAGE_BYTES)} MB max).`);
         return;
       }
       const prepared = await preparePickedImage(file, target);
       if (prepared.kind === 'undecodable') {
-        report('That file could not be read as an image.');
+        onError('That file could not be read as an image.');
         return;
       }
       // Pass-through: this browser cannot build a croppable working image from
@@ -129,13 +119,13 @@ export function useImageCropPicker({
       }
       setPicked({ file, source: prepared.source });
     },
-    [busy, report, target, upload],
+    [busy, onError, target, upload],
   );
 
   const confirm = useCallback(
     async (crop: PixelRect, rotation: Rotation): Promise<void> => {
       if (!picked) return;
-      report(null);
+      onError(null);
       // Busy from the tap on: rendering the crop takes long enough on a phone
       // for a second tap to upload the image twice.
       setBusy(true);
@@ -151,12 +141,12 @@ export function useImageCropPicker({
       }).catch(() => null);
       setBusy(false);
       if (!cropped) {
-        report('The crop could not be rendered. Try a different image.');
+        onError('The crop could not be rendered. Try a different image.');
         return;
       }
       await upload(cropped);
     },
-    [picked, report, target, upload],
+    [picked, onError, target, upload],
   );
 
   return {
@@ -183,10 +173,9 @@ export function useImageCropPicker({
             heading={heading}
             {...(confirmLabel ? { confirmLabel } : {})}
             busy={busy}
-            error={error}
             onConfirm={(crop, rotation) => void confirm(crop, rotation)}
             onCancel={() => {
-              report(null);
+              onError(null);
               closeSource();
             }}
           />

@@ -10,7 +10,6 @@
 // also what pins the target when playback advances mid-edit.
 
 import { useState, type FormEvent } from 'react';
-import { AlertBanner } from '@/components/ui/design-system';
 import {
   Dialog,
   DialogClose,
@@ -20,6 +19,10 @@ import {
 } from '@/components/ui/dialog';
 import { inputClass, primaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
 import { cn } from '@/lib/cn';
+import { toast } from '@/lib/toast';
+
+/** One naming dialog is open at a time, so its failures share one key. */
+const RENAME_FAILED_KEY = 'rename';
 
 export function RenameDialog({
   heading,
@@ -43,20 +46,19 @@ export function RenameDialog({
 }) {
   const [name, setName] = useState(currentName);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const trimmed = name.trim();
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!trimmed || busy) return;
     setBusy(true);
-    setError(null);
     const failure = await onRename(trimmed);
     setBusy(false);
     if (failure) {
-      setError(failure);
+      toast.error(failure, { key: RENAME_FAILED_KEY });
       return;
     }
+    toast.dismiss(RENAME_FAILED_KEY);
     onClose();
   }
 
@@ -91,7 +93,6 @@ export function RenameDialog({
             data-testid="rename-input"
             className={inputClass}
           />
-          {error ? <AlertBanner data-testid="rename-error">{error}</AlertBanner> : null}
           <div className="flex items-stretch gap-2">
             <button
               type="submit"

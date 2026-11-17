@@ -42,7 +42,6 @@ export function PlayerSessionOptions({
   sessionTitle,
   newMusicStatus,
   onOpenNewMusic,
-  actionError,
   coverImageId,
   busy,
   onStop,
@@ -71,8 +70,6 @@ export function PlayerSessionOptions({
   newMusicStatus: NewMusicStatus;
   /** Opens the New music sheet (parent-owned, so two sheets never stack). */
   onOpenNewMusic: () => void;
-  /** The player's action feedback, which this sheet covers while it is up. */
-  actionError: string | null;
   coverImageId: string | null;
   busy: boolean;
   onStop: () => void;
@@ -200,7 +197,6 @@ export function PlayerSessionOptions({
         }}
         scopes={SESSION_OPTIONS_SCOPES}
         actions={actions}
-        actionError={actionError}
         leadRows={
           <>
             <NewMusicRow status={newMusicStatus} onOpen={onOpenNewMusic} />

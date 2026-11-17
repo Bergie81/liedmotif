@@ -14,7 +14,7 @@ import { useState, type ReactNode } from 'react';
 import { ImagePlus, ListPlus, MicVocal, MoreHorizontal } from 'lucide-react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { RenameDialog } from '@/components/rename-dialog';
-import { AlertBanner, iconButtonClass, menuTileClass } from '@/components/ui/design-system';
+import { iconButtonClass, menuTileClass } from '@/components/ui/design-system';
 import { OnlineOnly } from '@/components/ui/online-only';
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTrigger } from '@/components/ui/sheet';
 import { BlendToggleTile } from './blend-toggle';
@@ -49,7 +49,6 @@ export function PlayerOptionsSheet({
   tiles,
   scopes,
   actions,
-  actionError,
   leadRows,
   footer,
 }: {
@@ -66,9 +65,6 @@ export function PlayerOptionsSheet({
    *  the roadmap row it is. Call sites type this as a full Record over their
    *  own available ids, so shipping a row without a handler is a type error. */
   actions: Partial<Record<OptionsRowId, OptionsRowAction>>;
-  /** The player's own failure line, repeated here because a tile that keeps the
-   *  sheet up can fail while the player behind it is covered. */
-  actionError?: string | null;
   /** About the source as a whole, so they lead the list above the scoped groups. */
   leadRows?: ReactNode;
   /** The source's closing action, below the list (a Session can be stopped). */
@@ -122,7 +118,6 @@ export function PlayerOptionsSheet({
             sourceName={sourceName}
           />
           {tiles ? <OptionsTiles {...tiles} /> : null}
-          {actionError ? <AlertBanner className="mt-3">{actionError}</AlertBanner> : null}
           {/* In their own wrapper the last of them is a last child, so it draws
               no rule above the first scope's own heading rule. */}
           {leadRows ? <div>{leadRows}</div> : null}

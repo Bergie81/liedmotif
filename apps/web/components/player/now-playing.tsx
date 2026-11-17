@@ -395,7 +395,6 @@ export function NowPlaying({
       sessionTitle={sessionTitle}
       newMusicStatus={newMusicStatus}
       onOpenNewMusic={() => setNewMusicOpen(true)}
-      actionError={surfaceError}
       coverImageId={coverId}
       busy={sessionActions.busyAction === 'stop'}
       onStop={() => void sessionActions.stop()}
@@ -535,7 +534,6 @@ export function NowPlaying({
           changeVibePending={vibeChangePending}
           changeVibeOpen={changeVibeOpen}
           onChangeVibeOpenChange={setChangeVibeOpen}
-          actionError={sessionActions.error}
           onReroll={player.dislike}
           onChangeVibe={(input, options) => submitChangeVibe(session.id, input, options)}
           onMoreLikeThis={sessionActions.startMoreLikeThis}

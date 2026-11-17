@@ -134,7 +134,6 @@ export function SessionOptionsFlow({
         {selected ? (
           <SessionOptionsSheet
             session={selected}
-            error={null}
             resuming={resumingId === selected.id}
             deleting={deletingId === selected.id}
             converting={convertingId === selected.id}

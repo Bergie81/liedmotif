@@ -47,7 +47,6 @@ function Options({
     coverImageId: null,
     newMusicStatus: GENERATING,
     onOpenNewMusic,
-    actionError: null,
     busy: false,
     onStop: noop,
     lyricsAvailable,

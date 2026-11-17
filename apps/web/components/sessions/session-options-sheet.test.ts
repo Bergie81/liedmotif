@@ -36,7 +36,6 @@ function renderSheet(
       { open: true },
       h(SessionOptionsSheet, {
         session,
-        error: null,
         resuming: false,
         deleting: false,
         converting: false,

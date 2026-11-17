@@ -23,11 +23,14 @@ import {
   type ApplyTrackMembershipsData,
 } from '@/lib/api-client';
 import { cn } from '@/lib/cn';
+import { toast } from '@/lib/toast';
 import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { AlertBanner, CheckIndicator, menuRowClass } from '@/components/ui/design-system';
 import { inputClass, primaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
 import { LoadingRow, LiedmotifLoader } from '@/components/ui/loading';
 import { CoverThumb } from '@/components/player/cover-art';
+
+const SAVE_FAILED_KEY = 'save-to-playlist';
 
 export interface SavePickerTrack {
   id: string;
@@ -72,14 +75,14 @@ function PickerContent({
   const [newName, setNewName] = useState('');
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     void getAllPlaylists({ containsTrackId: track.id }).then((result) => {
       if (cancelled) return;
       if (!result.ok) {
-        setError(`Couldn’t load your playlists: ${result.error.message}`);
+        setLoadError(`Couldn’t load your playlists: ${result.error.message}`);
         return;
       }
       const all = result.data.playlists;
@@ -120,7 +123,6 @@ function PickerContent({
   async function commit() {
     if (!canCommit) return;
     setBusy(true);
-    setError(null);
     const result = await applyTrackMemberships({
       trackId: track.id,
       // Unsave leaves every playlist, the unlisted ones included; any other
@@ -130,9 +132,10 @@ function PickerContent({
     });
     setBusy(false);
     if (!result.ok) {
-      setError(`Saving failed: ${result.error.message}`);
+      toast.error(`Saving failed: ${result.error.message}`, { key: SAVE_FAILED_KEY });
       return;
     }
+    toast.dismiss(SAVE_FAILED_KEY);
     router.refresh();
     onApplied(result.data);
     onClose();
@@ -149,9 +152,9 @@ function PickerContent({
         // suppresses the wrap and lets the line run past the header.
         description={<span className="block truncate">{track.title ?? 'Untitled Track'}</span>}
       />
-      {error ? <AlertBanner className="mt-4">{error}</AlertBanner> : null}
+      {loadError ? <AlertBanner className="mt-4">{loadError}</AlertBanner> : null}
 
-      {playlists === null && !error ? (
+      {playlists === null && !loadError ? (
         <LoadingRow className="mt-6 py-6" label="Loading Playlists…" />
       ) : null}
 

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ThumbsDown } from 'lucide-react';
 import type { ChangeVibeIntentInput, SessionVibe } from '@liedmotif/shared';
-import { AlertBanner, nowPlayingSpareRowClass } from '@/components/ui/design-system';
+import { nowPlayingSpareRowClass } from '@/components/ui/design-system';
 import { primaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
 import { OnlineOnly } from '@/components/ui/online-only';
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTrigger } from '@/components/ui/sheet';
@@ -12,7 +12,7 @@ import type { ChangeVibeOptions } from '@/lib/api-client';
 import { cn } from '@/lib/cn';
 import { ChangeVibeSheet } from './change-vibe-sheet';
 import { MoreLikeThisGlyph } from '@/components/ui/glyphs';
-import type { PlayerHookAction, PlayerHookActionError } from './use-player-session-actions';
+import type { PlayerHookAction } from './use-player-session-actions';
 
 /** Dislike as the player says it: the label the listener reads, and
  *  the consequence the one word cannot state. */
@@ -33,7 +33,6 @@ export function PlayerDirectionActions({
   changeVibePending,
   changeVibeOpen,
   onChangeVibeOpenChange,
-  actionError,
   onReroll,
   onChangeVibe,
   onMoreLikeThis,
@@ -59,7 +58,6 @@ export function PlayerDirectionActions({
    *  can open the same sheet this bar's trigger does. */
   changeVibeOpen: boolean;
   onChangeVibeOpenChange: (open: boolean) => void;
-  actionError: PlayerHookActionError | null;
   /** Dislike: the same prompt is regenerated into a different Track,
    *  and this one goes. It steers nothing — Change Vibe, beside it, is the
    *  action that does. */
@@ -102,7 +100,6 @@ export function PlayerDirectionActions({
           trackTitle={trackTitle}
           disabled={disabled || anyBusy}
           busy={busyAction === 'more-like-this'}
-          error={actionError?.action === 'more-like-this' ? actionError.message : null}
           onConfirm={onMoreLikeThis}
         />
       </OnlineOnly>
@@ -114,13 +111,11 @@ function MoreLikeThisSheet({
   trackTitle,
   disabled,
   busy,
-  error,
   onConfirm,
 }: {
   trackTitle: string | null;
   disabled: boolean;
   busy: boolean;
-  error: string | null;
   onConfirm: () => Promise<boolean>;
 }) {
   const [open, setOpen] = useState(false);
@@ -150,7 +145,6 @@ function MoreLikeThisSheet({
             {trackTitle ?? 'Current Track'}
           </div>
         </div>
-        {error ? <AlertBanner className="mt-3">{error}</AlertBanner> : null}
         <button
           type="button"
           disabled={busy}

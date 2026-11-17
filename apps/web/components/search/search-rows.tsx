@@ -154,7 +154,6 @@ export function SearchTrackResults({
       {selected ? (
         <TrackOptionsSheet
           track={selected}
-          error={null}
           busyAction={
             actions.busyAction?.trackId === selected.id ? actions.busyAction.action : null
           }

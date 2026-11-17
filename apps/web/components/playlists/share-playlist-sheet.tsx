@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import type { PlaylistSummaryItem } from '@liedmotif/shared';
 import { getPlaylistShare, sharePlaylist, type PlaylistShareData } from '@/lib/api-client';
 import { cn } from '@/lib/cn';
+import { toast } from '@/lib/toast';
 import { AvatarBadge } from '@/components/avatar-badge';
 import { loungeOwnerDisplayName } from '@/components/lounge/lounge-view-model';
 import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';
@@ -28,6 +29,8 @@ import {
   toggleShareSelection,
   type ShareSelection,
 } from './share-playlist-view-model';
+
+const SHARE_FAILED_KEY = 'share-playlist';
 
 /** What the sheet shows of the playlist — any playlist listing can open it. */
 type SharedPlaylist = Pick<
@@ -70,14 +73,14 @@ function ShareContent({
   const [share, setShare] = useState<PlaylistShareData | null>(null);
   const [selection, setSelection] = useState<ShareSelection>(new Set());
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     void getPlaylistShare(playlist.id).then((result) => {
       if (cancelled) return;
       if (!result.ok) {
-        setError(`Couldn’t load sharing: ${result.error.message}`);
+        setLoadError(`Couldn’t load sharing: ${result.error.message}`);
         return;
       }
       setShare(result.data);
@@ -94,15 +97,16 @@ function ShareContent({
   async function confirm() {
     if (!commit || commit.disabled || busy) return;
     setBusy(true);
-    setError(null);
     const result = await sharePlaylist(playlist.id, commit.audience);
     setBusy(false);
     if (!result.ok) {
-      setError(
+      toast.error(
         `${commit.audience ? 'Sharing' : 'Returning to Private'} failed: ${result.error.message}`,
+        { key: SHARE_FAILED_KEY },
       );
       return;
     }
+    toast.dismiss(SHARE_FAILED_KEY);
     onShared({ playlistId: result.data.playlistId, sharedAt: result.data.sharedAt });
     onClose();
   }
@@ -122,8 +126,8 @@ function ShareContent({
           />
         }
       />
-      {error ? <AlertBanner className="mt-4">{error}</AlertBanner> : null}
-      {share === null && !error ? (
+      {loadError ? <AlertBanner className="mt-4">{loadError}</AlertBanner> : null}
+      {share === null && !loadError ? (
         <LoadingRow className="mt-6 py-6" label="Loading sharing…" />
       ) : null}
 

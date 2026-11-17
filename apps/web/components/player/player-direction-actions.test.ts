@@ -33,7 +33,6 @@ function renderActions({
         changeVibePending: false,
         changeVibeOpen: false,
         onChangeVibeOpenChange: vi.fn(),
-        actionError: null,
         onReroll: vi.fn(),
         onChangeVibe: vi.fn(),
         onMoreLikeThis: async () => true,

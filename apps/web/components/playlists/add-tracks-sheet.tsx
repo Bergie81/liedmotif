@@ -20,9 +20,13 @@ import { primaryButtonClass, secondaryButtonClass } from '@/components/ui/form-s
 import { LoadingRow, LiedmotifLoader } from '@/components/ui/loading';
 import { formatTrackDuration } from '@/components/library/library-view-model';
 import { appendUniqueById } from '@/lib/append-unique';
+import { toast } from '@/lib/toast';
 
 /** The most Track ids one `addPlaylistTracks` request takes. */
 const ADD_BATCH = 100;
+
+const ADD_FAILED_KEY = 'add-tracks';
+const LOAD_MORE_KEY = 'add-tracks-load-more';
 
 export function AddTracksSheet({
   open,
@@ -69,15 +73,21 @@ function AddTracksContent({
   const [loadingMore, setLoadingMore] = useState(false);
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const members = useMemo(() => new Set(existingTrackIds), [existingTrackIds]);
 
   async function loadPage(cursor: string | null) {
     const result = await getLibrary('history', { cursor });
     if (!result.ok) {
-      setError(`Couldn’t load your tracks: ${result.error.message}`);
+      // A later page failing leaves the Tracks already shown in place.
+      if (cursor) {
+        toast.error(`Couldn’t load more Tracks: ${result.error.message}`, { key: LOAD_MORE_KEY });
+      } else {
+        setLoadError(`Couldn’t load your tracks: ${result.error.message}`);
+      }
       return;
     }
+    if (cursor) toast.dismiss(LOAD_MORE_KEY);
     setTracks((current) => appendUniqueById(current ?? [], result.data.items));
     setNextCursor(result.data.nextCursor);
   }
@@ -100,7 +110,6 @@ function AddTracksContent({
   async function commit() {
     if (checked.size === 0 || busy) return;
     setBusy(true);
-    setError(null);
     // One add takes at most ADD_BATCH Tracks; adds are idempotent and append in
     // request order, so consecutive batches keep the picked order and a retry
     // after a failed batch adds only what is still missing.
@@ -109,7 +118,7 @@ function AddTracksContent({
       const result = await addPlaylistTracks(playlistId, trackIds.slice(start, start + ADD_BATCH));
       if (!result.ok) {
         setBusy(false);
-        setError(`Adding failed: ${result.error.message}`);
+        toast.error(`Adding failed: ${result.error.message}`, { key: ADD_FAILED_KEY });
         if (start > 0) {
           router.refresh();
           onAdded();
@@ -118,6 +127,7 @@ function AddTracksContent({
       }
     }
     setBusy(false);
+    toast.dismiss(ADD_FAILED_KEY);
     router.refresh();
     onAdded();
     onClose();
@@ -130,8 +140,8 @@ function AddTracksContent({
         closeDisabled={busy}
         description="Pick any generated tracks — adding keeps them in your Library."
       />
-      {error ? <AlertBanner className="mt-4">{error}</AlertBanner> : null}
-      {tracks === null && !error ? (
+      {loadError ? <AlertBanner className="mt-4">{loadError}</AlertBanner> : null}
+      {tracks === null && !loadError ? (
         <LoadingRow className="mt-6 py-6" label="Loading Tracks…" />
       ) : null}
       {tracks ? (

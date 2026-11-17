@@ -30,7 +30,6 @@ import { PlayerOptionsSheet } from './player-options-sheet';
 export function PlaylistOptions({
   playlist,
   visitor = false,
-  actionError,
   coverImageId,
   track,
   lyricsAvailable,
@@ -55,8 +54,6 @@ export function PlaylistOptions({
    *  visitor scope — owner rows absent, the way back leads to the Lounge view,
    *  and the cover is the owner's to manage, not the listener's. */
   visitor?: boolean;
-  /** The surface's failure line; the sheet repeats it over the page it covers. */
-  actionError?: string | null;
   /** The current Track's art — the plate's thumb. */
   coverImageId: string | null;
   /** The current Track — null disables what needs one. */
@@ -174,7 +171,6 @@ export function PlaylistOptions({
         leadRows={<OfflineMenuRow kind="playlist" id={playlist.id} />}
         scopes={visitor ? visitorPlaylistOptionsScopes() : playlistOptionsScopes(playlist.kind)}
         actions={actions}
-        actionError={actionError}
       />
     </>
   );

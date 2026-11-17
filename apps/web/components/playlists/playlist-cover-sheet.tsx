@@ -25,6 +25,7 @@ import {
   type PlaylistCoverStatusData,
 } from '@/lib/api-client';
 import { cn } from '@/lib/cn';
+import { toast } from '@/lib/toast';
 import { COVER_STYLE_LABELS } from '@/lib/cover-styles';
 import { useImageCropPicker } from '@/components/media/use-image-crop-picker';
 import { COVER_UPLOAD } from '@/lib/image-upload-targets';
@@ -46,6 +47,14 @@ import { LiedmotifLoader } from '@/components/ui/loading';
 import { PlaylistCover } from './playlist-cover';
 
 const STATUS_POLL_MS = 2500;
+
+/** Every cover action in the sheet, the upload included, shares one failure. */
+const COVER_FAILED_KEY = 'playlist-cover';
+
+function reportCoverFailure(message: string | null) {
+  if (message) toast.error(message, { key: COVER_FAILED_KEY });
+  else toast.dismiss(COVER_FAILED_KEY);
+}
 
 export function PlaylistCoverSheet({
   playlist,
@@ -85,15 +94,18 @@ function CoverSheetContent({
   /** Per attempt, never persisted: every open starts without People. */
   const [usePeople, setUsePeople] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const refresh = useCallback(
     async (signal?: AbortSignal) => {
       const result = await playlistCoverStatus(playlist.id, signal);
-      if (result.ok) setStatus(result.data);
+      if (result.ok) {
+        setStatus(result.data);
+        setLoadError(null);
+      }
       // An aborted read is the sheet closing, not something to report.
       else if (!signal?.aborted)
-        setError(`Couldn’t load the cover status: ${result.error.message}`);
+        setLoadError(`Couldn’t load the cover status: ${result.error.message}`);
       return result.ok;
     },
     [playlist.id],
@@ -115,21 +127,19 @@ function CoverSheetContent({
   async function run(action: () => Promise<{ ok: boolean; error?: { message: string } } | void>) {
     if (busy) return;
     setBusy(true);
-    setError(null);
     const result = await action();
-    if (result && !result.ok && result.error) setError(result.error.message);
+    if (result) reportCoverFailure(!result.ok && result.error ? result.error.message : null);
     await refresh();
     setBusy(false);
   }
 
-  // The upload keeps its own busy/error state in the crop dialog, so it does not
-  // ride `run` — a failure must leave the dialog open with the framing intact.
+  // The upload keeps its own busy state in the crop dialog, so it does not ride
+  // `run` — a failure must leave the dialog open with the framing intact.
   const picker = useImageCropPicker({
     target: COVER_UPLOAD,
     heading: 'Playlist cover',
-    onError: setError,
+    onError: reportCoverFailure,
     onUpload: async (file) => {
-      setError(null);
       const result = await uploadPlaylistCover(playlist.id, file);
       if (!result.ok) return result.error.message;
       onCoverChanged(result.data.coverImageId);
@@ -164,7 +174,7 @@ function CoverSheetContent({
   return (
     <SheetContent side="bottom" className="overflow-y-auto" data-testid="playlist-cover-sheet">
       <SheetHeader title="Playlist cover" closeDisabled={working} description={playlist.name} />
-      {error ? <AlertBanner className="mt-4">{error}</AlertBanner> : null}
+      {loadError ? <AlertBanner className="mt-4">{loadError}</AlertBanner> : null}
 
       <div className="mt-4 flex items-start gap-4">
         <PlaylistCover

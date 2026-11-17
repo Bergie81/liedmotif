@@ -19,6 +19,7 @@ import { OnlineOnly } from '@/components/ui/online-only';
 import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { setSessionMode } from '@/lib/api-client';
 import { cn } from '@/lib/cn';
+import { toast } from '@/lib/toast';
 import {
   NEW_MUSIC_CHOICES,
   NEW_MUSIC_SAVING,
@@ -33,6 +34,8 @@ const DEFAULT_TARGET_MINUTES = 60;
 const MIN_TARGET_MINUTES = 5;
 
 const CHOICE_ORDER: readonly NewMusicChoice[] = ['off', 'target', 'no-limit'];
+
+const SAVE_FAILED_KEY = 'new-music-save';
 
 function choiceInForce(session: SessionSummary): NewMusicChoice {
   if (session.sessionMode === 'repeat') return 'off';
@@ -64,7 +67,6 @@ function NewMusicPanel({
   const inForce = choiceInForce(session);
   const [choice, setChoice] = useState(inForce);
   const [minutes, setMinutes] = useState(session.targetDurationMinutes ?? DEFAULT_TARGET_MINUTES);
-  const [error, setError] = useState<string | null>(null);
   const [headroom, setHeadroom] = useState<GenerationHeadroom | null>(null);
 
   // The sheet cannot be dismissed mid-save, so a reply that finds this panel
@@ -86,7 +88,6 @@ function NewMusicPanel({
 
   async function commit(next: NewMusicChoice) {
     onSavingChange(true);
-    setError(null);
     const result =
       next === 'off'
         ? await setSessionMode(session.id, 'repeat')
@@ -94,17 +95,17 @@ function NewMusicPanel({
     if (!mounted.current) return;
     onSavingChange(false);
     if (!result.ok) {
-      setError(result.error.message);
+      toast.error(result.error.message, { key: SAVE_FAILED_KEY });
       setChoice(inForce);
       return;
     }
+    toast.dismiss(SAVE_FAILED_KEY);
     onSessionChange(result.data.session);
     onClose();
   }
 
   function choose(next: NewMusicChoice) {
     setChoice(next);
-    setError(null);
     if (next === 'off' && inForce !== 'off') void commit('off');
   }
 
@@ -162,11 +163,6 @@ function NewMusicPanel({
         </p>
         <p className="text-dim">Only generates while you listen.</p>
       </div>
-      {error ? (
-        <p role="alert" className="mt-2 text-[12px] text-warn">
-          {error}
-        </p>
-      ) : null}
       {needsSave ? (
         <button
           type="button"

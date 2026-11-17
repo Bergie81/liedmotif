@@ -8,11 +8,13 @@ import { createElement as h } from 'react';
 import type { PlaylistSummaryItem, ShareAudience } from '@liedmotif/shared';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { shownToasts, toast } from '@/lib/toast';
 import { SharePlaylistSheet, type ShareResult } from './share-playlist-sheet';
 
 const holder = vi.hoisted(() => ({
   audience: null as unknown,
   writes: [] as unknown[],
+  refusals: 0,
 }));
 
 vi.mock('@/lib/api-client', () => ({
@@ -29,6 +31,10 @@ vi.mock('@/lib/api-client', () => ({
   }),
   sharePlaylist: async (playlistId: string, audience: ShareAudience | null) => {
     holder.writes.push(audience);
+    if (holder.refusals > 0) {
+      holder.refusals -= 1;
+      return { ok: false as const, error: { code: 'internal_error', message: 'Offline.' } };
+    }
     return {
       ok: true as const,
       data: { playlistId, sharedAt: audience ? '2026-10-31T10:00:00.000Z' : null, audience },
@@ -37,9 +43,11 @@ vi.mock('@/lib/api-client', () => ({
 }));
 
 afterEach(() => {
+  toast.dismiss();
   cleanup();
   holder.audience = null;
   holder.writes = [];
+  holder.refusals = 0;
 });
 
 const PLAYLIST: PlaylistSummaryItem = {
@@ -60,8 +68,11 @@ const PLAYLIST: PlaylistSummaryItem = {
   updatedAt: '2026-10-20T10:00:00.000Z',
 };
 
-async function renderSheet(onShared: (result: ShareResult) => void = () => {}) {
-  render(h(SharePlaylistSheet, { playlist: PLAYLIST, onClose: () => {}, onShared }));
+async function renderSheet(
+  onShared: (result: ShareResult) => void = () => {},
+  onClose: () => void = () => {},
+) {
+  render(h(SharePlaylistSheet, { playlist: PLAYLIST, onClose, onShared }));
   await screen.findByTestId('share-candidate-u-anna');
 }
 
@@ -100,5 +111,30 @@ describe('share picker', () => {
       expect(onShared).toHaveBeenCalledWith({ playlistId: PLAYLIST.id, sharedAt: null }),
     );
     expect(holder.writes).toEqual([null]);
+  });
+
+  it('floats a refused share above the sheet and keeps the picks for another try', async () => {
+    holder.audience = { kind: 'everyone' };
+    holder.refusals = 1;
+    const onShared = vi.fn();
+    const onClose = vi.fn();
+    await renderSheet(onShared, onClose);
+
+    fireEvent.click(screen.getByTestId('share-candidate-u-jonas'));
+    fireEvent.click(screen.getByTestId('share-commit'));
+
+    await waitFor(() =>
+      expect(shownToasts()).toEqual([
+        expect.objectContaining({ tone: 'error', message: 'Sharing failed: Offline.' }),
+      ]),
+    );
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect([checked('u-anna'), checked('u-jonas')]).toEqual(['true', 'false']);
+    expect(onClose).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId('share-commit'));
+
+    await waitFor(() => expect(onShared).toHaveBeenCalled());
+    expect(shownToasts()).toEqual([]);
   });
 });

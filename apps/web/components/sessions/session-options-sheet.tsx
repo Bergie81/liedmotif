@@ -12,7 +12,6 @@ import {
 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { OfflineMenuRow } from '@/components/offline/offline-menu-row';
-import { AlertBanner } from '@/components/ui/design-system';
 import { SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { MenuRow } from '@/components/ui/menu-row';
 import { MENU_COPY } from '@/components/ui/menu-copy';
@@ -21,7 +20,6 @@ import { formatGenreLine, formatTrackCount } from './session-list-model';
 
 export function SessionOptionsSheet({
   session,
-  error,
   resuming,
   deleting,
   converting,
@@ -34,7 +32,6 @@ export function SessionOptionsSheet({
   onDelete,
 }: {
   session: SessionListItem;
-  error: string | null;
   resuming: boolean;
   deleting: boolean;
   converting: boolean;
@@ -61,7 +58,6 @@ export function SessionOptionsSheet({
           `${formatTrackCount(session.trackCount)} · ready to continue`
         }
       />
-      {error ? <AlertBanner className="mt-4">{error}</AlertBanner> : null}
       <div className="mt-4">
         <OfflineMenuRow kind="session" id={session.id} />
         <MenuRow
