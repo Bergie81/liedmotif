@@ -31,6 +31,7 @@ import { AssistantPanel } from './assistant-panel';
 import type { ProposedChatAction } from './card';
 import { confirmCard } from './confirm-card';
 import { createAssistantConversation } from './conversation';
+import { applyCover, followCover } from './cover-card';
 import type { PlayerChatAction, PlayerCommands } from './player-command';
 import { TapToPlayContext } from './player-command-line';
 import { CardsContext, type Cards } from './proposal-card';
@@ -175,8 +176,17 @@ export function AssistantDock({
   );
   const cards = useMemo<Cards | null>(
     () =>
-      cardHost ? { headroom: cardHost.headroom, coverUsage: cardHost.coverUsage, confirm } : null,
-    [cardHost, confirm],
+      cardHost
+        ? {
+            headroom: cardHost.headroom,
+            coverStatus: cardHost.coverStatus,
+            confirm,
+            followCover: (action, signal) =>
+              followCover(action, { conversation, host: cardHost }, signal),
+            applyCover: (action) => applyCover(action, { conversation, host: cardHost }),
+          }
+        : null,
+    [cardHost, confirm, conversation],
   );
   const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);

@@ -10,7 +10,6 @@ import type {
   AssistantCoverCard,
   ChangeVibeIntentInput,
   CoverCardRegenerateRequest,
-  SessionCoverUsage,
   StartSessionRequest,
   StartSurpriseRequest,
 } from '@liedmotif/shared';
@@ -25,9 +24,13 @@ import {
   playlistCoverStatus,
   regeneratePlaylistCover,
   regenerateSessionCover,
+  selectPlaylistCover,
+  selectSessionCover,
   startSession,
   startSurprise,
+  type SessionCoverStatusData,
 } from '@/lib/api-client';
+import { announceOutsideLibraryWrite } from '@/lib/offline/library-writes';
 import { useClientId } from '@/lib/use-client-id';
 
 /** What one of the app's flows came to. */
@@ -41,6 +44,15 @@ export interface CardFlowResult {
 
 /** A flow a click started; null when the click sent nothing and the card may be confirmed again. */
 type CardFlow = Promise<CardFlowResult> | null;
+
+/** The Session or Playlist a cover card is for. */
+type CoverSubject = Pick<AssistantCoverCard['subject'], 'kind' | 'id'>;
+
+/** What the cover status route tells of a Session's or Playlist's covers, as the cover dialog reads it. */
+export type CoverStatus = Pick<
+  SessionCoverStatusData,
+  'coverImageId' | 'latestRegeneration' | 'history' | 'usage'
+>;
 
 export interface CardHost {
   /** What is left of the budget, as the shell's own readout has it; null when nothing counts down. */
@@ -83,11 +95,15 @@ export interface CardHost {
    * shows on the card: the app has no other place that shows it here.
    */
   generateCover: (generate: CoverCardRegenerateRequest) => CardFlow;
-  /** What the cover dialog reads of the cover budget for a Session or Playlist; null when it cannot be read. */
-  coverUsage: (
-    subject: Pick<AssistantCoverCard['subject'], 'kind' | 'id'>,
-    signal: AbortSignal,
-  ) => Promise<SessionCoverUsage | null>;
+  /** Reads the cover status of a Session or Playlist; null when it cannot be read. */
+  coverStatus: (subject: CoverSubject, signal: AbortSignal) => Promise<CoverStatus | null>;
+  /**
+   * Makes a cover from the history the cover with the select request the
+   * cover dialog's save sends. It costs nothing. The app's views read their
+   * covers again; the player follows on its own status poll, as after the
+   * dialog's save.
+   */
+  selectCover: (subject: CoverSubject, coverImageId: string) => Promise<CardFlowResult>;
 }
 
 export function useCardHost(
@@ -164,12 +180,26 @@ export function useCardHost(
             ? { carriedOut: true, coverGenerationId: result.data.coverGenerationId }
             : { carriedOut: false, refusal: result.error.message },
         ),
-      coverUsage: async (subject, signal) => {
+      coverStatus: async (subject, signal) => {
         const status =
           subject.kind === 'session'
             ? await getSessionCoverStatus(subject.id, signal)
             : await playlistCoverStatus(subject.id, signal);
-        return status.ok ? status.data.usage : null;
+        return status.ok ? status.data : null;
+      },
+      selectCover: async (subject, coverImageId) => {
+        const selected =
+          subject.kind === 'session'
+            ? await selectSessionCover(subject.id, coverImageId)
+            : await selectPlaylistCover(subject.id, coverImageId);
+        if (!selected.ok) return { carriedOut: false, refusal: selected.error.message };
+        // The cover dialog's callers patch the lists they hold; from the chat
+        // those lists, the pages and the shell's copy of the active Session
+        // are read again.
+        router.refresh();
+        announceOutsideLibraryWrite();
+        refreshChrome();
+        return { carriedOut: true };
       },
     }),
     [headroom, refreshChrome, handOffStart, clientId, router, engage, submitChangeVibe],

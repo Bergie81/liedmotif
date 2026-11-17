@@ -13,7 +13,7 @@ import {
   surpriseVibeLine,
   surpriseVocalLine,
 } from '@/components/create/surprise-preview-lines';
-import type { CardOutcome } from '@/lib/assistant/card-note';
+import type { CardOutcome, CoverAttemptState } from '@/lib/assistant/card-note';
 import { sessionTitle, trackTitle } from './receipt';
 
 /** A card as the chat holds it. Without an outcome it is offered and waits for the user. */
@@ -27,7 +27,19 @@ export interface CardOutcomeFacts {
   refusal?: string;
   /** The cover attempt a confirmed cover card asked for, so the card can read how it is going. */
   coverGenerationId?: string;
+  /** How that attempt is going, as the cover status route last told it. */
+  cover?: CoverAttempt;
 }
+
+/**
+ * The cover attempt of a confirmed cover card. Its cover is known from the
+ * first read, so the card still finds it once a later attempt is the latest.
+ */
+export type CoverAttempt =
+  | { state: Exclude<CoverAttemptState, 'ready' | 'failed'>; coverImageId: string }
+  /** `refusal`: why the cover select request did not make it the cover, in the app's words. */
+  | { state: 'ready'; coverImageId: string; refusal?: string }
+  | { state: 'failed'; failure: string | null };
 
 export interface CardWording {
   /** What confirming does. */

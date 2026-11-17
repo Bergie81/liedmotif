@@ -3,7 +3,7 @@
 
 import type { AssistantCard } from '@liedmotif/shared';
 import { describe, expect, it } from 'vitest';
-import { cardNote, cardRecord, type CardOutcome } from './card-note';
+import { cardNote, cardRecord, type CardOutcome, type CoverAttemptState } from './card-note';
 
 const CALM: AssistantCard = { kind: 'session', prompt: 'calm piano', vocal: 'instrumental' };
 const RAINY = { id: '00000000-0000-4000-8000-000000000003', name: 'Rainy Window' };
@@ -125,4 +125,23 @@ describe('a card as the model reads it', () => {
     expect(record.startsWith(`[Card shown by the app: ${cardNote(CALM)}. `)).toBe(true);
     expect(record).toMatch(became);
   });
+
+  it.each<[CoverAttemptState, RegExp]>([
+    ['generating', /generating the cover\. It becomes the cover only if the user picks it/],
+    ['ready', /The user has not used it, so the current cover stays/],
+    ['using', /chose to use the new cover, and the app is making it the cover\./],
+    ['inUse', /used the new cover, so it is the cover now\./],
+    ['deleted', /has since been deleted from the cover history\./],
+    ['failed', /the cover failed to generate, and the card told them why\./],
+  ])(
+    'records a confirmed cover card whose cover is %s with how the cover is going',
+    (state, became) => {
+      const cover: AssistantCard = {
+        kind: 'cover',
+        subject: { kind: 'session', ...RAINY },
+      };
+
+      expect(cardRecord(cover, 'confirmed', state)).toMatch(became);
+    },
+  );
 });

@@ -29,7 +29,7 @@ function actionNote(action: ChatAction): string {
     case 'player':
       return playerCommandRecord(action.command, action.outcome);
     case 'proposed':
-      return cardRecord(action.card, action.outcome);
+      return cardRecord(action.card, action.outcome, action.cover?.state);
   }
 }
 

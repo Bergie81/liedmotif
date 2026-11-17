@@ -235,13 +235,16 @@ describe('the Assistant’s own code', () => {
 
     expect(Object.fromEntries(calls.filter(([, names]) => names.length > 0))).toEqual({
       // The start and cover requests, sent from one place: the flows a confirmed
-      // card runs, and the cover budget a cover card shows, read as the cover
-      // dialog reads it.
+      // card runs, the cover status a cover card reads its budget and its
+      // attempt from, as the cover dialog reads it, and the free select
+      // request that makes a ready cover the cover.
       [CARD_HOST]: [
         'getSessionCoverStatus',
         'playlistCoverStatus',
         'regeneratePlaylistCover',
         'regenerateSessionCover',
+        'selectPlaylistCover',
+        'selectSessionCover',
         'startSession',
         'startSurprise',
       ],

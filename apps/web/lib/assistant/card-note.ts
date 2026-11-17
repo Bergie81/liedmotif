@@ -67,6 +67,31 @@ const BECAME: Record<CardOutcome, string> = {
   failed: 'The user confirmed it, but the app did not carry it out and told them why.',
 };
 
-/** What a later turn is told about a card: what it offered, and what the user did with it. */
-export const cardRecord = (card: AssistantCard, outcome?: CardOutcome) =>
-  `[Card shown by the app: ${cardNote(card)}. ${outcome ? BECAME[outcome] : LEFT_ALONE}]`;
+/**
+ * How the cover a confirmed cover card asked for is going: generated, offered
+ * on the card, being made the cover, the cover, or gone from the history.
+ */
+export type CoverAttemptState = 'generating' | 'ready' | 'using' | 'inUse' | 'deleted' | 'failed';
+
+// A generated cover is never applied on its own: only the card's second tap makes it the cover.
+const COVER_BECAME: Record<CoverAttemptState, string> = {
+  generating:
+    'The user confirmed it, and the app is generating the cover. It becomes the cover only if the user picks it on the card.',
+  ready:
+    'The user confirmed it, and the new cover is ready on the card. The user has not used it, so the current cover stays and the new one is in the cover history.',
+  using:
+    'The user confirmed it and chose to use the new cover, and the app is making it the cover.',
+  inUse: 'The user confirmed it and used the new cover, so it is the cover now.',
+  deleted:
+    'The user confirmed it, and the new cover was generated but has since been deleted from the cover history.',
+  failed: 'The user confirmed it, but the cover failed to generate, and the card told them why.',
+};
+
+/**
+ * What a later turn is told about a card: what it offered, and what the user
+ * did with it. A confirmed cover card says how its cover is going.
+ */
+export const cardRecord = (card: AssistantCard, outcome?: CardOutcome, cover?: CoverAttemptState) =>
+  `[Card shown by the app: ${cardNote(card)}. ${
+    outcome === 'confirmed' && cover ? COVER_BECAME[cover] : outcome ? BECAME[outcome] : LEFT_ALONE
+  }]`;
