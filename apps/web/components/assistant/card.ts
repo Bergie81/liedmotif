@@ -14,7 +14,7 @@ import {
   surpriseVocalLine,
 } from '@/components/create/surprise-preview-lines';
 import type { CardOutcome, CoverAttemptState } from '@/lib/assistant/card-note';
-import { sessionTitle, trackTitle } from './receipt';
+import { playlistName, sessionTitle, trackTitle } from './receipt';
 
 /** A card as the chat holds it. Without an outcome it is offered and waits for the user. */
 export type ProposedChatAction = Extract<AssistantAction, { status: 'proposed' }> & {
@@ -147,7 +147,7 @@ export function cardWording(card: AssistantCard): CardWording {
         details:
           subject.kind === 'session'
             ? `For the Session ${sessionTitle(subject)}`
-            : `For the Playlist ${subject.name ?? 'Untitled Playlist'}`,
+            : `For the Playlist ${playlistName(subject)}`,
         // The cover dialog's rule: a new cover is previewed, never applied on its own.
         cost: 'Generating uses one cover from your budget. It becomes the cover only when you pick it.',
         confirm: 'Generate cover',

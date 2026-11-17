@@ -42,6 +42,7 @@ import {
 } from '@liedmotif/shared';
 import { LIST_NAMES } from '../find-music-tool';
 import {
+  askedSource,
   askedTracks,
   done,
   NO_PLAYLIST_PLAYING,
@@ -56,6 +57,7 @@ import { BAD_SESSION_NAME } from '../manage-session-tools';
 import { named, quoted, trackCount } from '../music-names';
 import { handedOver, refused as leftAsItIs } from '../player-tools';
 import { BAD_DURATION, notOffered, proposed } from '../proposal';
+import { GUIDANCE_TOO_LONG } from '../propose-cover-tool';
 import { BAD_TRACK_NAME } from '../rename-track-tool';
 import {
   ADD_TO_PLAYLIST_TOOL_NAME,
@@ -357,13 +359,6 @@ function playable({
   return track ? { source, track: item(track) } : { why: 'That Track is not in it.' };
 }
 
-/** The Session or Playlist a call names, or the one of that kind the player has on: "this". */
-const askedSource = (
-  kind: 'session' | 'playlist',
-  given: string | null | undefined,
-  player: AssistantPlayerState | null,
-) => given || (player?.source.kind === kind ? player.source.id : undefined);
-
 /**
  * The Surprise Me suggestion a fixture turn prepares, whatever was asked of
  * it but its vocals: the app's comes from the text LLM and the user's taste,
@@ -605,7 +600,7 @@ function fixtureAnswers(
       actions.take('proposed', async () => {
         const words = guidance?.trim() || undefined;
         if (words && words.length > MAX_COVER_GUIDANCE_LENGTH) {
-          return notOffered(`Art direction has at most ${MAX_COVER_GUIDANCE_LENGTH} characters.`);
+          return notOffered(GUIDANCE_TOO_LONG);
         }
         const askedId = askedSource(kind, givenId, player);
         if (!askedId) {

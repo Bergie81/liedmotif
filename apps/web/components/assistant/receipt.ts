@@ -16,7 +16,7 @@ export interface ReceiptLine {
 
 export const trackTitle = ({ name }: AssistantActionItem) => name ?? 'Untitled Track';
 export const sessionTitle = ({ name }: AssistantActionItem) => name || 'Untitled Session';
-const playlistName = ({ name }: AssistantActionItem) => name ?? 'Untitled Playlist';
+export const playlistName = ({ name }: AssistantActionItem) => name ?? 'Untitled Playlist';
 
 /** The Playlist's own page; Favorites has one like every other. */
 const playlistPage = (playlist: AssistantActionItem) => ({

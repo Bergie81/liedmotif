@@ -13,6 +13,7 @@ import {
 } from '@liedmotif/shared';
 import { coverAttemptGate } from '@/lib/cover-attempt-gate';
 import {
+  askedSource,
   NO_PLAYLIST_PLAYING,
   NO_SESSION_PLAYING,
   NO_SUCH_PLAYLIST,
@@ -25,7 +26,8 @@ import { PROPOSE_COVER_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 import type { TurnActions } from './turn-actions';
 
-const GUIDANCE_TOO_LONG = `Art direction has at most ${MAX_COVER_GUIDANCE_LENGTH} characters.`;
+/** The refusal for art direction longer than the cover dialog's field takes. */
+export const GUIDANCE_TOO_LONG = `Art direction has at most ${MAX_COVER_GUIDANCE_LENGTH} characters.`;
 
 const KINDS = {
   session: { label: 'Session', nothingOn: NO_SESSION_PLAYING, noSuch: NO_SUCH_SESSION },
@@ -61,7 +63,7 @@ export function createProposeCoverTool(
         const words = guidance?.trim() || undefined;
         if (words && words.length > MAX_COVER_GUIDANCE_LENGTH) return notOffered(GUIDANCE_TOO_LONG);
         const { label, nothingOn, noSuch } = KINDS[kind];
-        const askedId = id || (player?.source.kind === kind ? player.source.id : undefined);
+        const askedId = askedSource(kind, id, player);
         if (!askedId) return notOffered(nothingOn);
         const subject = await ownSubject(asker, kind, askedId);
         if (!subject) return notOffered(noSuch);

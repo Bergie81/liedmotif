@@ -32,6 +32,16 @@ export function askedTracks(
   return player?.trackId ? [player.trackId] : [];
 }
 
+/**
+ * The Session or Playlist a call names, or the one of that kind the player has
+ * on when it names none: "this". Undefined when there is neither.
+ */
+export const askedSource = (
+  kind: AssistantPlayerState['source']['kind'],
+  given: string | null | undefined,
+  player: AssistantPlayerState | null,
+): string | undefined => given || (player?.source.kind === kind ? player.source.id : undefined);
+
 /** A tool was given no Track, and the player has none on the deck for "this" to mean. */
 export const NO_TRACK_PLAYING =
   'No Track is playing, so "this" names nothing. Ask the user which Track they mean.';

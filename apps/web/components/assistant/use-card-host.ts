@@ -170,9 +170,7 @@ export function useCardHost(
       generateCover: (generate) =>
         (generate.kind === 'session'
           ? regenerateSessionCover(generate.request.activitySessionId, {
-              ...(generate.request.guidance !== undefined && {
-                guidance: generate.request.guidance,
-              }),
+              guidance: generate.request.guidance,
             })
           : regeneratePlaylistCover(generate.request)
         ).then((result) =>

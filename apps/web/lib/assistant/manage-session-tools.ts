@@ -10,12 +10,17 @@ import {
   renameSessionInputSchema,
   renameSessionRequestSchema,
   SESSION_PIN_LIMIT_MESSAGE,
-  type AssistantPlayerState,
   type PinSessionInput,
   type RenameSessionInput,
 } from '@liedmotif/shared';
 import { giveSessionName } from '@/lib/given-names';
-import { done, NO_SESSION_PLAYING, NO_SUCH_SESSION, refused } from './library-action';
+import {
+  askedSource,
+  done,
+  NO_SESSION_PLAYING,
+  NO_SUCH_SESSION,
+  refused,
+} from './library-action';
 import { ownSession } from './readable-music';
 import { PIN_SESSION_TOOL_NAME, RENAME_SESSION_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
@@ -23,10 +28,6 @@ import type { TurnActions } from './turn-actions';
 
 /** The rename's refusal for a name the Sessions page would not take. */
 export const BAD_SESSION_NAME = `A Session name has 1 to ${MAX_SESSION_TITLE_LENGTH} characters.`;
-
-/** The Session a call names, or the one the player has on when it names none: "this". */
-const askedSession = (given: string | null | undefined, player: AssistantPlayerState | null) =>
-  given || (player?.source.kind === 'session' ? player.source.id : undefined);
 
 export function createRenameSessionTool(
   asker: AssistantAsker,
@@ -42,7 +43,7 @@ export function createRenameSessionTool(
       actions.take('done', async () => {
         const parsed = renameSessionRequestSchema.shape.title.safeParse(input.name);
         if (!parsed.success) return refused(BAD_SESSION_NAME);
-        const sessionId = askedSession(input.sessionId, player);
+        const sessionId = askedSource('session', input.sessionId, player);
         if (!sessionId) return refused(NO_SESSION_PLAYING);
         const session = await ownSession(asker, sessionId);
         if (!session) return refused(NO_SUCH_SESSION);
@@ -73,7 +74,7 @@ export function createPinSessionTool(
     inputSchema: pinSessionInputSchema,
     execute: (input) =>
       actions.take('done', async () => {
-        const sessionId = askedSession(input.sessionId, player);
+        const sessionId = askedSource('session', input.sessionId, player);
         if (!sessionId) return refused(NO_SESSION_PLAYING);
         const session = await ownSession(asker, sessionId);
         if (!session) return refused(NO_SUCH_SESSION);
