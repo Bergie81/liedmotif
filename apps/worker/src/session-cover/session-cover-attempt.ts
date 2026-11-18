@@ -344,6 +344,10 @@ export async function freezePlanInputs(
     forcedTerminalReason?: string;
     /** Effective user art direction for a regeneration attempt. */
     guidance?: string;
+    /** The art direction as the user typed it: the only text a regeneration
+     *  matches Person names in, so the Writing AI's rewrite can neither add nor
+     *  drop a Person. */
+    typedGuidance?: string;
     textLlmConfigured: boolean;
   },
 ): Promise<FrozenPlanInputs> {
@@ -358,6 +362,7 @@ export async function freezePlanInputs(
     capabilities,
     skipProfile: session.skipProfile,
     includesListener: session.includesListener,
+    ...(args.typedGuidance ? { coverWish: args.typedGuidance } : {}),
   });
   const customDefinition =
     session.coverStyle === 'custom'

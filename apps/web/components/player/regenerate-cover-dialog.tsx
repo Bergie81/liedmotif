@@ -470,6 +470,9 @@ export function RegenerateCoverDialog({
                     data-testid="regenerate-cover-guidance"
                     className={cn(inputClass, 'resize-y text-[13.5px] font-normal')}
                   />
+                  <span className="text-[11.5px] font-normal leading-relaxed text-dim">
+                    Name someone from People to put their photo on the cover.
+                  </span>
                   {llmConfigured ? (
                     <span className="mt-2 flex items-center gap-3">
                       <Switch

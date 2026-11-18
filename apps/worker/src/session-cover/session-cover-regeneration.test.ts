@@ -1,12 +1,18 @@
 import { randomUUID } from 'node:crypto';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { and, eq, ne } from 'drizzle-orm';
 import {
   activitySessions,
   coverImages,
+  createPerson,
+  ensureOwnerPerson,
+  insertPersonReferencePhoto,
+  listenerProfiles,
   reserveSessionCoverRegeneration,
   sessionCoverGenerations,
+  updatePerson,
   updateUsageLimits,
+  type CoverReferenceFrequency,
 } from '@liedmotif/db';
 import {
   connectTestDb,
@@ -33,7 +39,14 @@ import {
 
 const describeIfDb = TEST_DATABASE_URL ? describe : describe.skip;
 
-const FIXTURE_TABLES = [...GENERATION_FIXTURE_TABLES, 'cover_images', 'app_settings'] as const;
+const FIXTURE_TABLES = [
+  ...GENERATION_FIXTURE_TABLES,
+  'cover_images',
+  'app_settings',
+  'listener_profiles',
+  'person_reference_photos',
+  'people',
+] as const;
 
 const SNAPSHOT = {
   stylePrompt: 'mellow lofi hip hop, vinyl crackle',
@@ -45,15 +58,30 @@ const SNAPSHOT = {
 
 const IMAGE_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 9, 8, 7]);
 
-function fakeCoverArt(behavior: { error?: Error } = {}) {
+function fakeCoverArt(
+  behavior: {
+    error?: Error | ((attempt: number) => Error | undefined);
+    idempotency?: GeneratedImageCapabilities['idempotency'];
+    acceptsReferences?: boolean;
+  } = {},
+) {
   const calls: GeneratedImageRequest[] = [];
   const capabilities: GeneratedImageCapabilities = {
     provider: { providerType: 'image', providerKey: 'fake-images', model: 'test/cover-model' },
     maxPromptCharacters: 8_000,
     exclusions: 'inline',
     nativeSeed: true,
-    idempotency: 'absent',
-    references: null,
+    idempotency: behavior.idempotency ?? 'absent',
+    references: behavior.acceptsReferences
+      ? {
+          roles: ['subject'],
+          maxCount: 3,
+          multiSubjectIdentity: false,
+          mediaTypes: ['image/jpeg', 'image/png', 'image/webp'],
+          maxBytesPerReference: 2_000_000,
+          maxTotalBytes: 4_000_000,
+        }
+      : null,
     squareOutput: 'native',
     maxCandidates: 1,
     costReporting: true,
@@ -67,7 +95,9 @@ function fakeCoverArt(behavior: { error?: Error } = {}) {
     },
     async generate(input) {
       calls.push(input);
-      if (behavior.error) throw behavior.error;
+      const error =
+        typeof behavior.error === 'function' ? behavior.error(calls.length) : behavior.error;
+      if (error) throw error;
       return {
         provider: capabilities.provider,
         bytes: IMAGE_BYTES,
@@ -134,7 +164,12 @@ describeIfDb('SessionCoverGenerator regeneration', () => {
     return { ownerUserId, sessionId, currentCoverId };
   }
 
-  async function reserveAttempt(ownerUserId: string, sessionId: string, guidance?: string) {
+  async function reserveAttempt(
+    ownerUserId: string,
+    sessionId: string,
+    guidance?: string,
+    rewrittenGuidance?: string,
+  ) {
     const attemptId = randomUUID();
     const coverImageId = randomUUID();
     const row = await reserveSessionCoverRegeneration(ctx.db, {
@@ -144,6 +179,9 @@ describeIfDb('SessionCoverGenerator regeneration', () => {
       coverImageId,
       storageKey: storageKeys.generatedCover(ownerUserId, sessionId, coverImageId, 'webp'),
       ...(guidance === undefined ? {} : { userGuidance: guidance }),
+      ...(rewrittenGuidance === undefined
+        ? {}
+        : { effectiveGuidance: rewrittenGuidance, enhancementApplied: true }),
     });
     expect(row).not.toBeNull();
     return row!;
@@ -425,5 +463,350 @@ describeIfDb('SessionCoverGenerator regeneration', () => {
     expect(initial).toMatchObject({ trigger: 'initial', state: 'ready' });
     expect(await sessionCoverId(sessionId)).toBe(currentCoverId);
     expect((await ledgerRow(attempt.id))?.state).toBe('ready');
+  });
+
+  describe('People named in the cover wish', () => {
+    interface SeededPerson {
+      personId: string;
+      photoIds: string[];
+    }
+
+    async function seedPhoto(ownerUserId: string, personId: string): Promise<string> {
+      const photoId = randomUUID();
+      const storageKey = storageKeys.personReferencePhoto(ownerUserId, personId, photoId, 'webp');
+      await store.provider.write({
+        key: storageKey,
+        body: new Uint8Array([1, 2, 3, 4]),
+        mimeType: 'image/webp',
+      });
+      const result = await insertPersonReferencePhoto(ctx.db, {
+        id: photoId,
+        ownerUserId,
+        personId,
+        storageProvider: 'local-fs',
+        storageKey,
+        mediaType: 'image/webp',
+        byteSize: 4,
+      });
+      expect(result.inserted).toBe(true);
+      return photoId;
+    }
+
+    /**
+     * A Session with a current cover and configured People: the owner Person
+     * is "Thomas", the others follow in configured order. `photos` says how
+     * many reference photos each Person has.
+     */
+    async function seedPeopleSession(args: {
+      userPrompt: string;
+      photos: Record<string, number>;
+      frequency?: CoverReferenceFrequency;
+      includesListener?: boolean;
+      skipProfile?: boolean;
+    }) {
+      const seeded = await seedSessionWithCurrentCover();
+      const { ownerUserId, sessionId } = seeded;
+      await ctx.db
+        .insert(listenerProfiles)
+        .values({ ownerUserId, coverReferenceFrequency: args.frequency ?? 'always' });
+      const owner = await ensureOwnerPerson(ctx.db, ownerUserId);
+      await updatePerson(ctx.db, {
+        ownerUserId,
+        personId: owner.id,
+        name: 'Thomas',
+        about: owner.about,
+      });
+      const people: Record<string, SeededPerson> = {};
+      for (const [name, count] of Object.entries(args.photos)) {
+        const personId =
+          name === 'Thomas'
+            ? owner.id
+            : (await createPerson(ctx.db, { ownerUserId, name, about: '' })).id;
+        const photoIds: string[] = [];
+        for (let index = 0; index < count; index += 1) {
+          photoIds.push(await seedPhoto(ownerUserId, personId));
+        }
+        people[name] = { personId, photoIds };
+      }
+      await ctx.db
+        .update(activitySessions)
+        .set({
+          userPrompt: args.userPrompt,
+          includesListener: args.includesListener ?? false,
+          skipProfile: args.skipProfile ?? false,
+        })
+        .where(eq(activitySessions.id, sessionId));
+      return { ...seeded, people };
+    }
+
+    async function referencesFor(
+      seeded: { ownerUserId: string; sessionId: string },
+      typedWish: string,
+      rewrittenWish?: string,
+    ) {
+      const attempt = await reserveAttempt(
+        seeded.ownerUserId,
+        seeded.sessionId,
+        typedWish,
+        rewrittenWish,
+      );
+      const { provider, calls } = fakeCoverArt({ acceptsReferences: true });
+      const result = await generator(seeded.ownerUserId, provider).processRegeneration(
+        seeded.sessionId,
+        attempt.id,
+      );
+      expect(result).toMatchObject({ status: 'ready', generatedNow: true });
+      expect(calls).toHaveLength(1);
+      const sent = calls[0]!.references.map((reference) => reference.id);
+      const frozen = (await ledgerRow(attempt.id))!.selectedReferences.map(
+        (reference) => reference.id,
+      );
+      expect(frozen).toEqual(sent);
+      return { sent, calls, attempt };
+    }
+
+    it('a Person named in the cover wish brings their photos', async () => {
+      const seeded = await seedPeopleSession({
+        userPrompt: 'A slow drive along the coast',
+        photos: { Thomas: 1, Anna: 2 },
+      });
+
+      const { sent } = await referencesFor(seeded, 'Anna at the beach');
+
+      expect(sent).toEqual(seeded.people.Anna!.photoIds);
+    });
+
+    async function frozenPersonIds(attemptId: string) {
+      return (await ledgerRow(attemptId))!.selectedReferences.map(
+        (reference) => reference.personId,
+      );
+    }
+
+    it('only the People named in the wish decide the photos', async () => {
+      const seeded = await seedPeopleSession({
+        userPrompt: 'Roadtrip with Jonas',
+        photos: { Thomas: 1, Jonas: 1, Anna: 3 },
+      });
+
+      const { sent } = await referencesFor(seeded, 'Anna at the beach');
+
+      expect(sent).toEqual(seeded.people.Anna!.photoIds);
+    });
+
+    it("a wish that names nobody keeps the Session's own selection", async () => {
+      const named = await seedPeopleSession({
+        userPrompt: 'Roadtrip with Jonas',
+        photos: { Thomas: 1, Jonas: 1, Anna: 1 },
+        includesListener: true,
+      });
+      const withNames = await referencesFor(named, 'darker, more neon');
+      expect(await frozenPersonIds(withNames.attempt.id)).toEqual([
+        named.people.Thomas!.personId,
+        named.people.Jonas!.personId,
+      ]);
+
+      const unnamed = await seedPeopleSession({
+        userPrompt: 'A slow drive along the coast',
+        photos: { Thomas: 1, Anna: 1 },
+      });
+      const fallback = await referencesFor(unnamed, 'darker, more neon');
+      expect(fallback.sent).toEqual(unnamed.people.Thomas!.photoIds);
+    });
+
+    it('several People named in the wish each supply one photo, in configured order', async () => {
+      const seeded = await seedPeopleSession({
+        userPrompt: 'A slow drive along the coast',
+        photos: { Thomas: 1, Jonas: 2, Anna: 2 },
+      });
+
+      const { sent, attempt } = await referencesFor(seeded, 'Anna and Jonas on a hill');
+
+      expect(sent).toHaveLength(2);
+      expect(await frozenPersonIds(attempt.id)).toEqual([
+        seeded.people.Jonas!.personId,
+        seeded.people.Anna!.personId,
+      ]);
+    });
+
+    it('a Session that includes the listener adds the owner only when the wish names the owner', async () => {
+      const seeded = await seedPeopleSession({
+        userPrompt: 'Me and Jonas on a roadtrip',
+        photos: { Thomas: 1, Jonas: 1, Anna: 1 },
+        includesListener: true,
+      });
+
+      const annaOnly = await referencesFor(seeded, 'Anna at the beach');
+      expect(annaOnly.sent).toEqual(seeded.people.Anna!.photoIds);
+
+      const withOwner = await referencesFor(seeded, 'Thomas and Anna at the beach');
+      expect(await frozenPersonIds(withOwner.attempt.id)).toEqual([
+        seeded.people.Thomas!.personId,
+        seeded.people.Anna!.personId,
+      ]);
+
+      const [session] = await ctx.db
+        .select({ includesListener: activitySessions.includesListener })
+        .from(activitySessions)
+        .where(eq(activitySessions.id, seeded.sessionId));
+      expect(session!.includesListener).toBe(true);
+    });
+
+    it('a name only in the rewritten wish brings no photo', async () => {
+      const seeded = await seedPeopleSession({
+        userPrompt: 'Roadtrip with Jonas',
+        photos: { Thomas: 1, Jonas: 1, Anna: 1 },
+      });
+
+      const { sent, calls } = await referencesFor(
+        seeded,
+        'a beach at dawn',
+        'Anna strolling a pastel beach at dawn',
+      );
+
+      expect(sent).toEqual(seeded.people.Jonas!.photoIds);
+      expect(calls[0]!.positivePrompt).toContain('pastel beach');
+    });
+
+    it('a name only in the typed wish still brings the photo', async () => {
+      const seeded = await seedPeopleSession({
+        userPrompt: 'Roadtrip with Jonas',
+        photos: { Thomas: 1, Jonas: 1, Anna: 1 },
+      });
+
+      const { sent, calls } = await referencesFor(
+        seeded,
+        'Anna at the beach',
+        'a lone figure on a pastel beach at dawn',
+      );
+
+      expect(sent).toEqual(seeded.people.Anna!.photoIds);
+      expect(calls[0]!.positivePrompt).toContain('pastel beach');
+    });
+
+    it('a safe retry sends the references frozen at planning without matching again', async () => {
+      const seeded = await seedPeopleSession({
+        userPrompt: 'Roadtrip with Jonas',
+        photos: { Thomas: 1, Jonas: 1, Anna: 1 },
+      });
+      const attempt = await reserveAttempt(
+        seeded.ownerUserId,
+        seeded.sessionId,
+        'Anna at the beach',
+      );
+      const { provider, calls } = fakeCoverArt({
+        acceptsReferences: true,
+        idempotency: 'native',
+        error: (call) =>
+          call === 1
+            ? new GeneratedImageProviderError('unavailable', 'retryable_with_same_key')
+            : undefined,
+      });
+
+      await expect(
+        generator(seeded.ownerUserId, provider).processRegeneration(seeded.sessionId, attempt.id),
+      ).rejects.toBeInstanceOf(SessionCoverRetryableError);
+      // A renamed Person would no longer match the wish; the frozen plan holds.
+      await updatePerson(ctx.db, {
+        ownerUserId: seeded.ownerUserId,
+        personId: seeded.people.Anna!.personId,
+        name: 'Annabel',
+        about: '',
+      });
+      await expect(
+        generator(seeded.ownerUserId, provider).processRegeneration(seeded.sessionId, attempt.id),
+      ).resolves.toMatchObject({ status: 'ready', generatedNow: true });
+
+      expect(calls).toHaveLength(2);
+      expect(calls[1]!.references.map((reference) => reference.id)).toEqual(
+        seeded.people.Anna!.photoIds,
+      );
+      expect(calls[0]!.references.map((reference) => reference.id)).toEqual(
+        calls[1]!.references.map((reference) => reference.id),
+      );
+    });
+
+    it('never: a named Person brings no photo and the cover is made without references', async () => {
+      const seeded = await seedPeopleSession({
+        userPrompt: 'Roadtrip with Jonas',
+        photos: { Thomas: 1, Anna: 1 },
+        frequency: 'never',
+      });
+      const readSpy = vi.spyOn(store.provider, 'readStream');
+
+      const { sent, calls } = await referencesFor(seeded, 'Anna at the beach');
+
+      expect(sent).toEqual([]);
+      expect(calls[0]!.positivePrompt).not.toContain('Reference treatment:');
+      expect(readSpy).not.toHaveBeenCalled();
+      readSpy.mockRestore();
+    });
+
+    it("start without profile: the owner's name brings no photo, another named Person still does", async () => {
+      const seeded = await seedPeopleSession({
+        userPrompt: 'Roadtrip with Jonas',
+        photos: { Thomas: 1, Jonas: 1, Anna: 1 },
+        skipProfile: true,
+      });
+
+      const both = await referencesFor(seeded, 'Thomas and Anna at the beach');
+      expect(both.sent).toEqual(seeded.people.Anna!.photoIds);
+
+      const ownerOnly = await referencesFor(seeded, 'Thomas at the beach');
+      expect(ownerOnly.sent).toEqual([]);
+    });
+
+    it('a named Person without photos does not block the reroll', async () => {
+      const seeded = await seedPeopleSession({
+        userPrompt: 'Roadtrip with Jonas',
+        photos: { Thomas: 1, Jonas: 1, Mia: 0 },
+      });
+
+      const { sent } = await referencesFor(seeded, 'Mia at the beach');
+
+      expect(sent).toEqual([]);
+    });
+
+    it('settles references_unsupported unpaid when the image model accepts no reference photos', async () => {
+      const seeded = await seedPeopleSession({
+        userPrompt: 'A slow drive along the coast',
+        photos: { Anna: 1 },
+      });
+      await updateUsageLimits(ctx.db, { generatedCoversPerDay: 1 });
+      const refused = await reserveAttempt(
+        seeded.ownerUserId,
+        seeded.sessionId,
+        'Anna at the beach',
+      );
+      const { provider, calls } = fakeCoverArt({ acceptsReferences: false });
+
+      const result = await generator(seeded.ownerUserId, provider).processRegeneration(
+        seeded.sessionId,
+        refused.id,
+      );
+
+      expect(result).toMatchObject({ status: 'fallback', reason: 'references_unsupported' });
+      expect(calls).toHaveLength(0);
+      expect(await ledgerRow(refused.id)).toMatchObject({
+        state: 'not_admitted',
+        possiblyPaid: false,
+        failureCategory: 'references_unsupported',
+      });
+      const next = await reserveAttempt(seeded.ownerUserId, seeded.sessionId, 'darker, more neon');
+      await expect(
+        generator(seeded.ownerUserId, provider).processRegeneration(seeded.sessionId, next.id),
+      ).resolves.toMatchObject({ status: 'ready', generatedNow: true });
+    });
+
+    it('a Person named like a common word matches that word in the wish', async () => {
+      // Decided: exact names match whole words, so "rose" finds Rose.
+      const seeded = await seedPeopleSession({
+        userPrompt: 'A slow drive along the coast',
+        photos: { Thomas: 1, Rose: 1 },
+      });
+
+      const { sent } = await referencesFor(seeded, 'one red rose');
+
+      expect(sent).toEqual(seeded.people.Rose!.photoIds);
+    });
   });
 });

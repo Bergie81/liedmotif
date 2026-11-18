@@ -15,6 +15,7 @@ import {
   type GeneratedImageCapabilities,
   type GeneratedImageReference,
 } from '@liedmotif/providers';
+import { matchConfiguredPeople } from '@liedmotif/shared';
 import { readAllBytes, type StorageProvider } from '@liedmotif/storage';
 
 export type SelectedCoverReference = Required<
@@ -104,6 +105,11 @@ export async function selectCoverReferencesForPlan(
     /** The owner asked this attempt for reference photos (see
      *  `selectPersonCoverReferences` for what the mode changes). */
     explicitOptIn?: boolean;
+    /** The raw art direction of a user regeneration. When it names at least
+     *  one configured Person, those People alone decide the attempt's photos:
+     *  `promptText` and `includesListener` are set aside, while `skipProfile`
+     *  still keeps the owner out. */
+    coverWish?: string;
   },
 ): Promise<CoverReferencePlanSelection> {
   // A music-task-driven provider consumes no prompt and no references — the
@@ -124,6 +130,10 @@ export async function selectCoverReferencesForPlan(
     listPeople(db, args.ownerUserId),
     listPersonReferencePhotos(db, { ownerUserId: args.ownerUserId }),
   ]);
+  const namingWish =
+    args.coverWish && matchConfiguredPeople(args.coverWish, people).length > 0
+      ? args.coverWish
+      : null;
   return {
     ...selectPersonCoverReferences({
       frequency,
@@ -131,10 +141,10 @@ export async function selectCoverReferencesForPlan(
       photos,
       ownerUserId: args.ownerUserId,
       contextId: args.contextId,
-      promptText: args.promptText,
+      promptText: namingWish ?? args.promptText,
       capabilities: args.capabilities,
       explicitOptIn: args.explicitOptIn,
-      owner: coverReferenceOwner(args),
+      owner: coverReferenceOwner(namingWish === null ? args : { skipProfile: args.skipProfile }),
     }),
     capabilityDowngrades: [],
   };
