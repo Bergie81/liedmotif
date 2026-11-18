@@ -527,6 +527,55 @@ describe('validateCredential — image/openai (free model lookups, never a gener
   });
 });
 
+describe('validateCredential — image/gemini (the free model list, never a generation)', () => {
+  const list = {
+    object: 'list',
+    data: [{ id: 'models/gemini-3.8-flash' }, { id: 'models/gemini-nano-banana-2.1' }],
+  };
+  const input = { providerType: 'image', providerKey: 'gemini', secret: 'AIza-img' } as const;
+
+  it("finds the image model on Google's model list with the key in a header", async () => {
+    const { impl, calls } = stubFetch(200, list);
+    const result = await validateCredential({
+      ...input,
+      model: ' gemini-nano-banana-2.1 ',
+      fetchImpl: impl,
+    });
+    expect(result).toMatchObject({ ok: true, reason: 'ok' });
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.url).toBe('https://generativelanguage.googleapis.com/v1beta/openai/models');
+    expect(calls[0]?.url).not.toContain('AIza-img');
+    expect(calls[0]?.headers.authorization).toBe('Bearer AIza-img');
+  });
+
+  it('tells a bad key from a model the key cannot see', async () => {
+    const unauthorized = await validateCredential({
+      ...input,
+      model: 'gemini-nano-banana-2.1',
+      fetchImpl: stubFetch(401).impl,
+    });
+    expect(unauthorized.reason).toBe('unauthorized');
+    const unknown = await validateCredential({
+      ...input,
+      model: 'gemini-9-image',
+      fetchImpl: stubFetch(200, list).impl,
+    });
+    expect(unknown).toMatchObject({ ok: false, reason: 'unknown_model' });
+  });
+
+  it('flags a missing key as misconfigured before any network call', async () => {
+    const { impl, calls } = stubFetch(200, list);
+    const result = await validateCredential({
+      providerType: 'image',
+      providerKey: 'gemini',
+      model: 'gemini-nano-banana-2.1',
+      fetchImpl: impl,
+    });
+    expect(result.reason).toBe('misconfigured');
+    expect(calls).toHaveLength(0);
+  });
+});
+
 describe('validateCredential — unsupported requirement', () => {
   it('reports misconfigured for a provider it cannot validate', async () => {
     const result = await validateCredential({

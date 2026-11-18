@@ -1,4 +1,8 @@
-import { OPENAI_DEFAULT_COVER_MODEL, OPENROUTER_DEFAULT_COVER_MODEL } from '@liedmotif/shared';
+import {
+  GEMINI_DEFAULT_COVER_MODEL,
+  OPENAI_DEFAULT_COVER_MODEL,
+  OPENROUTER_DEFAULT_COVER_MODEL,
+} from '@liedmotif/shared';
 import { llmProviderMeta } from './llm-providers';
 
 export interface ConfigurableProviderMeta {
@@ -37,6 +41,13 @@ export const IMAGE_PROVIDERS: readonly ConfigurableProviderMeta[] = [
     needsKey: true,
     needsBaseUrl: false,
     defaultModel: OPENAI_DEFAULT_COVER_MODEL,
+  },
+  {
+    value: 'gemini',
+    label: 'Gemini',
+    needsKey: true,
+    needsBaseUrl: false,
+    defaultModel: GEMINI_DEFAULT_COVER_MODEL,
   },
   {
     value: 'openrouter',

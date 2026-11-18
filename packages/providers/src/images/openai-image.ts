@@ -121,7 +121,7 @@ export function openAiImageProvider(config: OpenAiImageConfig): GeneratedImagePr
       const payload = await submitGeneratedImageRequest(
         fetchImpl,
         `${OPENAI_IMAGES_BASE_URL}/${endpoint}`,
-        { apiKey, body, timeoutMs },
+        { authHeaders: { authorization: `Bearer ${apiKey}` }, body, timeoutMs },
       );
       const image = extractImage(firstImageDatum(payload));
       if (!image) throw new GeneratedImageProviderError('invalid_response', 'outcome_unknown');

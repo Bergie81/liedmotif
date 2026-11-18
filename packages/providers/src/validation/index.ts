@@ -198,6 +198,16 @@ export async function validateCredential(
     });
   }
 
+  if (input.providerType === 'image' && input.providerKey === 'gemini') {
+    if (!secret) return result('misconfigured');
+    return validateListedModel(input.model?.trim() || undefined, {
+      base: GEMINI_DEFAULT_BASE_URL,
+      secret,
+      fetchImpl,
+      timeoutMs,
+    });
+  }
+
   // Storage has no remote probe, so it lands here with every unsupported provider.
   return result('misconfigured');
 }
@@ -245,6 +255,24 @@ async function validateOpenAi(
   if ('error' in res) return result('unreachable');
   if (model && res.status === 404) return result('unknown_model');
   return fromStatus(res.status);
+}
+
+/**
+ * A key on an OpenAI-style `/models` list, then the model among the listed IDs.
+ * Gemini's OpenAI-compatible list names its models `models/<id>`.
+ */
+async function validateListedModel(
+  model: string | undefined,
+  ctx: { base: string; secret: string; fetchImpl: typeof fetch; timeoutMs: number },
+): Promise<CredentialValidationResult> {
+  const res = await probe(`${ctx.base}/models`, ctx);
+  if ('error' in res) return result('unreachable');
+  const keyResult = fromStatus(res.status);
+  if (!keyResult.ok || !model) return keyResult;
+  const listed = listedModelIds(res.body);
+  if (!listed) return result('model_unchecked');
+  const found = listed.has(model) || listed.has(`models/${model}`);
+  return found ? keyResult : result('unknown_model');
 }
 
 /** The model IDs an OpenAI-style `/models` reply lists, or `null` when it lists none. */
@@ -307,15 +335,7 @@ async function validateLlm(
         (input.providerKey === 'gemini' ? GEMINI_DEFAULT_BASE_URL : undefined);
       if (!base) return result('misconfigured'); // generic preset needs an explicit base URL
       if (!ctx.secret) return result('misconfigured'); // ...and an API key (matches OpenRouter)
-      const res = await probe(`${trimBaseUrl(base)}/models`, ctx);
-      if ('error' in res) return result('unreachable');
-      const keyResult = fromStatus(res.status);
-      if (!keyResult.ok || !model) return keyResult;
-      const listed = listedModelIds(res.body);
-      if (!listed) return result('model_unchecked');
-      // Gemini's OpenAI-compatible list names its models `models/<id>`.
-      const found = listed.has(model) || listed.has(`models/${model}`);
-      return found ? keyResult : result('unknown_model');
+      return validateListedModel(model, { ...ctx, base: trimBaseUrl(base), secret: ctx.secret });
     }
     default:
       return result('misconfigured');

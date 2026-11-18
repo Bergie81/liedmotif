@@ -114,6 +114,9 @@ describe.skipIf(skip)('generatedCoverModel', () => {
     expect(await model({ IMAGE_PROVIDER: 'openai', IMAGE_API_KEY: 'k' })).toBe(
       'gpt-image-2.6-flare',
     );
+    expect(await model({ IMAGE_PROVIDER: 'gemini', IMAGE_API_KEY: 'k' })).toBe(
+      'gemini-nano-banana-2.1',
+    );
     expect(await model({ IMAGE_PROVIDER: 'openrouter', IMAGE_API_KEY: 'k' })).toBe(
       'google/gemini-3.1-flash-image',
     );

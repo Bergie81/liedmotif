@@ -451,8 +451,9 @@ regenerated.
 ### Generated Session Cover operations
 
 Every Session gets a Cover; the owner's switch picks which source paints it.
-An OpenAI or OpenRouter image key (saved under Settings → Providers → Cover
-images, or `IMAGE_PROVIDER=openai` / `openrouter` with `IMAGE_API_KEY` in `.env`)
+An OpenAI, Gemini or OpenRouter image key (saved under Settings → Providers →
+Cover images, or `IMAGE_PROVIDER=openai` / `gemini` / `openrouter` with
+`IMAGE_API_KEY` in `.env`)
 plus Settings → Generation → "Generate Tailored Cover Art" (on by default)
 enables that hosted adapter, the only source that can honor a Cover style or carry People. With either missing, covers come from the
 music provider instead — derived from the session's first completed Suno music
@@ -463,7 +464,10 @@ is coming and sessions keep the built-in branded placeholder.
 
 The OpenAI adapter has fixed capabilities and needs no discovery: it paints one
 square 1024px image, through image generation, or image editing when People
-photos ride along.
+photos ride along. The Gemini adapter is fixed too: one native
+`generateContent` call carries the prompt and up to four People photos as
+inline images and returns one square 1K image. Gemini paints Covers only on a
+Google project with billing turned on.
 
 The rest of this section applies to the OpenRouter adapter only. The worker discovers the configured model's definitive
 endpoint descriptor during provider validation and pins requests to that

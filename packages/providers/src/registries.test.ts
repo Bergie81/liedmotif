@@ -112,6 +112,17 @@ describe('buildGeneratedImageProvider', () => {
     expect(configured?.model).toBe('gpt-image-2.5-flare');
   });
 
+  it('builds the Gemini adapter with its default model, or the configured one', () => {
+    const preset = buildGeneratedImageProvider({ providerKey: 'gemini', apiKey: 'AIza-1' });
+    expect(preset).toMatchObject({ providerKey: 'gemini', model: 'gemini-nano-banana-2.1' });
+    const configured = buildGeneratedImageProvider({
+      providerKey: 'gemini',
+      apiKey: 'AIza-1',
+      model: ' gemini-3-pro-image ',
+    });
+    expect(configured?.model).toBe('gemini-3-pro-image');
+  });
+
   it('builds the OpenRouter adapter with its default model', () => {
     const provider = buildGeneratedImageProvider({ providerKey: 'openrouter', apiKey: 'sk-or-1' });
     expect(provider).toMatchObject({
@@ -125,6 +136,8 @@ describe('buildGeneratedImageProvider', () => {
     expect(buildGeneratedImageProvider({ providerKey: 'openai' })).toBeNull();
     expect(buildGeneratedImageProvider({ providerKey: 'openai', apiKey: '  ' })).toBeNull();
     expect(buildGeneratedImageProvider({ providerKey: 'openrouter' })).toBeNull();
+    expect(buildGeneratedImageProvider({ providerKey: 'gemini' })).toBeNull();
+    expect(buildGeneratedImageProvider({ providerKey: 'gemini', apiKey: ' ' })).toBeNull();
   });
 
   it('throws on an unknown provider name, with or without a key', () => {
@@ -136,8 +149,9 @@ describe('buildGeneratedImageProvider', () => {
 });
 
 describe('imageProviderSelection', () => {
-  it('accepts openai and openrouter, names none when blank, and refuses a typo', () => {
+  it('accepts openai, gemini and openrouter, names none when blank, and refuses a typo', () => {
     expect(imageProviderSelection(' openai ')).toBe('openai');
+    expect(imageProviderSelection('gemini')).toBe('gemini');
     expect(imageProviderSelection('openrouter')).toBe('openrouter');
     expect(imageProviderSelection('  ')).toBeNull();
     expect(() => imageProviderSelection('opneai')).toThrow(/opneai/);

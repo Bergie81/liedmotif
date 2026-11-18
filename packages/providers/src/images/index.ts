@@ -32,4 +32,9 @@ export {
   OPENAI_IMAGES_BASE_URL,
   type OpenAiImageConfig,
 } from './openai-image';
+export {
+  geminiImageProvider,
+  GEMINI_IMAGES_BASE_URL,
+  type GeminiImageConfig,
+} from './gemini-image';
 export { sunoCoverImageProvider, type SunoCoverImageConfig } from './suno-cover';

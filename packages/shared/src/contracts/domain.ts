@@ -118,6 +118,10 @@ export const OPENROUTER_DEFAULT_COVER_MODEL = 'google/gemini-3.1-flash-image';
  *  the model saved with the image key names one; the UI's model-field default. */
 export const OPENAI_DEFAULT_COVER_MODEL = 'gpt-image-2.6-flare';
 
+/** The Gemini image model a generated cover uses when neither `IMAGE_MODEL` nor
+ *  the model saved with the image key names one; the UI's model-field default. */
+export const GEMINI_DEFAULT_COVER_MODEL = 'gemini-nano-banana-2.1';
+
 /**
  * The one cover thumbnail edge the byte route serves (`?w=`): list/grid tiles
  * render at 42–64 CSS px, so 160 covers ≥2.5× DPR while cutting the 1024²

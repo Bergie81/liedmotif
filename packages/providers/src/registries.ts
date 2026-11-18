@@ -21,6 +21,7 @@ import {
   parseOpenRouterImageParams,
   type GeneratedImageProvider,
 } from './images/generated';
+import { geminiImageProvider } from './images/gemini-image';
 import { openAiImageProvider } from './images/openai-image';
 import { sunoCoverImageProvider } from './images/suno-cover';
 import type { MusicProvider } from './music/index';
@@ -229,7 +230,7 @@ export function buildLlmProvider(config: LlmRuntimeConfig | null): LlmProvider |
 
 // --- Image (cover art) ------------------------------------------------------
 
-const IMAGE_PROVIDER_SELECTIONS = ['openai', 'openrouter'] as const;
+const IMAGE_PROVIDER_SELECTIONS = ['openai', 'gemini', 'openrouter'] as const;
 
 /** The generated-cover presets. */
 export type ImageProviderSelection = (typeof IMAGE_PROVIDER_SELECTIONS)[number];
@@ -289,6 +290,8 @@ export function buildGeneratedImageProvider(
   switch (selection) {
     case 'openai':
       return openAiImageProvider(common);
+    case 'gemini':
+      return geminiImageProvider(common);
     case 'openrouter': {
       const supportedParams = parseOpenRouterImageParams(config.supportedParams);
       return openRouterImageProvider({

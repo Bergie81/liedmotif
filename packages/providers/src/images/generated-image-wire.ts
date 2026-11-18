@@ -33,11 +33,14 @@ function decodeBase64(value: string): Uint8Array {
   return new Uint8Array(Buffer.from(value, 'base64'));
 }
 
-export function referenceDataUrl({ bytes, mediaType }: GeneratedImageReference): string {
+export function referenceBase64({ bytes }: GeneratedImageReference): string {
   // A Buffer VIEW over the existing bytes — `Buffer.from(Uint8Array)` would copy
   // megabytes per reference photo just to base64 them.
-  const view = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  return `data:${mediaType};base64,${view.toString('base64')}`;
+  return Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength).toString('base64');
+}
+
+export function referenceDataUrl(reference: GeneratedImageReference): string {
+  return `data:${reference.mediaType};base64,${referenceBase64(reference)}`;
 }
 
 function resolveMediaType(bytes: Uint8Array, declared: string | null): CoverImageMediaType {
@@ -140,13 +143,17 @@ export function acceptedReferences(
 export async function submitGeneratedImageRequest(
   fetchImpl: typeof fetch,
   url: string,
-  { apiKey, body, timeoutMs }: { apiKey: string; body: unknown; timeoutMs: number },
+  {
+    authHeaders,
+    body,
+    timeoutMs,
+  }: { authHeaders: Record<string, string>; body: unknown; timeoutMs: number },
 ): Promise<unknown> {
   let response: Response;
   try {
     response = await fetchImpl(url, {
       method: 'POST',
-      headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
+      headers: { ...authHeaders, 'content-type': 'application/json' },
       body: JSON.stringify(body),
       redirect: 'manual',
       signal: AbortSignal.timeout(timeoutMs),

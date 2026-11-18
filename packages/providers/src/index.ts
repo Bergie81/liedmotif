@@ -128,8 +128,9 @@ export {
   ProviderUnbilledError,
 } from './errors';
 
-// Async generated Session Cover art (OpenRouter, OpenAI) + its deterministic prompt pipeline.
+// Async generated Session Cover art (OpenRouter, OpenAI, Gemini) + its deterministic prompt pipeline.
 export {
+  geminiImageProvider,
   openAiImageProvider,
   openRouterImageProvider,
   parseOpenRouterImageParams,

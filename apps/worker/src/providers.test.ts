@@ -176,6 +176,7 @@ describe('worker cover-art resolution', () => {
   it('boots with an image provider named and no key anywhere', () => {
     expect(() => buildWorkerProviders({ IMAGE_PROVIDER: 'openrouter' })).not.toThrow();
     expect(() => buildWorkerProviders({ IMAGE_PROVIDER: 'openai' })).not.toThrow();
+    expect(() => buildWorkerProviders({ IMAGE_PROVIDER: 'gemini' })).not.toThrow();
   });
 
   it('refuses an unknown IMAGE_PROVIDER at boot', () => {

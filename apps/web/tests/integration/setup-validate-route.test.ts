@@ -312,6 +312,30 @@ describe.skipIf(skip)('POST /api/setup/validate credential fallback', () => {
     expect(await missing.json()).toMatchObject({ ok: false, reason: 'unknown_model' });
   });
 
+  it("tests a Gemini Cover key and its default image model on Google's free model list", async () => {
+    vi.stubEnv('IMAGE_PROVIDER', 'gemini');
+    vi.stubEnv('IMAGE_API_KEY', 'env-gemini-image-key');
+    const list = { object: 'list', data: [{ id: 'models/gemini-nano-banana-2.1' }] };
+    stubProbeFetch(200, list);
+    const res = await postJson({ providerType: 'image', providerKey: 'gemini' });
+    expect(await res.json()).toMatchObject({ ok: true, reason: 'ok' });
+    expect(probeCalls).toEqual([
+      {
+        url: 'https://generativelanguage.googleapis.com/v1beta/openai/models',
+        authorization: 'Bearer env-gemini-image-key',
+      },
+    ]);
+
+    stubProbeFetch(200, list);
+    const missing = await postJson({
+      providerType: 'image',
+      providerKey: 'gemini',
+      secret: 'typed-key',
+      model: 'gemini-9-image',
+    });
+    expect(await missing.json()).toMatchObject({ ok: false, reason: 'unknown_model' });
+  });
+
   it('applies the SSRF guard to a base URL resolved from stored config', async () => {
     await upsertProviderCredential(testDb.db, {
       providerType: 'llm',

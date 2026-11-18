@@ -323,7 +323,7 @@ export function openRouterImageProvider(config: OpenRouterImageConfig): Generate
 
       assertSafeBaseUrl(baseUrl);
       const payload = await submitGeneratedImageRequest(fetchImpl, `${baseUrl}/images`, {
-        apiKey,
+        authHeaders: { authorization: `Bearer ${apiKey}` },
         body,
         timeoutMs,
       });

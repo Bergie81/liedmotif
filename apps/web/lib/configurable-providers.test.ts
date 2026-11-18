@@ -86,14 +86,14 @@ describe('providerPicker', () => {
     expect(picker.moreOptionsHidden).toBe(false);
   });
 
-  it('shows OpenAI for Cover images and keeps OpenRouter behind More options', () => {
+  it('shows OpenAI, then Gemini for Cover images and keeps OpenRouter behind More options', () => {
     const picker = providerPicker(IMAGE_PROVIDERS, {
       selectedKey: 'openai',
       loadedKey: 'openai',
       moreOptionsOpened: false,
     });
 
-    expect(labels(picker.shown)).toEqual(['OpenAI']);
+    expect(labels(picker.shown)).toEqual(['OpenAI', 'Gemini']);
     expect(picker.moreOptionsHidden).toBe(true);
     expect(IMAGE_PROVIDERS[0]).toMatchObject({
       value: 'openai',
@@ -101,6 +101,13 @@ describe('providerPicker', () => {
       needsBaseUrl: false,
       defaultModel: 'gpt-image-2.6-flare',
     });
+    expect(IMAGE_PROVIDERS[1]).toMatchObject({
+      value: 'gemini',
+      needsKey: true,
+      needsBaseUrl: false,
+      defaultModel: 'gemini-nano-banana-2.1',
+    });
+    expect(providerDisplayName('image', 'gemini')).toBe('Gemini');
   });
 
   it('keeps an Instance stored on OpenRouter Covers shown and selected', () => {
@@ -110,7 +117,7 @@ describe('providerPicker', () => {
       moreOptionsOpened: false,
     });
 
-    expect(labels(picker.shown)).toEqual(['OpenAI', 'OpenRouter']);
+    expect(labels(picker.shown)).toEqual(['OpenAI', 'Gemini', 'OpenRouter']);
     expect(picker.moreOptionsHidden).toBe(false);
   });
 });
