@@ -32,11 +32,17 @@ const MAX_PROMPT_CHARACTERS = 32_000;
 const MAX_REFERENCES = 16;
 
 /**
- * Keeps each reference, and so the JSON body that carries it base64'd, bounded
- * well inside OpenAI's 20 MiB data-URL ceiling. A People photo is a 1024px
- * rendition, far below it.
+ * Keeps each base64'd reference well inside OpenAI's 20 MiB data-URL ceiling.
+ * A People photo is a 1024px rendition, far below it.
  */
 const MAX_REFERENCE_BYTES = 4 * 1024 * 1024;
+
+/**
+ * Bounds the whole edit request: up to 16 photos at the per-photo cap would
+ * otherwise base64 into a body of about 85 MiB. People photos are 1024px WebP
+ * renditions, so a full set of them fits with room to spare.
+ */
+const MAX_TOTAL_REFERENCE_BYTES = 16 * 1024 * 1024;
 
 export interface OpenAiImageConfig {
   apiKey: string;
@@ -66,6 +72,7 @@ export function openAiImageProvider(config: OpenAiImageConfig): GeneratedImagePr
       multiSubjectIdentity: false,
       mediaTypes: [...COVER_IMAGE_MEDIA_TYPES],
       maxBytesPerReference: MAX_REFERENCE_BYTES,
+      maxTotalBytes: MAX_TOTAL_REFERENCE_BYTES,
     },
     squareOutput: 'native',
     maxCandidates: 1,

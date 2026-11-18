@@ -158,6 +158,27 @@ describe('OpenAI generated-image adapter', () => {
     expect(result.downgradeCodes).toContain('references_omitted');
   });
 
+  it('bounds the references it sends in total, not just per photo', async () => {
+    const fetchImpl = vi.fn().mockResolvedValueOnce(json({ data: [{ b64_json: PNG_B64 }] }));
+    const provider = adapter(fetchImpl as unknown as typeof fetch);
+    const limits = (await provider.getCapabilities()).references!;
+    const total = limits.maxTotalBytes!;
+    const perPhoto = limits.maxBytesPerReference!;
+    expect(total).toBeLessThan(limits.maxCount * perPhoto);
+    const photos = Array.from({ length: Math.ceil(total / perPhoto) + 1 }, (_, index) => ({
+      id: `photo-${index}`,
+      role: 'subject' as const,
+      mediaType: 'image/webp' as const,
+      bytes: new Uint8Array(perPhoto),
+    }));
+
+    const result = await provider.generate(request({ references: photos }));
+
+    const sentBytes = (sent(fetchImpl).body.images as unknown[]).length * perPhoto;
+    expect(sentBytes).toBeLessThanOrEqual(total);
+    expect(result.downgradeCodes).toContain('references_omitted');
+  });
+
   it.each([
     [401, 'configuration', 'not_started'],
     [403, 'configuration', 'not_started'],
