@@ -9,7 +9,7 @@ import { NextResponse } from 'next/server';
 import {
   resolveProviderCredential,
   resolveProviderSettings,
-  resolveShareableTextLlmKey,
+  resolveSharedImageKey,
 } from '@liedmotif/db';
 import { isBlockedValidationTargetResolved, validateCredential } from '@liedmotif/providers';
 import { configurableProviderMeta, isConfigurableProviderType } from '@/lib/configurable-providers';
@@ -51,14 +51,20 @@ export async function POST(request: Request) {
   const typedBaseUrl =
     typeof body.baseUrl === 'string' && body.baseUrl.trim() ? body.baseUrl : undefined;
   const typedModel = typeof body.model === 'string' ? body.model.trim() : '';
+  // The Cover images card set to the Text AI's key: tested as saving would store
+  // it, without the image credential's own key.
+  const sharesTextLlmKey = providerType === 'image' && body.shareTextLlmKey === true;
+  if (sharesTextLlmKey && typedSecret) {
+    return badRequest('Send either an API key or shareTextLlmKey, not both.');
+  }
 
   // Test verifies the configuration that will actually run: the credential
   // generation resolves (env first, then the stored row, per field), with the
   // form's values standing in for what saving it would store — its model, and no
   // base URL once the field is cleared. A typed secret or base URL is tested as
   // typed (the wizard's type-before-save flow); a typed model still yields to the
-  // env model that would outrank it. An image provider without a key of its own
-  // tests the Text AI key it shares. The image key is checked against the
+  // env model that would outrank it. An image provider without a key of its own,
+  // or set to share, tests the Text AI key it shares. The image key is checked against the
   // provider's own fixed endpoint, so an image credential resolves no base URL.
   const credential = await resolveProviderCredential(getDb(), { providerType, providerKey });
   const settings = resolveProviderSettings(providerType, providerKey, {
@@ -69,12 +75,10 @@ export async function POST(request: Request) {
   let secret = typedSecret;
   if (!secret) {
     try {
-      secret = credential?.readApiKey(encryptionKeyIfConfigured());
+      const encryptionKey = encryptionKeyIfConfigured();
+      if (!sharesTextLlmKey) secret = credential?.readApiKey(encryptionKey);
       if (!secret && providerType === 'image') {
-        const shared = await resolveShareableTextLlmKey(getDb(), {
-          encryptionKey: encryptionKeyIfConfigured(),
-        });
-        if (shared?.vendor === providerKey) secret = shared.apiKey;
+        secret = await resolveSharedImageKey(getDb(), providerKey, { encryptionKey });
       }
     } catch {
       // A stored secret that cannot be decrypted (rotated/missing key) tests as

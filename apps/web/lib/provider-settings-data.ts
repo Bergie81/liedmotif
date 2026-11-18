@@ -18,6 +18,7 @@ import { llmEffectiveModel, llmProviderMeta } from '@/lib/llm-providers';
 import {
   coverAccountAlert,
   coverKeyNotice,
+  coverSharedKeyVendor,
   generatedImageProviderPresentation,
   llmProviderPresentation,
 } from '@/lib/provider-settings-model';
@@ -118,7 +119,7 @@ export async function loadProviderSettingsData() {
       credential: statuses.image,
       providerKey: imageKey,
       modelEnvironmentManaged: readEnvLayer('image', imageKey).model !== undefined,
-      sharedKeyVendor,
+      sharedKeyVendor: coverSharedKeyVendor(statuses.image, sharedKeyVendor),
       sharesKey: statuses.image?.source === 'shared',
       ...generatedImageProviderPresentation({
         credential: statuses.image,

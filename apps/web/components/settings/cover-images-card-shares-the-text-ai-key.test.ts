@@ -83,6 +83,23 @@ describe('Cover images card — shared key', () => {
     expect(body.secret).toBeUndefined();
   });
 
+  it('tests the shared key by reference when switched to it over an own key', async () => {
+    const bodies = stubFetch();
+    renderCoverEditor({
+      initialProviderKey: 'openai',
+      currentMasked: '••••9876',
+      sharesKey: false,
+      sharedKeyVendor: 'openai',
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Use the same OpenAI key' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Test' }));
+    await waitFor(() => expect(bodies).toHaveLength(1));
+
+    expect(bodies[0]).toMatchObject({ providerType: 'image', shareTextLlmKey: true });
+    expect(bodies[0]!.secret).toBeUndefined();
+  });
+
   it('offers an own key in place of the shared one', async () => {
     const bodies = stubFetch();
     renderCoverEditor({

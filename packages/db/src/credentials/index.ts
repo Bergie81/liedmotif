@@ -43,6 +43,7 @@ export {
   resolveLlmRuntimeConfig,
   resolveMusicRuntimeConfig,
   resolveShareableTextLlmKey,
+  resolveSharedImageKey,
   type CredentialRef,
   type CredentialStatus,
   type ResolvedCredential,

@@ -146,6 +146,11 @@ export function useCredentialEditor(props: CredentialEditorProps) {
     invalidateTest();
   }
 
+  /** The key half of a Test or Save body: the Text AI's key by reference, or the typed one. */
+  function keyFields() {
+    return usesSharedKey ? { shareTextLlmKey: true } : { secret: secret || undefined };
+  }
+
   /** Switch between the Text AI's key and an own key; a typed key goes either way. */
   function shareKey(share: boolean) {
     setUsesSharedKey(share);
@@ -191,7 +196,7 @@ export function useCredentialEditor(props: CredentialEditorProps) {
         body: JSON.stringify({
           providerType: props.providerType,
           providerKey,
-          secret: secret || undefined,
+          ...keyFields(),
           baseUrl: submittedBaseUrl(),
           model: model || undefined,
         }),
@@ -240,7 +245,7 @@ export function useCredentialEditor(props: CredentialEditorProps) {
         body: JSON.stringify({
           providerType: props.providerType,
           providerKey,
-          ...(usesSharedKey ? { shareTextLlmKey: true } : { secret: secret || undefined }),
+          ...keyFields(),
           ...savedFields(),
         }),
       }).catch(() => null);

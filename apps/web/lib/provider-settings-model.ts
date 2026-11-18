@@ -161,3 +161,15 @@ export function coverKeyNotice(
 ): string | null {
   return coverCredential?.source === 'shared' ? COVER_KEY_NOTICE : null;
 }
+
+/**
+ * The vendor whose Text AI key the Cover images card may offer, or `null`. An
+ * `IMAGE_API_KEY` beside its `IMAGE_PROVIDER` always wins, so a Cover key from
+ * `.env` leaves nothing to share.
+ */
+export function coverSharedKeyVendor(
+  coverCredential: Pick<CredentialStatus, 'source'> | null,
+  shareableVendor: string | null,
+): string | null {
+  return coverCredential?.source === 'env' ? null : shareableVendor;
+}

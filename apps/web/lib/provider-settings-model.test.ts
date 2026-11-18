@@ -4,6 +4,7 @@ import {
   COVER_KEY_NOTICE,
   coverAccountAlert,
   coverKeyNotice,
+  coverSharedKeyVendor,
   generatedImageProviderPresentation,
   llmProviderPresentation,
   requiresProviderReplacementConfirmation,
@@ -114,6 +115,14 @@ describe('provider settings model', () => {
     expect(coverKeyNotice({ source: 'database' })).toBeNull();
     expect(coverKeyNotice({ source: 'env' })).toBeNull();
     expect(coverKeyNotice(null)).toBeNull();
+  });
+
+  it('offers the shared Text AI key only where a Cover key from .env does not win', () => {
+    expect(coverSharedKeyVendor({ source: 'database' }, 'openai')).toBe('openai');
+    expect(coverSharedKeyVendor({ source: 'shared' }, 'openai')).toBe('openai');
+    expect(coverSharedKeyVendor(null, 'gemini')).toBe('gemini');
+    expect(coverSharedKeyVendor({ source: 'env' }, 'openai')).toBeNull();
+    expect(coverSharedKeyVendor({ source: 'database' }, null)).toBeNull();
   });
 
   it('recognizes a keyless Ollama configuration independently of credential source', () => {

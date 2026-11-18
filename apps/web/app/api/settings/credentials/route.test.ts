@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
   envLayer: vi.fn((): Record<string, string> => ({})),
   unitCosts: vi.fn(async () => ({ perTrackUsd: 0.04, perCoverUsd: 0.07 })),
   updateUnitCosts: vi.fn(async () => ({ perTrackUsd: 0.04, perCoverUsd: 0.07 })),
-  shareableKey: vi.fn(async (): Promise<{ vendor: string; apiKey: string } | null> => null),
+  sharedImageKey: vi.fn(async (): Promise<string | undefined> => undefined),
 }));
 
 vi.mock('@liedmotif/db', () => ({
@@ -22,7 +22,7 @@ vi.mock('@liedmotif/db', () => ({
   upsertProviderCredential: mocks.upsert,
   getUnitCosts: mocks.unitCosts,
   updateUnitCosts: mocks.updateUnitCosts,
-  resolveShareableTextLlmKey: mocks.shareableKey,
+  resolveSharedImageKey: mocks.sharedImageKey,
 }));
 // Only the DNS-resolving SSRF probe is stubbed; the base-URL rule is the real
 // one, so this file proves what the route actually stores.
@@ -49,7 +49,7 @@ describe('provider credential writes', () => {
     mocks.unitCosts.mockResolvedValue({ perTrackUsd: 0.04, perCoverUsd: 0.07 });
     mocks.updateUnitCosts.mockClear();
     mocks.credentialStatus.mockResolvedValue({ configured: false });
-    mocks.shareableKey.mockResolvedValue(null);
+    mocks.sharedImageKey.mockResolvedValue(undefined);
   });
 
   it('refuses a base URL carrying credentials before it can be stored', async () => {
@@ -412,7 +412,7 @@ describe('provider credential writes', () => {
 
   it('removes the own image key when the save asks to share the Text AI key', async () => {
     mocks.encryptionKey.mockReturnValue(Buffer.alloc(32));
-    mocks.shareableKey.mockResolvedValue({ vendor: 'gemini', apiKey: 'AIza-text' });
+    mocks.sharedImageKey.mockResolvedValue('AIza-text');
 
     const response = await postImage({ providerKey: 'gemini', shareTextLlmKey: true });
 
@@ -427,7 +427,7 @@ describe('provider credential writes', () => {
 
   it('refuses to share a key that does not resolve for that provider', async () => {
     mocks.encryptionKey.mockReturnValue(Buffer.alloc(32));
-    mocks.shareableKey.mockResolvedValue({ vendor: 'openai', apiKey: 'sk-proj-text' });
+    mocks.sharedImageKey.mockResolvedValue(undefined);
 
     const response = await postImage({ providerKey: 'gemini', shareTextLlmKey: true });
 
@@ -436,12 +436,13 @@ describe('provider credential writes', () => {
       ok: false,
       error: 'An API key is required for this provider.',
     });
+    expect(mocks.sharedImageKey).toHaveBeenCalledWith({}, 'gemini', expect.anything());
     expect(mocks.upsert).not.toHaveBeenCalled();
   });
 
   it('refuses a save that both shares the Text AI key and sends its own', async () => {
     mocks.encryptionKey.mockReturnValue(Buffer.alloc(32));
-    mocks.shareableKey.mockResolvedValue({ vendor: 'openai', apiKey: 'sk-proj-text' });
+    mocks.sharedImageKey.mockResolvedValue('sk-proj-text');
 
     const response = await postImage({
       providerKey: 'openai',

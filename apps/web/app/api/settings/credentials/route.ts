@@ -9,7 +9,7 @@ import {
   getStoredProviderConfig,
   getUnitCosts,
   readEnvLayer,
-  resolveShareableTextLlmKey,
+  resolveSharedImageKey,
   updateUnitCosts,
   upsertProviderCredential,
   type ProviderConfig,
@@ -41,12 +41,6 @@ const BASE_URL_REFUSALS: Record<ProviderBaseUrlRejection, string> = {
   carries_authentication:
     'That base URL cannot carry a username, password, query, or fragment — put the API key in the API key field.',
 };
-
-/** Whether an image preset of `providerKey` can use the Text AI's key. */
-async function sharedTextLlmKeyResolves(providerKey: string, encryptionKey: Buffer) {
-  const shared = await resolveShareableTextLlmKey(getDb(), { encryptionKey }).catch(() => null);
-  return shared?.vendor === providerKey;
-}
 
 export async function POST(request: Request) {
   const admin = await requireAdminOwnerId(request);
@@ -153,7 +147,9 @@ export async function POST(request: Request) {
   // AI key drops the stored one, so only the shared key counts for it.
   if (providerType !== 'music' && providerMeta.needsKey && !secret) {
     const keyResolves = sharesTextLlmKey
-      ? await sharedTextLlmKeyResolves(providerKey, encryptionKey)
+      ? Boolean(
+          await resolveSharedImageKey(getDb(), providerKey, { encryptionKey }).catch(() => null),
+        )
       : (await getCredentialStatus(getDb(), { providerType, providerKey, encryptionKey }))
           .configured;
     if (!keyResolves) return badRequest('An API key is required for this provider.');

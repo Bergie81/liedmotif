@@ -357,6 +357,45 @@ describe.skipIf(skip)('POST /api/setup/validate credential fallback', () => {
     ]);
   });
 
+  it('tests the shared Text AI key, not the own Cover key, when the form shares it', async () => {
+    for (const [providerType, secret] of [
+      ['llm', 'stored-text-key'],
+      ['image', 'own-image-key'],
+    ] as const) {
+      await upsertProviderCredential(testDb.db, {
+        providerType,
+        providerKey: 'openai',
+        displayName: 'OpenAI',
+        secret,
+        encryptionKey: ENCRYPTION_KEY,
+      });
+    }
+    stubProbeFetch(200, { id: 'gpt-image-2.6-flare', object: 'model' });
+
+    const res = await postJson({
+      providerType: 'image',
+      providerKey: 'openai',
+      shareTextLlmKey: true,
+    });
+
+    expect(await res.json()).toMatchObject({ ok: true, reason: 'ok' });
+    expect(probeCalls.map((call) => call.authorization)).toEqual(['Bearer stored-text-key']);
+  });
+
+  it('refuses a Test that both shares the Text AI key and types its own', async () => {
+    stubProbeFetch();
+
+    const res = await postJson({
+      providerType: 'image',
+      providerKey: 'openai',
+      secret: 'typed-key',
+      shareTextLlmKey: true,
+    });
+
+    expect(res.status).toBe(400);
+    expect(probeCalls).toEqual([]);
+  });
+
   it('applies the SSRF guard to a base URL resolved from stored config', async () => {
     await upsertProviderCredential(testDb.db, {
       providerType: 'llm',

@@ -216,7 +216,7 @@ export async function getCredentialStatus(
   if (source === null && ref.providerType === 'image') {
     let sharedKey: string | undefined;
     try {
-      sharedKey = await sharedImageKey(db, ref.providerKey, {
+      sharedKey = await resolveSharedImageKey(db, ref.providerKey, {
         env,
         encryptionKey: ref.encryptionKey,
       });
@@ -431,8 +431,12 @@ export async function resolveShareableTextLlmKey(
   return apiKey ? { vendor: llm.providerKey, apiKey } : null;
 }
 
-/** The text LLM key an image provider of `providerKey` uses when it has none of its own. */
-async function sharedImageKey(
+/**
+ * Server-only: the text LLM key an image provider of `providerKey` uses when it
+ * has none of its own (`resolveShareableTextLlmKey` matched to the vendor), else
+ * `undefined`. Throws like it. Never serialize the key to the client or a log.
+ */
+export async function resolveSharedImageKey(
   db: Database,
   providerKey: string,
   ref: WithEnvAndKey,
@@ -462,7 +466,7 @@ export async function resolveImageRuntimeConfig(
   const { providerKey } = credential;
   const apiKey =
     credential.readApiKey(ref.encryptionKey) ??
-    (await sharedImageKey(db, providerKey, { env, encryptionKey: ref.encryptionKey }));
+    (await resolveSharedImageKey(db, providerKey, { env, encryptionKey: ref.encryptionKey }));
   const { model } = resolveProviderSettings('image', providerKey, credential.config, env);
   const resolution = env.IMAGE_RESOLUTION?.trim();
   const aspectRatio = env.IMAGE_ASPECT_RATIO?.trim();
