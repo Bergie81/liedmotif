@@ -7,7 +7,7 @@
 import { and, eq, sql } from 'drizzle-orm';
 import type { ListenerContext } from '@liedmotif/shared';
 import type { Database } from '../client';
-import { voidOpenLinks } from '../invites/invites-repo';
+import { listOpenMemberInvites, voidOpenLinks } from '../invites/invites-repo';
 import { deleteOtherLogins } from '../logins';
 import { isEmailUniqueViolation } from '../pg-errors';
 import { renameOwnerPersonFollowingUser } from '../people/people-repo';
@@ -75,7 +75,8 @@ export async function getListenerProfile(
 /**
  * Persist the full profile atomically: name/email onto the Better Auth `user`
  * row (email is the login identifier — an address another account signs in with
- * is refused as `email_in_use`; moving it clears Confirmed email and voids the
+ * is refused as `email_in_use`, and moving onto one an open Invite carries as
+ * `email_has_open_invite`; moving it clears Confirmed email and voids the
  * open reset links, which went to the address the account is leaving), the
  * rest upserted into the owner's `listener_profiles` row. One transaction, so a
  * refused address or a failed upsert never
@@ -93,7 +94,8 @@ export interface UpdateListenerProfileOptions {
   revokeOtherLoginsExcept?: string;
 }
 
-export type UpdateListenerProfileResult = { ok: true } | { ok: false; reason: 'email_in_use' };
+export type UpdateListenerProfileResult =
+  { ok: true } | { ok: false; reason: 'email_in_use' | 'email_has_open_invite' };
 
 export async function updateListenerProfile(
   db: Database,
@@ -102,12 +104,11 @@ export async function updateListenerProfile(
   options: UpdateListenerProfileOptions = {},
 ): Promise<UpdateListenerProfileResult> {
   try {
-    await writeListenerProfile(db, userId, profile, options);
+    return await writeListenerProfile(db, userId, profile, options);
   } catch (error) {
     if (isEmailUniqueViolation(error)) return { ok: false, reason: 'email_in_use' };
     throw error;
   }
-  return { ok: true };
 }
 
 async function writeListenerProfile(
@@ -115,13 +116,24 @@ async function writeListenerProfile(
   userId: string,
   profile: ListenerProfile,
   options: UpdateListenerProfileOptions,
-): Promise<void> {
-  await withTransaction(db, async (tx) => {
+): Promise<UpdateListenerProfileResult> {
+  return withTransaction(db, async (tx) => {
     const [before] = await tx
       .select({ name: user.name, email: user.email })
       .from(user)
       .where(eq(user.id, userId))
       .limit(1);
+    const nextEmail = profile.email.toLowerCase();
+    const emailMoves = before !== undefined && before.email.toLowerCase() !== nextEmail;
+    // An emailed Invite is bound to its address, so a User taking it first would
+    // leave the invitee a link they can never claim. A read, not a reservation:
+    // an Invite minted at the same moment can still collide at its claim.
+    if (
+      emailMoves &&
+      (await listOpenMemberInvites(tx)).some((open) => open.email?.toLowerCase() === nextEmail)
+    ) {
+      return { ok: false as const, reason: 'email_has_open_invite' as const };
+    }
     await tx
       .update(user)
       .set({
@@ -133,7 +145,7 @@ async function writeListenerProfile(
         emailVerified: sql`${user.emailVerified} AND lower(${user.email}) = lower(${profile.email})`,
       })
       .where(eq(user.id, userId));
-    if (before && before.email.toLowerCase() !== profile.email.toLowerCase()) {
+    if (emailMoves) {
       await voidOpenLinks(tx, { kind: 'password_reset', targetUserId: userId, now: new Date() });
     }
     // The owner Person follows the User name until it is given one of its own, so
@@ -162,6 +174,7 @@ async function writeListenerProfile(
     if (options.revokeOtherLoginsExcept) {
       await deleteOtherLogins(tx, userId, options.revokeOtherLoginsExcept);
     }
+    return { ok: true as const };
   });
 }
 

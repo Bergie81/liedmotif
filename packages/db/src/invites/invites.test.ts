@@ -213,6 +213,32 @@ describeIfDb('invites — one-shot tokens and the atomic Member claim', () => {
     expect(retry.ok).toBe(true);
   });
 
+  // The address of an emailed Invite is fixed, so "pick another" is advice its
+  // claimer cannot follow: the result tells the route which case it is.
+  it('refuses an emailed Invite whose address a User already holds, with no partial rows, leaving it claimable', async () => {
+    await ctx.db.insert(user).values({ id: 'holder-1', name: 'Anna', email: 'anna@example.com' });
+    const bound = await createMemberInvite(ctx.db, {
+      label: 'Anna',
+      budget: CUSTOM_BUDGET,
+      email: 'anna@example.com',
+      createdByUserId: adminId,
+    });
+
+    const result = await claimMemberInvite(ctx.db, {
+      token: bound.token,
+      name: 'Anna',
+      email: 'someone-else@example.test',
+      password: 'correct-horse',
+      hashPassword: fakeHash,
+    });
+
+    expect(result).toEqual({ ok: false, reason: 'invite_email_in_use' });
+    const users = await ctx.db.select().from(user).where(eq(user.email, 'anna@example.com'));
+    expect(users.map((row) => row.id)).toEqual(['holder-1']);
+    const [inviteRow] = await ctx.db.select().from(invites).where(eq(invites.id, bound.invite.id));
+    expect(inviteRow?.consumedAt).toBeNull();
+  });
+
   it('claiming an emailed Invite signs in with its address, confirmed, whatever the body says', async () => {
     const { token } = await createMemberInvite(ctx.db, {
       label: 'Lisa',

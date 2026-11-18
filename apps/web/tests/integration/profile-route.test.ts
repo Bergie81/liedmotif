@@ -22,6 +22,8 @@ const holder = vi.hoisted(() => ({
   verifiedPasswords: [] as string[],
   loginToken: 'this-browser' as string | null,
   revokedExcept: [] as (string | undefined)[],
+  saveResult: { ok: true } as { ok: true } | { ok: false; reason: string },
+  mailed: [] as string[],
 }));
 
 vi.mock('@/lib/db', () => ({ getDb: () => ({}) }));
@@ -55,6 +57,15 @@ vi.mock('@/lib/session', async (importActual) => {
     currentLoginToken: async () => holder.loginToken,
   };
 });
+vi.mock('@/lib/account-mail', () => ({
+  mailConfirmLink: async () => {
+    holder.mailed.push('confirm-link');
+    return true;
+  },
+  mailEmailChangedNotice: async () => {
+    holder.mailed.push('email-changed-notice');
+  },
+}));
 vi.mock('@/lib/worker-jobs', () => ({
   enqueueEmbedTrackMetadataBatch: async (_db: unknown, trackIds: string[]) => {
     holder.retagged.push(trackIds);
@@ -74,10 +85,12 @@ vi.mock('@liedmotif/db', async (importActual) => {
       profile: unknown,
       options?: { revokeOtherLoginsExcept?: string },
     ) => {
+      if (!holder.saveResult.ok) return holder.saveResult;
       holder.updates.push(profile);
       holder.revokedExcept.push(options?.revokeOtherLoginsExcept);
-      return { ok: true };
+      return holder.saveResult;
     },
+    getConfirmedEmail: async () => holder.currentProfile.email,
     listFinalMp3TrackIdsForOwner: async () => ['track-1', 'track-2'],
     verifyCredentialPassword: async (_db: unknown, _userId: string, password: string) => {
       holder.verifiedPasswords.push(password);
@@ -118,6 +131,8 @@ beforeEach(() => {
   holder.verifiedPasswords = [];
   holder.loginToken = 'this-browser';
   holder.revokedExcept = [];
+  holder.saveResult = { ok: true };
+  holder.mailed = [];
   holder.currentProfile = {
     name: 'John',
     email: 'admin@example.test',
@@ -263,6 +278,28 @@ describe('POST /api/settings/profile', () => {
     expect((await post({ ...BASE, email: 'new@example.test', name: 'Tom' })).status).toBe(200);
     expect(holder.revokedExcept).toEqual(['this-browser', undefined]);
     expect(holder.verifiedPasswords).toEqual(['Correct-Horse-42']);
+  });
+
+  // The repo refuses the address while an open Invite carries it; the route
+  // must say how to clear the way, not send the Admin hunting for another one.
+  it('refuses an email change onto an address an open Invite carries, mailing nothing', async () => {
+    vi.stubEnv('SMTP_URL', 'smtp://mail.example.test:1025');
+    vi.stubEnv('MAIL_FROM', 'Liedmotif <liedmotif@example.test>');
+    holder.saveResult = { ok: false, reason: 'email_has_open_invite' };
+
+    const res = await post({
+      ...BASE,
+      email: 'Anna@Example.com',
+      currentPassword: 'Correct-Horse-42',
+    });
+
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error: string }).error).toBe(
+      'That address has an open invite. Revoke the invite first.',
+    );
+    expect(holder.updates).toEqual([]);
+    expect(holder.mailed).toEqual([]);
+    expect(holder.sessionReads).toEqual([]);
   });
 
   it('still succeeds and retags when the cookie refresh fails', async () => {

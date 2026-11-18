@@ -5,10 +5,12 @@
 // insert the Better Auth `user` + credential `account`, insert the member
 // profile, snapshot the invite's budget, provision the owner Person. Any
 // failure — most importantly a duplicate email — rolls the consumption back,
-// so the link stays claimable. Better Auth's `user.create` hooks never run
-// here: this path does not go through Better Auth, and the single-admin lock
-// refuses every Better Auth signup on its own. The member role is a literal;
-// no input can escalate it.
+// so the link stays claimable. A duplicate is told apart by whose address it
+// was: the claimer's typed one (`email_in_use`, they can pick another) or the
+// emailed Invite's own (`invite_email_in_use`, only a new Invite helps).
+// Better Auth's `user.create` hooks never run here: this path does not go
+// through Better Auth, and the single-admin lock refuses every Better Auth
+// signup on its own. The member role is a literal; no input can escalate it.
 //
 // An emailed Invite brings its own address: the claimer's typed one is
 // ignored, and the address is a Confirmed email from the start, since only its
@@ -33,7 +35,7 @@ import { defaultHashPassword, upsertCredentialPassword } from './credential';
 
 export type ClaimMemberInviteResult =
   | { ok: true; userId: string; email: string }
-  | { ok: false; reason: 'invalid_token' | 'email_in_use' };
+  | { ok: false; reason: 'invalid_token' | 'email_in_use' | 'invite_email_in_use' };
 
 export type ResetPasswordWithTokenResult =
   { ok: true; userId: string } | { ok: false; reason: 'invalid_token' };
@@ -61,6 +63,7 @@ export async function claimMemberInvite(
   const passwordHash = await (input.hashPassword ?? defaultHashPassword)(input.password);
 
   let result: ClaimMemberInviteResult;
+  let addressBound = false;
   try {
     result = await withTransaction(db, async (tx) => {
       const invite = await consumeMemberInvite(tx, {
@@ -70,6 +73,7 @@ export async function claimMemberInvite(
       if (!invite) return { ok: false as const, reason: 'invalid_token' as const };
 
       const userId = randomUUID();
+      addressBound = invite.email !== null;
       const login = invite.email ?? email;
       await tx
         .insert(user)
@@ -92,7 +96,7 @@ export async function claimMemberInvite(
     });
   } catch (error) {
     if (isEmailUniqueViolation(error)) {
-      return { ok: false, reason: 'email_in_use' };
+      return { ok: false, reason: addressBound ? 'invite_email_in_use' : 'email_in_use' };
     }
     throw error;
   }

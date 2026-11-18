@@ -4,7 +4,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
-import { canonicalPersonName } from '@liedmotif/shared';
+import { canonicalPersonName, DEFAULT_MEMBER_LIMITS } from '@liedmotif/shared';
 import {
   createPerson,
   ensureOwnerPerson,
@@ -15,7 +15,12 @@ import {
 } from '../people/people-repo';
 import { session, user } from '../schema';
 import { createLogin } from '../generation/test-fixtures';
-import { createPasswordResetLink, findClaimableLink } from '../invites/invites-repo';
+import {
+  createMemberInvite,
+  createPasswordResetLink,
+  findClaimableLink,
+  revokeInvite,
+} from '../invites/invites-repo';
 import { connectTestDb, TEST_DATABASE_URL, truncateTables, type TestDb } from '../test-support';
 import { getListenerContext, getListenerProfile, updateListenerProfile } from './profile-repo';
 
@@ -200,6 +205,70 @@ describeIfDb('listener-profile repo', () => {
 
     await updateListenerProfile(ctx.db, userId, { ...profile, email: 'moved@example.test' });
     expect(await resetWorks(kept)).toBe(false);
+  });
+
+  // An emailed Invite is bound to its address, so a User moving onto it first
+  // would leave the invitee a link they can never claim.
+  describe('an address an open Invite carries', () => {
+    const profile = { name: 'John', city: '', country: '', artistName: '', description: '' };
+    const inviteAnna = (createdByUserId: string, extra: { expiresAt?: Date } = {}) =>
+      createMemberInvite(ctx.db, {
+        label: 'Anna',
+        budget: DEFAULT_MEMBER_LIMITS,
+        email: 'anna@example.com',
+        createdByUserId,
+        ...extra,
+      });
+    const storedEmail = async (userId: string) =>
+      (await ctx.db.select({ email: user.email }).from(user).where(eq(user.id, userId)))[0]?.email;
+
+    it('refuses an email change onto an address an open Invite carries, in any casing, writing nothing', async () => {
+      const userId = await seedUser(ctx, 'admin@example.test');
+      await createLogin(ctx.db, userId, 'this-browser');
+      await createLogin(ctx.db, userId, 'an-old-phone');
+      await inviteAnna(userId);
+
+      const result = await updateListenerProfile(
+        ctx.db,
+        userId,
+        { ...profile, name: 'Renamed', email: 'Anna@Example.com' },
+        { revokeOtherLoginsExcept: 'this-browser' },
+      );
+
+      expect(result).toEqual({ ok: false, reason: 'email_has_open_invite' });
+      expect(await getListenerProfile(ctx.db, userId)).toMatchObject({
+        name: 'John',
+        email: 'admin@example.test',
+      });
+      expect(await ctx.db.select({ token: session.token }).from(session)).toHaveLength(2);
+    });
+
+    it('lets the change through once the Invite is revoked, and ignores an expired one', async () => {
+      const userId = await seedUser(ctx, 'admin@example.test');
+      const { invite } = await inviteAnna(userId);
+      await inviteAnna(userId, { expiresAt: new Date(Date.now() - 1_000) });
+      await revokeInvite(ctx.db, { id: invite.id });
+
+      const result = await updateListenerProfile(ctx.db, userId, {
+        ...profile,
+        email: 'anna@example.com',
+      });
+
+      expect(result).toEqual({ ok: true });
+      expect(await storedEmail(userId)).toBe('anna@example.com');
+    });
+
+    it('never refuses an unchanged address or a change of casing only', async () => {
+      const userId = await seedUser(ctx, 'anna@example.com');
+      await inviteAnna(userId);
+
+      expect(
+        await updateListenerProfile(ctx.db, userId, { ...profile, email: 'anna@example.com' }),
+      ).toEqual({ ok: true });
+      expect(
+        await updateListenerProfile(ctx.db, userId, { ...profile, email: 'Anna@Example.com' }),
+      ).toEqual({ ok: true });
+    });
   });
 
   describe('the owner Person following the User name', () => {

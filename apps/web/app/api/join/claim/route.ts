@@ -52,6 +52,13 @@ export async function POST(request: Request) {
     if (result.reason === 'email_in_use') {
       return apiError('validation_error', 'That email is already in use. Pick another.');
     }
+    // An emailed Invite's address is fixed, so the claimer cannot pick another.
+    if (result.reason === 'invite_email_in_use') {
+      return apiError(
+        'validation_error',
+        'Someone already signs in with this invite’s address. Ask your admin for a new invite.',
+      );
+    }
     return apiError('not_found', INVALID_LINK_MESSAGE);
   }
 

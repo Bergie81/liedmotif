@@ -141,7 +141,13 @@ export async function POST(request: Request) {
   const saved = await updateListenerProfile(db, ownerUserId, profile, {
     revokeOtherLoginsExcept: keepLoginToken,
   });
-  if (!saved.ok) return badRequest('That email is already in use. Pick another.');
+  if (!saved.ok) {
+    return badRequest(
+      saved.reason === 'email_has_open_invite'
+        ? 'That address has an open invite. Revoke the invite first.'
+        : 'That email is already in use. Pick another.',
+    );
+  }
   // Name/email live on the Better Auth user row, which sessions cache in a
   // signed cookie — pull the fresh row into it so the account chip doesn't
   // show the old name for the cache's lifetime.

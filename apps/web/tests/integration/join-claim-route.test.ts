@@ -10,7 +10,7 @@ import {
   truncateTables,
 } from '@liedmotif/db/testing';
 import type { TestDb } from '@liedmotif/db/testing';
-import { createMemberInvite, revokeInvite, userProfiles } from '@liedmotif/db';
+import { createMemberInvite, invites, revokeInvite, user, userProfiles } from '@liedmotif/db';
 import { DEFAULT_MEMBER_LIMITS } from '@liedmotif/shared';
 
 const holder = vi.hoisted(() => ({
@@ -198,6 +198,43 @@ describe.skipIf(skip)('POST /api/join/claim', () => {
     });
     expect(response.status).toBe(400);
     expect((await response.json()).error.message).toContain('already in use');
+  });
+
+  // The emailed Invite's address is fixed, so its claimer cannot pick another:
+  // only the Admin can help, with a new Invite.
+  it('tells the claimer of an emailed Invite whose address is taken to ask for a new one, creating nothing', async () => {
+    await testDb.db
+      .insert(user)
+      .values({ id: 'holder-1', name: 'Anna', email: 'anna@example.com' });
+    const bound = await createMemberInvite(testDb.db, {
+      label: 'Anna',
+      budget: DEFAULT_MEMBER_LIMITS,
+      email: 'anna@example.com',
+      createdByUserId: adminId,
+    });
+
+    const response = await postClaim({
+      token: bound.token,
+      name: 'Anna',
+      email: 'anna@example.com',
+      password: 'Correct-Horse-42',
+    });
+
+    expect(response.status).toBe(400);
+    expect((await response.json()).error.message).toBe(
+      'Someone already signs in with this invite’s address. Ask your admin for a new invite.',
+    );
+    expect(holder.signInCalls).toEqual([]);
+    const members = await testDb.db
+      .select()
+      .from(userProfiles)
+      .where(eq(userProfiles.role, 'member'));
+    expect(members).toEqual([]);
+    const [inviteRow] = await testDb.db
+      .select({ consumedAt: invites.consumedAt })
+      .from(invites)
+      .where(eq(invites.id, bound.invite.id));
+    expect(inviteRow?.consumedAt).toBeNull();
   });
 
   it('throttles by IP', async () => {
