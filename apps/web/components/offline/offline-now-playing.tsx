@@ -9,6 +9,7 @@
 import { useEffect, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import {
+  AlertBanner,
   iconButtonClass,
   nowPlayingDetailsClass,
   nowPlayingLayoutClass,
@@ -58,6 +59,11 @@ export function OfflineNowPlaying({
   const queueIndex = track ? player.playableQueueItemIds.indexOf(track.queueItemId) : -1;
   const originSessionTitle = track?.originSessionTitle ?? 'Untitled Session';
   const tracks = playback.source.kind === 'offline' ? playback.source.tracks : [];
+  // Judged at every render, which every Track change brings.
+  const expired = playback.source.kind === 'offline' ? playback.source.expired : () => false;
+  const restExpired =
+    tracks.some((entry) => expired(entry.trackId)) &&
+    tracks.every((entry) => entry.trackId === track?.trackId || expired(entry.trackId));
 
   const [trackDataSheetOpen, setTrackDataSheetOpen] = useState(false);
   const [queueSheetOpen, setQueueSheetOpen] = useState(false);
@@ -154,6 +160,12 @@ export function OfflineNowPlaying({
           onOpenQueue={() => setQueueSheetOpen(true)}
         />
 
+        {restExpired ? (
+          <AlertBanner className="mt-4">
+            The rest of this {noun} expired on this device. Connect to refresh it.
+          </AlertBanner>
+        ) : null}
+
         <PlaylistQueueSheet
           open={queueSheetOpen}
           onOpenChange={setQueueSheetOpen}
@@ -164,6 +176,7 @@ export function OfflineNowPlaying({
             coverImageId: entry.coverImageId,
             durationSeconds: entry.durationSeconds,
             audioUrl: entry.assets.final,
+            expired: expired(entry.trackId),
           }))}
           currentTrackId={track?.trackId ?? null}
           onPlayTrack={(trackId) => player.playQueueItem(trackId)}

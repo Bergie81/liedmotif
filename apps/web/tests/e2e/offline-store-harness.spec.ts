@@ -14,7 +14,9 @@ import { expect, test, type Request } from '@playwright/test';
 // Then the Offline Library end to end: with the network cut, opening the app
 // lands on it through the service worker, and an offline Playlist plays in the
 // Player from the device without a single request. An offline Session is
-// listed apart and plays its Tracks in its own order.
+// listed apart and plays its Tracks in its own order. A Lounge Track whose
+// week since the last sync runs out mid-play never starts from its stored
+// audio, and the player says why.
 
 const FIXTURE_DIR = fileURLToPath(new URL('../../../worker/src/audio/fixtures', import.meta.url));
 const FIXTURE_URL = '/harness-fixtures/offline-track.mp3';
@@ -398,4 +400,125 @@ test('without a connection the app opens the Offline Library and plays an offlin
   // Online again, the app's pages load from the server.
   await context.setOffline(false);
   await harnessReady(page);
+});
+
+test('offline, a Lounge Track whose week runs out during playback does not start, and the player says why', async ({
+  context,
+  page,
+}) => {
+  const syncedAt = Date.UTC(2026, 10, 1);
+  await harnessReady(page);
+  await page.evaluate(async (lastSyncedAt) => {
+    const tone = (seconds: number) => {
+      const rate = 8000;
+      const samples = rate * seconds;
+      const view = new DataView(new ArrayBuffer(44 + samples * 2));
+      const text = (at: number, value: string) =>
+        [...value].forEach((char, i) => view.setUint8(at + i, char.charCodeAt(0)));
+      text(0, 'RIFF');
+      view.setUint32(4, 36 + samples * 2, true);
+      text(8, 'WAVEfmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, 1, true);
+      view.setUint32(24, rate, true);
+      view.setUint32(28, rate * 2, true);
+      view.setUint16(32, 2, true);
+      view.setUint16(34, 16, true);
+      text(36, 'data');
+      view.setUint32(40, samples * 2, true);
+      for (let i = 0; i < samples; i++) view.setInt16(44 + i * 2, Math.sin(i / 8) * 3000, true);
+      return new Blob([view.buffer], { type: 'audio/wav' });
+    };
+    const harness = window.__liedmotifOfflineStoreHarness!;
+    const store = await harness.openStore();
+    await store.wipe();
+    await store.claim('user-a');
+    const entry = (trackId: string, title: string, audio: Blob, fromLounge: boolean) => ({
+      trackId,
+      byteSize: audio.size,
+      version: 'v1',
+      title,
+      artist: null,
+      originSessionTitle: 'Harness Session',
+      durationSeconds: null,
+      coverImageId: null,
+      genreTags: [],
+      vocalMode: 'instrumental' as const,
+      hasLyrics: false,
+      fromLounge,
+    });
+    // The listener's own Track is short, so it ends after the week ran out.
+    const own = tone(4);
+    const lounge = tone(30);
+    const tracks = [
+      entry('own', 'Own Track', own, false),
+      entry('lounge', 'Lounge Track', lounge, true),
+    ];
+    for (const [track, audio] of [
+      [tracks[0]!, own],
+      [tracks[1]!, lounge],
+    ] as const) {
+      await store.put({
+        trackId: track.trackId,
+        version: 'v1',
+        track,
+        details: { title: track.title } as never,
+        lyrics: null,
+        audio,
+        cover: null,
+      });
+    }
+    await store.putMark({
+      key: 'playlist:p1',
+      kind: 'playlist',
+      id: 'p1',
+      markedAt: 1,
+      syncedAt: 2,
+      manifest: { name: 'Harness Playlist', tracks, leftOutTrackCount: 0 },
+    });
+    await store.putLastSyncedAt(lastSyncedAt);
+    await harness.readyOfflineLibrary();
+    await navigator.serviceWorker.ready;
+  }, syncedAt);
+
+  await page.clock.setFixedTime(syncedAt + 60_000);
+  await context.setOffline(true);
+  await page.goto('/library');
+  const row = page
+    .getByRole('list', { name: 'Offline Playlists' })
+    .getByTestId('offline-collection');
+  await expect(row).toContainText('2 Tracks');
+  const titles: string[] = [];
+  await page.exposeFunction('reportTitle', (title: string) => titles.push(title));
+
+  await row.click();
+  const nowPlaying = page.getByTestId('now-playing');
+  await expect(nowPlaying).toHaveAttribute('data-player-status', 'playing');
+  await expect(page.getByTestId('track-title')).toContainText('Own Track');
+  await page.evaluate(() => {
+    const title = document.querySelector('[data-testid="track-title"]')!;
+    new MutationObserver(() =>
+      (window as unknown as { reportTitle: (t: string) => void }).reportTitle(
+        title.textContent ?? '',
+      ),
+    ).observe(title, { subtree: true, childList: true, characterData: true });
+  });
+
+  // The week runs out while the own Track plays.
+  await page.clock.setFixedTime(syncedAt + 8 * 24 * 60 * 60 * 1000);
+
+  await expect(nowPlaying.getByRole('alert')).toHaveText(
+    'The rest of this Playlist expired on this device. Connect to refresh it.',
+    { timeout: 15_000 },
+  );
+  await expect(page.getByTestId('track-title')).toContainText('Own Track');
+  expect(titles.some((title) => title.includes('Lounge Track'))).toBe(false);
+
+  await page.getByRole('button', { name: 'Tracks in this Playlist' }).click();
+  const list = page.getByTestId('playlist-queue');
+  await expect(list.locator('li', { hasText: 'Lounge Track' })).toContainText('Expired');
+  await expect(list.getByRole('button', { name: 'Play Lounge Track' })).toHaveCount(0);
+
+  await context.setOffline(false);
 });

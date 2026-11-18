@@ -46,6 +46,21 @@ export function offlineCollections(
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/** Whether a stored Track's copy has expired at `now()`: the one expiry rule,
+ *  re-judged at every call, so a Player can ask it before every start. A Track
+ *  the device does not hold has nothing to expire. */
+export function offlineCopyExpired(
+  copies: readonly OfflineTrackCopy[],
+  lastSyncedAt: number | null,
+  now: () => number,
+): (trackId: string) => boolean {
+  const held = new Map(copies.map((copy) => [copy.trackId, copy.track]));
+  return (trackId) => {
+    const track = held.get(trackId);
+    return track != null && !offlineCopyPlayable(track, lastSyncedAt, now());
+  };
+}
+
 /** What a collection is called in the Offline Library and its Player: a
  *  Session, or a Playlist for every other kind of mark. */
 export function offlineCollectionNoun(collection: Pick<OfflineCollection, 'kind'>): SourceNoun {

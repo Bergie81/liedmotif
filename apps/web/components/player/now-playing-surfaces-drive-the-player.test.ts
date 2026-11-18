@@ -263,15 +263,21 @@ function mount(
   render(surface(playback), { wrapper: AppShell });
 }
 
-function showOffline(player: PlaybackControllerApi, noun: SourceNoun, onBack: () => void = noop) {
+function showOffline(
+  player: PlaybackControllerApi,
+  noun: SourceNoun,
+  onBack: () => void = noop,
+  { tracks = [], expired = () => false }: Partial<Extract<EngagedSource, { kind: 'offline' }>> = {},
+) {
   mount(
     player,
     {
       kind: 'offline',
       key: 'playlist:offline',
       name: OFFLINE_NAME,
-      tracks: [],
+      tracks,
       startTrackId: null,
+      expired,
     },
     (playback) => h(OfflineNowPlaying, { playback, name: OFFLINE_NAME, noun, onBack }),
   );
@@ -713,5 +719,42 @@ describe('the Offline surface holds nothing that writes to the server', () => {
 
     expect(onBack).toHaveBeenCalledOnce();
     expect(fired(player)).toEqual({});
+  });
+});
+
+describe('the Offline surface past a Lounge copy’s week', () => {
+  const OWN = track({ queueItemId: 'own', trackId: 'own', title: 'Own Track' });
+  const LOUNGE = track({ queueItemId: 'lounge', trackId: 'lounge', title: 'Lounge Track' });
+  const EXPIRED_LINE = 'The rest of this Playlist expired on this device. Connect to refresh it.';
+  const loungeExpired = (trackId: string) => trackId === 'lounge';
+
+  it('marks an expired Track in its list, and the row cannot start it', () => {
+    const player = playingPlayer({ currentTrack: OWN });
+    showOffline(player, 'Playlist', noop, { tracks: [LOUNGE, OWN], expired: loungeExpired });
+
+    press('Tracks in this Playlist');
+    const sheet = within(screen.getByTestId('playlist-queue'));
+
+    expect(sheet.getByText('Lounge Track').closest('li')?.textContent).toContain('Expired');
+    expect(sheet.queryByRole('button', { name: 'Play Lounge Track' })).toBeNull();
+    expect(sheet.getByRole('button', { name: 'Restart Own Track' })).toBeTruthy();
+  });
+
+  it('says why once only expired Tracks are left', () => {
+    showOffline(stubPlayer({ status: 'ended' }), 'Playlist', noop, {
+      tracks: [LOUNGE],
+      expired: loungeExpired,
+    });
+
+    expect(screen.getByRole('alert').textContent).toBe(EXPIRED_LINE);
+  });
+
+  it('says nothing while a Track that may still play is left', () => {
+    showOffline(playingPlayer({ currentTrack: LOUNGE }), 'Playlist', noop, {
+      tracks: [LOUNGE, OWN],
+      expired: loungeExpired,
+    });
+
+    expect(screen.queryByText(EXPIRED_LINE)).toBeNull();
   });
 });

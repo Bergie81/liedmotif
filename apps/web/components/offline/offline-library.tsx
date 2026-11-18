@@ -28,11 +28,11 @@ import {
   type OfflineMark,
   type OfflineTrackCopy,
 } from '@/lib/offline/offline-store';
-import { offlineCopyPlayable } from '@/lib/offline/offline-sync-plan';
 import { reportServerUnreachable, useOnline } from '@/lib/online-state';
 import {
   offlineCollectionNoun,
   offlineCollections,
+  offlineCopyExpired,
   offlinePlayableTracks,
   offlineTrackMedia,
   type OfflineCollection,
@@ -162,19 +162,19 @@ function OfflineLibraryView({ library }: { library: Library }) {
   }
 
   /** A tap on what is already playing only brings its player back. */
-  function open(collection: OfflineCollection, { lastSyncedAt, audioUrls }: ReadyLibrary) {
+  function open(collection: OfflineCollection, { copies, lastSyncedAt, audioUrls }: ReadyLibrary) {
     const at = Date.now();
     setNow(at);
     if (collection.key !== playing?.key) {
-      const tracks = collection.tracks.filter((copy) =>
-        offlineCopyPlayable(copy.track, lastSyncedAt, at),
-      );
+      const expired = offlineCopyExpired(copies, lastSyncedAt, Date.now);
+      const tracks = collection.tracks.filter((copy) => !expired(copy.trackId));
       if (tracks.length === 0) return;
       engageOffline({
         key: collection.key,
         name: collection.name,
         tracks: offlinePlayableTracks(tracks, (id) => audioUrls.get(id) ?? null),
         startTrackId: null,
+        expired,
       });
     }
     setShowPlayer(true);

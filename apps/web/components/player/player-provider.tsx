@@ -512,6 +512,7 @@ function PlayerHost({
           tracks: source.tracks,
           startTrackId: source.startTrackId,
           offline: true,
+          expired: source.expired,
         };
     }
   }, [source]);

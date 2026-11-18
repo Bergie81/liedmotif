@@ -70,6 +70,9 @@ export interface EdgeTransitionHost {
   unloadDeck(deck: DeckId): void;
   /** The transition target (next queue index, incl. the Session Repeat wrap). */
   nextTarget(): QueueTarget | null;
+  /** Whether a Track may still start now: an offline copy can expire after
+   *  its deck was prepared, and then never starts. */
+  startable(track: PlayableTrack): boolean;
   /** The logical handoff: deck switch, cursor, `started` report, metadata, UI.
    *  `queueWrapped` relays the target's Queue-loop-restart provenance into the
    *  report. */
@@ -136,7 +139,11 @@ export class EdgeTransitions {
    * parked/stale carrier element can never stall the next transition. */
   onTimeUpdate(el: HTMLAudioElement, fadeStartSeconds: number): void {
     const position = this.outClock(this.host.activeDeck(), el).positionSeconds;
-    const prep = this.prep;
+    let prep = this.prep;
+    if (prep && !this.host.startable(prep.track)) {
+      this.cancel();
+      prep = null;
+    }
     if (!prep) {
       if (position >= fadeStartSeconds - PREPARE_LEAD_SECONDS) {
         this.beginPreparation(el, fadeStartSeconds);
@@ -624,6 +631,10 @@ export class EdgeTransitions {
     const el = this.host.deckEl(prep.deck);
     const engine = this.host.engine();
     if (!el || !engine || this.prep !== prep) return;
+    if (!this.host.startable(prep.track)) {
+      this.cancel();
+      return;
+    }
     const aligned = prep.planned?.aligned ?? null;
 
     if (aligned) {

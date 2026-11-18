@@ -121,3 +121,15 @@ it('plays only what has not expired when a collection is tapped, even with the p
   ).toEqual(['own']);
   expect(row.textContent).toContain('1 expired');
 });
+
+it('hands the Player its expiry judgement, so a Lounge copy expiring mid-play is held back too', async () => {
+  const row = await openLibrary();
+  fireEvent.click(row);
+  const { expired } = engageOffline.mock.calls[0]![0] as { expired: (id: string) => boolean };
+  expect(expired('lounge')).toBe(false);
+
+  pastExpiry();
+
+  expect(expired('lounge')).toBe(true);
+  expect(expired('own')).toBe(false);
+});

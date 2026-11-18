@@ -135,6 +135,7 @@ function setup(): Fixture {
       unloaded.push(deck);
     },
     nextTarget: () => ({ idx: 1, track: track('in') }),
+    startable: () => true,
     commit: (_deck, committed) => {
       commits.push(committed.trackId);
     },
@@ -301,6 +302,20 @@ describe('EdgeTransitions failure paths', () => {
     expect(f.events[0]?.tier).toBe('beat-aligned');
     expect(f.events[0]?.phaseErrorMs).toBeCloseTo(50, 0);
     expect(f.events[0]?.actualStartContextTime).toBeCloseTo(107.5, 3);
+  });
+
+  it('never starts a prepared Track whose offline copy expired before its fade', async () => {
+    const f = setup();
+    prepareToReady(f, 27.8);
+    f.host.startable = () => false;
+
+    f.els.a.currentTime = 28.2;
+    f.driver.onTimeUpdate(f.els.a, 28);
+    await vi.runAllTimersAsync();
+
+    expect(f.els.b.paused).toBe(true);
+    expect(f.commits).toEqual([]);
+    expect(f.unloaded).toContain('b');
   });
 });
 
@@ -482,5 +497,23 @@ describe('EdgeTransitions buffer transport', () => {
     prepareToReady(f, 20);
     await Promise.resolve();
     expect(f.buffers.decoded).toEqual([]);
+  });
+
+  it('never starts decoded audio whose offline copy expired before its start', async () => {
+    const f = setupBuffer();
+    prepareToReady(f, 20);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(f.buffers.starts).toHaveLength(1);
+
+    f.host.startable = () => false;
+    f.els.a.currentTime = 21;
+    f.driver.onTimeUpdate(f.els.a, 28);
+    await vi.runAllTimersAsync();
+
+    // The deck's unload stops the scheduled source before its start time.
+    expect(f.unloaded).toContain('b');
+    expect(f.els.b.paused).toBe(true);
+    expect(f.commits).toEqual([]);
   });
 });

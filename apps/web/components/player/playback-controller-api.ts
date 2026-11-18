@@ -40,6 +40,10 @@ export type PlayerControllerSource =
        *  Library): the controller then makes no server call at all — no
        *  listening reports and no playback-settings read. */
       offline?: boolean;
+      /** Whether a Track's offline copy has expired on this device, judged
+       *  before every new start; the Track already playing finishes. Absent:
+       *  nothing expires. */
+      expired?: (trackId: string) => boolean;
     };
 
 /** The truthful playback clock sample: the buffer transport's context-clock

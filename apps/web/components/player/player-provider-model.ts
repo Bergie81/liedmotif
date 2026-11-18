@@ -43,6 +43,8 @@ export type EngagedSource =
       /** In play order, each playing its device copy. */
       tracks: PlayableTrack[];
       startTrackId: string | null;
+      /** Whether a Track's copy has expired on this device by now. */
+      expired: (trackId: string) => boolean;
     };
 
 /** The id the provider keys hosts/handoffs on. */

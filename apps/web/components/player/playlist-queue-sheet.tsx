@@ -23,10 +23,13 @@ export function PlaylistQueueSheet({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   playlistName: string;
-  tracks: Pick<
+  tracks: (Pick<
     PlaylistMemberItem,
     'id' | 'title' | 'coverImageId' | 'durationSeconds' | 'audioUrl'
-  >[];
+  > & {
+    /** Its offline copy expired on this device: listed, never started. */
+    expired?: boolean;
+  })[];
   currentTrackId: string | null;
   onPlayTrack: (trackId: string) => void;
 }) {
@@ -51,7 +54,9 @@ export function PlaylistQueueSheet({
                 title={title}
                 coverImageId={member.coverImageId}
                 playing={current}
-                onPlay={member.audioUrl ? () => onPlayTrack(member.id) : undefined}
+                onPlay={
+                  member.audioUrl && !member.expired ? () => onPlayTrack(member.id) : undefined
+                }
               >
                 <span
                   className={cn(
@@ -62,7 +67,7 @@ export function PlaylistQueueSheet({
                   {title}
                 </span>
                 <span className="font-mono text-[10.5px] tracking-[0.04em] text-dim">
-                  {formatTrackDuration(member.durationSeconds)}
+                  {member.expired ? 'Expired' : formatTrackDuration(member.durationSeconds)}
                 </span>
               </QueueRow>
             );

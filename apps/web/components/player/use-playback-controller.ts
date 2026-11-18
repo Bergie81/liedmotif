@@ -99,6 +99,8 @@ function clampVolume(volume: number): number {
 // previous one (the universal player idiom — double-tap to actually go back).
 const BACK_RESTART_SECONDS = 3;
 
+const NEVER_EXPIRES = (): boolean => false;
+
 /** `navigator.deviceMemory` where the browser reports it. */
 function reportedDeviceMemoryGb(): number | null {
   if (typeof navigator === 'undefined') return null;
@@ -123,6 +125,11 @@ export function usePlaybackController(
   const sourceId = source.kind === 'session' ? source.sessionId : source.playlistId;
   const sourceKind = source.kind;
   const offline = source.kind === 'playlist' && source.offline === true;
+  // Read at every start, never captured: an offline copy can expire while
+  // the Playlist plays.
+  const expiredRef = useRef<(trackId: string) => boolean>(NEVER_EXPIRES);
+  expiredRef.current = (source.kind === 'playlist' && source.expired) || NEVER_EXPIRES;
+  const expired = useCallback((track: PlayableTrack) => expiredRef.current(track.trackId), []);
   const deckARef = useRef<HTMLAudioElement | null>(null);
   const deckBRef = useRef<HTMLAudioElement | null>(null);
   const engineRef = useRef<PlayerEngine | null>(null);
@@ -568,6 +575,7 @@ export function usePlaybackController(
     [activeTrack],
   );
 
+  /** The next Track that may start, passing over expired ones and any `skip` rejects. */
   const explicitNextTarget = useCallback(
     (skip?: (track: PlayableTrack) => boolean): QueueTarget | null => {
       const next = nextIndex();
@@ -576,7 +584,7 @@ export function usePlaybackController(
         queueRef.current,
         activeTrack()?.queueItemId ?? null,
         start,
-        skip,
+        (track) => expired(track) || (skip?.(track) ?? false),
       );
       // An ordered advance past the projection's end is the Queue loop restarting;
       // the target carries that so its `started` report can prove the wrap to the
@@ -590,7 +598,7 @@ export function usePlaybackController(
       }
       return target;
     },
-    [activeTrack, nextIndex],
+    [activeTrack, expired, nextIndex],
   );
 
   const isDeadSource = useCallback(
@@ -605,12 +613,17 @@ export function usePlaybackController(
    * the next mode-selected queue slot. */
   const resolveNextTarget = useCallback((): QueueTarget | null => {
     if (sectionLoopRegion()) return null;
-    if (loopPinned()) return loopSeamTarget();
+    if (loopPinned()) {
+      // An expired pinned Track gets no further pass: it runs out, and its
+      // natural end moves on.
+      const seam = loopSeamTarget();
+      return seam && !expired(seam.track) ? seam : null;
+    }
     if (playbackTraversalRef.current.mode === 'loop-track') {
       return null;
     }
     return explicitNextTarget();
-  }, [explicitNextTarget, loopPinned, loopSeamTarget, sectionLoopRegion]);
+  }, [expired, explicitNextTarget, loopPinned, loopSeamTarget, sectionLoopRegion]);
 
   /** Arm Loop Track's seamless pin once `deck` commits a downloaded final (the
    * pin is restricted to finals). Before that the mode still holds generation:
@@ -705,6 +718,7 @@ export function usePlaybackController(
       },
       unloadDeck: (deck) => unloadDeck(deck),
       nextTarget: () => resolveNextTarget(),
+      startable: (track) => !expired(track),
       commit: (deck, track, idx, queueWrapped) => commitHandoff(deck, track, idx, queueWrapped),
       buffers: () => bufferDecks(),
       bufferEligible: () => bufferEligible(),
@@ -718,9 +732,29 @@ export function usePlaybackController(
     deckSources,
     effectiveCrossfadeSeconds,
     enterElementMode,
+    expired,
     resolveNextTarget,
     unloadDeck,
   ]);
+
+  /** Only expired Tracks are left: playback ends, with nothing parked to
+   * retry or loop. */
+  const endPlayback = useCallback(() => {
+    transitions().cancel();
+    applyLoopEvent({ type: 'exit' });
+    unloadDeck('a');
+    unloadDeck('b');
+    wantPlayRef.current = false;
+    patch({
+      status: 'ended',
+      playIntentPending: false,
+      currentTrack: null,
+      currentFavorited: false,
+      currentInCuratedPlaylist: false,
+      sourceKind: null,
+      activeEdgeTier: null,
+    });
+  }, [applyLoopEvent, patch, transitions, unloadDeck]);
 
   /** Play `el` and patch `playing` only once the play promise RESOLVES — a rejected
    * play (iOS autoplay/interruption policy, aborted load) leaves the UI paused
@@ -826,8 +860,20 @@ export function usePlaybackController(
       shuffleTransition: ShuffleTransition = 'record',
       queueWrapped = false,
     ) => {
-      const track = queueRef.current[idx];
+      let track = queueRef.current[idx];
       if (!track) return;
+      // Every hard-cut start passes here: an expired Track is passed over for
+      // the next one that may still play.
+      if (expired(track)) {
+        const target = explicitNextTarget();
+        if (!target) {
+          endPlayback();
+          return;
+        }
+        idx = target.idx;
+        track = target.track;
+        queueWrapped = target.wrapped ?? false;
+      }
 
       transitions().cancel();
       const previousDeck = activeDeckRef.current;
@@ -871,6 +917,9 @@ export function usePlaybackController(
       activeTrack,
       bufferDecks,
       cutOverTo,
+      endPlayback,
+      expired,
+      explicitNextTarget,
       patch,
       resolveNextTarget,
       setMediaMetadata,
@@ -911,13 +960,16 @@ export function usePlaybackController(
       const other: DeckId = activeDeckRef.current === 'a' ? 'b' : 'a';
       if (queueRef.current[idx]) {
         playOnDeck(other, idx, shuffleTransition, queueWrapped);
+      } else if (queueRef.current.some(expired)) {
+        // Nothing arrives to replace an expired copy.
+        endPlayback();
       } else {
         // Queue exhausted: park the cursor on the slot the next arriving track
         // fills, so resume starts there instead of replaying or skipping past it.
         waitAt(idx);
       }
     },
-    [playOnDeck, waitAt],
+    [endPlayback, expired, playOnDeck, waitAt],
   );
 
   /** Natural advance to the next track (sequential hard cut), loop, or wait.
@@ -1815,7 +1867,8 @@ export function usePlaybackController(
   const playQueueItem = useCallback(
     (queueItemId: string) => {
       const idx = queueRef.current.findIndex((track) => track.queueItemId === queueItemId);
-      if (idx < 0) return;
+      const tapped = queueRef.current[idx];
+      if (!tapped || expired(tapped)) return;
       userStartRef.current = true;
       queueTapStartRef.current = true;
       wantPlayRef.current = true;
@@ -1826,7 +1879,7 @@ export function usePlaybackController(
       }
       playOnDeck(activeDeckRef.current, idx);
     },
-    [applyLoopEvent, ensureEngine, patch, playOnDeck],
+    [applyLoopEvent, ensureEngine, expired, patch, playOnDeck],
   );
 
   // The repeat-one surface: assigned EVERY render, after everything it reads
