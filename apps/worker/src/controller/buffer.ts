@@ -346,17 +346,19 @@ export function isListenerActive(
 }
 
 /**
- * Whether a restart (Start, Resume, Try again) still counts as a listener. While
- * the Session has nothing to play, a restart stands for one batch: once that
- * batch is in flight, a further paid attempt waits until audio plays. This is
- * what keeps a Try again labelled with one batch's Tracks from topping up to a
- * larger ready-ahead target before anything has played.
+ * Whether the Session's latest restart still counts as a listener. Start always
+ * does: its window carries the cold-start prefill toward the ready-ahead
+ * target. A Resume or Try again on a Session with nothing to play stands for
+ * one batch: once that batch is in flight, a further paid attempt waits until
+ * audio plays. This is what keeps a Try again labelled with one batch's Tracks
+ * from topping up to a larger ready-ahead target before anything has played.
  */
 export function restartCountsAsListener(state: {
+  resumed: boolean;
   inFlightJobs: number;
   hasPlayableTrack: boolean;
 }): boolean {
-  return state.inFlightJobs === 0 || state.hasPlayableTrack;
+  return !state.resumed || state.inFlightJobs === 0 || state.hasPlayableTrack;
 }
 
 /**

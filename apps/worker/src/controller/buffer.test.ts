@@ -667,13 +667,27 @@ describe('Try again on a stuck Session buys one batch', () => {
 });
 
 describe('restartCountsAsListener', () => {
-  it('counts a restart while nothing is in flight or something can play', () => {
-    expect(restartCountsAsListener({ inFlightJobs: 0, hasPlayableTrack: false })).toBe(true);
-    expect(restartCountsAsListener({ inFlightJobs: 1, hasPlayableTrack: true })).toBe(true);
+  const resumed = { resumed: true } as const;
+
+  it('counts a Resume or Try again while nothing is in flight or something can play', () => {
+    expect(restartCountsAsListener({ ...resumed, inFlightJobs: 0, hasPlayableTrack: false })).toBe(
+      true,
+    );
+    expect(restartCountsAsListener({ ...resumed, inFlightJobs: 1, hasPlayableTrack: true })).toBe(
+      true,
+    );
   });
 
-  it('with a batch in flight and nothing to play, waits for audio instead', () => {
-    expect(restartCountsAsListener({ inFlightJobs: 1, hasPlayableTrack: false })).toBe(false);
+  it('with a Resume or Try again batch in flight and nothing to play, waits for audio instead', () => {
+    expect(restartCountsAsListener({ ...resumed, inFlightJobs: 1, hasPlayableTrack: false })).toBe(
+      false,
+    );
+  });
+
+  it('always counts a Start, so its cold-start prefill runs before the first play', () => {
+    expect(
+      restartCountsAsListener({ resumed: false, inFlightJobs: 1, hasPlayableTrack: false }),
+    ).toBe(true);
   });
 });
 

@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from 'react';
 import type { SessionSummary } from '@liedmotif/shared';
 import { convertSessionToPlaylist, moreLikeThis, stopSession } from '@/lib/api-client';
 import { useClientId } from '@/lib/use-client-id';
+import { MORE_LIKE_THIS_FAILED } from '@/components/create/creation-refusal';
 import { clearPlayerError, showPlayerError } from './player-error-toast';
 import { usePlayerActions } from './player-provider';
 import {
@@ -46,7 +47,7 @@ export function usePlayerSessionActions({
     return runPlayerSessionAction({
       gate: actionGate.current,
       action: 'more-like-this',
-      failureLabel: 'More Like This failed',
+      failureLabel: MORE_LIKE_THIS_FAILED,
       createsSession: true,
       request: () => moreLikeThis([trackId], clientId),
       onBusyChange: setBusyAction,

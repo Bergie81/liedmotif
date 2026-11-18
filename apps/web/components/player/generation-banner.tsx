@@ -19,6 +19,7 @@ import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, Info, Loader2, Repeat, RotateCcw, Trash2 } from 'lucide-react';
 import { presentGenerationStatus } from '@liedmotif/shared';
+import { trackNoun } from '@/components/app-shell-model';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { compactDangerButtonClass } from '@/components/ui/design-system';
 import { compactPrimaryButtonClass } from '@/components/ui/form-styles';
@@ -142,7 +143,7 @@ export function TryAgainAction({
         className={compactPrimaryButtonClass}
       >
         <RotateCcw className="h-4 w-4" aria-hidden />
-        {`Try again · ${tracks} ${tracks === 1 ? 'Track' : 'Tracks'}`}
+        {`Try again · ${tracks} ${trackNoun(tracks)}`}
       </button>
     </OnlineOnly>
   );

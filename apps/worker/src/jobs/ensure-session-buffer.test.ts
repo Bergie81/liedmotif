@@ -2028,6 +2028,25 @@ describeIfDb('ensure-session-buffer controller', () => {
       expect(calls()).toBe(2);
     });
 
+    it('a plain Start still prefills toward a higher target before anything plays', async () => {
+      const { ownerUserId, sessionId } = await freshGeneratingSession();
+      await ctx.db
+        .update(activitySessions)
+        .set({ startedAt: TAPPED_AT })
+        .where(eq(activitySessions.id, sessionId));
+      await updateGenerationSettings(ctx.db, { ownerUserId, patch: { bufferAheadTracks: 6 } });
+      const { provider, calls } = countingMusicProvider(async (_, n) => okTask(`prefill-${n}`));
+      const tick = () =>
+        runEnsureSessionBuffer(
+          { db: ctx.db, music: provider, now: NOW, limits: ampleLimits() },
+          { sessionId },
+        );
+
+      expect((await tick()).action).toBe('generate');
+      expect((await tick()).action).toBe('generate');
+      expect(calls()).toBe(2);
+    });
+
     it('in Repeat with zero Tracks the tap buys one batch, which the Session then loops', async () => {
       const { ownerUserId, sessionId, calls, tick, tap } = await failedFirstBatch('repeat');
       expect((await tick()).action).toBe('noop');

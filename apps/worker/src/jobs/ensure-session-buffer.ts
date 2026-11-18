@@ -603,13 +603,15 @@ export async function runEnsureSessionBuffer(
       inFlightSessionJobs === 0 &&
       !(await hasPlayableTrack());
     // Paid top-ups only while someone is listening (or right after a restart,
-    // so the cold-start prefill still runs before the first play). A restart
-    // whose batch is in flight before anything plays waits for that audio; the
-    // playable read runs only on a tick where the restart alone is the listener.
+    // so the cold-start prefill still runs before the first play). A Resume or
+    // Try again whose batch is in flight before anything plays waits for that
+    // audio; the playable read runs only on a tick where the restart alone is
+    // the listener.
     const listenerActive =
       isListenerActive(fresh, now) &&
       (isListenerActive(fresh, now, { restartsCount: false }) ||
         restartCountsAsListener({
+          resumed: fresh.lastResumedAt !== null,
           inFlightJobs: inFlightSessionJobs,
           hasPlayableTrack: inFlightSessionJobs > 0 && (await hasPlayableTrack()),
         }));

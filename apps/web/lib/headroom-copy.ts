@@ -3,7 +3,7 @@
 // asserted without a database.
 
 import { oneTimeBudgetUsedUpMessage, type CreationHeadroomDecision } from '@liedmotif/shared';
-import { trackNoun } from '@/components/app-shell-model';
+import { HEADROOM_PERIOD, trackNoun } from '@/components/app-shell-model';
 
 const WAY_OUT = 'Resume one of your sessions from Sessions or play your Library instead.';
 
@@ -39,7 +39,6 @@ export interface HeadroomCopyContext {
   resetTimezone: string;
 }
 
-const PERIOD = { day: ' today', month: ' this month' } as const;
 const RESET = { day: 'at midnight', month: 'on the 1st' } as const;
 const WINDOW_NAME = { day: 'daily', month: 'monthly' } as const;
 
@@ -80,5 +79,5 @@ export function creationHeadroomMessage(
   }
   const left = remainingTracks === 0 ? 'none' : String(remainingTracks);
   const holder = scope === 'pool' ? 'the shared budget has' : 'you have';
-  return `${needs}; ${holder} ${left} left${PERIOD[window]}. More Tracks ${RESET[window]} (${resetTimezone}). ${WAY_OUT}`;
+  return `${needs}; ${holder} ${left} left${HEADROOM_PERIOD[window]}. More Tracks ${RESET[window]} (${resetTimezone}). ${WAY_OUT}`;
 }
