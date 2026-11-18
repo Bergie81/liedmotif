@@ -26,7 +26,7 @@ async function main(): Promise<void> {
   const llm = await getLlmProvider();
   if (!llm) {
     throw new Error(
-      'No text LLM is configured: set LLM_PROVIDER and its LLM_* values, or connect a Writing AI in the app.',
+      'No text LLM is configured: set LLM_PROVIDER and its LLM_* values, or connect a Text AI in the app.',
     );
   }
   const { providerKey } = llm;

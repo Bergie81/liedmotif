@@ -48,7 +48,7 @@ export const ONBOARDING_GROUPS: readonly { group: OnboardingGroup; steps: Onboar
     steps: [
       { id: 'music', title: 'Music model' },
       { id: 'tracks', title: 'Track limit', optional: true },
-      { id: 'llm', title: 'Writing AI', optional: true },
+      { id: 'llm', title: 'Text AI', optional: true },
       { id: 'covers', title: 'Cover art', optional: true },
     ],
   },
@@ -283,7 +283,7 @@ export function onboardingRecord(
     draft.savedCeiling.enabled
       ? row('Tracks / day', `${draft.savedCeiling.dailyTracks} Tracks`, true)
       : row('Tracks / day', 'No limit', false),
-    credentialRow('Writing AI', data.llm, draft.llmConnected, draft.llmModel || 'Connected', 'Off'),
+    credentialRow('Text AI', data.llm, draft.llmConnected, draft.llmModel || 'Connected', 'Off'),
     // Having no source is what a Session falls back to when nothing was chosen,
     // so it is the one value that reads as unset.
     row('Cover images', COVER_SOURCE_LABELS[covers], covers !== 'none'),

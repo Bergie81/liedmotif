@@ -20,11 +20,11 @@ import { requireAdmin } from '@/lib/session';
 export const dynamic = 'force-dynamic';
 
 /**
- * Whether deleting the stored Writing AI row leaves the env-selected one running:
+ * Whether deleting the stored Text AI row leaves the env-selected one running:
  * the row backs another provider than `LLM_PROVIDER` names (so nothing reads it), or
  * env alone supplies the key, model and base URL that provider's builder needs.
  * `LLM_PROVIDER` by itself is not enough — with the key only stored, the delete
- * leaves no Writing AI at all.
+ * leaves no Text AI at all.
  */
 function storedLlmIsEnvFallback(storedProviderKey: string, selectedProviderKey: string): boolean {
   if (!process.env.LLM_PROVIDER?.trim()) return false;
@@ -95,12 +95,12 @@ export default async function ProvidersPage() {
 
         <SettingsSection
           id="text-llm"
-          title="Writing AI"
+          title="Text AI"
           action={<SettingsStatusBadge status={data.llm.presentation.status} />}
         >
           <ProviderCard
             icon={<Cpu />}
-            name={llm ? data.llm.displayName : 'Writing AI'}
+            name={llm ? data.llm.displayName : 'Text AI'}
             requirement="optional"
             source={data.llm.presentation.source}
             masked={llm?.masked}

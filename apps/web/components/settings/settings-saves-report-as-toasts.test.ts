@@ -145,7 +145,7 @@ describe('Cover art', () => {
   const saved = (enhancement?: { attempted: boolean; applied: boolean }) =>
     Response.json({ ok: true, settings: COVER_ART, enhancement });
 
-  it('says the definition was optimized when the Writing AI rewrote it', async () => {
+  it('says the definition was optimized when the Text AI rewrote it', async () => {
     serve(saved({ attempted: true, applied: true }));
     render(h(CoverArtForm, { initial: COVER_ART, llmConfigured: true }));
 
@@ -153,7 +153,7 @@ describe('Cover art', () => {
 
     await expectToasts({
       tone: 'success',
-      message: 'Saved. Your definition was optimized by your Writing AI.',
+      message: 'Saved. Your definition was optimized by your Text AI.',
     });
   });
 

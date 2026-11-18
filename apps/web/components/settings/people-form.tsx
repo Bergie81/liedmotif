@@ -266,7 +266,7 @@ export function PeopleForm(props: PeopleFormProps) {
         </SettingsCard>
         <SettingsFootnote>
           Person names and About text stay private unless a matching request needs them. Named About
-          text can inspire personalized lyrics for vocal requests when a Writing AI is connected.
+          text can inspire personalized lyrics for vocal requests when a Text AI is connected.
           Selected photos go only to the configured image provider for Cover generation; Never keeps
           every personal photo on this instance.
         </SettingsFootnote>

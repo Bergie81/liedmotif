@@ -137,7 +137,7 @@ const done = (receipt: unknown) => ({ type: 'action', action: { status: 'done', 
 
 describe('assistantStreamEventSchema', () => {
   it('reads the events a reply stream is made of', () => {
-    const { error } = makeApiError('provider_error', 'The Writing AI could not answer.', true);
+    const { error } = makeApiError('provider_error', 'The Text AI could not answer.', true);
     for (const event of [
       { type: 'text', text: 'Open ' },
       { type: 'done' },

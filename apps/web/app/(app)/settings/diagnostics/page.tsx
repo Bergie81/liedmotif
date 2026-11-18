@@ -148,7 +148,7 @@ export default async function DiagnosticsPage() {
                     health={musicHealth}
                   />
                   <ProviderRow
-                    label="Writing AI"
+                    label="Text AI"
                     value={
                       providers?.llm.credential
                         ? `${providers.llm.providerKey} · ${providers.llm.effectiveModel || 'model not configured'}`

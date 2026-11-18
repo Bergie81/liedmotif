@@ -2,7 +2,7 @@
 
 // The Assistant controls on Settings → Members: the instance default, each
 // Member's switch and daily allowance, and what the screen shows while no
-// Writing AI is connected.
+// Text AI is connected.
 
 import { createElement as h } from 'react';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -75,15 +75,15 @@ const memberAllowance = () =>
 const note = (control: HTMLElement) =>
   document.getElementById(control.getAttribute('aria-describedby') ?? '') as HTMLElement;
 
-it('shows a hint instead of the default while no Writing AI is connected', () => {
+it('shows a hint instead of the default while no Text AI is connected', () => {
   render(h(AssistantDefaultPanel, { access: null }));
 
-  expect(screen.getByText(/runs on your Writing AI/)).toBeTruthy();
+  expect(screen.getByText(/runs on your Text AI/)).toBeTruthy();
   expect(screen.queryByRole('switch')).toBeNull();
   expect(screen.queryByRole('textbox')).toBeNull();
 });
 
-it("leaves the Assistant controls off a Member's card while no Writing AI is connected", () => {
+it("leaves the Assistant controls off a Member's card while no Text AI is connected", () => {
   render(h(MemberCards, { ...memberCards({}).props, assistantDefault: null }));
 
   expect(screen.getByText('Lisa')).toBeTruthy();

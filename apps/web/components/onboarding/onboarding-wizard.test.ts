@@ -98,7 +98,7 @@ describe('first-login onboarding wizard', () => {
       'People',
       'Music model',
       'Track limit',
-      'Writing AI',
+      'Text AI',
       'Cover art',
     ]) {
       expect(markup).toContain(title);

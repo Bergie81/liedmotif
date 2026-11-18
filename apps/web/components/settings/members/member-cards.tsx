@@ -320,7 +320,7 @@ export function MemberCards({
   members: MembersAdminData['members'];
   tracksPerCall: number;
   unitCosts: UnitCosts;
-  /** The instance default for Assistant access; null while no Writing AI is connected. */
+  /** The instance default for Assistant access; null while no Text AI is connected. */
   assistantDefault: AssistantAccess | null;
 }) {
   if (members.length === 0) {

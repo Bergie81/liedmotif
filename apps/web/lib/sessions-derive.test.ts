@@ -89,7 +89,7 @@ describe('deriveSnapshotForIntentSafe', () => {
 });
 
 // Only an explicit Instrumental pick shuts the gate on About. Whether the words
-// ask for singing is the Writing AI's call, in any language, also on a Change
+// ask for singing is the Text AI's call, in any language, also on a Change
 // Vibe of an instrumental Session; it writes lyric notes only for a vocal one.
 describe('personLyricContextForRequest', () => {
   const people = [
@@ -178,7 +178,7 @@ describe('personLyricContextForRequest', () => {
       ).toEqual([{ name: 'Julia', about: 'repairs bicycles' }]);
     });
 
-    it('leaves instrumental change wording to the Writing AI', () => {
+    it('leaves instrumental change wording to the Text AI', () => {
       expect(
         namedPeople('instrumental only, no vocals', people, {
           promptHistory: 'a song for Julia',
@@ -194,7 +194,7 @@ describe('personLyricContextForRequest', () => {
       ).toEqual([]);
     });
 
-    it('an adjustment of an instrumental Session without a Vocal pick sends the About, leaving the vocal call to the Writing AI', () => {
+    it('an adjustment of an instrumental Session without a Vocal pick sends the About, leaving the vocal call to the Text AI', () => {
       expect(
         personLyricContextForRequest('add lyrics about Julia', people, {
           promptHistory: 'focus music for Julia',

@@ -75,7 +75,7 @@ export function CoverArtForm({
     // not — is exactly what the field shows after saving.
     if (data.settings) setDefinition(data.settings.customStyleDefinition);
     if (data.enhancement?.applied) {
-      toast.success('Saved. Your definition was optimized by your Writing AI.', { key: SAVE_KEY });
+      toast.success('Saved. Your definition was optimized by your Text AI.', { key: SAVE_KEY });
     } else if (data.enhancement?.attempted) {
       toast.warning('Saved. Enhancement was unavailable, so your definition was kept as written.', {
         key: SAVE_KEY,
@@ -152,15 +152,15 @@ export function CoverArtForm({
           <div className="text-[13px] font-semibold text-paper">Enhance prompts</div>
           <p className="mt-1 text-[11.5px] leading-[1.5] text-dim">
             {llmConfigured
-              ? 'Your Writing AI rewrites cover guidance and custom style definitions into image-model-friendly phrasing before generation.'
-              : 'Requires a Writing AI under Settings → Providers.'}
+              ? 'Your Text AI rewrites cover guidance and custom style definitions into image-model-friendly phrasing before generation.'
+              : 'Requires a Text AI under Settings → Providers.'}
           </p>
         </div>
         <Switch
           checked={llmConfigured && enhancementEnabled}
           onCheckedChange={setEnhancementEnabled}
           disabled={!llmConfigured}
-          aria-label="Enhance prompts with the Writing AI"
+          aria-label="Enhance prompts with the Text AI"
           data-testid="prompt-enhancement-toggle"
         />
       </div>

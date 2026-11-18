@@ -180,7 +180,7 @@ describe('scoring an answer', () => {
   });
 
   it('fails every check that applies when the turn itself failed', () => {
-    const failed = turn({ answer: '', toolCalls: [], error: 'The Writing AI did not answer.' });
+    const failed = turn({ answer: '', toolCalls: [], error: 'The Text AI did not answer.' });
 
     expect(scoreAnswer({ ...INVITE, link: null }, failed, ADMIN)).toMatchObject({
       validRead: 'fail',

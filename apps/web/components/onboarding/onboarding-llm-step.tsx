@@ -57,7 +57,7 @@ function LlmStepBody({ credential, encryptionKeyConfigured, onConnected, onDone 
 
   return (
     <section>
-      <OnboardingStepHeader eyebrow="Optional · recommended" title="Add a Writing AI">
+      <OnboardingStepHeader eyebrow="Optional · recommended" title="Add a Text AI">
         It turns what you type into a detailed music style and writes Session names, Track titles,
         and lyric ideas.
         {credential.configured

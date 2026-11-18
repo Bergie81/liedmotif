@@ -101,11 +101,11 @@ export const EVAL_SET: readonly EvalEntry[] = [
     id: 'disable-writing-ai',
     role: 'admin',
     language: 'de',
-    question: 'Wie schalte ich die Writing AI wieder ab?',
+    question: 'Wie schalte ich die Text AI wieder ab?',
     docs: [{ page: 'providers-and-keys', section: 'writing-ai' }],
     link: '/settings/providers',
     goodAnswer:
-      'Press Disable Writing AI in Settings › AI Providers. If .env configures the writing AI, those lines have to go too, or it stays on; until then the button reads Delete stored fallback.',
+      'Press Disable Text AI in Settings › AI Providers. If .env configures the text AI, those lines have to go too, or it stays on; until then the button reads Delete stored fallback.',
   },
   {
     id: 'ollama-base-url',
@@ -249,7 +249,7 @@ export const EVAL_SET: readonly EvalEntry[] = [
     docs: [{ page: 'features', section: 'make-it-personal' }],
     link: '/settings/people',
     goodAnswer:
-      'Add her in Settings › People (Name, About them, Reference photos), then use her saved name in the request; the word has to match. About them reaches the lyrics only with a writing AI.',
+      'Add her in Settings › People (Name, About them, Reference photos), then use her saved name in the request; the word has to match. About them reaches the lyrics only with a text AI.',
   },
   {
     id: 'offline-storage-cap',

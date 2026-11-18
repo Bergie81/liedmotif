@@ -102,7 +102,7 @@ export function CostsPanel({ unitCosts }: { unitCosts: UnitCosts }) {
         {busy ? 'Saving…' : 'Save unit costs'}
       </button>
       <SettingsFootnote>
-        Whole cents, US dollars. Round up to absorb Writing AI tokens — estimates are count × price,
+        Whole cents, US dollars. Round up to absorb Text AI tokens — estimates are count × price,
         never a bill.
       </SettingsFootnote>
     </SettingsCard>

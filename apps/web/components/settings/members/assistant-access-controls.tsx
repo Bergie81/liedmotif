@@ -125,7 +125,7 @@ function DailyMessagesRow({
 }
 
 /**
- * The instance default. `access` is null while no Writing AI is connected:
+ * The instance default. `access` is null while no Text AI is connected:
  * there is no Assistant to give access to, so the controls give way to a hint.
  */
 export function AssistantDefaultPanel({ access }: { access: AssistantAccess | null }) {
@@ -133,7 +133,7 @@ export function AssistantDefaultPanel({ access }: { access: AssistantAccess | nu
     return (
       <SettingsCard>
         <p className="text-[13px] leading-relaxed text-muted">
-          The Assistant runs on your Writing AI, and none is connected. Add one under{' '}
+          The Assistant runs on your Text AI, and none is connected. Add one under{' '}
           <Link href="/settings/providers" className="text-paper underline underline-offset-2">
             Settings → AI Providers
           </Link>{' '}

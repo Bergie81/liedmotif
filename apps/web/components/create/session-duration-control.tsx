@@ -42,7 +42,7 @@ export function SessionDurationControl({
         <div className="mt-2 text-[11.5px] leading-[1.5] text-dim">
           <p>A selected duration overrides any duration in your prompt.</p>
           <p className="mt-1">
-            Auto detects an explicit duration in your prompt when a Writing AI is connected. Without
+            Auto detects an explicit duration in your prompt when a Text AI is connected. Without
             one, generation stays continuous.
           </p>
         </div>

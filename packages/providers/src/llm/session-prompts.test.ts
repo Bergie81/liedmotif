@@ -467,7 +467,7 @@ describe('trackLyricBriefPrompt', () => {
   });
 });
 
-// The writing AI, not a word list, decides whether "me"/"we" puts the listener
+// The text AI, not a word list, decides whether "me"/"we" puts the listener
 // in the scene — in any language. The listener's own About rides along so the
 // same call can use it once it has decided.
 describe('expansionPrompt for a request that may include the listener', () => {

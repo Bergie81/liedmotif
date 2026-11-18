@@ -220,7 +220,7 @@ describe('an eval run', () => {
       async *streamAssistantReply(input) {
         const question = input.messages.at(-1)!.content;
         asked.push(question);
-        if (question === INVITE.question) throw new ProviderError('The Writing AI did not answer.');
+        if (question === INVITE.question) throw new ProviderError('The Text AI did not answer.');
         yield 'Nimm **Edit budget**.';
       },
     };
@@ -232,7 +232,7 @@ describe('an eval run', () => {
 
     expect(asked).toEqual([INVITE.question, FOLLOW_UP.question]);
     expect(reported).toEqual([INVITE.id, FOLLOW_UP.id]);
-    expect(results[0]?.turn.error).toBe('The Writing AI did not answer.');
+    expect(results[0]?.turn.error).toBe('The Text AI did not answer.');
     expect(results[0]?.score).toMatchObject({ validRead: 'fail', link: 'fail', language: 'fail' });
     expect(results[1]?.turn).toMatchObject({ answer: 'Nimm **Edit budget**.' });
     expect(results[1]?.turn.error).toBeUndefined();

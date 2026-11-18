@@ -109,7 +109,7 @@ describe('provider credential writes', () => {
     );
   });
 
-  it('refuses an OpenAI-compatible Writing AI with no base URL anywhere', async () => {
+  it('refuses an OpenAI-compatible Text AI with no base URL anywhere', async () => {
     // Its builder needs an explicit endpoint, so the row would be the selected LLM
     // while every Session silently compiled without it.
     mocks.encryptionKey.mockReturnValue(Buffer.alloc(32));
@@ -143,7 +143,7 @@ describe('provider credential writes', () => {
     expect(mocks.upsert).not.toHaveBeenCalled();
   });
 
-  it('accepts a Writing AI key-only save whose model comes from .env, storing no model', async () => {
+  it('accepts a Text AI key-only save whose model comes from .env, storing no model', async () => {
     mocks.encryptionKey.mockReturnValue(Buffer.alloc(32));
     mocks.envLayer.mockReturnValue({ model: 'env-model', baseUrl: 'https://llm.example.org/v1' });
     const response = await POST(

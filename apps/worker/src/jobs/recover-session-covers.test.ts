@@ -135,7 +135,7 @@ describeIfDb('recover-session-covers job', () => {
     };
   }
 
-  it('plans an aged regeneration with the configured Writing AI: the stored pick, the wish as written', async () => {
+  it('plans an aged regeneration with the configured Text AI: the stored pick, the wish as written', async () => {
     const ownerUserId = await createUser(ctx.db);
     const sessionId = await createSession(ctx.db, {
       ownerUserId,

@@ -718,7 +718,7 @@ describe('expandSessionIntent', () => {
     expect(captured).toHaveLength(1);
   });
 
-  it("keeps the writing AI's style as written, with no phrase filtered out", async () => {
+  it("keeps the text AI's style as written, with no phrase filtered out", async () => {
     const style = JSON.stringify({
       stylePrompt: 'groovy disco loops in the style of French house',
     });

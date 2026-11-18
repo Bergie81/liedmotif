@@ -292,7 +292,7 @@ describeIfDb('PlaylistCoverGenerator regeneration', () => {
     expect(settled?.plan.userGuidance).toBe('warm dusk light over a paper skyline');
   });
 
-  it('keeps named references in the art direction only when a Writing AI is configured', async () => {
+  it('keeps named references in the art direction only when a Text AI is configured', async () => {
     const guidance = 'a harbor at dusk, Picasso-inspired';
     const prompts: Record<string, string> = {};
     for (const textLlmConfigured of [true, false]) {

@@ -217,7 +217,7 @@ function providerSummary(input: SettingsHubInput): SettingsHubSummary {
   const status = hasUnhealthy ? { label: 'Unhealthy', tone: 'warn' as const } : music;
   return {
     status,
-    text: `Music ${music.label} · Writing AI ${llm.label} · Covers ${covers.label}`,
+    text: `Music ${music.label} · Text AI ${llm.label} · Covers ${covers.label}`,
   };
 }
 
@@ -383,11 +383,11 @@ export function buildSettingsHubData(input: SettingsHubInput): SettingsHubData {
         );
   const diagnostics = workerSummary(input.worker);
   const llm = !input.providers.ok
-    ? unhealthy('Writing AI configuration could not be resolved')
+    ? unhealthy('Text AI configuration could not be resolved')
     : input.providers.value.llm
       ? {
           status: input.providers.value.llm.status,
-          text: `${input.providers.value.llm.providerKey} · Optional Writing AI`,
+          text: `${input.providers.value.llm.providerKey} · Optional Text AI`,
         }
       : unavailable('Optional · prompts pass through as written without it');
 

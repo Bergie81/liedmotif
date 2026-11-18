@@ -97,7 +97,7 @@ export function Costs({ read }: { read: RangedRead<CostComparisonData> }) {
             <SettingsFootnote>
               Estimates, not an invoice. Every music and Cover attempt that may have been billed
               counts, uncertain ones included, at today's Unit costs — so changing a price reprices
-              the past. Writing AI usage is only roughly covered by those prices. Days start at
+              the past. Text AI usage is only roughly covered by those prices. Days start at
               midnight in the budget timezone ({data.timezone}).
             </SettingsFootnote>
           </RangedBody>

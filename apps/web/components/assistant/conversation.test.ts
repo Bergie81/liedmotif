@@ -209,7 +209,7 @@ it.each([
     notice: 'That was a lot of questions at once. Try again in 3 minutes.',
   },
   {
-    refusal: 'a Writing AI that failed',
+    refusal: 'a Text AI that failed',
     status: 502,
     code: 'provider_error',
     headers: undefined,
@@ -286,7 +286,7 @@ it('keeps what was written when the answer fails part-way', async () => {
   reply.send({ type: 'text', text: 'Open **Settings' });
   reply.send({
     type: 'error',
-    error: makeApiError('provider_error', 'The Writing AI stopped answering. Try again.', true)
+    error: makeApiError('provider_error', 'The Text AI stopped answering. Try again.', true)
       .error,
   });
 
@@ -298,7 +298,7 @@ it('keeps what was written when the answer fails part-way', async () => {
     ],
     answering: false,
     draft: '',
-    notice: 'The Writing AI stopped answering. Try again.',
+    notice: 'The Text AI stopped answering. Try again.',
   });
 });
 
@@ -476,14 +476,14 @@ it('keeps what was done when the answer breaks off after it', async () => {
   reply.send({ type: 'action', action: created('Sunday') });
   reply.send({
     type: 'error',
-    error: makeApiError('provider_error', 'The Writing AI could not answer.', true).error,
+    error: makeApiError('provider_error', 'The Text AI could not answer.', true).error,
   });
   await vi.waitFor(() => expect(conversation.getState().answering).toBe(false));
 
   expect(conversation.getState()).toMatchObject({
     messages: [{ role: 'user' }, { role: 'assistant', actions: [created('Sunday')] }],
     draft: '',
-    notice: 'The Writing AI could not answer.',
+    notice: 'The Text AI could not answer.',
   });
 });
 

@@ -101,14 +101,14 @@ describe('the eval report', () => {
       ...mockLlmProvider(),
       // eslint-disable-next-line require-yield
       async *streamAssistantReply() {
-        throw new ProviderError('The Writing AI did not answer.');
+        throw new ProviderError('The Text AI did not answer.');
       },
     };
 
     const markdown = report(await runEval(llm, pick('invite-member')));
 
     expect(markdown).toContain('Answered: 0 of 1');
-    expect(markdown).toContain('**Failed:** The Writing AI did not answer.');
+    expect(markdown).toContain('**Failed:** The Text AI did not answer.');
     expect(markdown).toContain('| Link correct | 0 / 1 |');
   });
 

@@ -475,7 +475,7 @@ export function RegenerateCoverDialog({
                       <Switch
                         checked={enhanceActive}
                         onCheckedChange={setEnhanceChoice}
-                        aria-label="Enhance prompt with the Writing AI"
+                        aria-label="Enhance prompt with the Text AI"
                         data-testid="regenerate-enhance-toggle"
                       />
                       <span
@@ -483,7 +483,7 @@ export function RegenerateCoverDialog({
                         className="text-[11px] font-normal leading-relaxed text-dim"
                       >
                         {enhanceActive
-                          ? 'Optimized automatically by your Writing AI.'
+                          ? 'Optimized automatically by your Text AI.'
                           : 'Sent to the image model exactly as written.'}
                       </span>
                     </span>

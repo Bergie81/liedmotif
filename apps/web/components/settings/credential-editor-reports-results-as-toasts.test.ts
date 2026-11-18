@@ -2,7 +2,7 @@
 
 // Settings → AI Providers (and the onboarding provider steps, which share the
 // editor) report a Test result and a failed save as toasts, so the buttons
-// under the fields stay put. A stored Writing AI that cannot be removed says so
+// under the fields stay put. A stored Text AI that cannot be removed says so
 // the same way.
 
 import { createElement as h, type ReactNode } from 'react';
@@ -104,7 +104,7 @@ describe('credential editor — results as toasts', () => {
   });
 });
 
-describe('stored Writing AI removal — results as toasts', () => {
+describe('stored Text AI removal — results as toasts', () => {
   it('reports a failed removal as an error toast', async () => {
     stubAnswers({ status: 500, body: { ok: false, error: { message: 'Database offline.' } } });
     vi.spyOn(window, 'confirm').mockReturnValue(true);
@@ -112,7 +112,7 @@ describe('stored Writing AI removal — results as toasts', () => {
       inGroup(h(StoredLlmCredentialAction, { providerKey: 'openai', environmentActive: false })),
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Disable Writing AI' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Disable Text AI' }));
 
     await waitFor(() => expect(shown()).toEqual([{ tone: 'error', message: 'Database offline.' }]));
     expect(screen.queryByRole('status')).toBeNull();

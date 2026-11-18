@@ -124,7 +124,7 @@ const SERVER_CALLS = [
   'updatePlaybackSettings',
   // The one write to a Session: its mode, and only to Repeat.
   'switchSessionMode',
-  // Surprise Me's suggestion, as Home asks for it: the same Writing AI calls
+  // Surprise Me's suggestion, as Home asks for it: the same Text AI calls
   // the app's own Surprise Me button makes, and the user's one pending
   // suggestion. It buys no music.
   'proposeSurprise',

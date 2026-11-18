@@ -186,7 +186,7 @@ export function OnboardingProfileStep({
               />
             </div>
             <p className="text-[11.5px] leading-[1.5] text-dim">
-              The Writing AI can use this to give Sessions a sense of place.
+              The Text AI can use this to give Sessions a sense of place.
             </p>
           </div>
           {withDescription ? (

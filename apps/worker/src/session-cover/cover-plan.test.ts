@@ -676,7 +676,7 @@ describe('Session Cover art-direction policy', () => {
     );
   });
 
-  it('picks no scene from Name words when a Writing AI is configured', () => {
+  it('picks no scene from Name words when a Text AI is configured', () => {
     const concept = 'A storm lantern swinging over an empty night platform.';
     const result = buildSessionCoverPlan({
       sessionId: 'llm-scene-session',
@@ -1379,7 +1379,7 @@ describe('Session Cover user guidance (regeneration art direction)', () => {
     },
   );
 
-  it('keeps named references in an unrewritten wish when a Writing AI is configured', () => {
+  it('keeps named references in an unrewritten wish when a Text AI is configured', () => {
     const result = buildSessionCoverPlan({
       ...guidanceInput('by Picasso, Apple logo (texture:1.8) masterpiece'),
       textLlmConfigured: true,
@@ -1390,7 +1390,7 @@ describe('Session Cover user guidance (regeneration art direction)', () => {
     expect(result.plan.prompt).not.toMatch(/texture:1\.8|masterpiece/i);
   });
 
-  it('keeps a Custom style definition as written when a Writing AI is configured', () => {
+  it('keeps a Custom style definition as written when a Text AI is configured', () => {
     const result = buildSessionCoverPlan({
       ...guidanceInput(null),
       coverStyle: 'custom',
@@ -1404,7 +1404,7 @@ describe('Session Cover user guidance (regeneration art direction)', () => {
     expect(result.plan.customDefinition).toBe('Banksy stencil');
   });
 
-  it("keeps ordinary words like 'ignore' in Session data when a Writing AI is configured", () => {
+  it("keeps ordinary words like 'ignore' in Session data when a Text AI is configured", () => {
     const result = buildSessionCoverPlan({
       ...guidanceInput('ignore the rain <lora:private:1> Typography: one neon sign'),
       sessionIntent: 'music to ignore the rain',
@@ -1422,7 +1422,7 @@ describe('Session Cover user guidance (regeneration art direction)', () => {
     expect(direction).not.toMatch(/<lora|Typography:/);
   });
 
-  it('strips prompt syntax from the concept and Session data, with or without a Writing AI', () => {
+  it('strips prompt syntax from the concept and Session data, with or without a Text AI', () => {
     for (const textLlmConfigured of [true, false]) {
       const result = buildSessionCoverPlan({
         ...guidanceInput(null),

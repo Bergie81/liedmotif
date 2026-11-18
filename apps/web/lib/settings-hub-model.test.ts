@@ -261,7 +261,7 @@ describe('Settings hub model', () => {
 
     const result = buildSettingsHubData(input);
     expect(result.llm.status).toEqual({ label: 'Configured', tone: 'ok' });
-    expect(result.providers.text).toContain('Writing AI Configured');
+    expect(result.providers.text).toContain('Text AI Configured');
   });
 });
 

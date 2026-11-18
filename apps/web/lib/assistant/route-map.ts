@@ -140,14 +140,14 @@ export const APP_ROUTES: readonly AppRoute[] = [
     path: '/settings/providers',
     label: 'Settings › AI Providers',
     description:
-      'Connect the music provider, the Writing AI and the cover image provider: keys, models and unit costs.',
+      'Connect the music provider, the Text AI and the cover image provider: keys, models and unit costs.',
     adminOnly: true,
   },
   {
     path: '/settings/cover-art',
     label: 'Settings › Cover art',
     description:
-      'Your default cover style, Tailored Cover Art, your own Custom style and whether the Writing AI polishes cover text.',
+      'Your default cover style, Tailored Cover Art, your own Custom style and whether the Text AI polishes cover text.',
     adminOnly: false,
   },
   {

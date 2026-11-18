@@ -166,7 +166,7 @@ function CoversStepBody({
             />
           </OnboardingCard>
           {credential.environmentManaged ? null : (
-            <OpenRouterKeyHowTo note="Already added an OpenRouter key for the Writing AI? The same key works here." />
+            <OpenRouterKeyHowTo note="Already added an OpenRouter key for the Text AI? The same key works here." />
           )}
         </>
       ) : null}

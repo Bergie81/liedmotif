@@ -192,12 +192,12 @@ describe('onboardingRecord', () => {
       'Location',
       'People',
       'Music model',
-      'Writing AI',
+      'Text AI',
       'Cover images',
     ]);
   });
 
-  it('records a switched-off Track ceiling as no limit, like a Writing AI left off', () => {
+  it('records a switched-off Track ceiling as no limit, like a Text AI left off', () => {
     const draft = { ...empty, savedCeiling: { ...empty.savedCeiling, enabled: false } };
     expect(rowFor(draft, 'Tracks / day')).toEqual({
       label: 'Tracks / day',
@@ -238,7 +238,7 @@ describe('onboardingRecord', () => {
 
   it('names the LLM model once one is connected', () => {
     const draft = { ...empty, llmConnected: true, llmModel: 'minimax/minimax-m3' };
-    expect(rowFor(draft, 'Writing AI')?.value).toBe('minimax/minimax-m3');
+    expect(rowFor(draft, 'Text AI')?.value).toBe('minimax/minimax-m3');
   });
 
   it('joins a partial location instead of leaving a dangling comma', () => {

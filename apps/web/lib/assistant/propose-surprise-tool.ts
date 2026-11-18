@@ -1,6 +1,6 @@
 // `proposeSurprise`: prepares a Surprise Me suggestion the way Home's Surprise
 // Me does, and starts nothing. Preparing one is the app's own propose
-// function, run as the asker: its gates, the same Writing AI calls the app's
+// function, run as the asker: its gates, the same Text AI calls the app's
 // own Surprise Me button makes, and its pending suggestion, which Home then
 // shows too. Starting it buys music, so the chat gets a card, and only the
 // user's click on that card reaches the start route.

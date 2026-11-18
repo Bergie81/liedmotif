@@ -107,7 +107,7 @@ export function DescribeSessionPanel({
         <div className="mt-4 flex items-start gap-2 rounded-card-sm border border-line-2 bg-paper/[0.03] px-4 py-3 text-[13.5px]">
           <Info className="mt-px h-[17px] w-[17px] shrink-0 text-dim" aria-hidden />
           <p className="text-muted">
-            <strong className="font-semibold text-paper">No Writing AI connected.</strong> Your
+            <strong className="font-semibold text-paper">No Text AI connected.</strong> Your
             words go to the music model exactly as written; your picks still apply.
           </p>
           <Link
