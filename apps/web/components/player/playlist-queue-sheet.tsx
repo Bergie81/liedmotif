@@ -6,10 +6,26 @@
 // highlighted, tap to jump. Navigation is never feedback.
 
 import type { PlaylistMemberItem } from '@liedmotif/shared';
-import { formatTrackDuration } from '@/components/library/library-view-model';
+import { FAILED_TRACK_NOTICE, formatTrackDuration } from '@/components/library/library-view-model';
 import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { cn } from '@/lib/cn';
 import { QueueRow, queueEmptyNoteClass } from './queue-row';
+
+type QueueSheetTrack = Pick<
+  PlaylistMemberItem,
+  'id' | 'title' | 'coverImageId' | 'durationSeconds' | 'audioUrl'
+> &
+  Partial<Pick<PlaylistMemberItem, 'status'>> & {
+    /** Its offline copy expired on this device: listed, never started. */
+    expired?: boolean;
+  };
+
+/** The row's mono line: why it cannot play, else its length. */
+function queueRowNote(member: QueueSheetTrack): string {
+  if (member.status === 'failed') return FAILED_TRACK_NOTICE;
+  if (member.expired) return 'Expired';
+  return formatTrackDuration(member.durationSeconds);
+}
 
 export function PlaylistQueueSheet({
   open,
@@ -23,14 +39,7 @@ export function PlaylistQueueSheet({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   playlistName: string;
-  tracks: (Pick<
-    PlaylistMemberItem,
-    'id' | 'title' | 'coverImageId' | 'durationSeconds' | 'audioUrl'
-  > &
-    Partial<Pick<PlaylistMemberItem, 'status'>> & {
-      /** Its offline copy expired on this device: listed, never started. */
-      expired?: boolean;
-    })[];
+  tracks: QueueSheetTrack[];
   currentTrackId: string | null;
   onPlayTrack: (trackId: string) => void;
 }) {
@@ -68,11 +77,7 @@ export function PlaylistQueueSheet({
                   {title}
                 </span>
                 <span className="font-mono text-[10.5px] tracking-[0.04em] text-dim">
-                  {member.status === 'failed'
-                    ? 'Could not be kept'
-                    : member.expired
-                      ? 'Expired'
-                      : formatTrackDuration(member.durationSeconds)}
+                  {queueRowNote(member)}
                 </span>
               </QueueRow>
             );

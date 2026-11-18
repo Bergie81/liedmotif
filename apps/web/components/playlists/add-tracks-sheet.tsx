@@ -18,7 +18,7 @@ import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { AlertBanner, CheckIndicator, menuRowClass } from '@/components/ui/design-system';
 import { primaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
 import { LoadingRow, LiedmotifLoader } from '@/components/ui/loading';
-import { formatTrackDuration } from '@/components/library/library-view-model';
+import { FAILED_TRACK_NOTICE, formatTrackDuration } from '@/components/library/library-view-model';
 import { appendUniqueById } from '@/lib/append-unique';
 import { toast } from '@/lib/toast';
 import { addedToPlaylistMessage } from './playlist-view-model';
@@ -185,7 +185,7 @@ function AddTracksContent({
                   {track.title ?? 'Untitled Track'}
                 </span>
                 <span className="font-mono text-[10.5px] tracking-[0.04em] text-dim">
-                  {failed ? 'Could not be kept' : formatTrackDuration(track.durationSeconds)}
+                  {failed ? FAILED_TRACK_NOTICE : formatTrackDuration(track.durationSeconds)}
                 </span>
                 <CheckIndicator checked={isChecked} />
               </button>

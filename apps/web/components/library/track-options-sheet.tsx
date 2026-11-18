@@ -9,7 +9,7 @@ import { SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { MenuRow } from '@/components/ui/menu-row';
 import { startFileDownload, trackDownloadUrl } from '@/lib/downloads';
 import { DeleteTrackMenuRow } from './delete-track-menu-row';
-import { formatTrackDuration } from './library-view-model';
+import { formatTrackDuration, trackDownloadNote } from './library-view-model';
 import type { LibraryActionName } from './use-library-actions';
 
 export function TrackOptionsSheet({
@@ -115,7 +115,7 @@ export function TrackOptionsSheet({
           icon={<Download />}
           label="Download Track"
           description="Save this track as a fully tagged MP3"
-          note={track.downloadable ? undefined : failed ? 'Could not be kept' : 'Still generating'}
+          note={trackDownloadNote(track)}
           disabled={locked || !track.downloadable}
           data-testid="library-download-track"
           onClick={() => startFileDownload(trackDownloadUrl(track.id))}

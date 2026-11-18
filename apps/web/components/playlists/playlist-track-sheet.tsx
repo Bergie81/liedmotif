@@ -14,6 +14,7 @@ import { MenuRow } from '@/components/ui/menu-row';
 import { startFileDownload, trackDownloadUrl } from '@/lib/downloads';
 import { CoverThumb } from '@/components/player/cover-art';
 import { DeleteTrackMenuRow } from '@/components/library/delete-track-menu-row';
+import { trackDownloadNote } from '@/components/library/library-view-model';
 import { formatPlaylistMemberMetadata } from './playlist-view-model';
 
 export function PlaylistTrackSheet({
@@ -113,13 +114,7 @@ export function PlaylistTrackSheet({
                   icon={<Download />}
                   label="Download Track"
                   description="Save this track as a fully tagged MP3"
-                  note={
-                    item.downloadable
-                      ? undefined
-                      : item.status === 'failed'
-                        ? 'Could not be kept'
-                        : 'Still generating'
-                  }
+                  note={trackDownloadNote(item)}
                   disabled={!item.downloadable}
                   data-testid="playlist-download-track"
                   onClick={() => startFileDownload(trackDownloadUrl(item.id))}

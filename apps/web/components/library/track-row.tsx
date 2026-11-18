@@ -42,7 +42,8 @@ export function TrackRow({
   /** Library and Playlist lists keep their covers' rounding to a hairline. */
   minimalCoverRounding?: boolean;
 }) {
-  const unavailable = track.audioUrl === null || track.status === 'failed';
+  const failed = track.status === 'failed';
+  const unavailable = track.audioUrl === null || failed;
   const title = track.title ?? 'Untitled Track';
 
   return (
@@ -60,7 +61,7 @@ export function TrackRow({
         onClick={onPreview}
         disabled={unavailable}
         className="grid min-w-0 grid-cols-[48px_minmax(0,1fr)] items-center gap-3 text-left disabled:cursor-not-allowed"
-        aria-label={previewLabel(title, previewState, unavailable, track.status === 'failed')}
+        aria-label={previewLabel(title, previewState, unavailable, failed)}
       >
         <TrackCover
           key={track.coverImageId ?? 'none'}

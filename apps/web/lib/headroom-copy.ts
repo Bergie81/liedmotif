@@ -63,7 +63,7 @@ export function creationHeadroomMessage(
   }
 
   if (windowCapTracks < minHeadroomTracks) {
-    const noWait = `so waiting won’t help.`;
+    const noWait = 'so waiting won’t help.';
     switch (scope) {
       case 'instance':
         return `${needs}, but your ${WINDOW_NAME[window]} limit is only ${windowCapTracks}, ${noWait} Adjust your cost limits to start one. ${WAY_OUT}`;
