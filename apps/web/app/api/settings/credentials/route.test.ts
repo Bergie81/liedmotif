@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   envLayer: vi.fn((): Record<string, string> => ({})),
   unitCosts: vi.fn(async () => ({ perTrackUsd: 0.04, perCoverUsd: 0.07 })),
   updateUnitCosts: vi.fn(async () => ({ perTrackUsd: 0.04, perCoverUsd: 0.07 })),
+  shareableKey: vi.fn(async (): Promise<{ vendor: string; apiKey: string } | null> => null),
 }));
 
 vi.mock('@liedmotif/db', () => ({
@@ -21,6 +22,7 @@ vi.mock('@liedmotif/db', () => ({
   upsertProviderCredential: mocks.upsert,
   getUnitCosts: mocks.unitCosts,
   updateUnitCosts: mocks.updateUnitCosts,
+  resolveShareableTextLlmKey: mocks.shareableKey,
 }));
 // Only the DNS-resolving SSRF probe is stubbed; the base-URL rule is the real
 // one, so this file proves what the route actually stores.
@@ -46,6 +48,8 @@ describe('provider credential writes', () => {
     mocks.envLayer.mockReturnValue({});
     mocks.unitCosts.mockResolvedValue({ perTrackUsd: 0.04, perCoverUsd: 0.07 });
     mocks.updateUnitCosts.mockClear();
+    mocks.credentialStatus.mockResolvedValue({ configured: false });
+    mocks.shareableKey.mockResolvedValue(null);
   });
 
   it('refuses a base URL carrying credentials before it can be stored', async () => {
@@ -374,6 +378,76 @@ describe('provider credential writes', () => {
         body: JSON.stringify({ providerType: 'image', providerKey: 'openrouter' }),
       }),
     );
+
+    expect(response.status).toBe(400);
+    expect(mocks.upsert).not.toHaveBeenCalled();
+  });
+
+  function postImage(body: Record<string, unknown>) {
+    return POST(
+      new Request('http://localhost/api/settings/credentials', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ providerType: 'image', ...body }),
+      }),
+    );
+  }
+
+  it('accepts an image save without a key when it shares the Text AI key', async () => {
+    mocks.encryptionKey.mockReturnValue(Buffer.alloc(32));
+    mocks.credentialStatus.mockResolvedValue({ configured: true });
+
+    const response = await postImage({ providerKey: 'openai' });
+
+    expect(response.status).toBe(200);
+    expect(mocks.credentialStatus).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ providerType: 'image', providerKey: 'openai' }),
+    );
+    expect(mocks.upsert).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ providerType: 'image', providerKey: 'openai', secret: undefined }),
+    );
+  });
+
+  it('removes the own image key when the save asks to share the Text AI key', async () => {
+    mocks.encryptionKey.mockReturnValue(Buffer.alloc(32));
+    mocks.shareableKey.mockResolvedValue({ vendor: 'gemini', apiKey: 'AIza-text' });
+
+    const response = await postImage({ providerKey: 'gemini', shareTextLlmKey: true });
+
+    expect(response.status).toBe(200);
+    expect(mocks.upsert).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ providerType: 'image', providerKey: 'gemini', secret: null }),
+    );
+    expect(mocks.updateUnitCosts).toHaveBeenLastCalledWith({}, { perCoverUsd: 0.04 });
+    expect(JSON.stringify(await response.json())).not.toContain('AIza-text');
+  });
+
+  it('refuses to share a key that does not resolve for that provider', async () => {
+    mocks.encryptionKey.mockReturnValue(Buffer.alloc(32));
+    mocks.shareableKey.mockResolvedValue({ vendor: 'openai', apiKey: 'sk-proj-text' });
+
+    const response = await postImage({ providerKey: 'gemini', shareTextLlmKey: true });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      ok: false,
+      error: 'An API key is required for this provider.',
+    });
+    expect(mocks.upsert).not.toHaveBeenCalled();
+  });
+
+  it('refuses a save that both shares the Text AI key and sends its own', async () => {
+    mocks.encryptionKey.mockReturnValue(Buffer.alloc(32));
+    mocks.shareableKey.mockResolvedValue({ vendor: 'openai', apiKey: 'sk-proj-text' });
+
+    const response = await postImage({
+      providerKey: 'openai',
+      secret: 'sk-proj-image',
+      shareTextLlmKey: true,
+    });
 
     expect(response.status).toBe(400);
     expect(mocks.upsert).not.toHaveBeenCalled();

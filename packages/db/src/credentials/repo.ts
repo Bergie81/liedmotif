@@ -24,6 +24,7 @@ import {
   resolveLlmRuntimeSettings,
   resolveProviderSettings,
   selectProviderKey,
+  textLlmKeyShareable,
   type CredentialProviderType,
   type CredentialSource,
   type ImageRuntimeSettings,
@@ -39,8 +40,9 @@ export interface CredentialRef {
 
 /** UI-facing credential status — masked preview only, never the raw secret. */
 export interface CredentialStatus extends CredentialRef {
+  /** The stored row's name, or `null` when no row is stored (an env-only provider). */
   displayName: string | null;
-  /** True when a secret is resolvable from either env or the database. */
+  /** True when a secret resolves: env, the database, or a shared text LLM key. */
   configured: boolean;
   /** Which source won, or `null` when unconfigured. */
   source: CredentialSource | null;
@@ -97,8 +99,11 @@ async function getStoredCredential(db: DbOrTx, ref: CredentialRef) {
 
 export interface UpsertCredentialInput extends CredentialRef {
   displayName: string;
-  /** Plaintext secret to seal. Omit to update only metadata/config. */
-  secret?: string;
+  /**
+   * Plaintext secret to seal. `null` removes the stored secret (an image
+   * credential that shares the text LLM key); omit to keep it.
+   */
+  secret?: string | null;
   config?: ProviderConfig | null;
   /** Required when `secret` is provided (used to encrypt it). */
   encryptionKey?: Buffer;
@@ -123,8 +128,9 @@ export async function upsertProviderCredential(
   db: Database,
   input: UpsertCredentialInput,
 ): Promise<void> {
-  let encryptedSecret: EncryptedSecret | undefined;
-  if (input.secret !== undefined) {
+  let encryptedSecret: EncryptedSecret | null | undefined =
+    input.secret === null ? null : undefined;
+  if (typeof input.secret === 'string') {
     if (!input.encryptionKey) {
       throw new Error('encryptionKey is required to store a provider secret');
     }
@@ -150,8 +156,8 @@ export async function upsertProviderCredential(
         .update(providerCredentials)
         .set({
           displayName: input.displayName,
-          // Only overwrite the stored secret when a new one was provided.
-          ...(encryptedSecret ? { encryptedSecret } : {}),
+          // Only overwrite the stored secret when a new one (or its removal) was given.
+          ...(encryptedSecret !== undefined ? { encryptedSecret } : {}),
           ...(input.config !== undefined ? { config: input.config } : {}),
           source: 'database',
         })
@@ -191,9 +197,10 @@ export async function setCredentialValidation(
 }
 
 /**
- * Resolve a credential to its UI-facing status (env-first, DB fills gaps). The
- * masked preview comes from the env value, or from decrypting the stored envelope
- * — and the raw secret is never part of the returned object.
+ * Resolve a credential to its UI-facing status (env-first, DB fills gaps; an
+ * image provider without a key of its own reports the text LLM key it shares).
+ * The masked preview comes from the resolved key — and the raw secret is never
+ * part of the returned object.
  */
 export async function getCredentialStatus(
   db: Database,
@@ -203,10 +210,25 @@ export async function getCredentialStatus(
   const envSecret = readEnvLayer(ref.providerType, ref.providerKey, env).apiKey;
   const stored = await getStoredCredential(db, ref);
   const hasDbSecret = Boolean(stored?.encryptedSecret);
-  const source = resolveCredentialSource(envSecret, hasDbSecret);
-
+  let source = resolveCredentialSource(envSecret, hasDbSecret);
   let masked: string | null = null;
   let decryptError = false;
+  if (source === null && ref.providerType === 'image') {
+    let sharedKey: string | undefined;
+    try {
+      sharedKey = await sharedImageKey(db, ref.providerKey, {
+        env,
+        encryptionKey: ref.encryptionKey,
+      });
+    } catch {
+      // An undecryptable text LLM key shares nothing; the text LLM's own status
+      // reports the decrypt error.
+    }
+    if (sharedKey) {
+      source = 'shared';
+      masked = maskSecret(sharedKey);
+    }
+  }
   if (source === 'env' && envSecret) {
     masked = maskSecret(envSecret);
   } else if (source === 'database' && stored?.encryptedSecret) {
@@ -389,14 +411,46 @@ export async function resolveLlmRuntimeConfig(
 }
 
 /**
+ * Server-only: the text LLM key an image provider of `vendor` without a key of
+ * its own uses, or `null` when the resolved text LLM's key cannot be shared
+ * (`textLlmKeyShareable`) or there is none. The key is referenced, never copied:
+ * rotating or removing it on the text LLM moves Cover images with it. Throws when
+ * a stored text LLM secret cannot be decrypted. Never serialize the key to the
+ * client or a log.
+ */
+export async function resolveShareableTextLlmKey(
+  db: Database,
+  ref: WithEnvAndKey = {},
+): Promise<{ vendor: string; apiKey: string } | null> {
+  const env = ref.env ?? process.env;
+  const llm = await resolveProviderCredential(db, { providerType: 'llm', env });
+  if (!llm) return null;
+  const { baseUrl } = resolveProviderSettings('llm', llm.providerKey, llm.config, env);
+  if (!textLlmKeyShareable({ providerKey: llm.providerKey, baseUrl })) return null;
+  const apiKey = llm.readApiKey(ref.encryptionKey);
+  return apiKey ? { vendor: llm.providerKey, apiKey } : null;
+}
+
+/** The text LLM key an image provider of `providerKey` uses when it has none of its own. */
+async function sharedImageKey(
+  db: Database,
+  providerKey: string,
+  ref: WithEnvAndKey,
+): Promise<string | undefined> {
+  const shared = await resolveShareableTextLlmKey(db, ref);
+  return shared?.vendor === providerKey ? shared.apiKey : undefined;
+}
+
+/**
  * Server-only: the generated-cover provider's runtime config for an actual
  * provider call, the one resolution web and worker share, or `null` when no image
  * provider is selected. The provider, key and model resolve like every saved
  * field; the other `IMAGE_*` settings are env-only. Callers resolve it per use,
  * so a key or model saved in the app applies to the next cover without a
- * restart. A selected provider without a key still resolves — building it then
- * yields no provider. Carries the raw secret: never serialize it to the client or
- * a log.
+ * restart. Without a key of its own the provider uses the text LLM's key of the
+ * same vendor (`resolveShareableTextLlmKey`). A selected provider without any key
+ * still resolves — building it then yields no provider. Carries the raw secret:
+ * never serialize it to the client or a log.
  */
 export async function resolveImageRuntimeConfig(
   db: Database,
@@ -406,7 +460,9 @@ export async function resolveImageRuntimeConfig(
   const credential = await resolveProviderCredential(db, { providerType: 'image', env });
   if (!credential) return null;
   const { providerKey } = credential;
-  const apiKey = credential.readApiKey(ref.encryptionKey);
+  const apiKey =
+    credential.readApiKey(ref.encryptionKey) ??
+    (await sharedImageKey(db, providerKey, { env, encryptionKey: ref.encryptionKey }));
   const { model } = resolveProviderSettings('image', providerKey, credential.config, env);
   const resolution = env.IMAGE_RESOLUTION?.trim();
   const aspectRatio = env.IMAGE_ASPECT_RATIO?.trim();

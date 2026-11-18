@@ -69,22 +69,64 @@ export function SecretField({
   currentMasked: string | null;
 }) {
   if (!editor.selected?.needsKey) return null;
-  return (
-    <label className={labelClass}>
-      <span className="flex items-baseline justify-between gap-2">
+  const vendor = editor.selected.label;
+  if (editor.usesSharedKey) {
+    return (
+      <div className={labelClass}>
         {label}
-        {currentMasked ? <FieldNote>LEAVE BLANK TO KEEP</FieldNote> : null}
-      </span>
-      <input
-        type="password"
-        value={editor.secret}
-        onChange={(event) => editor.setSecret(event.target.value)}
-        className={inputClass}
-        placeholder={placeholder}
-        autoComplete="off"
-        disabled={editor.operationPending}
-      />
-    </label>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-[13.5px] font-normal text-muted">
+          <span>Uses your {vendor} key</span>
+          <KeyAction editor={editor} onClick={() => editor.shareKey(false)}>
+            Use a separate key
+          </KeyAction>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-2">
+      <label className={labelClass}>
+        <span className="flex items-baseline justify-between gap-2">
+          {label}
+          {currentMasked ? <FieldNote>LEAVE BLANK TO KEEP</FieldNote> : null}
+        </span>
+        <input
+          type="password"
+          value={editor.secret}
+          onChange={(event) => editor.setSecret(event.target.value)}
+          className={inputClass}
+          placeholder={placeholder}
+          autoComplete="off"
+          disabled={editor.operationPending}
+        />
+      </label>
+      {editor.canShareKey ? (
+        <KeyAction editor={editor} onClick={() => editor.shareKey(true)}>
+          Use the same {vendor} key
+        </KeyAction>
+      ) : null}
+    </div>
+  );
+}
+
+function KeyAction({
+  editor,
+  onClick,
+  children,
+}: {
+  editor: CredentialEditorState;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={editor.operationPending}
+      className="self-start text-[13px] font-semibold text-muted [-webkit-tap-highlight-color:transparent] hover:text-paper"
+    >
+      {children}
+    </button>
   );
 }
 

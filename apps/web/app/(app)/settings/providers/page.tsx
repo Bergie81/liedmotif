@@ -46,8 +46,12 @@ export default async function ProvidersPage() {
   const llm = data.llm.credential;
   const cover = data.cover.credential;
   const lockedCoverModel = lockedImageModel(data.cover);
+  // A shared key comes from the Text AI credential, so saving that one clears it too.
   const coverAccountAlert = await loadCoverAccountAlert(data.cover.providerKey, [
     { providerType: 'image', providerKey: data.cover.providerKey },
+    ...(data.cover.sharesKey && llm
+      ? [{ providerType: 'llm' as const, providerKey: llm.providerKey }]
+      : []),
   ]);
 
   return (
@@ -110,6 +114,7 @@ export default async function ProvidersPage() {
             description="Used once for each Session request. Without it, your words reach the music model exactly as written, with the fine-tune picks applied."
             environmentManaged={data.llm.presentation.source === 'Environment'}
             decryptError={llm?.decryptError}
+            notice={data.llm.coverKeyNotice}
           >
             <CredentialMutationGroup>
               <CredentialEditor
@@ -131,6 +136,7 @@ export default async function ProvidersPage() {
                     data.storedLlmProviderKey,
                     data.llm.providerKey,
                   )}
+                  coverKeyNotice={data.llm.coverKeyNotice}
                 />
               ) : null}
             </CredentialMutationGroup>
@@ -163,6 +169,8 @@ export default async function ProvidersPage() {
                 showModel
                 lockedModel={lockedCoverModel}
                 initialModel={lockedCoverModel ? undefined : (data.cover.model ?? undefined)}
+                sharedKeyVendor={data.cover.sharedKeyVendor}
+                sharesKey={data.cover.sharesKey}
               />
             </CredentialMutationGroup>
           </ProviderCard>

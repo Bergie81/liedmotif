@@ -6,7 +6,11 @@
 // errors/keys).
 
 import { NextResponse } from 'next/server';
-import { resolveProviderCredential, resolveProviderSettings } from '@liedmotif/db';
+import {
+  resolveProviderCredential,
+  resolveProviderSettings,
+  resolveShareableTextLlmKey,
+} from '@liedmotif/db';
 import { isBlockedValidationTargetResolved, validateCredential } from '@liedmotif/providers';
 import { configurableProviderMeta, isConfigurableProviderType } from '@/lib/configurable-providers';
 import { credentialTestMessage } from '@/lib/credential-test-copy';
@@ -53,7 +57,8 @@ export async function POST(request: Request) {
   // form's values standing in for what saving it would store — its model, and no
   // base URL once the field is cleared. A typed secret or base URL is tested as
   // typed (the wizard's type-before-save flow); a typed model still yields to the
-  // env model that would outrank it. The image key is checked against the
+  // env model that would outrank it. An image provider without a key of its own
+  // tests the Text AI key it shares. The image key is checked against the
   // provider's own fixed endpoint, so an image credential resolves no base URL.
   const credential = await resolveProviderCredential(getDb(), { providerType, providerKey });
   const settings = resolveProviderSettings(providerType, providerKey, {
@@ -65,6 +70,12 @@ export async function POST(request: Request) {
   if (!secret) {
     try {
       secret = credential?.readApiKey(encryptionKeyIfConfigured());
+      if (!secret && providerType === 'image') {
+        const shared = await resolveShareableTextLlmKey(getDb(), {
+          encryptionKey: encryptionKeyIfConfigured(),
+        });
+        if (shared?.vendor === providerKey) secret = shared.apiKey;
+      }
     } catch {
       // A stored secret that cannot be decrypted (rotated/missing key) tests as
       // unconfigured — the settings page surfaces the decrypt error itself.

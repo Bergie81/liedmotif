@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { CredentialStatus } from '@liedmotif/db';
 import {
+  COVER_KEY_NOTICE,
   coverAccountAlert,
+  coverKeyNotice,
   generatedImageProviderPresentation,
   llmProviderPresentation,
   requiresProviderReplacementConfirmation,
@@ -32,10 +34,11 @@ describe('provider settings model', () => {
     expect(generatedImageProviderPresentation({ credential: null, model: null })).toMatchObject(
       notConfigured,
     );
-    // IMAGE_PROVIDER named without a key anywhere is the optional provider left off.
+    // IMAGE_PROVIDER named without a key anywhere (no row saved in the app) is
+    // the optional provider left off.
     expect(
       generatedImageProviderPresentation({
-        credential: status({ configured: false, source: null, masked: null }),
+        credential: status({ configured: false, source: null, masked: null, displayName: null }),
         model: null,
       }),
     ).toMatchObject(notConfigured);
@@ -64,6 +67,53 @@ describe('provider settings model', () => {
         model: null,
       }),
     ).toMatchObject({ configured: false, status: { label: 'Unhealthy', tone: 'warn' } });
+  });
+
+  it('presents Cover images sharing the Text AI key, and a saved provider with no key', () => {
+    const status = (over: Partial<CredentialStatus>): CredentialStatus => ({
+      providerType: 'image',
+      providerKey: 'openai',
+      displayName: 'openai',
+      configured: true,
+      source: 'shared',
+      masked: '••••9876',
+      config: null,
+      lastValidatedAt: null,
+      validationStatus: null,
+      decryptError: false,
+      ...over,
+    });
+
+    expect(generatedImageProviderPresentation({ credential: status({}), model: null })).toEqual({
+      name: 'OpenAI',
+      configured: true,
+      source: 'Shared OpenAI key',
+      model: null,
+      status: { label: 'Configured', tone: 'ok' },
+    });
+    expect(
+      generatedImageProviderPresentation({
+        credential: status({ configured: false, source: null, masked: null }),
+        model: null,
+      }),
+    ).toEqual({
+      name: 'OpenAI',
+      configured: false,
+      source: null,
+      model: null,
+      status: { label: 'Needs a key', tone: 'warn' },
+    });
+  });
+
+  it('warns on the Text AI card only while Cover images share its key', () => {
+    expect(COVER_KEY_NOTICE).toBe(
+      'Cover images use this key too. Changing the provider or removing this key turns Tailored Cover Art off until Cover images has its own key.',
+    );
+    expect(coverKeyNotice({ source: 'shared' })).toBe(COVER_KEY_NOTICE);
+    // A mixed setup on separate keys, or no Cover provider at all.
+    expect(coverKeyNotice({ source: 'database' })).toBeNull();
+    expect(coverKeyNotice({ source: 'env' })).toBeNull();
+    expect(coverKeyNotice(null)).toBeNull();
   });
 
   it('recognizes a keyless Ollama configuration independently of credential source', () => {

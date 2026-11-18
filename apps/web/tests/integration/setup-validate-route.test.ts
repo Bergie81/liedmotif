@@ -336,6 +336,27 @@ describe.skipIf(skip)('POST /api/setup/validate credential fallback', () => {
     expect(await missing.json()).toMatchObject({ ok: false, reason: 'unknown_model' });
   });
 
+  it('tests Cover images with the shared Text AI key when no key is typed', async () => {
+    await upsertProviderCredential(testDb.db, {
+      providerType: 'llm',
+      providerKey: 'openai',
+      displayName: 'OpenAI',
+      secret: 'stored-text-key',
+      encryptionKey: ENCRYPTION_KEY,
+    });
+    stubProbeFetch(200, { id: 'gpt-image-2.6-flare', object: 'model' });
+
+    const res = await postJson({ providerType: 'image', providerKey: 'openai' });
+
+    expect(await res.json()).toMatchObject({ ok: true, reason: 'ok' });
+    expect(probeCalls).toEqual([
+      {
+        url: 'https://api.openai.com/v1/models/gpt-image-2.6-flare',
+        authorization: 'Bearer stored-text-key',
+      },
+    ]);
+  });
+
   it('applies the SSRF guard to a base URL resolved from stored config', async () => {
     await upsertProviderCredential(testDb.db, {
       providerType: 'llm',

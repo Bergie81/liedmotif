@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { AlertTriangle, LockKeyhole } from 'lucide-react';
 import { AlertBanner } from '@/components/ui/design-system';
 import { cn } from '@/lib/cn';
-import { SettingsCard } from './settings-ui';
+import { SettingsCard, SettingsFeedback } from './settings-ui';
 
 /** The provider's health rides the section heading, so the card head carries
  *  only what the heading cannot: which provider this is, and whether the
@@ -17,6 +17,7 @@ export function ProviderCard({
   environmentManaged = false,
   decryptError = false,
   accountAlert = null,
+  notice = null,
   children,
 }: {
   icon: ReactNode;
@@ -29,6 +30,8 @@ export function ProviderCard({
   decryptError?: boolean;
   /** Why the vendor refuses this provider's account, while it does. */
   accountAlert?: string | null;
+  /** A state of this provider the Admin should keep in mind before changing it. */
+  notice?: string | null;
   children?: ReactNode;
 }) {
   return (
@@ -81,6 +84,12 @@ export function ProviderCard({
       ) : null}
 
       {accountAlert ? <AlertBanner className="mb-4">{accountAlert}</AlertBanner> : null}
+
+      {notice ? (
+        <div className="mb-4">
+          <SettingsFeedback kind="info">{notice}</SettingsFeedback>
+        </div>
+      ) : null}
 
       {children}
     </SettingsCard>

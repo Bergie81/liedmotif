@@ -614,6 +614,153 @@ describeIfDb('provider credential repository (env overrides DB, masked never raw
       ).resolves.toMatchObject({ model: 'env/model' });
     });
 
+    describe("shared key: Cover images without a key use the text LLM's key of the same vendor", () => {
+      async function saveLlm(
+        providerKey: string,
+        secret?: string,
+        config?: Record<string, string>,
+      ) {
+        await upsertProviderCredential(ctx.db, {
+          providerType: 'llm',
+          providerKey,
+          displayName: providerKey,
+          ...(secret ? { secret } : {}),
+          ...(config ? { config } : {}),
+          encryptionKey: KEY,
+        });
+      }
+
+      async function saveImage(providerKey: string, secret?: string) {
+        await upsertProviderCredential(ctx.db, {
+          providerType: 'image',
+          providerKey,
+          displayName: providerKey,
+          ...(secret ? { secret } : {}),
+          encryptionKey: KEY,
+        });
+      }
+
+      const resolveImage = (env: NodeJS.ProcessEnv = EMPTY_ENV) =>
+        resolveImageRuntimeConfig(ctx.db, { env, encryptionKey: KEY });
+
+      it.each([
+        ['openai', 'sk-proj-text'],
+        ['gemini', 'AIza-text'],
+        ['openrouter', 'sk-or-text'],
+      ])(
+        'shares the $0 text LLM key with a keyless image provider of that vendor',
+        async (vendor, key) => {
+          await saveLlm(vendor, key);
+          await saveImage(vendor);
+
+          await expect(resolveImage()).resolves.toEqual({ providerKey: vendor, apiKey: key });
+        },
+      );
+
+      it('lets a key stored on the image credential win over the text LLM key', async () => {
+        await saveLlm('openai', 'sk-proj-text');
+        await saveImage('openai', 'sk-proj-image');
+
+        await expect(resolveImage()).resolves.toMatchObject({ apiKey: 'sk-proj-image' });
+      });
+
+      it('lets IMAGE_API_KEY beside a matching IMAGE_PROVIDER win over the text LLM key', async () => {
+        await saveLlm('gemini', 'AIza-text');
+
+        await expect(
+          resolveImage({ IMAGE_PROVIDER: 'gemini', IMAGE_API_KEY: 'AIza-image-env' }),
+        ).resolves.toMatchObject({ providerKey: 'gemini', apiKey: 'AIza-image-env' });
+      });
+
+      it('never shares a key across vendors', async () => {
+        await saveLlm('openai', 'sk-proj-text');
+        await saveImage('gemini');
+
+        await expect(resolveImage()).resolves.toEqual({ providerKey: 'gemini' });
+      });
+
+      it('shares no key while the text LLM runs on a base URL override', async () => {
+        await saveLlm('openai', 'sk-proj-text', { baseUrl: 'https://proxy.example.org/v1' });
+        await saveImage('openai');
+        await expect(resolveImage()).resolves.toEqual({ providerKey: 'openai' });
+
+        await saveLlm('openai', 'sk-proj-text', {});
+        await expect(
+          resolveImage({ LLM_PROVIDER: 'openai', LLM_BASE_URL: 'https://proxy.example.org/v1' }),
+        ).resolves.toEqual({ providerKey: 'openai' });
+      });
+
+      it('lets a stored image credential use a text LLM key from .env', async () => {
+        await saveImage('openrouter');
+
+        await expect(
+          resolveImage({ LLM_PROVIDER: 'openrouter', LLM_API_KEY: 'sk-or-env-text' }),
+        ).resolves.toEqual({ providerKey: 'openrouter', apiKey: 'sk-or-env-text' });
+      });
+
+      it('shares LLM_API_KEY with IMAGE_PROVIDER of the same vendor in .env alone', async () => {
+        await expect(
+          resolveImage({
+            LLM_PROVIDER: 'openai',
+            LLM_API_KEY: 'sk-proj-env-text',
+            IMAGE_PROVIDER: 'openai',
+            IMAGE_API_KEY: '',
+          }),
+        ).resolves.toEqual({ providerKey: 'openai', apiKey: 'sk-proj-env-text' });
+      });
+
+      it('resolves no key once the text LLM is removed', async () => {
+        await saveLlm('gemini', 'AIza-text');
+        await saveImage('gemini');
+        await deleteProviderCredential(ctx.db, { providerType: 'llm', providerKey: 'gemini' });
+
+        await expect(resolveImage()).resolves.toEqual({ providerKey: 'gemini' });
+      });
+
+      it('reports the shared key in the Cover images status, masked', async () => {
+        await saveLlm('openai', 'sk-proj-text-9876');
+        await saveImage('openai');
+
+        const status = await getCredentialStatus(ctx.db, {
+          providerType: 'image',
+          providerKey: 'openai',
+          env: EMPTY_ENV,
+          encryptionKey: KEY,
+        });
+
+        expect(status).toMatchObject({ configured: true, source: 'shared', masked: '••••9876' });
+        expect(JSON.stringify(status)).not.toContain('sk-proj-text-9876');
+      });
+
+      it('removes the stored image key when the save shares the text LLM key', async () => {
+        await saveLlm('gemini', 'AIza-text');
+        await saveImage('gemini', 'AIza-image');
+
+        await upsertProviderCredential(ctx.db, {
+          providerType: 'image',
+          providerKey: 'gemini',
+          displayName: 'Gemini',
+          secret: null,
+        });
+
+        await expect(resolveImage()).resolves.toMatchObject({ apiKey: 'AIza-text' });
+      });
+
+      it('keeps a mixed setup on separate keys whatever happens to the text LLM', async () => {
+        await saveLlm('openai', 'sk-proj-text');
+        await saveImage('gemini', 'AIza-image');
+        await expect(resolveImage()).resolves.toMatchObject({ apiKey: 'AIza-image' });
+        await expect(
+          resolveLlmRuntimeConfig(ctx.db, { env: EMPTY_ENV, encryptionKey: KEY }),
+        ).resolves.toMatchObject({ apiKey: 'sk-proj-text' });
+
+        await saveLlm('gemini', 'AIza-text');
+        await expect(resolveImage()).resolves.toMatchObject({ apiKey: 'AIza-image' });
+        await deleteProviderCredential(ctx.db, { providerType: 'llm', providerKey: 'gemini' });
+        await expect(resolveImage()).resolves.toMatchObject({ apiKey: 'AIza-image' });
+      });
+    });
+
     it('resolves no image provider when neither the env nor the app names one', async () => {
       await expect(resolveImageRuntimeConfig(ctx.db, { env: EMPTY_ENV })).resolves.toBeNull();
       // A bare key without IMAGE_PROVIDER stays inert: blank IMAGE_PROVIDER is the

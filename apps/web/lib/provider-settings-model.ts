@@ -56,7 +56,8 @@ export function llmProviderPresentation(input: {
 /**
  * The cover-image provider as the UI reports it. Generated covers are optional,
  * so a provider with no key anywhere reads as not configured rather than
- * unhealthy, whether or not `IMAGE_PROVIDER` names it.
+ * unhealthy when only `IMAGE_PROVIDER` names it; one saved in the app without a
+ * key resolving (its shared Text AI key went away) needs a key.
  */
 export function generatedImageProviderPresentation(input: {
   /** The selected provider's credential status, or `null` when none is selected. */
@@ -66,26 +67,44 @@ export function generatedImageProviderPresentation(input: {
 }): {
   name: string;
   configured: boolean;
-  source: 'Environment' | 'Database' | null;
+  source: string | null;
   model: string | null;
   status: SettingsStatus;
 } {
   const { credential, model } = input;
+  const name = credential
+    ? providerDisplayName('image', credential.providerKey, credential.displayName)
+    : 'Not configured';
   if (!credential?.configured) {
-    return {
-      name: 'Not configured',
-      configured: false,
-      source: null,
-      model,
-      status: { label: 'Unavailable', tone: 'muted' },
-    };
+    // A stored row always carries a display name; an env-only selection has none.
+    const saved = credential?.displayName != null;
+    return saved
+      ? {
+          name,
+          configured: false,
+          source: null,
+          model,
+          status: { label: 'Needs a key', tone: 'warn' },
+        }
+      : {
+          name: 'Not configured',
+          configured: false,
+          source: null,
+          model,
+          status: { label: 'Unavailable', tone: 'muted' },
+        };
   }
-  const source = credential.source === 'env' ? 'Environment' : 'Database';
+  const source =
+    credential.source === 'env'
+      ? 'Environment'
+      : credential.source === 'shared'
+        ? `Shared ${name} key`
+        : 'Database';
   const configured =
     configurableProviderMeta('image', credential.providerKey) !== undefined &&
     !credential.decryptError;
   return {
-    name: providerDisplayName('image', credential.providerKey, credential.displayName),
+    name,
     configured,
     source,
     model,
@@ -127,4 +146,18 @@ export function coverAccountAlert(input: {
     (savedAt) => savedAt !== null && savedAt > outcome.settledAt,
   );
   return savedSince ? null : (ACCOUNT_NOT_READY_CAUSES[outcome.providerKey] ?? null);
+}
+
+export const COVER_KEY_NOTICE =
+  'Cover images use this key too. Changing the provider or removing this key turns Tailored Cover Art off until Cover images has its own key.';
+
+/**
+ * The Text AI card's warning, while Cover images use its key: a change to the
+ * Text AI then takes the Cover key away. A Cover provider with its own key is
+ * untouched by the Text AI, so it gets no warning.
+ */
+export function coverKeyNotice(
+  coverCredential: Pick<CredentialStatus, 'source'> | null,
+): string | null {
+  return coverCredential?.source === 'shared' ? COVER_KEY_NOTICE : null;
 }

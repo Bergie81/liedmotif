@@ -165,7 +165,7 @@ export default async function DiagnosticsPage() {
                         ? [providers.cover.name, providers.cover.model].filter(Boolean).join(' · ')
                         : null
                     }
-                    source={presentationSource(providers?.cover.source)}
+                    source={providers?.cover.credential?.source ?? null}
                     health={coverDiagnostic.health}
                     unavailableLabel={coverDiagnostic.emptyLabel}
                   />

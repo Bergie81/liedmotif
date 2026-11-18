@@ -38,6 +38,13 @@ export interface CredentialEditorProps {
   initialBaseUrl?: string;
   initialModel?: string;
   /**
+   * Cover images only: the image provider that can use the Text AI's key (its
+   * vendor, when that key can be shared), else `null`.
+   */
+  sharedKeyVendor?: string | null;
+  /** Whether the loaded provider uses the Text AI's key now (`currentMasked` is then that key). */
+  sharesKey?: boolean;
+  /**
    * What a successful save means for the surrounding surface, given what was stored.
    * Required, because "saved" has no useful default: Settings reloads to re-resolve
    * the server-rendered credential status, while a wizard advances instead — a reload
@@ -59,6 +66,7 @@ export function useCredentialEditor(props: CredentialEditorProps) {
   // Held apart from the test state, which every model edit resets: picking a
   // suggestion must not take the suggestions away.
   const [discoveredModels, setDiscoveredModels] = useState<string[]>([]);
+  const [usesSharedKey, setUsesSharedKey] = useState(() => sharesKeyByDefault(initialSelection));
   // Only the verdict stays: the Test's message is the toast's to say.
   const [testState, setTestState] = useState<{ status: CredentialTestState['status'] }>({
     status: 'idle',
@@ -68,7 +76,18 @@ export function useCredentialEditor(props: CredentialEditorProps) {
   const gate = useCredentialMutationGate();
   const selected = props.options.find((option) => option.value === providerKey) ?? props.options[0];
   const operationPending = gate.pending !== null;
-  const canTest = Boolean(secret.trim() || baseUrl.trim() || model.trim()) || props.configured;
+  const canTest =
+    Boolean(secret.trim() || baseUrl.trim() || model.trim()) || props.configured || usesSharedKey;
+
+  /**
+   * A provider on the Text AI's vendor uses the Text AI's key unless it has a key
+   * of its own, which only the loaded provider can have.
+   */
+  function sharesKeyByDefault(value: string): boolean {
+    const ownKey =
+      value === props.initialProviderKey && Boolean(props.currentMasked) && !props.sharesKey;
+    return value === props.sharedKeyVendor && !ownKey;
+  }
 
   /** A finished Test is both the state that gates a wizard step and a toast. */
   function finishTest(state: CredentialTestState) {
@@ -127,6 +146,13 @@ export function useCredentialEditor(props: CredentialEditorProps) {
     invalidateTest();
   }
 
+  /** Switch between the Text AI's key and an own key; a typed key goes either way. */
+  function shareKey(share: boolean) {
+    setUsesSharedKey(share);
+    setSecret('');
+    invalidateTest();
+  }
+
   function editModel(value: string) {
     setModel(value);
     invalidateTest();
@@ -139,6 +165,7 @@ export function useCredentialEditor(props: CredentialEditorProps) {
     setProviderKey(value);
     const isSaved = value === props.initialProviderKey;
     setModel(isSaved ? (props.initialModel ?? '') : '');
+    setUsesSharedKey(sharesKeyByDefault(value));
     setBaseUrl(isSaved ? (props.initialBaseUrl ?? '') : '');
     setDiscoveredModels([]);
     setTestState({ status: 'idle' });
@@ -213,7 +240,7 @@ export function useCredentialEditor(props: CredentialEditorProps) {
         body: JSON.stringify({
           providerType: props.providerType,
           providerKey,
-          secret: secret || undefined,
+          ...(usesSharedKey ? { shareTextLlmKey: true } : { secret: secret || undefined }),
           ...savedFields(),
         }),
       }).catch(() => null);
@@ -240,6 +267,9 @@ export function useCredentialEditor(props: CredentialEditorProps) {
     model,
     setModel: editModel,
     discoveredModels,
+    usesSharedKey,
+    canShareKey: providerKey === props.sharedKeyVendor,
+    shareKey,
     testState,
     operationPending,
     testing: gate.pending === 'test',

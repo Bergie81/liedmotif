@@ -4,6 +4,7 @@ import {
   readEnvLayer,
   resolveLlmRuntimeSettings,
   resolveProviderSettings,
+  resolveShareableTextLlmKey,
   type CredentialRef,
 } from '@liedmotif/db';
 import {
@@ -11,11 +12,12 @@ import {
   IMAGE_PROVIDERS,
   providerDisplayName,
 } from '@/lib/configurable-providers';
-import { getProviderStatuses } from '@/lib/credentials';
+import { encryptionKeyIfConfigured, getProviderStatuses } from '@/lib/credentials';
 import { getDb } from '@/lib/db';
 import { llmEffectiveModel, llmProviderMeta } from '@/lib/llm-providers';
 import {
   coverAccountAlert,
+  coverKeyNotice,
   generatedImageProviderPresentation,
   llmProviderPresentation,
 } from '@/lib/provider-settings-model';
@@ -37,8 +39,26 @@ export async function loadCoverAccountAlert(
   return coverAccountAlert({ outcome, credentialsSavedAt });
 }
 
+/**
+ * The image provider that can use the Text AI's key, or `null`. Only the vendor
+ * leaves the server; an unreadable key shares nothing.
+ */
+export async function loadSharedKeyVendor(): Promise<string | null> {
+  try {
+    const shared = await resolveShareableTextLlmKey(getDb(), {
+      encryptionKey: encryptionKeyIfConfigured(),
+    });
+    return shared?.vendor ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function loadProviderSettingsData() {
-  const statuses = await getProviderStatuses();
+  const [statuses, sharedKeyVendor] = await Promise.all([
+    getProviderStatuses(),
+    loadSharedKeyVendor(),
+  ]);
   const musicBaseUrl = resolveProviderSettings(
     'music',
     statuses.music.providerKey,
@@ -92,11 +112,14 @@ export async function loadProviderSettingsData() {
       settings: llmSettings,
       effectiveModel: llmEffectiveModel(llmMeta, llmSettings?.model),
       presentation: llmPresentation,
+      coverKeyNotice: coverKeyNotice(statuses.image),
     },
     cover: {
       credential: statuses.image,
       providerKey: imageKey,
       modelEnvironmentManaged: readEnvLayer('image', imageKey).model !== undefined,
+      sharedKeyVendor,
+      sharesKey: statuses.image?.source === 'shared',
       ...generatedImageProviderPresentation({
         credential: statuses.image,
         model:

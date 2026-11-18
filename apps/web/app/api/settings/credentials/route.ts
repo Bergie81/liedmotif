@@ -9,6 +9,7 @@ import {
   getStoredProviderConfig,
   getUnitCosts,
   readEnvLayer,
+  resolveShareableTextLlmKey,
   updateUnitCosts,
   upsertProviderCredential,
   type ProviderConfig,
@@ -41,6 +42,12 @@ const BASE_URL_REFUSALS: Record<ProviderBaseUrlRejection, string> = {
     'That base URL cannot carry a username, password, query, or fragment — put the API key in the API key field.',
 };
 
+/** Whether an image preset of `providerKey` can use the Text AI's key. */
+async function sharedTextLlmKeyResolves(providerKey: string, encryptionKey: Buffer) {
+  const shared = await resolveShareableTextLlmKey(getDb(), { encryptionKey }).catch(() => null);
+  return shared?.vendor === providerKey;
+}
+
 export async function POST(request: Request) {
   const admin = await requireAdminOwnerId(request);
   if (admin instanceof NextResponse) return admin;
@@ -57,6 +64,12 @@ export async function POST(request: Request) {
   if (!providerMeta) return badRequest('Unsupported provider.');
 
   const secret = trimmed(body.secret);
+  // Cover images using the Text AI's key: the image credential then keeps no key
+  // of its own, so a later rotation on the Text AI card reaches Covers too.
+  const sharesTextLlmKey = providerType === 'image' && body.shareTextLlmKey === true;
+  if (sharesTextLlmKey && secret) {
+    return badRequest('Send either an API key or shareTextLlmKey, not both.');
+  }
   const model = trimmed(body.model);
   const displayName = trimmed(body.displayName) ?? providerKey;
 
@@ -132,23 +145,25 @@ export async function POST(request: Request) {
   }
 
   // Same invariant for the key: a key-requiring LLM or image preset saved with no
-  // secret anywhere (form, DB, env) would register as the selected provider
-  // (`selectProviderKey`) while its builder returns null — a confusing
-  // half-configured row. Presets whose model default made the save
-  // guard passable (openai) hit this with a completely empty form, so enforce it
-  // at the same boundary.
+  // secret anywhere (form, DB, env, or the Text AI key an image preset shares)
+  // would register as the selected provider (`selectProviderKey`) while its
+  // builder returns null — a confusing half-configured row. Presets whose model
+  // default made the save guard passable (openai) hit this with a completely
+  // empty form, so enforce it at the same boundary. A save that shares the Text
+  // AI key drops the stored one, so only the shared key counts for it.
   if (providerType !== 'music' && providerMeta.needsKey && !secret) {
-    const status = await getCredentialStatus(getDb(), { providerType, providerKey });
-    if (!status.configured) {
-      return badRequest('An API key is required for this provider.');
-    }
+    const keyResolves = sharesTextLlmKey
+      ? await sharedTextLlmKeyResolves(providerKey, encryptionKey)
+      : (await getCredentialStatus(getDb(), { providerType, providerKey, encryptionKey }))
+          .configured;
+    if (!keyResolves) return badRequest('An API key is required for this provider.');
   }
 
   await upsertProviderCredential(getDb(), {
     providerType,
     providerKey,
     displayName,
-    secret,
+    secret: sharesTextLlmKey ? null : secret,
     config,
     encryptionKey,
   });

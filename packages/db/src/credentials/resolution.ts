@@ -10,8 +10,11 @@
 import { normalizeReasoningEffort, type LlmReasoningEffort } from '@liedmotif/shared';
 import type { ProviderConfig } from '../schema/types';
 
-/** Where a resolved provider credential ultimately came from. */
-export type CredentialSource = 'env' | 'database';
+/**
+ * Where a resolved provider credential ultimately came from. `shared` is an image
+ * provider using the text LLM's key (`textLlmKeyShareable`).
+ */
+export type CredentialSource = 'env' | 'database' | 'shared';
 
 /** The kind of provider a credential belongs to (mirrors the `provider_type` enum). */
 export type CredentialProviderType = 'music' | 'llm' | 'image' | 'storage';
@@ -107,6 +110,19 @@ export function resolveProviderSettings(
     ? (fromEnv.model ?? readStoredField(storedConfig, 'model'))
     : undefined;
   return { ...(baseUrl ? { baseUrl } : {}), ...(model ? { model } : {}) };
+}
+
+/** Vendors whose one API key serves both the text LLM and Cover images. */
+const KEY_SHARING_VENDORS: ReadonlySet<string> = new Set(['openai', 'gemini', 'openrouter']);
+
+/**
+ * Whether the resolved text LLM's key may serve an image provider of the same
+ * vendor that has no key of its own. A base URL override (app or `.env`) means
+ * the key belongs to some other endpoint, so it is never sent to the vendor's
+ * image API.
+ */
+export function textLlmKeyShareable(llm: { providerKey: string; baseUrl?: string }): boolean {
+  return KEY_SHARING_VENDORS.has(llm.providerKey) && !llm.baseUrl;
 }
 
 /**

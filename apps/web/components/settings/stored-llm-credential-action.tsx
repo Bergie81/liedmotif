@@ -10,11 +10,14 @@ const DELETE_KEY = 'stored-llm-delete';
 interface StoredLlmCredentialActionProps {
   providerKey: string;
   environmentActive: boolean;
+  /** Said in the confirmation too, while Cover images use this key. */
+  coverKeyNotice?: string | null;
 }
 
 export function StoredLlmCredentialAction({
   providerKey,
   environmentActive,
+  coverKeyNotice = null,
 }: StoredLlmCredentialActionProps) {
   const gate = useCredentialMutationGate();
   const deleting = gate.pending === 'delete';
@@ -26,7 +29,8 @@ export function StoredLlmCredentialAction({
       const consequence = environmentActive
         ? 'The environment-selected Text AI will remain active.'
         : 'Sessions keep working: your words will reach the music model exactly as written, without AI expansion.';
-      if (!window.confirm(`${label}? ${consequence}`)) return;
+      const warning = [consequence, coverKeyNotice].filter(Boolean).join(' ');
+      if (!window.confirm(`${label}? ${warning}`)) return;
       toast.dismiss(DELETE_KEY);
 
       const response = await fetch('/api/settings/credentials', {
