@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { buildProviderDiagnostics } from '@liedmotif/shared';
-import { providerJobs } from '../schema';
+import { generationRequests, providerJobs } from '../schema';
 import {
   connectTestDb,
   createSession,
@@ -90,5 +90,44 @@ describeIfDb('submit repo diagnostics persistence', () => {
     const stored = await storedDiagnostics(jobId);
     expect(stored.rawRequest).toEqual({ model: 'V5' });
     expect(stored.rawResponse).toBeNull();
+  });
+});
+
+describeIfDb('submit repo prompt stamp', () => {
+  let ctx: TestDb;
+  beforeAll(async () => {
+    ctx = await connectTestDb('liedmotif-submit-repo-stamp-test');
+  }, 60_000);
+  afterAll(async () => {
+    await ctx?.pool.end();
+  });
+  beforeEach(async () => {
+    await truncateTables(ctx.pool, GENERATION_FIXTURE_TABLES);
+  });
+
+  async function storedStamp(userPrompt: string | null | undefined): Promise<string | null> {
+    const ownerUserId = await createUser(ctx.db);
+    const sessionId = await createSession(ctx.db, { ownerUserId });
+    const { requestId } = await withTransaction(ctx.db, (tx) =>
+      insertSubmittingGenerationJob(tx, {
+        ownerUserId,
+        activitySessionId: sessionId,
+        providerKey: 'mock',
+        ...(userPrompt !== undefined ? { userPrompt } : {}),
+      }),
+    );
+    const [row] = await ctx.db
+      .select({ userPrompt: generationRequests.userPrompt })
+      .from(generationRequests)
+      .where(eq(generationRequests.id, requestId));
+    return row!.userPrompt;
+  }
+
+  it('stores an empty prompt history as the empty string, a frozen "no prompt"', async () => {
+    expect(await storedStamp('')).toBe('');
+  });
+
+  it('stores no stamp when the caller freezes none', async () => {
+    expect(await storedStamp(undefined)).toBeNull();
   });
 });

@@ -220,7 +220,7 @@ interface SubmitPlan {
   stylePrompt: string | null;
   identity: BlendIdentity;
   styleSnapshot: StyleSnapshot | null;
-  /** The prompt history this request freezes (Track Data's "Your prompt"). */
+  /** The prompt history this request freezes (Track Data's "Your prompt"); '' is a frozen "none". */
   userPrompt: string | null;
   /**
    * The snapshot asks for the user's own voice: the submit must carry a
@@ -265,9 +265,9 @@ interface SubmitPlan {
  * the adapter's boundary clamp.
  *
  * The prompt provenance follows the same rule as the style: a fresh submit
- * FREEZES the session's prompt history as it stands, a reroll copies the
- * original request's frozen value — the replacement tells the story of the
- * Track it replaces.
+ * FREEZES the session's prompt history as it stands (an empty one included), a
+ * reroll copies the original request's frozen value as it is — the replacement
+ * tells the story of the Track it replaces.
  */
 function planSubmit(args: {
   reroll: RerollIdentity | null;
@@ -322,7 +322,9 @@ function planSubmit(args: {
     // The validated snapshot IS the stored shape; the cast only bridges the
     // providers-side interface to the db column's permissive jsonb type.
     styleSnapshot: parsedSnapshot.data as StyleSnapshot,
-    userPrompt: truncateTrackDataPrompt(args.sessionUserPrompt),
+    // No history yet freezes as '' rather than null: null means a legacy
+    // request that froze nothing, which Track Data fills from the live Session.
+    userPrompt: truncateTrackDataPrompt(args.sessionUserPrompt) ?? '',
     useOwnVoice: parsedSnapshot.data.useOwnVoice,
     freshSnapshot: parsedSnapshot.data,
   };

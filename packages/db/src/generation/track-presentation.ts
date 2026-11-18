@@ -14,14 +14,17 @@ export function resolveArtistName(artistName: string | null, userName: string): 
 
 /**
  * The prompt history that produced a Track: the request's stamp, frozen at
- * generation time. Only legacy requests, which carry none, fall back to the
- * owning Session's live value — so a Track that outlived its Session, or whose
+ * generation time. An empty stamp is a frozen "no prompt" (the Session had no
+ * history yet, as after More Like This) and shows nothing. Only legacy
+ * requests, which carry no stamp at all (null), fall back to the owning
+ * Session's live value — so a Track that outlived its Session, or whose
  * Session has since been re-styled, still answers with its own story.
  */
 export function resolveTrackDataPrompt(
   stampedPrompt: string | null,
   sessionPrompt: string | null,
 ): string | null {
+  if (stampedPrompt === '') return null;
   return truncateTrackDataPrompt(stampedPrompt ?? sessionPrompt);
 }
 

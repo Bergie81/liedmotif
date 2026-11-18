@@ -118,7 +118,7 @@ describeIfDb('embed-track-metadata', () => {
       ownerUserId,
       activitySessionId: sessionId,
       ...(options.stylePrompt ? { stylePrompt: options.stylePrompt } : {}),
-      ...(options.requestUserPrompt ? { userPrompt: options.requestUserPrompt } : {}),
+      ...(options.requestUserPrompt !== undefined ? { userPrompt: options.requestUserPrompt } : {}),
     });
     const jobId = await createProviderJob(ctx.db, { generationRequestId: requestId });
     const audioKey = `tracks/${ownerUserId}/fixture/track.mp3`;
@@ -370,6 +370,15 @@ describeIfDb('embed-track-metadata', () => {
     expect(readId3Tags(await readAudio(seeded.audioKey))!.userText.Prompt).toBe(
       'calm music for coding',
     );
+  });
+
+  it('writes no prompt for a Track that froze an empty history, even after a later Change Vibe', async () => {
+    const seeded = await seedMp3Track({ userPrompt: 'mehr rockiger', requestUserPrompt: '' });
+    const { render } = fakeRenderAlbumArt();
+
+    await runEmbedTrackMetadata(deps(render), { trackId: seeded.trackId });
+
+    expect(readId3Tags(await readAudio(seeded.audioKey))!.userText).not.toHaveProperty('Prompt');
   });
 
   it('retags when the Track’s own frozen prompt changes', async () => {

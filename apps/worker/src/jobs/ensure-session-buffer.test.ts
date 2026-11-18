@@ -10,6 +10,7 @@ import {
   countTasksInWindow,
   defaultUsageLimits,
   failFinalLessTracksOfJob,
+  getReadableTrackDetails,
   generationRequests,
   providerCredentials,
   providerJobs,
@@ -2673,6 +2674,27 @@ describeIfDb('ensure-session-buffer controller', () => {
     expect(requests[1]?.userPrompt).toBe('calm music for late-night coding\n\nmehr rockiger');
   });
 
+  it('stamps an empty prompt history, not none, when the session has no prompt', async () => {
+    const ownerUserId = await createUser(ctx.db);
+    const sessionId = await createSession(ctx.db, {
+      ownerUserId,
+      styleSnapshot: { stylePrompt: 'instrumental lofi', bpm: 96, key: 'A minor' },
+    });
+
+    await runEnsureSessionBuffer(
+      {
+        db: ctx.db,
+        music: countingMusicProvider(async (_i, n) => okTask(`mock-empty-stamp-${n}`)).provider,
+        now: NOW,
+        limits: ampleLimits(),
+        stallThresholdMs: NEVER_STALE,
+      },
+      { sessionId },
+    );
+
+    expect((await sessionRequests(sessionId))[0]?.userPrompt).toBe('');
+  });
+
   it('caps a stamped prompt at the track-data bound', async () => {
     const ownerUserId = await createUser(ctx.db);
     const sessionId = await createSession(ctx.db, {
@@ -2760,6 +2782,36 @@ describeIfDb('ensure-session-buffer controller', () => {
     const requests = await sessionRequests(sessionId);
     expect(requests).toHaveLength(2);
     expect(requests[1]?.userPrompt).toBe('origin prompt');
+  });
+
+  it('a reroll of an empty-stamp request copies the empty stamp, so it shows no prompt after a later change', async () => {
+    const sessionId = await seedRerollWithFrozenPrompt({
+      userPrompt: '',
+      styleSnapshot: { stylePrompt: 'instrumental lofi', bpm: 96, key: 'A minor' },
+    });
+
+    await runRerollTick(sessionId);
+
+    const requests = await sessionRequests(sessionId);
+    expect(requests).toHaveLength(2);
+    expect(requests[1]?.userPrompt).toBe('');
+    const [replacement] = await ctx.db
+      .select({ id: providerJobs.id })
+      .from(providerJobs)
+      .where(eq(providerJobs.generationRequestId, requests[1]!.id));
+    const [session] = await ctx.db
+      .select({ ownerUserId: activitySessions.ownerUserId })
+      .from(activitySessions)
+      .where(eq(activitySessions.id, sessionId));
+    const ownerUserId = session!.ownerUserId;
+    const trackId = await createTrack(ctx.db, {
+      ownerUserId,
+      generationRequestId: requests[1]!.id,
+      providerJobId: replacement!.id,
+      status: 'ready',
+    });
+    const details = await getReadableTrackDetails(ctx.db, { viewerUserId: ownerUserId, trackId });
+    expect(details?.userPrompt).toBeNull();
   });
 
   it('a reroll of a legacy request stamps nothing (there is no frozen prompt to copy)', async () => {
@@ -3766,6 +3818,19 @@ describeIfDb('ensure-session-buffer controller', () => {
       expect(await liveSessionLyricContext(sessionId)).toBe(LYRIC_NOTES);
     });
 
+    it('passes no user prompt for a session without a prompt history', async () => {
+      const ownerUserId = await createUser(ctx.db);
+      const sessionId = await createSession(ctx.db, { ownerUserId, styleSnapshot: VOCAL_SNAPSHOT });
+      const { llm, briefCalls } = capturingLlm();
+
+      await runEnsureSessionBuffer(briefDeps(capturingMusic('no-prompt').provider, llm), {
+        sessionId,
+      });
+
+      expect(briefCalls).toHaveLength(1);
+      expect(briefCalls[0]).not.toHaveProperty('userPrompt');
+    });
+
     it("feeds the previous generation's brief into the next brief call (variety memory)", async () => {
       const { sessionId } = await seedVocalSession();
       const first = capturingMusic('mem-first');
@@ -4019,6 +4084,20 @@ describeIfDb('ensure-session-buffer controller', () => {
         'Glass Avenue',
         'Velvet Static',
       ]);
+    });
+
+    it('passes no user prompt for a session without a prompt history', async () => {
+      const ownerUserId = await createUser(ctx.db);
+      const sessionId = await createSession(ctx.db, {
+        ownerUserId,
+        styleSnapshot: { ...POOL_SNAPSHOT, trackTitles: ['Neon Harbor'] },
+      });
+      const { llm, titleCalls } = titlesLlm(async () => ['Glass Avenue', 'Velvet Static']);
+
+      await runEnsureSessionBuffer(titleDeps(llm), { sessionId });
+
+      expect(titleCalls).toHaveLength(1);
+      expect(titleCalls[0]).not.toHaveProperty('userPrompt');
     });
 
     it('makes no title call while the pool still covers the submit', async () => {

@@ -214,6 +214,12 @@ describe.skipIf(skip)('GET /api/tracks/[trackId]/details — frozen prompt prove
     expect(await promptOf(afterChange)).toBe('calm music for coding\n\nmehr rockiger');
   });
 
+  it('shows no prompt for a Track stamped with an empty history, whatever the session says now', async () => {
+    const noHistory = await seedTrack({ userPrompt: '' });
+
+    expect(await promptOf(noHistory)).toBeNull();
+  });
+
   it('falls back to the session’s live prompt for a legacy Track that was never stamped', async () => {
     const legacy = await seedTrack({});
 

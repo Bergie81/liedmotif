@@ -39,7 +39,9 @@ export interface InsertSubmittingGenerationJobInput {
   /** The compiled input's negative tags, persisted for provenance. */
   negativePrompt?: string | null;
   /** The session's prompt history frozen at submit time — what Track Data shows
-   *  for this request's Tracks forever after, whatever the session becomes. */
+   *  for this request's Tracks forever after, whatever the session becomes.
+   *  `''` freezes "no prompt"; only an absent stamp (null) is the legacy case
+   *  Track Data fills from the live session. */
   userPrompt?: string | null;
 }
 
