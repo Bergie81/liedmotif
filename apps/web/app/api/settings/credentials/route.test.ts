@@ -167,6 +167,29 @@ describe('provider credential writes', () => {
     );
   });
 
+  it('accepts Gemini as the Text AI without a model, so its default model applies', async () => {
+    mocks.encryptionKey.mockReturnValue(Buffer.alloc(32));
+    const response = await POST(
+      new Request('http://localhost/api/settings/credentials', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ providerType: 'llm', providerKey: 'gemini', secret: 'AIza-1' }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.upsert).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ providerType: 'llm', providerKey: 'gemini', secret: 'AIza-1' }),
+    );
+    expect(mocks.upsert).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.not.objectContaining({
+        config: expect.objectContaining({ model: expect.anything() }),
+      }),
+    );
+  });
+
   it('blocks config-only database writes when credential encryption is unavailable', async () => {
     const response = await POST(
       new Request('http://localhost/api/settings/credentials', {

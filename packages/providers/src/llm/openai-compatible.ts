@@ -28,6 +28,8 @@ import {
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import {
   COVER_STYLE_PRESETS,
+  GEMINI_DEFAULT_LLM_MODEL,
+  GEMINI_DEFAULT_REASONING_EFFORT,
   MAX_COVER_GUIDANCE_LENGTH,
   narrowTo,
   OPENAI_DEFAULT_LLM_MODEL,
@@ -135,7 +137,7 @@ const sessionExpansionRequestSchema = sessionExpansionSchema.omit({ seedParamete
 
 type SessionExpansion = z.infer<typeof sessionExpansionSchema>;
 
-export type LlmProviderKey = 'openai' | 'openai-compatible' | 'openrouter' | 'ollama';
+export type LlmProviderKey = 'openai' | 'gemini' | 'openai-compatible' | 'openrouter' | 'ollama';
 
 export interface OpenAiCompatibleLlmConfig {
   providerKey: LlmProviderKey;
@@ -164,6 +166,7 @@ export interface OpenAiCompatibleLlmConfig {
 
 const OPENAI_BASE_URL = 'https://api.openai.com/v1';
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
+const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/openai';
 const OLLAMA_DEFAULT_ROOT = 'http://localhost:11434';
 const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
 const DEFAULT_MAX_RETRIES = 1;
@@ -853,6 +856,39 @@ export function createOpenAiLlmProvider(opts: {
     apiKey: opts.apiKey,
     model,
     ...(reasoningEffort ? { reasoningEffort } : {}),
+    supportsStructuredOutputs: opts.supportsStructuredOutputs ?? false,
+    validationBaseUrl: baseUrl,
+    ...(opts.headers ? { headers: opts.headers } : {}),
+    ...(opts.fetchImpl ? { fetchImpl: opts.fetchImpl } : {}),
+    ...(opts.languageModel ? { languageModel: opts.languageModel } : {}),
+    ...(opts.requestTimeoutMs != null ? { requestTimeoutMs: opts.requestTimeoutMs } : {}),
+  });
+}
+
+export function createGeminiLlmProvider(opts: {
+  apiKey: string;
+  /** Blank/absent → the preset default (`gemini-3.8-flash`). */
+  model?: string;
+  /** Defaults to `low`. */
+  reasoningEffort?: LlmReasoningEffort;
+  supportsStructuredOutputs?: boolean;
+  baseUrl?: string;
+  headers?: Record<string, string>;
+  fetchImpl?: typeof fetch;
+  languageModel?: LanguageModel;
+  requestTimeoutMs?: number;
+}): LlmProvider {
+  const baseUrl = trimTrailingSlash(opts.baseUrl?.trim() || GEMINI_BASE_URL);
+  // Current Gemini models cannot switch thinking off and refuse `none`;
+  // `minimal` is the lowest effort they take.
+  const configured = opts.reasoningEffort ?? GEMINI_DEFAULT_REASONING_EFFORT;
+  const reasoningEffort = configured === 'none' ? 'minimal' : configured;
+  return createOpenAiCompatibleLlmProvider({
+    providerKey: 'gemini',
+    baseUrl,
+    apiKey: opts.apiKey,
+    model: opts.model?.trim() || GEMINI_DEFAULT_LLM_MODEL,
+    reasoningEffort,
     supportsStructuredOutputs: opts.supportsStructuredOutputs ?? false,
     validationBaseUrl: baseUrl,
     ...(opts.headers ? { headers: opts.headers } : {}),

@@ -1,4 +1,4 @@
-// Text-LLM reasoning-effort vocabulary and the hosted-OpenAI preset defaults.
+// Text-LLM reasoning-effort vocabulary and the hosted OpenAI and Gemini preset defaults.
 //
 // The effort values are the OpenAI `reasoning_effort` API's. They live in shared —
 // not in `@liedmotif/providers` — because credential resolution (`@liedmotif/db`) and
@@ -26,6 +26,12 @@ export const OPENAI_DEFAULT_LLM_MODEL = 'gpt-6-luna';
 
 /** Default reasoning effort for the hosted `openai` LLM preset. */
 export const OPENAI_DEFAULT_REASONING_EFFORT: LlmReasoningEffort = 'high';
+
+/** Default model for the hosted `gemini` LLM preset, applied like the openai one. */
+export const GEMINI_DEFAULT_LLM_MODEL = 'gemini-3.8-flash';
+
+/** Default reasoning effort for the hosted `gemini` LLM preset. */
+export const GEMINI_DEFAULT_REASONING_EFFORT: LlmReasoningEffort = 'low';
 
 /**
  * A valid reasoning effort from arbitrary input (env var, stored credential

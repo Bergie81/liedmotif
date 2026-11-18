@@ -115,7 +115,7 @@ describe('onboarding text-LLM step', () => {
   it('starts a new install on OpenAI, with the advanced presets behind More options', () => {
     const markup = renderLlm({ ...openRouter, providerKey: 'openai', displayName: 'OpenAI' });
 
-    expect(providerButtons(markup)).toEqual(['OpenAI', 'Ollama']);
+    expect(providerButtons(markup)).toEqual(['OpenAI', 'Gemini', 'Ollama']);
     expect(markup).toMatch(/data-state="active"[^>]*>OpenAI</);
     expect(markup).toMatch(/<button[^>]*>More options<\/button>/);
   });
@@ -125,12 +125,23 @@ describe('onboarding text-LLM step', () => {
 
     expect(providerButtons(markup)).toEqual([
       'OpenAI',
+      'Gemini',
       'Ollama',
       'OpenRouter',
       'OpenAI-compatible',
     ]);
     expect(markup).toMatch(/data-state="active"[^>]*>OpenRouter</);
     expect(markup).not.toContain('More options');
+  });
+
+  it('explains where to get a Gemini key when Gemini is selected', () => {
+    const gemini = renderLlm({ ...openRouter, providerKey: 'gemini', displayName: 'Gemini' });
+    expect(gemini).toMatch(/data-state="active"[^>]*>Gemini</);
+    expect(gemini).toContain('Where do I get a Gemini key?');
+    expect(gemini).toContain('aistudio.google.com');
+
+    const openAi = renderLlm({ ...openRouter, providerKey: 'openai', displayName: 'OpenAI' });
+    expect(openAi).not.toContain('Gemini key');
   });
 
   it('reports the environment as the source and offers no skip it cannot honour', () => {

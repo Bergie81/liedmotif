@@ -233,6 +233,7 @@ export type { SessionTitleSnapshot, SessionNamingMetadata } from './session-titl
 
 export {
   createOpenAiCompatibleLlmProvider,
+  createGeminiLlmProvider,
   createOpenAiLlmProvider,
   createOpenRouterLlmProvider,
   createOllamaLlmProvider,

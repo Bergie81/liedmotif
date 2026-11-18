@@ -10,6 +10,7 @@ import { SUNO_BASE_CAPABILITIES, sunoMusicProvider } from './music/suno';
 import { mockLlmProvider } from './llm/mock';
 import type { LlmReasoningEffort } from '@liedmotif/shared';
 import {
+  createGeminiLlmProvider,
   createOllamaLlmProvider,
   createOpenAiCompatibleLlmProvider,
   createOpenAiLlmProvider,
@@ -93,7 +94,7 @@ export function buildMusicProvider(
 // --- Text LLM (optional) ----------------------------------------------------
 
 export interface LlmRuntimeConfig {
-  providerKey: 'openai' | 'openrouter' | 'openai-compatible' | 'ollama' | 'mock';
+  providerKey: 'openai' | 'gemini' | 'openrouter' | 'openai-compatible' | 'ollama' | 'mock';
   model: string;
   apiKey?: string;
   baseUrl?: string;
@@ -148,9 +149,10 @@ export function assembleLlmRuntimeConfig(input: {
 export function buildLlmProvider(config: LlmRuntimeConfig | null): LlmProvider | null {
   if (!config) return null;
   if (config.providerKey === 'mock') return mockLlmProvider();
-  // A real preset needs a model to be usable — except `openai`, whose preset
-  // supplies a well-known default model when none is configured.
-  if (!config.model.trim() && config.providerKey !== 'openai') return null;
+  // A real preset needs a model to be usable — except `openai` and `gemini`,
+  // whose presets supply a well-known default model when none is configured.
+  const hasDefaultModel = config.providerKey === 'openai' || config.providerKey === 'gemini';
+  if (!config.model.trim() && !hasDefaultModel) return null;
 
   const supportsStructuredOutputs = config.supportsStructuredOutputs ?? false;
   const baseUrl = config.baseUrl?.trim();
@@ -174,6 +176,19 @@ export function buildLlmProvider(config: LlmRuntimeConfig | null): LlmProvider |
       // preset defaults (gpt-6-luna, high).
       return apiKey
         ? createOpenAiLlmProvider({
+            apiKey,
+            model: config.model,
+            supportsStructuredOutputs,
+            ...(baseUrl ? { baseUrl } : {}),
+            ...reasoningEffort,
+            ...timeout,
+          })
+        : null;
+    case 'gemini':
+      // Hosted Gemini: only the key is required — model and reasoning effort
+      // have preset defaults (gemini-3.8-flash, low).
+      return apiKey
+        ? createGeminiLlmProvider({
             apiKey,
             model: config.model,
             supportsStructuredOutputs,

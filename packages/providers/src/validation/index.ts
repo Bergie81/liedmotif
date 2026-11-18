@@ -53,6 +53,7 @@ const DEFAULT_TIMEOUT_MS = 8_000;
 const SUNO_DEFAULT_BASE_URL = 'https://api.sunoapi.org';
 const OPENAI_DEFAULT_BASE_URL = 'https://api.openai.com/v1';
 const OPENROUTER_DEFAULT_BASE_URL = 'https://openrouter.ai/api/v1';
+const GEMINI_DEFAULT_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/openai';
 const OLLAMA_DEFAULT_BASE_URL = 'http://localhost:11434';
 
 /** Fixed, safe messages per reason — never built from a provider response. */
@@ -276,8 +277,11 @@ async function validateLlm(
         secret: ctx.secret,
       });
     }
+    case 'gemini':
     case 'openai-compatible': {
-      const base = input.baseUrl?.trim();
+      const base =
+        input.baseUrl?.trim() ||
+        (input.providerKey === 'gemini' ? GEMINI_DEFAULT_BASE_URL : undefined);
       if (!base) return result('misconfigured'); // generic preset needs an explicit base URL
       if (!ctx.secret) return result('misconfigured'); // ...and an API key (matches OpenRouter)
       const res = await probe(`${trimBaseUrl(base)}/models`, ctx);

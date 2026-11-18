@@ -3,6 +3,7 @@ import type { LanguageModel } from 'ai';
 import { ProviderError } from '../errors';
 import {
   clampMaxRetries,
+  createGeminiLlmProvider,
   createOllamaLlmProvider,
   createOpenAiLlmProvider,
   createOpenRouterLlmProvider,
@@ -331,6 +332,75 @@ describe('structured-output wire format', () => {
     for (const body of bodies) {
       expect(body.reasoning_effort).toBe('high');
     }
+  });
+});
+
+describe('createGeminiLlmProvider (hosted Gemini preset)', () => {
+  /** Answers every generation call with the same chat-completions reply and
+   *  records each request's URL and JSON body. */
+  function stubGeminiWire(content: string) {
+    const requests: Array<{ url: string; body: Record<string, unknown> }> = [];
+    const impl = (async (url: string | URL, init?: RequestInit) => {
+      requests.push({ url: String(url), body: JSON.parse(String(init?.body)) });
+      return new Response(
+        JSON.stringify({
+          id: 'chatcmpl-1',
+          object: 'chat.completion',
+          created: 1,
+          model: 'gemini-3.8-flash',
+          choices: [{ index: 0, message: { role: 'assistant', content }, finish_reason: 'stop' }],
+          usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
+    }) as unknown as typeof fetch;
+    return { impl, requests };
+  }
+
+  it("calls Google's OpenAI-compatible endpoint with the default model at low effort", async () => {
+    const { impl, requests } = stubGeminiWire(SNAPSHOT_JSON);
+    const provider = createGeminiLlmProvider({ apiKey: 'AIza-1', fetchImpl: impl });
+    await provider.expandSessionIntent('chill study music');
+    expect(requests.length).toBeGreaterThan(0);
+    for (const { url, body } of requests) {
+      expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions');
+      expect(body.model).toBe('gemini-3.8-flash');
+      expect(body.reasoning_effort).toBe('low');
+    }
+  });
+
+  it('sends minimal instead of none, because Gemini cannot switch thinking off', async () => {
+    const { impl, requests } = stubGeminiWire(SNAPSHOT_JSON);
+    const provider = createGeminiLlmProvider({
+      apiKey: 'AIza-1',
+      reasoningEffort: 'none',
+      fetchImpl: impl,
+    });
+    await provider.expandSessionIntent('chill study music');
+    expect(requests.length).toBeGreaterThan(0);
+    for (const { body } of requests) expect(body.reasoning_effort).toBe('minimal');
+  });
+
+  it('keeps a configured model and effort', async () => {
+    const { impl, requests } = stubGeminiWire(SNAPSHOT_JSON);
+    const provider = createGeminiLlmProvider({
+      apiKey: 'AIza-1',
+      model: 'gemini-4-argon',
+      reasoningEffort: 'high',
+      fetchImpl: impl,
+    });
+    await provider.expandSessionIntent('chill study music');
+    expect(requests[0]?.body).toMatchObject({ model: 'gemini-4-argon', reasoning_effort: 'high' });
+  });
+
+  it('fails a refused call with a retryable error instead of passing the words through', async () => {
+    const provider = createGeminiLlmProvider({
+      apiKey: 'AIza-1',
+      languageModel: throwingModel(Object.assign(new Error('quota'), { statusCode: 429 })),
+    });
+    await expect(provider.expandSessionIntent('chill study music')).rejects.toBeInstanceOf(
+      ProviderError,
+    );
   });
 });
 

@@ -316,6 +316,49 @@ describe('validateCredential — text LLM key and model, told apart', () => {
     expect(rejected.reason).toBe('unauthorized');
   });
 
+  it("checks a Gemini key on Google's model list and finds a model listed as models/<id>", async () => {
+    const list = {
+      object: 'list',
+      data: [{ id: 'models/gemini-3.8-flash' }, { id: 'models/gemini-4-argon' }],
+    };
+    const input = { providerType: 'llm', providerKey: 'gemini', secret: 'AIza-1' } as const;
+    const listed = stubFetch(200, list);
+    const found = await validateCredential({
+      ...input,
+      model: 'gemini-3.8-flash',
+      fetchImpl: listed.impl,
+    });
+    expect(found.reason).toBe('ok');
+    expect(listed.calls).toHaveLength(1);
+    expect(listed.calls[0]?.url).toBe(
+      'https://generativelanguage.googleapis.com/v1beta/openai/models',
+    );
+    expect(listed.calls[0]?.headers.authorization).toBe('Bearer AIza-1');
+
+    const missing = await validateCredential({
+      ...input,
+      model: 'gemini-9-flash',
+      fetchImpl: stubFetch(200, list).impl,
+    });
+    expect(missing).toMatchObject({ ok: false, reason: 'unknown_model' });
+
+    const rejected = await validateCredential({
+      ...input,
+      model: 'gemini-3.8-flash',
+      fetchImpl: stubFetch(401).impl,
+    });
+    expect(rejected.reason).toBe('unauthorized');
+
+    const keyless = stubFetch(200, list);
+    const withoutKey = await validateCredential({
+      providerType: 'llm',
+      providerKey: 'gemini',
+      fetchImpl: keyless.impl,
+    });
+    expect(withoutKey.reason).toBe('misconfigured');
+    expect(keyless.calls).toHaveLength(0);
+  });
+
   it('passes the key but leaves the model unchecked when the endpoint lists no models', async () => {
     const result = await validateCredential({
       providerType: 'llm',

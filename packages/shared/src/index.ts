@@ -75,6 +75,8 @@ export {
 } from './provider-diagnostics';
 
 export {
+  GEMINI_DEFAULT_LLM_MODEL,
+  GEMINI_DEFAULT_REASONING_EFFORT,
   LLM_REASONING_EFFORTS,
   normalizeReasoningEffort,
   OPENAI_DEFAULT_LLM_MODEL,

@@ -31,7 +31,7 @@ describe('providerPicker', () => {
       moreOptionsOpened: false,
     });
 
-    expect(labels(picker.shown)).toEqual(['OpenAI', 'Ollama']);
+    expect(labels(picker.shown)).toEqual(['OpenAI', 'Gemini', 'Ollama']);
     expect(picker.moreOptionsHidden).toBe(true);
   });
 
@@ -42,7 +42,13 @@ describe('providerPicker', () => {
       moreOptionsOpened: true,
     });
 
-    expect(labels(picker.shown)).toEqual(['OpenAI', 'Ollama', 'OpenRouter', 'OpenAI-compatible']);
+    expect(labels(picker.shown)).toEqual([
+      'OpenAI',
+      'Gemini',
+      'Ollama',
+      'OpenRouter',
+      'OpenAI-compatible',
+    ]);
     expect(picker.moreOptionsHidden).toBe(false);
   });
 
@@ -53,7 +59,13 @@ describe('providerPicker', () => {
       moreOptionsOpened: false,
     });
 
-    expect(labels(picker.shown)).toEqual(['OpenAI', 'Ollama', 'OpenRouter', 'OpenAI-compatible']);
+    expect(labels(picker.shown)).toEqual([
+      'OpenAI',
+      'Gemini',
+      'Ollama',
+      'OpenRouter',
+      'OpenAI-compatible',
+    ]);
     expect(picker.moreOptionsHidden).toBe(false);
   });
 
@@ -64,7 +76,13 @@ describe('providerPicker', () => {
       moreOptionsOpened: false,
     });
 
-    expect(labels(picker.shown)).toEqual(['OpenAI', 'Ollama', 'OpenRouter', 'OpenAI-compatible']);
+    expect(labels(picker.shown)).toEqual([
+      'OpenAI',
+      'Gemini',
+      'Ollama',
+      'OpenRouter',
+      'OpenAI-compatible',
+    ]);
     expect(picker.moreOptionsHidden).toBe(false);
   });
 

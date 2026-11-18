@@ -189,6 +189,29 @@ describe.skipIf(skip)('POST /api/setup/validate credential fallback', () => {
     ]);
   });
 
+  it('tests a Gemini key from .env and its default model on the free model list', async () => {
+    vi.stubEnv('LLM_PROVIDER', 'gemini');
+    vi.stubEnv('LLM_API_KEY', 'env-gemini-key');
+    stubProbeFetch(200, { object: 'list', data: [{ id: 'models/gemini-3.8-flash' }] });
+    const res = await postJson({ providerType: 'llm', providerKey: 'gemini' });
+    expect(await res.json()).toMatchObject({ ok: true, reason: 'ok' });
+    expect(probeCalls).toEqual([
+      {
+        url: 'https://generativelanguage.googleapis.com/v1beta/openai/models',
+        authorization: 'Bearer env-gemini-key',
+      },
+    ]);
+
+    stubProbeFetch(200, { object: 'list', data: [{ id: 'models/gemini-3.8-flash' }] });
+    const missing = await postJson({
+      providerType: 'llm',
+      providerKey: 'gemini',
+      secret: 'typed-key',
+      model: 'gemini-9-flash',
+    });
+    expect(await missing.json()).toMatchObject({ ok: false, reason: 'unknown_model' });
+  });
+
   it('names the provider and the model when the key works but the model does not exist', async () => {
     stubProbeFetch(404, { error: { message: 'Not Found', code: 404 } });
     const res = await postJson({

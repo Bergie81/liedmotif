@@ -62,6 +62,16 @@ describe('buildLlmProvider', () => {
     expect(provider?.getCapabilities().model).toBe('gpt-6');
   });
 
+  it('builds the gemini preset with its model default (gemini-3.8-flash)', () => {
+    const provider = buildLlmProvider({ providerKey: 'gemini', model: '', apiKey: 'AIza-1' });
+    expect(provider?.providerKey).toBe('gemini');
+    expect(provider?.getCapabilities().model).toBe('gemini-3.8-flash');
+  });
+
+  it('treats gemini without an API key as absent (returns null)', () => {
+    expect(buildLlmProvider({ providerKey: 'gemini', model: 'gemini-3.8-flash' })).toBeNull();
+  });
+
   it('treats openai without an API key as absent (returns null)', () => {
     expect(buildLlmProvider({ providerKey: 'openai', model: 'gpt-6-luna' })).toBeNull();
   });

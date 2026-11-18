@@ -3,10 +3,10 @@
 // and server (validation, settings) derive from the SAME matrix — the wizard can
 // never accept a config the server validator would reject.
 
-import { OPENAI_DEFAULT_LLM_MODEL } from '@liedmotif/shared';
+import { GEMINI_DEFAULT_LLM_MODEL, OPENAI_DEFAULT_LLM_MODEL } from '@liedmotif/shared';
 
 export interface LlmProviderMeta {
-  value: 'openai' | 'openrouter' | 'openai-compatible' | 'ollama';
+  value: 'openai' | 'gemini' | 'openrouter' | 'openai-compatible' | 'ollama';
   label: string;
   /** Whether this preset requires an API key. */
   needsKey: boolean;
@@ -32,6 +32,13 @@ export const LLM_PROVIDERS: readonly LlmProviderMeta[] = [
     needsKey: true,
     needsBaseUrl: false,
     defaultModel: OPENAI_DEFAULT_LLM_MODEL,
+  },
+  {
+    value: 'gemini',
+    label: 'Gemini',
+    needsKey: true,
+    needsBaseUrl: false,
+    defaultModel: GEMINI_DEFAULT_LLM_MODEL,
   },
   {
     value: 'ollama',
@@ -71,7 +78,7 @@ export function llmProviderMeta(key: string): LlmProviderMeta | undefined {
  * The one model-requirement rule, shared by wizard/settings/server validation: a
  * preset without a runtime model default needs an explicit model — without one
  * the LLM can never actually be built (`buildLlmProvider` returns null). Presets
- * with a default (openai) stay usable model-less.
+ * with a default (openai, gemini) stay usable model-less.
  */
 export function llmModelMissing(
   meta: Pick<LlmProviderMeta, 'defaultModel'> | undefined,

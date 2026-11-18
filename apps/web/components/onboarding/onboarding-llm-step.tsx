@@ -10,7 +10,11 @@ import { largeSecondaryButtonClass } from '@/components/ui/form-styles';
 import { cn } from '@/lib/cn';
 import { LLM_PROVIDERS } from '@/lib/llm-providers';
 import type { OnboardingCredential } from '@/lib/onboarding-data';
-import { OnboardingCredentialFields, OpenRouterKeyHowTo } from './onboarding-credential-fields';
+import {
+  GeminiKeyHowTo,
+  OnboardingCredentialFields,
+  OpenRouterKeyHowTo,
+} from './onboarding-credential-fields';
 import {
   EnvVar,
   OnboardingActions,
@@ -87,7 +91,7 @@ function LlmStepBody({ credential, encryptionKeyConfigured, onConnected, onDone 
         />
       </OnboardingCard>
 
-      {environmentManaged || editor.providerKey !== 'openrouter' ? null : <OpenRouterKeyHowTo />}
+      {environmentManaged ? null : <KeyHowTo providerKey={editor.providerKey} />}
 
       <OnboardingActions>
         {environmentManaged ? (
@@ -115,4 +119,16 @@ function LlmStepBody({ credential, encryptionKeyConfigured, onConnected, onDone 
       </OnboardingActions>
     </section>
   );
+}
+
+/** Where to get the selected preset's key, for the presets people usually search for. */
+function KeyHowTo({ providerKey }: { providerKey: string }) {
+  switch (providerKey) {
+    case 'openrouter':
+      return <OpenRouterKeyHowTo />;
+    case 'gemini':
+      return <GeminiKeyHowTo />;
+    default:
+      return null;
+  }
 }

@@ -163,3 +163,24 @@ export function OpenRouterKeyHowTo({ note }: { note?: ReactNode }) {
     </OnboardingHowTo>
   );
 }
+
+/** Google's key for Gemini, created in AI Studio. */
+export function GeminiKeyHowTo() {
+  return (
+    <OnboardingHowTo question="Where do I get a Gemini key?">
+      <ol>
+        <li>
+          Open{' '}
+          <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">
+            aistudio.google.com/apikey
+          </a>{' '}
+          and sign in with your Google account.
+        </li>
+        <li>
+          Click <b>Create API key</b>.
+        </li>
+        <li>Copy it and paste it above.</li>
+      </ol>
+    </OnboardingHowTo>
+  );
+}
