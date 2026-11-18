@@ -90,9 +90,9 @@ export const playbackEvents = pgTable(
       .where(sql`${table.eventType} <> 'started' or ${table.trackId} is null`),
     // Dedupe persisted events per session: a retried report with the same
     // client_event_id collides here and the insert is a no-op (ON CONFLICT DO
-    // NOTHING). Scoped to the session because events are always queried by session.
-    // Rows orphaned by a Session delete hold NULL here and never collide (NULLs
-    // are distinct); they are closed events, nothing writes to them again.
+    // NOTHING). Every write carries its live Session; rows orphaned by a Session
+    // delete hold NULL here and never collide (NULLs are distinct), which is
+    // safe because they are closed events nothing writes to again.
     uniqueIndex('playback_events_session_client_event_id_uq').on(
       table.activitySessionId,
       table.clientEventId,
