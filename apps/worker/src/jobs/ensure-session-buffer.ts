@@ -475,6 +475,7 @@ export async function runEnsureSessionBuffer(
       currentRevisionUnrefusedRequests,
     } = await getBufferSessionCounts(tx, {
       sessionId: payload.sessionId,
+      now,
       phantomSubmitCutoff,
       supplyAtOrAboveStyleRevision: fresh.vibeSwitchRevision ?? undefined,
       requestsAtOrAboveStyleRevision: fresh.styleRevision === 1 ? undefined : fresh.styleRevision,

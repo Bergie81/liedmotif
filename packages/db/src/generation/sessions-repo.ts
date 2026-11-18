@@ -29,6 +29,7 @@ import {
 import type { Database } from '../client';
 import { withTransaction, type DbOrTx, type Transaction } from '../transactions';
 import { inFlightProviderJobCondition } from './limits-repo';
+import { READY_MISSING_TRACKS_RECENCY_MS } from './provider-poll-repo';
 import { queueItemRequestEdge } from './queue-request-edge';
 import {
   activitySessions,
@@ -315,11 +316,19 @@ function inFlightSessionJobsQuery(
  * Disliked or deleted Track is replaced by its reroll, not owed again), floored
  * at 0. A job owes while it holds an in-flight slot, and after `ready` until its
  * request is `materialized` — `ready` is written before the Tracks are, and that
- * gap must not read as no supply. Failed and timed-out jobs owe nothing.
+ * gap must not read as no supply. The gap owes only while the ready-missing-tracks
+ * recovery still retries it (`readyRecoveryCutoff`): a settle that never lands
+ * would otherwise hold the Buffer shut for the Session's whole life. Failed and
+ * timed-out jobs owe nothing.
  */
 function incomingSessionTracksQuery(
   db: DbOrTx,
-  args: { sessionId: string; phantomSubmitCutoff: Date; atOrAboveStyleRevision?: number },
+  args: {
+    sessionId: string;
+    phantomSubmitCutoff: Date;
+    readyRecoveryCutoff: Date;
+    atOrAboveStyleRevision?: number;
+  },
 ) {
   const created = sql`(select count(*) from ${tracks} where ${tracks.providerJobId} = ${providerJobs.id})`;
   return db
@@ -336,6 +345,7 @@ function incomingSessionTracksQuery(
           and(
             eq(providerJobs.normalizedStatus, 'ready'),
             ne(generationRequests.status, 'materialized'),
+            gte(providerJobs.updatedAt, args.readyRecoveryCutoff),
           ),
         ),
         ...styleRevisionAtLeast(args.atOrAboveStyleRevision),
@@ -446,6 +456,7 @@ export async function getBufferSessionCounts(
   db: DbOrTx,
   args: {
     sessionId: string;
+    now: Date;
     phantomSubmitCutoff: Date;
     supplyAtOrAboveStyleRevision?: number;
     requestsAtOrAboveStyleRevision?: number;
@@ -473,6 +484,7 @@ export async function getBufferSessionCounts(
         incomingSessionTracksQuery(db, {
           sessionId: args.sessionId,
           phantomSubmitCutoff: args.phantomSubmitCutoff,
+          readyRecoveryCutoff: new Date(args.now.getTime() - READY_MISSING_TRACKS_RECENCY_MS),
           atOrAboveStyleRevision: args.supplyAtOrAboveStyleRevision,
         }),
       ),

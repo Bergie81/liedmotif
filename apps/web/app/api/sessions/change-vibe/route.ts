@@ -96,9 +96,9 @@ export async function POST(request: Request) {
   const { sessionId, input: rawInput, switchImmediately, targetDurationMinutes } = parsed;
 
   const db = getDb();
-  // The gate is a free read with no data dependency on the session, so it rides
-  // alongside it — and the session still answers first, keeping an unowned id a
-  // 404 rather than a refusal that admits it exists (the IDOR posture).
+  // The gates are free reads with no data dependency on the session, so they
+  // ride alongside it — and the session still answers first, keeping an unowned
+  // id a 404 rather than a refusal that admits it exists (the IDOR posture).
   const [current, paused, budget] = await Promise.all([
     getSessionById(db, { ownerUserId, sessionId }),
     newMusicPausedRefusal(db, ownerUserId),

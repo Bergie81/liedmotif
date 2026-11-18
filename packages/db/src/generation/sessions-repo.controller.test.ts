@@ -21,6 +21,7 @@ import {
   listSessionLoopCandidates,
   setGenerationStatus,
 } from './sessions-repo';
+import { READY_MISSING_TRACKS_RECENCY_MS } from './provider-poll-repo';
 
 const describeIfDb = TEST_DATABASE_URL ? describe : describe.skip;
 
@@ -219,6 +220,7 @@ describeIfDb('sessions repo — buffer controller reads/writes', () => {
     async function incoming(sessionId: string, supplyAtOrAboveStyleRevision?: number) {
       return getBufferSessionCounts(ctx.db, {
         sessionId,
+        now: NOW,
         phantomSubmitCutoff: CUTOFF,
         supplyAtOrAboveStyleRevision,
       });
@@ -275,6 +277,15 @@ describeIfDb('sessions repo — buffer controller reads/writes', () => {
       });
       await batch(s, { normalizedStatus: 'failed_final' });
       expect((await incoming(s.sessionId)).incomingTracks).toBe(2);
+    });
+
+    it('a ready job past the recovery window owes nothing, so a lost settle cannot stall the Buffer', async () => {
+      const s = await session();
+      await batch(s, {
+        normalizedStatus: 'ready',
+        updatedAt: new Date(NOW.getTime() - READY_MISSING_TRACKS_RECENCY_MS - 60_000),
+      });
+      expect((await incoming(s.sessionId)).incomingTracks).toBe(0);
     });
 
     it('a job whose created Track was rejected does not owe it again', async () => {

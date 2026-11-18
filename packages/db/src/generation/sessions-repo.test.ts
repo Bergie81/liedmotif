@@ -367,7 +367,11 @@ describeIfDb('buffer session counts — combined statement', () => {
     const { sessionId } = await seedMixedSession();
     const phantomSubmitCutoff = new Date(Date.now() - 15 * 60_000);
 
-    const combined = await getBufferSessionCounts(ctx.db, { sessionId, phantomSubmitCutoff });
+    const combined = await getBufferSessionCounts(ctx.db, {
+      sessionId,
+      now: new Date(),
+      phantomSubmitCutoff,
+    });
     expect(combined).toEqual({
       readyAhead: await countReadyAheadTracks(ctx.db, sessionId),
       ownReady: await countSessionOwnReadyTracks(ctx.db, sessionId),
@@ -393,6 +397,7 @@ describeIfDb('buffer session counts — combined statement', () => {
 
     const combined = await getBufferSessionCounts(ctx.db, {
       sessionId,
+      now: new Date(),
       phantomSubmitCutoff,
       supplyAtOrAboveStyleRevision: 2,
       requestsAtOrAboveStyleRevision: 2,
@@ -428,6 +433,7 @@ describeIfDb('buffer session counts — combined statement', () => {
     const sessionId = await createSession(ctx.db, { ownerUserId });
     const combined = await getBufferSessionCounts(ctx.db, {
       sessionId,
+      now: new Date(),
       phantomSubmitCutoff: new Date(),
     });
     expect(combined).toEqual({
