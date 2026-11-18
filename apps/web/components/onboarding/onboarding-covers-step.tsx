@@ -2,9 +2,11 @@
 // Every Session wears a Cover whatever is chosen here; the switch only decides
 // whether the image model paints it (`coverSource`).
 //
-// Choosing Tailored Cover Art asks for the image provider's key and model, saved the
-// way the text LLM's are; a key or model in `.env` wins and is reported instead. The
-// key is optional: without one the switch is kept, just inert. The ceilings are
+// Choosing Tailored Cover Art offers the image provider, its key and model, saved the
+// way the text LLM's are; a key or model in `.env` wins and is reported instead. On
+// the Text AI's vendor, the Text AI's key is used by reference when it resolves, so
+// no second key is asked for. The switch alone opts in to paid Covers. The key is
+// optional: without one the switch is kept, just inert. The ceilings are
 // stored per instance. The music-provider source is reported, never offered: it
 // needs no choice — it simply takes over whenever the image model is off or absent.
 
@@ -18,8 +20,8 @@ import { Switch } from '@/components/ui/controls';
 import { cn } from '@/lib/cn';
 import { IMAGE_PROVIDERS, coverPriceCents, lockedImageModel } from '@/lib/configurable-providers';
 import { coverSource, type CoverSource } from '@/lib/cover-source';
-import type { OnboardingCredential } from '@/lib/onboarding-data';
-import { OnboardingCredentialFields, OpenRouterKeyHowTo } from './onboarding-credential-fields';
+import type { OnboardingImageCredential } from '@/lib/onboarding-data';
+import { OnboardingCredentialFields, ProviderKeyHowTo } from './onboarding-credential-fields';
 import {
   OnboardingCard,
   OnboardingLimitRow,
@@ -29,13 +31,17 @@ import {
   OnboardingSubhead,
 } from './onboarding-layout';
 import { coverBudgetPatch, stepLimit, type CoverBudget } from './onboarding-limits-model';
-import { coverBudgetNote } from './onboarding-model';
+import { coverBudgetNote, preselectedCoverProvider } from './onboarding-model';
 import { useLimitSave } from './use-limit-save';
 
 interface CoversStepProps {
   budget: CoverBudget;
   /** The image provider's key, as resolved when the flow loaded. */
-  credential: OnboardingCredential;
+  credential: OnboardingImageCredential;
+  /** The Cover provider stored, set in `.env`, or saved on this step since; `null` when none is. */
+  imageProviderKey: string | null;
+  /** The image provider that can use the Text AI's key as saved now, or `null`. */
+  sharedKeyVendor: string | null;
   /** A key resolves now — as loaded, or saved on this step since. */
   imageConnected: boolean;
   /** The image model — as loaded, or saved on this step since. */
@@ -43,7 +49,7 @@ interface CoversStepProps {
   encryptionKeyConfigured: boolean;
   musicProviderCoverConfigured: boolean;
   onChange: (budget: CoverBudget) => void;
-  onConnected: (model: string) => void;
+  onConnected: (saved: { providerKey: string; model: string }) => void;
   onDone: () => void;
 }
 
@@ -60,6 +66,8 @@ export function OnboardingCoversStep(props: CoversStepProps) {
 function CoversStepBody({
   budget,
   credential,
+  imageProviderKey,
+  sharedKeyVendor,
   imageConnected,
   imageModel,
   encryptionKeyConfigured,
@@ -70,19 +78,29 @@ function CoversStepBody({
 }: CoversStepProps) {
   const { saving, error, save } = useLimitSave(onDone);
   const lockedModel = lockedImageModel(credential);
-  const initialModel = lockedModel ? undefined : imageModel;
+  const preselected = preselectedCoverProvider({
+    chosenProviderKey: imageProviderKey,
+    sharedKeyVendor,
+  });
+  // The loaded model belongs to a chosen provider; a preselected one starts on its default.
+  const initialModel = lockedModel || preselected !== imageProviderKey ? undefined : imageModel;
   const editor = useCredentialEditor({
     providerType: 'image',
     options: IMAGE_PROVIDERS,
-    initialProviderKey: credential.providerKey,
-    currentMasked: credential.masked,
+    initialProviderKey: preselected,
+    // A shared key's preview is the Text AI's key, never one this provider keeps.
+    currentMasked:
+      preselected === credential.providerKey && !credential.sharesKey ? credential.masked : null,
     configured: imageConnected,
     databaseWritesEnabled: encryptionKeyConfigured,
     showModel: true,
     initialModel,
+    // An `IMAGE_API_KEY` always wins, so a Cover key from `.env` leaves nothing to share.
+    sharedKeyVendor: credential.environmentManaged ? null : sharedKeyVendor,
+    sharesKey: credential.sharesKey,
     // The key is stored first, and the Cover budget follows it in the same commit.
     onSaved: (saved) => {
-      onConnected(saved.model ?? '');
+      onConnected({ providerKey: saved.providerKey, model: saved.model ?? '' });
       void save(coverBudgetPatch(budget));
     },
   });
@@ -97,14 +115,13 @@ function CoversStepBody({
   const withoutImageModel = coverSource({ ...sourceInput, tailoredCoverArtEnabled: false });
   const busy = saving || editor.operationPending;
   const keyProvider = editor.selected?.label ?? credential.displayName;
-  const coverCents = coverPriceCents(editor.providerKey);
   // A changed model alone is saved only beside a key that already resolves: the
   // credentials route refuses a model with no key anywhere.
   const modelChanged = editor.model.trim() !== (initialModel ?? '');
   const savesCredential =
     budget.tailoredCoverArtEnabled &&
     encryptionKeyConfigured &&
-    (Boolean(editor.secret.trim()) || (imageConnected && modelChanged));
+    (Boolean(editor.secret.trim()) || editor.usesSharedKey || (imageConnected && modelChanged));
   // A key typed here paints once Save stores it, so its caps can be set beforehand.
   const painting = source === 'image' || savesCredential;
   // The switch follows the caps it governs: both are live only while Covers are painted.
@@ -130,11 +147,7 @@ function CoversStepBody({
       <OnboardingCard className="mt-0">
         <SettingsControlRow
           label="Generate Tailored Cover Art"
-          description={
-            imageConnected
-              ? `Uses ${credential.displayName}${imageModel ? ` · ${imageModel}` : ''} · about ${coverCents} cents a Cover`
-              : `Needs your own ${credential.displayName} key · about ${coverCents} cents a Cover`
-          }
+          description={`Uses ${keyProvider} · about ${coverPriceCents(editor.providerKey)} cents a Cover`}
         >
           <Switch
             checked={budget.tailoredCoverArtEnabled}
@@ -167,8 +180,8 @@ function CoversStepBody({
               encryptionKeyConfigured={encryptionKeyConfigured}
             />
           </OnboardingCard>
-          {credential.environmentManaged || editor.providerKey !== 'openrouter' ? null : (
-            <OpenRouterKeyHowTo note="Already added an OpenRouter key for the Text AI? The same key works here." />
+          {credential.environmentManaged || editor.usesSharedKey ? null : (
+            <ProviderKeyHowTo providerKey={editor.providerKey} />
           )}
         </>
       ) : null}
@@ -177,7 +190,7 @@ function CoversStepBody({
         <CoverSourceExplainer
           source={source}
           withoutImageModel={withoutImageModel}
-          awaitingKey={budget.tailoredCoverArtEnabled && !imageConnected}
+          awaitingKey={budget.tailoredCoverArtEnabled && !painting}
         />
       </OnboardingNote>
 

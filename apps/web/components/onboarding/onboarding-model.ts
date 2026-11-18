@@ -7,7 +7,7 @@ import type { ListenerProfile } from '@liedmotif/db';
 import { DEFAULT_UNIT_COSTS } from '@liedmotif/shared';
 import { namedPeopleCount } from '@/components/settings/people-form-model';
 import type { PersonEditorValue } from '@/components/settings/people-types';
-import { coverPriceCents } from '@/lib/configurable-providers';
+import { IMAGE_PROVIDERS, coverPriceCents } from '@/lib/configurable-providers';
 import { coverSource, type CoverSource } from '@/lib/cover-source';
 import type { BudgetUsage } from '@/lib/my-budget-model';
 import type { OnboardingData } from '@/lib/onboarding-data';
@@ -138,6 +138,10 @@ export interface OnboardingDraft {
   /** A resolvable cover-image key — from `.env`, already stored, or saved on its step. */
   imageConnected: boolean;
   imageModel: string;
+  /** The Cover provider stored, set in `.env`, or saved on its step; `null` when none is. */
+  imageProviderKey: string | null;
+  /** The image provider that can use the Text AI's key as saved now, or `null`. */
+  sharedKeyVendor: string | null;
   ceiling: TrackCeiling;
   coverBudget: CoverBudget;
   /** The ceiling and budget as last stored: a spend cap is reported only once it binds. */
@@ -155,6 +159,8 @@ export function initialOnboardingDraft(data: OnboardingData): OnboardingDraft {
     llmModel: data.llm.model ?? '',
     imageConnected: data.image.configured,
     imageModel: data.image.model ?? '',
+    imageProviderKey: data.image.chosen ? data.image.providerKey : null,
+    sharedKeyVendor: data.image.sharedKeyVendor,
     ceiling: trackCeilingFromLimits(data.limits, data.tracksPerRequest),
     coverBudget: coverBudgetFromLimits(data.limits),
     savedCeiling: trackCeilingFromLimits(data.limits, data.tracksPerRequest),
@@ -196,6 +202,45 @@ export function coverBudgetNote(covers: number, imageProviderKey: string): Cover
     covers,
     dailyCostUsd: ((Math.max(covers, 0) * coverPriceCents(imageProviderKey)) / 100).toFixed(2),
   };
+}
+
+/** What each Text AI preset costs to run, before saying whether it can paint Covers. */
+const TEXT_AI_COSTS: Record<string, string> = {
+  openai: 'Under 1 cent per Session.',
+  gemini: 'Free to start.',
+  ollama: 'Free, runs on your machine.',
+  openrouter: 'Cost depends on the model.',
+  'openai-compatible': 'Cost depends on your service.',
+};
+
+/**
+ * The cost line under the Text AI picker: what the preset costs, and whether the
+ * same key can paint Covers at that vendor's price. `null` for a preset it has
+ * no line for.
+ */
+export function textAiCostLine(providerKey: string): string | null {
+  const cost = TEXT_AI_COSTS[providerKey];
+  if (!cost) return null;
+  if (!IMAGE_PROVIDERS.some((option) => option.value === providerKey)) {
+    return `${cost} It cannot paint Covers.`;
+  }
+  const covers = `${cost} This key can also paint your Covers, about ${coverPriceCents(providerKey)} cents each.`;
+  return providerKey === 'gemini' ? `${covers} Covers need billing turned on at Google.` : covers;
+}
+
+/**
+ * The Cover provider the Cover art step opens on: one already stored or set in
+ * `.env`, else the vendor whose Text AI key can paint (a shared key resolves),
+ * else OpenAI.
+ */
+export function preselectedCoverProvider({
+  chosenProviderKey,
+  sharedKeyVendor,
+}: {
+  chosenProviderKey: string | null;
+  sharedKeyVendor: string | null;
+}): string {
+  return chosenProviderKey ?? sharedKeyVendor ?? IMAGE_PROVIDERS[0]!.value;
 }
 
 const COVER_SOURCE_LABELS: Record<CoverSource, string> = {

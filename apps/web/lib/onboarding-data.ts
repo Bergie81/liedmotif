@@ -55,6 +55,12 @@ export interface OnboardingCredential {
   modelEnvironmentManaged?: boolean;
 }
 
+/** The Cover image provider's resolved state. */
+export interface OnboardingImageCredential extends OnboardingCredential {
+  /** The loaded provider uses the Text AI's key now (`masked` is then that key). */
+  sharesKey: boolean;
+}
+
 /**
  * The settings the closing screen reports as left alone. Facts, not sentences —
  * the step words them, because copy belongs beside the markup that renders it.
@@ -80,7 +86,12 @@ export interface OnboardingData {
   music: OnboardingCredential;
   llm: OnboardingCredential;
   /** The optional cover-image provider; `model` is the model its covers render with. */
-  image: OnboardingCredential;
+  image: OnboardingImageCredential & {
+    /** A Cover provider is stored or set in `.env`, rather than `providerKey` being the default. */
+    chosen: boolean;
+    /** The image provider that can use the Text AI's key, or `null`. */
+    sharedKeyVendor: string | null;
+  };
   /** The music provider can draw its own Covers, so Covers never fall to the placeholder. */
   musicProviderCoverConfigured: boolean;
   untouched: OnboardingUntouched;
@@ -116,7 +127,7 @@ export async function loadPeopleFormProps(ownerUserId: string): Promise<PeopleFo
 
 function imageCredential(
   cover: Awaited<ReturnType<typeof loadProviderSettingsData>>['cover'],
-): OnboardingCredential {
+): OnboardingData['image'] {
   return {
     providerKey: cover.providerKey,
     displayName: providerDisplayName('image', cover.providerKey),
@@ -125,6 +136,9 @@ function imageCredential(
     masked: cover.credential?.masked ?? null,
     ...(cover.model ? { model: cover.model } : {}),
     modelEnvironmentManaged: cover.modelEnvironmentManaged,
+    sharesKey: cover.sharesKey,
+    chosen: cover.credential !== null,
+    sharedKeyVendor: cover.sharedKeyVendor,
   };
 }
 

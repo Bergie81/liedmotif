@@ -66,6 +66,9 @@ function makeData(overrides: Partial<OnboardingData> = {}): OnboardingData {
       environmentManaged: false,
       configured: false,
       masked: null,
+      sharesKey: false,
+      chosen: false,
+      sharedKeyVendor: null,
     },
     musicProviderCoverConfigured: false,
     untouched: {
@@ -93,14 +96,7 @@ describe('first-login onboarding wizard', () => {
 
     expect(markup).toContain('Welcome. What should we call you?');
     // Every step is named from the first screen, so the shape is knowable up front.
-    for (const title of [
-      'You',
-      'People',
-      'Music model',
-      'Track limit',
-      'Text AI',
-      'Cover art',
-    ]) {
+    for (const title of ['You', 'People', 'Music model', 'Track limit', 'Text AI', 'Cover art']) {
       expect(markup).toContain(title);
     }
     expect(markup).toContain('Step 1 of 7');

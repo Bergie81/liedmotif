@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   unitCosts: vi.fn(async () => ({ perTrackUsd: 0.04, perCoverUsd: 0.07 })),
   updateUnitCosts: vi.fn(async () => ({ perTrackUsd: 0.04, perCoverUsd: 0.07 })),
   sharedImageKey: vi.fn(async (): Promise<string | undefined> => undefined),
+  shareableTextLlmKey: vi.fn(async (): Promise<{ vendor: string; apiKey: string } | null> => null),
 }));
 
 vi.mock('@liedmotif/db', () => ({
@@ -23,6 +24,7 @@ vi.mock('@liedmotif/db', () => ({
   getUnitCosts: mocks.unitCosts,
   updateUnitCosts: mocks.updateUnitCosts,
   resolveSharedImageKey: mocks.sharedImageKey,
+  resolveShareableTextLlmKey: mocks.shareableTextLlmKey,
 }));
 // Only the DNS-resolving SSRF probe is stubbed; the base-URL rule is the real
 // one, so this file proves what the route actually stores.
@@ -36,7 +38,7 @@ vi.mock('@/lib/session', () => ({
   getAdminSession: mocks.adminSession,
 }));
 
-const { DELETE, POST } = await import('./route');
+const { DELETE, GET, POST } = await import('./route');
 
 describe('provider credential writes', () => {
   beforeEach(() => {
@@ -502,5 +504,37 @@ describe('provider credential writes', () => {
 
     expect(response.status).toBe(401);
     expect(mocks.delete).not.toHaveBeenCalled();
+  });
+});
+
+describe('reading which Cover provider can use the Text AI key', () => {
+  const read = () => GET(new Request('http://localhost/api/settings/credentials'));
+
+  beforeEach(() => {
+    mocks.adminSession.mockResolvedValue({ user: { id: 'admin-1' } });
+    mocks.shareableTextLlmKey.mockClear();
+    mocks.shareableTextLlmKey.mockResolvedValue(null);
+  });
+
+  it('names the vendor whose Text AI key resolves, and never the key', async () => {
+    mocks.shareableTextLlmKey.mockResolvedValue({ vendor: 'gemini', apiKey: 'AIza-secret' });
+
+    const response = await read();
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body).toEqual({ ok: true, sharedKeyVendor: 'gemini' });
+    expect(JSON.stringify(body)).not.toContain('AIza-secret');
+  });
+
+  it('names no vendor when no Text AI key can be shared', async () => {
+    expect(await (await read()).json()).toEqual({ ok: true, sharedKeyVendor: null });
+  });
+
+  it('refuses anyone but the Admin', async () => {
+    mocks.adminSession.mockResolvedValue(null);
+
+    expect((await read()).status).toBe(401);
+    expect(mocks.shareableTextLlmKey).not.toHaveBeenCalled();
   });
 });

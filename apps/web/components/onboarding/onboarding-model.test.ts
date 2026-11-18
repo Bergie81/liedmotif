@@ -7,6 +7,8 @@ import {
   ONBOARDING_STEPS,
   coverBudgetNote,
   memberOnboardingRecord,
+  preselectedCoverProvider,
+  textAiCostLine,
   onboardingProgress,
   onboardingRecord,
   resolveInitialTimezone,
@@ -145,6 +147,48 @@ describe('coverBudgetNote', () => {
   });
 });
 
+describe('textAiCostLine', () => {
+  it('says what each Text AI option costs and whether its key can paint Covers', () => {
+    expect(textAiCostLine('openai')).toBe(
+      'Under 1 cent per Session. This key can also paint your Covers, about 6 cents each.',
+    );
+    expect(textAiCostLine('gemini')).toBe(
+      'Free to start. This key can also paint your Covers, about 4 cents each. Covers need billing turned on at Google.',
+    );
+    expect(textAiCostLine('ollama')).toBe('Free, runs on your machine. It cannot paint Covers.');
+    expect(textAiCostLine('openrouter')).toBe(
+      'Cost depends on the model. This key can also paint your Covers, about 7 cents each.',
+    );
+    expect(textAiCostLine('openai-compatible')).toBe(
+      'Cost depends on your service. It cannot paint Covers.',
+    );
+  });
+
+  it('says nothing for a provider it has no line for', () => {
+    expect(textAiCostLine('something-else')).toBeNull();
+  });
+});
+
+describe('preselectedCoverProvider', () => {
+  it('keeps a Cover provider already stored or set in .env', () => {
+    expect(
+      preselectedCoverProvider({ chosenProviderKey: 'openrouter', sharedKeyVendor: 'gemini' }),
+    ).toBe('openrouter');
+  });
+
+  it("starts on the Text AI's vendor when its key can paint", () => {
+    expect(preselectedCoverProvider({ chosenProviderKey: null, sharedKeyVendor: 'gemini' })).toBe(
+      'gemini',
+    );
+  });
+
+  it('starts on OpenAI otherwise', () => {
+    expect(preselectedCoverProvider({ chosenProviderKey: null, sharedKeyVendor: null })).toBe(
+      'openai',
+    );
+  });
+});
+
 describe('onboardingRecord', () => {
   const data = {
     profile: EMPTY_PROFILE,
@@ -165,6 +209,8 @@ describe('onboardingRecord', () => {
     llmModel: '',
     imageConnected: false,
     imageModel: '',
+    imageProviderKey: null,
+    sharedKeyVendor: null,
     ceiling: { enabled: true, dailyTracks: '40', monthlyTracks: '400', concurrentTracks: '2' },
     coverBudget: {
       tailoredCoverArtEnabled: false,

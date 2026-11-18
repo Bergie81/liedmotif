@@ -1,5 +1,6 @@
-// Admin-only: store/update/delete a provider credential (encrypted at rest). The
-// route's admin guard authorizes the write; a Member is refused.
+// Admin-only: store/update/delete a provider credential (encrypted at rest), and
+// read which Cover provider can use the Text AI's key. The route's admin guard
+// authorizes every method; a Member is refused.
 // Secrets are encrypted via the AES key and never echoed back.
 
 import { NextResponse } from 'next/server';
@@ -28,6 +29,7 @@ import { encryptionKeyIfConfigured } from '@/lib/credentials';
 import { getDb } from '@/lib/db';
 import { badRequest } from '@/lib/http';
 import { readJsonObjectBody, requireAdminOwnerId } from '@/lib/api-response';
+import { loadSharedKeyVendor } from '@/lib/provider-settings-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,6 +43,16 @@ const BASE_URL_REFUSALS: Record<ProviderBaseUrlRejection, string> = {
   carries_authentication:
     'That base URL cannot carry a username, password, query, or fragment — put the API key in the API key field.',
 };
+
+/**
+ * The image provider that can use the Text AI's key as stored now, so a flow that
+ * just saved its Text AI decides the Cover key from the server, not a picker.
+ */
+export async function GET(request: Request) {
+  const admin = await requireAdminOwnerId(request);
+  if (admin instanceof NextResponse) return admin;
+  return NextResponse.json({ ok: true, sharedKeyVendor: await loadSharedKeyVendor() });
+}
 
 export async function POST(request: Request) {
   const admin = await requireAdminOwnerId(request);

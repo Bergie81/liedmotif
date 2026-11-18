@@ -10,11 +10,7 @@ import { largeSecondaryButtonClass } from '@/components/ui/form-styles';
 import { cn } from '@/lib/cn';
 import { LLM_PROVIDERS } from '@/lib/llm-providers';
 import type { OnboardingCredential } from '@/lib/onboarding-data';
-import {
-  GeminiKeyHowTo,
-  OnboardingCredentialFields,
-  OpenRouterKeyHowTo,
-} from './onboarding-credential-fields';
+import { OnboardingCredentialFields, ProviderKeyHowTo } from './onboarding-credential-fields';
 import {
   EnvVar,
   OnboardingActions,
@@ -22,6 +18,7 @@ import {
   OnboardingPrimaryAction,
   OnboardingStepHeader,
 } from './onboarding-layout';
+import { textAiCostLine } from './onboarding-model';
 
 interface LlmStepProps {
   credential: OnboardingCredential;
@@ -82,6 +79,7 @@ function LlmStepBody({ credential, encryptionKeyConfigured, onConnected, onDone 
           testLabel={environmentManaged ? 'Test the configured connection' : 'Test the connection'}
           currentMasked={credential.masked}
           encryptionKeyConfigured={encryptionKeyConfigured}
+          providerNote={textAiCostLine(editor.providerKey)}
           environmentNote={
             <>
               The provider and model come from <EnvVar>LLM_PROVIDER</EnvVar> and{' '}
@@ -91,7 +89,7 @@ function LlmStepBody({ credential, encryptionKeyConfigured, onConnected, onDone 
         />
       </OnboardingCard>
 
-      {environmentManaged ? null : <KeyHowTo providerKey={editor.providerKey} />}
+      {environmentManaged ? null : <ProviderKeyHowTo providerKey={editor.providerKey} />}
 
       <OnboardingActions>
         {environmentManaged ? (
@@ -119,16 +117,4 @@ function LlmStepBody({ credential, encryptionKeyConfigured, onConnected, onDone 
       </OnboardingActions>
     </section>
   );
-}
-
-/** Where to get the selected preset's key, for the presets people usually search for. */
-function KeyHowTo({ providerKey }: { providerKey: string }) {
-  switch (providerKey) {
-    case 'openrouter':
-      return <OpenRouterKeyHowTo />;
-    case 'gemini':
-      return <GeminiKeyHowTo />;
-    default:
-      return null;
-  }
 }

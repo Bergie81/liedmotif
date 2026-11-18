@@ -41,6 +41,7 @@ export function OnboardingCredentialFields({
   currentMasked,
   encryptionKeyConfigured,
   environmentNote,
+  providerNote,
 }: {
   editor: CredentialEditorState;
   options: readonly ProviderOption[];
@@ -61,6 +62,8 @@ export function OnboardingCredentialFields({
   currentMasked: string | null;
   encryptionKeyConfigured: boolean;
   environmentNote?: ReactNode;
+  /** A line under the provider picker about the selected provider. */
+  providerNote?: ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-4">
@@ -80,6 +83,9 @@ export function OnboardingCredentialFields({
       ) : (
         <>
           <ProviderChoice editor={editor} options={options} />
+          {providerNote ? (
+            <p className="-mt-2 text-[13px] leading-[1.55] text-muted">{providerNote}</p>
+          ) : null}
           <SecretField
             editor={editor}
             label={keyLabel}
@@ -139,8 +145,46 @@ export function OnboardingHowTo({ question, children }: { question: string; chil
   );
 }
 
+/** Where to get the selected preset's key, for the presets people usually search for. */
+export function ProviderKeyHowTo({ providerKey }: { providerKey: string }) {
+  switch (providerKey) {
+    case 'openai':
+      return <OpenAiKeyHowTo />;
+    case 'gemini':
+      return <GeminiKeyHowTo />;
+    case 'openrouter':
+      return <OpenRouterKeyHowTo />;
+    default:
+      return null;
+  }
+}
+
+/** OpenAI's key, created on its developer platform. */
+function OpenAiKeyHowTo() {
+  return (
+    <OnboardingHowTo question="Where do I get an OpenAI key?">
+      <ol>
+        <li>
+          Open{' '}
+          <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">
+            platform.openai.com/api-keys
+          </a>{' '}
+          and sign in.
+        </li>
+        <li>
+          Add credit under <b>Settings › Billing</b>.
+        </li>
+        <li>
+          Click <b>Create new secret key</b>.
+        </li>
+        <li>Copy it and paste it above.</li>
+      </ol>
+    </OnboardingHowTo>
+  );
+}
+
 /** OpenRouter's key, which the text LLM and the cover images can both run on. */
-export function OpenRouterKeyHowTo({ note }: { note?: ReactNode }) {
+function OpenRouterKeyHowTo() {
   return (
     <OnboardingHowTo question="Where do I get an OpenRouter key?">
       <ol>
@@ -159,13 +203,12 @@ export function OpenRouterKeyHowTo({ note }: { note?: ReactNode }) {
         </li>
         <li>Copy it and paste it above.</li>
       </ol>
-      {note ? <p className="mt-2">{note}</p> : null}
     </OnboardingHowTo>
   );
 }
 
 /** Google's key for Gemini, created in AI Studio. */
-export function GeminiKeyHowTo() {
+function GeminiKeyHowTo() {
   return (
     <OnboardingHowTo question="Where do I get a Gemini key?">
       <ol>

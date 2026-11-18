@@ -79,6 +79,20 @@ export async function loadPeopleNames(): Promise<PersonSummary[] | null> {
   return body.people ?? null;
 }
 
+/**
+ * The image provider that can use the Text AI's key as stored now, or `null`;
+ * `undefined` when it could not be read.
+ */
+export async function readSharedKeyVendor(): Promise<string | null | undefined> {
+  const response = await fetch('/api/settings/credentials').catch(() => null);
+  if (!response?.ok) return undefined;
+  const body = (await response.json().catch(() => ({}))) as { sharedKeyVendor?: unknown };
+  if (body.sharedKeyVendor === null || typeof body.sharedKeyVendor === 'string') {
+    return body.sharedKeyVendor;
+  }
+  return undefined;
+}
+
 /** Apply a partial cost-limits patch; omitted fields keep their stored value. */
 export function saveUsageLimits(patch: Partial<UsageLimits>): Promise<SettingsWrite<UsageLimits>> {
   return postJson(

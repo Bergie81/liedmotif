@@ -9,6 +9,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { OnboardingData } from '@/lib/onboarding-data';
+import { readSharedKeyVendor } from '@/lib/settings-client';
 import { OnboardingCoversStep } from './onboarding-covers-step';
 import { OnboardingDoneStep } from './onboarding-done-step';
 import {
@@ -70,6 +71,17 @@ export function OnboardingWizard({
     advance();
   }
 
+  /**
+   * The Text AI just saved decides whether Covers can use its key, and only the
+   * server knows whether that key resolves (vendor, endpoint, readable secret).
+   * Best-effort: a failed read keeps the vendor already known.
+   */
+  async function advanceFromLlm() {
+    const sharedKeyVendor = await readSharedKeyVendor();
+    if (sharedKeyVendor !== undefined) patch({ sharedKeyVendor });
+    advance();
+  }
+
   function renderStep(id: OnboardingStepId) {
     switch (id) {
       case 'you':
@@ -120,7 +132,7 @@ export function OnboardingWizard({
             credential={{ ...data.llm, configured: draft.llmConnected }}
             encryptionKeyConfigured={data.encryptionKeyConfigured}
             onConnected={(llmModel) => patch({ llmConnected: true, llmModel })}
-            onDone={advance}
+            onDone={advanceFromLlm}
           />
         );
       case 'covers':
@@ -128,12 +140,16 @@ export function OnboardingWizard({
           <OnboardingCoversStep
             budget={draft.coverBudget}
             credential={data.image}
+            imageProviderKey={draft.imageProviderKey}
+            sharedKeyVendor={draft.sharedKeyVendor}
             imageConnected={draft.imageConnected}
             imageModel={draft.imageModel}
             encryptionKeyConfigured={data.encryptionKeyConfigured}
             musicProviderCoverConfigured={data.musicProviderCoverConfigured}
             onChange={(coverBudget) => patch({ coverBudget })}
-            onConnected={(imageModel) => patch({ imageConnected: true, imageModel })}
+            onConnected={({ providerKey, model }) =>
+              patch({ imageConnected: true, imageModel: model, imageProviderKey: providerKey })
+            }
             onDone={() => {
               patch({ savedCoverBudget: draft.coverBudget });
               advance();

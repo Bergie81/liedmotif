@@ -1,50 +1,68 @@
+// @vitest-environment jsdom
+
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { toast } from '@/lib/toast';
 import { OnboardingCoversStep } from './onboarding-covers-step';
-import type { OnboardingCredential } from '@/lib/onboarding-data';
+import type { OnboardingImageCredential } from '@/lib/onboarding-data';
 import type { CoverBudget } from './onboarding-limits-model';
 
 const noop = () => {};
-const openRouter: OnboardingCredential = {
+const openRouter: OnboardingImageCredential = {
   providerKey: 'openrouter',
   displayName: 'OpenRouter',
   environmentManaged: false,
   configured: false,
   masked: null,
+  sharesKey: false,
 };
 
-function renderCovers({
+interface CoversOptions extends Partial<CoverBudget> {
+  imageConnected?: boolean;
+  credential?: OnboardingImageCredential;
+  /** The Cover provider stored, set in `.env` or saved on the step; `null` when none is. */
+  imageProviderKey?: string | null;
+  imageModel?: string;
+  sharedKeyVendor?: string | null;
+  musicProviderCoverConfigured?: boolean;
+  onDone?: () => void;
+}
+
+function coversStep({
   imageConnected = true,
   credential = { ...openRouter, configured: imageConnected },
+  imageProviderKey = credential.providerKey,
   imageModel = credential.model ?? '',
+  sharedKeyVendor = null,
   musicProviderCoverConfigured = false,
+  onDone = noop,
   ...budget
-}: Partial<CoverBudget> & {
-  imageConnected?: boolean;
-  credential?: OnboardingCredential;
-  imageModel?: string;
-  musicProviderCoverConfigured?: boolean;
-}) {
-  return renderToStaticMarkup(
-    React.createElement(OnboardingCoversStep, {
-      budget: {
-        tailoredCoverArtEnabled: true,
-        ceilingEnabled: false,
-        coversPerDay: '25',
-        coversPerMonth: '300',
-        ...budget,
-      },
-      credential,
-      imageConnected,
-      imageModel,
-      encryptionKeyConfigured: true,
-      musicProviderCoverConfigured,
-      onChange: noop,
-      onConnected: noop,
-      onDone: noop,
-    }),
-  );
+}: CoversOptions) {
+  return React.createElement(OnboardingCoversStep, {
+    budget: {
+      tailoredCoverArtEnabled: true,
+      ceilingEnabled: false,
+      coversPerDay: '25',
+      coversPerMonth: '300',
+      ...budget,
+    },
+    credential,
+    imageProviderKey,
+    imageConnected,
+    imageModel,
+    sharedKeyVendor,
+    encryptionKeyConfigured: true,
+    musicProviderCoverConfigured,
+    onChange: noop,
+    onConnected: noop,
+    onDone,
+  });
+}
+
+function renderCovers(options: CoversOptions) {
+  return renderToStaticMarkup(coversStep(options));
 }
 
 describe('onboarding covers step image key', () => {
@@ -161,5 +179,162 @@ describe('onboarding covers step price', () => {
         ceilingEnabled: true,
       }),
     ).toContain('$1.50 a day');
+  });
+});
+
+describe('onboarding covers step provider', () => {
+  afterEach(() => {
+    cleanup();
+    toast.dismiss();
+    vi.unstubAllGlobals();
+  });
+
+  /** A fresh install: no Cover provider stored, the Text AI as given. */
+  const fresh = (options: CoversOptions = {}) =>
+    render(
+      coversStep({
+        imageConnected: false,
+        imageProviderKey: null,
+        credential: { ...openRouter, providerKey: 'openai', displayName: 'OpenAI' },
+        ...options,
+      }),
+    );
+  const keyField = () => screen.queryByPlaceholderText('sk-…');
+  const active = () => screen.getByRole('button', { pressed: true }).textContent;
+  const pick = (name: string) => fireEvent.click(screen.getByRole('button', { name }));
+
+  it('offers OpenAI and Gemini, OpenRouter behind More options, and the model, whatever the Text AI', () => {
+    fresh({ sharedKeyVendor: null });
+
+    expect(screen.getByRole('button', { name: 'OpenAI' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Gemini' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'OpenRouter' })).toBeNull();
+    pick('More options');
+    expect(screen.getByRole('button', { name: 'OpenRouter' })).toBeTruthy();
+    expect(screen.getByText('Model')).toBeTruthy();
+  });
+
+  it('opens on a Cover provider already chosen, else the Text AI vendor whose key can paint, else OpenAI', () => {
+    fresh({ imageProviderKey: 'openrouter', sharedKeyVendor: 'gemini' });
+    expect(active()).toBe('OpenRouter');
+    cleanup();
+
+    fresh({ sharedKeyVendor: 'gemini' });
+    expect(active()).toBe('Gemini');
+    cleanup();
+
+    fresh({ sharedKeyVendor: null });
+    expect(active()).toBe('OpenAI');
+  });
+
+  it("uses the Text AI's key on the same vendor, with no key field", () => {
+    fresh({ sharedKeyVendor: 'openai' });
+
+    expect(screen.getByText('Uses your OpenAI key')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Use a separate key' })).toBeTruthy();
+    expect(keyField()).toBeNull();
+    expect(screen.queryByText('Where do I get an OpenAI key?')).toBeNull();
+  });
+
+  it('asks for the Gemini key beside an OpenAI Text AI, and stops asking on OpenAI again', () => {
+    fresh({ sharedKeyVendor: 'openai' });
+
+    pick('Gemini');
+    expect(keyField()).toBeTruthy();
+    expect(screen.getByText('Where do I get a Gemini key?')).toBeTruthy();
+    expect(screen.queryByText(/Uses your/)).toBeNull();
+
+    pick('OpenAI');
+    expect(keyField()).toBeNull();
+    expect(screen.getByText('Uses your OpenAI key')).toBeTruthy();
+  });
+
+  it('asks for the OpenAI key beside a Gemini Text AI, and stops asking on Gemini again', () => {
+    fresh({ sharedKeyVendor: 'gemini' });
+    expect(keyField()).toBeNull();
+
+    pick('OpenAI');
+    expect(keyField()).toBeTruthy();
+    expect(screen.getByText('Where do I get an OpenAI key?')).toBeTruthy();
+
+    pick('Gemini');
+    expect(keyField()).toBeNull();
+    expect(screen.getByText('Uses your Gemini key')).toBeTruthy();
+  });
+
+  // No Text AI, or one on Ollama or an OpenAI-compatible service: no shared key resolves.
+  it('asks for a key when no Text AI key can be shared', () => {
+    fresh({ sharedKeyVendor: null });
+
+    expect(keyField()).toBeTruthy();
+    expect(screen.getByText('Where do I get an OpenAI key?')).toBeTruthy();
+    expect(screen.queryByText(/Uses your/)).toBeNull();
+  });
+
+  it('shows no OpenRouter note about reusing the Text AI key', () => {
+    fresh({ imageProviderKey: 'openrouter', sharedKeyVendor: null });
+
+    expect(screen.getByText('Where do I get an OpenRouter key?')).toBeTruthy();
+    expect(screen.queryByText(/same key works here/)).toBeNull();
+  });
+
+  it('names the selected vendor and its price on the switch', () => {
+    fresh({ sharedKeyVendor: 'openai' });
+    expect(screen.getByText('Uses OpenAI · about 6 cents a Cover')).toBeTruthy();
+
+    pick('Gemini');
+    expect(screen.getByText('Uses Gemini · about 4 cents a Cover')).toBeTruthy();
+  });
+
+  it('asks for no key while the switch is off, even with a shared key', () => {
+    fresh({ sharedKeyVendor: 'openai', tailoredCoverArtEnabled: false });
+
+    expect(keyField()).toBeNull();
+    expect(screen.queryByText(/Uses your/)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Gemini' })).toBeNull();
+  });
+
+  it('saves the shared key by reference, then the Cover budget', async () => {
+    const sent: Array<{ url: string; body: Record<string, unknown> }> = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        sent.push({ url, body: JSON.parse(String(init?.body)) as Record<string, unknown> });
+        return Response.json({ ok: true, limits: {} });
+      }),
+    );
+    const onDone = vi.fn();
+    fresh({ sharedKeyVendor: 'gemini', onDone });
+
+    pick('Save and continue');
+    await waitFor(() => expect(onDone).toHaveBeenCalled());
+
+    expect(sent[0]).toMatchObject({
+      url: '/api/settings/credentials',
+      body: { providerType: 'image', providerKey: 'gemini', shareTextLlmKey: true },
+    });
+    expect(sent[0]!.body.secret).toBeUndefined();
+    expect(sent[1]).toMatchObject({
+      url: '/api/settings/limits',
+      body: { tailoredCoverArtEnabled: true },
+    });
+  });
+
+  it('saves only the budget with the switch off, even with a shared key', async () => {
+    const urls: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        urls.push(url);
+        return Response.json({ ok: true, limits: {} });
+      }),
+    );
+    const onDone = vi.fn();
+    fresh({ sharedKeyVendor: 'gemini', tailoredCoverArtEnabled: false, onDone });
+
+    pick('Save and continue');
+    await waitFor(() => expect(onDone).toHaveBeenCalled());
+
+    expect(urls).toEqual(['/api/settings/limits']);
   });
 });

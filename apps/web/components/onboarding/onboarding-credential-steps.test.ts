@@ -144,6 +144,34 @@ describe('onboarding text-LLM step', () => {
     expect(openAi).not.toContain('Gemini key');
   });
 
+  it('explains where to get an OpenAI key when OpenAI is selected', () => {
+    const openAi = renderLlm({ ...openRouter, providerKey: 'openai', displayName: 'OpenAI' });
+    expect(openAi).toContain('Where do I get an OpenAI key?');
+    expect(openAi).toContain('platform.openai.com/api-keys');
+
+    expect(renderLlm(openRouter)).not.toContain('OpenAI key?');
+  });
+
+  it("states the selected option's cost under the picker", () => {
+    expect(renderLlm({ ...openRouter, providerKey: 'openai', displayName: 'OpenAI' })).toContain(
+      'Under 1 cent per Session. This key can also paint your Covers, about 6 cents each.',
+    );
+    expect(renderLlm({ ...openRouter, providerKey: 'gemini', displayName: 'Gemini' })).toContain(
+      'Covers need billing turned on at Google.',
+    );
+    expect(renderLlm({ ...openRouter, providerKey: 'ollama', displayName: 'Ollama' })).toContain(
+      'Free, runs on your machine. It cannot paint Covers.',
+    );
+    expect(renderLlm(openRouter)).toContain('Cost depends on the model.');
+    expect(
+      renderLlm({
+        ...openRouter,
+        providerKey: 'openai-compatible',
+        displayName: 'OpenAI-compatible',
+      }),
+    ).toContain('Cost depends on your service. It cannot paint Covers.');
+  });
+
   it('reports the environment as the source and offers no skip it cannot honour', () => {
     const markup = renderLlm({ ...openRouter, environmentManaged: true, configured: true });
 
