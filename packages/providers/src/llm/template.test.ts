@@ -94,6 +94,63 @@ describe('compileStructuredControls (deterministic, no LLM)', () => {
     ).toBe('F# minor');
   });
 
+  describe('re-derives a producer key that is not a musical key', () => {
+    const withKey = (key: string) =>
+      freezeStyleParameters(
+        sessionStyleSnapshotSchema.parse({
+          stylePrompt: 'lofi beats',
+          energy: 'low',
+          genreTags: ['lofi', 'ambient'],
+          key,
+        }),
+      ).key;
+    const derivedKey = withKey('');
+
+    it.each([
+      'A minor',
+      'C major',
+      'F# minor',
+      'F♯ minor',
+      'Bb major',
+      'B♭ major',
+      'F sharp harmonic minor',
+      'E flat major',
+      'A melodic minor',
+      'D dorian',
+      'E phrygian',
+      'F lydian',
+      'G mixolydian',
+      'A aeolian',
+      'B locrian',
+      'C ionian',
+      'a minor',
+      'C MAJOR',
+      'f# Minor',
+    ])('keeps %j as written', (key) => {
+      expect(withKey(` ${key} `)).toBe(key);
+    });
+
+    it.each([
+      'N/A',
+      'unknown',
+      'varies',
+      '',
+      'no fixed key',
+      // Shorthand and a bare note are not kept: the mode must be spelled out.
+      'Am',
+      'F#m',
+      'C',
+      'H minor',
+      'C minor, then D major',
+    ])('replaces %j with the derived key', (key) => {
+      expect(withKey(key)).toBe(derivedKey);
+    });
+
+    it('derives a real key for the fallback', () => {
+      expect(derivedKey).toMatch(/^[A-G] (major|minor)$/);
+    });
+  });
+
   it('derives different frozen BPMs for different energy levels', () => {
     const low = compileStructuredControls({ energy: 'low', genres: ['lofi'] });
     const high = compileStructuredControls({ energy: 'high', genres: ['lofi'] });

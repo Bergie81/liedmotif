@@ -200,17 +200,47 @@ function deriveBaseSeed(fingerprint: string): number {
  *  cap-aware budget in `styleWithTail` promises always survives a provider clamp. */
 const MAX_KEY_LENGTH = 24;
 
+/** The spellings a producer key may use: a note letter, an optional accidental,
+ *  an optional minor-scale qualifier, and a spelled-out mode. Shorthand ("Am",
+ *  "F#m") and a bare note ("C") are not keys here; they fall back to a derived key. */
+const KEY_NOTES = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+const KEY_ACCIDENTALS = ['#', '♯', 'b', '♭', ' sharp', ' flat'];
+const KEY_SCALE_QUALIFIERS = ['harmonic', 'melodic', 'natural'];
+const KEY_MODES = [
+  'major',
+  'minor',
+  'ionian',
+  'dorian',
+  'phrygian',
+  'lydian',
+  'mixolydian',
+  'aeolian',
+  'locrian',
+];
+const MUSICAL_KEY_SPELLING = new RegExp(
+  `^[${KEY_NOTES.join('')}](?:${KEY_ACCIDENTALS.join('|')})?` +
+    `(?: (?:${KEY_SCALE_QUALIFIERS.join('|')}))? (?:${KEY_MODES.join('|')})$`,
+  'iu',
+);
+
+/** Whether a trimmed key is a real musical key short enough for the style tail. */
+function isMusicalKey(key: string): boolean {
+  return key.length <= MAX_KEY_LENGTH && MUSICAL_KEY_SPELLING.test(key);
+}
+
 /**
  * Fill any unfrozen blend parameters on a snapshot. Used by the free-text
  * producers so EVERY session — not just the structured path — carries a frozen
  * BPM/key + seed, the precondition for blend-for-free. A model-provided BPM is
  * normalized to an integer (so the frozen value and the per-track style tag share
- * one source of truth) and a provided key is kept only when it is plausibly a short
- * musical key; an unset, blank, or overlong key is derived from the snapshot's own
- * energy/genre instead (an unbounded LLM-provided key would make the style tail
- * itself exceed a tight provider cap). The hidden seed is ALWAYS frozen from the
- * controls-derived `stylePrompt` (the one seed source), so the same controls
- * always freeze the same `baseSeed`; any existing reroll salt is preserved.
+ * one source of truth) and a provided key is kept as written (trimmed) only when it
+ * is a real musical key in the spellings above, within `MAX_KEY_LENGTH`; anything
+ * else (blank, a placeholder such as "N/A", a sentence, an overlong string) is
+ * replaced by the key derived from the snapshot's own energy/genre, so every
+ * Track's style tail carries one real, short key. The hidden seed is ALWAYS
+ * frozen from the controls-derived `stylePrompt` (the one seed source), so the
+ * same controls always freeze the same `baseSeed`; any existing reroll salt is
+ * preserved.
  */
 export function freezeStyleParameters(snapshot: SessionStyleSnapshot): SessionStyleSnapshot {
   const derived = deriveFrozenBpmKey(snapshot.energy, snapshot.genreTags);
@@ -218,7 +248,7 @@ export function freezeStyleParameters(snapshot: SessionStyleSnapshot): SessionSt
   return {
     ...snapshot,
     bpm: snapshot.bpm != null ? Math.round(snapshot.bpm) : derived.bpm,
-    key: key && key.length <= MAX_KEY_LENGTH ? key : derived.key,
+    key: isMusicalKey(key) ? key : derived.key,
     seedParameters: {
       ...snapshot.seedParameters,
       baseSeed: deriveBaseSeed(snapshot.stylePrompt),
