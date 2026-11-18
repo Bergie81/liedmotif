@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runMigrations } from 'graphile-worker';
 import { startSessionResponseSchema } from '@liedmotif/shared';
-import { getSessionById, type Database, type StyleSnapshot } from '@liedmotif/db';
+import { createPerson, getSessionById, type Database, type StyleSnapshot } from '@liedmotif/db';
 import {
   connectTestDb,
   createSession,
@@ -245,6 +245,42 @@ describe.skipIf(skip)('POST /api/sessions/change-vibe — picks only, with a wri
     const snapshot = (await loadSession(sessionId)).sessionStyleSnapshot!;
     expect(snapshot.novelty).toBe(0.8);
     expect(snapshot.stylePrompt).toBe(SEEDED.stylePrompt);
+  });
+
+  it('keeps the cover concept and its Auto cover style, whatever the reply proposes', async () => {
+    const sessionId = await seededSession();
+    await testDb.pool.query(
+      `update activity_sessions set cover_concept = $1, auto_cover_style = 'drawing' where id = $2`,
+      ['A lighthouse at dawn', sessionId],
+    );
+
+    await changeVibeOk(sessionId, { mode: 'picks', energy: 'high' });
+
+    const after = await loadSession(sessionId);
+    expect(after.coverConcept).toBe('A lighthouse at dawn');
+    expect(after.autoCoverStyle).toBe('drawing');
+  });
+
+  it('sends no About for an instrumental Session when the vocal pick is untouched', async () => {
+    await createPerson(testDb.db as Database, {
+      ownerUserId: holder.ownerUserId!,
+      name: 'Julia',
+      about: 'repairs bicycles',
+    });
+    const sessionId = await createSession(testDb.db, {
+      ownerUserId: holder.ownerUserId!,
+      styleSnapshot: { ...SEEDED, vocalMode: 'instrumental', voiceGender: '', lyricContext: '' },
+      userPrompt: 'calm piano for Julia',
+      title: 'Neon Nights',
+    });
+
+    const calls = await callsDuring(() =>
+      changeVibeOk(sessionId, { mode: 'picks', energy: 'high' }),
+    );
+
+    const listener = calls[0]!.args[1] as { people?: unknown; about?: string } | null;
+    expect(listener?.people).toBeUndefined();
+    expect(listener?.about).toBeUndefined();
   });
 
   it('keeps the running language when Auto Detect is the only change and nothing names one', async () => {

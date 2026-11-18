@@ -25,6 +25,7 @@ import {
   nextMemberCursor,
   PLAYLIST_DETAIL_PAGE_LIMIT,
   reindexMembers,
+  withoutSoleMember,
 } from './playlist-view-model';
 
 /** A playlist summary with an ordered member list (full or a loaded prefix). */
@@ -207,6 +208,8 @@ export function usePlaylistMembers({
       }
       router.refresh();
       if (result.data.unsaved) {
+        const { deletedForGood } = result.data;
+        setPlaylist((p) => (p ? withoutSoleMember(p, deletedForGood) : p));
         onUnsaved({
           deletedForGood: result.data.deletedForGood,
           sharedReference: member.owner !== null,

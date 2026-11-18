@@ -355,7 +355,13 @@ function applyVocalPick(
       negativeTerms: snapshot.negativeTerms.filter((t) => !isVocalsNegative(t)),
     };
   }
-  if (vocal === snapshot.vocalMode) return snapshot;
+  if (vocal === 'instrumental' && snapshot.vocalMode === 'instrumental') {
+    // A model that already obeyed the pick need not carry the anti-vocals
+    // steer: on an adjustment it was shown the vocal snapshot's terms.
+    return snapshot.negativeTerms.some(isVocalsNegative)
+      ? snapshot
+      : { ...snapshot, negativeTerms: [...snapshot.negativeTerms, 'vocals'] };
+  }
   if (vocal === 'vocal') {
     // Only the BARE "instrumental" tag is dropped — from the style (whole comma
     // segments) and from genreTags, with one predicate — so a compound genre

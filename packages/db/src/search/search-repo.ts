@@ -521,8 +521,12 @@ export async function searchPlaylists(
     },
     toPlaylistHit,
   );
-  return {
-    ...group,
-    items: await attributeForeignPlaylists(db, args.ownerUserId, group.items),
-  };
+  // The delete counts read the sharing owner's other playlists and Sessions,
+  // which a visitor never sees (as the Lounge read zeroes them).
+  const items = group.items.map((item) =>
+    item.ownerUserId === viewer
+      ? item
+      : { ...item, soleMemberTrackCount: 0, soleMemberDeletedTrackCount: 0 },
+  );
+  return { ...group, items: await attributeForeignPlaylists(db, args.ownerUserId, items) };
 }

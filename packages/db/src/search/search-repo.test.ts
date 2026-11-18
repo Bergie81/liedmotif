@@ -926,6 +926,8 @@ describe.skipIf(skip)('visitor search integration', () => {
     expect(items[0]!.match.field).toBe('name');
     // The row is visibly foreign: the sharing owner's attribution rides it.
     expect(items[0]!.owner?.name).toBe('Test Admin');
+    // What a delete would cost reads the owner's own Library: never the visitor's to see.
+    expect(items[0]).toMatchObject({ soleMemberTrackCount: 0, soleMemberDeletedTrackCount: 0 });
   });
 
   it('a pinned playlist matches by member title and genre tag, like an own playlist', async () => {
@@ -956,6 +958,7 @@ describe.skipIf(skip)('visitor search integration', () => {
     expect(rows.get(own.id)?.match.field).toBe('tags');
     // Own rows carry no attribution — foreignness is what `owner` marks.
     expect(rows.get(own.id)?.owner).toBeFalsy();
+    expect(rows.get(own.id)?.soleMemberTrackCount).toBe(1);
   });
 
   it('a Shared reference counts toward its containing own playlist track-title match', async () => {

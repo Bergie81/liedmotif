@@ -217,6 +217,29 @@ describe('cover reference selection for a Session run without the owner’s prof
     ]);
   });
 
+  it('never hands the owner’s name to a Person whose name is part of it', () => {
+    const result = select({
+      owner: 'exclude',
+      frequency: 'always',
+      people: [
+        {
+          id: 'owner-person',
+          role: 'owner',
+          name: 'Anna Müller',
+          nameMatchKey: 'anna müller',
+          sortOrder: 0,
+        },
+        { id: 'anna-person', role: 'ordinary', name: 'Anna', nameMatchKey: 'anna', sortOrder: 1 },
+      ],
+      photos: [
+        { id: 'owner-1', personId: 'owner-person', mediaType: 'image/webp', byteSize: 100 },
+        { id: 'anna-1', personId: 'anna-person', mediaType: 'image/webp', byteSize: 100 },
+      ],
+      promptText: 'Anna Müller at the beach',
+    });
+    expect(result).toMatchObject({ selectedPersonIds: [], selectedReferences: [] });
+  });
+
   it('never falls back to the owner when nobody else is named', () => {
     expect(
       select({ owner: 'exclude', frequency: 'always', promptText: 'Late night drive' }),

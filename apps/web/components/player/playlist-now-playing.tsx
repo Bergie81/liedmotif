@@ -9,7 +9,7 @@
 // picker and the star, with the playlist's ordered list one tap away in the
 // transport's queue slot.
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { PlaylistMemberItem, PlaylistSummaryItem } from '@liedmotif/shared';
 import {
@@ -43,6 +43,7 @@ import {
   resolveCoverImageId,
 } from './player-presentation';
 import { optionsTrackOf } from './playable-track';
+import { withoutSoleMember } from '@/components/playlists/playlist-view-model';
 import { PlaylistOptions } from './playlist-options';
 import { sectionLoopControl } from './playback-controller-api';
 import { usePlayerContext, type LivePlayback } from './player-provider';
@@ -55,8 +56,13 @@ import { engagedSourceId } from './player-provider-model';
 import { clearPlayerError, showPlayerError, type PlayerAct } from './player-error-toast';
 
 /** Tracks removed from the playing Playlist, against the membership they edit. */
-type Removals = { from: readonly PlaylistMemberItem[]; trackIds: ReadonlySet<string> };
 const NO_MEMBERS: readonly PlaylistMemberItem[] = [];
+
+/** The Tracks removed while an engagement plays, keyed by the membership it
+ *  engaged with: the engagement outlives this surface (the player page unmounts
+ *  on navigation while the music plays on), and a fresh engagement brings a
+ *  fresh membership. */
+const removalsByEngagement = new WeakMap<readonly PlaylistMemberItem[], Set<string>>();
 const NO_REMOVALS: ReadonlySet<string> = new Set();
 
 export function PlaylistNowPlaying({
@@ -87,11 +93,9 @@ export function PlaylistNowPlaying({
   // removals belong to the engagement whose membership they edit: a fresh
   // engagement of this Playlist brings its own membership.
   const engagedItems = playback.source.kind === 'playlist' ? playback.source.items : NO_MEMBERS;
-  const [removals, setRemovals] = useState<Removals>(() => ({
-    from: engagedItems,
-    trackIds: new Set(),
-  }));
-  const removedTrackIds = removals.from === engagedItems ? removals.trackIds : NO_REMOVALS;
+  const [, removalsChanged] = useReducer((count: number) => count + 1, 0);
+  const removedTrackIds: ReadonlySet<string> =
+    removalsByEngagement.get(engagedItems) ?? NO_REMOVALS;
   const items = engagedItems.filter((item) => !removedTrackIds.has(item.id));
   // The visitor scope: a foreign In-Lounge playlist plays through
   // this same surface with every owner act absent — never disabled.
@@ -147,10 +151,9 @@ export function PlaylistNowPlaying({
       router.push(`/library/playlist/${playlist.id}`);
       return;
     }
-    setRemovals((current) => ({
-      from: engagedItems,
-      trackIds: new Set(current.from === engagedItems ? current.trackIds : []).add(removedTrackId),
-    }));
+    const removed = removalsByEngagement.get(engagedItems) ?? new Set<string>();
+    removalsByEngagement.set(engagedItems, removed.add(removedTrackId));
+    removalsChanged();
     playerRef.current.advancePastDeletedTrack(removedTrackId);
   }
 
@@ -170,6 +173,10 @@ export function PlaylistNowPlaying({
         return;
       }
       router.refresh();
+      if (result.data.unsaved) {
+        const { deletedForGood } = result.data;
+        setPlaylist((current) => withoutSoleMember(current, deletedForGood));
+      }
       continueWithout(trackId);
     } finally {
       removingRef.current = false;

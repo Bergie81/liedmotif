@@ -117,6 +117,38 @@ describe('usePlaylistMembers', () => {
     );
   });
 
+  it('takes a removed last-playlist Track out of what deleting the playlist would cost', async () => {
+    api.removePlaylistTrack.mockResolvedValueOnce({
+      ok: true,
+      data: { removed: true, unsaved: true, deletedForGood: true },
+    });
+    const gone = member('01', 0);
+    const { result } = renderHook(() =>
+      usePlaylistMembers({
+        playlistId: PLAYLIST_ID,
+        initial: {
+          playlist: summary({
+            trackCount: 2,
+            soleMemberTrackCount: 2,
+            soleMemberDeletedTrackCount: 1,
+          }),
+          items: [gone, member('02', 1)],
+        },
+        onError: vi.fn(),
+        onUnsaved: vi.fn(),
+      }),
+    );
+
+    act(() => result.current.removeMember(gone.id));
+
+    await waitFor(() =>
+      expect(result.current.playlist).toMatchObject({
+        soleMemberTrackCount: 1,
+        soleMemberDeletedTrackCount: 0,
+      }),
+    );
+  });
+
   it('holds paging while an optimistic removal commits, then pages from the reindexed prefix', async () => {
     let settleRemove!: (value: unknown) => void;
     api.removePlaylistTrack.mockReturnValueOnce(

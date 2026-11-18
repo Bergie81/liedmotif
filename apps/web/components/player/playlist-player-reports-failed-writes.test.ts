@@ -136,13 +136,22 @@ function showPlaylist(items: PlaylistMemberItem[] = MEMBERS) {
     player,
     coldStartBeganAt: TIMESTAMP,
   });
-  const view = render(h(PlaylistNowPlaying, { playback: engaged(items), playlist: PLAYLIST }), {
+  // One engagement's membership: every engagement brings its own.
+  const members = [...items];
+  const view = render(h(PlaylistNowPlaying, { playback: engaged(members), playlist: PLAYLIST }), {
     wrapper: AppShell,
   });
   /** A fresh engagement of the same Playlist, as Play on it again starts one. */
-  const engageAgain = (members: PlaylistMemberItem[]) =>
-    view.rerender(h(PlaylistNowPlaying, { playback: engaged(members), playlist: PLAYLIST }));
-  return Object.assign(player, { engageAgain });
+  const engageAgain = (fresh: PlaylistMemberItem[]) =>
+    view.rerender(h(PlaylistNowPlaying, { playback: engaged(fresh), playlist: PLAYLIST }));
+  /** The player page left and opened again while the same engagement plays on. */
+  const reopen = () => {
+    view.unmount();
+    render(h(PlaylistNowPlaying, { playback: engaged(members), playlist: PLAYLIST }), {
+      wrapper: AppShell,
+    });
+  };
+  return Object.assign(player, { engageAgain, reopen });
 }
 
 function openOptions() {
@@ -232,6 +241,20 @@ it('ends playback on the Playlist page when the last playable Track is removed',
   expect(provider.release).toHaveBeenCalledTimes(1);
   expect(provider.engagePlaylist).not.toHaveBeenCalled();
   expect(player.advancePastDeletedTrack).not.toHaveBeenCalled();
+});
+
+it('keeps a removed Track out of the list when the player page opens again', async () => {
+  api.removePlaylistTrack.mockResolvedValueOnce({ ok: true, data: {} });
+  const player = showPlaylist();
+
+  fireEvent.click(openOptions().getByTestId('player-remove-from-playlist'));
+  await act(async () => {});
+  player.reopen();
+
+  fireEvent.click(screen.getByTestId('player-queue'));
+  const list = within(screen.getByTestId('playlist-queue'));
+  expect(list.queryByText('Night Drive')).toBeNull();
+  expect(list.getByText('Morning')).toBeTruthy();
 });
 
 it('lists a removed Track again once a fresh engagement of the Playlist carries it', async () => {

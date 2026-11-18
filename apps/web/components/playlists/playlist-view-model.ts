@@ -217,6 +217,21 @@ export function deletePlaylistConfirmBody(
   return `${only} leave your Library. ${gone} of them will be deleted for good, ${sessionGone}. ${ask}`;
 }
 
+type DeleteCost = Pick<PlaylistSummaryItem, 'soleMemberTrackCount' | 'soleMemberDeletedTrackCount'>;
+
+/** The summary after a removal took a Track's last playlist: that sole member
+ *  no longer counts toward what deleting the playlist would cost. */
+export function withoutSoleMember<T extends DeleteCost>(playlist: T, deletedForGood: boolean): T {
+  return {
+    ...playlist,
+    soleMemberTrackCount: Math.max(0, playlist.soleMemberTrackCount - 1),
+    soleMemberDeletedTrackCount: Math.max(
+      0,
+      playlist.soleMemberDeletedTrackCount - (deletedForGood ? 1 : 0),
+    ),
+  };
+}
+
 /** The notice after a removal took a Track's last playlist. */
 export function lastRemovalNotice(removal: {
   deletedForGood: boolean;

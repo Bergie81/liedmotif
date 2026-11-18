@@ -226,11 +226,7 @@ export function selectPersonCoverReferences(
       terminalReason: args.explicitOptIn ? 'privacy_rejected' : null,
     };
   }
-  const selection = matchedOrOwnerReferences(
-    args.owner === 'exclude'
-      ? { ...args, people: args.people.filter((person) => person.role !== 'owner') }
-      : args,
-  );
+  const selection = matchedOrOwnerReferences(args);
   return args.explicitOptIn && selection.selectedReferences.length === 0
     ? { ...selection, terminalReason: 'references_unsupported' }
     : selection;
@@ -238,6 +234,7 @@ export function selectPersonCoverReferences(
 
 /** The owner Person, when an explicit request or the frequency roll admits the no-name fallback. */
 function ownerFallbackPeople(args: SelectPersonCoverReferencesInput): CoverSelectablePerson[] {
+  if (args.owner === 'exclude') return [];
   const admitted =
     args.explicitOptIn ||
     fallbackFrequencyAllowsReference(args.frequency, args.ownerUserId, args.contextId);
@@ -246,9 +243,13 @@ function ownerFallbackPeople(args: SelectPersonCoverReferencesInput): CoverSelec
 
 /** The People the request names, in configured order: exact names, plus the owner when the request includes the listener. */
 function mentionedPeople(args: SelectPersonCoverReferencesInput): CoverSelectablePerson[] {
+  // Names resolve over every Person before the owner is left out, so text that
+  // names the owner never turns into a shorter name another Person carries.
   const named = new Set(matchConfiguredPeople(args.promptText, args.people));
-  return args.people.filter(
-    (person) => named.has(person) || (args.owner === 'include' && person.role === 'owner'),
+  return args.people.filter((person) =>
+    person.role === 'owner'
+      ? args.owner === 'include' || (args.owner !== 'exclude' && named.has(person))
+      : named.has(person),
   );
 }
 

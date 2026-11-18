@@ -81,9 +81,10 @@ type PersonMatchContext = Pick<ExpansionOptions, 'promptHistory'> & {
 
 /** Nothing will be sung, so no About may go out: only an explicit Instrumental
  *  pick says so. The gate never reads the request's words, and a running
- *  instrumental Session does not shut it either: whether the words, in any
- *  language, ask for singing is the expansion's call, and it writes lyric notes
- *  only for a vocal Session (ADR 0004, ADR 0007). */
+ *  instrumental Session does not shut it for a message: whether the words, in
+ *  any language, ask for singing is the expansion's call, and it writes lyric
+ *  notes only for a vocal Session (ADR 0004, ADR 0007). A picks-only change has
+ *  no words, so its caller passes the running vocal mode when no pick is made. */
 function vocalsRuledOut(context?: PersonMatchContext): boolean {
   return context?.vocal === 'instrumental';
 }
@@ -136,7 +137,11 @@ async function listenerContextForIntent(
   const skipProfile = options?.skipProfile === true;
   const general = skipProfile ? null : await getListenerContext(db, ownerUserId);
   if (input.mode === 'controls') return general;
-  const context: PersonMatchContext = { ...options, vocal: input.vocal };
+  // A picks-only change has no words that could ask for singing, so without a
+  // vocal pick the running Session's vocal mode stands.
+  const vocal =
+    input.mode === 'picks' ? (input.vocal ?? options?.adjustFrom?.vocalMode) : input.vocal;
+  const context: PersonMatchContext = { ...options, vocal };
   if (vocalsRuledOut(context)) return general;
   const everyone = await listPeople(db, ownerUserId);
   // A picks-only change has no message: People are matched over the history alone.

@@ -535,6 +535,19 @@ describe('applyStylePicks (deterministic fine-tune enforcement on a produced sna
     expect(forced.stylePrompt).toMatch(/\binstrumental\b/i);
   });
 
+  it('an Instrumental pick the model already obeyed still carries the anti-vocals steer', () => {
+    // On an adjustment the model was shown the vocal snapshot's empty terms.
+    const obeyed = sessionStyleSnapshotSchema.parse({
+      stylePrompt: 'dream pop, soft synths',
+      vocalMode: 'instrumental',
+      energy: 'medium',
+      negativeTerms: [],
+    });
+    expect(applyStylePicks(obeyed, { vocal: 'instrumental' }).negativeTerms).toEqual(['vocals']);
+    const steered = { ...obeyed, negativeTerms: ['vocals'] };
+    expect(applyStylePicks(steered, { vocal: 'instrumental' }).negativeTerms).toEqual(['vocals']);
+  });
+
   it('a Voice pick sets voiceGender on a vocal result and is ignored on instrumental', () => {
     expect(applyStylePicks(base(), { vocal: 'vocal', voice: 'male' }).voiceGender).toBe('male');
     expect(applyStylePicks(base(), { voice: 'male' }).voiceGender).toBe('');

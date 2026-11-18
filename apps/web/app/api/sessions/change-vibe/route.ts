@@ -204,8 +204,10 @@ export async function POST(request: Request) {
     snapshot,
     // The Auto pick follows the concept it was written with (ADR 0007). A reply
     // without a concept keeps both: a small adjustment leaves the existing cover
-    // direction relevant, and the preserved naming skips the naming call.
-    ...(coverConcept
+    // direction relevant, and the preserved naming skips the naming call. A
+    // picks-only change keeps both whatever the reply: picks move the sound,
+    // never the cover direction.
+    ...(coverConcept && input.mode !== 'picks'
       ? { coverConcept, autoCoverStyle: autoCoverStyle ?? current.autoCoverStyle }
       : {}),
     includesListener: derived.includesListener,
