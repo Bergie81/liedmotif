@@ -278,6 +278,45 @@ describe('onboarding covers step provider', () => {
     expect(screen.queryByText(/same key works here/)).toBeNull();
   });
 
+  // "Leave blank to keep" promises a key the selected provider keeps of its own.
+  it('offers no stored key to keep for a separate key beside a shared one', () => {
+    fresh({
+      imageConnected: true,
+      imageProviderKey: 'openai',
+      sharedKeyVendor: 'openai',
+      credential: {
+        ...openRouter,
+        providerKey: 'openai',
+        displayName: 'OpenAI',
+        configured: true,
+        masked: 'sk-…abcd',
+        sharesKey: true,
+      },
+    });
+
+    pick('Use a separate key');
+    expect(keyField()).toBeTruthy();
+    expect(screen.queryByText('LEAVE BLANK TO KEEP')).toBeNull();
+  });
+
+  it('offers the stored key to keep only on the provider that keeps it', () => {
+    fresh({
+      imageConnected: true,
+      imageProviderKey: 'openai',
+      credential: {
+        ...openRouter,
+        providerKey: 'openai',
+        displayName: 'OpenAI',
+        configured: true,
+        masked: 'sk-…abcd',
+      },
+    });
+    expect(screen.getByText('LEAVE BLANK TO KEEP')).toBeTruthy();
+
+    pick('Gemini');
+    expect(screen.queryByText('LEAVE BLANK TO KEEP')).toBeNull();
+  });
+
   it('names the selected vendor and its price on the switch', () => {
     fresh({ sharedKeyVendor: 'openai' });
     expect(screen.getByText('Uses OpenAI · about 6 cents a Cover')).toBeTruthy();

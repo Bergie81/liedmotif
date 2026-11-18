@@ -44,7 +44,7 @@ export async function loadCoverAccountAlert(
  * The image provider that can use the Text AI's key, or `null`. Only the vendor
  * leaves the server; an unreadable key shares nothing.
  */
-export async function loadSharedKeyVendor(): Promise<string | null> {
+async function loadSharedKeyVendor(): Promise<string | null> {
   try {
     const shared = await resolveShareableTextLlmKey(getDb(), {
       encryptionKey: encryptionKeyIfConfigured(),
@@ -53,6 +53,19 @@ export async function loadSharedKeyVendor(): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * What the Cover step needs once the Text AI is saved: the image provider that can
+ * use its key, and whether the Cover key resolves now (a shared one follows the
+ * Text AI's vendor). Never a key.
+ */
+export async function loadCoverKeyState(): Promise<{
+  sharedKeyVendor: string | null;
+  coverConnected: boolean;
+}> {
+  const { cover } = await loadProviderSettingsData();
+  return { sharedKeyVendor: cover.sharedKeyVendor, coverConnected: cover.configured };
 }
 
 export async function loadProviderSettingsData() {

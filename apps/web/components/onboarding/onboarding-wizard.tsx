@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { OnboardingData } from '@/lib/onboarding-data';
-import { readSharedKeyVendor } from '@/lib/settings-client';
+import { readCoverKeyState } from '@/lib/settings-client';
 import { OnboardingCoversStep } from './onboarding-covers-step';
 import { OnboardingDoneStep } from './onboarding-done-step';
 import {
@@ -72,13 +72,14 @@ export function OnboardingWizard({
   }
 
   /**
-   * The Text AI just saved decides whether Covers can use its key, and only the
-   * server knows whether that key resolves (vendor, endpoint, readable secret).
-   * Best-effort: a failed read keeps the vendor already known.
+   * The Text AI just saved decides whether Covers can use its key, and whether a
+   * Cover key that shares it still resolves; only the server knows (vendor,
+   * endpoint, readable secret). Best-effort: a failed read keeps what is known.
    */
   async function advanceFromLlm() {
-    const sharedKeyVendor = await readSharedKeyVendor();
-    if (sharedKeyVendor !== undefined) patch({ sharedKeyVendor });
+    const state = await readCoverKeyState();
+    if (state)
+      patch({ sharedKeyVendor: state.sharedKeyVendor, imageConnected: state.coverConnected });
     advance();
   }
 

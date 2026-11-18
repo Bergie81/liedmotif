@@ -84,19 +84,19 @@ function CoversStepBody({
   });
   // The loaded model belongs to a chosen provider; a preselected one starts on its default.
   const initialModel = lockedModel || preselected !== imageProviderKey ? undefined : imageModel;
+  // A shared key's preview is the Text AI's key, never one a Cover provider keeps.
+  const ownKeyMasked = (providerKey: string) =>
+    providerKey === credential.providerKey && !credential.sharesKey ? credential.masked : null;
   const editor = useCredentialEditor({
     providerType: 'image',
     options: IMAGE_PROVIDERS,
     initialProviderKey: preselected,
-    // A shared key's preview is the Text AI's key, never one this provider keeps.
-    currentMasked:
-      preselected === credential.providerKey && !credential.sharesKey ? credential.masked : null,
+    currentMasked: ownKeyMasked(preselected),
     configured: imageConnected,
     databaseWritesEnabled: encryptionKeyConfigured,
     showModel: true,
     initialModel,
-    // An `IMAGE_API_KEY` always wins, so a Cover key from `.env` leaves nothing to share.
-    sharedKeyVendor: credential.environmentManaged ? null : sharedKeyVendor,
+    sharedKeyVendor,
     sharesKey: credential.sharesKey,
     // The key is stored first, and the Cover budget follows it in the same commit.
     onSaved: (saved) => {
@@ -176,7 +176,7 @@ function CoversStepBody({
                   ? 'Test the configured key and model'
                   : 'Test the key and model'
               }
-              currentMasked={credential.masked}
+              currentMasked={ownKeyMasked(editor.providerKey)}
               encryptionKeyConfigured={encryptionKeyConfigured}
             />
           </OnboardingCard>

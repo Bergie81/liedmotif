@@ -80,17 +80,23 @@ export async function loadPeopleNames(): Promise<PersonSummary[] | null> {
 }
 
 /**
- * The image provider that can use the Text AI's key as stored now, or `null`;
- * `undefined` when it could not be read.
+ * The Cover key state as stored now: the image provider that can use the Text
+ * AI's key (or `null`), and whether the Cover key resolves; `undefined` when it
+ * could not be read.
  */
-export async function readSharedKeyVendor(): Promise<string | null | undefined> {
+export async function readCoverKeyState(): Promise<
+  { sharedKeyVendor: string | null; coverConnected: boolean } | undefined
+> {
   const response = await fetch('/api/settings/credentials').catch(() => null);
   if (!response?.ok) return undefined;
-  const body = (await response.json().catch(() => ({}))) as { sharedKeyVendor?: unknown };
-  if (body.sharedKeyVendor === null || typeof body.sharedKeyVendor === 'string') {
-    return body.sharedKeyVendor;
-  }
-  return undefined;
+  const body = (await response.json().catch(() => ({}))) as {
+    sharedKeyVendor?: unknown;
+    coverConnected?: unknown;
+  };
+  const { sharedKeyVendor, coverConnected } = body;
+  if (sharedKeyVendor !== null && typeof sharedKeyVendor !== 'string') return undefined;
+  if (typeof coverConnected !== 'boolean') return undefined;
+  return { sharedKeyVendor, coverConnected };
 }
 
 /** Apply a partial cost-limits patch; omitted fields keep their stored value. */
