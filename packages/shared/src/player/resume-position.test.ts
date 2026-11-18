@@ -8,7 +8,8 @@ import {
 
 // Resume must restart at the session's stored queue position. The pure index resolver the player feeds with the
 // `getSessionQueue` cursor (`currentQueueItemId` preferred, then `currentTrackId`),
-// falling back to the first playable item only when neither resolves.
+// then the next remaining Track after the stored position, and the Session's
+// start only when nothing remains after it.
 
 const playlist = [
   { queueItemId: 'qi-0', trackId: 't-0', vibeSwitchSetAside: false },
@@ -53,13 +54,37 @@ describe('resolveInitialPlaylistIndex', () => {
     ).toBe(2);
   });
 
-  it('falls back to 0 when neither cursor resolves to a playable item', () => {
-    expect(
-      resolveInitialPlaylistIndex(playlist, {
-        currentQueueItemId: 'qi-missing',
-        currentTrackId: 't-missing',
-      }),
-    ).toBe(0);
+  // Slot positions with gaps: the stored slot at position 4 was removed by a
+  // Dislike, so neither cursor resolves.
+  const positioned = [
+    { queueItemId: 'qi-0', trackId: 't-0', vibeSwitchSetAside: false, queuePosition: 0 },
+    { queueItemId: 'qi-1', trackId: 't-1', vibeSwitchSetAside: false, queuePosition: 3 },
+    { queueItemId: 'qi-2', trackId: 't-2', vibeSwitchSetAside: false, queuePosition: 5 },
+    { queueItemId: 'qi-3', trackId: 't-3', vibeSwitchSetAside: false, queuePosition: 6 },
+  ];
+  const goneCursor = { currentQueueItemId: 'qi-gone', currentTrackId: 't-gone' };
+
+  it('resumes at the next remaining Track after the stored position when the stored slot is gone', () => {
+    expect(resolveInitialPlaylistIndex(positioned, { ...goneCursor, anchorPosition: 4 })).toBe(2);
+  });
+
+  it('resumes on the first unconsumed slot the read anchors on when no current item is stored', () => {
+    expect(resolveInitialPlaylistIndex(positioned, { anchorPosition: 3 })).toBe(1);
+  });
+
+  it('walks past a switch-now set-aside after the stored position', () => {
+    const withSetAside = positioned.map((item) =>
+      item.queueItemId === 'qi-2' ? { ...item, vibeSwitchSetAside: true } : item,
+    );
+    expect(resolveInitialPlaylistIndex(withSetAside, { ...goneCursor, anchorPosition: 4 })).toBe(3);
+  });
+
+  it("starts at the Session's start when nothing remains after the stored position", () => {
+    expect(resolveInitialPlaylistIndex(positioned, { ...goneCursor, anchorPosition: 7 })).toBe(0);
+  });
+
+  it('starts at the first item when neither cursor resolves and no position is reported', () => {
+    expect(resolveInitialPlaylistIndex(positioned, goneCursor)).toBe(0);
   });
 });
 

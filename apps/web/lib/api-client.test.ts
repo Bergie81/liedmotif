@@ -106,6 +106,7 @@ function queueBody(
       styleRevision: 1,
       currentTrackId: trackId,
       currentQueueItemId: uuid(),
+      anchorPosition: 0,
       earlierTracks: 0,
       items: [
         {

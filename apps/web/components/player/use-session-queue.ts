@@ -48,6 +48,8 @@ export interface SessionQueueSnapshot {
   queueItemIds: ReadonlySet<string>;
   currentQueueItemId: string | null;
   currentTrackId: string | null;
+  /** The stored place as a slot position, kept when its Track is gone. */
+  anchorPosition?: number | null;
   generationStatus: QueueData['generationStatus'];
   generationStatusScope: QueueData['generationStatusScope'];
   statusMessageSafe: string | null;
@@ -110,6 +112,7 @@ function playableTrack(
     targetBpm: item.targetBpm,
     targetKey: item.targetKey,
     blendAnalysis: item.blendAnalysis,
+    queuePosition: item.position,
   };
 }
 
@@ -140,6 +143,7 @@ function sessionQueueSnapshot(
     queueItemIds: queueItemIds(data),
     currentQueueItemId: data.currentQueueItemId,
     currentTrackId: data.currentTrackId,
+    anchorPosition: data.anchorPosition,
     generationStatus: data.generationStatus,
     generationStatusScope: data.generationStatusScope,
     statusMessageSafe: data.statusMessageSafe,

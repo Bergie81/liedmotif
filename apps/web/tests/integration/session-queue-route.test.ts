@@ -316,6 +316,51 @@ describe.skipIf(skip)('GET /api/sessions/queue — blend identity + analysis con
     expect(windowed.items[0]!.position).toBe(10);
   });
 
+  it('reports the stored slot position when a Dislike rejected the current slot, which the items leave out', async () => {
+    const base = await seedSession();
+    for (let position = 0; position < 40; position += 1) await seedQueuedTrack(base, position);
+    const dislikedTrack = await seedQueuedTrack(base, 40);
+    const [current] = (
+      await testDb.pool.query<{ id: string }>(
+        `update activity_session_queue_items set state = 'rejected'
+           where track_id = $1 returning id`,
+        [dislikedTrack],
+      )
+    ).rows;
+    await testDb.db.update(tracks).set({ status: 'rejected' }).where(eq(tracks.id, dislikedTrack));
+    await testDb.pool.query(
+      `update activity_sessions set current_queue_item_id = $1, current_track_id = $2 where id = $3`,
+      [current!.id, dislikedTrack, base.sessionId],
+    );
+    await seedQueuedTrack(base, 41);
+
+    const data = await callQueue(base.sessionId);
+    expect(data.anchorPosition).toBe(40);
+    expect(data.currentQueueItemId).toBe(current!.id);
+    expect(data.items.map((item) => item.id)).not.toContain(current!.id);
+    expect(data.items.map((item) => item.position)).toContain(41);
+    // The full read reports the same place.
+    expect((await callQueue(base.sessionId, { full: true })).anchorPosition).toBe(40);
+  });
+
+  it('anchors on the first unconsumed slot without a stored current slot, one past the last when all are consumed, and on nothing without slots', async () => {
+    const base = await seedSession();
+    expect((await callQueue(base.sessionId)).anchorPosition).toBeNull();
+
+    for (const position of [0, 1]) {
+      await createQueueItem(testDb.db, {
+        activitySessionId: base.sessionId,
+        position,
+        state: 'played',
+      });
+    }
+    expect((await callQueue(base.sessionId)).anchorPosition).toBe(2);
+
+    await seedQueuedTrack(base, 4);
+    await seedQueuedTrack(base, 5);
+    expect((await callQueue(base.sessionId)).anchorPosition).toBe(4);
+  });
+
   it('carries no loop head when the read leaves nothing out', async () => {
     const base = await seedSession();
     for (let position = 0; position < 5; position += 1) await seedQueuedTrack(base, position);

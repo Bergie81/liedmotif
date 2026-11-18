@@ -15,20 +15,25 @@ export interface PlaylistCursorItem {
   trackId: string;
   /** True only when switch-now Change Vibe set this Queue item aside. */
   vibeSwitchSetAside: boolean;
+  /** The Session Queue slot's position; absent outside a Session Queue. */
+  queuePosition?: number;
 }
 
-/** The stored playback position from `getSessionQueue` (either field may be absent). */
+/** The stored playback position from `getSessionQueue` (any field may be absent). */
 export interface PlaylistCursor {
   currentQueueItemId?: string | null;
   currentTrackId?: string | null;
+  /** The position the read anchors on: the stored current slot's, which a
+   *  removed Track's slot keeps. */
+  anchorPosition?: number | null;
 }
 
 /**
  * The playable index a resumed session should start at: the stored
- * `currentQueueItemId` (preferred), else the stored `currentTrackId`, else the first
- * playable item (0). Either cursor that does not resolve to a playable item (e.g. the
- * current item isn't downloaded yet) is skipped, so resume degrades to the next
- * available signal rather than jumping to the wrong track.
+ * `currentQueueItemId` (preferred), else the stored `currentTrackId`, else the
+ * first remaining Track at or after `anchorPosition` (the stored Track is gone or
+ * not playable yet), else the Session's start (0: the loop head when it leads the
+ * projection). Resume never lands before the stored place unless it wraps.
  */
 export function resolveInitialPlaylistIndex(
   playlist: ReadonlyArray<PlaylistCursorItem>,
@@ -46,6 +51,15 @@ export function resolveInitialPlaylistIndex(
   if (cursor.currentTrackId) {
     const byTrack = playlist.findIndex((item) => item.trackId === cursor.currentTrackId);
     if (byTrack >= 0) return byTrack;
+  }
+
+  const anchor = cursor.anchorPosition;
+  if (anchor != null) {
+    const after = playlist.findIndex(
+      (item) =>
+        item.queuePosition != null && item.queuePosition >= anchor && !item.vibeSwitchSetAside,
+    );
+    if (after >= 0) return after;
   }
 
   return 0;

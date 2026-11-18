@@ -197,6 +197,9 @@ export async function GET(request: Request) {
     styleRevision: view.session.styleRevision,
     currentTrackId: view.session.currentTrackId,
     currentQueueItemId: view.session.currentQueueItemId,
+    // The stored place as a slot position, which outlives a removed Track:
+    // Resume continues from it when the stored Track is gone.
+    anchorPosition: view.anchorPosition,
     // Playable Tracks the windowed read elided before `items`.
     earlierTracks: view.earlierTracks,
     items: view.items.map(toQueueItem),

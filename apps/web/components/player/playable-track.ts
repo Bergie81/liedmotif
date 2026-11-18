@@ -51,6 +51,9 @@ export interface PlayableTrack {
   targetKey: string | null;
   /** Measured analysis (null while pending / suppressed as stale). */
   blendAnalysis: BlendAnalysis | null;
+  /** The Session Queue slot's position (Resume finds the next remaining Track
+   *  by it); absent on Playlist and Offline Library projections. */
+  queuePosition?: number;
 }
 
 /** A queue slot resolved for playback targeting: the projection index plus its

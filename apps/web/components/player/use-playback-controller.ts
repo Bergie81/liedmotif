@@ -1635,19 +1635,17 @@ export function usePlaybackController(
       }
 
       // Resume restores the stored queue POSITION, not just the style: on the first
-      // non-empty queue load, start at the server's current item. Applied once
-      // so subsequent polls don't reset a session that is already playing.
+      // non-empty queue load, start at the server's current item, or at the next
+      // remaining Track after its slot when that Track is gone. Resolved over the
+      // whole projection, so the fallback index 0 is the Session's start: the
+      // loop head when it leads. Applied once so subsequent polls don't reset a
+      // session that is already playing.
       if (!startIndexAppliedRef.current && queueTracks.length > 0) {
-        // Resolved inside the window; the loop head is only the wrap target.
-        const lead = projection.loopHeadId ? 1 : 0;
-        idxRef.current = Math.min(
-          lead +
-            resolveInitialPlaylistIndex(snapshot.tracks, {
-              currentQueueItemId: snapshot.currentQueueItemId,
-              currentTrackId: snapshot.currentTrackId,
-            }),
-          queueTracks.length - 1,
-        );
+        idxRef.current = resolveInitialPlaylistIndex(queueTracks, {
+          currentQueueItemId: snapshot.currentQueueItemId,
+          currentTrackId: snapshot.currentTrackId,
+          anchorPosition: sessionSnapshot?.anchorPosition,
+        });
         startIndexAppliedRef.current = true;
       } else {
         // Each poll replaces the projection, and removals (e.g. dislike) shift

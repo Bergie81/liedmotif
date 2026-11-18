@@ -475,6 +475,7 @@ describe('diagnostics & queue expose generation-controller state', () => {
     styleRevision: 1,
     currentTrackId: null,
     currentQueueItemId: null,
+    anchorPosition: null,
     earlierTracks: 0,
     items: [],
     generatingTracksAhead: 0,
@@ -639,6 +640,23 @@ describe('diagnostics & queue expose generation-controller state', () => {
         data: { ...withStatus, loopHead: { ...loopHead, assets: undefined } },
       }).success,
     ).toBe(false);
+  });
+
+  it('getSessionQueue reports the anchor position, null only for a Session without slots', () => {
+    const withStatus = {
+      ...queueData,
+      generationStatus: 'ok',
+      generationStatusScope: null,
+      statusMessageSafe: null,
+    };
+    const parse = (data: object) =>
+      getSessionQueueResponseSchema.safeParse({ ok: true, data }).success;
+    expect(parse({ ...withStatus, anchorPosition: 31 })).toBe(true);
+    expect(parse(withStatus)).toBe(true);
+    const { anchorPosition: _dropped, ...withoutAnchor } = withStatus;
+    expect(parse(withoutAnchor)).toBe(false);
+    expect(parse({ ...withStatus, anchorPosition: -1 })).toBe(false);
+    expect(parse({ ...withStatus, anchorPosition: 1.5 })).toBe(false);
   });
 
   it('getSessionQueue takes an optional full-read flag as a URL flag, windowed by default', () => {

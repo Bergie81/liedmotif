@@ -218,6 +218,9 @@ const queueSessionColumns = {
 export interface SessionQueueView {
   session: QueueSessionRecord;
   items: SessionQueueItemRecord[];
+  /** The slot position the read anchors on (see `anchorPositionColumn`);
+   * null only for a Session without slots. */
+  anchorPosition: number | null;
   /** Slots elided from `items` by the read window. */
   earlier: number;
   /** The elided slots the player's projection would hold (a pinned source, still
@@ -271,7 +274,7 @@ const slotStillInSession = and(
  * `PLAYED_WINDOW_SLOTS` slots before the anchor plus everything from it
  * forward; older slots collapse into `earlier`, and the first playable of them
  * rides along as `loopHead`. The anchor is the current item, or the first
- * unconsumed slot when the session carries no current item (see `anchorPosition`).
+ * unconsumed slot when the session carries no current item (see `anchorPositionColumn`).
  */
 export async function getSessionQueue(
   db: Database,
@@ -300,6 +303,7 @@ export async function getSessionQueue(
         gte(generationRequests.styleRevision, activitySessions.styleRevision),
       ),
       liveRevisionFillSpent: liveRevisionFillSpentColumn(db),
+      anchorPosition: anchorPositionColumn,
     })
     .from(activitySessions)
     .where(
@@ -310,11 +314,12 @@ export async function getSessionQueue(
     )
     .limit(1);
   if (!row) return null;
-  const { generatingTracksAhead, generatingNewVibeTracksAhead, ...session } = row;
+  const { generatingTracksAhead, generatingNewVibeTracksAhead, anchorPosition, ...session } = row;
 
-  const { windowStartPosition, earlier, earlierTracks } = args.fullRead
-    ? FULL_READ
-    : await resolveQueueWindow(db, args.sessionId, session.currentQueueItemId);
+  const { windowStartPosition, earlier, earlierTracks } =
+    args.fullRead || anchorPosition == null
+      ? FULL_READ
+      : await resolveQueueWindow(db, args.sessionId, anchorPosition);
 
   const sessionSlots = and(
     eq(activitySessionQueueItems.activitySessionId, args.sessionId),
@@ -346,6 +351,7 @@ export async function getSessionQueue(
   return {
     session,
     items,
+    anchorPosition,
     earlier,
     earlierTracks,
     loopHead,
@@ -474,22 +480,29 @@ const liveQueueItemStatesSql = sql.join(
 );
 
 /**
- * The position the window is anchored on: the current item, or — with no current
+ * The position the window is anchored on, as a column correlated to the
+ * `activity_sessions` row being read: the current item's, or — with no current
  * item stamped — the first slot a listener has not consumed, which is where
- * playback would begin. A session whose every slot is consumed anchors one past
- * its last, so the window is the tail rather than the whole order: the pointer is
- * null until a `started` report lands, and a poll running every 1–4s must not
- * drag a session's full history in the meantime.
+ * playback would begin. A removed Track's slot keeps its row and position, so
+ * the anchor survives a Dislike or Delete of the current Track; the pointer only
+ * clears with the slot row itself. A session whose every slot is consumed anchors
+ * one past its last, so the window is the tail rather than the whole order: the
+ * pointer is null until a `started` report lands, and a poll running every 1–4s
+ * must not drag a session's full history in the meantime. Null without slots.
+ * The outer columns are table-qualified by hand: a single-table select renders
+ * its columns bare, which inside these subqueries would bind to `q`.
  */
-function anchorPosition(sessionId: string, currentQueueItemId: string | null): SQL<number> {
-  if (currentQueueItemId) {
-    return sql`(select q.position from ${activitySessionQueueItems} q where q.id = ${currentQueueItemId})`;
-  }
-  return sql`(select coalesce(
-      min(q.position) filter (where q.state in (${liveQueueItemStatesSql})),
-      max(q.position) + 1
-    ) from ${activitySessionQueueItems} q where q.activity_session_id = ${sessionId})`;
-}
+const outerSession = (column: { name: string }) =>
+  sql`${activitySessions}.${sql.identifier(column.name)}`;
+const anchorPositionColumn = sql<number | null>`coalesce(
+    (select q.position from ${activitySessionQueueItems} q
+      where q.id = ${outerSession(activitySessions.currentQueueItemId)}),
+    (select coalesce(
+        min(q.position) filter (where q.state in (${liveQueueItemStatesSql})),
+        max(q.position) + 1
+      ) from ${activitySessionQueueItems} q
+      where q.activity_session_id = ${outerSession(activitySessions.id)})
+  )`;
 
 /** The whole Session: no window start, nothing elided. */
 const FULL_READ = { windowStartPosition: null, earlier: 0, earlierTracks: 0 } as const;
@@ -505,7 +518,7 @@ const FULL_READ = { windowStartPosition: null, earlier: 0, earlierTracks: 0 } as
 async function resolveQueueWindow(
   db: Database,
   sessionId: string,
-  currentQueueItemId: string | null,
+  anchorPosition: number,
 ): Promise<{ windowStartPosition: number | null; earlier: number; earlierTracks: number }> {
   const [edge] = await db
     .select({
@@ -518,7 +531,7 @@ async function resolveQueueWindow(
       and(
         eq(activitySessionQueueItems.activitySessionId, sessionId),
         slotStillInSession,
-        lt(activitySessionQueueItems.position, anchorPosition(sessionId, currentQueueItemId)),
+        lt(activitySessionQueueItems.position, anchorPosition),
       ),
     )
     .orderBy(desc(activitySessionQueueItems.position))

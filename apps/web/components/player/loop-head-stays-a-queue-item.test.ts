@@ -83,6 +83,7 @@ describe('the loop head in a windowed queue read', () => {
           styleRevision: 1,
           currentTrackId: TAIL_TRACK_ID,
           currentQueueItemId: TAIL_ID,
+          anchorPosition: 59,
           earlierTracks: 59,
           items: [queueItem(TAIL_ID, TAIL_TRACK_ID, 59)],
           loopHead: queueItem(HEAD_ID, HEAD_TRACK_ID, 0),

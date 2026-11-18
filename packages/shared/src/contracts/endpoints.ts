@@ -636,6 +636,11 @@ export const getSessionQueueResponseSchema = apiResponse(
     styleRevision: z.number().int().positive(),
     currentTrackId: uuidSchema.nullable(),
     currentQueueItemId: uuidSchema.nullable(),
+    // The slot position the read anchors on: the stored current slot's (kept
+    // when its Track was removed), else the first unconsumed slot's, else one
+    // past the last. Resume starts at the first remaining Track from here when
+    // the stored Track is gone. Null only for a Session without slots.
+    anchorPosition: z.number().int().nonnegative().nullable(),
     // Playable Tracks elided by the server-side read window (`items` holds the
     // last ~30 played slots plus everything from the current item forward);
     // the player adds them to its Track numbering.
