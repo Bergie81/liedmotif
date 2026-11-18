@@ -858,6 +858,105 @@ describe.skipIf(skip)('POST /api/playlists/cover/upload', () => {
     expect(first.data.coverImageId).not.toBe(second.data.coverImageId);
   });
 
+  async function select(playlistId: string, coverImageId: string) {
+    expect((await postJson(selectPost, { playlistId, coverImageId })).status).toBe(200);
+  }
+
+  async function keptCoverRows(): Promise<number> {
+    return (await testDb.db.select({ id: coverImages.id }).from(coverImages)).length;
+  }
+
+  it('counts uploads kept behind a selected generated cover against the Playlist cap', async () => {
+    const { ownerUserId, playlistId } = await seedOwnedPlaylist();
+    await updateUsageLimits(testDb.db, { generatedCoversPerDay: 50, generatedCoversPerMonth: 200 });
+    // Each round keeps two covers: a generated one is selected, so the upload
+    // after it replaces a generated cover and the earlier upload stays.
+    let lastGenerated = '';
+    for (let round = 0; round < MAX_PLAYLIST_COVER_HISTORY / 2; round += 1) {
+      lastGenerated = (await seedReadyAttempt(ownerUserId, playlistId)).coverImageId;
+      await select(playlistId, lastGenerated);
+      expect((await uploadImage(playlistId)).status).toBe(200);
+    }
+    expect(await keptCoverRows()).toBe(MAX_PLAYLIST_COVER_HISTORY);
+    await select(playlistId, lastGenerated);
+    const storedBefore = holder.stored.size;
+
+    const refusedUpload = await uploadImage(playlistId);
+    expect(refusedUpload.status).toBe(429);
+    const body = (await refusedUpload.json()) as { error: { code: string; message: string } };
+    expect(body.error.code).toBe('limit_reached');
+    expect(body.error.message).toBe(
+      `This Playlist already keeps ${MAX_PLAYLIST_COVER_HISTORY} covers. Delete a previous cover to upload another one.`,
+    );
+    expect((await postJson(regeneratePost, { playlistId })).status).toBe(429);
+
+    expect(await keptCoverRows()).toBe(MAX_PLAYLIST_COVER_HISTORY);
+    expect(holder.stored.size).toBe(storedBefore);
+    expect(await playlistCoverId(playlistId)).toBe(lastGenerated);
+    expect(holder.enqueued).toHaveLength(0);
+  });
+
+  it('counts an in-flight generation against the cap, so the tenth slot is not sold twice', async () => {
+    const { ownerUserId, playlistId } = await seedOwnedPlaylist();
+    for (let i = 0; i < MAX_PLAYLIST_COVER_HISTORY - 1; i += 1) {
+      await seedReadyAttempt(ownerUserId, playlistId);
+    }
+    // The last free slot is claimed by a reserved attempt that has not settled.
+    const coverImageId = randomUUID();
+    const reserved = await reservePlaylistCoverRegeneration(testDb.db, {
+      id: randomUUID(),
+      ownerUserId,
+      playlistId,
+      coverImageId,
+      storageKey: `covers/generated-playlists/${ownerUserId}/${playlistId}/${coverImageId}.webp`,
+      coverStyle: 'minimal',
+    });
+    expect(reserved).not.toBeNull();
+
+    expect((await uploadImage(playlistId)).status).toBe(429);
+    expect(holder.stored.size).toBe(0);
+    expect(await playlistCoverId(playlistId)).toBeNull();
+  });
+
+  it('refuses an upload at the cap even when it would replace the current upload', async () => {
+    const { ownerUserId, playlistId } = await seedOwnedPlaylist();
+    for (let i = 0; i < MAX_PLAYLIST_COVER_HISTORY - 1; i += 1) {
+      await seedReadyAttempt(ownerUserId, playlistId);
+    }
+    const current = (await (await uploadImage(playlistId)).json()) as {
+      data: { coverImageId: string };
+    };
+
+    expect((await uploadImage(playlistId)).status).toBe(429);
+    expect(await playlistCoverId(playlistId)).toBe(current.data.coverImageId);
+    expect(holder.stored.size).toBe(1);
+    expect(await keptCoverRows()).toBe(MAX_PLAYLIST_COVER_HISTORY);
+  });
+
+  it('lets exactly one of an upload and a generation racing for the tenth slot have it', async () => {
+    const { ownerUserId, playlistId } = await seedOwnedPlaylist();
+    await updateUsageLimits(testDb.db, { generatedCoversPerDay: 50, generatedCoversPerMonth: 200 });
+    for (let i = 0; i < MAX_PLAYLIST_COVER_HISTORY - 1; i += 1) {
+      await seedReadyAttempt(ownerUserId, playlistId);
+    }
+
+    const [uploaded, generated] = await Promise.all([
+      uploadImage(playlistId),
+      postJson(regeneratePost, { playlistId }),
+    ]);
+
+    expect([uploaded.status, generated.status].sort()).toEqual([200, 429]);
+    const live = await testDb.db
+      .select()
+      .from(sessionCoverGenerations)
+      .where(eq(sessionCoverGenerations.state, 'reserved'));
+    const uploads = await testDb.db
+      .select({ id: coverImages.id })
+      .from(coverImages)
+      .where(eq(coverImages.sourceType, 'uploaded'));
+    expect(live.length + uploads.length).toBe(1);
+  });
+
   it('rejects bytes whose decoded format is not the declared one', async () => {
     const { playlistId } = await seedOwnedPlaylist();
     // The declared `Content-Type` is a client label; these bytes decode as SVG,

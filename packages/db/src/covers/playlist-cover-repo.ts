@@ -15,7 +15,7 @@ import {
   tracks,
   type CoverMetadata,
 } from '../schema';
-import { withTransaction, type DbOrTx } from '../transactions';
+import type { DbOrTx } from '../transactions';
 import { queueCoverFileDeletions } from './cover-reclaim';
 import {
   deleteCoverFromHistoryForSubject,
@@ -28,6 +28,7 @@ import {
   planCoverGenerationForSubject,
   playlistLedgerSubject,
   reservedCoverAttemptFields,
+  withOwnerCoverAdmissionLock,
   type SessionCoverGenerationRow,
   type UploadedCover,
 } from './generation-ledger-repo';
@@ -121,6 +122,21 @@ export async function listPlaylistCoverHistory(
   );
 }
 
+/**
+ * Every cover the playlist keeps against its history cap: settled generated
+ * covers, uploads, and the one attempt still in flight (it will land as a
+ * cover, so its slot is already taken).
+ */
+export async function countPlaylistCoverHistory(
+  db: DbOrTx,
+  args: { ownerUserId: string; playlistId: string },
+): Promise<number> {
+  const generated = await listPlaylistCoverHistory(db, args);
+  const uploaded = await listUploadedPlaylistCovers(db, args);
+  const live = await getLivePlaylistCoverGeneration(db, args);
+  return generated.length + uploaded.length + (live ? 1 : 0);
+}
+
 /** The history entry for one cover, or null when it is not in this playlist's history. */
 export async function getPlaylistCoverHistoryEntry(
   db: DbOrTx,
@@ -209,30 +225,39 @@ export interface SetUploadedPlaylistCoverInput {
   storageKey: string;
   /** Size of the written object — what the storage quota counts this cover as. */
   byteSize: number;
+  /** Covers the playlist may keep, uploads and generated covers alike. */
+  maxHistory: number;
   now?: Date;
 }
+
+export type SetUploadedPlaylistCoverResult = 'applied' | 'not_found' | 'history_full';
 
 /**
  * Register an uploaded cover and make it the playlist's current cover — ONE
  * transaction: the `cover_images` row, the pointer swap, and the cleanup of a
  * REPLACED uploaded cover (its row goes and its bytes are queued for
  * reclamation; a replaced generated cover stays re-selectable in the history).
- * Returns false when the playlist is absent/not owned — the caller compensates
+ * The cap is checked before anything changes, under the per-owner lock the
+ * generation admission takes, so an upload and a generation cannot both take
+ * the last slot. A full history refuses even when the upload would replace
+ * the current upload. On `not_found` or `history_full` the caller compensates
  * by deleting the just-written bytes.
  */
 export async function setUploadedPlaylistCover(
   db: Database,
   args: SetUploadedPlaylistCoverInput,
-): Promise<boolean> {
+): Promise<SetUploadedPlaylistCoverResult> {
   const now = args.now ?? new Date();
-  return withTransaction(db, async (tx) => {
+  return withOwnerCoverAdmissionLock(db, args.ownerUserId, async (tx) => {
     const [playlist] = await tx
       .select({ id: playlists.id, coverImageId: playlists.coverImageId })
       .from(playlists)
       .where(and(eq(playlists.id, args.playlistId), eq(playlists.ownerUserId, args.ownerUserId)))
       .limit(1)
       .for('update');
-    if (!playlist) return false;
+    if (!playlist) return 'not_found';
+    const kept = await countPlaylistCoverHistory(tx, args);
+    if (kept >= args.maxHistory) return 'history_full';
 
     await tx.insert(coverImages).values({
       id: args.coverImageId,
@@ -264,7 +289,7 @@ export async function setUploadedPlaylistCover(
         });
       }
     }
-    return true;
+    return 'applied';
   });
 }
 

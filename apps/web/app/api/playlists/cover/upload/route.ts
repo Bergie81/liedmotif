@@ -4,11 +4,12 @@
 // metadata-free WebP, then registered + pointed at in ONE repo transaction
 // (`setUploadedPlaylistCover`) — which also retires a replaced uploaded cover.
 // Unlike a Session cover, a Playlist upload applies immediately: this surface
-// has no preview step.
+// has no preview step. An upload takes one of the playlist's
+// MAX_PLAYLIST_COVER_HISTORY slots, like a generated cover.
 
 import { NextResponse } from 'next/server';
-import { setUploadedPlaylistCover } from '@liedmotif/db';
-import { uuidSchema } from '@liedmotif/shared';
+import { setUploadedPlaylistCover, type SetUploadedPlaylistCoverResult } from '@liedmotif/db';
+import { MAX_PLAYLIST_COVER_HISTORY, uuidSchema } from '@liedmotif/shared';
 import { apiError, apiOk, requireOwnerId } from '@/lib/api-response';
 import { processCoverUpload, storeUploadedCover } from '@/lib/cover-upload-image';
 import { getDb } from '@/lib/db';
@@ -16,6 +17,8 @@ import { readImageUpload, readUploadForm, withImageUploadAdmission } from '@/lib
 import type { RecordStoredBytes } from '@/lib/storage-quota';
 
 export const dynamic = 'force-dynamic';
+
+const PLAYLIST_FULL_MESSAGE = `This Playlist already keeps ${MAX_PLAYLIST_COVER_HISTORY} covers. Delete a previous cover to upload another one.`;
 
 export async function POST(request: Request) {
   const ownerUserId = await requireOwnerId(request);
@@ -44,13 +47,23 @@ async function storePlaylistCover(
   const processed = await processCoverUpload(upload.bytes);
   if (!processed) return apiError('validation_error', 'The file could not be read as an image.');
 
+  let outcome = 'not_found' as SetUploadedPlaylistCoverResult;
   const coverImageId = await storeUploadedCover({
     ownerUserId,
     processed,
     recordStored,
-    register: (cover) =>
-      setUploadedPlaylistCover(getDb(), { ownerUserId, playlistId: playlistId.data, ...cover }),
+    register: async (cover) => {
+      outcome = await setUploadedPlaylistCover(getDb(), {
+        ownerUserId,
+        playlistId: playlistId.data,
+        maxHistory: MAX_PLAYLIST_COVER_HISTORY,
+        ...cover,
+      });
+      return outcome === 'applied';
+    },
   });
-  if (!coverImageId) return apiError('not_found', 'Playlist not found.');
-  return apiOk({ coverImageId });
+  if (coverImageId) return apiOk({ coverImageId });
+  return outcome === 'history_full'
+    ? apiError('limit_reached', PLAYLIST_FULL_MESSAGE)
+    : apiError('not_found', 'Playlist not found.');
 }

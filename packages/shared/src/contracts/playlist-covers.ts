@@ -15,7 +15,10 @@ import {
   sessionCoverUsageSchema,
 } from './session-covers';
 
-/** Hard cap on generated covers a Playlist may keep (mirrors the Session cap). */
+/**
+ * Hard cap on every cover a Playlist keeps: generated covers, uploads, and the
+ * one attempt in flight all count (mirrors the Session cap).
+ */
 export const MAX_PLAYLIST_COVER_HISTORY = 10;
 
 /** The multipart upload's answer: the uploaded cover, already applied. */

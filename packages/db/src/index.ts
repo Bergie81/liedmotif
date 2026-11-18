@@ -252,6 +252,7 @@ export {
 } from './covers/generation-ledger-repo';
 // Playlist custom-cover persistence (same ledger, keyed on playlist).
 export {
+  countPlaylistCoverHistory,
   deletePlaylistCoverFromHistory,
   getLatestPlaylistCoverRegeneration,
   getLivePlaylistCoverGeneration,
@@ -268,6 +269,7 @@ export {
   type InsertGeneratedPlaylistCoverInput,
   type PlaylistCoverSubject,
   type ReservePlaylistCoverRegenerationInput,
+  type SetUploadedPlaylistCoverResult,
 } from './covers/playlist-cover-repo';
 export {
   addUploadedSessionCover,

@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import {
   MAX_COVER_GUIDANCE_LENGTH,
+  MAX_PLAYLIST_COVER_HISTORY,
   PLAYLIST_COVER_STYLE_CHOICES,
   type PlaylistCoverStyleChoice,
   type PlaylistSummaryItem,
@@ -165,8 +166,13 @@ function CoverSheetContent({
   const working = busy || picker.busy;
   const peopleAvailable = status?.peopleReferencesAvailable ?? false;
   const includePeople = usePeople && peopleAvailable;
+  // Every cover counts against the cap the routes enforce: uploads, generated
+  // covers, and the attempt still in flight.
+  const keptCovers = status ? status.history.length + (status.generating ? 1 : 0) : 0;
+  const historyFull = keptCovers >= MAX_PLAYLIST_COVER_HISTORY;
   const generateDisabled =
     working ||
+    historyFull ||
     !status ||
     status.generating ||
     !status.usage.providerConfigured ||
@@ -188,7 +194,7 @@ function CoverSheetContent({
           <button
             type="button"
             className={secondaryButtonClass}
-            disabled={working}
+            disabled={working || historyFull}
             onClick={picker.pick}
             data-testid="playlist-cover-upload"
           >
@@ -208,6 +214,12 @@ function CoverSheetContent({
           {picker.element}
         </div>
       </div>
+      {historyFull ? (
+        <p className="mt-3 text-[12.5px] text-muted" data-testid="playlist-cover-full">
+          This Playlist holds the maximum of {MAX_PLAYLIST_COVER_HISTORY} covers. Delete a previous
+          cover to make room for a new one.
+        </p>
+      ) : null}
 
       <div className="mt-5 border-t border-line pt-4">
         <h3 className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
@@ -325,8 +337,14 @@ function CoverSheetContent({
 
       {status && status.history.length > 0 ? (
         <div className="mt-5 border-t border-line pt-4">
-          <h3 className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-            Previous covers
+          <h3 className="flex items-baseline justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+            <span>Previous covers</span>
+            <span
+              data-testid="playlist-cover-count"
+              className={cn(historyFull && 'font-semibold text-warn')}
+            >
+              {keptCovers}/{MAX_PLAYLIST_COVER_HISTORY}
+            </span>
           </h3>
           <div className="mt-2 grid grid-cols-4 gap-2">
             {status.history.map((entry) => (

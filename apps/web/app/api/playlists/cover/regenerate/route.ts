@@ -9,10 +9,10 @@
 import { randomUUID } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import {
+  countPlaylistCoverHistory,
   coverAdmissionDecision,
   getLivePlaylistCoverGeneration,
   getPlaylistCoverSubject,
-  listPlaylistCoverHistory,
   reservePlaylistCoverRegeneration,
   withOwnerCoverAdmissionLock,
 } from '@liedmotif/db';
@@ -104,11 +104,11 @@ export async function POST(request: Request) {
       playlistId: playlist.id,
     });
     if (live) return { outcome: 'pending' as const, coverGenerationId: live.id };
-    const keptInLock = await listPlaylistCoverHistory(tx, {
+    const keptInLock = await countPlaylistCoverHistory(tx, {
       ownerUserId,
       playlistId: playlist.id,
     });
-    if (keptInLock.length >= MAX_PLAYLIST_COVER_HISTORY) {
+    if (keptInLock >= MAX_PLAYLIST_COVER_HISTORY) {
       return { outcome: 'playlist_full' as const };
     }
     const admission = await coverAdmissionDecision(tx, {

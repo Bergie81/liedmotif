@@ -13,6 +13,7 @@ import {
 import {
   createDb,
   createPlaylist,
+  coverImages,
   createPool,
   insertGeneratedCoverImage,
   insertGeneratedPlaylistCoverImage,
@@ -119,6 +120,22 @@ async function seedReadyCover(ownerUserId: string, subject: Subject) {
       visualTheme: 'minimal',
     });
   }
+}
+
+/** An owner-uploaded cover in the subject's history. */
+async function seedUploadedCover(ownerUserId: string, subject: Subject) {
+  const coverImageId = randomUUID();
+  await testDb.db.insert(coverImages).values({
+    id: coverImageId,
+    sourceType: 'uploaded',
+    storageProvider: 'local-fs',
+    storageKey: `covers/uploaded/${ownerUserId}/${coverImageId}.webp`,
+    tags: { label: 'Gate fixture upload' },
+    provenance:
+      subject.kind === 'session'
+        ? { ownerUserId, activitySessionId: subject.id }
+        : { ownerUserId, playlistId: subject.id },
+  });
 }
 
 async function attemptCount(): Promise<number> {
@@ -231,7 +248,10 @@ describe.skipIf(skip).each(SUBJECTS)(
         generatedCoversPerDay: 50,
         generatedCoversPerMonth: 200,
       });
-      for (let i = 0; i < max; i += 1) await seedReadyCover(ownerUserId, subject);
+      // Uploads take history slots exactly like generated covers.
+      for (let i = 0; i < max - 2; i += 1) await seedReadyCover(ownerUserId, subject);
+      await seedUploadedCover(ownerUserId, subject);
+      await seedUploadedCover(ownerUserId, subject);
 
       const verdict = await gate(ownerUserId, subject);
 

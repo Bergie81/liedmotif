@@ -11,11 +11,11 @@
 import { NextResponse } from 'next/server';
 import {
   advisoryCoverAdmission,
+  countPlaylistCoverHistory,
   countSessionCoverHistory,
   getLivePlaylistCoverGeneration,
   getLiveSessionCoverGeneration,
   getUsageLimits,
-  listPlaylistCoverHistory,
   type Database,
   type UsageLimits,
 } from '@liedmotif/db';
@@ -83,8 +83,8 @@ async function historyFullMessage(
     const kept = await countSessionCoverHistory(db, { ownerUserId, activitySessionId: subject.id });
     return kept >= MAX_SESSION_COVER_HISTORY ? SESSION_COVERS_FULL_MESSAGE : null;
   }
-  const kept = await listPlaylistCoverHistory(db, { ownerUserId, playlistId: subject.id });
-  return kept.length >= MAX_PLAYLIST_COVER_HISTORY ? PLAYLIST_COVERS_FULL_MESSAGE : null;
+  const kept = await countPlaylistCoverHistory(db, { ownerUserId, playlistId: subject.id });
+  return kept >= MAX_PLAYLIST_COVER_HISTORY ? PLAYLIST_COVERS_FULL_MESSAGE : null;
 }
 
 /** Whether a new cover attempt for `subject` would be refused, already runs, or may go ahead. */

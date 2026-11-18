@@ -6,10 +6,15 @@
 
 import { createElement as h } from 'react';
 import type { SessionCoverGenerationRow } from '@liedmotif/db';
-import { COVER_STYLE_CHOICES, type PlaylistSummaryItem } from '@liedmotif/shared';
+import {
+  COVER_STYLE_CHOICES,
+  MAX_PLAYLIST_COVER_HISTORY,
+  type PlaylistSummaryItem,
+} from '@liedmotif/shared';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  deletePlaylistCover,
   playlistCoverStatus,
   regeneratePlaylistCover,
   type PlaylistCoverStatusData,
@@ -201,5 +206,56 @@ describe('PlaylistCoverSheet — People reference photos', () => {
     });
 
     expect(screen.getByText(failureMessageSafe)).toBeTruthy();
+  });
+});
+
+describe('PlaylistCoverSheet — cover cap', () => {
+  function historyOf(count: number): PlaylistCoverStatusData['history'] {
+    return Array.from({ length: count }, (_, i) => ({
+      coverImageId: `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`,
+      isCurrent: i === 0,
+      style: i % 2 === 0 ? 'minimal' : 'uploaded',
+      createdAt: '2026-11-18T10:00:00.000Z',
+    }));
+  }
+
+  it('at ten covers the sheet disables Upload and Generate and says to delete one first', async () => {
+    const full = historyOf(MAX_PLAYLIST_COVER_HISTORY);
+    await renderSheet({ history: full });
+
+    expect(screen.getByTestId('playlist-cover-count').textContent).toBe(
+      `${MAX_PLAYLIST_COVER_HISTORY}/${MAX_PLAYLIST_COVER_HISTORY}`,
+    );
+    expect((screen.getByTestId('playlist-cover-upload') as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByTestId('playlist-cover-generate') as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+    expect(screen.getByText(/Delete a previous cover to make room/)).toBeTruthy();
+
+    // Deleting one makes room again.
+    const deleteButtons = screen.getAllByRole('button', { name: 'Delete this cover' });
+    expect((deleteButtons[0] as HTMLButtonElement).disabled).toBe(false);
+    vi.mocked(deletePlaylistCover).mockResolvedValue({
+      ok: true,
+      data: { coverImageId: full[1]!.coverImageId },
+    });
+    vi.mocked(playlistCoverStatus).mockResolvedValue({
+      ok: true,
+      data: { ...STATUS, history: full.slice(0, -1) },
+    });
+    fireEvent.click(deleteButtons[0]!);
+
+    await waitFor(() =>
+      expect((screen.getByTestId('playlist-cover-upload') as HTMLButtonElement).disabled).toBe(
+        false,
+      ),
+    );
+    expect((screen.getByTestId('playlist-cover-generate') as HTMLButtonElement).disabled).toBe(
+      false,
+    );
+    expect(screen.getByTestId('playlist-cover-count').textContent).toBe(
+      `${MAX_PLAYLIST_COVER_HISTORY - 1}/${MAX_PLAYLIST_COVER_HISTORY}`,
+    );
+    expect(screen.queryByText(/Delete a previous cover to make room/)).toBeNull();
   });
 });
