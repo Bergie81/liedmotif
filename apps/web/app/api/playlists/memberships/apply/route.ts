@@ -36,6 +36,9 @@ export async function POST(request: Request) {
   if (result === 'removed') {
     return apiError('conflict', 'This track was removed and can no longer be saved.');
   }
+  if (result === 'failed') {
+    return apiError('conflict', 'This track could not be kept, so it cannot join a playlist.');
+  }
 
   return apiOk({
     trackId: parsed.trackId,

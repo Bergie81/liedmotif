@@ -205,8 +205,15 @@ export async function runPollMusicGeneration(
   // the terminal CAS (materialization/enqueue crash — the tracks are paid for but may
   // not exist yet), so hand that job to `process-provider-results` to self-heal; its
   // materialization is idempotent, making a rare redundant run harmless.
+  // Likewise a provider-reported failure fails its final-less Tracks only after
+  // its CAS, so a retry of a poll that died in between repeats that idempotent
+  // write; otherwise those Tracks would stay offered for play on a dead stream.
   if (TERMINAL_STATUSES.has(job.normalizedStatus)) {
     if (job.normalizedStatus === 'ready') await deps.enqueueProcessResults(job.jobId);
+    if (job.providerStatus === 'failed') {
+      const { failedTrackIds } = await failFinalLessTracksOfJob(deps.db, job.jobId);
+      if (failedTrackIds.length > 0) await wakeOwnerActiveSession(deps, ownerUserId);
+    }
     return {
       outcome: 'already_terminal',
       normalizedStatus: job.normalizedStatus,

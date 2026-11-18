@@ -37,6 +37,8 @@ export function createFavoriteTrackTool(
         });
         if (!flags) return refused(NO_SUCH_TRACK);
         if (flags === 'removed') return refused('That Track was removed.');
+        if (flags === 'failed')
+          return refused('That Track could not be kept, so it cannot be favorited.');
         return done({
           action: 'favoriteTrack',
           track: { id: trackId, name: title },

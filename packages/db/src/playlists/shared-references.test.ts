@@ -121,7 +121,7 @@ describe.skipIf(skip)('Shared reference save', () => {
     });
     expect(result).not.toBeNull();
     expect(result).not.toBe('removed');
-    if (result === null || result === 'removed') throw new Error('unreachable');
+    if (result === null || typeof result === 'string') throw new Error('unreachable');
     expect(result.playlistIds).toEqual([mine.id]);
     // The reference appends like any other member: dense positions, user order.
     expect(await memberRows(mine.id)).toEqual([
@@ -261,7 +261,7 @@ describe.skipIf(skip)('Shared reference save', () => {
     });
     expect(result).not.toBeNull();
     expect(result).not.toBe('removed');
-    if (result === null || result === 'removed') throw new Error('unreachable');
+    if (result === null || typeof result === 'string') throw new Error('unreachable');
     expect(result.favoritedAt).not.toBeNull();
 
     const favorites = await ensureFavoritesPlaylist(testDb.db, { ownerUserId: visitor });
@@ -274,7 +274,7 @@ describe.skipIf(skip)('Shared reference save', () => {
       trackId,
       favorited: false,
     });
-    if (cleared === null || cleared === 'removed') throw new Error('unreachable');
+    if (cleared === null || typeof cleared === 'string') throw new Error('unreachable');
     expect(cleared.favoritedAt).toBeNull();
     expect(await memberRows(favorites.id)).toEqual([]);
   });

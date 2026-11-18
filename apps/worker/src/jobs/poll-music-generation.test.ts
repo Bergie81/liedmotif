@@ -386,6 +386,33 @@ describeIfDb('poll-music-generation', () => {
     ]);
   });
 
+  it('a retried poll fails the stream-only Tracks a provider failure left behind', async () => {
+    const { jobId } = await submittedJob();
+    const streamOnly = [{ providerTrackId: 'A', streamAudioUrl: 'https://cdn.example/s/A' }];
+    const streaming = scriptedProvider(() => result('text_ready', streamOnly));
+    await runPollMusicGeneration(deps(streaming.provider), { providerJobId: jobId });
+    // Stage the crash window: the failure's terminal CAS landed, but the worker
+    // died before the Tracks were failed.
+    await updateProviderJobPollState(ctx.db, {
+      jobId,
+      providerStatus: 'failed',
+      normalizedStatus: 'failed_final',
+      nextPollAt: null,
+      retryCount: 2,
+    });
+
+    const guard = scriptedProvider(() => {
+      throw new Error('the retried poll itself must not re-poll the provider');
+    });
+    const r = await runPollMusicGeneration(deps(guard.provider), { providerJobId: jobId });
+
+    expect(r.outcome).toBe('already_terminal');
+    expect(guard.calls()).toBe(0);
+    expect(await ctx.db.select({ status: tracks.status }).from(tracks)).toEqual([
+      { status: 'failed' },
+    ]);
+  });
+
   it('a job that timed out while polling keeps its stream-only Tracks live', async () => {
     const { jobId } = await submittedJob();
     const streamOnly = [{ providerTrackId: 'A', streamAudioUrl: 'https://cdn.example/s/A' }];

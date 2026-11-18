@@ -609,17 +609,18 @@ async function readTrackFlagsInTx(
  * Lounge-audible track: Favorites is a save target like any other
  * playlist, so the star files a Shared reference and answers with the
  * caller's own shelves, never the owner's flags. Idempotent; same
- * null/'removed' posture as every retention write.
+ * null/'removed' posture as every retention write, plus `'failed'` when a
+ * failed Track would be newly favorited.
  */
 export async function setTrackFavorited(
   db: Database,
   args: { ownerUserId: string; trackId: string; favorited: boolean; now?: Date },
-): Promise<TrackFlagWriteResult> {
+): Promise<TrackFlagWriteResult | 'failed'> {
   const now = args.now ?? new Date();
   return withOwnerPlaylistLock(db, args.ownerUserId, async (tx) => {
     const track = await lockSaveableTrack(tx, args.ownerUserId, args.trackId);
     if (track === null || track === 'removed') return track;
-    if (args.favorited && track.status === 'failed') return 'removed';
+    if (args.favorited && track.status === 'failed') return 'failed';
     const foreign = track.ownerUserId !== args.ownerUserId;
 
     const favorites = await ensureFavoritesPlaylist(tx, { ownerUserId: args.ownerUserId });
@@ -693,7 +694,8 @@ export interface ApplyTrackMembershipsResult {
  * user playlist that also receives the track, and the retention flags + audits
  * are derived once at the end — so save/unsave can never half-apply. Desired
  * ids that are absent/not owned are ignored (the IDOR posture). Returns
- * `'removed'` for a rejected/deleted track (no longer saveable), null when the
+ * `'removed'` for a rejected/deleted track (no longer saveable), `'failed'` when
+ * a failed Track would join a Playlist, null when the
  * track is absent/not owned — unless it is Lounge-audible: then the
  * commit files it as a Shared reference, an ordinary membership row in the
  * caller's own playlists that flips none of the owner's flags and appends no
@@ -709,7 +711,7 @@ export async function applyTrackMemberships(
     createPlaylistName?: string;
     now?: Date;
   },
-): Promise<ApplyTrackMembershipsResult | 'removed' | null> {
+): Promise<ApplyTrackMembershipsResult | 'removed' | 'failed' | null> {
   const now = args.now ?? new Date();
   return withOwnerPlaylistLock(db, args.ownerUserId, async (tx) => {
     const track = await lockSaveableTrack(tx, args.ownerUserId, args.trackId);
@@ -751,7 +753,7 @@ export async function applyTrackMemberships(
       track.status === 'failed' &&
       (args.createPlaylistName || [...desired].some((id) => !currentIds.has(id)))
     ) {
-      return 'removed';
+      return 'failed';
     }
 
     let createdPlaylistId: string | null = null;

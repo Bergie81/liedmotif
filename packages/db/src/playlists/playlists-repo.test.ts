@@ -783,7 +783,7 @@ describe.skipIf(skip)('applyTrackMemberships', () => {
     });
     expect(result).not.toBeNull();
     expect(result).not.toBe('removed');
-    if (result === null || result === 'removed') throw new Error('unreachable');
+    if (result === null || typeof result === 'string') throw new Error('unreachable');
     expect(result.createdPlaylistId).toBeTruthy();
     expect([...result.playlistIds].sort()).toEqual([b.id, result.createdPlaylistId].sort());
 
@@ -816,7 +816,7 @@ describe.skipIf(skip)('applyTrackMemberships', () => {
       trackId,
       playlistIds: [foreign.id], // not ours -> ignored -> effectively empty
     });
-    if (result === null || result === 'removed') throw new Error('unreachable');
+    if (result === null || typeof result === 'string') throw new Error('unreachable');
     expect(result.playlistIds).toEqual([]);
     expect((await trackFlags(trackId)).savedAt).toBeNull();
     expect(await auditCount(trackId, 'unsave')).toBe(1);
@@ -1037,7 +1037,7 @@ describe.skipIf(skip)('curated Playlist membership', () => {
       playlistIds: [favorites.id],
       now: NOW,
     });
-    if (starred === null || starred === 'removed') throw new Error('unreachable');
+    if (starred === null || typeof starred === 'string') throw new Error('unreachable');
     expect(starred.flags.savedAt).toEqual(NOW);
     expect(starred.inCuratedPlaylist).toBe(false);
     expect(
@@ -1051,7 +1051,7 @@ describe.skipIf(skip)('curated Playlist membership', () => {
       createPlaylistName: 'Night drive',
       now: NOW,
     });
-    if (filed === null || filed === 'removed') throw new Error('unreachable');
+    if (filed === null || typeof filed === 'string') throw new Error('unreachable');
     expect(filed.inCuratedPlaylist).toBe(true);
     expect(
       (await getOwnedTrackSummary(testDb.db, { ownerUserId, trackId }))?.inCuratedPlaylist,
@@ -1069,7 +1069,7 @@ describe.skipIf(skip)('membership-backed retention writes', () => {
       favorited: true,
       now: NOW,
     });
-    if (on === null || on === 'removed') throw new Error('unreachable');
+    if (on === null || typeof on === 'string') throw new Error('unreachable');
     expect(on.favoritedAt).toEqual(NOW);
     expect(on.savedAt).toEqual(NOW);
     const favorites = await ensureFavoritesPlaylist(testDb.db, { ownerUserId });
@@ -1081,7 +1081,7 @@ describe.skipIf(skip)('membership-backed retention writes', () => {
       trackId,
       favorited: false,
     });
-    if (off === null || off === 'removed') throw new Error('unreachable');
+    if (off === null || typeof off === 'string') throw new Error('unreachable');
     expect(off.favoritedAt).toBeNull();
     expect(off.savedAt).toBeNull();
     expect(await memberPositions(favorites.id)).toEqual([]);
@@ -1104,7 +1104,7 @@ describe.skipIf(skip)('membership-backed retention writes', () => {
     await setTrackFavorited(testDb.db, { ownerUserId, trackId, favorited: true });
 
     const result = await unsaveTrackEverywhere(testDb.db, { ownerUserId, trackId });
-    if (result === null || result === 'removed') throw new Error('unreachable');
+    if (result === null || typeof result === 'string') throw new Error('unreachable');
     expect(result.savedAt).toBeNull();
     expect(result.favoritedAt).toBeNull();
     expect(result.retentionClass).toBe('ephemeral');
@@ -1671,7 +1671,7 @@ describe.skipIf(skip)('a failed Track (its final never arrived)', () => {
         trackId,
         playlistIds: [mix.id, favorites.id, other.id],
       }),
-    ).toBe('removed');
+    ).toBe('failed');
     expect(await memberPositions(other.id)).toEqual([]);
     expect(await memberPositions(mix.id)).toEqual([[trackId, 0]]);
     expect(await memberPositions(favorites.id)).toEqual([[trackId, 0]]);
@@ -1686,10 +1686,10 @@ describe.skipIf(skip)('a failed Track (its final never arrived)', () => {
       trackId,
       favorited: false,
     });
-    expect(unstarred).not.toBe('removed');
+    expect(unstarred).not.toBe('failed');
     expect(await memberPositions(favorites.id)).toEqual([]);
     expect(await setTrackFavorited(testDb.db, { ownerUserId, trackId, favorited: true })).toBe(
-      'removed',
+      'failed',
     );
 
     const second = await createPlaylist(testDb.db, { ownerUserId, name: 'Second' });
@@ -1702,7 +1702,7 @@ describe.skipIf(skip)('a failed Track (its final never arrived)', () => {
       trackId,
       playlistIds: [mix.id],
     });
-    expect(unfiled).not.toBe('removed');
+    expect(unfiled).not.toBe('failed');
     expect(await memberPositions(second.id)).toEqual([]);
 
     expect(

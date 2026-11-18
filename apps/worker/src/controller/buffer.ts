@@ -19,7 +19,7 @@
 //                             the ready tracks, no lifecycle change. A stuck
 //                             Session (see `stuck`) keeps `provider_error`
 //                             after the cooldown, for as long as it is stuck.
-//   - ok                   — generating normally (or buffer already full /
+//   - ok                    — generating normally (or buffer already full /
 //                             voluntary Repeat / manual-only). Returning to `ok`
 //                             when the limit window rolls over IS the auto-resume.
 

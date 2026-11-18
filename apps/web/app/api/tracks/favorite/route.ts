@@ -33,5 +33,8 @@ export async function POST(request: Request) {
   if (flags === 'removed') {
     return apiError('conflict', 'This track was removed and can no longer be updated.');
   }
+  if (flags === 'failed') {
+    return apiError('conflict', 'This track could not be kept, so it cannot be favorited.');
+  }
   return apiOk(toTrackFlags(flags));
 }
