@@ -35,14 +35,13 @@ export function buildSetupPayload(form: SetupState): SetupPayload {
  * the route does, because TLS terminates at the proxy.
  */
 export function setupAddressNotice(requestHost: string | null, publicUrl: string): string | null {
-  const opened = hostOf(requestHost === null ? null : `http://${requestHost}`);
+  const opened = requestHost === null ? null : hostOf(`http://${requestHost}`);
   const configured = hostOf(publicUrl);
   if (opened === null || configured === null || opened === configured) return null;
   return `This install is set up for ${publicUrl}. Open it there, or set APP_PUBLIC_URL to this address and restart.`;
 }
 
-function hostOf(url: string | null): string | null {
-  if (url === null) return null;
+function hostOf(url: string): string | null {
   try {
     return new URL(url).host;
   } catch {

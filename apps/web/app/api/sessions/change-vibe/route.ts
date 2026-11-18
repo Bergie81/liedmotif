@@ -149,11 +149,9 @@ export async function POST(request: Request) {
   // possible; the session's creative naming rides through unchanged on either mode,
   // and the Session Name is never touched, Derived or Given.
   const anchor = sessionStyleSnapshotSchema.safeParse(runningStyle);
-  // Picks alone have nothing to adjust without a readable current style.
-  if (!anchor.success && input.mode === 'picks') {
-    return apiError('validation_error', UNREADABLE_STYLE_MESSAGE);
-  }
   if (!anchor.success) {
+    // Picks alone have nothing to adjust without a readable current style.
+    if (input.mode === 'picks') return apiError('validation_error', UNREADABLE_STYLE_MESSAGE);
     // Degrades to an un-anchored derivation (a fresh expansion) — worth a trace,
     // since the user experiences it as a much bigger change than they asked for.
     logger.warn('stored snapshot unparseable; deriving the vibe change without its anchor', {

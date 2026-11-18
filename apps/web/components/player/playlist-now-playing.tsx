@@ -151,7 +151,8 @@ export function PlaylistNowPlaying({
       return;
     }
     const removed = removalsByEngagement.get(engagedItems) ?? new Set<string>();
-    removalsByEngagement.set(engagedItems, removed.add(removedTrackId));
+    removed.add(removedTrackId);
+    removalsByEngagement.set(engagedItems, removed);
     removalsChanged();
     playerRef.current.advancePastDeletedTrack(removedTrackId);
   }

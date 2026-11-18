@@ -314,7 +314,10 @@ function applyGenrePicks(
  *  reading, carried by the enum fields, never a word match (ADR 0004). */
 const INSTRUMENTAL_TAG = 'instrumental';
 const VOCALS_TAG = 'with vocals';
-const energyTag = (energy: EnergyLevel) => `${energy} energy`;
+
+function energyTag(energy: EnergyLevel): string {
+  return `${energy} energy`;
+}
 
 function isTag(segment: string, tag: string): boolean {
   return segment.toLowerCase() === tag;
@@ -328,6 +331,11 @@ function isEnergyTag(segment: string): boolean {
 function withTag(segments: readonly string[], tag: string): string {
   const kept = segments.some((segment) => isTag(segment, tag)) ? segments : [...segments, tag];
   return kept.join(', ').slice(0, MAX_STYLE_PROMPT_LENGTH);
+}
+
+/** The negative terms with the anti-vocals steer, added unless one is there. */
+function withVocalsSteer(negativeTerms: string[]): string[] {
+  return negativeTerms.some(isVocalsNegative) ? negativeTerms : [...negativeTerms, 'vocals'];
 }
 
 /**
@@ -358,9 +366,8 @@ function applyVocalPick(
   if (vocal === 'instrumental' && snapshot.vocalMode === 'instrumental') {
     // A model that already obeyed the pick need not carry the anti-vocals
     // steer: on an adjustment it was shown the vocal snapshot's terms.
-    return snapshot.negativeTerms.some(isVocalsNegative)
-      ? snapshot
-      : { ...snapshot, negativeTerms: [...snapshot.negativeTerms, 'vocals'] };
+    const negativeTerms = withVocalsSteer(snapshot.negativeTerms);
+    return negativeTerms === snapshot.negativeTerms ? snapshot : { ...snapshot, negativeTerms };
   }
   if (vocal === 'vocal') {
     // Only the BARE "instrumental" tag is dropped — from the style (whole comma
@@ -384,9 +391,7 @@ function applyVocalPick(
   return {
     ...snapshot,
     vocalMode: 'instrumental',
-    negativeTerms: snapshot.negativeTerms.some(isVocalsNegative)
-      ? snapshot.negativeTerms
-      : [...snapshot.negativeTerms, 'vocals'],
+    negativeTerms: withVocalsSteer(snapshot.negativeTerms),
     stylePrompt: withTag(segments, INSTRUMENTAL_TAG),
     lyricContext: '',
     voiceGender: '',
@@ -402,9 +407,8 @@ function retaggedEnergy(stylePrompt: string, energy: EnergyLevel, append: boolea
   const first = segments.findIndex(isEnergyTag);
   if (first === -1) return append ? withTag(segments, energyTag(energy)) : stylePrompt;
   return segments
-    .flatMap((segment, index) =>
-      index === first ? [energyTag(energy)] : isEnergyTag(segment) ? [] : [segment],
-    )
+    .filter((segment, index) => index === first || !isEnergyTag(segment))
+    .map((segment) => (isEnergyTag(segment) ? energyTag(energy) : segment))
     .join(', ')
     .slice(0, MAX_STYLE_PROMPT_LENGTH);
 }
