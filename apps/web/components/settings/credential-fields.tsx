@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useId, useState } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 import { providerPicker, type LockedModel } from '@/lib/configurable-providers';
 import { segmentedListClass, segmentedTriggerClass } from '@/components/ui/design-system';
@@ -44,13 +44,7 @@ export function ProviderChoice({
         ))}
       </div>
       {picker.moreOptionsHidden ? (
-        <button
-          type="button"
-          onClick={() => setMoreOptionsOpened(true)}
-          className="self-start text-[13px] font-semibold text-muted [-webkit-tap-highlight-color:transparent] hover:text-paper"
-        >
-          More options
-        </button>
+        <TextAction onClick={() => setMoreOptionsOpened(true)}>More options</TextAction>
       ) : null}
     </div>
   );
@@ -76,9 +70,9 @@ export function SecretField({
         {label}
         <div className="flex flex-wrap items-center justify-between gap-2 text-[13.5px] font-normal text-muted">
           <span>Uses your {vendor} key</span>
-          <KeyAction editor={editor} onClick={() => editor.shareKey(false)}>
+          <TextAction disabled={editor.operationPending} onClick={() => editor.shareKey(false)}>
             Use a separate key
-          </KeyAction>
+          </TextAction>
         </div>
       </div>
     );
@@ -101,28 +95,28 @@ export function SecretField({
         />
       </label>
       {editor.canShareKey ? (
-        <KeyAction editor={editor} onClick={() => editor.shareKey(true)}>
+        <TextAction disabled={editor.operationPending} onClick={() => editor.shareKey(true)}>
           Use the same {vendor} key
-        </KeyAction>
+        </TextAction>
       ) : null}
     </div>
   );
 }
 
-function KeyAction({
-  editor,
+function TextAction({
+  disabled,
   onClick,
   children,
 }: {
-  editor: CredentialEditorState;
+  disabled?: boolean;
   onClick: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      disabled={editor.operationPending}
+      disabled={disabled}
       className="self-start text-[13px] font-semibold text-muted [-webkit-tap-highlight-color:transparent] hover:text-paper"
     >
       {children}
@@ -194,7 +188,7 @@ export function ModelField({
   );
 }
 
-function FieldNote({ children }: { children: React.ReactNode }) {
+function FieldNote({ children }: { children: ReactNode }) {
   return (
     <span className="font-mono text-[11px] font-normal tracking-[0.04em] text-dim">{children}</span>
   );

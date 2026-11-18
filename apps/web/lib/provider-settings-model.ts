@@ -72,34 +72,27 @@ export function generatedImageProviderPresentation(input: {
   status: SettingsStatus;
 } {
   const { credential, model } = input;
-  const name = credential
-    ? providerDisplayName('image', credential.providerKey, credential.displayName)
-    : 'Not configured';
   if (!credential?.configured) {
     // A stored row always carries a display name; an env-only selection has none.
-    const saved = credential?.displayName != null;
-    return saved
-      ? {
-          name,
-          configured: false,
-          source: null,
-          model,
-          status: { label: 'Needs a key', tone: 'warn' },
-        }
-      : {
-          name: 'Not configured',
-          configured: false,
-          source: null,
-          model,
-          status: { label: 'Unavailable', tone: 'muted' },
-        };
+    if (credential?.displayName == null) {
+      return {
+        name: 'Not configured',
+        configured: false,
+        source: null,
+        model,
+        status: { label: 'Unavailable', tone: 'muted' },
+      };
+    }
+    return {
+      name: providerDisplayName('image', credential.providerKey, credential.displayName),
+      configured: false,
+      source: null,
+      model,
+      status: { label: 'Needs a key', tone: 'warn' },
+    };
   }
-  const source =
-    credential.source === 'env'
-      ? 'Environment'
-      : credential.source === 'shared'
-        ? `Shared ${name} key`
-        : 'Database';
+  const name = providerDisplayName('image', credential.providerKey, credential.displayName);
+  const source = imageKeySource(credential.source, name);
   const configured =
     configurableProviderMeta('image', credential.providerKey) !== undefined &&
     !credential.decryptError;
@@ -114,6 +107,17 @@ export function generatedImageProviderPresentation(input: {
         ? { label: 'Environment', tone: 'ok' }
         : { label: 'Configured', tone: 'ok' },
   };
+}
+
+function imageKeySource(source: CredentialSource | null, name: string): string {
+  switch (source) {
+    case 'env':
+      return 'Environment';
+    case 'shared':
+      return `Shared ${name} key`;
+    default:
+      return 'Database';
+  }
 }
 
 export function requiresProviderReplacementConfirmation(input: {

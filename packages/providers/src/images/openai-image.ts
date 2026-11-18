@@ -91,20 +91,19 @@ export function openAiImageProvider(config: OpenAiImageConfig): GeneratedImagePr
       headers: authHeaders,
     },
     async paint({ prompt, references, quality }) {
-      const body: Record<string, unknown> = {
+      const edit = references.length > 0;
+      const body = {
         model,
         prompt,
         size: '1024x1024',
         // `auto` lets the model pick the tier, and with it the price.
         quality: quality === 'high' ? 'high' : 'medium',
         n: 1,
+        ...(edit
+          ? { images: references.map((reference) => ({ image_url: referenceDataUrl(reference) })) }
+          : {}),
       };
-      if (references.length > 0) {
-        body.images = references.map((reference) => ({
-          image_url: referenceDataUrl(reference),
-        }));
-      }
-      const endpoint = references.length > 0 ? 'images/edits' : 'images/generations';
+      const endpoint = edit ? 'images/edits' : 'images/generations';
       const payload = await submitGeneratedImageRequest(
         fetchImpl,
         `${OPENAI_IMAGES_BASE_URL}/${endpoint}`,
