@@ -4,9 +4,9 @@
 
 'use client';
 
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import { cn } from '@/lib/cn';
-import type { LockedModel } from '@/lib/configurable-providers';
+import { providerPicker, type LockedModel } from '@/lib/configurable-providers';
 import { segmentedListClass, segmentedTriggerClass } from '@/components/ui/design-system';
 import { inputClass, labelClass } from '@/components/ui/form-styles';
 import type { CredentialEditorState, ProviderOption } from './use-credential-editor';
@@ -18,12 +18,14 @@ export function ProviderChoice({
   editor: CredentialEditorState;
   options: readonly ProviderOption[];
 }) {
+  const [moreOptionsOpened, setMoreOptionsOpened] = useState(false);
   if (options.length <= 1) return null;
+  const picker = providerPicker(options, { selectedKey: editor.providerKey, moreOptionsOpened });
   return (
     <div className={labelClass}>
       <span>Provider</span>
       <div className={cn(segmentedListClass, 'overflow-x-auto')} role="group">
-        {options.map((option) => (
+        {picker.shown.map((option) => (
           <button
             key={option.value}
             type="button"
@@ -37,6 +39,15 @@ export function ProviderChoice({
           </button>
         ))}
       </div>
+      {picker.moreOptionsHidden ? (
+        <button
+          type="button"
+          onClick={() => setMoreOptionsOpened(true)}
+          className="self-start text-[13px] font-semibold text-muted [-webkit-tap-highlight-color:transparent] hover:text-paper"
+        >
+          More options
+        </button>
+      ) : null}
     </div>
   );
 }

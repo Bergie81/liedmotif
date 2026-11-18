@@ -23,6 +23,7 @@ export interface ProviderOption {
   defaultModel?: string;
   listsModels?: boolean;
   baseUrlPlaceholder?: string;
+  behindMoreOptions?: boolean;
 }
 
 export interface CredentialEditorProps {

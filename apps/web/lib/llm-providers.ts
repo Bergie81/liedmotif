@@ -20,8 +20,11 @@ export interface LlmProviderMeta {
   listsModels?: boolean;
   /** Example base URL shown in an empty base-URL field. */
   baseUrlPlaceholder?: string;
+  /** The provider picker lists this preset only once More options is opened. */
+  behindMoreOptions?: boolean;
 }
 
+/** In picker order: the list position is where the preset appears in the picker. */
 export const LLM_PROVIDERS: readonly LlmProviderMeta[] = [
   {
     value: 'openai',
@@ -30,8 +33,6 @@ export const LLM_PROVIDERS: readonly LlmProviderMeta[] = [
     needsBaseUrl: false,
     defaultModel: OPENAI_DEFAULT_LLM_MODEL,
   },
-  { value: 'openrouter', label: 'OpenRouter', needsKey: true, needsBaseUrl: false },
-  { value: 'openai-compatible', label: 'OpenAI-compatible', needsKey: true, needsBaseUrl: true },
   {
     value: 'ollama',
     label: 'Ollama',
@@ -40,6 +41,20 @@ export const LLM_PROVIDERS: readonly LlmProviderMeta[] = [
     listsModels: true,
     // Same-machine Ollama as the Docker deployment reaches it; `localhost` natively.
     baseUrlPlaceholder: 'http://host.docker.internal:11434',
+  },
+  {
+    value: 'openrouter',
+    label: 'OpenRouter',
+    needsKey: true,
+    needsBaseUrl: false,
+    behindMoreOptions: true,
+  },
+  {
+    value: 'openai-compatible',
+    label: 'OpenAI-compatible',
+    needsKey: true,
+    needsBaseUrl: true,
+    behindMoreOptions: true,
   },
 ];
 

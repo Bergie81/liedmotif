@@ -107,13 +107,30 @@ describe('onboarding text-LLM step', () => {
     expect(markup).toContain('Save and continue');
   });
 
-  it('offers every text-LLM preset, with the resolved one selected', () => {
+  const providerButtons = (markup: string) =>
+    [...markup.matchAll(/data-state="(?:active|inactive)"[^>]*>([^<]+)<\/button>/g)].map(
+      (match) => match[1],
+    );
+
+  it('starts a new install on OpenAI, with the advanced presets behind More options', () => {
+    const markup = renderLlm({ ...openRouter, providerKey: 'openai', displayName: 'OpenAI' });
+
+    expect(providerButtons(markup)).toEqual(['OpenAI', 'Ollama']);
+    expect(markup).toMatch(/data-state="active"[^>]*>OpenAI</);
+    expect(markup).toMatch(/<button[^>]*>More options<\/button>/);
+  });
+
+  it('shows and selects a stored preset that sits behind More options', () => {
     const markup = renderLlm(openRouter);
 
-    for (const label of ['OpenAI', 'OpenRouter', 'OpenAI-compatible', 'Ollama']) {
-      expect(markup).toContain(label);
-    }
-    expect(markup).toMatch(/data-state="active"[^>]*>OpenRouter/);
+    expect(providerButtons(markup)).toEqual([
+      'OpenAI',
+      'Ollama',
+      'OpenRouter',
+      'OpenAI-compatible',
+    ]);
+    expect(markup).toMatch(/data-state="active"[^>]*>OpenRouter</);
+    expect(markup).not.toContain('More options');
   });
 
   it('reports the environment as the source and offers no skip it cannot honour', () => {
