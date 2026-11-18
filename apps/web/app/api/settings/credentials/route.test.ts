@@ -260,6 +260,33 @@ describe('provider credential writes', () => {
     expect(await response.json()).toEqual({ ok: true });
   });
 
+  it('accepts OpenAI for Cover images without a model, so its default model applies', async () => {
+    mocks.encryptionKey.mockReturnValue(Buffer.alloc(32));
+    const response = await POST(
+      new Request('http://localhost/api/settings/credentials', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ providerType: 'image', providerKey: 'openai', secret: 'sk-proj-1' }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.upsert).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        providerType: 'image',
+        providerKey: 'openai',
+        secret: 'sk-proj-1',
+      }),
+    );
+    expect(mocks.upsert).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.not.objectContaining({
+        config: expect.objectContaining({ model: expect.anything() }),
+      }),
+    );
+  });
+
   it('refuses an image save with no key anywhere', async () => {
     mocks.encryptionKey.mockReturnValue(Buffer.alloc(32));
     const response = await POST(

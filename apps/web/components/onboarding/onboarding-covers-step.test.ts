@@ -58,6 +58,16 @@ describe('onboarding covers step image key', () => {
     );
   });
 
+  it('asks a new install for an OpenAI key, without the OpenRouter guide', () => {
+    const markup = renderCovers({
+      imageConnected: false,
+      credential: { ...openRouter, providerKey: 'openai', displayName: 'OpenAI' },
+    });
+    expect(markup).toContain('OpenAI API key');
+    expect(markup).not.toContain('Where do I get an OpenRouter key?');
+    expect(renderCovers({ imageConnected: false })).toContain('Where do I get an OpenRouter key?');
+  });
+
   it('offers the image model prefilled, and locks it while IMAGE_MODEL sets it', () => {
     const editable = renderCovers({
       imageConnected: false,

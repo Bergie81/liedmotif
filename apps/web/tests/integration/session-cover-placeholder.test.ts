@@ -13,6 +13,7 @@ import {
 } from '@liedmotif/db';
 import { eq } from 'drizzle-orm';
 import {
+  generatedCoverModel,
   generatedCoverProviderConfigured,
   initialSessionCoverId,
   sunoCoverFallbackConfigured,
@@ -103,6 +104,29 @@ describe.skipIf(skip)('generatedCoverProviderConfigured', () => {
   it('treats an unknown provider as not configured', async () => {
     // An unknown key fails the worker at boot — no generated cover is coming.
     expect(await configured({ IMAGE_PROVIDER: 'dall-e', IMAGE_API_KEY: 'k' })).toBe(false);
+  });
+});
+
+describe.skipIf(skip)('generatedCoverModel', () => {
+  const model = (vars: Record<string, string>) => generatedCoverModel(vars as NodeJS.ProcessEnv);
+
+  it("names the selected provider's default model when none is set", async () => {
+    expect(await model({ IMAGE_PROVIDER: 'openai', IMAGE_API_KEY: 'k' })).toBe(
+      'gpt-image-2.6-flare',
+    );
+    expect(await model({ IMAGE_PROVIDER: 'openrouter', IMAGE_API_KEY: 'k' })).toBe(
+      'google/gemini-3.1-flash-image',
+    );
+  });
+
+  it('names the model IMAGE_MODEL sets', async () => {
+    expect(
+      await model({
+        IMAGE_PROVIDER: 'openai',
+        IMAGE_API_KEY: 'k',
+        IMAGE_MODEL: 'gpt-image-2.5-flare',
+      }),
+    ).toBe('gpt-image-2.5-flare');
   });
 });
 

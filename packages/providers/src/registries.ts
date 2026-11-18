@@ -21,6 +21,7 @@ import {
   parseOpenRouterImageParams,
   type GeneratedImageProvider,
 } from './images/generated';
+import { openAiImageProvider } from './images/openai-image';
 import { sunoCoverImageProvider } from './images/suno-cover';
 import type { MusicProvider } from './music/index';
 import type { LlmProvider } from './llm/index';
@@ -228,9 +229,9 @@ export function buildLlmProvider(config: LlmRuntimeConfig | null): LlmProvider |
 
 // --- Image (cover art) ------------------------------------------------------
 
-const IMAGE_PROVIDER_SELECTIONS = ['openrouter'] as const;
+const IMAGE_PROVIDER_SELECTIONS = ['openai', 'openrouter'] as const;
 
-/** The generated-cover presets: `openrouter` is the only one. */
+/** The generated-cover presets. */
 export type ImageProviderSelection = (typeof IMAGE_PROVIDER_SELECTIONS)[number];
 
 /**
@@ -256,10 +257,11 @@ export interface GeneratedImageRuntimeConfig {
   providerKey: string;
   apiKey?: string;
   model?: string;
+  requestTimeoutMs?: number;
+  /** OpenRouter only, like `resolution`, `aspectRatio` and `supportedParams`. */
   baseUrl?: string;
   resolution?: string;
   aspectRatio?: string;
-  requestTimeoutMs?: number;
   /** Operator assertion for discovery outages. It can only narrow a discovered
    * endpoint descriptor; unknown names are dropped. */
   supportedParams?: string;
@@ -275,21 +277,31 @@ export function buildGeneratedImageProvider(
   config: GeneratedImageRuntimeConfig | null,
 ): GeneratedImageProvider | null {
   if (!config) return null;
-  if (config.providerKey !== 'openrouter') {
-    throw new Error(`Unknown image provider: ${String(config.providerKey)}`);
-  }
+  const selection = imageProviderSelection(config.providerKey);
+  if (!selection) throw new Error(`Unknown image provider: ${String(config.providerKey)}`);
   const apiKey = config.apiKey?.trim();
   if (!apiKey) return null;
-  const supportedParams = parseOpenRouterImageParams(config.supportedParams);
-  return openRouterImageProvider({
+  const common = {
     apiKey,
     ...(config.model?.trim() ? { model: config.model.trim() } : {}),
-    ...(config.baseUrl?.trim() ? { baseUrl: config.baseUrl.trim() } : {}),
-    ...(config.resolution?.trim() ? { resolution: config.resolution.trim() } : {}),
-    ...(config.aspectRatio?.trim() ? { aspectRatio: config.aspectRatio.trim() } : {}),
     ...(config.requestTimeoutMs != null ? { requestTimeoutMs: config.requestTimeoutMs } : {}),
-    ...(supportedParams ? { capabilityAssertion: { supportedParameters: supportedParams } } : {}),
-  });
+  };
+  switch (selection) {
+    case 'openai':
+      return openAiImageProvider(common);
+    case 'openrouter': {
+      const supportedParams = parseOpenRouterImageParams(config.supportedParams);
+      return openRouterImageProvider({
+        ...common,
+        ...(config.baseUrl?.trim() ? { baseUrl: config.baseUrl.trim() } : {}),
+        ...(config.resolution?.trim() ? { resolution: config.resolution.trim() } : {}),
+        ...(config.aspectRatio?.trim() ? { aspectRatio: config.aspectRatio.trim() } : {}),
+        ...(supportedParams
+          ? { capabilityAssertion: { supportedParameters: supportedParams } }
+          : {}),
+      });
+    }
+  }
 }
 
 /**

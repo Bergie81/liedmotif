@@ -96,6 +96,7 @@ function CoversStepBody({
   // whenever it is configured, so the explainer must not promise the placeholder.
   const withoutImageModel = coverSource({ ...sourceInput, tailoredCoverArtEnabled: false });
   const busy = saving || editor.operationPending;
+  const keyProvider = editor.selected?.label ?? credential.displayName;
   // A changed model alone is saved only beside a key that already resolves: the
   // credentials route refuses a model with no key anywhere.
   const modelChanged = editor.model.trim() !== (initialModel ?? '');
@@ -153,9 +154,9 @@ function CoversStepBody({
               environmentVariable="IMAGE_API_KEY"
               showModel
               lockedModel={lockedModel}
-              providerLabel={`The ${credential.displayName} image key`}
-              keyLabel={`${credential.displayName} API key`}
-              keyPlaceholder="sk-or-…"
+              providerLabel={`The ${keyProvider} image key`}
+              keyLabel={`${keyProvider} API key`}
+              keyPlaceholder="sk-…"
               testLabel={
                 credential.environmentManaged
                   ? 'Test the configured key and model'
@@ -165,7 +166,7 @@ function CoversStepBody({
               encryptionKeyConfigured={encryptionKeyConfigured}
             />
           </OnboardingCard>
-          {credential.environmentManaged ? null : (
+          {credential.environmentManaged || editor.providerKey !== 'openrouter' ? null : (
             <OpenRouterKeyHowTo note="Already added an OpenRouter key for the Text AI? The same key works here." />
           )}
         </>

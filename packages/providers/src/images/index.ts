@@ -27,4 +27,9 @@ export {
   type OpenRouterImageConfig,
   type OpenRouterImageParam,
 } from './generated';
+export {
+  openAiImageProvider,
+  OPENAI_IMAGES_BASE_URL,
+  type OpenAiImageConfig,
+} from './openai-image';
 export { sunoCoverImageProvider, type SunoCoverImageConfig } from './suno-cover';

@@ -188,6 +188,16 @@ export async function validateCredential(
     );
   }
 
+  if (input.providerType === 'image' && input.providerKey === 'openai') {
+    if (!secret) return result('misconfigured');
+    return validateOpenAi(input.model?.trim() || undefined, {
+      base: OPENAI_DEFAULT_BASE_URL,
+      secret,
+      fetchImpl,
+      timeoutMs,
+    });
+  }
+
   // Storage has no remote probe, so it lands here with every unsupported provider.
   return result('misconfigured');
 }
@@ -219,6 +229,21 @@ async function validateOpenRouter(
   );
   if ('error' in res) return result('unreachable');
   if (res.status === 404) return result('unknown_model');
+  return fromStatus(res.status);
+}
+
+/**
+ * An OpenAI key, and the model when one is given. Retrieving one model
+ * authenticates the key too: 401 for the key, 404 for the model.
+ */
+async function validateOpenAi(
+  model: string | undefined,
+  ctx: { base: string; secret: string; fetchImpl: typeof fetch; timeoutMs: number },
+): Promise<CredentialValidationResult> {
+  const url = model ? `${ctx.base}/models/${encodeURIComponent(model)}` : `${ctx.base}/models`;
+  const res = await probe(url, ctx);
+  if ('error' in res) return result('unreachable');
+  if (model && res.status === 404) return result('unknown_model');
   return fromStatus(res.status);
 }
 
@@ -261,13 +286,11 @@ async function validateLlm(
     }
     case 'openai': {
       if (!ctx.secret) return result('misconfigured');
-      const base = trimBaseUrl(input.baseUrl?.trim() || OPENAI_DEFAULT_BASE_URL);
-      // Retrieving one model authenticates the key too: 401 for the key, 404 for the model.
-      const url = model ? `${base}/models/${encodeURIComponent(model)}` : `${base}/models`;
-      const res = await probe(url, ctx);
-      if ('error' in res) return result('unreachable');
-      if (model && res.status === 404) return result('unknown_model');
-      return fromStatus(res.status);
+      return validateOpenAi(model, {
+        ...ctx,
+        base: trimBaseUrl(input.baseUrl?.trim() || OPENAI_DEFAULT_BASE_URL),
+        secret: ctx.secret,
+      });
     }
     case 'openrouter': {
       if (!ctx.secret) return result('misconfigured');

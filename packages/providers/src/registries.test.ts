@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildLlmProvider, buildMusicProvider, musicTracksPerRequest } from './registries';
+import {
+  buildGeneratedImageProvider,
+  buildLlmProvider,
+  buildMusicProvider,
+  imageProviderSelection,
+  musicTracksPerRequest,
+} from './registries';
 
 describe('buildMusicProvider', () => {
   it('selects the mock provider by default', () => {
@@ -91,5 +97,49 @@ describe('buildLlmProvider', () => {
     expect(() =>
       buildLlmProvider({ providerKey: 'opnrouter' as never, model: 'm', apiKey: 'k' }),
     ).toThrow(/unknown/i);
+  });
+});
+
+describe('buildGeneratedImageProvider', () => {
+  it('builds the OpenAI adapter with its default model, or the configured one', () => {
+    const preset = buildGeneratedImageProvider({ providerKey: 'openai', apiKey: 'sk-proj-1' });
+    expect(preset).toMatchObject({ providerKey: 'openai', model: 'gpt-image-2.6-flare' });
+    const configured = buildGeneratedImageProvider({
+      providerKey: 'openai',
+      apiKey: 'sk-proj-1',
+      model: ' gpt-image-2.5-flare ',
+    });
+    expect(configured?.model).toBe('gpt-image-2.5-flare');
+  });
+
+  it('builds the OpenRouter adapter with its default model', () => {
+    const provider = buildGeneratedImageProvider({ providerKey: 'openrouter', apiKey: 'sk-or-1' });
+    expect(provider).toMatchObject({
+      providerKey: 'openrouter',
+      model: 'google/gemini-3.1-flash-image',
+    });
+  });
+
+  it('builds nothing when no key resolves, so Covers fall back', () => {
+    expect(buildGeneratedImageProvider(null)).toBeNull();
+    expect(buildGeneratedImageProvider({ providerKey: 'openai' })).toBeNull();
+    expect(buildGeneratedImageProvider({ providerKey: 'openai', apiKey: '  ' })).toBeNull();
+    expect(buildGeneratedImageProvider({ providerKey: 'openrouter' })).toBeNull();
+  });
+
+  it('throws on an unknown provider name, with or without a key', () => {
+    expect(() => buildGeneratedImageProvider({ providerKey: 'dall-e', apiKey: 'k' })).toThrow(
+      /dall-e/,
+    );
+    expect(() => buildGeneratedImageProvider({ providerKey: 'dall-e' })).toThrow(/dall-e/);
+  });
+});
+
+describe('imageProviderSelection', () => {
+  it('accepts openai and openrouter, names none when blank, and refuses a typo', () => {
+    expect(imageProviderSelection(' openai ')).toBe('openai');
+    expect(imageProviderSelection('openrouter')).toBe('openrouter');
+    expect(imageProviderSelection('  ')).toBeNull();
+    expect(() => imageProviderSelection('opneai')).toThrow(/opneai/);
   });
 });

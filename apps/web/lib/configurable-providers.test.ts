@@ -86,14 +86,31 @@ describe('providerPicker', () => {
     expect(picker.moreOptionsHidden).toBe(false);
   });
 
-  it('offers no More options when the Cover provider is the only preset', () => {
+  it('shows OpenAI for Cover images and keeps OpenRouter behind More options', () => {
+    const picker = providerPicker(IMAGE_PROVIDERS, {
+      selectedKey: 'openai',
+      loadedKey: 'openai',
+      moreOptionsOpened: false,
+    });
+
+    expect(labels(picker.shown)).toEqual(['OpenAI']);
+    expect(picker.moreOptionsHidden).toBe(true);
+    expect(IMAGE_PROVIDERS[0]).toMatchObject({
+      value: 'openai',
+      needsKey: true,
+      needsBaseUrl: false,
+      defaultModel: 'gpt-image-2.6-flare',
+    });
+  });
+
+  it('keeps an Instance stored on OpenRouter Covers shown and selected', () => {
     const picker = providerPicker(IMAGE_PROVIDERS, {
       selectedKey: 'openrouter',
       loadedKey: 'openrouter',
       moreOptionsOpened: false,
     });
 
-    expect(labels(picker.shown)).toEqual(['OpenRouter']);
+    expect(labels(picker.shown)).toEqual(['OpenAI', 'OpenRouter']);
     expect(picker.moreOptionsHidden).toBe(false);
   });
 });

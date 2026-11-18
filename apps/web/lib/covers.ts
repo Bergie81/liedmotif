@@ -19,6 +19,7 @@ import {
   type CoverStyleChoice,
   type PlaylistCoverStyleChoice,
 } from '@liedmotif/shared';
+import { configurableProviderMeta } from '@/lib/configurable-providers';
 import { encryptionKeyIfConfigured } from '@/lib/credentials';
 import { getDb } from '@/lib/db';
 import { getMusicProvider } from '@/lib/providers';
@@ -55,10 +56,13 @@ export async function generatedCoverProviderConfigured(
  */
 export async function generatedCoverModel(env: NodeJS.ProcessEnv = process.env): Promise<string> {
   const credential = await resolveProviderCredential(getDb(), { providerType: 'image', env });
-  const settings = credential
-    ? resolveProviderSettings('image', credential.providerKey, credential.config, env)
-    : {};
-  return settings.model ?? OPENROUTER_DEFAULT_COVER_MODEL;
+  if (!credential) return OPENROUTER_DEFAULT_COVER_MODEL;
+  const settings = resolveProviderSettings('image', credential.providerKey, credential.config, env);
+  return (
+    settings.model ??
+    configurableProviderMeta('image', credential.providerKey)?.defaultModel ??
+    OPENROUTER_DEFAULT_COVER_MODEL
+  );
 }
 
 /**

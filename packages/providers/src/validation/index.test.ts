@@ -479,6 +479,54 @@ describe('validateCredential — image/openrouter (the free key check, never a g
   });
 });
 
+describe('validateCredential — image/openai (free model lookups, never a generation)', () => {
+  it('retrieves the image model with the bearer key', async () => {
+    const { impl, calls } = stubFetch(200, { id: 'gpt-image-2.6-flare', object: 'model' });
+    const result = await validateCredential({
+      providerType: 'image',
+      providerKey: 'openai',
+      secret: 'sk-proj-img',
+      model: ' gpt-image-2.6-flare ',
+      fetchImpl: impl,
+    });
+    expect(result.ok).toBe(true);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.url).toBe('https://api.openai.com/v1/models/gpt-image-2.6-flare');
+    expect(calls[0]?.headers.authorization).toBe('Bearer sk-proj-img');
+  });
+
+  it('tells a bad key from a model the key cannot see', async () => {
+    const unauthorized = await validateCredential({
+      providerType: 'image',
+      providerKey: 'openai',
+      secret: 'sk-wrong',
+      model: 'gpt-image-2.6-flare',
+      fetchImpl: stubFetch(401).impl,
+    });
+    expect(unauthorized.reason).toBe('unauthorized');
+    const unknown = await validateCredential({
+      providerType: 'image',
+      providerKey: 'openai',
+      secret: 'sk-proj-img',
+      model: 'gpt-image-9',
+      fetchImpl: stubFetch(404).impl,
+    });
+    expect(unknown).toMatchObject({ ok: false, reason: 'unknown_model' });
+  });
+
+  it('flags a missing key as misconfigured before any network call', async () => {
+    const { impl, calls } = stubFetch(200);
+    const result = await validateCredential({
+      providerType: 'image',
+      providerKey: 'openai',
+      model: 'gpt-image-2.6-flare',
+      fetchImpl: impl,
+    });
+    expect(result.reason).toBe('misconfigured');
+    expect(calls).toHaveLength(0);
+  });
+});
+
 describe('validateCredential — unsupported requirement', () => {
   it('reports misconfigured for a provider it cannot validate', async () => {
     const result = await validateCredential({

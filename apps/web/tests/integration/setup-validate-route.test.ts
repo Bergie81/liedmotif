@@ -287,6 +287,31 @@ describe.skipIf(skip)('POST /api/setup/validate credential fallback', () => {
     expect(probeCalls[0]!.authorization).toBe('Bearer env-image-key');
   });
 
+  it('tests an OpenAI Cover key and its default image model with a free model lookup', async () => {
+    vi.stubEnv('IMAGE_PROVIDER', 'openai');
+    vi.stubEnv('IMAGE_API_KEY', 'env-openai-image-key');
+    stubProbeFetch(200, { id: 'gpt-image-2.6-flare', object: 'model' });
+    const res = await postJson({ providerType: 'image', providerKey: 'openai' });
+    expect(await res.json()).toMatchObject({ ok: true, reason: 'ok' });
+    expect(probeCalls).toEqual([
+      {
+        url: 'https://api.openai.com/v1/models/gpt-image-2.6-flare',
+        authorization: 'Bearer env-openai-image-key',
+      },
+    ]);
+
+    stubProbeFetch(404, {
+      error: { message: 'The model does not exist', code: 'model_not_found' },
+    });
+    const missing = await postJson({
+      providerType: 'image',
+      providerKey: 'openai',
+      secret: 'typed-key',
+      model: 'gpt-image-9',
+    });
+    expect(await missing.json()).toMatchObject({ ok: false, reason: 'unknown_model' });
+  });
+
   it('applies the SSRF guard to a base URL resolved from stored config', async () => {
     await upsertProviderCredential(testDb.db, {
       providerType: 'llm',

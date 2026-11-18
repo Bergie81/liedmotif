@@ -114,6 +114,10 @@ export type CoverStylePreset = (typeof COVER_STYLE_PRESETS)[number];
  *  nor the model saved with the image key names one; the UI's model-field default. */
 export const OPENROUTER_DEFAULT_COVER_MODEL = 'google/gemini-3.1-flash-image';
 
+/** The OpenAI image model a generated cover uses when neither `IMAGE_MODEL` nor
+ *  the model saved with the image key names one; the UI's model-field default. */
+export const OPENAI_DEFAULT_COVER_MODEL = 'gpt-image-2.6-flare';
+
 /**
  * The one cover thumbnail edge the byte route serves (`?w=`): list/grid tiles
  * render at 42–64 CSS px, so 160 covers ≥2.5× DPR while cutting the 1024²
