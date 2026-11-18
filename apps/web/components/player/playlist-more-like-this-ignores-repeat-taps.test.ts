@@ -18,6 +18,8 @@ import {
 } from './playback-controller-api';
 import type { LivePlayback } from './player-provider';
 import { PlaylistNowPlaying } from './playlist-now-playing';
+import { closeCreationRefusal, shownCreationRefusal } from '@/components/create/creation-refusal';
+import { shownToasts, toast } from '@/lib/toast';
 
 const api = vi.hoisted(() => ({ moreLikeThis: vi.fn() }));
 
@@ -60,6 +62,8 @@ beforeAll(() => {
 afterEach(() => {
   cleanup();
   api.moreLikeThis.mockReset();
+  closeCreationRefusal();
+  toast.dismiss();
 });
 
 const TIMESTAMP = '2026-11-07T10:00:00.000Z';
@@ -150,4 +154,18 @@ it('sends one More Like This while the first is still in flight', async () => {
   await tapMoreLikeThis();
 
   expect(api.moreLikeThis).toHaveBeenCalledTimes(2);
+});
+
+it('opens the blocked dialog, not an error, when the new Session has no headroom', async () => {
+  const message = 'A new Session needs 5 Tracks; you have 4 left today.';
+  api.moreLikeThis.mockResolvedValue({
+    ok: false,
+    error: { code: 'session_headroom_blocked', message, retryable: false },
+  });
+  showPlaylist();
+
+  await tapMoreLikeThis();
+
+  expect(shownCreationRefusal()).toEqual({ kind: 'headroom', message });
+  expect(shownToasts()).toEqual([]);
 });

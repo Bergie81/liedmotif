@@ -6,22 +6,24 @@
 // settings with nothing to adjust.
 
 import { createElement as h } from 'react';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AppChromeContext, type AppChromeContextValue } from '@/components/app-chrome-context';
 
 const push = vi.hoisted(() => vi.fn());
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
 
-const { CreationBlockedDialog } = await import('./creation-blocked-dialog');
+const { CreationBlockedDialog, CreationRefusalHost } = await import('./creation-blocked-dialog');
+const { closeCreationRefusal, presentCreationFailure } = await import('./creation-refusal');
 
 afterEach(() => {
   cleanup();
   push.mockReset();
+  act(() => closeCreationRefusal());
 });
 
-function renderDialog(viewerRole: AppChromeContextValue['viewerRole']): HTMLElement {
-  const chrome: AppChromeContextValue = {
+function chromeFor(viewerRole: AppChromeContextValue['viewerRole']): AppChromeContextValue {
+  return {
     listener: { name: 'Test', email: 'test@example.test', artistName: null, imageUrl: null },
     viewerRole,
     ownVoiceOffered: false,
@@ -29,15 +31,65 @@ function renderDialog(viewerRole: AppChromeContextValue['viewerRole']): HTMLElem
     onToggleThemeMode: () => {},
     fetchChrome: () => new Promise(() => {}),
   };
+}
+
+function renderDialog(viewerRole: AppChromeContextValue['viewerRole']): HTMLElement {
   render(
     h(
       AppChromeContext.Provider,
-      { value: chrome },
-      h(CreationBlockedDialog, { open: true, onOpenChange: () => {}, message: 'Budget used up.' }),
+      { value: chromeFor(viewerRole) },
+      h(CreationBlockedDialog, {
+        open: true,
+        onOpenChange: () => {},
+        refusal: { kind: 'headroom', message: 'Budget used up.' },
+      }),
     ),
   );
   return screen.getByTestId('creation-blocked-dialog');
 }
+
+describe('creation-blocked dialog title', () => {
+  it('titles a headroom refusal by what is short', () => {
+    const dialog = renderDialog('admin');
+    expect(within(dialog).getByRole('heading').textContent).toBe('Not enough Tracks left to start');
+  });
+});
+
+// One presenter decides what a refused creation shows, wherever it was tapped.
+describe('presentCreationFailure', () => {
+  function renderHost() {
+    render(h(AppChromeContext.Provider, { value: chromeFor('admin') }, h(CreationRefusalHost)));
+  }
+
+  it('opens the blocked dialog, with its ways out, for a headroom refusal', () => {
+    renderHost();
+    let inline: string | null = 'unset';
+    act(() => {
+      inline = presentCreationFailure(
+        { code: 'session_headroom_blocked', message: 'A new Session needs 5 Tracks.' },
+        'More Like This didn’t start',
+      );
+    });
+    expect(inline).toBeNull();
+    const dialog = screen.getByTestId('creation-blocked-dialog');
+    expect(within(dialog).getByText('A new Session needs 5 Tracks.')).toBeTruthy();
+    expect(within(dialog).getByRole('button', { name: /Resume a Session/ })).toBeTruthy();
+    expect(within(dialog).getByRole('button', { name: /Browse Library/ })).toBeTruthy();
+  });
+
+  it('hands any other failure back as its line of text, with no dialog', () => {
+    renderHost();
+    let inline: string | null = null;
+    act(() => {
+      inline = presentCreationFailure(
+        { code: 'not_found', message: 'Track not found.' },
+        'More Like This didn’t start',
+      );
+    });
+    expect(inline).toBe('More Like This didn’t start: Track not found.');
+    expect(screen.queryByTestId('creation-blocked-dialog')).toBeNull();
+  });
+});
 
 describe('creation-blocked dialog settings way out', () => {
   it('sends the Admin to cost limits', () => {

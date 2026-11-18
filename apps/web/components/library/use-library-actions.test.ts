@@ -10,16 +10,21 @@ import type { LibraryTrackItem, TrackFlags } from '@liedmotif/shared';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { captureFetches } from '@/tests/helpers/capture-fetches';
 import { shownToasts, toast } from '@/lib/toast';
+import { closeCreationRefusal, shownCreationRefusal } from '@/components/create/creation-refusal';
+import type { SeedRefusal } from '@/components/sessions/use-seed-more-like-this';
 import { useLibraryActions } from './use-library-actions';
 
 // More Like This needs a router and the player provider; retention writes do not.
+const seed = vi.hoisted(() => ({ refusal: null as SeedRefusal | null }));
 vi.mock('@/components/sessions/use-seed-more-like-this', () => ({
-  useSeedMoreLikeThis: () => async () => null,
+  useSeedMoreLikeThis: () => async () => seed.refusal,
 }));
 
 afterEach(() => {
   cleanup();
   toast.dismiss();
+  closeCreationRefusal();
+  seed.refusal = null;
   vi.unstubAllGlobals();
 });
 
@@ -156,6 +161,34 @@ describe('useLibraryActions failures', () => {
 
     expect(shownToasts()).toEqual([
       expect.objectContaining({ tone: 'error', message: 'Delete failed: Track not found.' }),
+    ]);
+  });
+});
+
+describe('useLibraryActions More Like This', () => {
+  it('opens the blocked dialog, not an error, when there is no headroom', async () => {
+    const message = 'A new Session needs 5 Tracks; you have 4 left today.';
+    seed.refusal = { code: 'session_headroom_blocked', message };
+    const { result } = renderActions();
+
+    await act(() => result.current.seedMoreLikeThis(filedTrack()));
+
+    expect(shownCreationRefusal()).toEqual({ kind: 'headroom', message });
+    expect(shownToasts()).toEqual([]);
+  });
+
+  it('keeps any other refusal an error notification', async () => {
+    seed.refusal = { code: 'not_found', message: 'Track not found.' };
+    const { result } = renderActions();
+
+    await act(() => result.current.seedMoreLikeThis(filedTrack()));
+
+    expect(shownCreationRefusal()).toBeNull();
+    expect(shownToasts()).toEqual([
+      expect.objectContaining({
+        tone: 'error',
+        message: 'More Like This didn’t start: Track not found.',
+      }),
     ]);
   });
 });

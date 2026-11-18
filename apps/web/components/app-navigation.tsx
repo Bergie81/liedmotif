@@ -27,7 +27,10 @@ import { AccountMenu, type Listener } from './account-menu';
 import {
   deriveGenerationHeadroom,
   getPrimaryNavDestination,
+  HEADROOM_PERIOD,
+  headroomLine,
   PRIMARY_NAV_ITEMS,
+  trackNoun,
   type PrimaryNavItem,
 } from './app-shell-model';
 import { OfflineBadge } from './offline-badge';
@@ -57,12 +60,6 @@ const NAV_ICONS: Record<PrimaryNavItem['icon'], ComponentType<{ className?: stri
 };
 
 type GenerationHeadroom = NonNullable<ReturnType<typeof deriveGenerationHeadroom>>;
-
-const HEADROOM_PERIODS: Record<GenerationHeadroom['window'], string> = {
-  day: ' today',
-  month: ' this month',
-  total: '',
-};
 
 export function PrimaryNavigation({
   pathname,
@@ -203,8 +200,8 @@ export function HeadroomLink({
   // The figure is whichever window binds, so the readout names that window: a
   // month-bound number is not what is left today, and a One-time total is left
   // for good.
-  const period = HEADROOM_PERIODS[headroom.window];
-  const label = `Generation headroom: ${headroom.remainingTracks} Tracks left${period}`;
+  const unitLine = `${trackNoun(headroom.remainingTracks)} left${HEADROOM_PERIOD[headroom.window]}`;
+  const label = `Generation headroom: ${headroomLine(headroom)}`;
 
   if (compact) {
     return (
@@ -221,7 +218,7 @@ export function HeadroomLink({
         <b className={cn('font-bold', headroom.critical ? 'text-warn' : 'text-paper')}>
           {headroom.remainingTracks}
         </b>
-        Tracks left{period}
+        {unitLine}
       </Link>
     );
   }
@@ -243,7 +240,7 @@ export function HeadroomLink({
         <b className={cn('font-bold', headroom.critical ? 'text-warn' : 'text-paper')}>
           {headroom.remainingTracks}
         </b>
-        <span className="hidden rail-exp:inline">Tracks left{period}</span>
+        <span className="hidden rail-exp:inline">{unitLine}</span>
       </div>
       <Meter
         label={label}

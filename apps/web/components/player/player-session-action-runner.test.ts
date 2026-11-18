@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { closeCreationRefusal, shownCreationRefusal } from '@/components/create/creation-refusal';
 import {
   runPlayerSessionAction,
   type PlayerSessionActionGate,
@@ -78,5 +79,43 @@ describe('player Session action runner', () => {
     expect(duplicate).toBe(false);
     expect(await first).toBe(true);
     expect(request).toHaveBeenCalledTimes(1);
+  });
+
+  // A creating action refused for headroom shows the blocked dialog with its
+  // ways out; an action that creates nothing keeps its error.
+  it('opens the blocked dialog, not an error, when a creating action has no headroom', async () => {
+    const fail = vi.fn();
+    const error = { code: 'session_headroom_blocked' as const, message: 'Needs 5 Tracks.' };
+
+    const result = await runPlayerSessionAction({
+      gate: gate(),
+      action: 'more-like-this',
+      failureLabel: 'More Like This failed',
+      createsSession: true,
+      request: async () => ({ ok: false as const, error }),
+      onBusyChange: vi.fn(),
+      onFailure: fail,
+      onSuccess: vi.fn(),
+    });
+
+    expect(result).toBe(false);
+    expect(shownCreationRefusal()).toEqual({ kind: 'headroom', message: 'Needs 5 Tracks.' });
+    expect(fail).not.toHaveBeenCalledWith(expect.objectContaining({ message: expect.anything() }));
+    closeCreationRefusal();
+
+    await runPlayerSessionAction({
+      gate: gate(),
+      action: 'change-vibe',
+      failureLabel: 'Change Vibe failed',
+      request: async () => ({ ok: false as const, error }),
+      onBusyChange: vi.fn(),
+      onFailure: fail,
+      onSuccess: vi.fn(),
+    });
+    expect(shownCreationRefusal()).toBeNull();
+    expect(fail).toHaveBeenLastCalledWith({
+      action: 'change-vibe',
+      message: 'Change Vibe failed: Needs 5 Tracks.',
+    });
   });
 });

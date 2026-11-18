@@ -47,6 +47,10 @@ import {
 import { usePlayPlaylist } from '@/components/playlists/use-play-playlist';
 import { OfflineMark } from '@/components/offline/offline-mark';
 import { RelativeTime } from '@/components/relative-time';
+import {
+  MORE_LIKE_THIS_FAILED,
+  presentCreationFailure,
+} from '@/components/create/creation-refusal';
 import { useSeedMoreLikeThis } from '@/components/sessions/use-seed-more-like-this';
 import {
   buildSharerCards,
@@ -194,10 +198,11 @@ export function LoungeView({
     toast.dismiss(MORE_LIKE_THIS_KEY);
     const page = await getLoungePlaylist(item.id, null, LOUNGE_MLT_SEED_TRACKS);
     const failure = !page.ok
-      ? `More Like This didn’t start: ${page.error.message}`
+      ? page.error
       : await seedMoreLikeThis(page.data.items.slice(0, LOUNGE_MLT_SEED_TRACKS).map((m) => m.id));
     setSeeding(false);
-    if (failure) toast.error(failure, { key: MORE_LIKE_THIS_KEY });
+    const line = failure && presentCreationFailure(failure, MORE_LIKE_THIS_FAILED);
+    if (line) toast.error(line, { key: MORE_LIKE_THIS_KEY });
   }
 
   function leaveRoom(playlistId: string) {

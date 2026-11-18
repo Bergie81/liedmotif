@@ -18,6 +18,7 @@ import { usePlayerContext } from '@/components/player/player-provider';
 import { currentPendingStart } from '@/components/player/session-handoff';
 import { switchNewMusicOn } from '@/components/player/switch-new-music-on';
 import { useHandOffStart } from '@/components/player/use-hand-off-start';
+import { MORE_LIKE_THIS_FAILED } from '@/components/create/creation-refusal';
 import { useSeedMoreLikeThis } from '@/components/sessions/use-seed-more-like-this';
 import {
   getSessionCoverStatus,
@@ -153,7 +154,9 @@ export function useCardHost(
         return live.current
           .seedMoreLikeThis(seedTrackIds)
           .then((failure) =>
-            failure === null ? { carriedOut: true } : { carriedOut: false, refusal: failure },
+            failure === null
+              ? { carriedOut: true }
+              : { carriedOut: false, refusal: `${MORE_LIKE_THIS_FAILED}: ${failure.message}` },
           );
       },
       newMusicOn: (sessionId, targetMinutes) =>

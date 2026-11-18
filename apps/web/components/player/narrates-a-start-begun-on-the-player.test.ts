@@ -35,8 +35,8 @@ vi.mock('./playlist-now-playing', () => ({
   PlaylistNowPlaying: () => h('div', { 'data-testid': 'live-player' }),
 }));
 vi.mock('@/components/create/creation-blocked-dialog', () => ({
-  CreationBlockedDialog: ({ message }: { message: string }) =>
-    h('div', { 'data-testid': 'blocked-dialog' }, message),
+  CreationBlockedDialog: ({ refusal }: { refusal: { message: string } }) =>
+    h('div', { 'data-testid': 'blocked-dialog' }, refusal.message),
 }));
 vi.mock('@/components/app-chrome-context', () => ({
   useAppChrome: () => ({ fetchChrome: player.fetchChrome }),

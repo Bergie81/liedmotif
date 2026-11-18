@@ -1,9 +1,16 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import type { ApiErrorCode } from '@liedmotif/shared';
 import { moreLikeThis } from '@/lib/api-client';
 import { useClientId } from '@/lib/use-client-id';
 import { usePlayerActions } from '@/components/player/player-provider';
+
+/** Why the seeding API refused, as the server said it. */
+export interface SeedRefusal {
+  code: ApiErrorCode;
+  message: string;
+}
 
 /**
  * Start a NEW Session seeded from Tracks, from a surface that is not the player
@@ -14,10 +21,11 @@ import { usePlayerActions } from '@/components/player/player-provider';
  * whatever source is already engaged, so navigating alone would land on the old
  * source and the seeded Session would never appear.
  *
- * Resolves to a user-facing message on failure and null on success; the calling
- * surface owns its own busy state.
+ * Resolves to the refusal, code and all, on failure and null on success: the
+ * calling surface decides how to show it (the blocked dialog for a headroom
+ * refusal) and owns its own busy state.
  */
-export function useSeedMoreLikeThis(): (trackIds: string[]) => Promise<string | null> {
+export function useSeedMoreLikeThis(): (trackIds: string[]) => Promise<SeedRefusal | null> {
   const clientId = useClientId();
   const router = useRouter();
   const { engage, beginOtherMusic } = usePlayerActions();
@@ -25,7 +33,7 @@ export function useSeedMoreLikeThis(): (trackIds: string[]) => Promise<string | 
   return async function seedMoreLikeThis(trackIds) {
     if (!(await beginOtherMusic())) return null;
     const result = await moreLikeThis(trackIds, clientId);
-    if (!result.ok) return `More Like This didn’t start: ${result.error.message}`;
+    if (!result.ok) return { code: result.error.code, message: result.error.message };
     engage(result.data.session, { autoplay: false });
     router.push('/player');
     return null;

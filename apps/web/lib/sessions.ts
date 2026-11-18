@@ -59,7 +59,7 @@ import {
   type SessionSummary,
 } from '@liedmotif/shared';
 import { cache } from 'react';
-import { headroomBlockedMessage } from './headroom-copy';
+import { creationHeadroomMessage, headroomBlockedMessage } from './headroom-copy';
 import { getLlmProvider, getMusicProvider } from '@/lib/providers';
 import { cachedUserProfile, requestNow } from './request-cache';
 import { providerTasksToTracks } from './track-units';
@@ -619,13 +619,20 @@ export const cachedOwnerUsageTracks = cache(
 
 /**
  * The refusal a blocked headroom or generation-budget decision is answered
- * with. Only a used-up One-time budget (the `total` window — always a Member's
- * own) needs the Admin's name, so that is the only case that reads it.
+ * with. A creation headroom decision carries its numbers, so its text names
+ * them, the reset in the Instance timezone and, when waiting cannot help, the
+ * Admin. A generation-budget refusal fires only when not one call fits, so it
+ * says used up, and only a One-time budget (the `total` window — always a
+ * Member's own) needs the Admin's name.
  */
 export async function headroomRefusalMessage(
   db: Database,
-  decision: Pick<CreationHeadroomDecision, 'scope' | 'window'>,
+  decision: CreationHeadroomDecision | Pick<CreationHeadroomDecision, 'scope' | 'window'>,
 ): Promise<string> {
+  if ('remainingTracks' in decision) {
+    const [adminName, limits] = await Promise.all([getAdminDisplayName(db), getUsageLimits(db)]);
+    return creationHeadroomMessage(decision, { adminName, resetTimezone: limits.resetTimezone });
+  }
   const adminName = decision.window === 'total' ? await getAdminDisplayName(db) : null;
   return headroomBlockedMessage(decision, adminName);
 }

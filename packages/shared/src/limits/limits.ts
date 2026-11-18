@@ -169,6 +169,12 @@ export interface CreationHeadroomDecision {
    * budget, whose refusal must not promise a rollover.
    */
   window: CostLimitWindow;
+  /**
+   * That window's own cap in tracks (Infinity when unbounded). Below
+   * `minHeadroomTracks`, no reset ever lets a Session start, so the refusal
+   * must not promise one.
+   */
+  windowCapTracks: number;
 }
 
 /**
@@ -198,11 +204,13 @@ export function evaluateCreationHeadroom(
       remainingTracks = remaining;
     }
   }
+  const binding = tightestWindow(tightest.windows);
   return {
     allowed: remainingTracks >= minHeadroomTracks,
     remainingTracks,
     minHeadroomTracks,
     scope: tightest.scope,
-    window: tightestWindow(tightest.windows).window,
+    window: binding.window,
+    windowCapTracks: binding.cap * tracksPerCall,
   };
 }

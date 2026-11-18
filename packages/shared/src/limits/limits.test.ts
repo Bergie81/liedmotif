@@ -147,6 +147,7 @@ describe('evaluateCreationHeadroom', () => {
       minHeadroomTracks: 5,
       scope: 'instance',
       window: 'month',
+      windowCapTracks: 800,
     });
   });
 
@@ -174,6 +175,7 @@ describe('evaluateCreationHeadroom', () => {
       minHeadroomTracks: 5,
       scope: 'instance',
       window: 'day',
+      windowCapTracks: 80,
     });
   });
 
@@ -189,6 +191,7 @@ describe('evaluateCreationHeadroom', () => {
       minHeadroomTracks: 5,
       scope: 'instance',
       window: 'day',
+      windowCapTracks: 80,
     });
   });
 
@@ -201,6 +204,30 @@ describe('evaluateCreationHeadroom', () => {
       evaluateCreationHeadroom([instance({ dailyTasksUsed: 0, monthlyTasksUsed: 399 })], 2, 5)
         .window,
     ).toBe('month');
+  });
+
+  it("carries the binding window's own cap in tracks, so copy can tell when waiting cannot help", () => {
+    // Daily cap 2 tasks (4 tracks) below a 5-track threshold: no reset fixes that.
+    const decision = evaluateCreationHeadroom(
+      [
+        {
+          scope: 'instance',
+          windows: rolling({
+            ...LIMITS,
+            dailyGenerationTasks: 2,
+            dailyTasksUsed: 0,
+            monthlyTasksUsed: 0,
+          }),
+        },
+      ],
+      2,
+      5,
+    );
+    expect(decision).toMatchObject({ allowed: false, window: 'day', windowCapTracks: 4 });
+    expect(
+      evaluateCreationHeadroom([instance({ dailyTasksUsed: 0, monthlyTasksUsed: 399 })], 2, 5)
+        .windowCapTracks,
+    ).toBe(800);
   });
 
   it('treats a zero threshold as the gate being disabled (always allowed)', () => {
@@ -236,6 +263,7 @@ describe('evaluateCreationHeadroom — the Member two-bound list', () => {
       minHeadroomTracks: 5,
       scope: 'pool',
       window: 'day',
+      windowCapTracks: 6,
     });
   });
 
@@ -298,6 +326,7 @@ describe('One-time bounds', () => {
       minHeadroomTracks: 5,
       scope: 'member',
       window: 'total',
+      windowCapTracks: 26,
     });
     expect(evaluateCreationHeadroom([oneTime(13, 10), openPool], 2, 5).allowed).toBe(true);
   });

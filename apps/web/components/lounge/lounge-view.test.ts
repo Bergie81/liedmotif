@@ -11,6 +11,7 @@ import type { LoungePlaylistItem } from '@liedmotif/shared';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { shownToasts, toast } from '@/lib/toast';
+import { closeCreationRefusal, shownCreationRefusal } from '@/components/create/creation-refusal';
 import { LoungeView } from './lounge-view';
 
 const moderate = vi.hoisted(() => vi.fn());
@@ -21,6 +22,7 @@ const getAllMembers = vi.hoisted(() => vi.fn());
 const getLounge = vi.hoisted(() => vi.fn());
 const engagePlaylist = vi.hoisted(() => vi.fn());
 const sharePlaylist = vi.hoisted(() => vi.fn());
+const seedMoreLikeThis = vi.hoisted(() => vi.fn());
 
 vi.mock('@/lib/api-client', () => ({
   getAllPlaylistMembers: getAllMembers,
@@ -28,7 +30,7 @@ vi.mock('@/lib/api-client', () => ({
   listLoungePlaylists: listLounge,
   pinLoungePlaylist: pinLounge,
   markPlaylistPlayed: vi.fn(),
-  moreLikeThis: vi.fn(),
+  moreLikeThis: seedMoreLikeThis,
   moderateLoungePlaylist: moderate,
   sharePlaylist,
 }));
@@ -73,6 +75,8 @@ afterEach(() => {
   getLounge.mockReset();
   engagePlaylist.mockReset();
   sharePlaylist.mockReset();
+  seedMoreLikeThis.mockReset();
+  closeCreationRefusal();
 });
 
 const FOREIGN: LoungePlaylistItem = {
@@ -442,6 +446,19 @@ describe('LoungeView — playing a foreign share', () => {
     await waitFor(() => expect(engagePlaylist).toHaveBeenCalledTimes(1));
     expect(getLounge).toHaveBeenCalledWith(FOREIGN.id, null, 100);
     expect(engagePlaylist).toHaveBeenCalledWith(SUMMARY, [MEMBER], null, { foreign: true });
+  });
+
+  it('opens the blocked dialog when More Like This from the tile has no headroom', async () => {
+    const message = 'A new Session needs 5 Tracks; you have 4 left today.';
+    seedMoreLikeThis.mockResolvedValue({
+      ok: false,
+      error: { code: 'session_headroom_blocked', message, retryable: false },
+    });
+    renderForeign();
+    fireEvent.click(screen.getByTestId(`lounge-menu-${FOREIGN.id}`));
+    fireEvent.click(screen.getByTestId(`lounge-menu-more-like-this-${FOREIGN.id}`));
+    await waitFor(() => expect(shownCreationRefusal()).toEqual({ kind: 'headroom', message }));
+    expect(shownToasts()).toEqual([]);
   });
 
   it('offers Play in its options menu', async () => {

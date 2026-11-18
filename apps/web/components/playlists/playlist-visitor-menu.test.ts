@@ -8,6 +8,8 @@ import { createElement as h } from 'react';
 import type { PlaylistMemberItem, PlaylistSummaryItem } from '@liedmotif/shared';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { closeCreationRefusal, shownCreationRefusal } from '@/components/create/creation-refusal';
+import { shownToasts, toast } from '@/lib/toast';
 import { PlaylistDetail } from './playlist-detail';
 
 const pinLounge = vi.hoisted(() => vi.fn());
@@ -46,6 +48,8 @@ afterEach(() => {
   moreLikeThis.mockReset();
   engagePlaylist.mockReset();
   push.mockReset();
+  closeCreationRefusal();
+  toast.dismiss();
 });
 
 const PLAYLIST: PlaylistSummaryItem = {
@@ -134,6 +138,15 @@ describe('PlaylistDetail — visitor menu', () => {
     renderVisitor();
     fireEvent.click(screen.getByTestId(`lounge-menu-more-like-this-${PLAYLIST.id}`));
     await waitFor(() => expect(moreLikeThis).toHaveBeenCalledWith([MEMBER.id]));
+  });
+
+  it('opens the blocked dialog when More Like This has no headroom', async () => {
+    const message = 'A new Session needs 5 Tracks; you have 4 left today.';
+    moreLikeThis.mockResolvedValue({ code: 'session_headroom_blocked', message });
+    renderVisitor();
+    fireEvent.click(screen.getByTestId(`lounge-menu-more-like-this-${PLAYLIST.id}`));
+    await waitFor(() => expect(shownCreationRefusal()).toEqual({ kind: 'headroom', message }));
+    expect(shownToasts()).toEqual([]);
   });
 
   it('lets the Admin return it to Private after confirming, then goes back to the Lounge', async () => {

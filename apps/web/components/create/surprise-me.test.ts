@@ -297,6 +297,7 @@ describe('Surprise Me', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Find a surprise' }));
 
     const blocked = await screen.findByTestId('creation-blocked-dialog');
+    expect(within(blocked).getByText('Not enough Tracks left to start')).toBeTruthy();
     expect(within(blocked).getByText('Today’s generation budget is used up.')).toBeTruthy();
     expect(within(blocked).getByRole('button', { name: /Resume a Session/ })).toBeTruthy();
     expect(within(blocked).getByRole('button', { name: /Browse Library/ })).toBeTruthy();

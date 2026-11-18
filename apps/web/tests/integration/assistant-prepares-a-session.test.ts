@@ -266,7 +266,7 @@ describe.skipIf(skip)('the Assistant asked to start a Session', () => {
     const turn = await propose(asker, { prompt: 'calm piano for reading' });
 
     expect(cards(turn)).toEqual([]);
-    expect(turn.results[0]).toContain('You have reached your generation headroom for now.');
+    expect(turn.results[0]).toContain('A new Session needs 4 Tracks; you have none left today.');
     expect(turn.results[0]).toMatch(/no card was shown/i);
     expect(await rowsIn('activity_sessions')).toBe(0);
   });

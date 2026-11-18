@@ -389,7 +389,7 @@ describe.skipIf(skip)('the Assistant asked for more like some Tracks', () => {
     const turn = await ask(asker, [moreLikeThis({ trackIds: [trackId] })]);
 
     expect(cards(turn)).toEqual([]);
-    expect(turn.results[0]).toContain('You have reached your generation headroom for now.');
+    expect(turn.results[0]).toContain('A new Session needs 4 Tracks; you have 2 left today.');
     expect(turn.results[0]).toMatch(/no card was shown/i);
   });
 

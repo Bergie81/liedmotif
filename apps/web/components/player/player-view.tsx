@@ -21,6 +21,7 @@ import type { SessionSummary } from '@liedmotif/shared';
 import { useAppChrome } from '@/components/app-chrome-context';
 import { cn } from '@/lib/cn';
 import { CreationBlockedDialog } from '@/components/create/creation-blocked-dialog';
+import { creationRefusalFor, type CreationRefusal } from '@/components/create/creation-refusal';
 import {
   iconButtonClass,
   nowPlayingDetailsClass,
@@ -87,7 +88,7 @@ type View =
   | { kind: 'discovering' }
   | { kind: 'connecting'; startedAt: string }
   | { kind: 'player' }
-  | { kind: 'blocked'; message: string }
+  | { kind: 'blocked'; refusal: CreationRefusal }
   | { kind: 'failed'; message: string }
   | { kind: 'idle' };
 
@@ -96,9 +97,8 @@ type View =
  * headroom-blocked popup (no session was created), or the error card. */
 function startedView(result: Awaited<PendingStart['result']>): View {
   if (result.ok) return { kind: 'player' };
-  if (result.error.code === 'session_headroom_blocked') {
-    return { kind: 'blocked', message: result.error.message };
-  }
+  const refusal = creationRefusalFor(result.error);
+  if (refusal) return { kind: 'blocked', refusal };
   return { kind: 'failed', message: result.error.message };
 }
 
@@ -264,7 +264,7 @@ export function PlayerView() {
             onOpenChange={(open) => {
               if (!open) setView(engagedSourceRef.current ? { kind: 'player' } : { kind: 'idle' });
             }}
-            message={view.message}
+            refusal={view.refusal}
           />
         </>
       );

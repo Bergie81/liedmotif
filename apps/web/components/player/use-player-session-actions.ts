@@ -47,6 +47,7 @@ export function usePlayerSessionActions({
       gate: actionGate.current,
       action: 'more-like-this',
       failureLabel: 'More Like This failed',
+      createsSession: true,
       request: () => moreLikeThis([trackId], clientId),
       onBusyChange: setBusyAction,
       onFailure: (failure) => reportFailure(failure, 'more-like-this'),

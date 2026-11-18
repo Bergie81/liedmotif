@@ -91,6 +91,7 @@ describe.skipIf(skip)('evaluateSessionHeadroom (creation-time money-gate)', () =
       minHeadroomTracks: 5,
       scope: 'instance',
       window: 'day',
+      windowCapTracks: 80,
     });
   });
 
@@ -105,6 +106,7 @@ describe.skipIf(skip)('evaluateSessionHeadroom (creation-time money-gate)', () =
       minHeadroomTracks: 5,
       scope: 'instance',
       window: 'day',
+      windowCapTracks: 6,
     });
   });
 
@@ -119,6 +121,7 @@ describe.skipIf(skip)('evaluateSessionHeadroom (creation-time money-gate)', () =
       minHeadroomTracks: 5,
       scope: 'instance',
       window: 'day',
+      windowCapTracks: 4,
     });
   });
 
@@ -143,6 +146,7 @@ describe.skipIf(skip)('evaluateSessionHeadroom (creation-time money-gate)', () =
       minHeadroomTracks: 4,
       scope: 'instance',
       window: 'day',
+      windowCapTracks: 4,
     });
     // The over-spent owner is blocked on the same limits.
     expect((await evaluateSessionHeadroom(testDb.db, other, NOW)).allowed).toBe(false);
@@ -161,6 +165,7 @@ describe.skipIf(skip)('evaluateSessionHeadroom (creation-time money-gate)', () =
       minHeadroomTracks: 2,
       scope: 'instance',
       window: 'day',
+      windowCapTracks: 2,
     });
   });
 });
@@ -189,6 +194,7 @@ describe.skipIf(skip)('evaluateSessionHeadroom — Member two-bound gate', () =>
       minHeadroomTracks: 5,
       scope: 'pool',
       window: 'day',
+      windowCapTracks: 2,
     });
   });
 
@@ -206,6 +212,7 @@ describe.skipIf(skip)('evaluateSessionHeadroom — Member two-bound gate', () =>
       minHeadroomTracks: 5,
       scope: 'member',
       window: 'day',
+      windowCapTracks: 2,
     });
   });
 
@@ -233,6 +240,7 @@ describe.skipIf(skip)('evaluateSessionHeadroom — Member two-bound gate', () =>
       minHeadroomTracks: 5,
       scope: 'member',
       window: 'day',
+      windowCapTracks: 20,
     });
   });
 
@@ -245,6 +253,7 @@ describe.skipIf(skip)('evaluateSessionHeadroom — Member two-bound gate', () =>
       minHeadroomTracks: 5,
       scope: 'instance',
       window: 'day',
+      windowCapTracks: 80,
     });
   });
 });
@@ -276,6 +285,7 @@ describe.skipIf(skip)('evaluateSessionHeadroom — One-time Member budget', () =
       minHeadroomTracks: 5,
       scope: 'member',
       window: 'total',
+      windowCapTracks: 8,
     });
   });
 
@@ -304,12 +314,25 @@ describe.skipIf(skip)('evaluateSessionHeadroom — One-time Member budget', () =
     );
   });
 
+  it('refuses the Admin with the numbers and the reset in the Instance timezone', async () => {
+    await seedLimits({ daily: 4, minHeadroom: 5 });
+    const adminId = await createUser(testDb.db);
+    await testDb.db.insert(userProfiles).values({ userId: adminId, role: 'admin' });
+    await seedSpentTasks(adminId, 2, NOW); // 2 tasks left → 4 tracks < 5
+
+    const decision = await evaluateSessionHeadroom(testDb.db, adminId, NOW);
+    expect(await headroomRefusalMessage(testDb.db, decision)).toBe(
+      'A new Session needs 5 Tracks; you have 4 left today. More Tracks at midnight (UTC). Resume one of your sessions from Sessions or play your Library instead.',
+    );
+  });
+
   it('refuses with the shared-budget copy when the total has headroom but the Pool is exhausted', async () => {
     await seedLimits({ daily: 40, minHeadroom: 5 });
     const other = await createUser(testDb.db);
     await testDb.db.insert(userProfiles).values({ userId: other, role: 'member' });
-    await seedSpentTasks(other, 1, NOW);
-    await updateMembersPool(testDb.db, { dailyGenerationTasks: 1, monthlyGenerationTasks: 10 });
+    // A Pool cap that fits a Session's 5 Tracks, used up: waiting for the reset helps.
+    await seedSpentTasks(other, 3, NOW);
+    await updateMembersPool(testDb.db, { dailyGenerationTasks: 3, monthlyGenerationTasks: 10 });
     const memberId = await seedOneTimeMember(10);
 
     const decision = await evaluateSessionHeadroom(testDb.db, memberId, NOW);

@@ -49,6 +49,10 @@ import { LoadMoreButton } from '@/components/ui/load-more-button';
 import { LoadingRow, LiedmotifLoader } from '@/components/ui/loading';
 import { OnlineOnly } from '@/components/ui/online-only';
 import { TrackDataSheet } from '@/components/player/track-data-sheet';
+import {
+  MORE_LIKE_THIS_FAILED,
+  presentCreationFailure,
+} from '@/components/create/creation-refusal';
 import { useSeedMoreLikeThis } from '@/components/sessions/use-seed-more-like-this';
 import { AddTracksSheet } from './add-tracks-sheet';
 import { PlaylistCoverSheet } from './playlist-cover-sheet';
@@ -178,7 +182,8 @@ export function PlaylistDetail({
     toast.dismiss(MORE_LIKE_THIS_KEY);
     const failure = await seed(trackIds);
     setSeeding(false);
-    if (failure) toast.error(failure, { key: MORE_LIKE_THIS_KEY });
+    const line = failure && presentCreationFailure(failure, MORE_LIKE_THIS_FAILED);
+    if (line) toast.error(line, { key: MORE_LIKE_THIS_KEY });
   }
 
   // Permanent Track delete (never feedback). Settled before the list changes —

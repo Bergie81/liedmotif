@@ -21,6 +21,10 @@ import {
   renameTrack,
 } from '@/lib/api-client';
 import { useClientId } from '@/lib/use-client-id';
+import {
+  MORE_LIKE_THIS_FAILED,
+  presentCreationFailure,
+} from '@/components/create/creation-refusal';
 import { OfflineMark } from '@/components/offline/offline-mark';
 import {
   SaveToPlaylistSheet,
@@ -223,7 +227,8 @@ export function PlaylistNowPlaying({
         clientId,
       );
       if (!result.ok) {
-        failed('more-like-this', `More Like This didn’t start: ${result.error.message}`);
+        const line = presentCreationFailure(result.error, MORE_LIKE_THIS_FAILED);
+        if (line) failed('more-like-this', line);
         return;
       }
       engage(result.data.session, { autoplay: false });

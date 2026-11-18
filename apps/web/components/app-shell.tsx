@@ -22,6 +22,7 @@ import {
   isSettingsDetailRoute,
 } from './app-shell-model';
 import { HeadroomLink, PrimaryNavigation } from './app-navigation';
+import { CreationRefusalHost } from './create/creation-blocked-dialog';
 import { MobileHeader } from './mobile-header';
 import { usePlayerContext } from './player/player-provider';
 import { useTrackPreviewAnnouncement } from './player/preview-announcer';
@@ -201,6 +202,7 @@ export function AppShell({
           <AssistantLauncherContext.Provider value={assistantAvailable ? assistant.launcher : null}>
             {children}
           </AssistantLauncherContext.Provider>
+          <CreationRefusalHost />
         </AppChromeContext.Provider>
       </main>
 

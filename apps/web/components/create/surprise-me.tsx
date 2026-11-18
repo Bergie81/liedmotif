@@ -35,6 +35,7 @@ import { syntheticProgressFraction } from '@/components/player/cold-start-progre
 import { primaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
 import { LiedmotifLoader } from '@/components/ui/loading';
 import { CreationBlockedDialog } from './creation-blocked-dialog';
+import { creationRefusalFor, type CreationRefusal } from './creation-refusal';
 import { SegmentedControl } from './session-start-controls';
 import {
   surpriseExploreLabel,
@@ -287,7 +288,7 @@ export function SurpriseMe({
   // The proposal request in flight; Cancel aborts it and nothing it answers lands.
   const [proposing, setProposing] = useState<AbortController | null>(null);
   const [dismissing, setDismissing] = useState(false);
-  const [blockedMessage, setBlockedMessage] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState<CreationRefusal | null>(null);
 
   const busy = proposing !== null || dismissing;
   const step = proposing ? 'proposing' : proposal && !editingSettings ? 'preview' : 'settings';
@@ -322,9 +323,12 @@ export function SurpriseMe({
       setProposal(result.data.proposal);
       setEditingSettings(false);
       onProposalChange?.(result.data.proposal);
-    } else if (result.error.code === 'session_headroom_blocked') {
+      return;
+    }
+    const refusal = creationRefusalFor(result.error);
+    if (refusal) {
       setOpen(false);
-      setBlockedMessage(result.error.message);
+      setBlocked(refusal);
     } else toast.error(result.error.message, { key: REQUEST_KEY });
   }
 
@@ -421,13 +425,15 @@ export function SurpriseMe({
         </DialogContent>
       </Dialog>
 
-      <CreationBlockedDialog
-        open={blockedMessage !== null}
-        onOpenChange={(next) => {
-          if (!next) setBlockedMessage(null);
-        }}
-        message={blockedMessage ?? ''}
-      />
+      {blocked ? (
+        <CreationBlockedDialog
+          open
+          onOpenChange={(next) => {
+            if (!next) setBlocked(null);
+          }}
+          refusal={blocked}
+        />
+      ) : null}
     </>
   );
 }

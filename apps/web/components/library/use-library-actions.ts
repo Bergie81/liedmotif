@@ -4,6 +4,10 @@ import { useEffect, useRef, useState } from 'react';
 import type { LibraryTrackItem, LibraryView, TrackFlags } from '@liedmotif/shared';
 import { deleteTrack as deleteTrackApi, favoriteTrack, unsaveTrack } from '@/lib/api-client';
 import { toast } from '@/lib/toast';
+import {
+  MORE_LIKE_THIS_FAILED,
+  presentCreationFailure,
+} from '@/components/create/creation-refusal';
 import { useSeedMoreLikeThis } from '@/components/sessions/use-seed-more-like-this';
 
 export type LibraryActionName = 'save' | 'favorite' | 'seed' | 'delete';
@@ -116,7 +120,8 @@ export function useLibraryActions({
     const failure = await seed([track.id]);
     if (!mountedRef.current) return;
     setBusyAction(null);
-    if (failure) reportFailure('seed', failure);
+    const line = failure && presentCreationFailure(failure, MORE_LIKE_THIS_FAILED);
+    if (line) reportFailure('seed', line);
   }
 
   return {

@@ -2,11 +2,12 @@
 
 // Creation-blocked popup.
 //
-// When the creation-time headroom gate refuses a new session, NO session
+// When a new session is refused (the creation-time headroom gate), NO session
 // is created; instead of failing silently the user is offered the two zero-cost ways
 // forward — Resume a Stopped session (My Sessions; never gated) or browse the Library.
 // Reuses the shared Radix dialog primitive.
 
+import { useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Gauge, ListMusic, Library as LibraryIcon, Wallet } from 'lucide-react';
 import { COST_SETTINGS_PATH, MY_BUDGET_PATH } from '@liedmotif/shared';
@@ -20,15 +21,40 @@ import {
 } from '@/components/ui/dialog';
 import { primaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
 import { cn } from '@/lib/cn';
+import {
+  closeCreationRefusal,
+  CREATION_REFUSAL_TITLES,
+  useShownCreationRefusal,
+  type CreationRefusal,
+} from './creation-refusal';
+
+/** The app's one blocked dialog for refusals presented from anywhere
+ * (`presentCreationFailure`); mounted once in the app shell. */
+export function CreationRefusalHost() {
+  const refusal = useShownCreationRefusal();
+  // The last refusal stays in the closing dialog while its exit plays.
+  const last = useRef(refusal);
+  if (refusal) last.current = refusal;
+  if (!last.current) return null;
+  return (
+    <CreationBlockedDialog
+      open={refusal !== null}
+      onOpenChange={(open) => {
+        if (!open) closeCreationRefusal();
+      }}
+      refusal={last.current}
+    />
+  );
+}
 
 export function CreationBlockedDialog({
   open,
   onOpenChange,
-  message,
+  refusal,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  message: string;
+  refusal: CreationRefusal;
 }) {
   const router = useRouter();
 
@@ -38,14 +64,14 @@ export function CreationBlockedDialog({
         <div className="flex items-center gap-2 text-warn">
           <Wallet className="h-5 w-5" aria-hidden />
           <DialogTitle className="font-display text-[18px] font-bold text-paper">
-            No generation headroom right now
+            {CREATION_REFUSAL_TITLES[refusal.kind]}
           </DialogTitle>
         </div>
         <DialogDescription
           id="creation-blocked-desc"
           className="mt-2 text-[13.5px] leading-relaxed text-muted"
         >
-          {message}
+          {refusal.message}
         </DialogDescription>
 
         <div className="mt-5 flex flex-col gap-2">
