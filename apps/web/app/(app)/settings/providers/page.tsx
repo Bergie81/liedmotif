@@ -46,7 +46,7 @@ export default async function ProvidersPage() {
   const llm = data.llm.credential;
   const cover = data.cover.credential;
   const lockedCoverModel = lockedImageModel(data.cover);
-  const coverAccountAlert = await loadCoverAccountAlert([
+  const coverAccountAlert = await loadCoverAccountAlert(data.cover.providerKey, [
     { providerType: 'image', providerKey: data.cover.providerKey },
   ]);
 

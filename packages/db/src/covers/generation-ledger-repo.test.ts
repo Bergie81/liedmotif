@@ -406,7 +406,7 @@ describeIfDb('Instance Cover account outcome', () => {
   }
 
   it('reports nothing before any Cover has settled', async () => {
-    expect(await getLatestCoverAccountOutcome(ctx.db)).toBeNull();
+    expect(await getLatestCoverAccountOutcome(ctx.db, 'gemini')).toBeNull();
   });
 
   it('reports the newest refusal across owners, ignoring failures that say nothing about the account', async () => {
@@ -433,7 +433,7 @@ describeIfDb('Instance Cover account outcome', () => {
       settledAt: new Date('2026-11-18T12:00:00.000Z'),
     });
 
-    expect(await getLatestCoverAccountOutcome(ctx.db)).toEqual({
+    expect(await getLatestCoverAccountOutcome(ctx.db, 'gemini')).toEqual({
       providerKey: 'gemini',
       accountNotReady: true,
       settledAt: new Date('2026-11-18T11:00:00.000Z'),
@@ -456,6 +456,29 @@ describeIfDb('Instance Cover account outcome', () => {
       settledAt: new Date('2026-11-18T11:00:00.000Z'),
     });
 
-    expect(await getLatestCoverAccountOutcome(ctx.db)).toMatchObject({ accountNotReady: false });
+    expect(await getLatestCoverAccountOutcome(ctx.db, 'openai')).toMatchObject({
+      accountNotReady: false,
+    });
+  });
+
+  it('ignores a Cover another provider painted after the refusal', async () => {
+    const ownerUserId = await createUser(ctx.db);
+    await settledAttempt({
+      ownerUserId,
+      providerKey: 'gemini',
+      state: 'provider_rejected',
+      failureCategory: 'account_not_ready',
+      settledAt: new Date('2026-11-18T10:00:00.000Z'),
+    });
+    await settledAttempt({
+      ownerUserId,
+      providerKey: 'suno-cover',
+      state: 'ready',
+      settledAt: new Date('2026-11-18T11:00:00.000Z'),
+    });
+
+    expect(await getLatestCoverAccountOutcome(ctx.db, 'gemini')).toMatchObject({
+      accountNotReady: true,
+    });
   });
 });

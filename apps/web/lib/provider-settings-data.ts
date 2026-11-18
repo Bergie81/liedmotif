@@ -22,13 +22,16 @@ import {
 import { credentialState } from '@/lib/settings-hub-model';
 
 /**
- * The account alert for the Cover images card. The credentials that supply the
- * Cover key are the ones whose save clears it.
+ * The account alert for the Cover images card's provider. The credentials that
+ * supply the Cover key are the ones whose save clears it.
  */
-export async function loadCoverAccountAlert(coverKeyCredentials: readonly CredentialRef[]) {
+export async function loadCoverAccountAlert(
+  coverProviderKey: string,
+  coverKeyCredentials: readonly CredentialRef[],
+) {
   const db = getDb();
   const [outcome, credentialsSavedAt] = await Promise.all([
-    getLatestCoverAccountOutcome(db),
+    getLatestCoverAccountOutcome(db, coverProviderKey),
     Promise.all(coverKeyCredentials.map((ref) => getCredentialUpdatedAt(db, ref))),
   ]);
   return coverAccountAlert({ outcome, credentialsSavedAt });

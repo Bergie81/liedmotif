@@ -448,14 +448,16 @@ export async function listRecentSessionCoverGenerations(
 }
 
 /**
- * The Instance's newest Cover outcome that says something about the image
- * provider's account: a Cover that landed, or an attempt the provider refused
+ * The Instance's newest outcome on `providerKey` that says something about that
+ * image provider's account: a Cover it painted, or an attempt it refused
  * because the account is not ready for images. Other failures are skipped, so
- * an outage after the refusal does not hide it. Across every owner, because the
- * account is the Instance's.
+ * an outage after the refusal does not hide it, and so are other providers'
+ * Covers, which say nothing about this account. Across every owner, because
+ * the account is the Instance's.
  */
 export async function getLatestCoverAccountOutcome(
   db: DbOrTx,
+  providerKey: string,
 ): Promise<{ providerKey: string; accountNotReady: boolean; settledAt: Date } | null> {
   const [row] = await db
     .select({
@@ -466,6 +468,7 @@ export async function getLatestCoverAccountOutcome(
     .from(sessionCoverGenerations)
     .where(
       and(
+        eq(sessionCoverGenerations.providerKey, providerKey),
         sql`${sessionCoverGenerations.settledAt} is not null`,
         or(
           eq(sessionCoverGenerations.state, 'ready'),

@@ -14,6 +14,11 @@ export interface CoverSubmissionFailure {
   retry: boolean;
 }
 
+/** A refusal no resend can turn into a Cover: the provider rejected the request or the account. */
+export function isTerminalRejection(kind: GeneratedImageFailureKind | null): boolean {
+  return kind === 'configuration' || kind === 'account_not_ready' || kind === 'rejection';
+}
+
 /**
  * Every paid image request is money, so a failed submission may only be resent under the
  * *same* idempotency key: a rejected/misconfigured request will never succeed, and an
@@ -26,12 +31,8 @@ export function classifyCoverSubmissionFailure(
 ): CoverSubmissionFailure {
   const known = error instanceof GeneratedImageProviderError ? error : null;
   const disposition = known?.submissionDisposition ?? 'outcome_unknown';
-  const terminalRejection =
-    known?.kind === 'configuration' ||
-    known?.kind === 'account_not_ready' ||
-    known?.kind === 'rejection';
   const sameKeySafe =
-    !terminalRejection &&
+    !isTerminalRejection(known?.kind ?? null) &&
     (disposition === 'not_started' ||
       (idempotency !== 'absent' &&
         (disposition === 'retryable_with_same_key' || disposition === 'outcome_unknown')));

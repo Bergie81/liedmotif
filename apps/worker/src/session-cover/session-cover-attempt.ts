@@ -49,6 +49,7 @@ import {
 import { storedAutoPick } from './cover-plan-selection';
 import {
   classifyCoverSubmissionFailure,
+  isTerminalRejection,
   type CoverSubmissionFailure,
 } from './cover-submission-retry';
 import {
@@ -525,13 +526,7 @@ function submitFailureState(
   if (failure.disposition === 'outcome_unknown' && idempotency === 'absent') {
     return 'submission_unknown';
   }
-  if (
-    failure.kind === 'configuration' ||
-    failure.kind === 'account_not_ready' ||
-    failure.kind === 'rejection'
-  ) {
-    return 'provider_rejected';
-  }
+  if (isTerminalRejection(failure.kind)) return 'provider_rejected';
   return 'provider_unavailable';
 }
 
