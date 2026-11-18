@@ -320,24 +320,15 @@ export async function getSessionQueue(
     eq(activitySessionQueueItems.activitySessionId, args.sessionId),
     slotStillInSession,
   );
-  const items = await selectQueueItems(
-    db,
+  const windowSlots =
     windowStartPosition == null
       ? sessionSlots
-      : and(sessionSlots, gte(activitySessionQueueItems.position, windowStartPosition)),
-  );
-  const [loopHead = null] =
+      : and(sessionSlots, gte(activitySessionQueueItems.position, windowStartPosition));
+  const items = await selectQueueItems(db, windowSlots);
+  const loopHead =
     windowStartPosition == null
-      ? []
-      : await selectQueueItems(
-          db,
-          and(
-            sessionSlots,
-            lt(activitySessionQueueItems.position, windowStartPosition),
-            slotHasPinnedSource,
-          ),
-          1,
-        );
+      ? null
+      : await selectLoopHead(db, sessionSlots, windowStartPosition);
 
   // Cold start only: while NO item carries a playable source, fetch the
   // session's latest provider job so the player can narrate what is happening.
@@ -362,6 +353,24 @@ export async function getSessionQueue(
     generatingTracksAhead,
     generatingNewVibeTracksAhead,
   };
+}
+
+/** The first slot before the window with a pinned source: the Session's loop head. */
+async function selectLoopHead(
+  db: Database,
+  sessionSlots: SQL | undefined,
+  windowStartPosition: number,
+): Promise<SessionQueueItemRecord | null> {
+  const [head] = await selectQueueItems(
+    db,
+    and(
+      sessionSlots,
+      lt(activitySessionQueueItems.position, windowStartPosition),
+      slotHasPinnedSource,
+    ),
+    1,
+  );
+  return head ?? null;
 }
 
 /** The Queue slots `where` selects, in play order, each with its Track resolved

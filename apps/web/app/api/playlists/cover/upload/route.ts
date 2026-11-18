@@ -60,8 +60,10 @@ async function storePlaylistCover(
       }),
     kept: 'applied',
   });
-  if (!('refused' in stored)) return apiOk({ coverImageId: stored.coverImageId });
-  return stored.refused === 'history_full'
-    ? apiError('limit_reached', PLAYLIST_FULL_MESSAGE)
-    : apiError('not_found', 'Playlist not found.');
+  if ('refused' in stored) {
+    return stored.refused === 'history_full'
+      ? apiError('limit_reached', PLAYLIST_FULL_MESSAGE)
+      : apiError('not_found', 'Playlist not found.');
+  }
+  return apiOk({ coverImageId: stored.coverImageId });
 }

@@ -113,6 +113,15 @@ function playableTrack(
   };
 }
 
+/** Every authoritative Queue item id. The loop head is in the Queue too, only
+ * outside the window: right after the wrap it is the audible Track while polls
+ * still answer the old window. */
+function queueItemIds(data: QueueData): Set<string> {
+  const ids = new Set(data.items.map((item) => item.id));
+  if (data.loopHead) ids.add(data.loopHead.id);
+  return ids;
+}
+
 function sessionQueueSnapshot(
   data: QueueData,
   tracks: PlayableTrack[],
@@ -128,11 +137,7 @@ function sessionQueueSnapshot(
     items: data.items.filter((item) => !isLocallyRemoved(item.id)),
     earlierTracks: data.earlierTracks,
     loopHead: data.loopHead ? playableTrack(data.loopHead, isLocallyRemoved) : null,
-    // The loop head is in the Queue too, only outside the window: right after
-    // the wrap it is the audible Track while polls still answer the old window.
-    queueItemIds: new Set(
-      [...data.items, ...(data.loopHead ? [data.loopHead] : [])].map((item) => item.id),
-    ),
+    queueItemIds: queueItemIds(data),
     currentQueueItemId: data.currentQueueItemId,
     currentTrackId: data.currentTrackId,
     generationStatus: data.generationStatus,
