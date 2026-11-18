@@ -135,3 +135,31 @@ describe('onboarding covers step budget note', () => {
     expect(renderCovers({ ceilingEnabled: true })).toContain('25 Covers a day');
   });
 });
+
+describe('onboarding covers step price', () => {
+  beforeAll(() => vi.stubGlobal('React', React));
+  afterAll(() => vi.unstubAllGlobals());
+
+  const gemini = { ...openRouter, providerKey: 'gemini', displayName: 'Gemini' };
+
+  it("states the selected provider's price per Cover on the switch", () => {
+    expect(renderCovers({ credential: gemini })).toContain('about 4 cents a Cover');
+    expect(renderCovers({ imageConnected: false, credential: gemini })).toContain(
+      'about 4 cents a Cover',
+    );
+    expect(renderCovers({})).toContain('about 7 cents a Cover');
+  });
+
+  it("prices the Cover budget note at the selected provider's price", () => {
+    expect(renderCovers({ credential: gemini, ceilingEnabled: false })).toMatch(
+      /at about <span[^>]*>4 cents<\/span> each/,
+    );
+    expect(renderCovers({ credential: gemini, ceilingEnabled: true })).toContain('$1.00 a day');
+    expect(
+      renderCovers({
+        credential: { ...openRouter, providerKey: 'openai', displayName: 'OpenAI' },
+        ceilingEnabled: true,
+      }),
+    ).toContain('$1.50 a day');
+  });
+});

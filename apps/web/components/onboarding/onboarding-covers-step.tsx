@@ -16,7 +16,7 @@ import { SettingsControlRow } from '@/components/settings/settings-ui';
 import { useCredentialEditor } from '@/components/settings/use-credential-editor';
 import { Switch } from '@/components/ui/controls';
 import { cn } from '@/lib/cn';
-import { IMAGE_PROVIDERS, lockedImageModel } from '@/lib/configurable-providers';
+import { IMAGE_PROVIDERS, coverPriceCents, lockedImageModel } from '@/lib/configurable-providers';
 import { coverSource, type CoverSource } from '@/lib/cover-source';
 import type { OnboardingCredential } from '@/lib/onboarding-data';
 import { OnboardingCredentialFields, OpenRouterKeyHowTo } from './onboarding-credential-fields';
@@ -29,7 +29,7 @@ import {
   OnboardingSubhead,
 } from './onboarding-layout';
 import { coverBudgetPatch, stepLimit, type CoverBudget } from './onboarding-limits-model';
-import { COVER_COST_CENTS, coverBudgetNote } from './onboarding-model';
+import { coverBudgetNote } from './onboarding-model';
 import { useLimitSave } from './use-limit-save';
 
 interface CoversStepProps {
@@ -97,6 +97,7 @@ function CoversStepBody({
   const withoutImageModel = coverSource({ ...sourceInput, tailoredCoverArtEnabled: false });
   const busy = saving || editor.operationPending;
   const keyProvider = editor.selected?.label ?? credential.displayName;
+  const coverCents = coverPriceCents(editor.providerKey);
   // A changed model alone is saved only beside a key that already resolves: the
   // credentials route refuses a model with no key anywhere.
   const modelChanged = editor.model.trim() !== (initialModel ?? '');
@@ -131,8 +132,8 @@ function CoversStepBody({
           label="Generate Tailored Cover Art"
           description={
             imageConnected
-              ? `Uses ${credential.displayName}${imageModel ? ` · ${imageModel}` : ''} · about ${COVER_COST_CENTS} cents a Cover`
-              : `Needs your own ${credential.displayName} key · about ${COVER_COST_CENTS} cents a Cover`
+              ? `Uses ${credential.displayName}${imageModel ? ` · ${imageModel}` : ''} · about ${coverCents} cents a Cover`
+              : `Needs your own ${credential.displayName} key · about ${coverCents} cents a Cover`
           }
         >
           <Switch
@@ -230,6 +231,7 @@ function CoversStepBody({
           <CoverBudgetExplainer
             uncapped={!budget.ceilingEnabled}
             coversPerDay={Number(budget.coversPerDay)}
+            imageProviderKey={editor.providerKey}
           />
         </OnboardingNote>
       ) : null}
@@ -248,20 +250,23 @@ function CoversStepBody({
 function CoverBudgetExplainer({
   uncapped,
   coversPerDay,
+  imageProviderKey,
 }: {
   uncapped: boolean;
   coversPerDay: number;
+  /** The image preset selected above, whose price per Cover the note states. */
+  imageProviderKey: string;
 }) {
   if (uncapped) {
     return (
       <>
         <b className="font-semibold text-paper">No cap on your own Covers.</b> Each new Session gets
         one, plus any you regenerate, at about{' '}
-        <span className="text-lamp">{COVER_COST_CENTS} cents</span> each.
+        <span className="text-lamp">{coverPriceCents(imageProviderKey)} cents</span> each.
       </>
     );
   }
-  const note = coverBudgetNote(coversPerDay);
+  const note = coverBudgetNote(coversPerDay, imageProviderKey);
   if (note.covers === 0) {
     return (
       <>

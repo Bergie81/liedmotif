@@ -1,4 +1,5 @@
 import {
+  DEFAULT_UNIT_COSTS,
   GEMINI_DEFAULT_COVER_MODEL,
   OPENAI_DEFAULT_COVER_MODEL,
   OPENROUTER_DEFAULT_COVER_MODEL,
@@ -29,18 +30,27 @@ export const MUSIC_PROVIDER: MusicProviderMeta = {
   needsBaseUrl: true,
 };
 
+export interface ImageProviderMeta extends ConfigurableProviderMeta {
+  /**
+   * What one Cover costs on the default model at the app's `high` quality, list
+   * price rounded up to the cent. The source of every Cover price the app states.
+   */
+  coverPriceUsd: number;
+}
+
 /**
  * The generated-cover presets, in picker order. The app stores their key and
  * model; the other `IMAGE_*` settings keep their adapter defaults unless `.env`
  * sets them.
  */
-export const IMAGE_PROVIDERS: readonly ConfigurableProviderMeta[] = [
+export const IMAGE_PROVIDERS: readonly ImageProviderMeta[] = [
   {
     value: 'openai',
     label: 'OpenAI',
     needsKey: true,
     needsBaseUrl: false,
     defaultModel: OPENAI_DEFAULT_COVER_MODEL,
+    coverPriceUsd: 0.06,
   },
   {
     value: 'gemini',
@@ -48,6 +58,7 @@ export const IMAGE_PROVIDERS: readonly ConfigurableProviderMeta[] = [
     needsKey: true,
     needsBaseUrl: false,
     defaultModel: GEMINI_DEFAULT_COVER_MODEL,
+    coverPriceUsd: 0.04,
   },
   {
     value: 'openrouter',
@@ -55,9 +66,36 @@ export const IMAGE_PROVIDERS: readonly ConfigurableProviderMeta[] = [
     needsKey: true,
     needsBaseUrl: false,
     defaultModel: OPENROUTER_DEFAULT_COVER_MODEL,
+    coverPriceUsd: 0.07,
     behindMoreOptions: true,
   },
 ];
+
+/**
+ * About what one Cover costs on an image preset. A provider key this build has
+ * no preset for falls back to the shipped default price.
+ */
+export function coverPriceUsd(providerKey: string): number {
+  return (
+    IMAGE_PROVIDERS.find((option) => option.value === providerKey)?.coverPriceUsd ??
+    DEFAULT_UNIT_COSTS.perCoverUsd
+  );
+}
+
+/** The same price in whole cents, the unit the UI states it in. */
+export function coverPriceCents(providerKey: string): number {
+  return Math.round(coverPriceUsd(providerKey) * 100);
+}
+
+/**
+ * The Instance's price per Cover once `providerKey` is saved as the Cover
+ * provider: a price that is some preset's list price follows the new preset;
+ * any other price (zero included) is the Admin's own and stays.
+ */
+export function followedCoverUnitCost(currentUsd: number, providerKey: string): number {
+  const listPrice = IMAGE_PROVIDERS.some((option) => option.coverPriceUsd === currentUsd);
+  return listPrice ? coverPriceUsd(providerKey) : currentUsd;
+}
 
 export interface ProviderPicker<T> {
   /** The presets the picker lists, main ones first, each group in preset order. */

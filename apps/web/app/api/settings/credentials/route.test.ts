@@ -9,6 +9,8 @@ const mocks = vi.hoisted(() => ({
   storedConfig: vi.fn(async (): Promise<Record<string, unknown> | null> => null),
   credentialStatus: vi.fn(async () => ({ configured: false })),
   envLayer: vi.fn((): Record<string, string> => ({})),
+  unitCosts: vi.fn(async () => ({ perTrackUsd: 0.04, perCoverUsd: 0.07 })),
+  updateUnitCosts: vi.fn(async () => ({ perTrackUsd: 0.04, perCoverUsd: 0.07 })),
 }));
 
 vi.mock('@liedmotif/db', () => ({
@@ -17,6 +19,8 @@ vi.mock('@liedmotif/db', () => ({
   readEnvLayer: mocks.envLayer,
   deleteProviderCredential: mocks.delete,
   upsertProviderCredential: mocks.upsert,
+  getUnitCosts: mocks.unitCosts,
+  updateUnitCosts: mocks.updateUnitCosts,
 }));
 // Only the DNS-resolving SSRF probe is stubbed; the base-URL rule is the real
 // one, so this file proves what the route actually stores.
@@ -40,6 +44,8 @@ describe('provider credential writes', () => {
     mocks.encryptionKey.mockReturnValue(undefined);
     mocks.storedConfig.mockResolvedValue(null);
     mocks.envLayer.mockReturnValue({});
+    mocks.unitCosts.mockResolvedValue({ perTrackUsd: 0.04, perCoverUsd: 0.07 });
+    mocks.updateUnitCosts.mockClear();
   });
 
   it('refuses a base URL carrying credentials before it can be stored', async () => {
@@ -308,6 +314,55 @@ describe('provider credential writes', () => {
         config: expect.objectContaining({ model: expect.anything() }),
       }),
     );
+  });
+
+  function saveImage(providerKey: string) {
+    return POST(
+      new Request('http://localhost/api/settings/credentials', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ providerType: 'image', providerKey, secret: 'image-key' }),
+      }),
+    );
+  }
+
+  it('moves the price per Cover to the saved provider while it is still a list price', async () => {
+    mocks.encryptionKey.mockReturnValue(Buffer.alloc(32));
+
+    expect((await saveImage('gemini')).status).toBe(200);
+    expect(mocks.updateUnitCosts).toHaveBeenLastCalledWith({}, { perCoverUsd: 0.04 });
+
+    mocks.unitCosts.mockResolvedValue({ perTrackUsd: 0.04, perCoverUsd: 0.04 });
+    expect((await saveImage('openai')).status).toBe(200);
+    expect(mocks.updateUnitCosts).toHaveBeenLastCalledWith({}, { perCoverUsd: 0.06 });
+
+    mocks.unitCosts.mockResolvedValue({ perTrackUsd: 0.04, perCoverUsd: 0.06 });
+    expect((await saveImage('openrouter')).status).toBe(200);
+    expect(mocks.updateUnitCosts).toHaveBeenLastCalledWith({}, { perCoverUsd: 0.07 });
+  });
+
+  it("leaves the Admin's own price per Cover alone when the provider changes", async () => {
+    mocks.encryptionKey.mockReturnValue(Buffer.alloc(32));
+    for (const perCoverUsd of [0.05, 0]) {
+      mocks.unitCosts.mockResolvedValue({ perTrackUsd: 0.04, perCoverUsd });
+      expect((await saveImage('gemini')).status).toBe(200);
+    }
+
+    expect(mocks.updateUnitCosts).not.toHaveBeenCalled();
+  });
+
+  it('leaves the price per Cover alone when a Text AI is saved', async () => {
+    mocks.encryptionKey.mockReturnValue(Buffer.alloc(32));
+    const response = await POST(
+      new Request('http://localhost/api/settings/credentials', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ providerType: 'llm', providerKey: 'gemini', secret: 'AIza-1' }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.updateUnitCosts).not.toHaveBeenCalled();
   });
 
   it('refuses an image save with no key anywhere', async () => {

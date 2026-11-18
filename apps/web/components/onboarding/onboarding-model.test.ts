@@ -134,12 +134,14 @@ describe('trackCeilingNote', () => {
 });
 
 describe('coverBudgetNote', () => {
-  it('prices a daily Cover ceiling at the documented per-image estimate', () => {
-    expect(coverBudgetNote(20)).toEqual({ covers: 20, dailyCostUsd: '1.40' });
+  it("prices a daily Cover ceiling at the selected provider's price per Cover", () => {
+    expect(coverBudgetNote(20, 'openrouter')).toEqual({ covers: 20, dailyCostUsd: '1.40' });
+    expect(coverBudgetNote(20, 'openai')).toEqual({ covers: 20, dailyCostUsd: '1.20' });
+    expect(coverBudgetNote(20, 'gemini')).toEqual({ covers: 20, dailyCostUsd: '0.80' });
   });
 
   it('reports no spend when generated Covers are switched off', () => {
-    expect(coverBudgetNote(0)).toEqual({ covers: 0, dailyCostUsd: '0.00' });
+    expect(coverBudgetNote(0, 'openai')).toEqual({ covers: 0, dailyCostUsd: '0.00' });
   });
 });
 

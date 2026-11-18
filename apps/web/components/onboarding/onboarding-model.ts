@@ -7,6 +7,7 @@ import type { ListenerProfile } from '@liedmotif/db';
 import { DEFAULT_UNIT_COSTS } from '@liedmotif/shared';
 import { namedPeopleCount } from '@/components/settings/people-form-model';
 import type { PersonEditorValue } from '@/components/settings/people-types';
+import { coverPriceCents } from '@/lib/configurable-providers';
 import { coverSource, type CoverSource } from '@/lib/cover-source';
 import type { BudgetUsage } from '@/lib/my-budget-model';
 import type { OnboardingData } from '@/lib/onboarding-data';
@@ -171,9 +172,6 @@ const MINUTES_PER_TRACK = 3.5;
 /** About what one Track costs on the default music provider. */
 export const TRACK_COST_CENTS = Math.round(DEFAULT_UNIT_COSTS.perTrackUsd * 100);
 
-/** About what one generated Cover costs on the default image model. */
-export const COVER_COST_CENTS = Math.round(DEFAULT_UNIT_COSTS.perCoverUsd * 100);
-
 interface TrackCeilingNote {
   tracks: number;
   hours: number;
@@ -192,10 +190,11 @@ interface CoverBudgetNote {
   dailyCostUsd: string;
 }
 
-export function coverBudgetNote(covers: number): CoverBudgetNote {
+/** What a daily Cover ceiling costs at most on the selected image preset. */
+export function coverBudgetNote(covers: number, imageProviderKey: string): CoverBudgetNote {
   return {
     covers,
-    dailyCostUsd: ((Math.max(covers, 0) * COVER_COST_CENTS) / 100).toFixed(2),
+    dailyCostUsd: ((Math.max(covers, 0) * coverPriceCents(imageProviderKey)) / 100).toFixed(2),
   };
 }
 

@@ -7,7 +7,9 @@ import {
   deleteProviderCredential,
   getCredentialStatus,
   getStoredProviderConfig,
+  getUnitCosts,
   readEnvLayer,
+  updateUnitCosts,
   upsertProviderCredential,
   type ProviderConfig,
 } from '@liedmotif/db';
@@ -16,7 +18,11 @@ import {
   normalizeProviderBaseUrl,
   type ProviderBaseUrlRejection,
 } from '@liedmotif/providers';
-import { configurableProviderMeta, isConfigurableProviderType } from '@/lib/configurable-providers';
+import {
+  configurableProviderMeta,
+  followedCoverUnitCost,
+  isConfigurableProviderType,
+} from '@/lib/configurable-providers';
 import { encryptionKeyIfConfigured } from '@/lib/credentials';
 import { getDb } from '@/lib/db';
 import { badRequest } from '@/lib/http';
@@ -146,6 +152,12 @@ export async function POST(request: Request) {
     config,
     encryptionKey,
   });
+
+  if (providerType === 'image') {
+    const current = (await getUnitCosts(getDb())).perCoverUsd;
+    const perCoverUsd = followedCoverUnitCost(current, providerKey);
+    if (perCoverUsd !== current) await updateUnitCosts(getDb(), { perCoverUsd });
+  }
 
   return NextResponse.json({ ok: true });
 }
