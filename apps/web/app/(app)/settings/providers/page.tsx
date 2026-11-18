@@ -163,14 +163,13 @@ export default async function ProvidersPage() {
                 providerType="image"
                 options={IMAGE_PROVIDERS}
                 initialProviderKey={data.cover.providerKey}
-                currentMasked={cover?.masked ?? null}
+                currentMasked={data.cover.sharesKey ? null : (cover?.masked ?? null)}
                 configured={data.cover.configured}
                 databaseWritesEnabled={data.encryptionKeyConfigured}
                 showModel
                 lockedModel={lockedCoverModel}
                 initialModel={lockedCoverModel ? undefined : (data.cover.model ?? undefined)}
                 sharedKeyVendor={data.cover.sharedKeyVendor}
-                sharesKey={data.cover.sharesKey}
               />
             </CredentialMutationGroup>
           </ProviderCard>

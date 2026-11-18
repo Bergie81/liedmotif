@@ -24,7 +24,7 @@ export function CredentialEditor({
   return (
     <div className="flex flex-col gap-4">
       <ProviderChoice editor={editor} options={props.options} />
-      <SecretField editor={editor} currentMasked={props.sharesKey ? null : props.currentMasked} />
+      <SecretField editor={editor} currentMasked={props.currentMasked} />
       <BaseUrlField editor={editor} />
       {props.showModel ? <ModelField editor={editor} locked={lockedModel} /> : null}
 

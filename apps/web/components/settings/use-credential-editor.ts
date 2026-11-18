@@ -30,6 +30,7 @@ export interface CredentialEditorProps {
   providerType: ConfigurableProviderType;
   options: readonly ProviderOption[];
   initialProviderKey: string;
+  /** The loaded provider's own key, masked; `null` without one (a shared Text AI key is not its own). */
   currentMasked: string | null;
   configured: boolean;
   hasExistingSelection?: boolean;
@@ -42,8 +43,6 @@ export interface CredentialEditorProps {
    * vendor, when that key can be shared), else `null`.
    */
   sharedKeyVendor?: string | null;
-  /** Whether the loaded provider uses the Text AI's key now (`currentMasked` is then that key). */
-  sharesKey?: boolean;
   /**
    * What a successful save means for the surrounding surface, given what was stored.
    * Required, because "saved" has no useful default: Settings reloads to re-resolve
@@ -84,8 +83,7 @@ export function useCredentialEditor(props: CredentialEditorProps) {
    * of its own, which only the loaded provider can have.
    */
   function sharesKeyByDefault(value: string): boolean {
-    const ownKey =
-      value === props.initialProviderKey && Boolean(props.currentMasked) && !props.sharesKey;
+    const ownKey = value === props.initialProviderKey && Boolean(props.currentMasked);
     return value === props.sharedKeyVendor && !ownKey;
   }
 

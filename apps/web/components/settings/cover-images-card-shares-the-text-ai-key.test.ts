@@ -35,7 +35,12 @@ function stubFetch() {
   return bodies;
 }
 
-function renderCoverEditor(props: {
+/** Renders the card's editor the way the Providers page does: a shared key is not its own. */
+function renderCoverEditor({
+  currentMasked,
+  sharesKey,
+  ...props
+}: {
   initialProviderKey: string;
   currentMasked: string | null;
   sharesKey: boolean;
@@ -48,7 +53,8 @@ function renderCoverEditor(props: {
       h(CredentialEditor, {
         providerType: 'image',
         options: IMAGE_PROVIDERS,
-        configured: props.currentMasked !== null,
+        currentMasked: sharesKey ? null : currentMasked,
+        configured: currentMasked !== null,
         databaseWritesEnabled: true,
         ...props,
       }),

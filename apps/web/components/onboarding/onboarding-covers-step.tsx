@@ -97,7 +97,6 @@ function CoversStepBody({
     showModel: true,
     initialModel,
     sharedKeyVendor,
-    sharesKey: credential.sharesKey,
     // The key is stored first, and the Cover budget follows it in the same commit.
     onSaved: (saved) => {
       onConnected({ providerKey: saved.providerKey, model: saved.model ?? '' });
