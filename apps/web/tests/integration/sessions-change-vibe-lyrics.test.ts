@@ -160,10 +160,13 @@ describe.skipIf(skip)('POST /api/sessions/change-vibe — the lyrical direction'
     const sessionId = await startVocalSession();
     const before = await storedNotes(sessionId);
 
-    // What the Change Vibe sheet sends when only a chip moved: the stored prompt
-    // re-expanded with the changed pick.
-    await changeVibe(sessionId, { mode: 'prompt', prompt: ORIGIN, energy: 'high' });
+    // What the Change Vibe sheet sends when only a chip moved.
+    await changeVibe(sessionId, { mode: 'picks', energy: 'high' });
 
+    expect(holder.expansions.at(-1)).toMatchObject({
+      adjustFrom: { lyricContext: before },
+      promptHistory: ORIGIN,
+    });
     expect(await storedNotes(sessionId)).toBe(before);
   });
 

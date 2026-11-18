@@ -127,6 +127,8 @@ export interface LlmProvider extends BaseProvider {
    * snapshot's `lyricContext` selection. `picks` are the user's explicit
    * fine-tune picks (genres/energy/vocal/voice): the provider must guarantee
    * they shape the snapshot — deterministically, never by trusting the model.
+   * On an adjustment (`options.adjustFrom`) an empty `intent` means there is no
+   * change message: the picks are the only change (a picks-only Change Vibe).
    */
   expandSessionIntent(
     intent: string,

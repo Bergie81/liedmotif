@@ -308,13 +308,37 @@ function applyGenrePicks(
   };
 }
 
+/** The style tags the app itself writes for the vocal mode and the energy. The
+ *  style text is checked only for these exact segments: the rest is prose in
+ *  any language, and whether it speaks of singing or intensity is the model's
+ *  reading, carried by the enum fields, never a word match (ADR 0004). */
+const INSTRUMENTAL_TAG = 'instrumental';
+const VOCALS_TAG = 'with vocals';
+const energyTag = (energy: EnergyLevel) => `${energy} energy`;
+
+function isTag(segment: string, tag: string): boolean {
+  return segment.toLowerCase() === tag;
+}
+
+function isEnergyTag(segment: string): boolean {
+  return ENERGY_LEVELS.some((level) => isTag(segment, energyTag(level)));
+}
+
+/** The style text with `tag` as its last segment, unless a segment already is it. */
+function withTag(segments: readonly string[], tag: string): string {
+  const kept = segments.some((segment) => isTag(segment, tag)) ? segments : [...segments, tag];
+  return kept.join(', ').slice(0, MAX_STYLE_PROMPT_LENGTH);
+}
+
 /**
  * Force the picked vocal mode over the model's reading. Beyond the mode flag
- * (which drives the provider's `instrumental` switch), the contradicting style
- * text is rewritten and the vocal-only fields are kept consistent: instrumental
- * clears lyricContext/voiceGender (no lyrics exist) and steers away from vocals
- * via `negativeTerms`; vocal drops that steer. The language survives either
- * mode — it also steers title language, and the per-track vocal tail is
+ * (which drives the provider's `instrumental` switch), the app's own opposite
+ * tag segment is dropped and its own tag for the picked mode is added, and the
+ * vocal-only fields are kept consistent: instrumental clears
+ * lyricContext/voiceGender (no lyrics exist) and steers away from vocals via
+ * `negativeTerms`; vocal drops that steer. Prose that speaks of singing stays as
+ * written — the provider's flag and the tag override it. The language survives
+ * either mode — it also steers title language, and the per-track vocal tail is
  * mode-gated (`vocalDescriptionTail`), so it can never leak into an
  * instrumental description.
  */
@@ -335,76 +359,73 @@ function applyVocalPick(
   if (vocal === 'vocal') {
     // Only the BARE "instrumental" tag is dropped — from the style (whole comma
     // segments) and from genreTags, with one predicate — so a compound genre
-    // like "instrumental hip hop" is never mangled. Contradicting prose the
-    // model wove into a longer segment stays; the provider's instrumental flag
-    // and the appended vocal tag override it.
-    const isBareInstrumental = (text: string) => text.trim().toLowerCase() === 'instrumental';
-    const stripped = commaSegments(snapshot.stylePrompt)
-      .filter((segment) => !isBareInstrumental(segment))
-      .join(', ');
+    // like "instrumental hip hop" is never mangled.
+    const isBareInstrumental = (text: string) => isTag(text.trim(), INSTRUMENTAL_TAG);
+    const segments = commaSegments(snapshot.stylePrompt).filter(
+      (segment) => !isBareInstrumental(segment),
+    );
     return {
       ...snapshot,
       vocalMode: 'vocal',
       negativeTerms: snapshot.negativeTerms.filter((term) => !isVocalsNegative(term)),
       genreTags: snapshot.genreTags.filter((tag) => !isBareInstrumental(tag)),
-      stylePrompt: (/vocal/i.test(stripped) ? stripped : `${stripped}, with vocals`).slice(
-        0,
-        MAX_STYLE_PROMPT_LENGTH,
-      ),
+      stylePrompt: withTag(segments, VOCALS_TAG),
     };
   }
-  // The "with vocals" phrase can't be part of a genre name, so it is safe to
-  // strip inside a segment; a segment left empty (or reduced to bare "vocals")
-  // disappears with it.
-  const stripped = commaSegments(snapshot.stylePrompt)
-    .map((segment) => segment.replace(/\bwith vocals\b/gi, '').trim())
-    .filter((segment) => segment && !isVocalsNegative(segment))
-    .join(', ');
+  const segments = commaSegments(snapshot.stylePrompt).filter(
+    (segment) => !isTag(segment, VOCALS_TAG),
+  );
   return {
     ...snapshot,
     vocalMode: 'instrumental',
     negativeTerms: snapshot.negativeTerms.some(isVocalsNegative)
       ? snapshot.negativeTerms
       : [...snapshot.negativeTerms, 'vocals'],
-    stylePrompt: (/\binstrumental\b/i.test(stripped)
-      ? stripped
-      : `${stripped}, instrumental`
-    ).slice(0, MAX_STYLE_PROMPT_LENGTH),
+    stylePrompt: withTag(segments, INSTRUMENTAL_TAG),
     lyricContext: '',
     voiceGender: '',
     useOwnVoice: false,
   };
 }
 
+/** The style text with one energy tag segment for `energy`: the first of the
+ *  app's own energy tags is rewritten to it and any further one dropped; when
+ *  there is none, `append` decides whether the tag is added. */
+function retaggedEnergy(stylePrompt: string, energy: EnergyLevel, append: boolean): string {
+  const segments = commaSegments(stylePrompt);
+  const first = segments.findIndex(isEnergyTag);
+  if (first === -1) return append ? withTag(segments, energyTag(energy)) : stylePrompt;
+  return segments
+    .flatMap((segment, index) =>
+      index === first ? [energyTag(energy)] : isEnergyTag(segment) ? [] : [segment],
+    )
+    .join(', ')
+    .slice(0, MAX_STYLE_PROMPT_LENGTH);
+}
+
 /**
  * Force the picked energy over the model's reading. The model's BPM reflected
  * ITS energy guess, so it is unfrozen (`bpm: null`) for `freezeStyleParameters`
- * to re-derive from the forced energy — and any stale "<level> energy" style
- * tag is rewritten to match (a changed energy is appended when the style never
- * named one).
+ * to re-derive from the forced energy — and the app's own "<level> energy" tag
+ * segment is rewritten to match (a changed energy is appended when the style
+ * carries no such tag).
  */
 function applyEnergyPick(
   snapshot: SessionStyleSnapshot,
   energy: EnergyLevel | undefined,
 ): SessionStyleSnapshot {
   if (!energy) return snapshot;
-  const energyTag = /\b(low|medium|high)[\s-]energy\b/gi;
-  const tagged = snapshot.stylePrompt.match(energyTag) !== null;
-  // A pick that matches the snapshot's energy leaves its tempo alone, but the
-  // words can still name another level (the passthrough never reads them).
+  // A pick that matches the snapshot's energy leaves its tempo alone, but a
+  // tag segment can still name another level (the passthrough never reads them).
   if (energy === snapshot.energy) {
-    return tagged
-      ? { ...snapshot, stylePrompt: snapshot.stylePrompt.replace(energyTag, `${energy} energy`) }
-      : snapshot;
+    const stylePrompt = retaggedEnergy(snapshot.stylePrompt, energy, false);
+    return stylePrompt === snapshot.stylePrompt ? snapshot : { ...snapshot, stylePrompt };
   }
-  const stylePrompt = tagged
-    ? snapshot.stylePrompt.replace(energyTag, `${energy} energy`)
-    : `${snapshot.stylePrompt}, ${energy} energy`;
   return {
     ...snapshot,
     energy,
     bpm: null,
-    stylePrompt: stylePrompt.slice(0, MAX_STYLE_PROMPT_LENGTH),
+    stylePrompt: retaggedEnergy(snapshot.stylePrompt, energy, true),
   };
 }
 

@@ -141,21 +141,22 @@ describe.skipIf(skip)('POST /api/sessions/change-vibe — no text LLM configured
     expect(holder.llmInvocations).toBe(0);
   });
 
-  it('applies a picks-only change re-deriving the stored prompt, without doubling the history', async () => {
+  it('applies a picks-only change to the current style, leaving the history alone', async () => {
     const sessionId = await startSession({ mode: 'prompt', prompt: ORIGIN });
     const before = await loadSession(sessionId);
 
-    // What the sheet sends for a picks-only change over a prompt vibe: the
-    // stored prompt with the changed picks (`buildChangeVibeIntent`).
     const res = await post(changeVibeRoute, {
       sessionId,
-      input: { mode: 'prompt', prompt: ORIGIN, energy: 'high' },
+      input: { mode: 'picks', energy: 'high' },
     });
     expect(res.status).toBe(200);
 
     const after = await loadSession(sessionId);
     expect(after.styleRevision).toBe(before.styleRevision + 1);
     expect(after.sessionStyleSnapshot?.energy).toBe('high');
+    expect(after.sessionStyleSnapshot?.stylePrompt).toBe(
+      `${before.sessionStyleSnapshot!.stylePrompt}, high energy`,
+    );
     expect(after.userPrompt).toBe(ORIGIN);
     expect(holder.llmInvocations).toBe(0);
   });
@@ -231,7 +232,7 @@ describe.skipIf(skip)('POST /api/sessions/change-vibe — no text LLM configured
 
     const res = await post(changeVibeRoute, {
       sessionId,
-      input: { mode: 'prompt', prompt: VOCAL_POP.prompt, energy: 'high' },
+      input: { mode: 'picks', energy: 'high' },
     });
     expect(res.status).toBe(200);
 

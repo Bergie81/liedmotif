@@ -1,9 +1,9 @@
 // Change Vibe overlay model: map the
 // queue poll's `vibe` projection to picker preselection, and build the intent a
 // submit sends. Preselected values are the CURRENT vibe; only picks the user
-// actually changes ride a free-text intent (untouched controls must not lock
-// the message out of steering those facets), while a picks-only change without
-// a message re-derives the stored intent with the edits applied.
+// actually changes ride the intent (untouched controls must not lock the
+// message out of steering those facets), and a picks-only change without a
+// message adjusts the current style by those picks alone.
 
 import {
   DURATION_TARGET_REACHED_MESSAGE,
@@ -228,14 +228,18 @@ function mergedControlsIntent(
   };
 }
 
+const NOTHING_TO_SUBMIT = 'Describe the change or adjust the fine-tune options.';
+
 /**
  * Build the intent a Change Vibe submit sends.
  * - Message present → prompt intent; changed picks ride as authoritative.
- * - Picks-only over a controls vibe → the stored controls with the edits.
- * - Picks-only over a prompt vibe → the stored prompt re-derived with the
- *   changed picks (one text-LLM call when one is configured — the documented
- *   Change Vibe budget — deterministic prompt passthrough otherwise).
- * - Nothing changed → not submittable.
+ * - Picks-only over a controls vibe (a legacy controls-born Session) → the
+ *   stored controls with the edits.
+ * - Any other picks-only change → a picks intent with the changed picks only;
+ *   the server adjusts the current Style Snapshot by them and never re-reads
+ *   the prompt history as a request.
+ * - Nothing changed, or only a change the picks intent cannot carry (every
+ *   genre cleared) → not submittable.
  */
 export function buildChangeVibeIntent(args: {
   message: string;
@@ -251,20 +255,13 @@ export function buildChangeVibeIntent(args: {
       intent: { mode: 'prompt', prompt: message, ...changedPromptPicks(args.initial, args.picks) },
     };
   }
-  if (!picksChanged) {
-    return { ok: false, error: 'Describe the change or adjust the fine-tune options.' };
+  if (!picksChanged) return { ok: false, error: NOTHING_TO_SUBMIT };
+  if (args.vibe?.controls) {
+    return { ok: true, intent: mergedControlsIntent(args.vibe, args.initial, args.picks) };
   }
-  if (!args.vibe?.controls && args.vibe?.userPrompt) {
-    return {
-      ok: true,
-      intent: {
-        mode: 'prompt',
-        prompt: args.vibe.userPrompt,
-        ...changedPromptPicks(args.initial, args.picks),
-      },
-    };
-  }
-  return { ok: true, intent: mergedControlsIntent(args.vibe, args.initial, args.picks) };
+  const picks = changedPromptPicks(args.initial, args.picks);
+  if (Object.keys(picks).length === 0) return { ok: false, error: NOTHING_TO_SUBMIT };
+  return { ok: true, intent: { mode: 'picks', ...picks } };
 }
 
 /** Duration is Session policy: only an explicit edit rides the request, never the creative intent.
@@ -282,12 +279,11 @@ export function buildChangeVibeRequest(
   | { ok: true; input?: ChangeVibeIntentInput; targetDurationMinutes?: number | null }
   | { ok: false; error: string } {
   const durationChanged = args.initialTarget !== args.target;
-  const creativeChange = args.message.trim().length > 0 || hasPickChanges(args.initial, args.picks);
-  if (!creativeChange && durationChanged) return { ok: true, targetDurationMinutes: args.target };
-  if (creativeChange && isDurationTargetReached(args.target, args.generatedDurationSeconds)) {
+  const built = buildChangeVibeIntent(args);
+  if (!built.ok && durationChanged) return { ok: true, targetDurationMinutes: args.target };
+  if (built.ok && isDurationTargetReached(args.target, args.generatedDurationSeconds)) {
     return { ok: false, error: DURATION_TARGET_REACHED_MESSAGE };
   }
-  const built = buildChangeVibeIntent(args);
   if (!built.ok) return built;
   return {
     ok: true,

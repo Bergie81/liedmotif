@@ -1531,6 +1531,27 @@ describe('request-language rule (German request → German titles and vocals)', 
 });
 
 describe('vocal language fallback (expansion omitted or junked the language)', () => {
+  it('asks no language question about a picks-only change, which has no message to read', async () => {
+    const captured: string[] = [];
+    const provider = createOpenRouterLlmProvider({
+      apiKey: 'sk-or-1',
+      model: 'm',
+      languageModel: promptCapturingModel(
+        [JSON.stringify({ stylePrompt: 'acoustic pop', vocalMode: 'vocal' }), '"German".'],
+        captured,
+      ),
+    });
+    const adjustFrom = compileStructuredControls({ vocal: 'vocal', genres: ['pop'] });
+    const snapshot = await provider.expandSessionIntent(
+      '',
+      null,
+      { energy: 'high' },
+      { adjustFrom },
+    );
+    expect(captured).toHaveLength(1);
+    expect(snapshot.language).toBe('');
+  });
+
   it('asks one follow-up question when a vocal expansion omits language', async () => {
     const captured: string[] = [];
     const provider = createOpenRouterLlmProvider({

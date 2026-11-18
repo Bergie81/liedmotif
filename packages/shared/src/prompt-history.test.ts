@@ -26,14 +26,9 @@ describe('extendPromptHistory', () => {
     );
   });
 
-  it('does not double the history when the whole stored prompt is resent', () => {
+  it('appends a message that repeats earlier words, since the listener may mean them again', () => {
     const stored = 'calm music for coding\n\nmehr rockiger';
-    expect(extendPromptHistory(stored, stored)).toBe(stored);
-  });
-
-  it('does not repeat a change that just landed', () => {
-    const stored = 'calm music for coding\n\nmehr rockiger';
-    expect(extendPromptHistory(stored, '  mehr rockiger ')).toBe(stored);
+    expect(extendPromptHistory(stored, '  mehr rockiger ')).toBe(`${stored}\n\nmehr rockiger`);
   });
 
   it('leaves the stored history untouched for blank incoming text', () => {

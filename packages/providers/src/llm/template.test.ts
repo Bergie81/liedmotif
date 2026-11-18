@@ -453,6 +453,38 @@ describe('applyStylePicks (deterministic fine-tune enforcement on a produced sna
     expect(applyStylePicks(echoed, { vocal: 'vocal' }).negativeTerms).toEqual(['piano']);
   });
 
+  it('reads only its own tag segments, never the prose, in any language', () => {
+    // "ruhiger Gesang, hohe Energie" names singing and high energy in German;
+    // the enum fields carry the picks, and the app adds its own tags once.
+    const german = sessionStyleSnapshotSchema.parse({
+      stylePrompt: 'ruhiger Gesang, hohe Energie',
+      vocalMode: 'vocal',
+      energy: 'low',
+    });
+    const picked = applyStylePicks(german, { vocal: 'instrumental', energy: 'high' });
+    const segments = picked.stylePrompt.split(',').map((segment) => segment.trim());
+    expect(segments.filter((segment) => segment === 'instrumental')).toHaveLength(1);
+    expect(segments.filter((segment) => segment === 'high energy')).toHaveLength(1);
+    expect(picked.stylePrompt).toContain('ruhiger Gesang, hohe Energie');
+  });
+
+  it('leaves prose that merely mentions vocals or an energy as the model wrote it', () => {
+    const prose = sessionStyleSnapshotSchema.parse({
+      stylePrompt: 'dream pop with vocals floating over low-energy pads',
+      vocalMode: 'vocal',
+      energy: 'low',
+    });
+    const picked = applyStylePicks(prose, { vocal: 'instrumental', energy: 'high' });
+    expect(picked.stylePrompt).toBe(
+      'dream pop with vocals floating over low-energy pads, instrumental, high energy',
+    );
+    const sung = applyStylePicks(
+      sessionStyleSnapshotSchema.parse({ stylePrompt: 'soft female vocal harmonies, ambient' }),
+      { vocal: 'vocal' },
+    );
+    expect(sung.stylePrompt).toBe('soft female vocal harmonies, ambient, with vocals');
+  });
+
   it('a forced vocal mode never mangles a compound instrumental-family genre pick', () => {
     // "instrumental hip hop" is a real genre; only the BARE mode tag may be
     // dropped from the style — a word-level strip would mangle the pick the
@@ -483,7 +515,7 @@ describe('applyStylePicks (deterministic fine-tune enforcement on a produced sna
 
   it('a forced instrumental strips the vocal fields the words asked for', () => {
     const vocalSnapshot = sessionStyleSnapshotSchema.parse({
-      stylePrompt: 'dream pop with vocals',
+      stylePrompt: 'dream pop, with vocals',
       vocalMode: 'vocal',
       energy: 'medium',
       language: 'German',

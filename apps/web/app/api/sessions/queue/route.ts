@@ -129,7 +129,6 @@ function toSessionVibe(session: QueueSessionRecord): SessionVibe | null {
     styleStrength: storedGuardrailLevel(facets.styleStrength),
     novelty: storedGuardrailLevel(facets.novelty),
     avoid: typeof facets.userAvoid === 'string' ? facets.userAvoid : '',
-    userPrompt: session.userPrompt,
     controls: parsedControls?.success ? parsedControls.data : null,
   };
 }

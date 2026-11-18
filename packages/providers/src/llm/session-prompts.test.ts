@@ -342,16 +342,13 @@ describe('expansionPrompt adjustment lyric continuity', () => {
     expect(adjusted({ promptHistory: '   ' })).not.toMatch(/background context/i);
   });
 
-  it('omits the history block when the change request already carries it', () => {
-    // What a picks-only fine-tune sends: the stored history re-expanded as the
-    // change request — rendering it twice would contradict itself.
-    const prompt = expansionPrompt(
-      HISTORY,
-      null,
-      { energy: 'high' },
-      { adjustFrom: current, promptHistory: HISTORY },
-    );
-    expect(prompt).not.toMatch(/background context/i);
+  it('renders the history in full even when a change message repeats it word for word', () => {
+    // The listener may mean the same words again: they are a message like any other.
+    const prompt = expansionPrompt(HISTORY, null, undefined, {
+      adjustFrom: current,
+      promptHistory: HISTORY,
+    });
+    expect(prompt).toMatch(/background context/i);
     expect(prompt).toContain(`Change request: ${HISTORY}`);
   });
 
@@ -377,6 +374,42 @@ describe('expansionPrompt adjustment lyric continuity', () => {
       expect(prompt).toContain(HISTORY);
       expect(prompt).toMatch(/EDIT it/);
     }
+  });
+});
+
+// A picks-only Change Vibe has no message: the picks are the only change, and
+// the history stays background.
+describe('expansionPrompt picks-only adjustment', () => {
+  const HISTORY = 'calm piano for reading\n\nmake it rockier\n\nactually, drop the guitars';
+  const current = sessionStyleSnapshotSchema.parse({
+    stylePrompt: 'calm, gentle solo piano',
+    energy: 'low',
+  });
+  const prompt = expansionPrompt(
+    '',
+    null,
+    { energy: 'high' },
+    {
+      adjustFrom: current,
+      promptHistory: HISTORY,
+    },
+  );
+
+  it('has no change-request line', () => {
+    expect(prompt).not.toContain('Change request:');
+  });
+
+  it('states that the picks are the only change and asks to reword the style to fit them', () => {
+    expect(prompt).toMatch(/no change request/i);
+    expect(prompt).toMatch(/only change is the explicit picks/i);
+    expect(prompt).toMatch(/reword stylePrompt/i);
+  });
+
+  it('keeps the anchor, the picks and the history as labeled background', () => {
+    expect(prompt).toContain('calm, gentle solo piano');
+    expect(prompt).toContain('energy to high');
+    expect(prompt).toContain(HISTORY);
+    expect(prompt).toMatch(/background context/i);
   });
 });
 

@@ -364,3 +364,103 @@ describe('deriveSessionMetadata settles whether the request includes the listene
     expect(changed.includesListener).toBe(false);
   });
 });
+
+// A Change Vibe that moves only fine-tune picks adjusts the running Style
+// Snapshot by those picks alone: the prompt history is background, never a
+// request to apply again.
+describe('a picks-only Change Vibe adjusts the current Style Snapshot', () => {
+  const anchor = sessionStyleSnapshotSchema.parse({
+    stylePrompt: 'calm, gentle solo piano',
+    negativeTerms: ['vocals'],
+    genreTags: ['piano'],
+    vocalMode: 'instrumental',
+    energy: 'low',
+    language: 'English',
+    bpm: 68,
+    key: 'D major',
+    title: 'Reading Room',
+    trackTitles: ['Page One', 'Margins'],
+    styleStrength: 0.9,
+    novelty: 0.1,
+    userAvoid: 'saxophone',
+  });
+  const history = 'calm piano for reading\n\nmake it rockier';
+  const options = { adjustFrom: anchor, promptHistory: history };
+
+  it('makes exactly one text-LLM call, with the anchor, the history and the picks but no change message', async () => {
+    const expand = vi.fn(async () => ({
+      snapshot: anchor,
+      coverConcept: '',
+      autoCoverStyle: null,
+    }));
+    const llm = { expandSessionIntentWithMetadata: expand } as unknown as LlmProvider;
+
+    await deriveSessionMetadata({ mode: 'picks', energy: 'high' }, llm, null, options);
+
+    expect(expand).toHaveBeenCalledTimes(1);
+    expect(expand).toHaveBeenCalledWith('', null, { energy: 'high' }, options);
+  });
+
+  it('without a text LLM applies the picks to the anchor’s style and takes nothing from the history', async () => {
+    const { snapshot } = await deriveSessionMetadata(
+      { mode: 'picks', energy: 'high' },
+      null,
+      null,
+      options,
+    );
+    expect(snapshot.stylePrompt).toBe('calm, gentle solo piano, high energy');
+    expect(snapshot.stylePrompt).not.toContain('rockier');
+    expect(snapshot.energy).toBe('high');
+    // A changed energy re-freezes the tempo; the key stays.
+    expect(snapshot.bpm).not.toBe(68);
+    expect(snapshot.key).toBe('D major');
+  });
+
+  it('puts a genre pick in front and leaves the old genre words standing (the accepted no-LLM limit)', async () => {
+    const { snapshot } = await deriveSessionMetadata(
+      { mode: 'picks', genres: ['techno'] },
+      null,
+      null,
+      options,
+    );
+    expect(snapshot.stylePrompt).toBe('techno, calm, gentle solo piano');
+    expect(snapshot.genreTags).toEqual(['techno', 'piano']);
+  });
+
+  it('keeps every facet no pick touches, and carries the untouched guardrails', async () => {
+    const { snapshot } = await deriveSessionMetadata(
+      { mode: 'picks', novelty: 0.6 },
+      null,
+      null,
+      options,
+    );
+    expect(snapshot).toMatchObject({
+      stylePrompt: anchor.stylePrompt,
+      genreTags: anchor.genreTags,
+      vocalMode: 'instrumental',
+      energy: 'low',
+      language: 'English',
+      bpm: 68,
+      key: 'D major',
+      title: 'Reading Room',
+      trackTitles: ['Page One', 'Margins'],
+      novelty: 0.6,
+      styleStrength: 0.9,
+      userAvoid: 'saxophone',
+    });
+    expect(snapshot.negativeTerms).toEqual(['vocals', 'saxophone']);
+  });
+
+  it('drops the previous Avoid terms when the Avoid is cleared', async () => {
+    const withAvoid = { ...anchor, negativeTerms: ['vocals', 'saxophone'] };
+    const { snapshot } = await deriveSessionMetadata({ mode: 'picks', avoid: '' }, null, null, {
+      adjustFrom: withAvoid,
+    });
+    expect(snapshot.userAvoid).toBeUndefined();
+    expect(snapshot.negativeTerms).toEqual(['vocals']);
+  });
+
+  it('has nothing to adjust without the running snapshot', async () => {
+    await expect(deriveSessionMetadata({ mode: 'picks', energy: 'high' }, null)).rejects.toThrow();
+  });
+});

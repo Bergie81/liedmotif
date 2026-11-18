@@ -27,21 +27,16 @@ function truncatePrompt(text: string, maxLength: number): string {
 
 /**
  * The Session's stored prompt after a Change Vibe carrying text: the history so
- * far, extended by the new text with an empty line between them.
- *
- * The append is SKIPPED when the incoming text is already the whole history or
- * its last segment — the picks-only fine-tune resends the stored prompt verbatim
- * as its intent, and a repeated identical tweak would otherwise double itself.
- * The result is bounded by the API edge's prompt limit, truncating the tail so
- * the origin always survives (and so the picks-only resend stays schema-valid).
+ * far, extended by the new text with an empty line between them. Every message
+ * is appended, even one that repeats earlier words: the listener may mean them
+ * again. The result is bounded by the API edge's prompt limit, truncating the
+ * tail so the origin always survives.
  */
 export function extendPromptHistory(stored: string | null, incoming: string): string {
   const history = stored?.trim() ?? '';
   const addition = incoming.trim();
   if (!addition) return history;
   if (!history) return truncatePrompt(addition, MAX_USER_PROMPT_LENGTH);
-  const lastSegment = history.split(SEGMENT_SEPARATOR).at(-1)!.trim();
-  if (addition === history || addition === lastSegment) return history;
   return truncatePrompt(`${history}${SEGMENT_SEPARATOR}${addition}`, MAX_USER_PROMPT_LENGTH);
 }
 

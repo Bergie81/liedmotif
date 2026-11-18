@@ -135,12 +135,13 @@ async function listenerContextForIntent(
 ): Promise<ListenerContext | null> {
   const skipProfile = options?.skipProfile === true;
   const general = skipProfile ? null : await getListenerContext(db, ownerUserId);
-  if (input.mode !== 'prompt') return general;
+  if (input.mode === 'controls') return general;
   const context: PersonMatchContext = { ...options, vocal: input.vocal };
   if (vocalsRuledOut(context)) return general;
   const everyone = await listPeople(db, ownerUserId);
+  // A picks-only change has no message: People are matched over the history alone.
   const { people, about } = personLyricContextForRequest(
-    input.prompt,
+    input.mode === 'prompt' ? input.prompt : '',
     skipProfile ? everyone.filter((person) => person.role !== 'owner') : everyone,
     context,
   );
@@ -178,12 +179,13 @@ export async function deriveSnapshotForIntent(
   return deriveSessionSnapshot(input, llm, listener);
 }
 
+/** The text LLM rewords a free-text or picks-only intent; controls never reach it. */
 async function deriveMetadataForIntent(
   input: SessionIntentInput,
   listener?: ListenerContext | null,
   expansion?: ExpansionOptions,
 ) {
-  const llm = input.mode === 'prompt' ? await getLlmProvider() : null;
+  const llm = input.mode === 'controls' ? null : await getLlmProvider();
   return deriveSessionMetadata(input, llm, listener, expansion);
 }
 

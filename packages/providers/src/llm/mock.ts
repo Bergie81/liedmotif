@@ -110,7 +110,8 @@ function mockLyricContext(
 /** The pre-pick snapshot an expansion starts from. An adjustment anchors on the
  *  running snapshot (the `adjustFrom` contract): the change text rides onto the
  *  style and every other facet — genres, vocal mode, language, frozen bpm/key —
- *  holds, the deterministic stand-in for the real adjustment prompt. Explicit
+ *  holds, the deterministic stand-in for the real adjustment prompt. A
+ *  picks-only adjustment has no change text, so the style holds too. Explicit
  *  picks are enforced afterwards and win over the anchor. */
 function baseSnapshot(
   text: string,
@@ -119,7 +120,9 @@ function baseSnapshot(
   if (anchor) {
     return sessionStyleSnapshotSchema.parse({
       ...anchor,
-      stylePrompt: `${anchor.stylePrompt}, ${text}`.slice(0, MAX_STYLE_PROMPT_LENGTH),
+      stylePrompt: text
+        ? `${anchor.stylePrompt}, ${text}`.slice(0, MAX_STYLE_PROMPT_LENGTH)
+        : anchor.stylePrompt,
     });
   }
   return sessionStyleSnapshotSchema.parse({
@@ -158,7 +161,7 @@ export function mockLlmProvider(
       picks?: StylePicks,
       options?: ExpansionOptions,
     ): Promise<SessionStyleSnapshot> {
-      const text = intent.trim() || DEFAULT_STYLE;
+      const text = intent.trim() || (options?.adjustFrom ? '' : DEFAULT_STYLE);
       const base = baseSnapshot(text, options?.adjustFrom);
       // Explicit picks are enforced first, so the vocal-only fields below follow
       // the FORCED mode (a picked vocal still gets a language; a picked
@@ -182,7 +185,9 @@ export function mockLlmProvider(
       // Skip-profile sessions source lyric notes from the request alone —
       // deterministic stand-in for the real model's request-derived notes.
       if (options?.skipProfile) {
-        return { ...snapshot, lyricContext: clampLyricContext(`story moments: ${text}`) };
+        return text
+          ? { ...snapshot, lyricContext: clampLyricContext(`story moments: ${text}`) }
+          : snapshot;
       }
       return listener
         ? { ...snapshot, lyricContext: mockLyricContext(listener, true, text) }

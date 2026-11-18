@@ -44,7 +44,6 @@ const VOCAL_VIBE: SessionVibe = {
   styleStrength: null,
   novelty: null,
   avoid: '',
-  userPrompt: null,
   controls: null,
 };
 
@@ -173,11 +172,7 @@ describe('ChangeVibeSheet preselection', () => {
           onSubmit,
         }) as ReactNode,
       );
-    const ownVoiceVibe: SessionVibe = {
-      ...VOCAL_VIBE,
-      ownVoice: true,
-      userPrompt: 'night drive with my voice',
-    };
+    const ownVoiceVibe: SessionVibe = { ...VOCAL_VIBE, ownVoice: true };
     const view = render(sheet(null));
     await act(async () => view.rerender(sheet(ownVoiceVibe)));
 
@@ -190,7 +185,7 @@ describe('ChangeVibeSheet preselection', () => {
     act(() => within(dialog).getByRole('button', { name: 'High' }).click());
     act(() => within(dialog).getByRole('button', { name: 'Change Vibe' }).click());
     expect(onSubmit).toHaveBeenCalledWith(
-      { mode: 'prompt', prompt: 'night drive with my voice', energy: 'high' },
+      { mode: 'picks', energy: 'high' },
       { switchImmediately: false, targetDurationMinutes: undefined },
     );
   });

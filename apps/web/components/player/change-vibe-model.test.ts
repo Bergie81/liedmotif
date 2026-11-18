@@ -28,7 +28,6 @@ function vibe(overrides: Partial<SessionVibe> = {}): SessionVibe {
     styleStrength: null,
     novelty: null,
     avoid: '',
-    userPrompt: null,
     controls: null,
     ...overrides,
   };
@@ -104,7 +103,7 @@ describe('buildChangeVibeIntent', () => {
   it('message + untouched picks → prompt intent with the message only (text steers)', () => {
     const result = buildChangeVibeIntent({
       message: 'slower and darker',
-      vibe: vibe({ userPrompt: 'warehouse techno' }),
+      vibe: vibe(),
       initial,
       picks: initial,
     });
@@ -117,7 +116,7 @@ describe('buildChangeVibeIntent', () => {
   it('message + changed picks → prompt intent carrying ONLY the changed picks', () => {
     const result = buildChangeVibeIntent({
       message: 'slower and darker',
-      vibe: vibe({ userPrompt: 'warehouse techno' }),
+      vibe: vibe(),
       initial,
       picks: { ...initial, energy: 'low', language: 'French' },
     });
@@ -132,13 +131,13 @@ describe('buildChangeVibeIntent', () => {
     expect(
       buildChangeVibeIntent({
         message: '',
-        vibe: vibe({ userPrompt: 'warehouse techno' }),
+        vibe: vibe(),
         initial,
         picks,
       }),
     ).toEqual({
       ok: true,
-      intent: { mode: 'prompt', prompt: 'warehouse techno', language: 'auto' },
+      intent: { mode: 'picks', language: 'auto' },
     });
     expect(
       buildChangeVibeIntent({
@@ -153,7 +152,7 @@ describe('buildChangeVibeIntent', () => {
   it('a vocal-mode flip pins vocal (and a picked voice) onto the intent', () => {
     const result = buildChangeVibeIntent({
       message: 'add a singer',
-      vibe: vibe({ userPrompt: 'warehouse techno' }),
+      vibe: vibe(),
       initial: { ...initial, vocal: 'instrumental', voice: 'any' },
       picks: { ...initial, vocal: 'vocal', voice: 'male' },
     });
@@ -166,20 +165,20 @@ describe('buildChangeVibeIntent', () => {
   it('turning Own Voice on pins the vocal group and drops the gender pick', () => {
     const result = buildChangeVibeIntent({
       message: '',
-      vibe: vibe({ userPrompt: 'warehouse techno' }),
+      vibe: vibe(),
       initial,
       picks: { ...initial, ownVoice: true },
     });
     expect(result).toEqual({
       ok: true,
-      intent: { mode: 'prompt', prompt: 'warehouse techno', vocal: 'vocal', ownVoice: true },
+      intent: { mode: 'picks', vocal: 'vocal', ownVoice: true },
     });
   });
 
   it('turning Own Voice off sends the explicit false so the server cannot carry it', () => {
     const result = buildChangeVibeIntent({
       message: 'brighter',
-      vibe: vibe({ userPrompt: 'warehouse techno' }),
+      vibe: vibe(),
       initial: { ...initial, ownVoice: true },
       picks: { ...initial, ownVoice: false },
     });
@@ -195,16 +194,16 @@ describe('buildChangeVibeIntent', () => {
     });
   });
 
-  it('picks-only over a prompt-mode session re-expands the stored prompt with the changes', () => {
+  it('a picks-only change never resends the stored prompt', () => {
     const result = buildChangeVibeIntent({
       message: '',
-      vibe: vibe({ userPrompt: 'warehouse techno' }),
+      vibe: vibe(),
       initial,
-      picks: { ...initial, genres: ['techno', 'trance'] },
+      picks: { ...initial, genres: ['techno', 'trance'], energy: 'low' },
     });
     expect(result).toEqual({
       ok: true,
-      intent: { mode: 'prompt', prompt: 'warehouse techno', genres: ['techno', 'trance'] },
+      intent: { mode: 'picks', genres: ['techno', 'trance'], energy: 'low' },
     });
   });
 
@@ -286,14 +285,14 @@ describe('buildChangeVibeIntent', () => {
   it('no message and no changes → not submittable', () => {
     const result = buildChangeVibeIntent({
       message: '   ',
-      vibe: vibe({ userPrompt: 'warehouse techno' }),
+      vibe: vibe(),
       initial,
       picks: initial,
     });
     expect(result.ok).toBe(false);
   });
 
-  it('picks-only with neither stored prompt nor controls falls back to a pure controls intent', () => {
+  it('a picks-only change on a Session with neither prompt nor controls sends picks, not controls', () => {
     const result = buildChangeVibeIntent({
       message: '',
       vibe: vibe(),
@@ -316,13 +315,27 @@ describe('buildChangeVibeIntent', () => {
         ...DEFAULT_GUARDRAIL_DRAFT,
       },
     });
-    expect(result).toEqual({
-      ok: true,
-      intent: {
-        mode: 'controls',
-        controls: { genres: ['ambient'], vocal: 'instrumental', ...DEFAULT_GUARDRAIL_CONTROLS },
-      },
+    expect(result).toEqual({ ok: true, intent: { mode: 'picks', genres: ['ambient'] } });
+  });
+
+  it('clearing every genre and nothing else is nothing to submit outside a controls vibe', () => {
+    const picks: ChangeVibePicks = { ...initial, genres: [] };
+    expect(buildChangeVibeIntent({ message: '', vibe: vibe(), initial, picks })).toEqual({
+      ok: false,
+      error: 'Describe the change or adjust the fine-tune options.',
     });
+    // A duration edit riding along is still saved on its own.
+    expect(
+      buildChangeVibeRequest({
+        message: '',
+        vibe: vibe(),
+        initial,
+        picks,
+        initialTarget: null,
+        target: 30,
+        generatedDurationSeconds: 0,
+      }),
+    ).toEqual({ ok: true, targetDurationMinutes: 30 });
   });
 });
 
@@ -362,7 +375,7 @@ describe('Session Guardrails as fine-tune picks', () => {
   it('sends ONLY the changed guardrail on a free-text change', () => {
     const result = buildChangeVibeIntent({
       message: 'warmer',
-      vibe: vibe({ userPrompt: 'warehouse techno' }),
+      vibe: vibe(),
       initial,
       picks: { ...initial, surprise: 10 },
     });
@@ -377,14 +390,11 @@ describe('Session Guardrails as fine-tune picks', () => {
   it('sends a cleared Avoid as an empty string, not as an omission', () => {
     const result = buildChangeVibeIntent({
       message: '',
-      vibe: vibe({ userPrompt: 'warehouse techno', avoid: 'saxophone' }),
+      vibe: vibe({ avoid: 'saxophone' }),
       initial,
       picks: { ...initial, avoid: '  ' },
     });
-    expect(result).toEqual({
-      ok: true,
-      intent: { mode: 'prompt', prompt: 'warehouse techno', avoid: '' },
-    });
+    expect(result).toEqual({ ok: true, intent: { mode: 'picks', avoid: '' } });
   });
 
   it('a guardrails-only change over a controls vibe is a real, submittable change', () => {

@@ -167,17 +167,32 @@ const changeVibeLanguageShape = {
   language: z.enum(['auto', ...SESSION_LANGUAGES]).optional(),
 };
 
+/** A Change Vibe with no message: only the changed picks, which adjust the
+ * current Style Snapshot. Change Vibe only — a new Session has nothing to
+ * adjust. A picks intent without any pick would change nothing, so it is
+ * refused. */
+const picksIntentSchema = z
+  .strictObject({ mode: z.literal('picks'), ...promptPicksShape, ...changeVibeLanguageShape })
+  .refine(
+    ({ mode: _mode, ...picks }) =>
+      Object.values(picks).some(
+        (value) => value !== undefined && !(Array.isArray(value) && value.length === 0),
+      ),
+    'A picks-only change needs at least one pick',
+  );
+
 /** Change Vibe's intent: the create intent's shape, plus the explicit `'auto'`
- * language marker. Picks are explicit inputs the overlay preselects from the
- * session's current vibe; a present pick is authoritative over the message text
- * exactly as at create, and an absent one leaves the derivation free. The
- * server carries the running session's language forward for intents without a
- * language pick (an API-level fallback only). */
+ * language marker, plus the picks-only variant. Picks are explicit inputs the
+ * overlay preselects from the session's current vibe; a present pick is
+ * authoritative over the message text exactly as at create, and an absent one
+ * leaves the derivation free. The server carries the running session's language
+ * forward for intents without a language pick (an API-level fallback only). */
 export const changeVibeIntentInputSchema = z.discriminatedUnion('mode', [
   promptIntentSchema.extend(changeVibeLanguageShape),
   controlsIntentSchema.extend({
     controls: structuredControlsSchema.extend(changeVibeLanguageShape),
   }),
+  picksIntentSchema,
 ]);
 export type ChangeVibeIntentInput = z.infer<typeof changeVibeIntentInputSchema>;
 
@@ -584,10 +599,10 @@ export const getSessionQueueRequestSchema = z.strictObject({
 export type GetSessionQueueRequest = z.infer<typeof getSessionQueueRequestSchema>;
 
 /** The session's CURRENT vibe facets, projected from its Style Snapshot for the
- *  Change Vibe overlay's preselection — plus the stored intent (free text OR
- *  structured controls, whichever created the vibe) so a picks-only change can
- *  re-derive without losing the rest of it. Exactly these fields — the
- *  snapshot's internals (style prompt, lyric context, seeds) stay server-only. */
+ *  Change Vibe overlay's preselection — plus the stored structured controls of a
+ *  controls-born vibe, which a picks-only change merges into. Exactly these
+ *  fields — the snapshot's internals (style prompt, lyric context, seeds) and the
+ *  prompt history stay server-only. */
 export const sessionVibeSchema = z.strictObject({
   genreTags: z.array(z.string()),
   energy: z.enum(ENERGY_LEVELS).nullable(),
@@ -605,7 +620,6 @@ export const sessionVibeSchema = z.strictObject({
   /** The Avoid text VERBATIM ('' = none) — never the compiled negative tags,
    *  which also carry system terms the user never typed. */
   avoid: z.string(),
-  userPrompt: z.string().nullable(),
   /** The stored structured controls for a controls-mode vibe; null otherwise. */
   controls: structuredControlsSchema.nullable(),
 });

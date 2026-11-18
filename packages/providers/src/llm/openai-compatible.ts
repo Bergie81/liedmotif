@@ -594,8 +594,9 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
       // one bounded follow-up question backfills an omission, '' on failure. An
       // instrumental session keeps whatever language it carries (it steers title
       // language; the vocal tail is mode-gated) but never triggers the
-      // follow-up call.
-      if (snapshot.vocalMode === 'vocal' && !snapshot.language) {
+      // follow-up call, and neither does a picks-only change: it has no words
+      // to detect a language from.
+      if (snapshot.vocalMode === 'vocal' && !snapshot.language && intent.trim()) {
         snapshot = { ...snapshot, language: await detectRequestLanguage(intent) };
       }
       // Freeze a BPM/key + seed for blend-readiness. A model-provided

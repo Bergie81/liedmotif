@@ -396,7 +396,7 @@ describe.skipIf(skip)('GET /api/sessions/queue — blend identity + analysis con
     expect(data.loopHead).toBeUndefined();
   });
 
-  it('projects the current vibe facets (and the stored intent) for the Change Vibe overlay', async () => {
+  it('projects the current vibe facets for the Change Vibe overlay', async () => {
     const ownerUserId = await createUser(testDb.db);
     holder.ownerUserId = ownerUserId;
     const sessionId = await createSession(testDb.db, {
@@ -430,7 +430,6 @@ describe.skipIf(skip)('GET /api/sessions/queue — blend identity + analysis con
       styleStrength: 0.9,
       novelty: 0.05,
       avoid: 'saxophone',
-      userPrompt: 'dark warehouse techno',
       controls: null,
     });
     expect(data.switchPending).toBe(false);
@@ -569,7 +568,6 @@ describe.skipIf(skip)('GET /api/sessions/queue — blend identity + analysis con
       styleStrength: null,
       novelty: null,
       avoid: '',
-      userPrompt: null,
       controls: null,
     });
   });

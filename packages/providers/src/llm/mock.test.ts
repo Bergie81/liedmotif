@@ -108,6 +108,15 @@ describe('mockLlmProvider', () => {
     expect(repicked.bpm).not.toBe(anchor.bpm);
   });
 
+  it('holds the anchor’s style on a picks-only adjustment, which has no change text', async () => {
+    const anchor = await provider.expandSessionIntent('calm solo piano for reading');
+    const adjusted = await provider.expandSessionIntent('', null, undefined, {
+      adjustFrom: anchor,
+    });
+    expect(adjusted.stylePrompt).toBe(anchor.stylePrompt);
+    expect(adjusted.genreTags).toEqual(anchor.genreTags);
+  });
+
   it('derives cosmetic metadata deterministically', async () => {
     const snapshot = await provider.expandSessionIntent('ambient focus');
     const meta = await provider.createTrackMetadata(snapshot, 1);

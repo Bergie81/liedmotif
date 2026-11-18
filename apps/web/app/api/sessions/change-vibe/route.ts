@@ -3,6 +3,8 @@
 // Re-styles the CURRENT session in place: same identity, stays `active`,
 // new Style Snapshot derived from the new intent (template for controls; the text
 // LLM for free text when configured, deterministic prompt passthrough otherwise).
+// A picks-only intent adjusts the current snapshot by its picks alone: one text-LLM
+// call with no change message, or the picks applied deterministically without one.
 // The only steering action; never creates a second session.
 // The live Change Vibe boundary is a crossfade in the player (no provider call).
 //
@@ -42,6 +44,9 @@ export const dynamic = 'force-dynamic';
 
 const logger = createLogger({ name: 'change-vibe' });
 
+const UNREADABLE_STYLE_MESSAGE =
+  "This Session's current style could not be read. Describe the change in words instead.";
+
 /** A vibe change changes direction, not language: for an intent without a
  * language pick the running session's language rides along as an explicit pick
  * (a server-side fallback for API callers without the overlay's preselection).
@@ -52,13 +57,13 @@ function resolveSessionLanguage(
   input: ChangeVibeIntentInput,
   language: string | undefined,
 ): { input: SessionIntentInput; autoLanguage: boolean } {
-  const pick = input.mode === 'prompt' ? input.language : input.controls.language;
+  const pick = input.mode === 'controls' ? input.controls.language : input.language;
   const autoLanguage = pick === 'auto';
   const carried = autoLanguage ? undefined : (pick ?? language);
   function withCarried<T extends object>(fields: T) {
     return carried ? { ...fields, language: carried } : fields;
   }
-  if (input.mode === 'prompt') {
+  if (input.mode !== 'controls') {
     const { language: _pick, ...rest } = input;
     return { input: withCarried(rest), autoLanguage };
   }
@@ -73,7 +78,7 @@ function resolveSessionLanguage(
  * own vocal/own-voice picks is authoritative. */
 function carrySessionOwnVoice(input: SessionIntentInput, useOwnVoice: boolean): SessionIntentInput {
   if (!useOwnVoice) return input;
-  if (input.mode === 'prompt') {
+  if (input.mode !== 'controls') {
     return input.vocal !== undefined || input.ownVoice !== undefined
       ? input
       : { ...input, ownVoice: true };
@@ -142,6 +147,10 @@ export async function POST(request: Request) {
   // possible; the session's creative naming rides through unchanged on either mode,
   // and the Session Name is never touched, Derived or Given.
   const anchor = sessionStyleSnapshotSchema.safeParse(runningStyle);
+  // Picks alone have nothing to adjust without a readable current style.
+  if (!anchor.success && input.mode === 'picks') {
+    return apiError('validation_error', UNREADABLE_STYLE_MESSAGE);
+  }
   if (!anchor.success) {
     // Degrades to an un-anchored derivation (a fresh expansion) — worth a trace,
     // since the user experiences it as a much bigger change than they asked for.
@@ -173,7 +182,13 @@ export async function POST(request: Request) {
   if (!derived.ok) {
     return apiError('provider_error', derived.message, { retryable: true });
   }
-  const { snapshot, userPrompt, coverConcept, autoCoverStyle } = derived;
+  const { userPrompt, coverConcept, autoCoverStyle } = derived;
+  // Auto Detect on a picks-only change has no new words to detect from: when the
+  // adjustment names no language, the Session keeps the one it had.
+  const snapshot =
+    input.mode === 'picks' && autoLanguage && !derived.snapshot.language
+      ? { ...derived.snapshot, language: runningStyle?.language ?? '' }
+      : derived.snapshot;
   const result = await restyleSession(db, {
     ownerUserId,
     sessionId,
@@ -188,7 +203,12 @@ export async function POST(request: Request) {
     // Provenance: the message EXTENDS the session's prompt history, which each
     // generation request then freezes for the Tracks it produces.
     userPromptAddition: userPrompt,
-    structuredControls: input.mode === 'controls' ? input.controls : null,
+    // A controls change stores its controls and a message clears them; a
+    // picks-only change leaves them as they are, so a Session never turns
+    // controls-born behind the listener's back.
+    ...(input.mode === 'picks'
+      ? {}
+      : { structuredControls: input.mode === 'controls' ? input.controls : null }),
     switchImmediately,
     targetDurationMinutes,
   });

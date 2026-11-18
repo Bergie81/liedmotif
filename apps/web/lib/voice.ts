@@ -24,7 +24,7 @@ import { cachedUserProfile } from './request-cache';
 /** The minimal intent surface the own-voice gate reads — structural, so both
  * the shared wire type and the providers-side intent type satisfy it. */
 interface OwnVoiceIntentLike {
-  mode: 'prompt' | 'controls';
+  mode: 'prompt' | 'controls' | 'picks';
   ownVoice?: boolean;
   controls?: { vocal?: string; ownVoice?: boolean };
 }
@@ -90,7 +90,7 @@ export async function resolveOwnVoiceOffer(
 
 /** Whether a create/change-vibe intent asks for the user's own voice. */
 export function intentRequestsOwnVoice(input: OwnVoiceIntentLike): boolean {
-  if (input.mode === 'prompt') return input.ownVoice === true;
+  if (input.mode !== 'controls') return input.ownVoice === true;
   return input.controls?.vocal === 'vocal' && input.controls.ownVoice === true;
 }
 

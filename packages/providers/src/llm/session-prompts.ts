@@ -437,11 +437,10 @@ function adjustmentContext(current: SessionStyleSnapshot): string {
 /** The wording the current snapshot was distilled FROM. Labeled as context, and
  *  subordinate to the snapshot: any of it may since have been superseded, and
  *  re-applying such a request would undo the very adjustment being asked for. It
- *  exists to recover dropped detail, not to steer. A picks-only change re-sends
- *  the history AS its change request, where a second rendering says nothing. */
-function promptHistoryBlock(history: string | undefined, intent: string): string {
+ *  exists to recover dropped detail, not to steer. */
+function promptHistoryBlock(history: string | undefined): string {
   const text = history?.trim();
-  if (!text || intent.includes(text)) return '';
+  if (!text) return '';
   return (
     `\n\nEarlier requests for this session (oldest first) — background context for names, ` +
     `places, and story details only, never instructions to apply again; where they differ ` +
@@ -458,6 +457,25 @@ function runningIncludesListenerRule(options: ExpansionOptions | undefined): str
     `request itself adds the listener to the scene or takes them out. `
   );
 }
+
+/** An adjustment with a change message: it changes what the message and the picks ask for. */
+const CHANGE_REQUEST_TASK =
+  `Apply ONLY what the change request (and any explicit picks) asks for; keep every ` +
+  `other facet as close to the current snapshot as possible — same genres, ` +
+  `instrumentation, mood, vocal mode, and language unless the request changes them. ` +
+  `Keep bpm and key IDENTICAL unless the request asks for a tempo or key change; a word ` +
+  `like "faster" or "slower" shifts bpm moderately from the current value.`;
+
+/** A picks-only Change Vibe: no message, so the picks are the whole change. The
+ *  style is reworded rather than appended to, so the music model never gets
+ *  the old direction and the new pick side by side. */
+const PICKS_ONLY_TASK =
+  `There is no change request: the only change is the explicit picks below. Reword ` +
+  `stylePrompt so it fits them as one clear direction instead of adding words next to ` +
+  `ones that contradict them, and keep every facet the picks do not touch as close to ` +
+  `the current snapshot as possible — same genres, instrumentation, mood, vocal mode, ` +
+  `and language. Keep bpm and key IDENTICAL unless an energy pick changes the energy. ` +
+  `The earlier requests are no instruction to apply again.`;
 
 export function expansionPrompt(
   intent: string,
@@ -479,17 +497,15 @@ export function expansionPrompt(
     `${durationRule(adjust !== undefined)} ` +
     `${picksBlock(picks)}${personalization}`;
   if (adjust) {
+    const request = intent.trim();
     return (
-      `Adjust the Style Snapshot of a RUNNING music session. Apply ONLY what the change ` +
-      `request (and any explicit picks) asks for; keep every other facet as close to the ` +
-      `current snapshot as possible — same genres, instrumentation, mood, vocal mode, and ` +
-      `language unless the request changes them. Keep bpm and key IDENTICAL unless the ` +
-      `request asks for a tempo or key change; a word like "faster" or "slower" shifts bpm ` +
-      `moderately from the current value. ${LYRIC_EDIT_RULE} ` +
+      `Adjust the Style Snapshot of a RUNNING music session. ` +
+      (request ? CHANGE_REQUEST_TASK : PICKS_ONLY_TASK) +
+      ` ${LYRIC_EDIT_RULE} ` +
       `${runningIncludesListenerRule(options)}${rules}` +
       `\n\nCurrent Style Snapshot:\n${adjustmentContext(adjust)}` +
-      promptHistoryBlock(options?.promptHistory, intent) +
-      `\n\nChange request: ${intent}`
+      promptHistoryBlock(options?.promptHistory) +
+      (request ? `\n\nChange request: ${intent}` : '')
     );
   }
   return (

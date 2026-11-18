@@ -583,9 +583,10 @@ export async function restyleSession(
     /** The re-derivation's answer on whether the request includes the listener. */
     includesListener: boolean;
     /** The change's free text, FOLDED INTO the session's prompt history rather
-     *  than replacing it (`extendPromptHistory`). Null/omitted — a controls
-     *  change — leaves the history exactly as it is. */
+     *  than replacing it (`extendPromptHistory`). Null/omitted — a controls or
+     *  picks-only change — leaves the history exactly as it is. */
     userPromptAddition?: string | null;
+    /** The controls to store, null to clear them; omitted leaves them as they are. */
     structuredControls?: StructuredControls | null;
     /** Switch-now: arm the cutover at the revision this restyle mints. A plain
      *  (false/omitted) change CLEARS any armed switch — choosing play-out

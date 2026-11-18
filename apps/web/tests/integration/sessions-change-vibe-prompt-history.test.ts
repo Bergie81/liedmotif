@@ -118,16 +118,22 @@ describe.skipIf(skip)('POST /api/sessions/change-vibe — the session prompt his
     expect(await storedPrompt(sessionId)).toBe(ORIGIN);
   });
 
-  it('does not double the history when a picks-only fine-tune resends the stored prompt', async () => {
+  it('adds nothing to the history for a picks-only change', async () => {
     const sessionId = await startSession({ mode: 'prompt', prompt: ORIGIN });
     await changeVibe(sessionId, { mode: 'prompt', prompt: 'mehr rockiger' });
     const history = (await storedPrompt(sessionId))!;
 
-    // What the Change Vibe sheet sends for a picks-only change over a prompt
-    // vibe: the stored prompt re-expanded with the changed picks.
-    await changeVibe(sessionId, { mode: 'prompt', prompt: history, energy: 'high' });
+    await changeVibe(sessionId, { mode: 'picks', energy: 'high' });
 
     expect(await storedPrompt(sessionId)).toBe(history);
+  });
+
+  it('appends a message that repeats the history word for word, like any message', async () => {
+    const sessionId = await startSession({ mode: 'prompt', prompt: ORIGIN });
+
+    await changeVibe(sessionId, { mode: 'prompt', prompt: ORIGIN });
+
+    expect(await storedPrompt(sessionId)).toBe(`${ORIGIN}\n\n${ORIGIN}`);
   });
 
   it('gives a controls session its first prompt only when a change carries text', async () => {
