@@ -1614,8 +1614,10 @@ export function usePlaybackController(
 
       // Repeat-one invalidations: a Change Vibe (moved
       // style revision), a stopped session, or a pinned item that vanished
-      // from the projection all clear the pin and release its hold. A Section
-      // loop ends on the same news.
+      // from the projection all clear the pin and release its hold. A Change
+      // Vibe also leaves Loop Track for the default mode, so the looped Track
+      // plays out and the Queue moves on (ADR 0014). A Section loop ends on
+      // the same news.
       if (sessionSnapshot) {
         const { styleRevision, sessionStatus, queueItemIds } = sessionSnapshot;
         const known = styleRevisionRef.current;
@@ -1625,6 +1627,9 @@ export function usePlaybackController(
           sessionStatus,
           queueItemIds,
         };
+        if (loopSnapshot.revisionMoved && playbackTraversalRef.current.mode === 'loop-track') {
+          setPlaybackMode('loop-session');
+        }
         onLoopQueueSnapshot(loopSnapshot);
         onSectionLoopQueueSnapshot(loopSnapshot);
       }
@@ -1781,6 +1786,7 @@ export function usePlaybackController(
       playOnDeck,
       resolveNextTarget,
       setMediaMetadata,
+      setPlaybackMode,
       transitions,
     ],
   );

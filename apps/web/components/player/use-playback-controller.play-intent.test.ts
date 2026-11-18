@@ -470,4 +470,64 @@ describe("Loop Track's generation hold (Session source, scripted decks)", () => 
     await toMode('shuffle');
     expect(leaseActions).toEqual(['acquire', 'release']);
   });
+
+  it('a Change Vibe leaves Loop Track, so the Track is not held again', async () => {
+    const decks = await mount();
+    await act(async () => {
+      feed!(snapshot([streaming('t1'), track('t2')]));
+    });
+    await act(async () => {
+      api.play();
+    });
+    await commitSource(decks.a);
+    await toMode('loop-track');
+    expect(leaseActions).toEqual(['acquire']);
+
+    // A Change Vibe in any tab shows up as a moved style revision in the poll.
+    await act(async () => {
+      feed!(snapshot([streaming('t1'), track('t2')], { styleRevision: 2 }));
+    });
+    expect(api.playbackMode).toBe('loop-session');
+    expect(leaseActions).toEqual(['acquire', 'release']);
+    expect(startedFor('t2')).toBe(0);
+
+    // The looped Track plays out; the Queue moves on and nothing holds again.
+    await act(async () => {
+      decks.a.ended();
+    });
+    await commitSource(decks.b);
+    expect(startedFor('t1')).toBe(1);
+    expect(startedFor('t2')).toBe(1);
+    expect(leaseActions).toEqual(['acquire', 'release']);
+  });
+
+  it('Loop Track chosen again after a Change Vibe loops and holds as usual', async () => {
+    const decks = await mount();
+    await act(async () => {
+      feed!(snapshot([streaming('t1'), track('t2')]));
+    });
+    await act(async () => {
+      api.play();
+    });
+    await commitSource(decks.a);
+    await toMode('loop-track');
+    await act(async () => {
+      feed!(snapshot([streaming('t1'), track('t2')], { styleRevision: 2 }));
+    });
+
+    await toMode('loop-track');
+    expect(leaseActions).toEqual(['acquire', 'release', 'acquire']);
+
+    // A later poll at the same revision is no new Change Vibe: the loop stands.
+    await act(async () => {
+      feed!(snapshot([streaming('t1'), track('t2')], { styleRevision: 2 }));
+    });
+    await act(async () => {
+      decks.a.ended();
+    });
+    await commitSource(decks.b);
+    expect(api.playbackMode).toBe('loop-track');
+    expect(startedFor('t2')).toBe(0);
+    expect(leaseActions).toEqual(['acquire', 'release', 'acquire']);
+  });
 });
