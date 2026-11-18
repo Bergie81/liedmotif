@@ -571,7 +571,16 @@ export type MoreLikeThisResponse = z.infer<typeof moreLikeThisResponseSchema>;
 
 // --- 5. getSessionQueue ------------------------------------------------------
 
-export const getSessionQueueRequestSchema = z.strictObject({ sessionId: uuidSchema });
+// A GET contract: `full` arrives as a URL flag (`?full=1`) and asks for every
+// slot of the Session instead of the window (Shuffle traverses the whole
+// Session, and only the device knows it is selected).
+export const getSessionQueueRequestSchema = z.strictObject({
+  sessionId: uuidSchema,
+  full: z
+    .enum(['1', 'true', '0', 'false'])
+    .default('0')
+    .transform((value) => value === '1' || value === 'true'),
+});
 export type GetSessionQueueRequest = z.infer<typeof getSessionQueueRequestSchema>;
 
 /** The session's CURRENT vibe facets, projected from its Style Snapshot for the

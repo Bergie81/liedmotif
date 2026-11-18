@@ -159,7 +159,10 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const parsed = validateInput(
     getSessionQueueRequestSchema,
-    { sessionId: url.searchParams.get('sessionId') },
+    {
+      sessionId: url.searchParams.get('sessionId'),
+      full: url.searchParams.get('full') ?? undefined,
+    },
     'Invalid queue request.',
   );
   if (parsed instanceof NextResponse) return parsed;
@@ -170,6 +173,7 @@ export async function GET(request: Request) {
     getSessionQueue(db, {
       ownerUserId,
       sessionId: parsed.sessionId,
+      fullRead: parsed.full,
       phantomSubmitCutoff: phantomSubmitCutoffAt(),
       tracksPerRequest,
     }),

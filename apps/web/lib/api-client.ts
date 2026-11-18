@@ -488,15 +488,17 @@ export function search(
   return callApi<SearchResponseData>(`/api/search?${query}`, searchResponseSchema, { signal });
 }
 
+/** `full` asks for every slot of the Session instead of the windowed read. */
 export function getSessionQueue(
   sessionId: string,
   signal?: AbortSignal,
+  options: { full?: boolean } = {},
 ): Promise<ApiResult<SessionQueueData>> {
-  return callApi<SessionQueueData>(
-    `/api/sessions/queue?sessionId=${encodeURIComponent(sessionId)}`,
-    getSessionQueueResponseSchema,
-    { signal },
-  );
+  const query = new URLSearchParams({ sessionId });
+  if (options.full) query.set('full', '1');
+  return callApi<SessionQueueData>(`/api/sessions/queue?${query}`, getSessionQueueResponseSchema, {
+    signal,
+  });
 }
 
 export function regenerateSessionCover(

@@ -1794,11 +1794,13 @@ export function usePlaybackController(
   );
   // Ref-backed so cadence probes never restart the polling effect.
   const getIsPlaying = useCallback(() => statusRef.current === 'playing', []);
+  // Shuffle traverses the whole Session, so it reads every slot, not the window.
   const refreshQueue = usePlaybackSourceQueue(
     source,
     isLocallyRemoved,
     applyQueueSnapshot,
     getIsPlaying,
+    state.playbackMode === 'shuffle',
   );
   pollQueueNowRef.current = refreshQueue;
 

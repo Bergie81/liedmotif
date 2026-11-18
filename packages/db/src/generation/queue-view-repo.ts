@@ -267,17 +267,20 @@ const slotStillInSession = and(
  * fields the player's `trackSummary` needs; `hasPlayableAudio` lets the route decide
  * whether to expose an app-routed audio path (provider URLs never reach the client).
  *
- * The read is WINDOWED: the last `PLAYED_WINDOW_SLOTS` slots before the anchor
- * plus everything from it forward; older slots collapse into `earlier`, and the
- * first playable of them rides along as `loopHead`. The anchor is the current
- * item, or the first unconsumed slot when the session carries no current item
- * (see `anchorPosition`).
+ * The read is WINDOWED unless `fullRead` asks for every slot: the last
+ * `PLAYED_WINDOW_SLOTS` slots before the anchor plus everything from it
+ * forward; older slots collapse into `earlier`, and the first playable of them
+ * rides along as `loopHead`. The anchor is the current item, or the first
+ * unconsumed slot when the session carries no current item (see `anchorPosition`).
  */
 export async function getSessionQueue(
   db: Database,
   args: {
     ownerUserId: string;
     sessionId: string;
+    /** Read every slot instead of the window (Shuffle traverses the whole
+     *  Session); nothing is elided, so there is no loop head either. */
+    fullRead?: boolean;
     /** The shared phantom-submit slot-hold bound (`phantomSubmitCutoffAt`). */
     phantomSubmitCutoff: Date;
     /** The music provider's `typicalTracksPerRequest` — how many Tracks one
@@ -309,11 +312,9 @@ export async function getSessionQueue(
   if (!row) return null;
   const { generatingTracksAhead, generatingNewVibeTracksAhead, ...session } = row;
 
-  const { windowStartPosition, earlier, earlierTracks } = await resolveQueueWindow(
-    db,
-    args.sessionId,
-    session.currentQueueItemId,
-  );
+  const { windowStartPosition, earlier, earlierTracks } = args.fullRead
+    ? FULL_READ
+    : await resolveQueueWindow(db, args.sessionId, session.currentQueueItemId);
 
   const sessionSlots = and(
     eq(activitySessionQueueItems.activitySessionId, args.sessionId),
@@ -480,6 +481,9 @@ function anchorPosition(sessionId: string, currentQueueItemId: string | null): S
       max(q.position) + 1
     ) from ${activitySessionQueueItems} q where q.activity_session_id = ${sessionId})`;
 }
+
+/** The whole Session: no window start, nothing elided. */
+const FULL_READ = { windowStartPosition: null, earlier: 0, earlierTracks: 0 } as const;
 
 /**
  * Where the windowed read starts, and how many slots and playable Tracks fall

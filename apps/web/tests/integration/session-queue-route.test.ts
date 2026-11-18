@@ -42,8 +42,11 @@ const { GET } = await import('@/app/api/sessions/queue/route');
 const skip = !TEST_DATABASE_URL;
 let testDb: TestDb;
 
-async function callQueue(sessionId: string) {
-  const res = await GET(new Request(`http://localhost/api/sessions/queue?sessionId=${sessionId}`));
+async function callQueue(sessionId: string, options: { full?: boolean } = {}) {
+  const fullFlag = options.full ? '&full=1' : '';
+  const res = await GET(
+    new Request(`http://localhost/api/sessions/queue?sessionId=${sessionId}${fullFlag}`),
+  );
   const parsed = getSessionQueueResponseSchema.parse(await res.json());
   if (!parsed.ok) throw new Error('expected an ok queue response');
   return parsed.data;
@@ -282,6 +285,35 @@ describe.skipIf(skip)('GET /api/sessions/queue — blend identity + analysis con
       },
     });
     expect(data.loopHead?.track?.id).toBe(firstPlayable);
+  });
+
+  it('asked for the full read, returns every slot still in the Session from the first one, with nothing reported earlier and no loop head', async () => {
+    const base = await seedSession();
+    const removed = await seedQueuedTrack(base, 0);
+    await testDb.db.update(tracks).set({ status: 'rejected' }).where(eq(tracks.id, removed));
+    for (let position = 1; position < 40; position += 1) await seedQueuedTrack(base, position);
+    const currentId = await createQueueItem(testDb.db, {
+      activitySessionId: base.sessionId,
+      position: 40,
+      state: 'playing',
+    });
+    await testDb.pool.query(
+      `update activity_sessions set current_queue_item_id = $1 where id = $2`,
+      [currentId, base.sessionId],
+    );
+    await seedQueuedTrack(base, 41);
+
+    const data = await callQueue(base.sessionId, { full: true });
+    expect(data.items.map((item) => item.position)).toEqual(
+      Array.from({ length: 41 }, (_, index) => index + 1),
+    );
+    expect(data.earlierTracks).toBe(0);
+    expect(data.loopHead).toBeUndefined();
+    expect(data.currentQueueItemId).toBe(currentId);
+
+    // Without the flag the same Session reads windowed.
+    const windowed = await callQueue(base.sessionId);
+    expect(windowed.items[0]!.position).toBe(10);
   });
 
   it('carries no loop head when the read leaves nothing out', async () => {

@@ -170,14 +170,24 @@ export function useSessionQueue(
   onSnapshot: (snapshot: SessionQueueSnapshot) => void,
   /** Live playback probe (ref-backed): hidden-tab audio must not poll as idle. */
   getIsPlaying: () => boolean,
+  /** Read every slot instead of the window: Shuffle traverses the whole
+   *  Session, and only this device knows Shuffle is selected. */
+  fullRead = false,
 ): () => void {
   const pollNowRef = useRef<() => void>(() => {});
+  const fullReadRef = useRef(fullRead);
+  useEffect(() => {
+    if (fullReadRef.current === fullRead) return;
+    fullReadRef.current = fullRead;
+    pollNowRef.current();
+  }, [fullRead]);
+
   useEffect(() => {
     if (!sessionId) return;
     const sawFinals = watchSessionFinals(sessionId);
 
     const poll = async (signal: AbortSignal) => {
-      const res = await getSessionQueue(sessionId, signal);
+      const res = await getSessionQueue(sessionId, signal, { full: fullReadRef.current });
       if (!res.ok) return { ok: false as const };
       const tracks = playableTracks(res.data, isLocallyRemoved);
       onSnapshot(sessionQueueSnapshot(res.data, tracks, isLocallyRemoved));

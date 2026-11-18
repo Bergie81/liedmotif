@@ -36,9 +36,11 @@ export function usePlaybackSourceQueue(
   isLocallyRemoved: (queueItemId: string) => boolean,
   onSnapshot: (snapshot: PlaybackSourceSnapshot) => void,
   getIsPlaying: () => boolean,
+  /** Read the whole Session instead of the window (Shuffle is selected). */
+  fullRead: boolean,
 ): () => void {
   const sessionId = source.kind === 'session' ? source.sessionId : null;
-  const pollNow = useSessionQueue(sessionId, isLocallyRemoved, onSnapshot, getIsPlaying);
+  const pollNow = useSessionQueue(sessionId, isLocallyRemoved, onSnapshot, getIsPlaying, fullRead);
 
   // A Playlist has no server queue: its full ordered membership IS the
   // projection. `source` is memoized by the host, so one engagement applies

@@ -17,6 +17,7 @@ import {
   dislikeTrackResponseSchema,
   errorResponseSchema,
   getDiagnosticsResponseSchema,
+  getSessionQueueRequestSchema,
   getSessionQueueResponseSchema,
   getTrackResponseSchema,
   listSessionsRequestSchema,
@@ -638,6 +639,16 @@ describe('diagnostics & queue expose generation-controller state', () => {
         data: { ...withStatus, loopHead: { ...loopHead, assets: undefined } },
       }).success,
     ).toBe(false);
+  });
+
+  it('getSessionQueue takes an optional full-read flag as a URL flag, windowed by default', () => {
+    const parse = (full?: string) =>
+      getSessionQueueRequestSchema.safeParse({ sessionId: UUID, full });
+    expect(parse().data?.full).toBe(false);
+    expect(parse('1').data?.full).toBe(true);
+    expect(parse('true').data?.full).toBe(true);
+    expect(parse('0').data?.full).toBe(false);
+    expect(parse('yes').success).toBe(false);
   });
 
   it('getSessionQueue requires the session-level styleRevision (the loop pin watches it)', () => {
