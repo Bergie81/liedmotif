@@ -47,6 +47,7 @@ export function PersonPhotos({
     onUpload: async (file) => {
       setBusy(true);
       onBusyChange(true);
+      report(null);
       const form = new FormData();
       form.set('file', file);
       const response = await fetch(`/api/settings/people/${person.id}/photos`, {

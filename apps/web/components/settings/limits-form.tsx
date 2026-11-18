@@ -72,6 +72,7 @@ export function LimitsForm({
 
   async function save() {
     if (saving) return;
+    toast.dismiss(SAVE_KEY);
     const parsed = buildLimitsPatch(values, tracksPerRequest);
     if (!parsed.ok) {
       setErrors(parsed.errors);

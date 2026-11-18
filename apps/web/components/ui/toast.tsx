@@ -4,7 +4,7 @@
 // layout. Toasts float over the page and above every sheet and dialog, so
 // nothing in the page moves when one appears.
 
-import { useEffect, useRef, type ComponentType } from 'react';
+import { useEffect, useRef, useState, type ComponentType } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import * as ToastPrimitive from '@radix-ui/react-toast';
@@ -63,9 +63,10 @@ const TONES: Record<
 
 export function Toaster() {
   const entries = useToastEntries();
-  useCloseErrorsOnRouteChange();
+  const stack = useStackRun(entries.length === 0);
+  useCloseErrorsOnRouteChange(entries.at(-1)?.id ?? 0);
   return (
-    <ToastPrimitive.Provider label="Notification" swipeDirection="up">
+    <ToastPrimitive.Provider key={stack} label="Notification" swipeDirection="up">
       {entries.map((entry) => (
         <ToastItem key={entry.id} entry={entry} />
       ))}
@@ -110,7 +111,13 @@ function ToastItem({ entry }: { entry: ToastEntry }) {
       )}
     >
       <Icon className={cn('mt-2.5 h-4 w-4 shrink-0', tone.iconColor)} aria-hidden />
-      <div className="min-w-0 flex-1 py-2">
+      {/* Radix announces a toast's text nodes run together; this reads them as
+          sentences instead. */}
+      <div
+        className="min-w-0 flex-1 py-2"
+        data-radix-toast-announce-exclude=""
+        data-radix-toast-announce-alt={announcedText(entry)}
+      >
         {entry.title ? (
           <ToastPrimitive.Title className="font-semibold">{entry.title}</ToastPrimitive.Title>
         ) : null}
@@ -120,6 +127,7 @@ function ToastItem({ entry }: { entry: ToastEntry }) {
         {entry.link ? (
           <Link
             href={entry.link.href}
+            prefetch={false}
             className="mt-1 inline-block text-[12.5px] font-medium underline underline-offset-2"
           >
             {entry.link.label}
@@ -141,12 +149,32 @@ function ToastItem({ entry }: { entry: ToastEntry }) {
   );
 }
 
-function useCloseErrorsOnRouteChange() {
+/** Counts the times the stack has emptied. Radix pauses every timer while focus
+ *  is in the viewport, and closing the last toast from its button leaves focus
+ *  there with nothing left to resume it, so the next toast would never time
+ *  out. Remounting the provider on an empty stack starts each run unpaused. */
+function useStackRun(empty: boolean): number {
+  const [run, setRun] = useState({ count: 0, empty });
+  if (run.empty !== empty) {
+    setRun({ count: empty ? run.count + 1 : run.count, empty });
+  }
+  return run.count;
+}
+
+function announcedText(entry: ToastEntry): string {
+  return [entry.title, entry.message, entry.link?.label]
+    .flatMap((part) => (part ? [/[.!?…]$/.test(part) ? part : `${part}.`] : []))
+    .join(' ');
+}
+
+/** `newestId` is the newest toast this render shows. The new page's own mount
+ *  effects run before this one, so an error they raise is newer and stays. */
+function useCloseErrorsOnRouteChange(newestId: number) {
   const pathname = usePathname();
   const shownOn = useRef(pathname);
   useEffect(() => {
     if (shownOn.current === pathname) return;
     shownOn.current = pathname;
-    dismissErrorToasts();
-  }, [pathname]);
+    dismissErrorToasts(newestId);
+  }, [pathname, newestId]);
 }

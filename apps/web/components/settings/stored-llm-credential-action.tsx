@@ -27,6 +27,7 @@ export function StoredLlmCredentialAction({
         ? 'The environment-selected Writing AI will remain active.'
         : 'Sessions keep working: your words will reach the music model exactly as written, without AI expansion.';
       if (!window.confirm(`${label}? ${consequence}`)) return;
+      toast.dismiss(DELETE_KEY);
 
       const response = await fetch('/api/settings/credentials', {
         method: 'DELETE',
@@ -40,7 +41,6 @@ export function StoredLlmCredentialAction({
           })
         : {};
       if (response?.ok && body.ok) {
-        toast.dismiss(DELETE_KEY);
         window.location.reload();
         return;
       }

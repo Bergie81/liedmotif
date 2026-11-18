@@ -128,6 +128,7 @@ function PickerContent({
   async function commit() {
     if (!canCommit) return;
     setBusy(true);
+    toast.dismiss(SAVE_KEY);
     const result = await applyTrackMemberships({
       trackId: track.id,
       // Unsave leaves every playlist, the unlisted ones included; any other
@@ -140,7 +141,6 @@ function PickerContent({
       toast.error(`Saving failed: ${result.error.message}`, { key: SAVE_KEY });
       return;
     }
-    toast.dismiss(SAVE_KEY);
     const confirmation = savedMessage();
     if (confirmation) toast.success(confirmation);
     router.refresh();

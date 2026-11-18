@@ -150,6 +150,7 @@ export function LoungeView({
     if (!nextCursor || loadingMore) return;
     const token = beginNextPage();
     if (token === null) return;
+    toast.dismiss(LOAD_MORE_KEY);
     const result = await listLoungePlaylists({
       cursor: nextCursor,
       query: query || undefined,
@@ -162,7 +163,6 @@ export function LoungeView({
       });
       return;
     }
-    toast.dismiss(LOAD_MORE_KEY);
     // A share can move while paging (unshare + re-share): append id-unique so
     // a tile never renders twice.
     setPlaylists((current) => appendUniqueById(current, result.data.playlists));
@@ -174,12 +174,12 @@ export function LoungeView({
    *  router cache's pre-pin seed goes with it before back-navigation can replay it. */
   async function togglePin(item: LoungePlaylistItem) {
     const pinned = !item.pinned;
+    toast.dismiss(PIN_KEY);
     const result = await pinLoungePlaylist(item.id, pinned);
     if (!result.ok) {
       toast.error(pinToggleFailure(pinned, result.error.message), { key: PIN_KEY });
       return;
     }
-    toast.dismiss(PIN_KEY);
     router.refresh();
     await loadRef.current();
   }
@@ -215,6 +215,7 @@ export function LoungeView({
    *  through the Lounge, since the owner's playlist route refuses a visitor, and
    *  plays in the visitor scope, which leaves the owner's play stamp alone. */
   async function play(item: LoungePlaylistItem) {
+    toast.dismiss(PLAY_KEY);
     const result = item.yours
       ? await getAllPlaylistMembers(item.id)
       : await getAllPlaylistMembers(item.id, (cursor, limit) =>
@@ -224,7 +225,6 @@ export function LoungeView({
       reportPlayFailure(`Couldn’t load the playlist: ${result.error.message}`);
       return;
     }
-    toast.dismiss(PLAY_KEY);
     (item.yours ? playback : visitorPlayback).play(result.data.playlist, result.data.items);
   }
 
@@ -257,8 +257,16 @@ export function LoungeView({
                 togglePin: () => void togglePin(item),
                 moreLikeThis: () => void seedFromShared(item),
                 editSharing: () => setSharing(item),
-                removeFromLounge: () => setRemoving(item),
-                returnToPrivate: viewerIsAdmin ? () => setModerating(item) : undefined,
+                removeFromLounge: () => {
+                  toast.dismiss(REMOVE_KEY);
+                  setRemoving(item);
+                },
+                returnToPrivate: viewerIsAdmin
+                  ? () => {
+                      toast.dismiss(RETURN_TO_PRIVATE_KEY);
+                      setModerating(item);
+                    }
+                  : undefined,
               }}
             />
           ))}
@@ -275,10 +283,7 @@ export function LoungeView({
       {removing ? (
         <RemoveFromLoungeDialog
           playlist={removing}
-          onRemoved={(result) => {
-            toast.dismiss(REMOVE_KEY);
-            onShareChanged(result);
-          }}
+          onRemoved={onShareChanged}
           onError={(message) => toast.error(message, { key: REMOVE_KEY })}
           onClose={() => setRemoving(null)}
         />
@@ -287,10 +292,7 @@ export function LoungeView({
         <ReturnToPrivateDialog
           playlist={moderating}
           owner={loungeOwnerDisplayName(moderating.ownerArtistName, moderating.ownerName)}
-          onReturned={() => {
-            toast.dismiss(RETURN_TO_PRIVATE_KEY);
-            leaveRoom(moderating.id);
-          }}
+          onReturned={() => leaveRoom(moderating.id)}
           onError={(message) => toast.error(message, { key: RETURN_TO_PRIVATE_KEY })}
           onClose={() => setModerating(null)}
         />

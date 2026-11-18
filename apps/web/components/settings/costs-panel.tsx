@@ -43,6 +43,7 @@ export function CostsPanel({ unitCosts }: { unitCosts: UnitCosts }) {
       return;
     }
     setBusy(true);
+    toast.dismiss(SAVE_KEY);
     const result = await apiFetchJson<{ unitCosts: UnitCosts }>(
       '/api/settings/unit-costs',
       'POST',

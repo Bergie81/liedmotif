@@ -28,6 +28,7 @@ export function LanguageForm({ initial }: { initial: GenerationSettings }) {
   async function save() {
     if (saving) return;
     setSaving(true);
+    toast.dismiss(SAVE_KEY);
     const result = await updateGenerationSettings({ defaultLanguage });
     setSaving(false);
     if (!result.ok) {

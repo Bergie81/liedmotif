@@ -59,6 +59,7 @@ export function PoolPanel({
       return;
     }
     setBusy(true);
+    toast.dismiss(SAVE_KEY);
     const result = await apiFetchJson<{ overSubscription: PoolOverSubscription[] }>(
       '/api/settings/members/pool',
       'POST',
@@ -66,7 +67,6 @@ export function PoolPanel({
     );
     if (result.ok) {
       setWarnings(result.data.overSubscription ?? []);
-      toast.dismiss(SAVE_KEY);
       toast.success('Shared budget saved.');
       router.refresh();
     } else {

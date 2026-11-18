@@ -33,6 +33,9 @@ export interface PlaylistMembership {
   items: PlaylistMemberItem[];
 }
 
+/** The membership acts that can fail: a next page, the whole list, a removal. */
+export type PlaylistMembersAct = 'load-more' | 'load-all' | 'remove';
+
 export function usePlaylistMembers({
   playlistId,
   initial,
@@ -46,8 +49,8 @@ export function usePlaylistMembers({
   /** Where a page comes from — the owner's detail endpoint unless a surface
    *  reads elsewhere (the Lounge visitor view). Must be referentially stable. */
   fetchPage?: PlaylistPageFetcher;
-  /** Curation/paging failures (the caller's action banner). */
-  onError: (message: string) => void;
+  /** Curation/paging failures, named by the act that failed. */
+  onError: (message: string, act: PlaylistMembersAct) => void;
   /** A removal took the track's LAST membership (the caller's Library-exit notice). */
   onUnsaved: () => void;
 }) {
@@ -123,7 +126,7 @@ export function usePlaylistMembers({
     const result = await fetchMemberPage(cursor, PLAYLIST_DETAIL_PAGE_LIMIT);
     if (!settle(token)) return;
     if (!result.ok) {
-      onError(`Couldn’t load more Tracks: ${result.error.message}`);
+      onError(`Couldn’t load more Tracks: ${result.error.message}`, 'load-more');
       return;
     }
     setPlaylist(result.data.playlist);
@@ -146,7 +149,7 @@ export function usePlaylistMembers({
     const result = await getAllPlaylistMembers(playlistId, fetchMemberPage);
     setLoadingAll(false);
     if (!result.ok) {
-      onError(`Couldn’t load the playlist: ${result.error.message}`);
+      onError(`Couldn’t load the playlist: ${result.error.message}`, 'load-all');
       return null;
     }
     if (settle(token)) {
@@ -199,7 +202,7 @@ export function usePlaylistMembers({
             : current,
         );
         shiftSummary(member, 'restore');
-        onError(`Remove failed: ${result.error.message}`);
+        onError(`Remove failed: ${result.error.message}`, 'remove');
         return;
       }
       router.refresh();

@@ -60,6 +60,7 @@ import type { PlayerControllerSource } from './playback-controller-api';
 import { cancelPendingStart, currentPendingStart } from './session-handoff';
 import type { SleepTimerControl } from './sleep-timer';
 import { usePlaybackController } from './use-playback-controller';
+import { clearPlayerErrors } from './player-error-toast';
 import { useTrackMedia } from './track-media';
 import { useSleepTimer } from './use-sleep-timer';
 import { useVibeChangeRequest, type VibeChangeState } from './use-vibe-change-request';
@@ -542,6 +543,8 @@ function PlayerHost({
   }, [coldStartBeganAt, publish, player, sourceId]);
 
   useEffect(() => () => publish(sourceId, null), [publish, sourceId]);
+  // The source leaving the player takes the failures it reported with it.
+  useEffect(() => () => clearPlayerErrors(sourceId), [sourceId]);
 
   return (
     <>

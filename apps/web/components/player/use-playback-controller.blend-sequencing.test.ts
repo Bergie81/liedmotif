@@ -9,6 +9,7 @@
 import { createElement, Fragment } from 'react';
 import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { shownToasts, toast } from '@/lib/toast';
 import type { BlendEdgeEventDetail, PlayableTrack } from './playable-track';
 import type { PlaybackControllerApi, PlayerControllerSource } from './playback-controller-api';
 import { usePlaybackController } from './use-playback-controller';
@@ -249,6 +250,7 @@ async function driveEdge(h: Harness, out: 'a' | 'b'): Promise<void> {
 
 afterEach(() => {
   cleanup();
+  toast.dismiss();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -419,7 +421,12 @@ describe('live blend sequencing (real controller, scripted decks)', () => {
     });
     // The write did not land, so the gate goes back on and the player says so.
     expect(h.api().blendEnabled).toBe(true);
-    expect(h.api().actionError).toContain('Settings write failed.');
+    expect(shownToasts()).toEqual([
+      expect.objectContaining({
+        tone: 'error',
+        message: expect.stringContaining('Settings write failed.'),
+      }),
+    ]);
 
     // Preparation re-arms off the next timeupdate, so the edge still blends —
     // the cancel must not have poisoned the transition for good.

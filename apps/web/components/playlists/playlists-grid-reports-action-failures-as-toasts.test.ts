@@ -21,6 +21,7 @@ const api = vi.hoisted(() => ({
 vi.mock('@/lib/api-client', () => ({
   ...api,
   createPlaylist: vi.fn(),
+  getLibrary: vi.fn(() => new Promise(() => undefined)),
   getPlaylistShare: vi.fn(),
   markPlaylistPlayed: vi.fn(),
   renamePlaylist: vi.fn(),
@@ -122,6 +123,21 @@ describe('PlaylistsGrid — action failures as toasts', () => {
       expect(shown()).toEqual([{ tone: 'error', message: 'Couldn’t load the playlist: Offline.' }]),
     );
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('keeps a refused Play up when Add Tracks opens on another playlist', async () => {
+    api.getAllPlaylistMembers.mockResolvedValueOnce({ ok: false, error: { message: 'Offline.' } });
+    api.getAllPlaylistMembers.mockResolvedValueOnce({ ok: true, data: { items: [] } });
+    renderGrid([FOCUS, DRIVE]);
+    fireEvent.click(screen.getByTestId(`playlist-play-${FOCUS.id}`));
+    await waitFor(() => expect(shown()).toHaveLength(1));
+
+    fireEvent.click(screen.getByTestId(`playlist-menu-${DRIVE.id}`));
+    fireEvent.click(screen.getByRole('button', { name: /Add Tracks/ }));
+    await waitFor(() => expect(api.getAllPlaylistMembers).toHaveBeenCalledTimes(2));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(shown()).toEqual([{ tone: 'error', message: 'Couldn’t load the playlist: Offline.' }]);
   });
 
   it('reports a failed Remove from Lounge as an error toast', async () => {

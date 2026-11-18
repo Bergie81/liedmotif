@@ -57,15 +57,28 @@ import { PlaylistMemberList } from './playlist-member-list';
 import { PlaylistTrackSheet } from './playlist-track-sheet';
 import { SaveToPlaylistSheet, type SavePickerTrack } from './save-to-playlist-sheet';
 import { deletePlaylistConfirmBody, pinToggleFailure, reindexMembers } from './playlist-view-model';
-import { usePlaylistMembers, type PlaylistMembership } from './use-playlist-members';
+import {
+  usePlaylistMembers,
+  type PlaylistMembersAct,
+  type PlaylistMembership,
+} from './use-playlist-members';
 import { usePlayPlaylist } from './use-play-playlist';
 import { useReorderPlaylist } from './use-reorder-playlist';
 
-// A retry of these acts replaces its earlier failure; a success clears it.
+// Trying one of these acts again clears its earlier failure, and a different
+// refusal replaces it.
 const TRACK_DELETE_KEY = 'playlist-track-delete';
 const DELETE_KEY = 'playlist-delete';
 const PIN_KEY = 'playlist-pin';
 const MORE_LIKE_THIS_KEY = 'playlist-more-like-this';
+const PLAY_KEY = 'playlist-play';
+const REORDER_KEY = 'playlist-reorder';
+const RETURN_TO_PRIVATE_KEY = 'playlist-return-to-private';
+const MEMBERS_KEY: Record<PlaylistMembersAct, string> = {
+  'load-more': 'playlist-load-more',
+  'load-all': 'playlist-load-all',
+  remove: 'playlist-remove',
+};
 
 /** At most one overlay is up at a time — two sheets never stack. */
 type PlaylistOverlay =
@@ -124,7 +137,7 @@ export function PlaylistDetail({
     playlistId,
     ...(initial ? { initial } : {}),
     ...(isVisitor ? { fetchPage: fetchLoungePage } : {}),
-    onError: toast.error,
+    onError: (message, act) => toast.error(message, { key: MEMBERS_KEY[act] }),
     onUnsaved: () =>
       toast.info(
         'Removed — that was its last playlist, so the track left your Library (it stays in History).',
@@ -137,12 +150,14 @@ export function PlaylistDetail({
     if (trackCount !== undefined) onTrackCountChange?.(trackCount);
   }, [trackCount, onTrackCountChange]);
 
-  const playback = usePlayPlaylist(toast.error, { foreign: isVisitor });
+  const playback = usePlayPlaylist((message) => toast.error(message, { key: PLAY_KEY }), {
+    foreign: isVisitor,
+  });
   const reorder = useReorderPlaylist({
     playlistId,
     items,
     setItems,
-    onError: toast.error,
+    onError: (message) => toast.error(message, { key: REORDER_KEY }),
     onConflict: () => void members.load(),
   });
   const { holdReloads } = members;
@@ -169,6 +184,7 @@ export function PlaylistDetail({
   // Permanent Track delete (never feedback). Settled before the list changes —
   // the confirm dialog is already the deliberate step, so no optimistic remove.
   async function deleteMemberEverywhere(item: PlaylistMemberItem) {
+    toast.dismiss(TRACK_DELETE_KEY);
     const result = await deleteTrack(item.id);
     setOverlay(null);
     if (!result.ok) {
@@ -176,7 +192,6 @@ export function PlaylistDetail({
       return;
     }
     members.dropMember(item);
-    toast.dismiss(TRACK_DELETE_KEY);
     toast.success('Track deleted — its audio is removed and it left every Playlist.');
   }
 
@@ -187,17 +202,18 @@ export function PlaylistDetail({
   async function togglePin() {
     if (!playlist) return;
     const next = !pinned;
+    toast.dismiss(PIN_KEY);
     const result = await pinLoungePlaylist(playlistId, next);
     if (!result.ok) {
       toast.error(pinToggleFailure(next, result.error.message), { key: PIN_KEY });
       return;
     }
-    toast.dismiss(PIN_KEY);
     setPinned(result.data.pinned);
     router.refresh();
   }
 
   async function confirmDelete() {
+    toast.dismiss(DELETE_KEY);
     const result = await deletePlaylist(playlistId);
     if (!result.ok) {
       toast.error(`Delete failed: ${result.error.message}`, { key: DELETE_KEY });
@@ -211,16 +227,20 @@ export function PlaylistDetail({
   // the loaded prefix first when pages remain.
   async function playAll(startTrackId?: string) {
     if (members.loadingAll) return;
+    toast.dismiss(PLAY_KEY);
+    toast.dismiss(MEMBERS_KEY['load-all']);
     const full = await members.ensureAllMembers();
     if (full) playback.play(full.playlist, full.items, startTrackId);
   }
 
   async function startReorder() {
+    toast.dismiss(MEMBERS_KEY['load-all']);
     const full = await members.ensureAllMembers();
     if (full) reorder.start(full.items);
   }
 
   async function startAddTracks() {
+    toast.dismiss(MEMBERS_KEY['load-all']);
     const full = await members.ensureAllMembers();
     if (full) setOverlay({ kind: 'add-tracks' });
   }
@@ -291,7 +311,10 @@ export function PlaylistDetail({
                       items.slice(0, LOUNGE_MLT_SEED_TRACKS).map((item) => item.id),
                     ),
                   returnToPrivate: visitor.isAdmin
-                    ? () => setOverlay({ kind: 'return-to-private' })
+                    ? () => {
+                        toast.dismiss(RETURN_TO_PRIVATE_KEY);
+                        setOverlay({ kind: 'return-to-private' });
+                      }
                     : undefined,
                 },
               }
@@ -327,7 +350,10 @@ export function PlaylistDetail({
               data-testid="playlist-reorder-done"
               disabled={reorder.saving}
               aria-busy={reorder.saving}
-              onClick={reorder.commit}
+              onClick={() => {
+                toast.dismiss(REORDER_KEY);
+                void reorder.commit();
+              }}
               className={cn(primaryButtonClass, 'flex flex-1 items-center justify-center gap-2')}
             >
               {reorder.saving ? <LiedmotifLoader /> : <Check className="h-4 w-4" />} Done
@@ -361,7 +387,10 @@ export function PlaylistDetail({
             <LoadMoreButton
               loading={members.loadingMore}
               disabled={members.removing}
-              onClick={() => void members.loadMore()}
+              onClick={() => {
+                toast.dismiss(MEMBERS_KEY['load-more']);
+                void members.loadMore();
+              }}
               className="mt-3 pb-1"
             />
           ) : null}
@@ -398,7 +427,7 @@ export function PlaylistDetail({
             router.refresh();
             router.push('/lounge');
           }}
-          onError={toast.error}
+          onError={(message) => toast.error(message, { key: RETURN_TO_PRIVATE_KEY })}
           onClose={() => setOverlay(null)}
         />
       ) : null}
@@ -424,6 +453,7 @@ export function PlaylistDetail({
         visitor={isVisitor}
         onClose={() => setOverlay(null)}
         onRemove={(item) => {
+          toast.dismiss(MEMBERS_KEY.remove);
           members.removeMember(item.id);
           setOverlay(null);
         }}

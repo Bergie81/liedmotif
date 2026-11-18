@@ -18,7 +18,6 @@ import type {
   TrackFlags,
 } from '@liedmotif/shared';
 import { AvatarBadge } from '@/components/avatar-badge';
-import { toast } from '@/lib/toast';
 import { Sheet } from '@/components/ui/sheet';
 import {
   formatLibraryTrackMetadata,
@@ -102,7 +101,7 @@ export function SearchTrackResults({
       onTrackRemoved();
     },
   });
-  const playback = useTrackRowPlayback(toast.error);
+  const playback = useTrackRowPlayback('search-play');
 
   // Playing a result is an act on it, so the play goes out through engagement.
   function playRow(track: SearchTrackItem) {

@@ -10,7 +10,6 @@ import { CheckSquare } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { addPlaylistTracks, listPlaylists } from '@/lib/api-client';
 import { cn } from '@/lib/cn';
-import { toast } from '@/lib/toast';
 import { AlertBanner } from '@/components/ui/design-system';
 import { secondaryButtonClass } from '@/components/ui/form-styles';
 import { LoadingRow } from '@/components/ui/loading';
@@ -203,7 +202,7 @@ function LibrarySmartListView({
     onFlagsResolved: resolveFlags,
     onTrackRemoved: query.removeTrack,
   });
-  const playback = useTrackRowPlayback(toast.error);
+  const playback = useTrackRowPlayback('library-play');
 
   return (
     <Sheet

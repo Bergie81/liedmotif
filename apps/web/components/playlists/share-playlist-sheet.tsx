@@ -97,6 +97,7 @@ function ShareContent({
   async function confirm() {
     if (!commit || commit.disabled || busy) return;
     setBusy(true);
+    toast.dismiss(SHARE_KEY);
     const result = await sharePlaylist(playlist.id, commit.audience);
     setBusy(false);
     if (!result.ok) {
@@ -106,7 +107,6 @@ function ShareContent({
       );
       return;
     }
-    toast.dismiss(SHARE_KEY);
     onShared({ playlistId: result.data.playlistId, sharedAt: result.data.sharedAt });
     onClose();
   }

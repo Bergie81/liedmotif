@@ -90,6 +90,7 @@ type PlaylistGridAction =
 const DELETE_KEY = 'playlists-delete';
 const PIN_KEY = 'playlists-pin';
 const PLAY_KEY = 'playlists-play';
+const ADD_TRACKS_KEY = 'playlists-add-tracks';
 const LOAD_MORE_KEY = 'playlists-load-more';
 const REMOVE_FROM_LOUNGE_KEY = 'playlists-remove-from-lounge';
 
@@ -166,13 +167,13 @@ export function PlaylistsGrid({
     if (!nextCursor || loadingMore) return;
     const token = beginNextPage();
     if (token === null) return;
+    toast.dismiss(LOAD_MORE_KEY);
     const result = await listPlaylists({ search, cursor: nextCursor });
     if (!settle(token)) return;
     if (!result.ok) {
       toast.error(`Couldn’t load more playlists: ${result.error.message}`, { key: LOAD_MORE_KEY });
       return;
     }
-    toast.dismiss(LOAD_MORE_KEY);
     // An activity-ordered keyset can hand back a playlist that moved while
     // paging — append id-unique so a card never renders twice.
     setPlaylists((current) => appendUniqueById(current ?? [], result.data.playlists));
@@ -200,23 +201,27 @@ export function PlaylistsGrid({
     return null;
   }
 
-  async function loadMembers(playlist: PlaylistSummaryItem): Promise<PlaylistMemberItem[] | null> {
+  /** `failureKey` is the act's own, so one act's retry never clears another's failure. */
+  async function loadMembers(
+    playlist: PlaylistSummaryItem,
+    failureKey: string,
+  ): Promise<PlaylistMemberItem[] | null> {
+    toast.dismiss(failureKey);
     const result = await getAllPlaylistMembers(playlist.id);
     if (!result.ok) {
-      toast.error(`Couldn’t load the playlist: ${result.error.message}`, { key: PLAY_KEY });
+      toast.error(`Couldn’t load the playlist: ${result.error.message}`, { key: failureKey });
       return null;
     }
-    toast.dismiss(PLAY_KEY);
     return result.data.items;
   }
 
   async function playPlaylist(playlist: PlaylistSummaryItem) {
-    const items = await loadMembers(playlist);
+    const items = await loadMembers(playlist, PLAY_KEY);
     if (items) playback.play(playlist, items);
   }
 
   async function startAddTracks(playlist: PlaylistSummaryItem) {
-    const items = await loadMembers(playlist);
+    const items = await loadMembers(playlist, ADD_TRACKS_KEY);
     if (items) {
       setAction({ kind: 'add-tracks', playlist, memberIds: items.map((item) => item.id) });
     }
@@ -234,12 +239,12 @@ export function PlaylistsGrid({
    *  replay it. */
   async function togglePin(playlist: PlaylistSummaryItem) {
     const pinned = playlist.pinnedAt === null;
+    toast.dismiss(PIN_KEY);
     const result = await pinLibraryPlaylist(playlist.id, pinned);
     if (!result.ok) {
       toast.error(pinToggleFailure(pinned, result.error.message), { key: PIN_KEY });
       return;
     }
-    toast.dismiss(PIN_KEY);
     router.refresh();
     await loadRef.current();
   }
@@ -249,13 +254,13 @@ export function PlaylistsGrid({
   }
 
   async function confirmDelete(playlist: PlaylistSummaryItem) {
+    toast.dismiss(DELETE_KEY);
     const result = await deletePlaylist(playlist.id);
     setAction(null);
     if (!result.ok) {
       toast.error(`Delete failed: ${result.error.message}`, { key: DELETE_KEY });
       return;
     }
-    toast.dismiss(DELETE_KEY);
     setPlaylists((all) => all?.filter((p) => p.id !== playlist.id) ?? all);
   }
 
@@ -280,7 +285,10 @@ export function PlaylistsGrid({
               onRename: (playlist) => setAction({ kind: 'rename', playlist }),
               onDelete: (playlist) => setAction({ kind: 'delete', playlist }),
               onShare: (playlist) => setAction({ kind: 'share', playlist }),
-              onRemoveFromLounge: (playlist) => setAction({ kind: 'remove-from-lounge', playlist }),
+              onRemoveFromLounge: (playlist) => {
+                toast.dismiss(REMOVE_FROM_LOUNGE_KEY);
+                setAction({ kind: 'remove-from-lounge', playlist });
+              },
               onTogglePin: (playlist) => void togglePin(playlist),
             }}
           />
@@ -330,10 +338,7 @@ export function PlaylistsGrid({
       {action?.kind === 'remove-from-lounge' ? (
         <RemoveFromLoungeDialog
           playlist={action.playlist}
-          onRemoved={(result) => {
-            toast.dismiss(REMOVE_FROM_LOUNGE_KEY);
-            applySharedAt(result);
-          }}
+          onRemoved={applySharedAt}
           onError={(message) => toast.error(message, { key: REMOVE_FROM_LOUNGE_KEY })}
           onClose={() => setAction(null)}
         />

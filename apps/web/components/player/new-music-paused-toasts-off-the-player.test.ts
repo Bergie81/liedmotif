@@ -26,11 +26,13 @@ function player(overrides: Partial<GenerationBannerPlayer> = {}): GenerationBann
   };
 }
 
+type Props = { current: GenerationBannerPlayer | null; onPlayer: boolean; sessionId?: string };
+
 function mount(initial: GenerationBannerPlayer, onPlayerPage = false) {
   return renderHook(
-    ({ current, onPlayer }: { current: GenerationBannerPlayer | null; onPlayer: boolean }) =>
-      useGenerationStatusToast(current, onPlayer),
-    { initialProps: { current: initial, onPlayer: onPlayerPage } },
+    ({ current, onPlayer, sessionId = 'session-1' }: Props) =>
+      useGenerationStatusToast(current, onPlayer, sessionId),
+    { initialProps: { current: initial, onPlayer: onPlayerPage } as Props },
   );
 }
 
@@ -57,6 +59,33 @@ describe('new music paused, seen off the Player', () => {
     view.rerender({ current: player({ generationStatus: 'provider_credits' }), onPlayer: false });
 
     expect(shownToasts()).toEqual([]);
+  });
+
+  it('follows the banner when the first poll brings the ready Tracks of a resumed Session', () => {
+    const view = mount(player({ generationStatus: 'provider_error', queueLength: 0 }));
+
+    view.rerender({
+      current: player({ generationStatus: 'provider_error', queueLength: 3 }),
+      onPlayer: false,
+    });
+
+    expect(shownToasts().map((shown) => shown.message)).toEqual([
+      'Generation hit a problem — playing your ready tracks while it recovers.',
+    ]);
+  });
+
+  it('says it again for another Session that pauses the same way', () => {
+    const view = mount(player());
+    view.rerender({ current: player({ generationStatus: 'provider_credits' }), onPlayer: false });
+    toast.dismiss();
+
+    view.rerender({
+      current: player({ generationStatus: 'provider_credits' }),
+      onPlayer: false,
+      sessionId: 'session-2',
+    });
+
+    expect(shownToasts()).toEqual([expect.objectContaining({ title: 'Generation paused' })]);
   });
 
   it('stays quiet on the Player, where the banner says it, and after leaving it', () => {

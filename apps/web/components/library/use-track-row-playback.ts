@@ -7,6 +7,7 @@
 
 import type { TrackPlayTarget } from '@/components/player/play-track-intent';
 import { usePlaySessionTrack } from '@/components/player/use-play-session-track';
+import { toast } from '@/lib/toast';
 import type { PreviewState } from './track-row';
 import { useTrackPreview, type PreviewableTrack } from './use-track-preview';
 
@@ -28,7 +29,10 @@ export function resolveRowPreview(preview: RowPreview, transport: RowPreview): R
   return preview.state === 'playing' || preview.state === 'paused' ? preview : transport;
 }
 
-export function useTrackRowPlayback(onError: (message: string) => void) {
+/** A play that fails is an error toast under `failureKey`, which the next
+ *  row's play clears. */
+export function useTrackRowPlayback(failureKey: string) {
+  const onError = (message: string) => toast.error(message, { key: failureKey });
   const preview = useTrackPreview(onError);
   const sessionPlay = usePlaySessionTrack(onError);
 
@@ -39,6 +43,7 @@ export function useTrackRowPlayback(onError: (message: string) => void) {
    * since the two share no audio element.
    */
   function playRow(track: PlayableTrackRow) {
+    toast.dismiss(failureKey);
     if (track.originSessionId) {
       preview.stop();
       void sessionPlay.playViaSession(track);

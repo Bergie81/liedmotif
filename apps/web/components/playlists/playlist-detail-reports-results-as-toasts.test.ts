@@ -158,6 +158,40 @@ describe('PlaylistDetail — results as toasts', () => {
     expect(screen.queryByRole('status')).toBeNull();
   });
 
+  async function removeTrack() {
+    await waitFor(() => expect(screen.getByTestId('playlist-member')).toBeTruthy());
+    openTrackOptions();
+    fireEvent.click(screen.getByTestId('playlist-remove-track'));
+  }
+
+  it('replaces a failed removal with a different refusal of the retry', async () => {
+    api.removePlaylistTrack.mockResolvedValueOnce({ ok: false, error: { message: 'Offline.' } });
+    api.removePlaylistTrack.mockResolvedValueOnce({ ok: false, error: { message: 'Not found.' } });
+    renderPage();
+
+    await removeTrack();
+    await waitFor(() =>
+      expect(shown()).toEqual([{ tone: 'error', message: 'Remove failed: Offline.' }]),
+    );
+    await removeTrack();
+
+    await waitFor(() =>
+      expect(shown()).toEqual([{ tone: 'error', message: 'Remove failed: Not found.' }]),
+    );
+  });
+
+  it('clears a failed removal when it is tried again', async () => {
+    api.removePlaylistTrack.mockResolvedValueOnce({ ok: false, error: { message: 'Offline.' } });
+    api.removePlaylistTrack.mockReturnValueOnce(new Promise(() => undefined));
+    renderPage();
+
+    await removeTrack();
+    await waitFor(() => expect(shown()).toHaveLength(1));
+    await removeTrack();
+
+    expect(shown()).toEqual([]);
+  });
+
   it('keeps a failed load inline', async () => {
     api.getPlaylist.mockResolvedValue({ ok: false, error: { message: 'Playlist not found.' } });
     render(h(PlaylistDetail, { playlistId: PLAYLIST.id }));

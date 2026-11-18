@@ -32,11 +32,11 @@ afterEach(() => {
 function setup() {
   const queue = ['a', 'b', 'c'];
   const deps: TrackActionDeps = {
+    sourceId: 's1',
     sessionId: 's1',
     activeTrack: () =>
       queue[0] ? ({ trackId: queue[0], queueItemId: `q-${queue[0]}` } as PlayableTrack) : null,
     patch: vi.fn(),
-    flashActionError: vi.fn(),
     markRemoved: vi.fn(),
     unmarkRemoved: vi.fn(),
     removeFromQueue: vi.fn(),

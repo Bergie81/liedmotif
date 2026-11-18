@@ -16,6 +16,7 @@ import {
   type PlaybackControllerApi,
 } from './playback-controller-api';
 import type { LivePlayback } from './player-provider';
+import { showPlayerError } from './player-error-toast';
 import { PlaylistNowPlaying } from './playlist-now-playing';
 
 const api = vi.hoisted(() => ({ removePlaylistTrack: vi.fn() }));
@@ -110,12 +111,11 @@ function AppShell({ children }: { children?: ReactNode }) {
   return h(TooltipProvider, null, h(AppChromeContext.Provider, { value: CHROME }, children));
 }
 
-function showPlaylist(actionError: string | null = null) {
+function showPlaylist() {
   const player = {
     ...initialPlaybackControllerState(),
     status: 'playing',
     currentTrack: CURRENT_TRACK,
-    actionError,
     getPlaybackSample: () => ({ positionSeconds: 12, durationSeconds: 180, playbackRate: 1 }),
     peekNeighbors: () => ({ next: null, previous: null }),
   } as unknown as PlaybackControllerApi;
@@ -145,7 +145,8 @@ const shownErrors = () =>
   shownToasts().flatMap((shown) => (shown.tone === 'error' ? [shown.message] : []));
 
 it('shows a player write that did not land as an error toast, which stays up over the options', () => {
-  showPlaylist(FAILED_FAVORITE);
+  showPlaylist();
+  showPlayerError(PLAYLIST.id, 'favorite', FAILED_FAVORITE);
 
   expect(shownErrors()).toEqual([FAILED_FAVORITE]);
   expect(screen.queryByRole('alert')).toBeNull();
@@ -160,7 +161,8 @@ it('shows a refused Remove beside a player notice that is still up', async () =>
     ok: false,
     error: { message: 'The server is away.' },
   });
-  showPlaylist(FAILED_FAVORITE);
+  showPlaylist();
+  showPlayerError(PLAYLIST.id, 'favorite', FAILED_FAVORITE);
 
   fireEvent.click(openOptions().getByTestId('player-remove-from-playlist'));
   await act(async () => {});

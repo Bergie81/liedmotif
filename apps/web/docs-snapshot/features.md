@@ -69,7 +69,7 @@ While the field is empty, it cycles through worked examples of good requests. Th
 
 A writing AI is optional. It's a text service that turns your words into one steady direction for the whole session, and gives sessions and tracks creative names. `.env` calls it a text LLM. Without one, your words reach the music model exactly as written, and your fine-tune picks apply either way. The admin connects one in **Settings › AI Providers**, and [providers and keys](/docs/providers-and-keys#writing-ai) compares the two in full.
 
-Without one, **Home** says **No Writing AI connected**. If a connected writing AI fails, the session doesn't quietly start without it: a notification at the top of the screen says why, and you can try again.
+Without one, **Home** says **No Writing AI connected**. If a connected writing AI fails, the session doesn't quietly start without it: the player shows **Your Session didn't start** with the reason, and **Try again** takes you back to Home.
 
 ### Fine-tune picks
 

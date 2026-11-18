@@ -52,13 +52,13 @@ export function RenameDialog({
     event.preventDefault();
     if (!trimmed || busy) return;
     setBusy(true);
+    toast.dismiss(RENAME_KEY);
     const failure = await onRename(trimmed);
     setBusy(false);
     if (failure) {
       toast.error(failure, { key: RENAME_KEY });
       return;
     }
-    toast.dismiss(RENAME_KEY);
     onClose();
   }
 

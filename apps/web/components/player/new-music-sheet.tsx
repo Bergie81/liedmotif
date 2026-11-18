@@ -88,6 +88,7 @@ function NewMusicPanel({
 
   async function commit(next: NewMusicChoice) {
     onSavingChange(true);
+    toast.dismiss(SAVE_KEY);
     const result =
       next === 'off'
         ? await setSessionMode(session.id, 'repeat')
@@ -99,7 +100,6 @@ function NewMusicPanel({
       setChoice(inForce);
       return;
     }
-    toast.dismiss(SAVE_KEY);
     onSessionChange(result.data.session);
     onClose();
   }

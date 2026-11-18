@@ -59,13 +59,13 @@ export function SessionOptionsFlow({
   async function resume(session: SessionListItem) {
     if (!(await beginOtherMusic())) return;
     setResumingId(session.id);
+    toast.dismiss(RESUME_KEY);
     const result = await resumeSession(session.id, clientId);
     setResumingId(null);
     if (!result.ok) {
       toast.error(result.error.message, { key: RESUME_KEY });
       return;
     }
-    toast.dismiss(RESUME_KEY);
     // The page stays put — playback surfaces in the mini player. Refetch the
     // list so the resumed Session moves into the Active now slot (and the
     // previously active one lands under History) without a manual reload.
@@ -76,13 +76,13 @@ export function SessionOptionsFlow({
 
   async function remove(session: SessionListItem) {
     setDeletingId(session.id);
+    toast.dismiss(DELETE_KEY);
     const result = await deleteSession(session.id);
     setDeletingId(null);
     if (!result.ok) {
       toast.error(result.error.message, { key: DELETE_KEY });
       return;
     }
-    toast.dismiss(DELETE_KEY);
     list.removeItem(session.id);
     search.removeResult(session.id);
     router.refresh();
@@ -101,13 +101,13 @@ export function SessionOptionsFlow({
 
   async function convertToPlaylist(session: SessionListItem) {
     setConvertingId(session.id);
+    toast.dismiss(CONVERT_KEY);
     const result = await convertSessionToPlaylist(session.id);
     setConvertingId(null);
     if (!result.ok) {
       toast.error(result.error.message, { key: CONVERT_KEY });
       return;
     }
-    toast.dismiss(CONVERT_KEY);
     onClose();
     // Library would otherwise replay its pre-convert list from the router cache.
     router.refresh();

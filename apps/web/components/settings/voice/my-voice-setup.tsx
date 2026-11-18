@@ -85,6 +85,7 @@ export function MyVoiceSetup({ initial }: { initial: VoiceProfileView }) {
   const mutate = useCallback(
     async (path: string, init?: VoiceApiInit) => {
       setBusy(true);
+      toast.dismiss(FAILURE_KEY);
       const succeeded = applyResult(await voiceApi(path, init));
       setBusy(false);
       return succeeded;

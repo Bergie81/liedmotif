@@ -104,6 +104,7 @@ export function useResumableSessions({
     if (!nextCursor || loadingMore) return;
     const token = beginNextPage();
     if (token === null) return;
+    toast.dismiss(LOAD_MORE_KEY);
     const result = await listSessions({
       limit,
       includeActive,
@@ -115,7 +116,6 @@ export function useResumableSessions({
       toast.error(`Couldn’t load more Sessions: ${result.error.message}`, { key: LOAD_MORE_KEY });
       return;
     }
-    toast.dismiss(LOAD_MORE_KEY);
     // An activity-ordered keyset can hand back a session that moved while
     // paging — append id-unique so a row never renders twice.
     setItems((current) => appendUniqueById(current ?? [], result.data.items));
@@ -123,12 +123,12 @@ export function useResumableSessions({
   }
 
   async function setPinned(id: string, next: boolean): Promise<boolean> {
+    toast.dismiss(PIN_KEY);
     const result = await setSessionPinned(id, next);
     if (!result.ok) {
       toast.error(result.error.message, { key: PIN_KEY });
       return false;
     }
-    toast.dismiss(PIN_KEY);
     // Back would otherwise replay the pre-pin lists from the router cache.
     router.refresh();
     const session = [...(items ?? []), ...pinned].find((item) => item.id === id);

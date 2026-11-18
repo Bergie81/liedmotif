@@ -31,6 +31,7 @@ export function AssistantToneForm({ initial }: { initial: AssistantTone }) {
   async function save() {
     if (saving) return;
     setSaving(true);
+    toast.dismiss(SAVE_KEY);
     const result = await updateAssistantTone({ tone });
     setSaving(false);
     if (result.ok) {

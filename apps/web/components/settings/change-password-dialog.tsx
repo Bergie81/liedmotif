@@ -94,6 +94,7 @@ function ResetLinkRequest({ email }: { email: string }) {
 
   async function send() {
     setSending(true);
+    toast.dismiss(FAILURE_KEY);
     const result = await apiFetchJson<{ sentTo: string }>(
       '/api/settings/profile/reset-link',
       'POST',
@@ -104,7 +105,6 @@ function ResetLinkRequest({ email }: { email: string }) {
       reportFailure(resetLinkErrorMessage(result.status, result.message));
       return;
     }
-    toast.dismiss(FAILURE_KEY);
     setSentTo(result.data.sentTo);
   }
 
@@ -133,13 +133,13 @@ function ConfirmEmailFirst({ email }: { email: string }) {
 
   async function send() {
     setSending(true);
+    toast.dismiss(FAILURE_KEY);
     const result = await requestConfirmLink();
     setSending(false);
     if (!result.sent) {
       reportFailure(result.message);
       return;
     }
-    toast.dismiss(FAILURE_KEY);
     setSent(result.message);
   }
 
@@ -178,13 +178,13 @@ function CurrentPasswordChange() {
     setPasswordError(broken);
     if (broken || !matches) return;
     setBusy(true);
+    toast.dismiss(FAILURE_KEY);
     const result = await apiFetchJson('/api/settings/profile/password', 'POST', {
       currentPassword,
       newPassword,
     });
     setBusy(false);
     if (result.ok) {
-      toast.dismiss(FAILURE_KEY);
       setChanged(true);
       return;
     }

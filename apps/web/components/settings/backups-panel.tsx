@@ -99,6 +99,7 @@ export function BackupsPanel({ initial }: { initial: BackupsOverview }) {
   async function save() {
     if (saving) return;
     setSaving(true);
+    toast.dismiss(SCHEDULE_KEY);
     const result = await apiFetchJson<{ schedule: BackupSchedule }>(
       '/api/settings/backups',
       'PUT',
@@ -116,6 +117,7 @@ export function BackupsPanel({ initial }: { initial: BackupsOverview }) {
 
   async function backUpNow() {
     setRequesting(true);
+    toast.dismiss(REQUEST_KEY);
     const result = await apiFetch('/api/settings/backups/run', { method: 'POST' });
     // A refused request (a run already in progress) refreshes too, so the page shows that run.
     const current = (await refresh()) ?? overview;
@@ -125,8 +127,6 @@ export function BackupsPanel({ initial }: { initial: BackupsOverview }) {
       toast.info('Backup requested. It runs once the backup service is back.', {
         key: REQUEST_KEY,
       });
-    } else {
-      toast.dismiss(REQUEST_KEY);
     }
   }
 

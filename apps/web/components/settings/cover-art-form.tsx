@@ -48,6 +48,7 @@ export function CoverArtForm({
 
   async function save() {
     setSaving(true);
+    toast.dismiss(SAVE_KEY);
     const res = await fetch('/api/settings/cover-art', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },

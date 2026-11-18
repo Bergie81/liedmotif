@@ -84,6 +84,7 @@ export function PeopleForm(props: PeopleFormProps) {
     setCreationErrors(errors);
     if (Object.keys(errors).length > 0) return;
     setCreating(true);
+    toast.dismiss(CREATE_KEY);
     const response = await fetch('/api/settings/people', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -102,13 +103,13 @@ export function PeopleForm(props: PeopleFormProps) {
     setNewAbout('');
     setAdding(false);
     setCreating(false);
-    toast.dismiss(CREATE_KEY);
     toast.success(`${body.person.name} added.`);
   }
 
   async function saveFrequency(next: CoverReferenceFrequency) {
     if (frequencyBusy || next === frequency) return;
     setFrequencyBusy(true);
+    toast.dismiss(FREQUENCY_KEY);
     const response = await fetch('/api/settings/people', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -124,7 +125,6 @@ export function PeopleForm(props: PeopleFormProps) {
     setFrequency(next);
     router.refresh();
     setFrequencyBusy(false);
-    toast.dismiss(FREQUENCY_KEY);
     toast.success('Cover fallback saved.');
   }
 

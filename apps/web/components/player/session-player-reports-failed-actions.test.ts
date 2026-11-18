@@ -24,18 +24,22 @@ vi.mock('@/lib/api-client', async (original) => ({
   ...(await original<typeof import('@/lib/api-client')>()),
   deleteTrack: api.deleteTrack,
 }));
-vi.mock('./player-provider', () => {
-  const context = {
-    engage: vi.fn(),
-    release: vi.fn(),
-    beginOtherMusic: vi.fn(async () => true),
-    submitChangeVibe: vi.fn(),
-    pending: null,
-    vibeChange: { pendingSessionId: null, error: null },
-    sleepTimer: { endsAt: null, start: vi.fn(), cancel: vi.fn() },
-  };
-  return { usePlayerContext: () => context, usePlayerActions: () => context };
-});
+const context = vi.hoisted(() => ({
+  engage: () => {},
+  release: () => {},
+  beginOtherMusic: async () => true,
+  submitChangeVibe: () => null,
+  pending: null,
+  vibeChange: {
+    pendingSessionId: null,
+    error: null as { sessionId: string; message: string } | null,
+  },
+  sleepTimer: { endsAt: null, start: () => {}, cancel: () => {} },
+}));
+vi.mock('./player-provider', () => ({
+  usePlayerContext: () => context,
+  usePlayerActions: () => context,
+}));
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
@@ -63,6 +67,7 @@ beforeAll(() => {
 afterEach(() => {
   cleanup();
   api.deleteTrack.mockReset();
+  context.vibeChange.error = null;
   toast.dismiss();
 });
 
@@ -105,12 +110,11 @@ function AppShell({ children }: { children?: ReactNode }) {
   return h(TooltipProvider, null, h(AppChromeContext.Provider, { value: CHROME }, children));
 }
 
-function nowPlayingFor(actionError: string | null) {
+function nowPlaying() {
   const player = {
     ...initialPlaybackControllerState(),
     status: 'playing',
     currentTrack: CURRENT_TRACK,
-    actionError,
     getPlaybackSample: () => ({ positionSeconds: 12, durationSeconds: 180, playbackRate: 1 }),
     peekNeighbors: () => ({ next: null, previous: null }),
     advancePastDeletedTrack: vi.fn(),
@@ -130,10 +134,8 @@ function nowPlayingFor(actionError: string | null) {
   });
 }
 
-/** Renders the Session surface; the returned function hands it a new controller notice. */
-function showSession(actionError: string | null = null) {
-  const view = render(nowPlayingFor(actionError), { wrapper: AppShell });
-  return (next: string | null) => view.rerender(nowPlayingFor(next));
+function showSession() {
+  return render(nowPlaying(), { wrapper: AppShell });
 }
 
 const shownErrors = () =>
@@ -145,14 +147,6 @@ async function deleteTrackFromOptions() {
   fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
   await act(async () => {});
 }
-
-it('shows a player write that did not land as an error toast, not on the page', () => {
-  const failed = 'Favorite failed — this track was not starred. Try again.';
-  showSession(failed);
-
-  expect(shownErrors()).toEqual([failed]);
-  expect(screen.queryByTestId('player-error')).toBeNull();
-});
 
 it('shows a refused Delete Track, and drops it once the retry lands', async () => {
   api.deleteTrack.mockResolvedValueOnce({ ok: false, error: { message: 'The server is away.' } });
@@ -167,16 +161,23 @@ it('shows a refused Delete Track, and drops it once the retry lands', async () =
   expect(shownErrors()).toEqual([]);
 });
 
-it('keeps a closed failure closed when a different one comes and goes', async () => {
+it('keeps a refused Delete Track closed when the Player opens again', async () => {
   api.deleteTrack.mockResolvedValueOnce({ ok: false, error: { message: 'The server is away.' } });
-  const notice = showSession();
+  const view = showSession();
   await deleteTrackFromOptions();
   closeToast(shownToasts()[0]!.id);
 
-  const favoriteFailed = 'Favorite failed — this track was not starred. Try again.';
-  notice(favoriteFailed);
-  expect(shownErrors()).toEqual([favoriteFailed]);
+  view.unmount();
+  showSession();
 
-  notice(null);
+  expect(shownErrors()).toEqual([]);
+  expect(screen.queryByTestId('player-error')).toBeNull();
+});
+
+it('leaves a Change Vibe failure to its request, so opening the Player does not raise it again', () => {
+  context.vibeChange.error = { sessionId: SESSION.id, message: 'Change Vibe failed: Offline.' };
+
+  showSession();
+
   expect(shownErrors()).toEqual([]);
 });

@@ -41,6 +41,7 @@ export function PlaybackForm({ initial }: { initial: PlaybackSettings }) {
   async function save() {
     if (saving) return;
     setSaving(true);
+    toast.dismiss(SAVE_KEY);
     const patch: UpdatePlaybackSettingsRequest = {};
     if (blendEnabled !== persisted.blendEnabled) patch.blendEnabled = blendEnabled;
     if (crossfadeSeconds !== persisted.crossfadeSeconds) patch.crossfadeSeconds = crossfadeSeconds;

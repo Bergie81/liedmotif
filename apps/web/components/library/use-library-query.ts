@@ -50,10 +50,10 @@ export function useLibraryQuery(view: LibraryView, search = '') {
     if (!nextCursor || loadingMore) return;
     const token = beginNextPage();
     if (token === null) return;
+    toast.dismiss(LOAD_MORE_KEY);
     const result = await getLibrary(view, { cursor: nextCursor, search });
     if (!settle(token)) return;
     if (result.ok) {
-      toast.dismiss(LOAD_MORE_KEY);
       setItems((current) => appendUniqueById(current ?? [], result.data.items));
       setNextCursor(result.data.nextCursor);
     } else {

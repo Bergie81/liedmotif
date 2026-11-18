@@ -59,7 +59,7 @@ export function ChangeVibeSheet({
   onOpenChange: (open: boolean) => void;
   /** Fire-and-forget: the sheet closes at once and the request runs at
    * provider scope — the player's cover chip and slider status narrate it,
-   * and a failure lands on the player error surface. */
+   * and a failure is an error toast. */
   onSubmit: (input: ChangeVibeIntentInput | undefined, options: ChangeVibeOptions) => void;
 }) {
   const { ownVoiceOffered } = useAppChrome();

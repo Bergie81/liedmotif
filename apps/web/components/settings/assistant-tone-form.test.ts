@@ -145,6 +145,28 @@ describe('the tone form', () => {
     );
   });
 
+  it('takes a failed save away as soon as saving again starts', async () => {
+    const answers: Array<Promise<Response>> = [
+      Promise.resolve(
+        Response.json(makeApiError('internal_error', 'Could not save the tone.'), { status: 500 }),
+      ),
+      new Promise<Response>(() => undefined),
+    ];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => answers.shift()!),
+    );
+    render(h(AssistantToneForm, { initial: { tone: 'Calm.' } }));
+    const save = screen.getByRole('button', { name: 'Save tone' });
+
+    fireEvent.click(save);
+    await waitFor(() => expect(shownToasts()).toHaveLength(1));
+    await waitFor(() => expect(field().disabled).toBe(false));
+    fireEvent.click(save);
+
+    expect(shownToasts()).toEqual([]);
+  });
+
   it('says how much of the length is used, and takes no more than the longest tone', () => {
     render(h(AssistantToneForm, { initial: { tone: 'Calm.' } }));
     expect(screen.getByText(`5/${ASSISTANT_TONE_MAX_LENGTH}`)).toBeTruthy();

@@ -3,7 +3,7 @@
 // The one toaster in the root layout: whatever a caller shows, its tone decides
 // how urgently it is announced and how long it stays.
 
-import { createElement as h } from 'react';
+import { createElement as h, Fragment, useEffect } from 'react';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { shownToasts, toast } from '@/lib/toast';
@@ -19,6 +19,8 @@ beforeEach(() => {
 
 afterEach(() => {
   act(() => toast.dismiss());
+  // Closed toasts leave the store once their exit has played.
+  act(() => vi.advanceTimersByTime(250));
   cleanup();
   vi.useRealTimers();
 });
@@ -87,6 +89,21 @@ describe('Toaster', () => {
     expect(shownToasts()).toEqual([]);
   });
 
+  it('times the next toast out after the last one was closed from its button', () => {
+    render(h(Toaster));
+    show(() => toast.error('Delete failed: Offline.'));
+    const close = screen.getByRole('button', { name: 'Close notification' });
+    act(() => close.focus());
+    act(() => close.click());
+    wait(300);
+    expect(shownToasts()).toEqual([]);
+
+    show(() => toast.success('Profile saved.'));
+    wait(4_100);
+
+    expect(shownToasts()).toEqual([]);
+  });
+
   it('closes errors on a route change and leaves timed toasts running', () => {
     const view = render(h(Toaster));
     show(() => toast.error('Delete failed: Offline.'));
@@ -98,6 +115,22 @@ describe('Toaster', () => {
     expect(shownToasts().map((shown) => shown.message)).toEqual(['Session deleted.']);
     wait(4_100);
     expect(shownToasts()).toEqual([]);
+  });
+
+  it('keeps an error the new page raises as it opens', () => {
+    function Page({ failure }: { failure: string }) {
+      useEffect(() => toast.error(failure), [failure]);
+      return null;
+    }
+    const layout = (failure: string) =>
+      h(Fragment, null, h(Page, { key: failure, failure }), h(Toaster));
+    const view = render(layout('Delete failed: Offline.'));
+    act(() => vi.advanceTimersByTime(50));
+
+    route.pathname = '/';
+    view.rerender(layout('Couldn’t load more playlists.'));
+
+    expect(shownToasts().map((shown) => shown.message)).toEqual(['Couldn’t load more playlists.']);
   });
 
   it('shows its title and its link', () => {
@@ -113,6 +146,21 @@ describe('Toaster', () => {
     expect(screen.getByText('Daily limit reached')).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Cost settings' }).getAttribute('href')).toBe(
       '/settings/costs',
+    );
+  });
+
+  it('announces its title, message and link as separate sentences', () => {
+    render(h(Toaster));
+
+    show(() =>
+      toast.warning('No tracks.', {
+        title: 'Generation paused',
+        link: { label: 'Cost settings', href: '/settings/costs' },
+      }),
+    );
+
+    expect(announcement('No tracks.')?.textContent).toBe(
+      'Notification Generation paused. No tracks. Cost settings.',
     );
   });
 });

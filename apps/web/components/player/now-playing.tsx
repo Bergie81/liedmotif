@@ -55,7 +55,7 @@ import { SectionLoopBar } from './section-loop-bar';
 import { OfflineMark } from '@/components/offline/offline-mark';
 import { TransportControls } from './transport-controls';
 import { useLyricsSurfaces } from './use-lyrics-surfaces';
-import { usePlayerErrorToast } from './use-player-error-toast';
+import { clearPlayerError, showPlayerError } from './player-error-toast';
 import { usePlayerSessionActions } from './use-player-session-actions';
 import {
   presentVibeChangeCaption,
@@ -206,8 +206,6 @@ export function NowPlaying({
   // narration survives navigating away and back mid-request.
   const { vibeChange, submitChangeVibe, pending: pendingSource, sleepTimer } = usePlayerContext();
   const vibeChangePending = vibeChange.pendingSessionId === session.id;
-  const vibeChangeError =
-    vibeChange.error?.sessionId === session.id ? vibeChange.error.message : null;
   const statusChip = presentStatusChip({
     incoming,
     switchPending: player.switchPending,
@@ -263,10 +261,6 @@ export function NowPlaying({
   // it, so it waits for that, and for any other action in flight.
   const changeVibeAvailable =
     player.styleRevision != null && !vibeChangePending && sessionActions.busyAction === null;
-  // Failures of the destructive Session/Track actions — the sheet (or the
-  // banner's confirm) has closed by the time they land, so they surface in the
-  // player's error toast.
-  const [optionsError, setOptionsError] = useState<string | null>(null);
   const [deletingSession, setDeletingSession] = useState(false);
   // The policy is only this player's to write while the Session it is showing
   // is the live, settled one: a stop, a delete, or a handoff to another Session
@@ -283,11 +277,6 @@ export function NowPlaying({
   // Parent-owned for the same never-stack reason as Lyrics: the options menu
   // and the header open this one sheet.
   const [newMusicOpen, setNewMusicOpen] = useState(false);
-  // Every current failure shows, so an older one never hides a newer one.
-  usePlayerErrorToast('playback', player.actionError);
-  usePlayerErrorToast('options', optionsError);
-  usePlayerErrorToast('change-vibe', vibeChangeError);
-  usePlayerErrorToast('session-action', sessionActions.error?.message);
 
   const { lyricsAvailable, lyricsSheetOpen, setLyricsSheetOpen } = useLyricsSurfaces(track);
   // Track Data is parent-owned for the same never-stack reason as Lyrics; it
@@ -347,10 +336,14 @@ export function NowPlaying({
    * controller advances only when the deleted Track is still the audible one,
    * then the authoritative Queue confirms. */
   async function deleteCurrentTrack(trackId: string): Promise<void> {
-    setOptionsError(null);
+    clearPlayerError(session.id, 'delete-track');
     const result = await deleteTrack(trackId);
     if (!result.ok) {
-      setOptionsError(`Delete failed — the track is unchanged. ${result.error.message}`);
+      showPlayerError(
+        session.id,
+        'delete-track',
+        `Delete failed — the track is unchanged. ${result.error.message}`,
+      );
       return;
     }
     const live = playerRef.current;
@@ -362,17 +355,23 @@ export function NowPlaying({
    * session, so this stops it first — the same two states My Sessions' delete
    * moves through, collapsed into one confirmed action. */
   async function deleteCurrentSession(): Promise<void> {
-    setOptionsError(null);
+    clearPlayerError(session.id, 'delete-session');
     setDeletingSession(true);
     try {
       const stopped = await stopSession(session.id);
       if (!stopped.ok) {
-        setOptionsError(`Delete failed — the Session is unchanged. ${stopped.error.message}`);
+        showPlayerError(
+          session.id,
+          'delete-session',
+          `Delete failed — the Session is unchanged. ${stopped.error.message}`,
+        );
         return;
       }
       const result = await deleteSession(session.id);
       if (!result.ok) {
-        setOptionsError(
+        showPlayerError(
+          session.id,
+          'delete-session',
           `The Session is stopped but not deleted: ${result.error.message} It remains in Sessions.`,
         );
         return;

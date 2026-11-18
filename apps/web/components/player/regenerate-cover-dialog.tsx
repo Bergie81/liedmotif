@@ -173,6 +173,7 @@ export function RegenerateCoverDialog({
     confirmLabel: 'Use this cover',
     onError: reportCoverFailure,
     onUpload: async (file) => {
+      reportCoverFailure(null);
       const result = await uploadSessionCover(sessionId, file);
       if (!result.ok) return result.error.message;
       await refresh();
@@ -216,6 +217,7 @@ export function RegenerateCoverDialog({
 
   async function start() {
     setBusy(true);
+    reportCoverFailure(null);
     setDismissed(false);
     setSelectedCoverId(null);
     const result = await regenerateSessionCover(sessionId, {
@@ -234,6 +236,7 @@ export function RegenerateCoverDialog({
   async function applyCover(historyCoverImageId: string) {
     if (historyBusyId) return;
     setHistoryBusyId(historyCoverImageId);
+    reportCoverFailure(null);
     const result = await selectSessionCover(sessionId, historyCoverImageId);
     setHistoryBusyId(null);
     reportCoverFailure(result.ok ? null : result.error.message);
@@ -247,6 +250,7 @@ export function RegenerateCoverDialog({
   async function deleteFromHistory(historyCoverImageId: string) {
     if (historyBusyId) return;
     setHistoryBusyId(historyCoverImageId);
+    reportCoverFailure(null);
     const result = await deleteSessionCover(sessionId, historyCoverImageId);
     setHistoryBusyId(null);
     reportCoverFailure(result.ok ? null : result.error.message);

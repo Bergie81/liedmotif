@@ -71,6 +71,7 @@ export function InviteMembersSection({
 
   async function create() {
     if (busy) return;
+    toast.dismiss(CREATE_KEY);
     setMintedUrl(null);
     const parsed = buildMemberBudgetKindPatch(kind, values, tracksPerCall);
     if (!parsed.ok) {
@@ -96,7 +97,6 @@ export function InviteMembersSection({
       toast.error(result.message, { key: CREATE_KEY });
       return;
     }
-    toast.dismiss(CREATE_KEY);
     if (result.data.url) setMintedUrl(result.data.url);
     else toast.success(`Invite sent to ${email.trim()}. The link works for 7 days.`);
     setLabel('');
@@ -107,10 +107,10 @@ export function InviteMembersSection({
   async function revoke(id: string) {
     if (revokingId) return;
     setRevokingId(id);
+    toast.dismiss(REVOKE_KEY);
     const result = await apiFetch(`/api/settings/members/invites/${id}`, { method: 'DELETE' });
     setRevokingId(null);
-    if (result.ok) toast.dismiss(REVOKE_KEY);
-    else toast.error(result.message, { key: REVOKE_KEY });
+    if (!result.ok) toast.error(result.message, { key: REVOKE_KEY });
     router.refresh();
   }
 

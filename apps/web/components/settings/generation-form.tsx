@@ -23,6 +23,7 @@ export function GenerationForm({ initial }: { initial: GenerationSettings }) {
   async function save() {
     if (saving) return;
     setSaving(true);
+    toast.dismiss(SAVE_KEY);
     const result = await updateGenerationSettings({ bufferEnabled, bufferAheadTracks });
     setSaving(false);
     if (result.ok) toast.success('Buffer settings saved.', { key: SAVE_KEY });

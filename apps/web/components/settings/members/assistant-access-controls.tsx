@@ -44,6 +44,7 @@ function useSavedAccess<T, P>(stored: T, url: string, preview: (current: T, patc
     if (busy) return;
     const before = value;
     setBusy(true);
+    toast.dismiss(url);
     setValue(preview(before, patch));
     const result = await apiFetchJson<{ access: T }>(url, 'POST', patch);
     setBusy(false);
@@ -52,7 +53,6 @@ function useSavedAccess<T, P>(stored: T, url: string, preview: (current: T, patc
       toast.error(result.message, { key: url });
       return;
     }
-    toast.dismiss(url);
     setValue(result.data.access);
     // The default reaches every Member card through the page's own data.
     router.refresh();

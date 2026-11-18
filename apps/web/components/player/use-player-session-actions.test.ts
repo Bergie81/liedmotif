@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
+import { shownToasts, toast } from '@/lib/toast';
 import { usePlayerSessionActions } from './use-player-session-actions';
 
 vi.mock('@/lib/use-client-id', () => ({ useClientId: () => 'client-1' }));
@@ -10,6 +11,7 @@ vi.mock('./player-provider', () => ({
 
 afterEach(() => {
   cleanup();
+  toast.dismiss();
   vi.unstubAllGlobals();
 });
 
@@ -39,7 +41,7 @@ it('hands over the new Playlist once the Session is converted', async () => {
   await act(() => result.current.convertToPlaylist());
   expect(fetcher.mock.calls[0]![0]).toBe('/api/sessions/convert-to-playlist');
   expect(onConverted).toHaveBeenCalledWith(PLAYLIST_ID);
-  expect(result.current.error).toBeNull();
+  expect(shownToasts()).toEqual([]);
 });
 
 it('says why when the conversion is refused', async () => {
@@ -53,9 +55,12 @@ it('says why when the conversion is refused', async () => {
   });
   await act(() => result.current.convertToPlaylist());
   expect(onConverted).not.toHaveBeenCalled();
-  expect(result.current.error?.message).toBe(
-    'Convert to Playlist failed: This Session has no Tracks yet.',
-  );
+  expect(shownToasts()).toEqual([
+    expect.objectContaining({
+      tone: 'error',
+      message: 'Convert to Playlist failed: This Session has no Tracks yet.',
+    }),
+  ]);
 });
 
 it('mints one Playlist for two quick taps', async () => {

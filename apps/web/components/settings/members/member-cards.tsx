@@ -85,13 +85,13 @@ function MemberCard({
     if (busy) return;
     const key = `member-${tag}:${member.userId}`;
     setBusy(tag);
+    toast.dismiss(key);
     const result = await call();
     setBusy(null);
     if (!result.ok) {
       toast.error(result.message, { key });
       return;
     }
-    toast.dismiss(key);
     onSuccess(result.data);
   }
 

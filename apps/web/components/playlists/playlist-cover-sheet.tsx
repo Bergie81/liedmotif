@@ -127,6 +127,7 @@ function CoverSheetContent({
   async function run(action: () => Promise<{ ok: boolean; error?: { message: string } } | void>) {
     if (busy) return;
     setBusy(true);
+    reportCoverFailure(null);
     const result = await action();
     if (result) reportCoverFailure(!result.ok && result.error ? result.error.message : null);
     await refresh();
@@ -140,6 +141,7 @@ function CoverSheetContent({
     heading: 'Playlist cover',
     onError: reportCoverFailure,
     onUpload: async (file) => {
+      reportCoverFailure(null);
       const result = await uploadPlaylistCover(playlist.id, file);
       if (!result.ok) return result.error.message;
       onCoverChanged(result.data.coverImageId);

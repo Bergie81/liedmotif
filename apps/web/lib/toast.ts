@@ -75,9 +75,15 @@ export const toast = {
   dismiss: (key?: string) => close((entry) => key === undefined || entry.key === key),
 };
 
-/** Errors wait to be closed, but never outlive the page they belong to. */
-export function dismissErrorToasts(): void {
-  close((entry) => entry.tone === 'error');
+/** Closes every toast whose key starts with `prefix`. */
+export function dismissToastsKeyedWith(prefix: string): void {
+  close((entry) => entry.key.startsWith(prefix));
+}
+
+/** Errors wait to be closed, but never outlive the page they belong to:
+ *  closes every error up to the toast with id `upToId`, all of them without one. */
+export function dismissErrorToasts(upToId = Infinity): void {
+  close((entry) => entry.tone === 'error' && entry.id <= upToId);
 }
 
 /** The toasts on screen now, oldest first. */

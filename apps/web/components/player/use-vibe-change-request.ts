@@ -23,6 +23,7 @@ import {
   runPlayerSessionAction,
   type PlayerSessionActionGate,
 } from './player-session-action-runner';
+import { clearPlayerError, showPlayerError } from './player-error-toast';
 
 /** The Change Vibe request narration the player surfaces read. */
 export interface VibeChangeState {
@@ -64,7 +65,13 @@ export function useVibeChangeRequest(
             ? changeVibe(sessionId, input, options)
             : setSessionDuration(sessionId, options.targetDurationMinutes ?? null),
         onBusyChange: (action) => setPendingSessionId(action ? sessionId : null),
-        onFailure: (err) => setError(err ? { sessionId, message: err.message } : null),
+        // The failure is also an error toast, raised here, where it happens,
+        // so it shows once on whatever page the listener is on.
+        onFailure: (err) => {
+          setError(err ? { sessionId, message: err.message } : null);
+          if (err) showPlayerError(sessionId, 'change-vibe', err.message);
+          else clearPlayerError(sessionId, 'change-vibe');
+        },
         onSuccess: (data) => applyRestyledSession(data.session),
       });
     },

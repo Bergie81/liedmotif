@@ -146,10 +146,6 @@ export interface PlaybackControllerState {
   currentInCuratedPlaylist: boolean;
   /** Whether the seamless repeat-one pin and generation lease are live. */
   loopActive: boolean;
-  /** Transient, user-visible failure of the last player action (Save/Dislike/
-   * loop hold) — truthful UX for writes that did NOT land server-side.
-   * Auto-dismisses. */
-  actionError: string | null;
   /** Committed source kind of the audible deck — the pinned URL that actually
    * loaded; null until a source commits. Drives the source badge. */
   sourceKind: CommittedSourceKind | null;
@@ -215,7 +211,6 @@ export function initialPlaybackControllerState(
     currentFavorited: false,
     currentInCuratedPlaylist: false,
     loopActive: false,
-    actionError: null,
     sourceKind: null,
     activeEdgeTier: null,
     sectionLoopTool: CLOSED_SECTION_LOOP_TOOL,

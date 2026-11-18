@@ -47,7 +47,8 @@ import { SectionLoopBar } from './section-loop-bar';
 import { TransportControls } from './transport-controls';
 import { PlaylistQueueSheet } from './playlist-queue-sheet';
 import { useLyricsSurfaces } from './use-lyrics-surfaces';
-import { usePlayerErrorToast } from './use-player-error-toast';
+import { engagedSourceId } from './player-provider-model';
+import { clearPlayerError, showPlayerError, type PlayerAct } from './player-error-toast';
 
 export function PlaylistNowPlaying({
   playback,
@@ -85,7 +86,6 @@ export function PlaylistNowPlaying({
   // the Track, so it outlives one — jumping into it is the way back to audio.
   const [trackDataSheetOpen, setTrackDataSheetOpen] = useState(false);
   const [queueSheetOpen, setQueueSheetOpen] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
   const seedingRef = useRef(false);
   const removingRef = useRef(false);
   // A confirm pins its tap-time closures, so the audible Track is read live.
@@ -93,11 +93,8 @@ export function PlaylistNowPlaying({
   useEffect(() => {
     currentTrackIdRef.current = track?.trackId ?? null;
   });
-  // The player's own writes (the star, the blend toggle) report through it, so a
-  // refused one is announced here as well as a refused curation write. Every
-  // current failure shows, so an older one never hides a newer one.
-  usePlayerErrorToast('playback', player.actionError);
-  usePlayerErrorToast('options', actionError);
+  const sourceId = engagedSourceId(playback.source);
+  const failed = (act: PlayerAct, message: string) => showPlayerError(sourceId, act, message);
   useEffect(() => {
     if (!hasTrack) {
       setSavePickerTrack(null);
@@ -151,10 +148,13 @@ export function PlaylistNowPlaying({
     if (removingRef.current) return;
     removingRef.current = true;
     try {
-      setActionError(null);
+      clearPlayerError(sourceId, 'remove-from-playlist');
       const result = await removePlaylistTrack(playlist.id, trackId);
       if (!result.ok) {
-        setActionError(`Remove failed — the track stays in the playlist. ${result.error.message}`);
+        failed(
+          'remove-from-playlist',
+          `Remove failed — the track stays in the playlist. ${result.error.message}`,
+        );
         return;
       }
       router.refresh();
@@ -168,10 +168,10 @@ export function PlaylistNowPlaying({
    * Track leaves every playlist and the Library with it, and it is not
    * feedback — nothing is steered by it. */
   async function deleteTrackEverywhere(trackId: string) {
-    setActionError(null);
+    clearPlayerError(sourceId, 'delete-track');
     const result = await deleteTrack(trackId);
     if (!result.ok) {
-      setActionError(`Delete failed — the track is unchanged. ${result.error.message}`);
+      failed('delete-track', `Delete failed — the track is unchanged. ${result.error.message}`);
       return;
     }
     continueWithout(trackId);
@@ -194,10 +194,13 @@ export function PlaylistNowPlaying({
 
   /** Deleting the source under the player: playback has nothing left to play. */
   async function deleteCurrentPlaylist() {
-    setActionError(null);
+    clearPlayerError(sourceId, 'delete-playlist');
     const result = await deletePlaylist(playlist.id);
     if (!result.ok) {
-      setActionError(`Delete failed — the playlist is unchanged. ${result.error.message}`);
+      failed(
+        'delete-playlist',
+        `Delete failed — the playlist is unchanged. ${result.error.message}`,
+      );
       return;
     }
     release();
@@ -213,14 +216,14 @@ export function PlaylistNowPlaying({
     if (seedingRef.current) return;
     seedingRef.current = true;
     try {
-      setActionError(null);
+      clearPlayerError(sourceId, 'more-like-this');
       if (!(await beginOtherMusic())) return;
       const result = await moreLikeThis(
         items.slice(0, 10).map((item) => item.id),
         clientId,
       );
       if (!result.ok) {
-        setActionError(`More Like This didn’t start: ${result.error.message}`);
+        failed('more-like-this', `More Like This didn’t start: ${result.error.message}`);
         return;
       }
       engage(result.data.session, { autoplay: false });

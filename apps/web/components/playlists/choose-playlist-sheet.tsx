@@ -76,6 +76,7 @@ function ChooseContent({
   async function choose(playlist: PlaylistSummaryItem) {
     if (busy) return;
     setBusy(true);
+    toast.dismiss(ADD_KEY);
     const result = await onChoose(playlist.id);
     setBusy(false);
     if (!result.ok) {
@@ -86,7 +87,6 @@ function ChooseContent({
   }
 
   function confirmAdded(playlistName: string, data: AddPlaylistTracksData) {
-    toast.dismiss(ADD_KEY);
     toast.success(addedToPlaylistMessage(data.added.length, playlistName));
     onClose();
   }

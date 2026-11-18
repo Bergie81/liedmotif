@@ -84,6 +84,7 @@ function AddTracksContent({
   const members = useMemo(() => new Set(existingTrackIds), [existingTrackIds]);
 
   async function loadPage(cursor: string | null) {
+    if (cursor) toast.dismiss(LOAD_MORE_KEY);
     const result = await getLibrary('history', { cursor });
     if (!result.ok) {
       // A later page failing leaves the Tracks already shown in place.
@@ -94,7 +95,6 @@ function AddTracksContent({
       }
       return;
     }
-    if (cursor) toast.dismiss(LOAD_MORE_KEY);
     setTracks((current) => appendUniqueById(current ?? [], result.data.items));
     setNextCursor(result.data.nextCursor);
   }
@@ -117,6 +117,7 @@ function AddTracksContent({
   async function commit() {
     if (checked.size === 0 || busy) return;
     setBusy(true);
+    toast.dismiss(ADD_KEY);
     // One add takes at most ADD_BATCH Tracks; adds are idempotent and append in
     // request order, so consecutive batches keep the picked order and a retry
     // after a failed batch adds only what is still missing.
@@ -134,7 +135,6 @@ function AddTracksContent({
       }
     }
     setBusy(false);
-    toast.dismiss(ADD_KEY);
     toast.success(addedToPlaylistMessage(trackIds.length, playlistName));
     router.refresh();
     onAdded();

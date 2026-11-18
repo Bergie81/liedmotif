@@ -18,10 +18,6 @@ function reportFailure(action: LibraryActionName, message: string): void {
   toast.error(message, { key: failureKey(action) });
 }
 
-function clearFailure(action: LibraryActionName): void {
-  toast.dismiss(failureKey(action));
-}
-
 export function useLibraryActions({
   view,
   onFlagsResolved,
@@ -50,8 +46,10 @@ export function useLibraryActions({
     };
   }, []);
 
+  /** Trying an action again takes its earlier failure away. */
   function begin(trackId: string, action: LibraryActionName) {
     setBusyAction({ trackId, action });
+    toast.dismiss(failureKey(action));
   }
 
   /** Unsave everywhere (retention is membership — removes every playlist
@@ -65,7 +63,6 @@ export function useLibraryActions({
       reportFailure('save', `Save change failed: ${result.error.message}`);
       return;
     }
-    clearFailure('save');
     const remove = view === 'saved' || (view === 'favorites' && !result.data.favoritedAt);
     // Unsave leaves EVERY playlist, so no curated membership survives it.
     onFlagsResolved(track.id, result.data, false, remove);
@@ -88,7 +85,6 @@ export function useLibraryActions({
       reportFailure('favorite', `Favorite change failed: ${result.error.message}`);
       return;
     }
-    clearFailure('favorite');
     // The star moves the Save floor, never Playlist membership. Unstarring a
     // Track kept only by Favorites unsaves it, so it leaves Saved too.
     onFlagsResolved(
@@ -111,7 +107,6 @@ export function useLibraryActions({
       reportFailure('delete', `Delete failed: ${result.error.message}`);
       return false;
     }
-    clearFailure('delete');
     onTrackRemoved(track.id);
     return true;
   }
@@ -122,7 +117,6 @@ export function useLibraryActions({
     if (!mountedRef.current) return;
     setBusyAction(null);
     if (failure) reportFailure('seed', failure);
-    else clearFailure('seed');
   }
 
   return {

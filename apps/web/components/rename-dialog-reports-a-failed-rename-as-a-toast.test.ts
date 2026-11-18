@@ -83,4 +83,18 @@ describe('rename dialog — a refused rename', () => {
     expect(shownToasts()).toEqual([]);
     expect(onClose).toHaveBeenCalled();
   });
+
+  it('takes the failure away as soon as the retry starts', async () => {
+    const answers = [
+      Promise.resolve('Rename failed: Offline.'),
+      new Promise<null>(() => undefined),
+    ];
+    openDialog(() => answers.shift()!);
+
+    await save();
+    expect(shownToasts()).toHaveLength(1);
+    await save();
+
+    expect(shownToasts()).toEqual([]);
+  });
 });

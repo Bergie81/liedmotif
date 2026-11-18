@@ -72,8 +72,8 @@ import {
   type PlaybackControllerInit,
   type PlaybackControllerState,
 } from './playback-controller-api';
-import { useActionNotice } from './use-action-notice';
 import { patchLeavesStateUnchanged } from './state-patch';
+import { clearPlayerError, showPlayerError } from './player-error-toast';
 import { usePlaybackSourceQueue, type PlaybackSourceSnapshot } from './use-playback-source-queue';
 import { usePlaybackSettings } from './use-playback-settings';
 import { useRepeatOne, type RepeatOneDeps } from './use-repeat-one';
@@ -119,6 +119,8 @@ export function usePlaybackController(
   // loop lease, no Skip feedback — the non-generative Playback source
   // borrows the transport and nothing else.
   const sessionId = source.kind === 'session' ? source.sessionId : null;
+  // The engaged source's id (`engagedSourceId`), which keys its failure toasts.
+  const sourceId = source.kind === 'session' ? source.sessionId : source.playlistId;
   const sourceKind = source.kind;
   const offline = source.kind === 'playlist' && source.offline === true;
   const deckARef = useRef<HTMLAudioElement | null>(null);
@@ -1160,12 +1162,8 @@ export function usePlaybackController(
     ],
   );
 
-  // The card's ONE transient failure notice, shared by the feedback actions
-  // and the loop generation hold.
-  const flashActionError = useActionNotice(patch);
-
   // The in-player blend toggle: the settings hook flips the live gate and
-  // persists; a write that did not land surfaces on the shared notice.
+  // persists; a write that did not land is an error toast.
   // Turning blends OFF also strikes the edge already in flight — aligned
   // automation arms at readiness, well before the fade start, and would
   // otherwise still crossfade; the cancelled target advances on `ended`
@@ -1173,10 +1171,11 @@ export function usePlaybackController(
   const toggleBlend = useCallback(() => {
     const enabled = !settingsRef.current.blendEnabled;
     if (!enabled) transitions().cancel();
+    clearPlayerError(sourceId, 'blend');
     void setBlendEnabled(enabled).then((error) => {
-      if (error) flashActionError(error);
+      if (error) showPlayerError(sourceId, 'blend', error);
     });
-  }, [flashActionError, setBlendEnabled, settingsRef, transitions]);
+  }, [setBlendEnabled, settingsRef, sourceId, transitions]);
 
   // Settings saved past the player (by the Assistant or Settings → Playback):
   // played from the next transition, and blending turned off strikes the edge
@@ -1214,10 +1213,10 @@ export function usePlaybackController(
   // Feedback-loop actions — semantics in use-track-actions.
   const { dislike, deleteTrack, applyRetentionFlags, toggleFavorite, reportSkip } = useTrackActions(
     {
+      sourceId,
       sessionId,
       activeTrack,
       patch,
-      flashActionError,
       queueChanged: () => pollQueueNowRef.current(),
       markRemoved: (queueItemId) => locallyRemovedRef.current.add(queueItemId),
       unmarkRemoved: (queueItemId) => locallyRemovedRef.current.delete(queueItemId),
@@ -1840,7 +1839,11 @@ export function usePlaybackController(
     // Offline a Section loop still runs, and nothing can buy while it does.
     onHoldFailed: () => {
       if (isOnline()) {
-        flashActionError('Loop is on, but the generation hold failed — retrying shortly.');
+        showPlayerError(
+          sourceId,
+          'loop-hold',
+          'Loop is on, but the generation hold failed — retrying shortly.',
+        );
       }
     },
   };
@@ -1870,7 +1873,7 @@ export function usePlaybackController(
       publishPositionState();
     },
     patch,
-    notice: flashActionError,
+    notice: (message) => showPlayerError(sourceId, 'section-loop', message),
   };
 
   // An open tool follows the audible Track, and picks up a final that lands.

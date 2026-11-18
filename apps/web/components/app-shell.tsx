@@ -67,7 +67,7 @@ export function AppShell({
   const [themeMode, setThemeMode] = useState<'night' | 'light'>('night');
   const { playback, sleepTimer } = usePlayerContext();
   const isPlayer = pathname === '/player' || pathname.startsWith('/player/');
-  useGenerationStatusToast(playback?.player ?? null, isPlayer);
+  useGenerationStatusToast(playback?.player ?? null, isPlayer, playback?.session?.id ?? null);
   const hasSettingsDetailHeader = isSettingsDetailRoute(pathname);
   // The live cross-route controller outranks the server-known active session:
   // it exists the moment playback starts, without waiting for a diagnostics

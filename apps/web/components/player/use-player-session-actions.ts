@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from 'react';
 import type { SessionSummary } from '@liedmotif/shared';
 import { convertSessionToPlaylist, moreLikeThis, stopSession } from '@/lib/api-client';
 import { useClientId } from '@/lib/use-client-id';
+import { clearPlayerError, showPlayerError } from './player-error-toast';
 import { usePlayerActions } from './player-provider';
 import {
   runPlayerSessionAction,
@@ -12,11 +13,6 @@ import {
 
 /** The actions THIS hook runs — Change Vibe has its own provider-scoped runner. */
 export type PlayerHookAction = 'convert-to-playlist' | 'more-like-this' | 'stop';
-
-export interface PlayerHookActionError {
-  action: PlayerHookAction;
-  message: string;
-}
 
 export function usePlayerSessionActions({
   sessionId,
@@ -35,7 +31,14 @@ export function usePlayerSessionActions({
   const { beginOtherMusic } = usePlayerActions();
   const actionGate = useRef<PlayerSessionActionGate>({ active: null });
   const [busyAction, setBusyAction] = useState<PlayerHookAction | null>(null);
-  const [error, setError] = useState<PlayerHookActionError | null>(null);
+  // A failure is an error toast; the action's next run clears it.
+  const reportFailure = useCallback(
+    (failure: { action: PlayerHookAction; message: string } | null, action: PlayerHookAction) => {
+      if (failure) showPlayerError(sessionId, action, failure.message);
+      else clearPlayerError(sessionId, action);
+    },
+    [sessionId],
+  );
 
   const startMoreLikeThis = useCallback(async (): Promise<boolean> => {
     if (!trackId) return false;
@@ -46,10 +49,10 @@ export function usePlayerSessionActions({
       failureLabel: 'More Like This failed',
       request: () => moreLikeThis([trackId], clientId),
       onBusyChange: setBusyAction,
-      onFailure: setError,
+      onFailure: (failure) => reportFailure(failure, 'more-like-this'),
       onSuccess: (data) => onSessionChange(data.session),
     });
-  }, [clientId, beginOtherMusic, onSessionChange, trackId]);
+  }, [clientId, beginOtherMusic, onSessionChange, reportFailure, trackId]);
 
   const stop = useCallback(async () => {
     return runPlayerSessionAction({
@@ -58,10 +61,10 @@ export function usePlayerSessionActions({
       failureLabel: 'Stop failed',
       request: () => stopSession(sessionId),
       onBusyChange: setBusyAction,
-      onFailure: setError,
+      onFailure: (failure) => reportFailure(failure, 'stop'),
       onSuccess: onStopped,
     });
-  }, [onStopped, sessionId]);
+  }, [onStopped, reportFailure, sessionId]);
 
   const convertToPlaylist = useCallback(async () => {
     return runPlayerSessionAction({
@@ -70,14 +73,13 @@ export function usePlayerSessionActions({
       failureLabel: 'Convert to Playlist failed',
       request: () => convertSessionToPlaylist(sessionId),
       onBusyChange: setBusyAction,
-      onFailure: setError,
+      onFailure: (failure) => reportFailure(failure, 'convert-to-playlist'),
       onSuccess: (data) => onConverted(data.playlistId),
     });
-  }, [onConverted, sessionId]);
+  }, [onConverted, reportFailure, sessionId]);
 
   return {
     busyAction,
-    error,
     startMoreLikeThis,
     stop,
     convertToPlaylist,

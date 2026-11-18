@@ -72,6 +72,7 @@ export function ProfileForm({
 
   async function sendConfirmLink() {
     setSendingConfirmLink(true);
+    toast.dismiss(CONFIRM_LINK_KEY);
     const { sent, message } = await requestConfirmLink();
     setSendingConfirmLink(false);
     if (sent) toast.success(message, { key: CONFIRM_LINK_KEY });
@@ -88,6 +89,7 @@ export function ProfileForm({
     if (Object.keys(errors).length > 0) return;
 
     setSaving(true);
+    toast.dismiss(SAVE_KEY);
     const result = await saveListenerProfile(values, currentPassword || undefined);
     setSaving(false);
     if (result.ok) {
@@ -109,12 +111,8 @@ export function ProfileForm({
       return;
     }
     const serverFieldErrors = profileFieldErrorsForServerMessage(result.error);
-    if (Object.keys(serverFieldErrors).length > 0) {
-      toast.dismiss(SAVE_KEY);
-      setFieldErrors(serverFieldErrors);
-    } else {
-      toast.error(result.error, { key: SAVE_KEY });
-    }
+    if (Object.keys(serverFieldErrors).length > 0) setFieldErrors(serverFieldErrors);
+    else toast.error(result.error, { key: SAVE_KEY });
   }
 
   return (

@@ -23,16 +23,16 @@ export function PersonalizationSection({ initialEnabled }: { initialEnabled: boo
   const toggle = async (next: boolean) => {
     setBusy(true);
     setEnabled(next);
+    toast.dismiss(SAVE_KEY);
     const saved = await savePersonalization(next);
-    if (saved.ok) {
-      toast.dismiss(SAVE_KEY);
-    } else {
+    if (!saved.ok) {
       setEnabled(!next);
       toast.error('The setting could not be saved.', { key: SAVE_KEY });
     }
     setBusy(false);
   };
   const reset = async () => {
+    toast.dismiss(RESET_KEY);
     const done = await resetLearnedTaste();
     if (done.ok) toast.success('Learned taste reset.', { key: RESET_KEY });
     else toast.error('Your learned taste could not be reset.', { key: RESET_KEY });

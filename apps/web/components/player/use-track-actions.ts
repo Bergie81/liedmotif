@@ -3,7 +3,7 @@
 // Current-Track mutations split from the playback controller: feedback,
 // retention, and explicit deletion share optimistic UI plumbing while their
 // domain effects remain separate. The controller supplies queue/cursor effects
-// and the shared transient-notice writer through narrow ports.
+// through narrow ports; a write that did not land is an error toast.
 
 import { useCallback, useRef } from 'react';
 import {
@@ -13,6 +13,7 @@ import {
   sendFeedback,
 } from '@/lib/api-client';
 import type { PlayableTrack } from './playable-track';
+import { clearPlayerError, showPlayerError, type PlayerAct } from './player-error-toast';
 import {
   optimisticFavoriteFlags,
   settleTrackFlags,
@@ -20,13 +21,13 @@ import {
 } from './track-retention';
 
 export interface TrackActionDeps {
+  /** The engaged source's id, which keys its failure toasts. */
+  sourceId: string;
   /** Null for a Playlist source: Skip is plain navigation, no feedback event. */
   sessionId: string | null;
   activeTrack(): PlayableTrack | null;
   /** Patch the render state for retention controls. */
   patch(next: { currentFavorited: boolean; currentInCuratedPlaylist: boolean }): void;
-  /** The card's shared transient failure notice (`use-action-notice.ts`). */
-  flashActionError(message: string): void;
   /** Local removal bookkeeping (a stale poll must not resurrect the track). */
   markRemoved(queueItemId: string): void;
   unmarkRemoved(queueItemId: string): void;
@@ -72,10 +73,14 @@ export function useTrackActions(deps: TrackActionDeps): TrackActions {
   const removalInFlightRef = useRef(false);
 
   const removeCurrentTrack = useCallback(
-    (request: (trackId: string) => Promise<{ ok: boolean }>, failureMessage: string) => {
+    (
+      request: (trackId: string) => Promise<{ ok: boolean }>,
+      act: PlayerAct,
+      failureMessage: string,
+    ) => {
       const {
+        sourceId,
         activeTrack,
-        flashActionError,
         markRemoved,
         unmarkRemoved,
         removeFromQueue,
@@ -85,11 +90,12 @@ export function useTrackActions(deps: TrackActionDeps): TrackActions {
       const track = activeTrack();
       if (!track || removalInFlightRef.current) return;
       removalInFlightRef.current = true;
+      clearPlayerError(sourceId, act);
       void request(track.trackId).then((res) => {
         removalInFlightRef.current = false;
         if (!res.ok) {
           unmarkRemoved(track.queueItemId);
-          flashActionError(failureMessage);
+          showPlayerError(sourceId, act, failureMessage);
           return;
         }
         queueChanged();
@@ -106,6 +112,7 @@ export function useTrackActions(deps: TrackActionDeps): TrackActions {
   const dislike = useCallback(() => {
     removeCurrentTrack(
       dislikeTrack,
+      'dislike',
       'Dislike failed — the track stays in your session. Try again.',
     );
   }, [removeCurrentTrack]);
@@ -113,6 +120,7 @@ export function useTrackActions(deps: TrackActionDeps): TrackActions {
   const deleteTrack = useCallback(() => {
     removeCurrentTrack(
       deleteTrackRequest,
+      'delete-track',
       'Delete failed — the track stays in your session. Try again.',
     );
   }, [removeCurrentTrack]);
@@ -133,10 +141,11 @@ export function useTrackActions(deps: TrackActionDeps): TrackActions {
   );
 
   const toggleFavorite = useCallback(() => {
-    const { activeTrack, flashActionError, patch } = depsRef.current;
+    const { sourceId, activeTrack, patch } = depsRef.current;
     const track = activeTrack();
     if (!track || retentionPendingRef.current.has(track.trackId)) return;
     retentionPendingRef.current.add(track.trackId);
+    clearPlayerError(sourceId, 'favorite');
     const previous = flagsOf(track);
     const favorited = previous.favoritedAt == null;
     applyFlags(track, optimisticFavoriteFlags(previous, favorited, new Date().toISOString()));
@@ -148,7 +157,9 @@ export function useTrackActions(deps: TrackActionDeps): TrackActions {
         patchFlags(track, patch);
       }
       if (!res.ok) {
-        flashActionError(
+        showPlayerError(
+          sourceId,
+          'favorite',
           favorited
             ? 'Favorite failed — this track was not starred. Try again.'
             : 'Unfavorite failed — this track is still starred. Try again.',

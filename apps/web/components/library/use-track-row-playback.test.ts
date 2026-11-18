@@ -62,7 +62,7 @@ describe('useTrackRowPlayback — handing a row to the transport', () => {
 
   it('takes a playing preview down for good, so the rows and the mini player follow the transport', async () => {
     const { result, rerender } = renderHook(() => ({
-      playback: useTrackRowPlayback(vi.fn()),
+      playback: useTrackRowPlayback('library-play'),
       announced: useTrackPreviewAnnouncement(),
     }));
     const audio = {

@@ -50,6 +50,7 @@ export function AvatarUploader({
   /** Send the request; resolves to an error message, or null on success. */
   async function submitAvatar(init: RequestInit): Promise<string | null> {
     setBusy(true);
+    toast.dismiss(FAILURE_KEY);
     const response = await fetch('/api/settings/profile/avatar', init).catch(() => null);
     const body: AvatarResponse = response
       ? ((await response.json().catch(() => ({}))) as AvatarResponse)

@@ -54,6 +54,7 @@ export function PersonEditor({
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) return;
     setBusy('save');
+    toast.dismiss(saveKey);
     const response = await fetch(`/api/settings/people/${person.id}`, {
       method: 'PATCH',
       headers: { 'content-type': 'application/json' },
@@ -70,7 +71,6 @@ export function PersonEditor({
     onUpdated(body.person);
     setName(body.person.name);
     setAbout(body.person.about);
-    toast.dismiss(saveKey);
     toast.success(`${body.person.name} saved.`);
     setBusy(null);
   }
@@ -81,6 +81,7 @@ export function PersonEditor({
       return;
     }
     setBusy('delete');
+    toast.dismiss(deleteKey);
     const response = await fetch(`/api/settings/people/${person.id}`, {
       method: 'DELETE',
     }).catch(() => null);
@@ -91,7 +92,6 @@ export function PersonEditor({
       setBusy(null);
       return;
     }
-    toast.dismiss(deleteKey);
     onDeleted(person.id);
   }
 

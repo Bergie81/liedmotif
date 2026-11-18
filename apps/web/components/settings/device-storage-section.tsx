@@ -160,10 +160,10 @@ function DeviceOfflineCard() {
   async function act(change: (offline: OfflineSync) => Promise<string | null>) {
     if (!offline) return;
     setBusy(true);
+    toast.dismiss(CHANGE_KEY);
     try {
       const refusal = await change(offline);
       if (refusal) toast.error(refusal, { key: CHANGE_KEY });
-      else toast.dismiss(CHANGE_KEY);
     } catch {
       toast.error('This device’s offline storage could not be changed. Try again.', {
         key: CHANGE_KEY,
