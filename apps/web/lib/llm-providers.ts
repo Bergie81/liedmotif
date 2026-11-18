@@ -24,7 +24,7 @@ export interface LlmProviderMeta {
   behindMoreOptions?: boolean;
 }
 
-/** In picker order: the list position is where the preset appears in the picker. */
+/** In picker order: the main presets, then those behind More options. */
 export const LLM_PROVIDERS: readonly LlmProviderMeta[] = [
   {
     value: 'openai',

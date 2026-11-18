@@ -27,6 +27,7 @@ describe('providerPicker', () => {
   it('shows the main Text AI presets first and keeps the rest behind More options', () => {
     const picker = providerPicker(LLM_PROVIDERS, {
       selectedKey: 'openai',
+      loadedKey: 'openai',
       moreOptionsOpened: false,
     });
 
@@ -37,6 +38,7 @@ describe('providerPicker', () => {
   it('lists OpenRouter and OpenAI-compatible after the main presets once More options opens', () => {
     const picker = providerPicker(LLM_PROVIDERS, {
       selectedKey: 'openai',
+      loadedKey: 'openai',
       moreOptionsOpened: true,
     });
 
@@ -47,6 +49,18 @@ describe('providerPicker', () => {
   it('never hides the preset an Instance already uses', () => {
     const picker = providerPicker(LLM_PROVIDERS, {
       selectedKey: 'openai-compatible',
+      loadedKey: 'openai',
+      moreOptionsOpened: false,
+    });
+
+    expect(labels(picker.shown)).toEqual(['OpenAI', 'Ollama', 'OpenRouter', 'OpenAI-compatible']);
+    expect(picker.moreOptionsHidden).toBe(false);
+  });
+
+  it('keeps a stored advanced preset shown after the Admin selects a main one', () => {
+    const picker = providerPicker(LLM_PROVIDERS, {
+      selectedKey: 'openai',
+      loadedKey: 'openrouter',
       moreOptionsOpened: false,
     });
 
@@ -57,6 +71,7 @@ describe('providerPicker', () => {
   it('offers no More options when the Cover provider is the only preset', () => {
     const picker = providerPicker(IMAGE_PROVIDERS, {
       selectedKey: 'openrouter',
+      loadedKey: 'openrouter',
       moreOptionsOpened: false,
     });
 

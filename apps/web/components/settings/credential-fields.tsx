@@ -20,7 +20,11 @@ export function ProviderChoice({
 }) {
   const [moreOptionsOpened, setMoreOptionsOpened] = useState(false);
   if (options.length <= 1) return null;
-  const picker = providerPicker(options, { selectedKey: editor.providerKey, moreOptionsOpened });
+  const picker = providerPicker(options, {
+    selectedKey: editor.providerKey,
+    loadedKey: editor.loadedProviderKey,
+    moreOptionsOpened,
+  });
   return (
     <div className={labelClass}>
       <span>Provider</span>

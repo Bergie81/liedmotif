@@ -49,17 +49,24 @@ export interface ProviderPicker<T> {
 }
 
 /**
- * Which presets a provider picker lists. The selected preset is always among
- * them, so an Instance already on an advanced provider opens with More options
- * expanded and looks set up rather than empty.
+ * Which presets a provider picker lists. The selected preset and the one the
+ * editor loaded (the stored one) are always among them, so an Instance already
+ * on an advanced provider opens with More options expanded, looks set up rather
+ * than empty, and keeps its provider in view while the Admin compares others.
  */
 export function providerPicker<T extends { value: string; behindMoreOptions?: boolean }>(
   options: readonly T[],
-  { selectedKey, moreOptionsOpened }: { selectedKey: string; moreOptionsOpened: boolean },
+  {
+    selectedKey,
+    loadedKey,
+    moreOptionsOpened,
+  }: { selectedKey: string; loadedKey: string; moreOptionsOpened: boolean },
 ): ProviderPicker<T> {
   const main = options.filter((option) => !option.behindMoreOptions);
   const more = options.filter((option) => option.behindMoreOptions);
-  const open = moreOptionsOpened || more.some((option) => option.value === selectedKey);
+  const open =
+    moreOptionsOpened ||
+    more.some((option) => option.value === selectedKey || option.value === loadedKey);
   return {
     shown: open ? [...main, ...more] : main,
     moreOptionsHidden: !open && more.length > 0,

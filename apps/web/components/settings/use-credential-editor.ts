@@ -231,6 +231,7 @@ export function useCredentialEditor(props: CredentialEditorProps) {
 
   return {
     providerKey,
+    loadedProviderKey: initialSelection,
     selected,
     secret,
     setSecret: editSecret,
