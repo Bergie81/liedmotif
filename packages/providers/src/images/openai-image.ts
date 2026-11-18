@@ -5,15 +5,13 @@
 
 import { OPENAI_DEFAULT_COVER_MODEL } from '@liedmotif/shared';
 import { pinnedProviderFetch } from '../validation/provider-fetch';
+import { fixedImageProvider } from './fixed-image-provider';
 import {
   COVER_IMAGE_MEDIA_TYPES,
   GeneratedImageProviderError,
-  type GeneratedImageCapabilities,
-  type GeneratedImageCapabilityDowngrade,
   type GeneratedImageProvider,
 } from './generated-image-contract';
 import {
-  acceptedReferences,
   extractImage,
   firstImageDatum,
   referenceDataUrl,
@@ -24,7 +22,6 @@ import {
 export const OPENAI_IMAGES_BASE_URL = 'https://api.openai.com/v1';
 
 const DEFAULT_TIMEOUT_MS = 60_000;
-const VALIDATION_TIMEOUT_MS = 8_000;
 
 /** OpenAI's documented prompt ceiling for the GPT image models. */
 const MAX_PROMPT_CHARACTERS = 32_000;
@@ -70,15 +67,14 @@ export function openAiImageProvider(config: OpenAiImageConfig): GeneratedImagePr
   const model = config.model?.trim() || OPENAI_DEFAULT_COVER_MODEL;
   const timeoutMs = config.requestTimeoutMs ?? DEFAULT_TIMEOUT_MS;
   const fetchImpl = config.fetch ?? pinnedProviderFetch({ providerKey: 'openai' });
-  const providerMetadata = { providerType: 'image' as const, providerKey: 'openai', model };
-  // Subject and style references without a multi-subject identity claim: what
-  // OpenRouter's endpoint listing declares for OpenAI's own image models.
-  const capabilities: GeneratedImageCapabilities = {
-    provider: providerMetadata,
+  const authHeaders = { authorization: `Bearer ${apiKey}` };
+
+  return fixedImageProvider({
+    providerKey: 'openai',
+    model,
     maxPromptCharacters: MAX_PROMPT_CHARACTERS,
-    exclusions: 'inline',
-    nativeSeed: false,
-    idempotency: 'absent',
+    // Subject and style references without a multi-subject identity claim: what
+    // OpenRouter's endpoint listing declares for OpenAI's own image models.
     references: {
       roles: ['subject', 'style'],
       maxCount: MAX_REFERENCES,
@@ -87,42 +83,20 @@ export function openAiImageProvider(config: OpenAiImageConfig): GeneratedImagePr
       maxBytesPerReference: MAX_REFERENCE_BYTES,
       maxTotalBytes: MAX_TOTAL_REFERENCE_BYTES,
     },
-    squareOutput: 'native',
-    maxCandidates: 1,
-    costReporting: false,
-  };
-
-  return {
-    ...providerMetadata,
-
-    async getCapabilities() {
-      return capabilities;
+    fetchImpl,
+    // Retrieving the model is free and read-only, and it refuses a wrong key
+    // (401) as well as a model the key cannot see (404).
+    keyCheck: {
+      url: `${OPENAI_IMAGES_BASE_URL}/models/${encodeURIComponent(model)}`,
+      headers: authHeaders,
     },
-
-    async generate(request) {
-      if (request.count !== 1) {
-        throw new GeneratedImageProviderError('configuration', 'not_started');
-      }
-      const references = acceptedReferences(request.references, capabilities);
-      const downgrades: GeneratedImageCapabilityDowngrade[] = [];
-      let prompt = request.positivePrompt;
-      if (request.exclusions.length > 0) {
-        prompt += `\n\nExclude: ${request.exclusions.join('; ')}.`;
-        downgrades.push('exclusions_inlined');
-      }
-      if (prompt.length > MAX_PROMPT_CHARACTERS) {
-        throw new GeneratedImageProviderError('rejection', 'not_started');
-      }
-      if (request.references.length > references.length) downgrades.push('references_omitted');
-      if (request.seed !== undefined) downgrades.push('seed_omitted');
-      downgrades.push('idempotency_unavailable');
-
+    async paint({ prompt, references, quality }) {
       const body: Record<string, unknown> = {
         model,
         prompt,
         size: '1024x1024',
         // `auto` lets the model pick the tier, and with it the price.
-        quality: request.target.quality === 'high' ? 'high' : 'medium',
+        quality: quality === 'high' ? 'high' : 'medium',
         n: 1,
       };
       if (references.length > 0) {
@@ -134,44 +108,11 @@ export function openAiImageProvider(config: OpenAiImageConfig): GeneratedImagePr
       const payload = await submitGeneratedImageRequest(
         fetchImpl,
         `${OPENAI_IMAGES_BASE_URL}/${endpoint}`,
-        { authHeaders: { authorization: `Bearer ${apiKey}` }, body, timeoutMs, classifyRefusal },
+        { authHeaders, body, timeoutMs, classifyRefusal },
       );
       const image = extractImage(firstImageDatum(payload));
       if (!image) throw new GeneratedImageProviderError('invalid_response', 'outcome_unknown');
-      return {
-        provider: providerMetadata,
-        ...image,
-        appliedControls: {
-          exclusions: 'inline',
-          square: 'native',
-          references: references.length,
-          seed: false,
-          idempotency: 'absent',
-          candidateCount: 1,
-        },
-        downgradeCodes: downgrades,
-      };
+      return image;
     },
-
-    async validateCredentials() {
-      // Retrieving the model is free and read-only, and it refuses a wrong key
-      // (401) as well as a model the key cannot see (404).
-      try {
-        const response = await fetchImpl(
-          `${OPENAI_IMAGES_BASE_URL}/models/${encodeURIComponent(model)}`,
-          {
-            headers: { authorization: `Bearer ${apiKey}` },
-            redirect: 'manual',
-            signal: AbortSignal.timeout(VALIDATION_TIMEOUT_MS),
-          },
-        );
-        await response.body?.cancel().catch(() => undefined);
-        return response.ok
-          ? { ok: true, message: 'Image provider credentials and endpoint look valid.' }
-          : { ok: false, message: 'Image provider credentials or endpoint were rejected.' };
-      } catch {
-        return { ok: false, message: 'Image provider credentials or endpoint were rejected.' };
-      }
-    },
-  };
+  });
 }
