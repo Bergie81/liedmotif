@@ -1,16 +1,38 @@
-import { readEnvLayer, resolveLlmRuntimeSettings, resolveProviderSettings } from '@liedmotif/db';
+import {
+  getCredentialUpdatedAt,
+  getLatestCoverAccountOutcome,
+  readEnvLayer,
+  resolveLlmRuntimeSettings,
+  resolveProviderSettings,
+  type CredentialRef,
+} from '@liedmotif/db';
 import {
   configurableProviderMeta,
   IMAGE_PROVIDERS,
   providerDisplayName,
 } from '@/lib/configurable-providers';
 import { getProviderStatuses } from '@/lib/credentials';
+import { getDb } from '@/lib/db';
 import { llmEffectiveModel, llmProviderMeta } from '@/lib/llm-providers';
 import {
+  coverAccountAlert,
   generatedImageProviderPresentation,
   llmProviderPresentation,
 } from '@/lib/provider-settings-model';
 import { credentialState } from '@/lib/settings-hub-model';
+
+/**
+ * The account alert for the Cover images card. The credentials that supply the
+ * Cover key are the ones whose save clears it.
+ */
+export async function loadCoverAccountAlert(coverKeyCredentials: readonly CredentialRef[]) {
+  const db = getDb();
+  const [outcome, credentialsSavedAt] = await Promise.all([
+    getLatestCoverAccountOutcome(db),
+    Promise.all(coverKeyCredentials.map((ref) => getCredentialUpdatedAt(db, ref))),
+  ]);
+  return coverAccountAlert({ outcome, credentialsSavedAt });
+}
 
 export async function loadProviderSettingsData() {
   const statuses = await getProviderStatuses();

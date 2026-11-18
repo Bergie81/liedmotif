@@ -26,7 +26,10 @@ export function classifyCoverSubmissionFailure(
 ): CoverSubmissionFailure {
   const known = error instanceof GeneratedImageProviderError ? error : null;
   const disposition = known?.submissionDisposition ?? 'outcome_unknown';
-  const terminalRejection = known?.kind === 'configuration' || known?.kind === 'rejection';
+  const terminalRejection =
+    known?.kind === 'configuration' ||
+    known?.kind === 'account_not_ready' ||
+    known?.kind === 'rejection';
   const sameKeySafe =
     !terminalRejection &&
     (disposition === 'not_started' ||

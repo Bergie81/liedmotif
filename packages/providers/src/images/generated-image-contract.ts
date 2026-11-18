@@ -86,14 +86,27 @@ export interface GeneratedImageResult {
   downgradeCodes: GeneratedImageCapabilityDowngrade[];
 }
 
+/**
+ * `account_not_ready`: the vendor refused image models for this account (no
+ * billing, an unverified organisation) although the key itself is valid. It
+ * never starts work, so it is never spend, and retrying cannot help until the
+ * Admin fixes the account.
+ */
 export type GeneratedImageFailureKind =
-  'configuration' | 'rate_limit' | 'unavailable' | 'timeout' | 'rejection' | 'invalid_response';
+  | 'configuration'
+  | 'account_not_ready'
+  | 'rate_limit'
+  | 'unavailable'
+  | 'timeout'
+  | 'rejection'
+  | 'invalid_response';
 
 export type GeneratedImageSubmissionDisposition =
   'not_started' | 'retryable_with_same_key' | 'outcome_unknown';
 
 const FAILURE_MESSAGES: Record<GeneratedImageFailureKind, string> = {
   configuration: 'Generated image provider configuration was rejected.',
+  account_not_ready: 'Generated image provider account is not ready for images.',
   rate_limit: 'Generated image provider rate limit was reached.',
   unavailable: 'Generated image provider is unavailable.',
   timeout: 'Generated image request timed out.',

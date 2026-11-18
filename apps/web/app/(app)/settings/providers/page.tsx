@@ -14,7 +14,7 @@ import { StoredLlmCredentialAction } from '@/components/settings/stored-llm-cred
 import { IMAGE_PROVIDERS, lockedImageModel } from '@/lib/configurable-providers';
 import { getDb } from '@/lib/db';
 import { LLM_PROVIDERS, llmProviderMeta } from '@/lib/llm-providers';
-import { loadProviderSettingsData } from '@/lib/provider-settings-data';
+import { loadCoverAccountAlert, loadProviderSettingsData } from '@/lib/provider-settings-data';
 import { requireAdmin } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
@@ -46,6 +46,9 @@ export default async function ProvidersPage() {
   const llm = data.llm.credential;
   const cover = data.cover.credential;
   const lockedCoverModel = lockedImageModel(data.cover);
+  const coverAccountAlert = await loadCoverAccountAlert([
+    { providerType: 'image', providerKey: data.cover.providerKey },
+  ]);
 
   return (
     <section>
@@ -147,6 +150,7 @@ export default async function ProvidersPage() {
             description="Generates Session and Playlist Covers. Without it, Covers come from the music provider, else the branded placeholder."
             environmentManaged={cover?.source === 'env'}
             decryptError={cover?.decryptError}
+            accountAlert={coverAccountAlert}
           >
             <CredentialMutationGroup>
               <CredentialEditor

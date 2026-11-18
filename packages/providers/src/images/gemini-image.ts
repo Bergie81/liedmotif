@@ -18,6 +18,7 @@ import {
   extractImage,
   referenceBase64,
   submitGeneratedImageRequest,
+  type GeneratedImageRefusalClassifier,
 } from './generated-image-wire';
 
 export const GEMINI_IMAGES_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
@@ -36,6 +37,27 @@ const MAX_REFERENCE_BYTES = 4 * 1024 * 1024;
  * photos by a third, so 12 MiB of them stays under it with room for the prompt.
  */
 const MAX_TOTAL_REFERENCE_BYTES = 12 * 1024 * 1024;
+
+/**
+ * Google's documented refusals of a project that is not set up to pay:
+ * `FAILED_PRECONDITION` (a prerequisite such as billing is not met) and
+ * `PERMISSION_DENIED` carrying the `FREE_TIER_VERIFICATION_REQUIRED` reason
+ * (verify the project or turn on billing). Every other refusal keeps its
+ * status classification.
+ */
+const classifyRefusal: GeneratedImageRefusalClassifier = (status, error) => {
+  const reasons = Array.isArray(error.details)
+    ? error.details.map((detail) => (detail as { reason?: unknown } | null)?.reason)
+    : [];
+  const accountNotReady =
+    (status === 400 && error.status === 'FAILED_PRECONDITION') ||
+    (status === 403 &&
+      error.status === 'PERMISSION_DENIED' &&
+      reasons.includes('FREE_TIER_VERIFICATION_REQUIRED'));
+  return accountNotReady
+    ? new GeneratedImageProviderError('account_not_ready', 'not_started')
+    : null;
+};
 
 export interface GeminiImageConfig {
   apiKey: string;
@@ -122,6 +144,7 @@ export function geminiImageProvider(config: GeminiImageConfig): GeneratedImagePr
         authHeaders,
         body,
         timeoutMs,
+        classifyRefusal,
       });
       const image = imageFromReply(payload);
       return {

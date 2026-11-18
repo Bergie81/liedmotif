@@ -216,6 +216,64 @@ describe('OpenAI generated-image adapter', () => {
     },
   );
 
+  // OpenAI documents no error code for this refusal; its reply is a 403 whose
+  // `invalid_request_error` message asks for organisation verification.
+  it('classifies the unverified-organisation refusal as account not ready, before any spend', async () => {
+    const fetchImpl = vi.fn().mockResolvedValueOnce(
+      json(
+        {
+          error: {
+            message: `Your organization must be verified to use the model \`${OPENAI_DEFAULT_COVER_MODEL}\`. Please go to: https://platform.openai.com/settings/organization/general and click on Verify Organization. If you just verified, it can take up to 15 minutes for access to propagate.`,
+            type: 'invalid_request_error',
+            param: null,
+            code: null,
+          },
+        },
+        403,
+      ),
+    );
+
+    await expect(
+      adapter(fetchImpl as unknown as typeof fetch).generate(request()),
+    ).rejects.toMatchObject({
+      kind: 'account_not_ready',
+      submissionDisposition: 'not_started',
+      message: 'Generated image provider account is not ready for images.',
+    });
+  });
+
+  it.each([
+    [
+      403,
+      {
+        error: {
+          message: 'Country, region, or territory not supported',
+          code: 'unsupported_country_region_territory',
+        },
+      },
+      'configuration',
+    ],
+    [
+      403,
+      { error: { message: 'You are not allowed to sample from this model', code: null } },
+      'configuration',
+    ],
+    [
+      400,
+      { error: { message: 'Your organization must be verified to use the model', code: null } },
+      'rejection',
+    ],
+  ] as const)(
+    'keeps a %s refusal that is not the verification one a plain provider failure',
+    async (status, body, kind) => {
+      const fetchImpl = vi.fn().mockResolvedValueOnce(json(body, status));
+
+      await expect(
+        adapter(fetchImpl as unknown as typeof fetch).generate(request()),
+      ).rejects.toMatchObject({ kind, submissionDisposition: 'not_started' });
+    },
+  );
+
   it('classifies a timeout and a dropped connection as outcome unknown', async () => {
     const timeout = Object.assign(new Error(`timeout ${SECRET}`), { name: 'TimeoutError' });
     const timedOut = vi.fn().mockRejectedValueOnce(timeout);

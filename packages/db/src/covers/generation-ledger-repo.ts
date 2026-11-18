@@ -448,6 +448,42 @@ export async function listRecentSessionCoverGenerations(
 }
 
 /**
+ * The Instance's newest Cover outcome that says something about the image
+ * provider's account: a Cover that landed, or an attempt the provider refused
+ * because the account is not ready for images. Other failures are skipped, so
+ * an outage after the refusal does not hide it. Across every owner, because the
+ * account is the Instance's.
+ */
+export async function getLatestCoverAccountOutcome(
+  db: DbOrTx,
+): Promise<{ providerKey: string; accountNotReady: boolean; settledAt: Date } | null> {
+  const [row] = await db
+    .select({
+      providerKey: sessionCoverGenerations.providerKey,
+      failureCategory: sessionCoverGenerations.failureCategory,
+      settledAt: sessionCoverGenerations.settledAt,
+    })
+    .from(sessionCoverGenerations)
+    .where(
+      and(
+        sql`${sessionCoverGenerations.settledAt} is not null`,
+        or(
+          eq(sessionCoverGenerations.state, 'ready'),
+          eq(sessionCoverGenerations.failureCategory, 'account_not_ready'),
+        ),
+      ),
+    )
+    .orderBy(desc(sessionCoverGenerations.settledAt))
+    .limit(1);
+  if (!row?.settledAt) return null;
+  return {
+    providerKey: row.providerKey,
+    accountNotReady: row.failureCategory === 'account_not_ready',
+    settledAt: row.settledAt,
+  };
+}
+
+/**
  * The provider-facing fields every frozen attempt persists identically —
  * shared by the initial insert and the reserved-row plan application so the
  * two write paths cannot drift.

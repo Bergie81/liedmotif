@@ -13,6 +13,7 @@ import {
   type TestDb,
 } from '../testing';
 import {
+  getLatestCoverAccountOutcome,
   getLiveSessionCoverGeneration,
   getSessionCoverGeneration,
   listAgedSessionCoverGenerationIds,
@@ -347,5 +348,114 @@ describeIfDb('Session Cover generation history', () => {
     expect(
       rows.every((row) => ['ready', 'planned', 'submitting', 'storing'].includes(row.state)),
     ).toBe(true);
+  });
+});
+
+// The Cover images card warns while the Instance's newest Cover outcome is an
+// account the image provider refused; a later Cover that landed clears it.
+describeIfDb('Instance Cover account outcome', () => {
+  let ctx: TestDb;
+
+  beforeAll(async () => {
+    ctx = await connectTestDb('liedmotif-cover-account-outcome-test');
+  }, 60_000);
+
+  afterAll(async () => ctx?.pool.end());
+
+  beforeEach(async () => truncateTables(ctx.pool, GENERATION_FIXTURE_TABLES));
+
+  async function settledAttempt(args: {
+    ownerUserId: string;
+    providerKey: string;
+    state: 'ready' | 'provider_rejected' | 'provider_unavailable';
+    failureCategory?: string;
+    settledAt: Date;
+  }) {
+    const activitySessionId = await createSession(ctx.db, {
+      ownerUserId: args.ownerUserId,
+      status: 'stopped',
+    });
+    const id = randomUUID();
+    await planSessionCoverGeneration(ctx.db, {
+      id,
+      ownerUserId: args.ownerUserId,
+      activitySessionId,
+      plan: RECOVERY_PLAN,
+      planVersion: 'test-plan',
+      promptVersion: 'test-prompt',
+      planHash: `plan-${id}`,
+      promptHash: `prompt-${id}`,
+      fingerprint: {},
+      providerKey: args.providerKey,
+      model: 'test-model',
+      capabilitySnapshot: {},
+      idempotencyKey: `cover-${id}`,
+      retryPolicy: {},
+      selectedReferences: [],
+      coverImageId: randomUUID(),
+      storageKey: `covers/${id}.webp`,
+    });
+    await ctx.db
+      .update(sessionCoverGenerations)
+      .set({
+        state: args.state,
+        failureCategory: args.failureCategory ?? null,
+        settledAt: args.settledAt,
+      })
+      .where(eq(sessionCoverGenerations.id, id));
+  }
+
+  it('reports nothing before any Cover has settled', async () => {
+    expect(await getLatestCoverAccountOutcome(ctx.db)).toBeNull();
+  });
+
+  it('reports the newest refusal across owners, ignoring failures that say nothing about the account', async () => {
+    const admin = await createUser(ctx.db);
+    const member = await createUser(ctx.db);
+    await settledAttempt({
+      ownerUserId: admin,
+      providerKey: 'gemini',
+      state: 'ready',
+      settledAt: new Date('2026-11-18T10:00:00.000Z'),
+    });
+    await settledAttempt({
+      ownerUserId: member,
+      providerKey: 'gemini',
+      state: 'provider_rejected',
+      failureCategory: 'account_not_ready',
+      settledAt: new Date('2026-11-18T11:00:00.000Z'),
+    });
+    await settledAttempt({
+      ownerUserId: admin,
+      providerKey: 'gemini',
+      state: 'provider_unavailable',
+      failureCategory: 'provider_unavailable',
+      settledAt: new Date('2026-11-18T12:00:00.000Z'),
+    });
+
+    expect(await getLatestCoverAccountOutcome(ctx.db)).toEqual({
+      providerKey: 'gemini',
+      accountNotReady: true,
+      settledAt: new Date('2026-11-18T11:00:00.000Z'),
+    });
+  });
+
+  it('reports a Cover that landed after the refusal', async () => {
+    const ownerUserId = await createUser(ctx.db);
+    await settledAttempt({
+      ownerUserId,
+      providerKey: 'openai',
+      state: 'provider_rejected',
+      failureCategory: 'account_not_ready',
+      settledAt: new Date('2026-11-18T10:00:00.000Z'),
+    });
+    await settledAttempt({
+      ownerUserId,
+      providerKey: 'openai',
+      state: 'ready',
+      settledAt: new Date('2026-11-18T11:00:00.000Z'),
+    });
+
+    expect(await getLatestCoverAccountOutcome(ctx.db)).toMatchObject({ accountNotReady: false });
   });
 });

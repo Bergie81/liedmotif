@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CredentialStatus } from '@liedmotif/db';
 import {
+  coverAccountAlert,
   generatedImageProviderPresentation,
   llmProviderPresentation,
   requiresProviderReplacementConfirmation,
@@ -157,5 +158,57 @@ describe('provider settings model', () => {
         nextProviderKey: 'openai',
       }),
     ).toBe(false);
+  });
+});
+
+describe('the Cover images account alert', () => {
+  const refusedAt = new Date('2026-11-18T10:00:00.000Z');
+  const before = new Date('2026-11-18T09:00:00.000Z');
+  const after = new Date('2026-11-18T11:00:00.000Z');
+
+  it.each([
+    ['gemini', 'Google needs billing turned on for image models.'],
+    ['openai', 'OpenAI needs your organisation verified for image models.'],
+  ])(
+    'names the cause while the newest %s Cover was refused for the account',
+    (providerKey, text) => {
+      expect(
+        coverAccountAlert({
+          outcome: { providerKey, accountNotReady: true, settledAt: refusedAt },
+          credentialsSavedAt: [before],
+        }),
+      ).toBe(text);
+    },
+  );
+
+  it('clears once a later Cover landed', () => {
+    expect(
+      coverAccountAlert({
+        outcome: { providerKey: 'gemini', accountNotReady: false, settledAt: after },
+        credentialsSavedAt: [before],
+      }),
+    ).toBeNull();
+  });
+
+  it('clears once any credential supplying the Cover key was saved after the refusal', () => {
+    expect(
+      coverAccountAlert({
+        outcome: { providerKey: 'openai', accountNotReady: true, settledAt: refusedAt },
+        credentialsSavedAt: [before, after],
+      }),
+    ).toBeNull();
+  });
+
+  it('stays while the credential is only in the environment', () => {
+    expect(
+      coverAccountAlert({
+        outcome: { providerKey: 'openai', accountNotReady: true, settledAt: refusedAt },
+        credentialsSavedAt: [null],
+      }),
+    ).toBe('OpenAI needs your organisation verified for image models.');
+  });
+
+  it('shows nothing before any Cover settled', () => {
+    expect(coverAccountAlert({ outcome: null, credentialsSavedAt: [] })).toBeNull();
   });
 });

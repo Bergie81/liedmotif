@@ -16,6 +16,7 @@ export function ProviderCard({
   description,
   environmentManaged = false,
   decryptError = false,
+  accountAlert = null,
   children,
 }: {
   icon: ReactNode;
@@ -26,6 +27,8 @@ export function ProviderCard({
   description: ReactNode;
   environmentManaged?: boolean;
   decryptError?: boolean;
+  /** Why the vendor refuses this provider's account, while it does. */
+  accountAlert?: string | null;
   children?: ReactNode;
 }) {
   return (
@@ -76,6 +79,8 @@ export function ProviderCard({
           credential-encryption key.
         </AlertBanner>
       ) : null}
+
+      {accountAlert ? <AlertBanner className="mb-4">{accountAlert}</AlertBanner> : null}
 
       {children}
     </SettingsCard>

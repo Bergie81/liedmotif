@@ -104,3 +104,27 @@ export function requiresProviderReplacementConfirmation(input: {
 }): boolean {
   return input.configured && input.initialProviderKey !== input.nextProviderKey;
 }
+
+const ACCOUNT_NOT_READY_CAUSES: Readonly<Record<string, string>> = {
+  gemini: 'Google needs billing turned on for image models.',
+  openai: 'OpenAI needs your organisation verified for image models.',
+};
+
+/**
+ * The Cover images card's account alert: the cause, while the Instance's
+ * newest Cover outcome is an image account the vendor refused and no
+ * credential that supplies the Cover key has been saved since. A save is the
+ * Admin saying they fixed it; the next Cover tells whether they did.
+ */
+export function coverAccountAlert(input: {
+  outcome: { providerKey: string; accountNotReady: boolean; settledAt: Date } | null;
+  /** When each credential supplying the Cover key was last saved; `null` when none is stored. */
+  credentialsSavedAt: readonly (Date | null)[];
+}): string | null {
+  const { outcome } = input;
+  if (!outcome?.accountNotReady) return null;
+  const savedSince = input.credentialsSavedAt.some(
+    (savedAt) => savedAt !== null && savedAt > outcome.settledAt,
+  );
+  return savedSince ? null : (ACCOUNT_NOT_READY_CAUSES[outcome.providerKey] ?? null);
+}

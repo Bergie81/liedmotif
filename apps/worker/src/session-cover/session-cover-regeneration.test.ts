@@ -245,6 +245,27 @@ describeIfDb('SessionCoverGenerator regeneration', () => {
     expect(settled?.settledAt).not.toBeNull();
   });
 
+  it('records an account that is not ready for images as its own cause, never as spend or a retry', async () => {
+    const { ownerUserId, sessionId, currentCoverId } = await seedSessionWithCurrentCover();
+    const attempt = await reserveAttempt(ownerUserId, sessionId);
+
+    const { provider, calls } = fakeCoverArt({
+      error: new GeneratedImageProviderError('account_not_ready', 'not_started'),
+    });
+    const result = await generator(ownerUserId, provider).processRegeneration(
+      sessionId,
+      attempt.id,
+    );
+
+    expect(result).toMatchObject({ status: 'fallback', coverImageId: currentCoverId });
+    expect(calls).toHaveLength(1);
+    expect(await ledgerRow(attempt.id)).toMatchObject({
+      state: 'provider_rejected',
+      failureCategory: 'account_not_ready',
+      possiblyPaid: false,
+    });
+  });
+
   it('settles a reserved regeneration without spending once the Session delete is pending', async () => {
     const { ownerUserId, sessionId } = await seedSessionWithCurrentCover();
     const attempt = await reserveAttempt(ownerUserId, sessionId);

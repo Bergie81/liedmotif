@@ -21,6 +21,19 @@ import {
  */
 const MAX_IMAGE_RESPONSE_BYTES = 32 * 1024 * 1024;
 
+/** An error reply is a short JSON object; anything larger is not read. */
+const MAX_ERROR_RESPONSE_BYTES = 64 * 1024;
+
+/**
+ * Reads a refused submission's `error` object to name a failure the HTTP status
+ * alone cannot, or returns null to keep the status classification. Only the
+ * returned kind leaves the adapter; the reply itself never does.
+ */
+export type GeneratedImageRefusalClassifier = (
+  status: number,
+  error: Record<string, unknown>,
+) => GeneratedImageProviderError | null;
+
 export interface GeneratedImageDatum {
   id?: unknown;
   b64_json?: unknown;
@@ -112,6 +125,21 @@ function classifyStatus(status: number): GeneratedImageProviderError {
   return new GeneratedImageProviderError('unavailable', 'outcome_unknown');
 }
 
+async function readRefusal(
+  response: Response,
+  classify: GeneratedImageRefusalClassifier,
+): Promise<GeneratedImageProviderError | null> {
+  try {
+    const payload = await readBoundedResponseJson(response, MAX_ERROR_RESPONSE_BYTES);
+    const error = (payload as { error?: unknown } | null)?.error;
+    return error && typeof error === 'object'
+      ? classify(response.status, error as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 export function acceptedReferences(
   references: GeneratedImageReference[],
   capabilities: GeneratedImageCapabilities,
@@ -147,7 +175,13 @@ export async function submitGeneratedImageRequest(
     authHeaders,
     body,
     timeoutMs,
-  }: { authHeaders: Record<string, string>; body: unknown; timeoutMs: number },
+    classifyRefusal,
+  }: {
+    authHeaders: Record<string, string>;
+    body: unknown;
+    timeoutMs: number;
+    classifyRefusal?: GeneratedImageRefusalClassifier;
+  },
 ): Promise<unknown> {
   let response: Response;
   try {
@@ -169,8 +203,9 @@ export async function submitGeneratedImageRequest(
     throw new GeneratedImageProviderError(timedOut ? 'timeout' : 'unavailable', 'outcome_unknown');
   }
   if (!response.ok) {
+    const refusal = classifyRefusal ? await readRefusal(response, classifyRefusal) : null;
     await response.body?.cancel().catch(() => undefined);
-    throw classifyStatus(response.status);
+    throw refusal ?? classifyStatus(response.status);
   }
   try {
     return await readBoundedResponseJson(response, MAX_IMAGE_RESPONSE_BYTES);

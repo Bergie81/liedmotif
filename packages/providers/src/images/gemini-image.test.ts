@@ -239,6 +239,92 @@ describe('Gemini generated-image adapter', () => {
     },
   );
 
+  // Google's documented codes: FAILED_PRECONDITION is a prerequisite such as
+  // disabled billing; PERMISSION_DENIED with FREE_TIER_VERIFICATION_REQUIRED is
+  // a project that must verify or set up billing.
+  it.each([
+    [
+      400,
+      {
+        error: {
+          code: 400,
+          message:
+            'Gemini API free tier is not available in your country. Please enable billing on your project in Google AI Studio.',
+          status: 'FAILED_PRECONDITION',
+        },
+      },
+    ],
+    [
+      403,
+      {
+        error: {
+          code: 403,
+          message: 'Your project has been denied access. Please contact support.',
+          status: 'PERMISSION_DENIED',
+          details: [
+            {
+              '@type': 'type.googleapis.com/google.rpc.ErrorInfo',
+              reason: 'FREE_TIER_VERIFICATION_REQUIRED',
+              domain: 'googleapis.com',
+            },
+          ],
+        },
+      },
+    ],
+  ] as const)(
+    'classifies the %s billing refusal as account not ready, before any spend',
+    async (status, body) => {
+      const fetchImpl = vi.fn().mockResolvedValueOnce(json(body, status));
+
+      await expect(
+        adapter(fetchImpl as unknown as typeof fetch).generate(request()),
+      ).rejects.toMatchObject({
+        kind: 'account_not_ready',
+        submissionDisposition: 'not_started',
+        message: 'Generated image provider account is not ready for images.',
+      });
+    },
+  );
+
+  it.each([
+    [
+      403,
+      {
+        error: {
+          code: 403,
+          message: 'Your API key was reported as leaked. Please use another API key.',
+          status: 'PERMISSION_DENIED',
+        },
+      },
+      'configuration',
+    ],
+    [
+      400,
+      {
+        error: {
+          code: 400,
+          message: 'Request contains an invalid argument.',
+          status: 'INVALID_ARGUMENT',
+        },
+      },
+      'rejection',
+    ],
+    [
+      429,
+      { error: { code: 429, message: 'Quota exceeded', status: 'RESOURCE_EXHAUSTED' } },
+      'rate_limit',
+    ],
+  ] as const)(
+    'keeps a %s refusal that is not a billing one a plain provider failure',
+    async (status, body, kind) => {
+      const fetchImpl = vi.fn().mockResolvedValueOnce(json(body, status));
+
+      await expect(
+        adapter(fetchImpl as unknown as typeof fetch).generate(request()),
+      ).rejects.toMatchObject({ kind, submissionDisposition: 'not_started' });
+    },
+  );
+
   it('classifies a timeout and a dropped connection as outcome unknown', async () => {
     const timeout = Object.assign(new Error(`timeout ${SECRET}`), { name: 'TimeoutError' });
     const timedOut = vi.fn().mockRejectedValueOnce(timeout);

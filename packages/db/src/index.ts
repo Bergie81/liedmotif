@@ -226,6 +226,7 @@ export {
   acquireOwnerCoverAdmissionLock,
   getSessionCoverGeneration,
   getInitialSessionCoverGeneration,
+  getLatestCoverAccountOutcome,
   getLatestSessionCoverRegeneration,
   getLiveSessionCoverGeneration,
   getSessionCoverGenerationById,

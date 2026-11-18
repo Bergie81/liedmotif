@@ -525,8 +525,24 @@ function submitFailureState(
   if (failure.disposition === 'outcome_unknown' && idempotency === 'absent') {
     return 'submission_unknown';
   }
-  if (failure.kind === 'configuration' || failure.kind === 'rejection') return 'provider_rejected';
+  if (
+    failure.kind === 'configuration' ||
+    failure.kind === 'account_not_ready' ||
+    failure.kind === 'rejection'
+  ) {
+    return 'provider_rejected';
+  }
   return 'provider_unavailable';
+}
+
+/**
+ * The ledger state is coarse (a pg enum), so the cause an Admin can act on
+ * rides the failure category: an account not ready for images is told apart
+ * from any other provider rejection.
+ */
+function submitFailureCategory(failure: CoverSubmissionFailure, state: SubmitFailureState): string {
+  if (failure.retry) return 'safe_retry_pending';
+  return failure.kind === 'account_not_ready' ? 'account_not_ready' : state;
 }
 
 /** Claim a `planned` attempt for submission; false means another run holds it. */
@@ -596,7 +612,7 @@ export async function generateCoverSubmission(
       possiblyPaid: args.possiblyPaidBefore || failure.disposition !== 'not_started',
       submissionDisposition: failure.disposition,
       safeRetryCount: failure.safeRetryCount,
-      failureCategory: failure.retry ? 'safe_retry_pending' : state,
+      failureCategory: submitFailureCategory(failure, state),
       settledAt: failure.retry ? null : now,
       updatedAt: now,
       expectedStates: ['submitting'],

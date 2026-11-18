@@ -18,6 +18,7 @@ import {
   firstImageDatum,
   referenceDataUrl,
   submitGeneratedImageRequest,
+  type GeneratedImageRefusalClassifier,
 } from './generated-image-wire';
 
 export const OPENAI_IMAGES_BASE_URL = 'https://api.openai.com/v1';
@@ -43,6 +44,18 @@ const MAX_REFERENCE_BYTES = 4 * 1024 * 1024;
  * renditions, so a full set of them fits with room to spare.
  */
 const MAX_TOTAL_REFERENCE_BYTES = 16 * 1024 * 1024;
+
+/**
+ * GPT Image models need API Organization Verification. OpenAI gives the refusal
+ * no error code (`code` is null), so the 403 is recognised by the sentence its
+ * message opens with; any other 403 stays a configuration failure.
+ */
+const UNVERIFIED_ORGANIZATION = /organization must be verified/i;
+
+const classifyRefusal: GeneratedImageRefusalClassifier = (status, error) =>
+  status === 403 && typeof error.message === 'string' && UNVERIFIED_ORGANIZATION.test(error.message)
+    ? new GeneratedImageProviderError('account_not_ready', 'not_started')
+    : null;
 
 export interface OpenAiImageConfig {
   apiKey: string;
@@ -121,7 +134,7 @@ export function openAiImageProvider(config: OpenAiImageConfig): GeneratedImagePr
       const payload = await submitGeneratedImageRequest(
         fetchImpl,
         `${OPENAI_IMAGES_BASE_URL}/${endpoint}`,
-        { authHeaders: { authorization: `Bearer ${apiKey}` }, body, timeoutMs },
+        { authHeaders: { authorization: `Bearer ${apiKey}` }, body, timeoutMs, classifyRefusal },
       );
       const image = extractImage(firstImageDatum(payload));
       if (!image) throw new GeneratedImageProviderError('invalid_response', 'outcome_unknown');
