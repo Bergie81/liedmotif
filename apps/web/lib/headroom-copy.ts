@@ -81,3 +81,15 @@ export function creationHeadroomMessage(
   const holder = scope === 'pool' ? 'the shared budget has' : 'you have';
   return `${needs}; ${holder} ${left} left${HEADROOM_PERIOD[window]}. More Tracks ${RESET[window]} (${resetTimezone}). ${WAY_OUT}`;
 }
+
+/**
+ * The refusal for a new music request while the Admin has paused all new
+ * music. Only the Admin can turn the switch off, so only the Admin is pointed
+ * at it; a Member learns who paused it.
+ */
+export function newMusicPausedMessage(
+  viewer: { role: 'admin' } | { role: 'member'; adminName: string | null },
+): string {
+  if (viewer.role === 'admin') return 'New music is paused in Settings › Generation.';
+  return `${viewer.adminName ?? 'The Admin'} has paused new music.`;
+}

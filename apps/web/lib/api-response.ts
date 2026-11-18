@@ -31,6 +31,7 @@ const STATUS_BY_CODE: Record<ApiErrorCode, number> = {
   // Creation-time headroom gate refusal: treated as a soft 429 — the
   // user is prompted to Resume (My Sessions) or browse the Library, not to retry.
   session_headroom_blocked: 429,
+  new_music_paused: 409,
   session_duration_reached: 409,
   assistant_unavailable: 503,
   assistant_access_off: 403,

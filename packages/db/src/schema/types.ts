@@ -36,7 +36,12 @@ export interface UsageLimits {
   maxRetriesPerJob: number;
   /** Local storage quota in bytes. Default 10 GiB. */
   storageQuotaBytes: number;
-  /** When true, never auto-generate; the admin triggers each batch. Default false. */
+  /**
+   * "Pause all new music": when true, the worker submits no music-model call on
+   * the Instance, a new Session's first Tracks included, and Start Session, More
+   * Like This, Surprise Me and Change Vibe are refused before any text-LLM call.
+   * Resume and playing what exists stay open. Default false.
+   */
   manualGenerationOnly: boolean;
   /** Auto-stop an active session after this many idle minutes. Default 15. */
   idleAutoStopAfterMinutes: number;

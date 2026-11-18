@@ -13,7 +13,7 @@ import {
   proposeChangeVibeInputSchema,
   type ProposeChangeVibeInput,
 } from '@liedmotif/shared';
-import { generationRefusal, NO_ACTIVE_SESSION, notOffered, proposed } from './proposal';
+import { changeVibeRefusal, NO_ACTIVE_SESSION, notOffered, proposed } from './proposal';
 import { PROPOSE_CHANGE_VIBE_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 import type { TurnActions } from './turn-actions';
@@ -42,8 +42,8 @@ export function createProposeChangeVibeTool(
           prompt: prompt.trim(),
         });
         if (!card.success) return notOffered(NO_WORDS);
-        // The route's own refusals, in its order: the budget, then the target.
-        const refusal = await generationRefusal(asker);
+        // The route's own refusals, in its order: the pause, the budget, then the target.
+        const refusal = await changeVibeRefusal(asker);
         if (refusal) return notOffered(refusal);
         if (
           isDurationTargetReached(active.targetDurationMinutes, active.generatedDurationSeconds)

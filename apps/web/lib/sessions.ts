@@ -59,7 +59,11 @@ import {
   type SessionSummary,
 } from '@liedmotif/shared';
 import { cache } from 'react';
-import { creationHeadroomMessage, headroomBlockedMessage } from './headroom-copy';
+import {
+  creationHeadroomMessage,
+  headroomBlockedMessage,
+  newMusicPausedMessage,
+} from './headroom-copy';
 import { getLlmProvider, getMusicProvider } from '@/lib/providers';
 import { cachedUserProfile, requestNow } from './request-cache';
 import { providerTasksToTracks } from './track-units';
@@ -635,6 +639,25 @@ export async function headroomRefusalMessage(
   }
   const adminName = decision.window === 'total' ? await getAdminDisplayName(db) : null;
   return headroomBlockedMessage(decision, adminName);
+}
+
+/**
+ * Why a request for new music is refused while the Admin has paused all new
+ * music, in the words the requester sees; null while it is not paused. A free
+ * read, so every door answers it before the creation rate limit and before its
+ * budget gate: a budget reset would not lift a pause.
+ */
+export async function newMusicPausedRefusal(
+  db: Database,
+  ownerUserId: string,
+  /** Stored limits the caller already read — one settings read per request. */
+  knownLimits?: UsageLimits,
+): Promise<string | null> {
+  const limits = knownLimits ?? (await getUsageLimits(db));
+  if (!limits.manualGenerationOnly) return null;
+  const profile = await cachedUserProfile(db, ownerUserId);
+  if (profile?.role !== 'member') return newMusicPausedMessage({ role: 'admin' });
+  return newMusicPausedMessage({ role: 'member', adminName: await getAdminDisplayName(db) });
 }
 
 /** Map a `SessionRecord` to the contract `sessionSummarySchema` payload. */

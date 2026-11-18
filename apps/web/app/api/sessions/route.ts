@@ -28,6 +28,7 @@ import {
   evaluateSessionHeadroom,
   headroomRefusalMessage,
   loadSessionList,
+  newMusicPausedRefusal,
   startingSessionMode,
   toSessionSummary,
 } from '@/lib/sessions';
@@ -59,6 +60,8 @@ export async function POST(request: Request) {
   // LLM. Both gates are free reads with no data dependency, so they run together;
   // headroom answers first when both would block.
   const usageLimits = await getUsageLimits(db);
+  const paused = await newMusicPausedRefusal(db, ownerUserId, usageLimits);
+  if (paused) return apiError('new_music_paused', paused);
   const [headroom, voiceBlocked] = await Promise.all([
     evaluateSessionHeadroom(db, ownerUserId, undefined, usageLimits),
     // "Use my voice" is honored or rejected — never silently downgraded to

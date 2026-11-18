@@ -16,6 +16,7 @@ import {
   evaluateSessionHeadroom,
   headroomRefusalMessage,
   nameSeededSnapshot,
+  newMusicPausedRefusal,
   startingSessionMode,
   stripPersonalIngredients,
   toSessionSummary,
@@ -45,6 +46,8 @@ export async function POST(request: Request) {
   const db = getDb();
 
   const usageLimits = await getUsageLimits(db);
+  const paused = await newMusicPausedRefusal(db, ownerUserId, usageLimits);
+  if (paused) return apiError('new_music_paused', paused);
   const headroom = await evaluateSessionHeadroom(db, ownerUserId, undefined, usageLimits);
   if (!headroom.allowed) {
     return apiError('session_headroom_blocked', await headroomRefusalMessage(db, headroom));

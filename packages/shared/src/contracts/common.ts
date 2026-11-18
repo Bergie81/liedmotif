@@ -48,6 +48,11 @@ export const API_ERROR_CODES = [
   // `limit_reached`: a running session never raises this (it degrades to Session
   // Repeat instead), and Resume is never gated by it.
   'session_headroom_blocked',
+  // The Admin paused all new music on the Instance: Start Session, More Like
+  // This, Surprise Me and Change Vibe are refused before any text-LLM call, and
+  // ahead of any budget refusal, since waiting for a reset would not help.
+  // Resume is never refused by it.
+  'new_music_paused',
   // Change Vibe at the Session duration target: a new revision could
   // never fill there, so the change is refused before any text-LLM call.
   'session_duration_reached',

@@ -10,6 +10,7 @@ import {
   evaluateGenerationBudget,
   evaluateSessionHeadroom,
   headroomRefusalMessage,
+  newMusicPausedRefusal,
 } from '@/lib/sessions';
 import { cardCost, cardNote } from './card-note';
 import type { AssistantAsker } from './tools';
@@ -30,11 +31,13 @@ export const notOffered = (why: string): ActionOutcome<'proposed'> => ({
 });
 
 /**
- * Why the app would refuse `asker` a new Session for budget right now, in the
- * words its own start route answers with; null when it would not. The same
- * gate that route applies, read and never spent.
+ * Why the app would refuse `asker` a new Session right now, paused new music
+ * or budget, in the words its own start route answers with; null when it would
+ * not. The same gates that route applies, read and never spent.
  */
 export async function newSessionRefusal({ db, userId }: AssistantAsker): Promise<string | null> {
+  const paused = await newMusicPausedRefusal(db, userId);
+  if (paused) return paused;
   const headroom = await evaluateSessionHeadroom(db, userId);
   return headroom.allowed ? null : headroomRefusalMessage(db, headroom);
 }
@@ -48,6 +51,15 @@ export async function newSessionRefusal({ db, userId }: AssistantAsker): Promise
 export async function generationRefusal({ db, userId }: AssistantAsker): Promise<string | null> {
   const budget = await evaluateGenerationBudget(db, userId);
   return budget.withinLimits ? null : headroomRefusalMessage(db, budget);
+}
+
+/**
+ * Why the app would refuse `asker` a Change Vibe right now, in the words the
+ * Change Vibe route answers with: paused new music first, then the budget for
+ * one more call. Null when neither refuses.
+ */
+export async function changeVibeRefusal(asker: AssistantAsker): Promise<string | null> {
+  return (await newMusicPausedRefusal(asker.db, asker.userId)) ?? generationRefusal(asker);
 }
 
 /**

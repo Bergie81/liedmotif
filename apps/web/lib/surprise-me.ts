@@ -52,6 +52,7 @@ import {
   evaluateSessionHeadroom,
   headroomRefusalMessage,
   nameSessionSnapshot,
+  newMusicPausedRefusal,
   startingSessionMode,
 } from './sessions';
 import { planSurprise, type SurprisePlan } from './surprise-me-plan';
@@ -85,7 +86,7 @@ export async function loadPendingSurprise(
 
 export type ProposeSurpriseResult =
   | { ok: true; proposal: SurpriseProposal }
-  | { ok: false; reason: 'headroom_blocked' | 'provider_error'; message: string }
+  | { ok: false; reason: 'paused' | 'headroom_blocked' | 'provider_error'; message: string }
   /** The tab's proposal is no longer the pending one; `retryable` when only the context moved. */
   | { ok: false; reason: 'stale'; message: string; retryable: boolean }
   | { ok: false; reason: 'busy' }
@@ -117,8 +118,11 @@ async function surpriseListener(
   return { ...(general ?? {}), about: self.about };
 }
 
-/** Start Session's budget gate: proposing and starting both refuse without headroom. */
-async function headroomRefusal(db: Database, ownerUserId: string) {
+/** Start Session's gates: proposing and starting both refuse while new music
+ * is paused, or without headroom. */
+async function creationRefusal(db: Database, ownerUserId: string) {
+  const paused = await newMusicPausedRefusal(db, ownerUserId);
+  if (paused) return { ok: false as const, reason: 'paused' as const, message: paused };
   const headroom = await evaluateSessionHeadroom(db, ownerUserId);
   if (headroom.allowed) return null;
   return {
@@ -147,7 +151,7 @@ export async function proposeSurprise(
   const { ownerUserId, adventurous, skipProfile, replaces } = input;
 
   // Every refusal that needs no model comes first, so none of them spends.
-  const blocked = await headroomRefusal(db, ownerUserId);
+  const blocked = await creationRefusal(db, ownerUserId);
   if (blocked) return blocked;
   const context = await getProposalContext(db, ownerUserId);
   if (context.pendingId !== replaces) {
@@ -281,7 +285,7 @@ export async function proposeSurprise(
 
 export type StartSurpriseResult =
   | ({ ok: true } & CreateSessionResult)
-  | { ok: false; reason: 'headroom_blocked' | 'not_pending'; message: string }
+  | { ok: false; reason: 'paused' | 'headroom_blocked' | 'not_pending'; message: string }
   | { ok: false; reason: 'rate_limited'; retryAfterMs: number };
 
 const NOT_PENDING_MESSAGE = 'This suggestion is no longer available. Ask for a new one.';
@@ -303,7 +307,7 @@ export async function startSurprise(
   // A retry of a Start that already bought its Session buys nothing, so it
   // answers ahead of gates that could only refuse a new purchase.
   if (!proposal.startedSessionId) {
-    const blocked = await headroomRefusal(db, ownerUserId);
+    const blocked = await creationRefusal(db, ownerUserId);
     if (blocked) return blocked;
     const admitted = sessionCreateLimiter.check(ownerUserId);
     if (!admitted.allowed) {

@@ -4,6 +4,7 @@ import {
   creationHeadroomMessage,
   HEADROOM_BLOCKED_MESSAGE,
   headroomBlockedMessage,
+  newMusicPausedMessage,
 } from './headroom-copy';
 
 // The refusal names which bound binds and, for a One-time Member
@@ -143,5 +144,24 @@ describe('creationHeadroomMessage', () => {
         context,
       ),
     ).toMatch(/^A new Session needs 1 Track; /);
+  });
+});
+
+// While all new music is paused, the refusal says so; a Member learns who paused
+// it, never a settings page they cannot change.
+describe('newMusicPausedMessage', () => {
+  it('points the Admin at the switch', () => {
+    expect(newMusicPausedMessage({ role: 'admin' })).toBe(
+      'New music is paused in Settings › Generation.',
+    );
+  });
+
+  it('names the Admin to a Member, or "The Admin" when no name is stored', () => {
+    expect(newMusicPausedMessage({ role: 'member', adminName: 'John' })).toBe(
+      'John has paused new music.',
+    );
+    expect(newMusicPausedMessage({ role: 'member', adminName: null })).toBe(
+      'The Admin has paused new music.',
+    );
   });
 });

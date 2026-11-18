@@ -214,14 +214,14 @@ export function LimitsForm({
             onStep={step}
           />
           <SettingsControlRow
-            label="Manual generation only"
+            label="Pause all new music"
             description="Stops all music generation, including a new Session's first Tracks"
           >
             <Switch
               checked={values.manualGenerationOnly}
               onCheckedChange={(checked) => change('manualGenerationOnly', checked)}
               disabled={saving}
-              aria-label="Manual generation only"
+              aria-label="Pause all new music"
             />
           </SettingsControlRow>
           <SettingsFootnote>

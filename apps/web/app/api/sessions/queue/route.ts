@@ -9,6 +9,7 @@
 import { NextResponse } from 'next/server';
 import {
   getSessionQueue,
+  getUsageLimits,
   type QueueSessionRecord,
   type SessionQueuePendingGeneration,
   type SessionQueueTrack,
@@ -109,15 +110,16 @@ function toSessionVibe(session: QueueSessionRecord): SessionVibe | null {
 
 /**
  * An armed switch-now is pending only while its revision's fill can still
- * arrive: new-vibe work in flight, or a fill the worker still owes. At the
- * duration target it owes none, and in Repeat it owes only the
- * revision's one initial batch, so a spent fill — even a failed one — ends the
- * wait. Otherwise the player would promise a cutover that never comes.
+ * arrive: new-vibe work in flight, or a fill the worker still owes. While new
+ * music is paused or at the duration target it owes none, and in Repeat it
+ * owes only the revision's one initial batch, so a spent fill — even a failed
+ * one — ends the wait. Otherwise the player would promise a cutover that never comes.
  */
-function vibeSwitchPending(view: SessionQueueView): boolean {
+function vibeSwitchPending(view: SessionQueueView, newMusicPaused: boolean): boolean {
   const { session } = view;
   if (session.vibeSwitchRevision == null) return false;
   if (view.generatingNewVibeTracksAhead > 0) return true;
+  if (newMusicPaused) return false;
   if (isDurationTargetReached(session.targetDurationMinutes, session.generatedDurationSeconds)) {
     return false;
   }
@@ -137,12 +139,16 @@ export async function GET(request: Request) {
   if (parsed instanceof NextResponse) return parsed;
 
   const tracksPerRequest = getTypicalTracksPerMusicRequest();
-  const view = await getSessionQueue(getDb(), {
-    ownerUserId,
-    sessionId: parsed.sessionId,
-    phantomSubmitCutoff: phantomSubmitCutoffAt(),
-    tracksPerRequest,
-  });
+  const db = getDb();
+  const [view, limits] = await Promise.all([
+    getSessionQueue(db, {
+      ownerUserId,
+      sessionId: parsed.sessionId,
+      phantomSubmitCutoff: phantomSubmitCutoffAt(),
+      tracksPerRequest,
+    }),
+    getUsageLimits(db),
+  ]);
   if (!view) return apiError('not_found', 'Session not found.');
 
   return apiOk({
@@ -193,7 +199,7 @@ export async function GET(request: Request) {
     // Armed switch-now Change Vibe: the player narrates the wait and triggers
     // its early advance when the post-cutover queue arrives (the flag drops
     // back to false in the same poll that delivers that queue).
-    switchPending: vibeSwitchPending(view),
+    switchPending: vibeSwitchPending(view, limits.manualGenerationOnly),
     // A content block refuses the same request again, so retrying it would be
     // pointless; Change Vibe is that banner's way forward.
     tryAgainTracks:

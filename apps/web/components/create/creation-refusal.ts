@@ -1,6 +1,6 @@
 // What a refused creation shows, decided in one place for every way a new
-// Session starts: a refusal with ways out (no headroom) opens the blocked
-// dialog, anything else stays the caller's line of text.
+// Session starts: a refusal with ways out (no headroom, or new music paused)
+// opens the blocked dialog, anything else stays the caller's line of text.
 //
 // Callable from components and plain hooks alike: the open refusal is module
 // state, and the one `CreationRefusalHost` in the app shell renders it. Tests
@@ -10,10 +10,11 @@ import { useSyncExternalStore } from 'react';
 import type { ApiErrorCode } from '@liedmotif/shared';
 
 /** The refusals the blocked dialog explains. Each one needs its own title. */
-export type CreationRefusalKind = 'headroom';
+export type CreationRefusalKind = 'headroom' | 'paused';
 
 export const CREATION_REFUSAL_TITLES: { readonly [Kind in CreationRefusalKind]: string } = {
   headroom: 'Not enough Tracks left to start',
+  paused: 'New music is paused',
 };
 
 export interface CreationRefusal {
@@ -23,6 +24,7 @@ export interface CreationRefusal {
 
 const DIALOG_KINDS: Partial<Record<ApiErrorCode, CreationRefusalKind>> = {
   session_headroom_blocked: 'headroom',
+  new_music_paused: 'paused',
 };
 
 /** The dialog refusal an API error is, or null when it is a plain failure. */

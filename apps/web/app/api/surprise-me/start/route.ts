@@ -32,6 +32,8 @@ export async function POST(request: Request) {
     });
   }
   switch (result.reason) {
+    case 'paused':
+      return apiError('new_music_paused', result.message);
     case 'headroom_blocked':
       return apiError('session_headroom_blocked', result.message);
     case 'not_pending':

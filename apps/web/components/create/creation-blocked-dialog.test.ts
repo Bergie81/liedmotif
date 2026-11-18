@@ -55,6 +55,49 @@ describe('creation-blocked dialog title', () => {
   });
 });
 
+// A pause is not a budget: waiting for a reset would not lift it, so it never
+// shows under the headroom title.
+describe('paused new music refusal', () => {
+  function renderHost(viewerRole: AppChromeContextValue['viewerRole']) {
+    render(h(AppChromeContext.Provider, { value: chromeFor(viewerRole) }, h(CreationRefusalHost)));
+  }
+
+  function presentPaused(message: string) {
+    let inline: string | null = 'unset';
+    act(() => {
+      inline = presentCreationFailure({ code: 'new_music_paused', message }, 'Start failed');
+    });
+    expect(inline).toBeNull();
+    return screen.getByTestId('creation-blocked-dialog');
+  }
+
+  it('opens under its own title, with the message and the free ways out', () => {
+    renderHost('admin');
+    const dialog = presentPaused('New music is paused in Settings › Generation.');
+    expect(within(dialog).getByRole('heading').textContent).toBe('New music is paused');
+    expect(within(dialog).getByText('New music is paused in Settings › Generation.')).toBeTruthy();
+    expect(within(dialog).getByRole('button', { name: /Resume a Session/ })).toBeTruthy();
+    expect(within(dialog).getByRole('button', { name: /Browse Library/ })).toBeTruthy();
+  });
+
+  it('takes the Admin to the switch, and offers a Member no budget page', () => {
+    renderHost('admin');
+    fireEvent.click(
+      within(presentPaused('New music is paused.')).getByRole('button', {
+        name: /Open Generation settings/,
+      }),
+    );
+    expect(push).toHaveBeenCalledExactlyOnceWith('/settings/limits');
+    cleanup();
+    act(() => closeCreationRefusal());
+
+    renderHost('member');
+    const dialog = presentPaused('Thomas has paused new music.');
+    expect(within(dialog).queryByRole('button', { name: /See your budget/ })).toBeNull();
+    expect(within(dialog).queryByRole('button', { name: /Adjust cost limits/ })).toBeNull();
+  });
+});
+
 // One presenter decides what a refused creation shows, wherever it was tapped.
 describe('presentCreationFailure', () => {
   function renderHost() {

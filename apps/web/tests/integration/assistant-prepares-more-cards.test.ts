@@ -236,6 +236,18 @@ describe.skipIf(skip)('the Assistant asked to change the vibe', () => {
     expect(turn.results[0]).toMatch(/no card was shown/i);
   });
 
+  it('gives the model the pause refusal and sends no card while new music is paused', async () => {
+    const asker = await createUser();
+    await createSession(testDb.db, { ownerUserId: asker });
+    await updateUsageLimits(testDb.db, { manualGenerationOnly: true });
+
+    const turn = await ask(asker, [changeVibe({ prompt: 'slower' })]);
+
+    expect(cards(turn)).toEqual([]);
+    expect(turn.results[0]).toContain('New music is paused in Settings › Generation.');
+    expect(turn.results[0]).toMatch(/no card was shown/i);
+  });
+
   it('still offers the card below the headroom a new Session needs, as the Change Vibe route does', async () => {
     const asker = await createUser();
     await createSession(testDb.db, { ownerUserId: asker });
@@ -390,6 +402,19 @@ describe.skipIf(skip)('the Assistant asked for more like some Tracks', () => {
 
     expect(cards(turn)).toEqual([]);
     expect(turn.results[0]).toContain('A new Session needs 4 Tracks; you have 2 left today.');
+    expect(turn.results[0]).toMatch(/no card was shown/i);
+  });
+
+  it('gives a Member the pause refusal naming the Admin, and sends no card while new music is paused', async () => {
+    const admin = await createUser();
+    const asker = await createUser('member');
+    const [trackId] = await seedTracks(asker, 'Night Drive');
+    await updateUsageLimits(testDb.db, { manualGenerationOnly: true });
+
+    const turn = await ask(asker, [moreLikeThis({ trackIds: [trackId] })]);
+
+    expect(cards(turn)).toEqual([]);
+    expect(turn.results[0]).toContain(`${admin} has paused new music.`);
     expect(turn.results[0]).toMatch(/no card was shown/i);
   });
 

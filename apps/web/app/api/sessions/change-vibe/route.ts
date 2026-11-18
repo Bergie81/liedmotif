@@ -12,8 +12,9 @@
 // a new Session has enough Tracks to Repeat. At the Session duration target the
 // fill is blocked too, so the change is refused there unless the same
 // edit lifts or clears the target. A Stopped Session never fills a revision, so
-// it is refused too. All three checks run ahead of the derivation, so a change
-// that could produce no music spends no LLM either.
+// it is refused too, and so is every change while the Admin has paused all new
+// music. These checks run ahead of the derivation, so a change that could
+// produce no music spends no LLM either.
 
 import { NextResponse } from 'next/server';
 import { getSessionById, restyleSession } from '@liedmotif/db';
@@ -31,6 +32,7 @@ import {
   deriveNamedSnapshotForIntent,
   evaluateGenerationBudget,
   headroomRefusalMessage,
+  newMusicPausedRefusal,
   toSessionSummary,
 } from '@/lib/sessions';
 import { enqueueEnsureSessionBuffer } from '@/lib/worker-jobs';
@@ -97,8 +99,9 @@ export async function POST(request: Request) {
   // The gate is a free read with no data dependency on the session, so it rides
   // alongside it — and the session still answers first, keeping an unowned id a
   // 404 rather than a refusal that admits it exists (the IDOR posture).
-  const [current, budget] = await Promise.all([
+  const [current, paused, budget] = await Promise.all([
     getSessionById(db, { ownerUserId, sessionId }),
+    newMusicPausedRefusal(db, ownerUserId),
     evaluateGenerationBudget(db, ownerUserId),
   ]);
   if (!current) return apiError('not_found', 'Session not found.');
@@ -106,6 +109,7 @@ export async function POST(request: Request) {
   if (current.status !== 'active') {
     return apiError('conflict', 'Change Vibe needs an active session.');
   }
+  if (paused) return apiError('new_music_paused', paused);
   if (!budget.withinLimits) {
     return apiError('session_headroom_blocked', await headroomRefusalMessage(db, budget));
   }

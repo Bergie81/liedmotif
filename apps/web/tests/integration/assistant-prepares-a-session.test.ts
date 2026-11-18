@@ -271,6 +271,21 @@ describe.skipIf(skip)('the Assistant asked to start a Session', () => {
     expect(await rowsIn('activity_sessions')).toBe(0);
   });
 
+  it('gives the model the pause refusal, not the budget one, and sends no card while new music is paused', async () => {
+    const asker = await createAdmin();
+    await setDailyCeiling(2, 4);
+    await spendCalls(asker, 2);
+    await updateUsageLimits(testDb.db, { manualGenerationOnly: true });
+
+    const turn = await propose(asker, { prompt: 'calm piano for reading' });
+
+    expect(cards(turn)).toEqual([]);
+    expect(turn.results[0]).toContain('New music is paused in Settings › Generation.');
+    expect(turn.results[0]).not.toContain('A new Session needs');
+    expect(turn.results[0]).toMatch(/no card was shown/i);
+    expect(await rowsIn('activity_sessions')).toBe(0);
+  });
+
   it('refuses a second card in one turn', async () => {
     const asker = await createAdmin();
 

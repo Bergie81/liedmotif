@@ -62,3 +62,22 @@ it('warns under a Track limit that no new Session could start under, without blo
   // Only the daily cap (4 Tracks) is below the headroom; the monthly default clears it.
   expect(text.split('Below 5 Tracks, no new Session can start.')).toHaveLength(2);
 });
+
+it('labels the Instance-wide stop "Pause all new music", on screen and for assistive tech', () => {
+  const html = renderToStaticMarkup(
+    createElement(
+      AppChromeContext.Provider,
+      { value: chrome },
+      createElement(LimitsForm, {
+        initial: defaultUsageLimits(),
+        tracksPerRequest: 2,
+        unitCosts: { perTrackUsd: 0.07, perCoverUsd: 0.04 },
+      }),
+    ),
+  );
+  expect(html).toContain('aria-label="Pause all new music"');
+  const text = html.replace(/<[^>]*>/g, '');
+  expect(text).toContain('Pause all new music');
+  expect(text).not.toContain('Manual generation only');
+  expect(text).toContain('Stops all music generation, including a new Session&#x27;s first Tracks');
+});

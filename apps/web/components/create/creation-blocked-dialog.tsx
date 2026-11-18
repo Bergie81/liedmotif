@@ -2,10 +2,10 @@
 
 // Creation-blocked popup.
 //
-// When a new session is refused (the creation-time headroom gate), NO session
-// is created; instead of failing silently the user is offered the two zero-cost ways
-// forward — Resume a Stopped session (My Sessions; never gated) or browse the Library.
-// Reuses the shared Radix dialog primitive.
+// When a new session is refused (the creation-time headroom gate, or new music
+// paused), NO session is created; instead of failing silently the user is
+// offered the two zero-cost ways forward — Resume a Stopped session (My
+// Sessions; never gated) or browse the Library. Reuses the shared Radix dialog primitive.
 
 import { useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -26,6 +26,7 @@ import {
   CREATION_REFUSAL_TITLES,
   useShownCreationRefusal,
   type CreationRefusal,
+  type CreationRefusalKind,
 } from './creation-refusal';
 
 /** The app's one blocked dialog for refusals presented from anywhere
@@ -100,6 +101,7 @@ export function CreationBlockedDialog({
             Browse Library
           </button>
           <CostSettingsButton
+            kind={refusal.kind}
             onNavigate={(path) => {
               onOpenChange(false);
               router.push(path);
@@ -114,20 +116,39 @@ export function CreationBlockedDialog({
   );
 }
 
-/** Only the Admin can change cost limits; a Member's way out is their own
- * read-only budget page, worded like the generation banner's link. Read inside
- * the dialog content so the role is resolved only once the dialog opens. */
-function CostSettingsButton({ onNavigate }: { onNavigate: (path: string) => void }) {
+/** Only the Admin can change cost limits or lift a pause; a Member's way out
+ * from a budget refusal is their own read-only budget page, worded like the
+ * generation banner's link, and a pause offers them none. */
+function settingsWayOut(
+  kind: CreationRefusalKind,
+  isMember: boolean,
+): { label: string; path: string } | null {
+  if (isMember) {
+    return kind === 'paused' ? null : { label: 'See your budget', path: MY_BUDGET_PATH };
+  }
+  const label = kind === 'paused' ? 'Open Generation settings' : 'Adjust cost limits';
+  return { label, path: COST_SETTINGS_PATH };
+}
+
+/** Read inside the dialog content so the role is resolved only once the dialog opens. */
+function CostSettingsButton({
+  kind,
+  onNavigate,
+}: {
+  kind: CreationRefusalKind;
+  onNavigate: (path: string) => void;
+}) {
   const { viewerRole } = useAppChrome();
-  const isMember = viewerRole === 'member';
+  const wayOut = settingsWayOut(kind, viewerRole === 'member');
+  if (!wayOut) return null;
   return (
     <button
       type="button"
-      onClick={() => onNavigate(isMember ? MY_BUDGET_PATH : COST_SETTINGS_PATH)}
+      onClick={() => onNavigate(wayOut.path)}
       className={cn(secondaryButtonClass, 'flex items-center justify-center gap-2 py-2.5')}
     >
       <Gauge className="h-4 w-4" aria-hidden />
-      {isMember ? 'See your budget' : 'Adjust cost limits'}
+      {wayOut.label}
     </button>
   );
 }

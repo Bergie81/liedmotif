@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { activitySessions, tracks } from '@liedmotif/db';
+import { activitySessions, tracks, updateUsageLimits } from '@liedmotif/db';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CURRENT_ANALYSIS_VERSION, getSessionQueueResponseSchema } from '@liedmotif/shared';
 import {
@@ -116,6 +116,8 @@ afterAll(async () => {
 beforeEach(async () => {
   if (skip) return;
   await truncateTables(testDb.pool, GENERATION_FIXTURE_TABLES);
+  // `app_settings` is shared across suites: an armed switch reads the pause.
+  await updateUsageLimits(testDb.db, { manualGenerationOnly: false });
   holder.ownerUserId = null;
 });
 
@@ -359,6 +361,36 @@ describe.skipIf(skip)('GET /api/sessions/queue — blend identity + analysis con
       normalizedStatus: 'failed_final',
     });
     expect((await callQueue(base.sessionId)).switchPending).toBe(false);
+  });
+
+  it('switchPending drops while new music is paused and no new-vibe work is in flight', async () => {
+    const base = await seedSession();
+    await testDb.pool.query(
+      `update activity_sessions set style_revision = 2, vibe_switch_revision = 2 where id = $1`,
+      [base.sessionId],
+    );
+    await updateUsageLimits(testDb.db, { manualGenerationOnly: true });
+    // The worker submits nothing while paused, so the owed fill cannot come.
+    expect((await callQueue(base.sessionId)).switchPending).toBe(false);
+
+    // Work already submitted still finishes, so the switch still comes.
+    const inFlight = await createGenerationRequest(testDb.db, {
+      ownerUserId: base.ownerUserId,
+      activitySessionId: base.sessionId,
+      styleRevision: 2,
+    });
+    const job = await createProviderJob(testDb.db, {
+      generationRequestId: inFlight,
+      normalizedStatus: 'processing',
+    });
+    expect((await callQueue(base.sessionId)).switchPending).toBe(true);
+
+    // Once nothing is in flight, lifting the pause makes the owed fill come again.
+    await testDb.pool.query(`delete from provider_jobs where id = $1`, [job]);
+    await testDb.pool.query(`delete from generation_requests where id = $1`, [inFlight]);
+    expect((await callQueue(base.sessionId)).switchPending).toBe(false);
+    await updateUsageLimits(testDb.db, { manualGenerationOnly: false });
+    expect((await callQueue(base.sessionId)).switchPending).toBe(true);
   });
 
   it('vibe is null without a snapshot; off-enum snapshot values project as null/defaults', async () => {
