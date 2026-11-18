@@ -14,9 +14,12 @@ import type { CredentialEditorState, ProviderOption } from './use-credential-edi
 export function ProviderChoice({
   editor,
   options,
+  locked,
 }: {
   editor: CredentialEditorState;
   options: readonly ProviderOption[];
+  /** The env variable that picks the provider, which outranks any choice made here. */
+  locked?: string;
 }) {
   const [moreOptionsOpened, setMoreOptionsOpened] = useState(false);
   if (options.length <= 1) return null;
@@ -27,7 +30,10 @@ export function ProviderChoice({
   });
   return (
     <div className={labelClass}>
-      <span>Provider</span>
+      <span className="flex items-baseline justify-between gap-2">
+        Provider
+        {locked ? <FieldNote>SET IN .env ({locked})</FieldNote> : null}
+      </span>
       <div className={cn(segmentedListClass, 'overflow-x-auto')} role="group">
         {picker.shown.map((option) => (
           <button
@@ -36,14 +42,14 @@ export function ProviderChoice({
             data-state={editor.providerKey === option.value ? 'active' : 'inactive'}
             aria-pressed={editor.providerKey === option.value}
             onClick={() => editor.selectProvider(option.value)}
-            disabled={editor.operationPending}
+            disabled={editor.operationPending || Boolean(locked)}
             className={cn(segmentedTriggerClass, 'min-w-[92px]')}
           >
             {option.label}
           </button>
         ))}
       </div>
-      {picker.moreOptionsHidden ? (
+      {picker.moreOptionsHidden && !locked ? (
         <TextAction onClick={() => setMoreOptionsOpened(true)}>More options</TextAction>
       ) : null}
     </div>

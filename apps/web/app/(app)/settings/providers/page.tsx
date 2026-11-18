@@ -168,6 +168,9 @@ export default async function ProvidersPage() {
                 databaseWritesEnabled={data.encryptionKeyConfigured}
                 showModel
                 lockedModel={lockedCoverModel}
+                lockedProvider={
+                  data.cover.providerEnvironmentManaged ? 'IMAGE_PROVIDER' : undefined
+                }
                 initialModel={lockedCoverModel ? undefined : (data.cover.model ?? undefined)}
                 sharedKeyVendor={data.cover.sharedKeyVendor}
               />

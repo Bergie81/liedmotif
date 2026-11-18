@@ -5,6 +5,7 @@ import {
   resolveLlmRuntimeSettings,
   resolveProviderSettings,
   resolveShareableTextLlmKey,
+  selectProviderKey,
   type CredentialRef,
 } from '@liedmotif/db';
 import {
@@ -131,6 +132,7 @@ export async function loadProviderSettingsData() {
     cover: {
       credential: statuses.image,
       providerKey: imageKey,
+      providerEnvironmentManaged: selectProviderKey('image', process.env, null) !== null,
       modelEnvironmentManaged: readEnvLayer('image', imageKey).model !== undefined,
       sharedKeyVendor: coverSharedKeyVendor(statuses.image, sharedKeyVendor),
       sharesKey: statuses.image?.source === 'shared',

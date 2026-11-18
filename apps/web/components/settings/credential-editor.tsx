@@ -15,15 +15,20 @@ export type { CredentialEditorProps, ProviderOption };
 
 export function CredentialEditor({
   lockedModel,
+  lockedProvider,
   ...props
-}: Omit<CredentialEditorProps, 'onSaved'> & { lockedModel?: LockedModel }) {
+}: Omit<CredentialEditorProps, 'onSaved'> & {
+  lockedModel?: LockedModel;
+  /** The env variable that picks the provider; the picker shows it and is locked. */
+  lockedProvider?: string;
+}) {
   // Settings reloads after a save so the server-rendered credential status — source,
   // masked preview, health — is re-resolved rather than guessed at client-side.
   const editor = useCredentialEditor({ ...props, onSaved: () => window.location.reload() });
 
   return (
     <div className="flex flex-col gap-4">
-      <ProviderChoice editor={editor} options={props.options} />
+      <ProviderChoice editor={editor} options={props.options} locked={lockedProvider} />
       <SecretField editor={editor} currentMasked={props.currentMasked} />
       <BaseUrlField editor={editor} />
       {props.showModel ? <ModelField editor={editor} locked={lockedModel} /> : null}

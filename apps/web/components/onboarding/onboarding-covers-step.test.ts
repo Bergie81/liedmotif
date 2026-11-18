@@ -120,6 +120,22 @@ describe('onboarding covers step image key', () => {
     expect(markup).not.toContain('loaded/model');
   });
 
+  it('locks the provider picker while IMAGE_PROVIDER sets it, and still asks for the key', () => {
+    const markup = renderCovers({
+      imageConnected: false,
+      credential: {
+        ...openRouter,
+        providerKey: 'gemini',
+        displayName: 'Gemini',
+        providerEnvironmentManaged: true,
+      },
+    });
+    expect(markup).toContain('SET IN .env (IMAGE_PROVIDER)');
+    expect(markup).toMatch(/<button[^>]*disabled[^>]*>OpenAI<\/button>/);
+    expect(markup).toContain('Gemini API key');
+    expect(renderCovers({ imageConnected: false })).not.toContain('IMAGE_PROVIDER');
+  });
+
   it('reports an image key from .env instead of asking for one', () => {
     const markup = renderCovers({
       credential: { ...openRouter, configured: true, environmentManaged: true },

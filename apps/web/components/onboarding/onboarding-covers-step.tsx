@@ -181,6 +181,7 @@ function CoversStepBody({
               environmentVariable="IMAGE_API_KEY"
               showModel
               lockedModel={lockedModel}
+              lockedProvider={credential.providerEnvironmentManaged ? 'IMAGE_PROVIDER' : undefined}
               providerLabel={`The ${keyProvider} image key`}
               keyLabel={`${keyProvider} API key`}
               keyPlaceholder="sk-…"

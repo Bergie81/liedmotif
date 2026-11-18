@@ -209,3 +209,38 @@ describe('Text AI card — while Cover images share its key', () => {
     expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining(COVER_KEY_NOTICE));
   });
 });
+
+describe('Cover images card — IMAGE_PROVIDER set in .env', () => {
+  it('locks the provider picker, says .env sets it, and keeps the key editable', async () => {
+    const bodies = stubFetch();
+    render(
+      h(
+        CredentialMutationGroup,
+        null,
+        h(CredentialEditor, {
+          providerType: 'image',
+          options: IMAGE_PROVIDERS,
+          initialProviderKey: 'gemini',
+          currentMasked: null,
+          configured: false,
+          databaseWritesEnabled: true,
+          lockedProvider: 'IMAGE_PROVIDER',
+        }),
+      ),
+    );
+
+    expect(screen.getByText('SET IN .env (IMAGE_PROVIDER)')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Gemini' }).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    expect((screen.getByRole('button', { name: 'OpenAI' }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+
+    fireEvent.change(keyField()!, { target: { value: 'sk-gemini' } });
+    expect(await saveAndReadBody(bodies)).toMatchObject({
+      providerKey: 'gemini',
+      secret: 'sk-gemini',
+    });
+  });
+});

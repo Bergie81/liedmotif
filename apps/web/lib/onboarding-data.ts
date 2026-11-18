@@ -59,6 +59,8 @@ export interface OnboardingCredential {
 export interface OnboardingImageCredential extends OnboardingCredential {
   /** The loaded provider uses the Text AI's key now (`masked` is then that key). */
   sharesKey: boolean;
+  /** `IMAGE_PROVIDER` picks `providerKey`, which no choice here could outrank. */
+  providerEnvironmentManaged?: boolean;
 }
 
 /**
@@ -136,6 +138,7 @@ function imageCredential(
     masked: cover.credential?.masked ?? null,
     ...(cover.model ? { model: cover.model } : {}),
     modelEnvironmentManaged: cover.modelEnvironmentManaged,
+    providerEnvironmentManaged: cover.providerEnvironmentManaged,
     sharesKey: cover.sharesKey,
     chosen: cover.credential !== null,
     sharedKeyVendor: cover.sharedKeyVendor,

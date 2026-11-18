@@ -31,6 +31,7 @@ export function OnboardingCredentialFields({
   options,
   showModel,
   lockedModel,
+  lockedProvider,
   baseUrlOptional,
   environmentManaged,
   environmentVariable,
@@ -47,6 +48,8 @@ export function OnboardingCredentialFields({
   options: readonly ProviderOption[];
   showModel?: boolean;
   lockedModel?: LockedModel;
+  /** The env variable that picks the provider; the picker shows it and is locked. */
+  lockedProvider?: string;
   /**
    * The preset works without a base URL, so the field hides behind a disclosure
    * instead of adding a decision to a screen that does not need one.
@@ -82,7 +85,7 @@ export function OnboardingCredentialFields({
         </div>
       ) : (
         <>
-          <ProviderChoice editor={editor} options={options} />
+          <ProviderChoice editor={editor} options={options} locked={lockedProvider} />
           {providerNote ? (
             <p className="-mt-2 text-[13px] leading-[1.55] text-muted">{providerNote}</p>
           ) : null}
