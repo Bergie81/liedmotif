@@ -25,6 +25,8 @@ import {
   type ProviderTrackUpsertContext,
 } from './provider-results-repo';
 import { decryptSourceUrl } from './source-url-crypto';
+import { addPlaylistTracks, createPlaylist } from '../playlists/playlists-repo';
+import { setPlaylistShared } from '../playlists/playlist-share-repo';
 
 const describeIfDb = TEST_DATABASE_URL ? describe : describe.skip;
 const KEY = randomBytes(32);
@@ -259,7 +261,31 @@ describeIfDb('download + stream-source repo', () => {
       finalMimeType: null,
       hasProviderStream: false,
       providerStreamEncryptedUrl: null,
+      ownedByViewer: true,
     });
+  });
+
+  it('tells the owner from a Visitor of a Lounge-audible track', async () => {
+    const { trackId, ownerUserId } = await stagedTrack({ withFinal: true });
+    const playlist = await createPlaylist(ctx.db, { ownerUserId, name: 'Shared shelf' });
+    await addPlaylistTracks(ctx.db, { ownerUserId, playlistId: playlist.id, trackIds: [trackId] });
+    await setPlaylistShared(ctx.db, {
+      ownerUserId,
+      playlistId: playlist.id,
+      audience: { kind: 'everyone' },
+    });
+    const visitor = await createUser(ctx.db);
+
+    const asOwner = await getReadableTrackPlaybackAudio(ctx.db, {
+      viewerUserId: ownerUserId,
+      trackId,
+    });
+    const asVisitor = await getReadableTrackPlaybackAudio(ctx.db, {
+      viewerUserId: visitor,
+      trackId,
+    });
+    expect(asOwner!.ownedByViewer).toBe(true);
+    expect(asVisitor!.ownedByViewer).toBe(false);
   });
 
   it('resolves playback audio in ONE database execution (the audio route is the hottest endpoint)', async () => {

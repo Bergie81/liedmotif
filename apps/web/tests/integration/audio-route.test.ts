@@ -342,6 +342,21 @@ describe.skipIf(skip)('GET /api/audio/[trackId]', () => {
       expect(Buffer.from(await res.arrayBuffer()).equals(retagged)).toBe(true);
     });
 
+    it('lets the owner’s browser reuse its own final for an hour on 200, 206 and 304', async () => {
+      const owner = await createUser(testDb.db);
+      holder.ownerUserId = owner;
+      const { trackId } = await seedOwnedTrackWithAudio(owner);
+
+      const full = await call(trackId);
+      const ranged = await call(trackId, { range: 'bytes=0-3' });
+      const notModified = await call(trackId, { 'if-none-match': full.headers.get('etag')! });
+
+      expect([full.status, ranged.status, notModified.status]).toEqual([200, 206, 304]);
+      for (const res of [full, ranged, notModified]) {
+        expect(res.headers.get('cache-control')).toBe('private, max-age=3600, immutable');
+      }
+    });
+
     it('If-None-Match wins over Range: a matching validator is 304 even with a Range', async () => {
       const owner = await createUser(testDb.db);
       holder.ownerUserId = owner;

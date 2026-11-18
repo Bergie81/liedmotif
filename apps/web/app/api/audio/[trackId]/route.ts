@@ -164,7 +164,7 @@ export async function GET(
   if (assetParam !== null) {
     if (assetParam === 'final') {
       return audio.finalStorageKey
-        ? serveLocalFinal(request, audio.finalStorageKey, audio.finalMimeType)
+        ? serveLocalFinal(request, audio.finalStorageKey, audio.finalMimeType, audio.ownedByViewer)
         : notFound();
     }
     if (assetParam === 'stream') {
@@ -184,7 +184,7 @@ export async function GET(
     return notFound();
   }
 
-  return serveLocalFinal(request, audio.finalStorageKey, audio.finalMimeType);
+  return serveLocalFinal(request, audio.finalStorageKey, audio.finalMimeType, audio.ownedByViewer);
 }
 
 /**
@@ -204,16 +204,28 @@ function anyEtagMatches(header: string, etag: string): boolean {
   return header.split(',').some((candidate) => opaque(candidate) === opaque(etag));
 }
 
-/** Response headers every local-final answer carries. Per-track bytes are
- *  immutable; private since the route is owner-gated. The stored type is
- *  allow-listed on the way out: a row written from a hostile provider response
- *  must not be served back as markup in the app origin. */
-function finalBaseHeaders(contentType: string, stat: StorageObjectStat): Record<string, string> {
+/**
+ * Response headers every local-final answer carries. Two cache policies, both
+ * private since the route is viewer-gated:
+ * - the viewer's own Track: its bytes are immutable and only the owner's own
+ *   delete takes it away, so the browser may replay it for an hour unasked;
+ * - another owner's Lounge-audible Track: access ends the moment its owner makes
+ *   the Playlist private, so the browser must ask on every play (`no-cache`).
+ *   Access is checked before the validator, so a revoked Track answers 404, never
+ *   a 304 that would bless the cached copy.
+ * The stored type is allow-listed on the way out: a row written from a hostile
+ * provider response must not be served back as markup in the app origin.
+ */
+function finalBaseHeaders(
+  contentType: string,
+  stat: StorageObjectStat,
+  ownedByViewer: boolean,
+): Record<string, string> {
   return {
     'Content-Type': audioContentType(contentType),
     'X-Content-Type-Options': 'nosniff',
     'Accept-Ranges': 'bytes',
-    'Cache-Control': 'private, max-age=3600, immutable',
+    'Cache-Control': ownedByViewer ? 'private, max-age=3600, immutable' : 'private, no-cache',
     ETag: weakAudioEtag(stat),
     'Last-Modified': stat.updatedAt.toUTCString(),
   };
@@ -304,6 +316,7 @@ async function serveLocalFinal(
   request: Request,
   finalStorageKey: string,
   finalMimeType: string | null,
+  ownedByViewer: boolean,
 ): Promise<Response> {
   const acquired = await acquireLocalFinal(
     getStorageProvider(),
@@ -318,6 +331,7 @@ async function serveLocalFinal(
   const headers = finalBaseHeaders(
     finalMimeType ?? stat.mimeType ?? contentTypeForKey(finalStorageKey),
     stat,
+    ownedByViewer,
   );
   // A storage body that stops mid-file (S3 stalled or half-open) must error the
   // response so the player's ladder can recover, rather than leave playback

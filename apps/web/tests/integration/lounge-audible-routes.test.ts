@@ -160,6 +160,19 @@ async function call<P extends Record<string, string>>(
 }
 
 const audio = (trackId: string) => call(getAudio, `/api/audio/${trackId}`, { trackId });
+/** An audio request with headers (Range, If-None-Match) and an optional query. */
+async function audioWith(
+  trackId: string,
+  headers: Record<string, string>,
+  query = '',
+): Promise<Response> {
+  const response = await getAudio(
+    new Request(`http://localhost/api/audio/${trackId}${query}`, { headers }),
+    { params: Promise.resolve({ trackId }) },
+  );
+  served.push(response);
+  return response;
+}
 const cover = (id: string) => call(getCover, `/api/covers/${id}`, { id });
 const details = (trackId: string) =>
   call(getDetails, `/api/tracks/${trackId}/details`, { trackId });
@@ -285,6 +298,38 @@ describe.skipIf(skip)('Lounge-audible read widening', () => {
 
       await signInFreshVisitor();
       expect((await audio(trackId)).status).toBe(404);
+    });
+
+    describe.each([
+      ['unpinned', ''],
+      ['pinned ?asset=final', '?asset=final'],
+    ])("a Visitor's final must be revalidated on every play (%s)", (_label, query) => {
+      it('200, 206 and 304 all carry private, no-cache', async () => {
+        const { trackId } = await seedSharedTrack();
+        await signInFreshVisitor();
+
+        const full = await audioWith(trackId, {}, query);
+        const ranged = await audioWith(trackId, { range: 'bytes=0-3' }, query);
+        const etag = full.headers.get('etag')!;
+        const notModified = await audioWith(trackId, { 'if-none-match': etag }, query);
+
+        expect([full.status, ranged.status, notModified.status]).toEqual([200, 206, 304]);
+        for (const res of [full, ranged, notModified]) {
+          expect(res.headers.get('cache-control')).toBe('private, no-cache');
+        }
+      });
+
+      it('a revoked Track answers a matching If-None-Match with the unknown-id 404, not a 304', async () => {
+        const { ownerUserId, trackId, playlistId } = await seedSharedTrack();
+        await signInFreshVisitor();
+        const etag = (await audioWith(trackId, {}, query)).headers.get('etag')!;
+        await setPlaylistShared(testDb.db, { ownerUserId, playlistId, audience: null });
+
+        const revoked = await audioWith(trackId, { 'if-none-match': etag }, query);
+        const unknown = await audioWith(randomUUID(), { 'if-none-match': etag }, query);
+        expect(revoked.status).toBe(404);
+        expect(await revoked.text()).toBe(await unknown.text());
+      });
     });
 
     it('keeps serving the owner when the playlist is private (no regression)', async () => {

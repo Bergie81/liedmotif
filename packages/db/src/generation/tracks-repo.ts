@@ -123,6 +123,9 @@ export interface ReadableTrackPlaybackAudio {
    * never reaches the client. Present whenever `hasProviderStream` is true.
    */
   providerStreamEncryptedUrl: string | null;
+  /** Whether the viewer owns the track; false means it is read as another owner's
+   *  Lounge-audible track, which the route lets no browser cache serve unasked. */
+  ownedByViewer: boolean;
 }
 
 /**
@@ -146,6 +149,7 @@ export async function getReadableTrackPlaybackAudio(
   // missing/unreadable track (no rows), preserving the uniform-404 posture.
   const rows = await db
     .select({
+      ownerUserId: tracks.ownerUserId,
       assetType: trackAudioAssets.assetType,
       storageKey: trackAudioAssets.storageKey,
       mimeType: trackAudioAssets.mimeType,
@@ -178,6 +182,7 @@ export async function getReadableTrackPlaybackAudio(
     finalMimeType: final?.mimeType ?? null,
     hasProviderStream: providerStream !== undefined,
     providerStreamEncryptedUrl: providerStream?.encryptedSourceUrl ?? null,
+    ownedByViewer: rows[0]!.ownerUserId === params.viewerUserId,
   };
 }
 
