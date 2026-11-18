@@ -62,12 +62,11 @@ describe('refuseCrossOrigin', () => {
   });
 });
 
-// The first-run setup routes answer before `APP_PUBLIC_URL` is authority over
-// anything: the image still ships the localhost default while the operator
-// browses by LAN IP.
+// The first-run setup routes accept an `Origin` whose host is the host
+// `APP_PUBLIC_URL` names, whatever its scheme, because TLS ends at the proxy.
 describe('refuseSetupCrossOrigin', () => {
-  // The request is always addressed to the host the browser sent: the host it
-  // reached no longer counts, only the host `APP_PUBLIC_URL` names.
+  // Each request is addressed to the host its `Origin` names, so a pass can
+  // only come from the `APP_PUBLIC_URL` host, never from the addressed host.
   const post = (origin: string) => {
     const addressed = origin === 'null' ? 'http://192.168.1.10' : origin;
     return refuseSetupCrossOrigin(
