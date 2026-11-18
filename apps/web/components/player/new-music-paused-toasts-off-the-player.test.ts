@@ -117,9 +117,9 @@ describe('new music paused, seen off the Player', () => {
 
   it.each([
     ['provider_credits', 'warning', 'Generation paused'],
-    ['repeat_cost_limit', 'info', 'Session Repeat'],
+    ['repeat_cost_limit', 'warning', 'Session Repeat'],
     ['provider_error', 'error', 'Generation error'],
-  ] as const)('shows %s in the banner tone, as a %s toast', (status, tone, title) => {
+  ] as const)('shows %s as a %s toast', (status, tone, title) => {
     const view = mount(player());
 
     view.rerender({ current: player({ generationStatus: status }), onPlayer: false });

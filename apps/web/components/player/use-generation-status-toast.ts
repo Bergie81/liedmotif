@@ -26,7 +26,11 @@ export function useGenerationStatusToast(
   sessionId: string | null,
 ): void {
   const banner = player ? presentGenerationBanner(player) : null;
-  const tone = banner ? TOAST_TONE[banner.tone] : null;
+  // Over budget is the one status off the Player that needs the listener's
+  // action, so a toast that sends them to their cost settings is at least a
+  // warning: it lasts longer and is announced assertively.
+  const bannerTone = banner ? TOAST_TONE[banner.tone] : null;
+  const tone = bannerTone === 'info' && banner?.showCostSettingsLink ? 'warning' : bannerTone;
   const shown =
     banner?.message && tone
       ? {

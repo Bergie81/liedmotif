@@ -101,7 +101,7 @@ function ToastItem({ entry }: { entry: ToastEntry }) {
       // must land on the toast, never fall through to the overlay and close it.
       style={{ pointerEvents: 'auto' }}
       className={cn(
-        'flex items-start gap-2.5 rounded-[14px] border py-2 pl-3.5 pr-1.5 text-[13.5px] leading-snug text-paper',
+        'flex items-start gap-2.5 rounded-[14px] border py-2 pl-3.5 pr-1.5 text-[13.5px] leading-5 text-paper',
         '[background:var(--gradient-float)] shadow-[var(--shadow-float)]',
         'data-[state=closed]:animate-toast-out data-[state=open]:animate-toast-in',
         'data-[swipe=move]:translate-y-[var(--radix-toast-swipe-move-y)]',
@@ -110,11 +110,14 @@ function ToastItem({ entry }: { entry: ToastEntry }) {
         tone.border,
       )}
     >
-      <Icon className={cn('mt-2.5 h-4 w-4 shrink-0', tone.iconColor)} aria-hidden />
+      {/* The first text line is as tall as the 42 px close button (11 + 20 + 11),
+          and the icon sits on that line's middle, so a one-line toast reads
+          centred and longer text grows downward from the same line. */}
+      <Icon className={cn('mt-[13px] h-4 w-4 shrink-0', tone.iconColor)} aria-hidden />
       {/* Radix announces a toast's text nodes run together; this reads them as
           sentences instead. */}
       <div
-        className="min-w-0 flex-1 py-2"
+        className="min-w-0 flex-1 py-[11px]"
         data-radix-toast-announce-exclude=""
         data-radix-toast-announce-alt={announcedText(entry)}
       >
