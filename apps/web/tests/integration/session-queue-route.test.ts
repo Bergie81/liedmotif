@@ -242,6 +242,83 @@ describe.skipIf(skip)('GET /api/sessions/queue — blend identity + analysis con
     expect(ahead.assets.final).toBe(`/api/audio/${aheadTrackId}?asset=final`);
   });
 
+  it("carries the loop head when the window leaves older slots out: the Session's first playable slot", async () => {
+    const base = await seedSession();
+    // Removed and unplayable slots ahead of it are passed over.
+    const deleted = await seedQueuedTrack(base, 0);
+    await testDb.db.update(tracks).set({ status: 'deleted' }).where(eq(tracks.id, deleted));
+    const disliked = await seedQueuedTrack(base, 1);
+    await testDb.db.update(tracks).set({ status: 'rejected' }).where(eq(tracks.id, disliked));
+    await seedQueuedTrack(base, 2, { withFinal: false });
+    const failed = await seedQueuedTrack(base, 3, { withFinal: false, withStream: true });
+    await testDb.db.update(tracks).set({ status: 'failed' }).where(eq(tracks.id, failed));
+    const firstPlayable = await seedQueuedTrack(base, 4, {
+      identity: { styleRevision: 1, targetBpm: 124, targetKey: 'A minor' },
+      withStream: true,
+    });
+    for (let position = 5; position < 40; position += 1) await seedQueuedTrack(base, position);
+    const currentId = await createQueueItem(testDb.db, {
+      activitySessionId: base.sessionId,
+      position: 40,
+      state: 'playing',
+    });
+    await testDb.pool.query(
+      `update activity_sessions set current_queue_item_id = $1 where id = $2`,
+      [currentId, base.sessionId],
+    );
+
+    const data = await callQueue(base.sessionId);
+    // The windowed read itself is unchanged: 30 slots behind the current one.
+    expect(data.items[0]!.position).toBe(10);
+    expect(data.loopHead).toMatchObject({
+      position: 4,
+      trackId: firstPlayable,
+      targetBpm: 124,
+      targetKey: 'A minor',
+      styleRevision: 1,
+      assets: {
+        final: `/api/audio/${firstPlayable}?asset=final`,
+        stream: `/api/audio/${firstPlayable}?asset=stream`,
+      },
+    });
+    expect(data.loopHead?.track?.id).toBe(firstPlayable);
+  });
+
+  it('carries no loop head when the read leaves nothing out', async () => {
+    const base = await seedSession();
+    for (let position = 0; position < 5; position += 1) await seedQueuedTrack(base, position);
+
+    const data = await callQueue(base.sessionId);
+    expect(data.earlierTracks).toBe(0);
+    expect(data.loopHead).toBeUndefined();
+  });
+
+  it('carries no loop head when every slot the window leaves out is unplayable', async () => {
+    const base = await seedSession();
+    for (let position = 0; position < 3; position += 1) {
+      await createQueueItem(testDb.db, {
+        activitySessionId: base.sessionId,
+        position,
+        state: 'failed',
+      });
+    }
+    for (let position = 3; position < 33; position += 1) await seedQueuedTrack(base, position);
+    const currentId = await createQueueItem(testDb.db, {
+      activitySessionId: base.sessionId,
+      position: 33,
+      state: 'playing',
+    });
+    await testDb.pool.query(
+      `update activity_sessions set current_queue_item_id = $1 where id = $2`,
+      [currentId, base.sessionId],
+    );
+
+    const data = await callQueue(base.sessionId);
+    // The window's first Track is already the Session's first playable one.
+    expect(data.items[0]!.position).toBe(3);
+    expect(data.loopHead).toBeUndefined();
+  });
+
   it('projects the current vibe facets (and the stored intent) for the Change Vibe overlay', async () => {
     const ownerUserId = await createUser(testDb.db);
     holder.ownerUserId = ownerUserId;

@@ -632,6 +632,10 @@ export const getSessionQueueResponseSchema = apiResponse(
     // the player adds them to its Track numbering.
     earlierTracks: z.number().int().nonnegative(),
     items: z.array(queueItemSchema),
+    // The Session's first playable slot, present only while the window leaves
+    // it out: ordered play wraps from the last Track to it, so a long Session
+    // repeats whole. Absent when `items` already starts the Session.
+    loopHead: queueItemSchema.optional(),
     // Tracks on the way from in-flight provider jobs that have not shown up as
     // queue slots yet (buffer top-ups, Dislike rerolls, Change Vibe fills) —
     // the band's honest generating count. In TRACKS, never provider calls.

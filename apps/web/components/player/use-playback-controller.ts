@@ -108,6 +108,27 @@ function reportedDeviceMemoryGb(): number | null {
   return typeof deviceMemory === 'number' ? deviceMemory : null;
 }
 
+/** The loop head, unless the projection already holds it. */
+function leadingLoopHead(
+  loopHead: PlayableTrack | null,
+  tracks: readonly PlayableTrack[],
+): PlayableTrack | null {
+  if (!loopHead || tracks.some((track) => track.queueItemId === loopHead.queueItemId)) return null;
+  return loopHead;
+}
+
+/** Whether the projection opens with the loop head (a local removal can take it out). */
+function loopHeadLeads(tracks: readonly PlayableTrack[], loopHeadId: string | null): boolean {
+  return loopHeadId != null && tracks[0]?.queueItemId === loopHeadId;
+}
+
+/** A projection index as a Track number of the whole Session: the Tracks the
+ * read window left out count before the window, after a leading loop head. */
+function sessionTrackNumber(index: number, earlierTracks: number, headLeads: boolean): number {
+  if (!headLeads) return earlierTracks + index + 1;
+  return index === 0 ? 1 : earlierTracks + index;
+}
+
 /** The sources a Track's deck load walks — what a failure condemns. */
 function sourceKeyOf(track: PlayableTrack): string {
   return `${track.assets.final ?? ''}|${track.assets.stream ?? ''}`;
@@ -139,6 +160,9 @@ export function usePlaybackController(
   // The playable projection of the Session Queue. Queue membership and normal
   // order are authoritative; alternate traversal modes remain client-local.
   const queueRef = useRef<PlayableTrack[]>([]);
+  // The Session's first Track when the read window left it out. It leads the
+  // projection, so every ordered wrap reaches it the way it reaches index 0.
+  const loopHeadRef = useRef<string | null>(null);
   const idxRef = useRef<number>(0);
   // Whether the stored resume position has been applied to `idxRef` yet — done once,
   // on the first non-empty queue load, so later polls never yank playback backwards.
@@ -609,6 +633,9 @@ export function usePlaybackController(
       while (idx != null && expired(queueRef.current[idx]!)) {
         idx = previousPlaylistIndex(queueRef.current, idx);
       }
+      // Back stays inside the window: the Tracks between the loop head and
+      // the window are not in hand.
+      if (idx === 0 && loopHeadLeads(queueRef.current, loopHeadRef.current)) return null;
       return idx;
     },
     [expired],
@@ -1571,7 +1598,9 @@ export function usePlaybackController(
   const applyQueueSnapshot = useCallback(
     (snapshot: PlaybackSourceSnapshot) => {
       const sessionSnapshot = snapshot.kind === 'session' ? snapshot : null;
-      let queueTracks = snapshot.tracks;
+      const loopHead = leadingLoopHead(sessionSnapshot?.loopHead ?? null, snapshot.tracks);
+      loopHeadRef.current = loopHead?.queueItemId ?? null;
+      let queueTracks = loopHead ? [loopHead, ...snapshot.tracks] : snapshot.tracks;
       const pinnedTrack =
         loopPinned() || sectionLoopRegion() ? deckTrackRef.current[activeDeckRef.current] : null;
       // A Queue item may remain authoritative while temporarily dropping out of
@@ -1629,10 +1658,16 @@ export function usePlaybackController(
       // non-empty queue load, start at the server's current item. Applied once
       // so subsequent polls don't reset a session that is already playing.
       if (!startIndexAppliedRef.current && queueTracks.length > 0) {
-        idxRef.current = resolveInitialPlaylistIndex(queueTracks, {
-          currentQueueItemId: snapshot.currentQueueItemId,
-          currentTrackId: snapshot.currentTrackId,
-        });
+        // Resolved inside the window; the loop head is only the wrap target.
+        const lead = loopHead ? 1 : 0;
+        idxRef.current = Math.min(
+          lead +
+            resolveInitialPlaylistIndex(snapshot.tracks, {
+              currentQueueItemId: snapshot.currentQueueItemId,
+              currentTrackId: snapshot.currentTrackId,
+            }),
+          queueTracks.length - 1,
+        );
         startIndexAppliedRef.current = true;
       } else {
         // Each poll replaces the projection, and removals (e.g. dislike) shift
@@ -1972,10 +2007,12 @@ export function usePlaybackController(
     const currentIndex = queueRef.current.findIndex(
       (t) => t.queueItemId === state.currentTrack?.queueItemId,
     );
+    const headLeads = loopHeadLeads(queueRef.current, loopHeadRef.current);
     return {
       ...state,
-      currentTrackNumber: currentIndex >= 0 ? state.earlierTracks + currentIndex + 1 : null,
-      trackCount: state.earlierTracks + state.queueLength,
+      currentTrackNumber:
+        currentIndex >= 0 ? sessionTrackNumber(currentIndex, state.earlierTracks, headLeads) : null,
+      trackCount: state.earlierTracks + state.queueLength - (headLeads ? 1 : 0),
       deckARef,
       deckBRef,
       play,

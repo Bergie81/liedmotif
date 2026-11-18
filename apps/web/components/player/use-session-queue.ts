@@ -40,6 +40,9 @@ export interface SessionQueueSnapshot {
   items: QueueItem[];
   /** Playable Tracks the server's read window elided before `tracks`. */
   earlierTracks: number;
+  /** The Session's first playable Track when the read window left it out:
+   *  ordered play wraps from the last Track to it. Absent or null otherwise. */
+  loopHead?: PlayableTrack | null;
   /** Every authoritative Queue item id, including slots that cannot currently
    *  enter the playable projection because their source is unavailable. */
   queueItemIds: ReadonlySet<string>;
@@ -75,36 +78,39 @@ function playableTracks(
   data: QueueData,
   isLocallyRemoved: (queueItemId: string) => boolean,
 ): PlayableTrack[] {
-  return data.items.flatMap((item) => {
-    const track = item.track;
-    if (!track || isLocallyRemoved(item.id)) return [];
-    if (!item.assets.final && !item.assets.stream) return [];
-    return [
-      {
-        queueItemId: item.id,
-        trackId: item.trackId ?? track.id,
-        queueState: item.state,
-        vibeSwitchSetAside: item.vibeSwitchSetAside,
-        title: track.title,
-        artist: track.generatedArtistName,
-        originSessionTitle: null,
-        durationSeconds: item.durationSeconds ?? track.durationSeconds,
-        coverImageId: track.coverImageId,
-        savedAt: track.savedAt,
-        inCuratedPlaylist: track.inCuratedPlaylist,
-        favoritedAt: track.favoritedAt,
-        genreTags: track.genreTags,
-        vocalMode: track.vocalMode,
-        hasLyrics: track.hasLyrics,
-        downloadable: track.downloadable,
-        assets: item.assets,
-        styleRevision: item.styleRevision,
-        targetBpm: item.targetBpm,
-        targetKey: item.targetKey,
-        blendAnalysis: item.blendAnalysis,
-      },
-    ];
-  });
+  return data.items.flatMap((item) => playableTrack(item, isLocallyRemoved) ?? []);
+}
+
+function playableTrack(
+  item: QueueItem,
+  isLocallyRemoved: (queueItemId: string) => boolean,
+): PlayableTrack | null {
+  const track = item.track;
+  if (!track || isLocallyRemoved(item.id)) return null;
+  if (!item.assets.final && !item.assets.stream) return null;
+  return {
+    queueItemId: item.id,
+    trackId: item.trackId ?? track.id,
+    queueState: item.state,
+    vibeSwitchSetAside: item.vibeSwitchSetAside,
+    title: track.title,
+    artist: track.generatedArtistName,
+    originSessionTitle: null,
+    durationSeconds: item.durationSeconds ?? track.durationSeconds,
+    coverImageId: track.coverImageId,
+    savedAt: track.savedAt,
+    inCuratedPlaylist: track.inCuratedPlaylist,
+    favoritedAt: track.favoritedAt,
+    genreTags: track.genreTags,
+    vocalMode: track.vocalMode,
+    hasLyrics: track.hasLyrics,
+    downloadable: track.downloadable,
+    assets: item.assets,
+    styleRevision: item.styleRevision,
+    targetBpm: item.targetBpm,
+    targetKey: item.targetKey,
+    blendAnalysis: item.blendAnalysis,
+  };
 }
 
 function sessionQueueSnapshot(
@@ -121,6 +127,7 @@ function sessionQueueSnapshot(
     tracks,
     items: data.items.filter((item) => !isLocallyRemoved(item.id)),
     earlierTracks: data.earlierTracks,
+    loopHead: data.loopHead ? playableTrack(data.loopHead, isLocallyRemoved) : null,
     queueItemIds: new Set(data.items.map((item) => item.id)),
     currentQueueItemId: data.currentQueueItemId,
     currentTrackId: data.currentTrackId,

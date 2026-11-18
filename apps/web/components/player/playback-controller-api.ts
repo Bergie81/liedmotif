@@ -116,8 +116,9 @@ export interface PlaybackControllerState {
   sessionCoverImageId: string | null;
   queueLength: number;
   /** Playable Tracks the Session's windowed queue read elided ahead of the
-   *  projection — they count before it in the Track numbering. 0 for a
-   *  Playlist, which is read whole. */
+   *  window — they count before it in the Track numbering. The loop head, when
+   *  it leads the projection, is one of them. 0 for a Playlist, which is read
+   *  whole. */
   earlierTracks: number;
   /** Queue item ids in the live playable projection. */
   playableQueueItemIds: string[];

@@ -223,6 +223,10 @@ export interface SessionQueueView {
   /** The elided slots the player's projection would hold (a pinned source, still
    * in the Session): the offset that numbers Tracks across the whole Session. */
   earlierTracks: number;
+  /** The Session's first playable slot (still in the Session, with a pinned
+   * final or stream source) when the window leaves it out; null when `items`
+   * already starts the Session. Ordered play wraps to it. */
+  loopHead: SessionQueueItemRecord | null;
   /** Null once any queue item carries a playable source (or no job exists). */
   pendingGeneration: SessionQueuePendingGeneration | null;
   /** What the session's in-flight provider work still owes the listener, in
@@ -264,9 +268,10 @@ const slotStillInSession = and(
  * whether to expose an app-routed audio path (provider URLs never reach the client).
  *
  * The read is WINDOWED: the last `PLAYED_WINDOW_SLOTS` slots before the anchor
- * plus everything from it forward; older slots collapse into `earlier`. The
- * anchor is the current item, or the first unconsumed slot when the session
- * carries no current item (see `anchorPosition`).
+ * plus everything from it forward; older slots collapse into `earlier`, and the
+ * first playable of them rides along as `loopHead`. The anchor is the current
+ * item, or the first unconsumed slot when the session carries no current item
+ * (see `anchorPosition`).
  */
 export async function getSessionQueue(
   db: Database,
@@ -310,7 +315,62 @@ export async function getSessionQueue(
     session.currentQueueItemId,
   );
 
-  const rows = await db
+  const sessionSlots = and(
+    eq(activitySessionQueueItems.activitySessionId, args.sessionId),
+    slotStillInSession,
+  );
+  const items = await selectQueueItems(
+    db,
+    windowStartPosition == null
+      ? sessionSlots
+      : and(sessionSlots, gte(activitySessionQueueItems.position, windowStartPosition)),
+  );
+  const [loopHead = null] =
+    windowStartPosition == null
+      ? []
+      : await selectQueueItems(
+          db,
+          and(
+            sessionSlots,
+            lt(activitySessionQueueItems.position, windowStartPosition),
+            slotHasPinnedSource,
+          ),
+          1,
+        );
+
+  // Cold start only: while NO item carries a playable source, fetch the
+  // session's latest provider job so the player can narrate what is happening.
+  // The same predicate the client projection plays from (a pinned final or
+  // stream asset), so the signal disappears exactly when playback can begin.
+  const hasPlayable = items.some(
+    (item) =>
+      item.track &&
+      item.track.status !== 'failed' &&
+      (item.track.hasFinalAsset || item.track.hasStreamAsset),
+  );
+  const pendingGeneration = hasPlayable
+    ? null
+    : await latestProviderJobState(db, args.sessionId, args.phantomSubmitCutoff);
+  return {
+    session,
+    items,
+    earlier,
+    earlierTracks,
+    loopHead,
+    pendingGeneration,
+    generatingTracksAhead,
+    generatingNewVibeTracksAhead,
+  };
+}
+
+/** The Queue slots `where` selects, in play order, each with its Track resolved
+ * for the player. Reads `tracks`, so `where` may use `slotStillInSession`. */
+async function selectQueueItems(
+  db: Database,
+  where: SQL | undefined,
+  limit?: number,
+): Promise<SessionQueueItemRecord[]> {
+  const query = db
     .select({
       id: activitySessionQueueItems.id,
       position: activitySessionQueueItems.position,
@@ -348,18 +408,10 @@ export async function getSessionQueue(
     .from(activitySessionQueueItems)
     .leftJoin(tracks, eq(activitySessionQueueItems.trackId, tracks.id))
     .leftJoin(generationRequests, queueItemRequestEdge())
-    .where(
-      and(
-        eq(activitySessionQueueItems.activitySessionId, args.sessionId),
-        slotStillInSession,
-        windowStartPosition == null
-          ? undefined
-          : gte(activitySessionQueueItems.position, windowStartPosition),
-      ),
-    )
+    .where(where)
     .orderBy(asc(activitySessionQueueItems.position));
-
-  const items: SessionQueueItemRecord[] = rows.map((row) => ({
+  const rows = await (limit == null ? query : query.limit(limit));
+  return rows.map((row) => ({
     id: row.id,
     position: row.position,
     state: row.state,
@@ -403,29 +455,6 @@ export async function getSessionQueue(
     targetKey: row.targetKey,
     styleRevision: row.styleRevision,
   }));
-
-  // Cold start only: while NO item carries a playable source, fetch the
-  // session's latest provider job so the player can narrate what is happening.
-  // The same predicate the client projection plays from (a pinned final or
-  // stream asset), so the signal disappears exactly when playback can begin.
-  const hasPlayable = items.some(
-    (item) =>
-      item.track &&
-      item.track.status !== 'failed' &&
-      (item.track.hasFinalAsset || item.track.hasStreamAsset),
-  );
-  const pendingGeneration = hasPlayable
-    ? null
-    : await latestProviderJobState(db, args.sessionId, args.phantomSubmitCutoff);
-  return {
-    session,
-    items,
-    earlier,
-    earlierTracks,
-    pendingGeneration,
-    generatingTracksAhead,
-    generatingNewVibeTracksAhead,
-  };
 }
 
 /** The live queue-item states as a parameterized SQL list (from the shared bucket). */

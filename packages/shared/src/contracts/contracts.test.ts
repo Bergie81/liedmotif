@@ -603,6 +603,43 @@ describe('diagnostics & queue expose generation-controller state', () => {
     ).toBe(false);
   });
 
+  it('getSessionQueue carries an optional loop head shaped like a queue item', () => {
+    const withStatus = {
+      ...queueData,
+      generationStatus: 'ok',
+      generationStatusScope: null,
+      statusMessageSafe: null,
+    };
+    const loopHead = {
+      id: UUID,
+      position: 0,
+      state: 'played',
+      vibeSwitchSetAside: false,
+      trackId: null,
+      track: null,
+      targetBpm: 124,
+      targetKey: 'A minor',
+      styleRevision: 1,
+      durationSeconds: 180,
+      assets: { final: `/api/audio/${UUID}?asset=final`, stream: null },
+      blendAnalysis: null,
+    };
+    expect(
+      getSessionQueueResponseSchema.safeParse({ ok: true, data: { ...withStatus, loopHead } })
+        .success,
+    ).toBe(true);
+    // Absent when the read left nothing out.
+    expect(getSessionQueueResponseSchema.safeParse({ ok: true, data: withStatus }).success).toBe(
+      true,
+    );
+    expect(
+      getSessionQueueResponseSchema.safeParse({
+        ok: true,
+        data: { ...withStatus, loopHead: { ...loopHead, assets: undefined } },
+      }).success,
+    ).toBe(false);
+  });
+
   it('getSessionQueue requires the session-level styleRevision (the loop pin watches it)', () => {
     const { styleRevision: _dropped, ...withoutRevision } = queueData;
     expect(

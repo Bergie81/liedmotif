@@ -11,6 +11,7 @@ import {
   getSessionQueue,
   getUsageLimits,
   type QueueSessionRecord,
+  type SessionQueueItemRecord,
   type SessionQueuePendingGeneration,
   type SessionQueueTrack,
   type SessionQueueView,
@@ -26,6 +27,7 @@ import {
   structuredControlsSchema,
   toBlendAnalysis,
   type PendingGeneration,
+  type QueueItem,
   type SessionVibe,
 } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
@@ -48,6 +50,30 @@ function toQueueItemAssets(track: SessionQueueTrack | null) {
   return {
     final: track?.hasFinalAsset ? `/api/audio/${track.id}?asset=final` : null,
     stream: track?.hasStreamAsset ? `/api/audio/${track.id}?asset=stream` : null,
+  };
+}
+
+function toQueueItem(item: SessionQueueItemRecord): QueueItem {
+  return {
+    id: item.id,
+    position: item.position,
+    state: item.state,
+    vibeSwitchSetAside: item.vibeSwitchSetAside,
+    trackId: item.trackId,
+    // The queue exposes audio on asset presence alone: its items resolve
+    // per-source pins (`toQueueItemAssets`), unlike the library's
+    // status-gated single URL.
+    track: item.track ? toTrackSummary(item.track, { assetPresenceOnly: true }) : null,
+    // Generation-time blend identity from the slot's request; null on
+    // legacy/pre-plan requests (a null identity always forces a plain edge).
+    targetBpm: item.targetBpm,
+    targetKey: item.targetKey,
+    styleRevision: item.styleRevision,
+    durationSeconds: item.track?.durationSeconds ?? null,
+    assets: toQueueItemAssets(item.track),
+    // Stale analyzer versions are suppressed here (`toBlendAnalysis` returns
+    // null below the current version) — the client never mixes versions.
+    blendAnalysis: item.track ? toBlendAnalysis(item.track.analysis) : null,
   };
 }
 
@@ -169,27 +195,8 @@ export async function GET(request: Request) {
     currentQueueItemId: view.session.currentQueueItemId,
     // Playable Tracks the windowed read elided before `items`.
     earlierTracks: view.earlierTracks,
-    items: view.items.map((item) => ({
-      id: item.id,
-      position: item.position,
-      state: item.state,
-      vibeSwitchSetAside: item.vibeSwitchSetAside,
-      trackId: item.trackId,
-      // The queue exposes audio on asset presence alone: its items resolve
-      // per-source pins (`toQueueItemAssets`), unlike the library's
-      // status-gated single URL.
-      track: item.track ? toTrackSummary(item.track, { assetPresenceOnly: true }) : null,
-      // Generation-time blend identity from the slot's request; null on
-      // legacy/pre-plan requests (a null identity always forces a plain edge).
-      targetBpm: item.targetBpm,
-      targetKey: item.targetKey,
-      styleRevision: item.styleRevision,
-      durationSeconds: item.track?.durationSeconds ?? null,
-      assets: toQueueItemAssets(item.track),
-      // Stale analyzer versions are suppressed here (`toBlendAnalysis` returns
-      // null below the current version) — the client never mixes versions.
-      blendAnalysis: item.track ? toBlendAnalysis(item.track.analysis) : null,
-    })),
+    items: view.items.map(toQueueItem),
+    ...(view.loopHead ? { loopHead: toQueueItem(view.loopHead) } : {}),
     // What the session's in-flight provider work still owes, in Tracks: the
     // player's "Generating" count, and the part of it carrying the live revision.
     generatingTracksAhead: view.generatingTracksAhead,
