@@ -55,18 +55,19 @@ async function storeSessionCover(
   const processed = await processCoverUpload(upload.bytes);
   if (!processed) return apiError('validation_error', 'The file could not be read as an image.');
 
-  const coverImageId = await storeUploadedCover({
+  const stored = await storeUploadedCover({
     ownerUserId,
     processed,
     recordStored,
-    register: async (cover) =>
-      (await addUploadedSessionCover(db, {
+    register: (cover) =>
+      addUploadedSessionCover(db, {
         ownerUserId,
         activitySessionId: session.id,
         maxHistory: MAX_SESSION_COVER_HISTORY,
         ...cover,
-      })) === 'added',
+      }),
+    kept: 'added',
   });
-  if (!coverImageId) return apiError('limit_reached', SESSION_FULL_MESSAGE);
-  return apiOk({ coverImageId });
+  if ('refused' in stored) return apiError('limit_reached', SESSION_FULL_MESSAGE);
+  return apiOk({ coverImageId: stored.coverImageId });
 }

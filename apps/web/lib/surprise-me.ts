@@ -49,11 +49,10 @@ import { getLlmProvider } from '@/lib/providers';
 import { sessionCreateLimiter } from './request-limits';
 import {
   deriveSnapshotForIntentSafe,
-  evaluateSessionHeadroom,
-  headroomRefusalMessage,
   nameSessionSnapshot,
-  newMusicPausedRefusal,
+  sessionCreationRefusal,
   startingSessionMode,
+  type SessionCreationRefusal,
 } from './sessions';
 import { planSurprise, type SurprisePlan } from './surprise-me-plan';
 
@@ -86,7 +85,8 @@ export async function loadPendingSurprise(
 
 export type ProposeSurpriseResult =
   | { ok: true; proposal: SurpriseProposal }
-  | { ok: false; reason: 'paused' | 'headroom_blocked' | 'provider_error'; message: string }
+  | ({ ok: false; reason: 'refused' } & SessionCreationRefusal)
+  | { ok: false; reason: 'provider_error'; message: string }
   /** The tab's proposal is no longer the pending one; `retryable` when only the context moved. */
   | { ok: false; reason: 'stale'; message: string; retryable: boolean }
   | { ok: false; reason: 'busy' }
@@ -118,18 +118,10 @@ async function surpriseListener(
   return { ...(general ?? {}), about: self.about };
 }
 
-/** Start Session's gates: proposing and starting both refuse while new music
- * is paused, or without headroom. */
+/** Start Session's gates: proposing and starting both refuse as it would. */
 async function creationRefusal(db: Database, ownerUserId: string) {
-  const paused = await newMusicPausedRefusal(db, ownerUserId);
-  if (paused) return { ok: false as const, reason: 'paused' as const, message: paused };
-  const headroom = await evaluateSessionHeadroom(db, ownerUserId);
-  if (headroom.allowed) return null;
-  return {
-    ok: false as const,
-    reason: 'headroom_blocked' as const,
-    message: await headroomRefusalMessage(db, headroom),
-  };
+  const refusal = await sessionCreationRefusal(db, ownerUserId);
+  return refusal && { ok: false as const, reason: 'refused' as const, ...refusal };
 }
 
 export async function proposeSurprise(
@@ -285,7 +277,8 @@ export async function proposeSurprise(
 
 export type StartSurpriseResult =
   | ({ ok: true } & CreateSessionResult)
-  | { ok: false; reason: 'paused' | 'headroom_blocked' | 'not_pending'; message: string }
+  | ({ ok: false; reason: 'refused' } & SessionCreationRefusal)
+  | { ok: false; reason: 'not_pending'; message: string }
   | { ok: false; reason: 'rate_limited'; retryAfterMs: number };
 
 const NOT_PENDING_MESSAGE = 'This suggestion is no longer available. Ask for a new one.';

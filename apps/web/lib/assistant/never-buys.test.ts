@@ -68,7 +68,6 @@ const SERVER_CALLS = [
   'closestNames',
   'DOCS_BASE_URL',
   'evaluateGenerationBudget',
-  'evaluateSessionHeadroom',
   'getActiveSession',
   'getAdminCoverUsage',
   'getAssistantTone',
@@ -95,6 +94,7 @@ const SERVER_CALLS = [
   'searchPlaylists',
   'searchSessions',
   'searchTracks',
+  'sessionCreationRefusal',
   'startingSessionMode',
   'toPlaylistMemberItem',
   // Library writes: they add, rename and pin. A Session or Track rename also

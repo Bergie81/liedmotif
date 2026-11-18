@@ -47,10 +47,8 @@ export async function POST(request: Request) {
   });
   if (result.ok) return apiOk({ proposal: result.proposal });
   switch (result.reason) {
-    case 'paused':
-      return apiError('new_music_paused', result.message);
-    case 'headroom_blocked':
-      return apiError('session_headroom_blocked', result.message);
+    case 'refused':
+      return apiError(result.code, result.message);
     case 'provider_error':
       return apiError('provider_error', result.message, { retryable: true });
     case 'stale':

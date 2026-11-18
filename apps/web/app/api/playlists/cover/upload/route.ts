@@ -8,7 +8,7 @@
 // MAX_PLAYLIST_COVER_HISTORY slots, like a generated cover.
 
 import { NextResponse } from 'next/server';
-import { setUploadedPlaylistCover, type SetUploadedPlaylistCoverResult } from '@liedmotif/db';
+import { setUploadedPlaylistCover } from '@liedmotif/db';
 import { MAX_PLAYLIST_COVER_HISTORY, uuidSchema } from '@liedmotif/shared';
 import { apiError, apiOk, requireOwnerId } from '@/lib/api-response';
 import { processCoverUpload, storeUploadedCover } from '@/lib/cover-upload-image';
@@ -47,23 +47,21 @@ async function storePlaylistCover(
   const processed = await processCoverUpload(upload.bytes);
   if (!processed) return apiError('validation_error', 'The file could not be read as an image.');
 
-  let outcome = 'not_found' as SetUploadedPlaylistCoverResult;
-  const coverImageId = await storeUploadedCover({
+  const stored = await storeUploadedCover({
     ownerUserId,
     processed,
     recordStored,
-    register: async (cover) => {
-      outcome = await setUploadedPlaylistCover(getDb(), {
+    register: (cover) =>
+      setUploadedPlaylistCover(getDb(), {
         ownerUserId,
         playlistId: playlistId.data,
         maxHistory: MAX_PLAYLIST_COVER_HISTORY,
         ...cover,
-      });
-      return outcome === 'applied';
-    },
+      }),
+    kept: 'applied',
   });
-  if (coverImageId) return apiOk({ coverImageId });
-  return outcome === 'history_full'
+  if (!('refused' in stored)) return apiOk({ coverImageId: stored.coverImageId });
+  return stored.refused === 'history_full'
     ? apiError('limit_reached', PLAYLIST_FULL_MESSAGE)
     : apiError('not_found', 'Playlist not found.');
 }

@@ -660,6 +660,30 @@ export async function newMusicPausedRefusal(
   return newMusicPausedMessage({ role: 'member', adminName: await getAdminDisplayName(db) });
 }
 
+/** A refused new Session: the API error it answers with, and the words the requester sees. */
+export interface SessionCreationRefusal {
+  code: 'new_music_paused' | 'session_headroom_blocked';
+  message: string;
+}
+
+/**
+ * Why a new Session would be refused right now, whichever door starts it
+ * (Start Session, More Like This, Surprise Me, the Assistant's cards); null
+ * when it would not. Paused new music answers first, since a budget reset
+ * would not lift it, then the creation headroom. Free reads, nothing spent.
+ */
+export async function sessionCreationRefusal(
+  db: Database,
+  ownerUserId: string,
+): Promise<SessionCreationRefusal | null> {
+  const limits = await getUsageLimits(db);
+  const paused = await newMusicPausedRefusal(db, ownerUserId, limits);
+  if (paused) return { code: 'new_music_paused', message: paused };
+  const headroom = await evaluateSessionHeadroom(db, ownerUserId, undefined, limits);
+  if (headroom.allowed) return null;
+  return { code: 'session_headroom_blocked', message: await headroomRefusalMessage(db, headroom) };
+}
+
 /** Map a `SessionRecord` to the contract `sessionSummarySchema` payload. */
 export function toSessionSummary(session: SessionRecord): SessionSummary {
   return {

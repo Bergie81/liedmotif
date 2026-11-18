@@ -6,17 +6,15 @@
 // check like Start Session: below the threshold NO session row is created.
 
 import { NextResponse } from 'next/server';
-import { createSession, getCoverArtSettings, getSeedSnapshot, getUsageLimits } from '@liedmotif/db';
+import { createSession, getCoverArtSettings, getSeedSnapshot } from '@liedmotif/db';
 import { moreLikeThisRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
 import { apiError, apiOk, apiRateLimited, parseJsonBody, requireOwnerId } from '@/lib/api-response';
 import { sessionCreateLimiter } from '@/lib/request-limits';
 import {
   deriveSnapshotForIntent,
-  evaluateSessionHeadroom,
-  headroomRefusalMessage,
   nameSeededSnapshot,
-  newMusicPausedRefusal,
+  sessionCreationRefusal,
   startingSessionMode,
   stripPersonalIngredients,
   toSessionSummary,
@@ -45,13 +43,8 @@ export async function POST(request: Request) {
 
   const db = getDb();
 
-  const usageLimits = await getUsageLimits(db);
-  const paused = await newMusicPausedRefusal(db, ownerUserId, usageLimits);
-  if (paused) return apiError('new_music_paused', paused);
-  const headroom = await evaluateSessionHeadroom(db, ownerUserId, undefined, usageLimits);
-  if (!headroom.allowed) {
-    return apiError('session_headroom_blocked', await headroomRefusalMessage(db, headroom));
-  }
+  const refusal = await sessionCreationRefusal(db, ownerUserId);
+  if (refusal) return apiError(refusal.code, refusal.message);
 
   // Resolve the seed track's frozen Style Snapshot (the style that made it) in
   // the one widened READ scope: the caller's own tracks, or

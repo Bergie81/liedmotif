@@ -35,13 +35,14 @@ export async function processCoverUpload(input: Uint8Array): Promise<ProcessedCo
 
 /**
  * Write processed cover bytes and register them, in that order, and answer with
- * the new `coverImageId` — or null when `register` refused. Registration is the
- * caller's, since Sessions and Playlists admit an upload on different terms; the
- * compensation is owned here, so a registration that refuses or throws never
- * leaves the stored object behind. A registered cover reports its size to the
- * storage admission, since only a kept cover occupies the quota.
+ * the new `coverImageId` when `register` answers `kept`, or with the outcome it
+ * refused with. Registration is the caller's, since Sessions and Playlists admit
+ * an upload on different terms; the compensation is owned here, so a
+ * registration that refuses or throws never leaves the stored object behind. A
+ * registered cover reports its size to the storage admission, since only a kept
+ * cover occupies the quota.
  */
-export async function storeUploadedCover(args: {
+export async function storeUploadedCover<Outcome extends string>(args: {
   ownerUserId: string;
   processed: ProcessedCoverImage;
   recordStored: RecordStoredBytes;
@@ -50,8 +51,10 @@ export async function storeUploadedCover(args: {
     storageProvider: string;
     storageKey: string;
     byteSize: number;
-  }) => Promise<boolean>;
-}): Promise<string | null> {
+  }) => Promise<Outcome>;
+  /** The outcome that keeps the cover; any other deletes the written bytes. */
+  kept: NoInfer<Outcome>;
+}): Promise<{ coverImageId: string } | { refused: Outcome }> {
   const storage = getStorageProvider();
   const coverImageId = randomUUID();
   const storageKey = storageKeys.uploadedCover(args.ownerUserId, coverImageId, 'webp');
@@ -61,17 +64,17 @@ export async function storeUploadedCover(args: {
     mimeType: args.processed.mediaType,
   });
 
-  let registered = false;
+  let outcome: Outcome | null = null;
   try {
-    registered = await args.register({
+    outcome = await args.register({
       coverImageId,
       storageProvider: storage.providerKey,
       storageKey,
       byteSize: stat.byteSize,
     });
   } finally {
-    if (registered) args.recordStored(stat.byteSize);
+    if (outcome === args.kept) args.recordStored(stat.byteSize);
     else await storage.delete(storageKey).catch(() => undefined);
   }
-  return registered ? coverImageId : null;
+  return outcome === args.kept ? { coverImageId } : { refused: outcome };
 }

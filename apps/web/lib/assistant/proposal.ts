@@ -8,9 +8,9 @@ import { getCoverArtSettings } from '@liedmotif/db';
 import type { AssistantCard } from '@liedmotif/shared';
 import {
   evaluateGenerationBudget,
-  evaluateSessionHeadroom,
   headroomRefusalMessage,
   newMusicPausedRefusal,
+  sessionCreationRefusal,
 } from '@/lib/sessions';
 import { cardCost, cardNote } from './card-note';
 import type { AssistantAsker } from './tools';
@@ -36,10 +36,7 @@ export const notOffered = (why: string): ActionOutcome<'proposed'> => ({
  * not. The same gates that route applies, read and never spent.
  */
 export async function newSessionRefusal({ db, userId }: AssistantAsker): Promise<string | null> {
-  const paused = await newMusicPausedRefusal(db, userId);
-  if (paused) return paused;
-  const headroom = await evaluateSessionHeadroom(db, userId);
-  return headroom.allowed ? null : headroomRefusalMessage(db, headroom);
+  return (await sessionCreationRefusal(db, userId))?.message ?? null;
 }
 
 /**

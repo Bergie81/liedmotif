@@ -10,7 +10,7 @@
 // keys never reach the client; all provider work is server-side.
 
 import { NextResponse } from 'next/server';
-import { createSession, getCoverArtSettings, getUsageLimits } from '@liedmotif/db';
+import { createSession, getCoverArtSettings } from '@liedmotif/db';
 import { listSessionsRequestSchema, startSessionRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
 import {
@@ -25,10 +25,8 @@ import {
 import { sessionCreateLimiter } from '@/lib/request-limits';
 import {
   deriveNamedSnapshotForIntent,
-  evaluateSessionHeadroom,
-  headroomRefusalMessage,
   loadSessionList,
-  newMusicPausedRefusal,
+  sessionCreationRefusal,
   startingSessionMode,
   toSessionSummary,
 } from '@/lib/sessions';
@@ -58,19 +56,14 @@ export async function POST(request: Request) {
 
   // Gate FIRST so a blocked request creates no row and (for free text) spends no
   // LLM. Both gates are free reads with no data dependency, so they run together;
-  // headroom answers first when both would block.
-  const usageLimits = await getUsageLimits(db);
-  const paused = await newMusicPausedRefusal(db, ownerUserId, usageLimits);
-  if (paused) return apiError('new_music_paused', paused);
-  const [headroom, voiceBlocked] = await Promise.all([
-    evaluateSessionHeadroom(db, ownerUserId, undefined, usageLimits),
+  // the creation refusal answers first when both would block.
+  const [refusal, voiceBlocked] = await Promise.all([
+    sessionCreationRefusal(db, ownerUserId),
     // "Use my voice" is honored or rejected — never silently downgraded to
     // generic vocals.
     intentRequestsOwnVoice(input) ? ownVoiceBlockedMessage(db, ownerUserId) : null,
   ]);
-  if (!headroom.allowed) {
-    return apiError('session_headroom_blocked', await headroomRefusalMessage(db, headroom));
-  }
+  if (refusal) return apiError(refusal.code, refusal.message);
   if (voiceBlocked) return apiError('validation_error', voiceBlocked);
 
   // The last gate, and the only one that meters the text LLM: the budget windows
