@@ -50,6 +50,7 @@ import { listPinnedSessions, listResumableSessions } from './session-list-repo';
 import { getSessionQueue } from './queue-view-repo';
 import { listSessionTracks } from './session-tracks-repo';
 import { getLibraryTracks, rejectDislikedTrack } from './feedback-repo';
+import { searchTracks } from '../search/search-repo';
 import { setSessionPinned } from './session-pin-repo';
 import { deleteTrack } from './delete-track-repo';
 import { countInFlightSessionJobs, countReadyAheadTracks } from './sessions-repo';
@@ -416,7 +417,7 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
       const result = await deleteSession(ctx.db, { ownerUserId, sessionId });
       expect(result).toEqual({ ok: true, id: sessionId, deferred: false, evictedTrackCount: 1 });
 
-      // The session identity is gone: row, queue items, playback events.
+      // The session identity is gone: row and queue items.
       const [session] = await ctx.db
         .select()
         .from(activitySessions)
@@ -428,12 +429,20 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
           .from(activitySessionQueueItems)
           .where(eq(activitySessionQueueItems.activitySessionId, sessionId)),
       ).toHaveLength(0);
-      expect(
-        await ctx.db
-          .select()
-          .from(playbackEvents)
-          .where(eq(playbackEvents.activitySessionId, sessionId)),
-      ).toHaveLength(0);
+
+      // Play history survives with the session edge severed.
+      const events = await ctx.db
+        .select()
+        .from(playbackEvents)
+        .where(eq(playbackEvents.trackId, trackId));
+      expect(events).toEqual([
+        expect.objectContaining({
+          activitySessionId: null,
+          ownerUserId,
+          trackId,
+          eventType: 'started',
+        }),
+      ]);
 
       // Spend accounting survives: the request row stays, session edge set null.
       const [request] = await ctx.db
@@ -479,6 +488,32 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
           .from(deletionQueueItems)
           .where(eq(deletionQueueItems.trackId, trackId)),
       ).toHaveLength(0);
+    });
+
+    it('a Saved Track still reads as played after its Session is deleted', async () => {
+      const { ownerUserId, sessionId, trackId } = await seedStoppedSessionWithTrack({});
+      const playlist = await createPlaylist(ctx.db, { ownerUserId, name: 'Keepers' });
+      await addPlaylistTracks(ctx.db, {
+        ownerUserId,
+        playlistId: playlist.id,
+        trackIds: [trackId],
+      });
+
+      await deleteSession(ctx.db, { ownerUserId, sessionId });
+
+      const library = await getLibraryTracks(ctx.db, { ownerUserId, view: 'saved', limit: 10 });
+      expect(library.items.map((t) => ({ id: t.id, hasPlayed: t.hasPlayed }))).toEqual([
+        { id: trackId, hasPlayed: true },
+      ]);
+      const search = await searchTracks(ctx.db, {
+        ownerUserId,
+        query: 'lofi',
+        limit: 10,
+        sort: 'relevance',
+      });
+      expect(search.items.map((t) => ({ id: t.id, hasPlayed: t.hasPlayed }))).toEqual([
+        { id: trackId, hasPlayed: true },
+      ]);
     });
 
     it('defers deletion for live Cover work and retains terminal spend after deletion', async () => {

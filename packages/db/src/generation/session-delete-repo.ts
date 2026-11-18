@@ -33,8 +33,10 @@ export type DeleteSessionResult =
   | { ok: false; reason: 'not_found' | 'active' };
 
 /**
- * Permanently delete a STOPPED session: the row, its queue items and playback
- * events (FK cascade). Refused while `active` (Stop is the lifecycle move).
+ * Permanently delete a STOPPED session: the row and its queue items (FK
+ * cascade). Its playback events stay with their session edge set null, so a
+ * kept Track still reads as played. Refused while `active` (Stop is the
+ * lifecycle move).
  * While provider jobs or a cover generation are in flight the delete is
  * deferred instead — a track or cover landing AFTER the delete would sever its
  * session edge with no remaining flow to reclaim its bytes — so the session is

@@ -50,9 +50,11 @@ export const playbackEvents = pgTable(
   {
     id: pk(),
     ownerUserId: ownerUserId(),
-    activitySessionId: uuid('activity_session_id')
-      .notNull()
-      .references(() => activitySessions.id, { onDelete: 'cascade' }),
+    // Set null, not cascade: a `started` row is the Track's play history
+    // (`hasPlayed`), which outlives the Session that played it.
+    activitySessionId: uuid('activity_session_id').references(() => activitySessions.id, {
+      onDelete: 'set null',
+    }),
     queueItemId: uuid('queue_item_id').references(() => activitySessionQueueItems.id, {
       onDelete: 'set null',
     }),
@@ -89,6 +91,8 @@ export const playbackEvents = pgTable(
     // Dedupe persisted events per session: a retried report with the same
     // client_event_id collides here and the insert is a no-op (ON CONFLICT DO
     // NOTHING). Scoped to the session because events are always queried by session.
+    // Rows orphaned by a Session delete hold NULL here and never collide (NULLs
+    // are distinct); they are closed events, nothing writes to them again.
     uniqueIndex('playback_events_session_client_event_id_uq').on(
       table.activitySessionId,
       table.clientEventId,

@@ -17,7 +17,7 @@
 //   readers and both ask the same one — "does a `started` row exist for this
 //   track?" (the Library's `hasPlayed` column and the Dislike reroll's
 //   unplayed-sibling probe) — so a `started` row still pointing at a track is
-//   kept at any age — including one pointing at a tombstoned (rejected or
+//   kept at any age, whether or not its Session still exists — including one pointing at a tombstoned (rejected or
 //   deleted) track, whose row is never removed. Everything else past the
 //   horizon is telemetry nothing reads: the ended/skipped/failed rows, and any
 //   row whose track is gone (`ON DELETE SET NULL` leaves it unreachable by
