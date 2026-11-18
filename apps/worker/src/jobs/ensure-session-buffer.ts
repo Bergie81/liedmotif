@@ -98,6 +98,7 @@ import {
   decideBufferAction,
   isFailedPaidBatch,
   isListenerActive,
+  isSpentSubmit,
   mapProviderBlockSignal,
   restartCountsAsListener,
   phantomSubmitCutoffAt,
@@ -595,28 +596,42 @@ export async function runEnsureSessionBuffer(
       }
     }
 
-    const hasPlayableTrack = () =>
-      hasPlayableSessionTrack(tx, { ownerUserId, sessionId: payload.sessionId });
+    // The latest batch that was paid or may have been paid: an unbilled refusal
+    // after it (a refused Try again) bought nothing and leaves the Session as
+    // stuck as it was.
+    const latestSpentJob =
+      latestJob === null || isSpentSubmit(latestJob)
+        ? latestJob
+        : await getLatestProviderJobState(tx, payload.sessionId, { spentOnly: true });
     // Only a failed paid batch with nothing in flight consults the playable
     // Tracks, so the extra read stays on the rare stuck-candidate tick.
     const stuck =
-      latestJob !== null &&
-      isFailedPaidBatch(latestJob) &&
+      latestSpentJob !== null &&
+      isFailedPaidBatch(latestSpentJob) &&
       inFlightSessionJobs === 0 &&
-      !(await hasPlayableTrack());
+      !(await hasPlayableSessionTrack(tx, { ownerUserId, sessionId: payload.sessionId }));
     // Paid top-ups only while someone is listening (or right after a restart,
     // so the cold-start prefill still runs before the first play). A Resume or
-    // Try again whose batch is in flight before anything plays waits for that
-    // audio; the playable read runs only on a tick where the restart alone is
-    // the listener.
+    // Try again that found nothing to play stands for one batch; once that
+    // batch is bought, the next waits for audio. The playable read runs only on
+    // a tick where the restart alone is the listener.
+    const restartIsListener = async (resumedAt: Date | null) =>
+      resumedAt === null ||
+      restartCountsAsListener({
+        resumed: true,
+        hadPlayableTrack: await hasPlayableSessionTrack(tx, {
+          ownerUserId,
+          sessionId: payload.sessionId,
+          createdBefore: resumedAt,
+        }),
+        boughtSinceRestart:
+          latestSpentJob !== null && latestSpentJob.createdAt.getTime() > resumedAt.getTime(),
+        inFlightJobs: inFlightSessionJobs,
+      });
     const listenerActive =
       isListenerActive(fresh, now) &&
       (isListenerActive(fresh, now, { restartsCount: false }) ||
-        restartCountsAsListener({
-          resumed: fresh.lastResumedAt !== null,
-          inFlightJobs: inFlightSessionJobs,
-          hasPlayableTrack: inFlightSessionJobs > 0 && (await hasPlayableTrack()),
-        }));
+        (await restartIsListener(fresh.lastResumedAt)));
 
     let duration: BufferDecisionInput['duration'];
     if (fresh.targetDurationMinutes != null) {

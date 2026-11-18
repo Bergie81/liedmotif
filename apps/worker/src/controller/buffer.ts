@@ -129,10 +129,11 @@ export interface BufferDecisionInput {
    */
   loopHeld: boolean;
   /**
-   * The Session has nothing to play and nothing coming: its latest request was
-   * paid or may have been paid and did not succeed (`isFailedPaidBatch`), no
-   * Track is playable, and nothing is in flight. Its failure must stay visible
-   * for as long as that holds, not only for the provider-error cooldown.
+   * The Session has nothing to play and nothing coming: its latest paid or
+   * possibly-paid batch did not succeed (`isFailedPaidBatch`), no Track is
+   * playable, and nothing is in flight. An unbilled refusal after that batch
+   * changes none of it. Its failure must stay visible for as long as that
+   * holds, not only for the provider-error cooldown.
    */
   stuck: boolean;
   /**
@@ -312,8 +313,13 @@ export function isFailedPaidBatch(job: {
   normalizedStatus: ProviderNormalizedStatus;
   submitState: string;
 }): boolean {
-  if (job.submitState === 'submit_rejected' || job.submitState === 'not_submitted') return false;
-  return job.normalizedStatus !== 'ready';
+  return isSpentSubmit(job) && job.normalizedStatus !== 'ready';
+}
+
+/** Whether a provider job was paid or may have been paid: it reached a submit
+ * that was not refused unbilled. */
+export function isSpentSubmit(job: { submitState: string }): boolean {
+  return job.submitState !== 'submit_rejected' && job.submitState !== 'not_submitted';
 }
 
 /**
@@ -348,17 +354,22 @@ export function isListenerActive(
 /**
  * Whether the Session's latest restart still counts as a listener. Start always
  * does: its window carries the cold-start prefill toward the ready-ahead
- * target. A Resume or Try again on a Session with nothing to play stands for
- * one batch: once that batch is in flight, a further paid attempt waits until
- * audio plays. This is what keeps a Try again labelled with one batch's Tracks
- * from topping up to a larger ready-ahead target before anything has played.
+ * target, and so does a Resume that found Tracks to play. A Resume or Try again
+ * on a Session with nothing to play stands for one batch: once that batch is
+ * bought, a further paid attempt waits until audio plays, also after the batch
+ * lands. This is what keeps a Try again labelled with one batch's Tracks from
+ * topping up to a larger ready-ahead target before anything has played.
  */
 export function restartCountsAsListener(state: {
   resumed: boolean;
+  /** A Track was playable before the restart. */
+  hadPlayableTrack: boolean;
+  /** A paid or possibly-paid batch was submitted after the restart. */
+  boughtSinceRestart: boolean;
   inFlightJobs: number;
-  hasPlayableTrack: boolean;
 }): boolean {
-  return !state.resumed || state.inFlightJobs === 0 || state.hasPlayableTrack;
+  if (!state.resumed || state.hadPlayableTrack) return true;
+  return !state.boughtSinceRestart && state.inFlightJobs === 0;
 }
 
 /**

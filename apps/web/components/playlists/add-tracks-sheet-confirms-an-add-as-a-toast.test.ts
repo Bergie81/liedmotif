@@ -114,3 +114,24 @@ describe('add tracks sheet — a landed add', () => {
     ]);
   });
 });
+
+describe('add tracks sheet — a failed Track', () => {
+  it('lists it with its notice and offers no way to pick it', async () => {
+    holder.tracks = [
+      ...tracks(1),
+      {
+        id: 'failed',
+        title: 'Lost',
+        coverImageId: null,
+        durationSeconds: 120,
+        status: 'failed',
+      } as LibraryTrackItem,
+    ];
+    openSheet();
+
+    const boxes = await screen.findAllByRole('checkbox');
+    const failed = boxes.find((box) => box.textContent?.includes('Lost'))!;
+    expect(failed.textContent).toContain('Could not be kept');
+    expect((failed as HTMLButtonElement).disabled).toBe(true);
+  });
+});

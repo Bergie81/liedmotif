@@ -1450,7 +1450,7 @@ describeIfDb('ensure-session-buffer controller', () => {
       generationRequestId: requestId,
       submitState: job.submitState ?? 'submitted',
       normalizedStatus: job.normalizedStatus,
-      createdAt: NOW,
+      createdAt: job.updatedAt ?? NOW,
       ...(job.providerTaskId !== undefined ? { providerTaskId: job.providerTaskId } : {}),
       ...(job.updatedAt ? { updatedAt: job.updatedAt } : {}),
     });
@@ -2140,6 +2140,87 @@ describeIfDb('ensure-session-buffer controller', () => {
       expect(calls()).toBe(0);
       expect(await statusMessage(sessionId)).toContain('Change Vibe');
     });
+
+    it('a retry batch that landed buys no top-up before audio plays', async () => {
+      const { ownerUserId, sessionId, calls, tick, tap } = await failedFirstBatch('keep_going');
+      await updateGenerationSettings(ctx.db, { ownerUserId, patch: { bufferAheadTracks: 6 } });
+      await tap();
+      const bought = await tick();
+      expect(bought.action).toBe('generate');
+
+      // The batch finishes inside the tap's listener window; nothing has played.
+      const [retryJob] = await ctx.db
+        .select()
+        .from(providerJobs)
+        .where(eq(providerJobs.id, bought.submittedProviderJobId!));
+      await ctx.db
+        .update(providerJobs)
+        .set({ normalizedStatus: 'ready' })
+        .where(eq(providerJobs.id, retryJob!.id));
+      await createTrack(ctx.db, {
+        ownerUserId,
+        generationRequestId: retryJob!.generationRequestId,
+        providerJobId: retryJob!.id,
+        status: 'ready',
+        audioStorageKey: 'audio/test/retry.mp3',
+      });
+      expect(await tick()).toMatchObject({ action: 'noop', generationStatus: 'ok' });
+      expect(calls()).toBe(1);
+
+      await ctx.db
+        .update(activitySessions)
+        .set({ lastPlaybackReportAt: NOW })
+        .where(eq(activitySessions.id, sessionId));
+      expect((await tick()).action).toBe('generate');
+      expect(calls()).toBe(2);
+    });
+
+    /** Move the Session's failed batch back to `at`, past its cooldown. */
+    async function failedBatchAt(sessionId: string, at: Date) {
+      await ctx.db
+        .update(providerJobs)
+        .set({ createdAt: at, updatedAt: at })
+        .where(
+          inArray(
+            providerJobs.generationRequestId,
+            ctx.db
+              .select({ id: generationRequests.id })
+              .from(generationRequests)
+              .where(eq(generationRequests.activitySessionId, sessionId)),
+          ),
+        );
+    }
+
+    it.each(['keep_going', 'repeat'] as const)(
+      'a refused retry leaves the Session stuck, and the next tap retries (%s)',
+      async (sessionMode) => {
+        const { ownerUserId, sessionId, calls, tick, tap } = await failedFirstBatch(sessionMode);
+        await failedBatchAt(sessionId, HOUR_BEFORE);
+        // The first tap's submit was refused unbilled, long enough ago that its
+        // own block is over.
+        await tap(new Date(NOW.getTime() - 50 * 60_000));
+        const refusedAt = new Date(NOW.getTime() - 45 * 60_000);
+        const refusedRequestId = await createGenerationRequest(ctx.db, {
+          ownerUserId,
+          activitySessionId: sessionId,
+          stylePrompt: COMPILED_STYLE,
+        });
+        await createProviderJob(ctx.db, {
+          generationRequestId: refusedRequestId,
+          submitState: 'submit_rejected',
+          normalizedStatus: 'failed_final',
+          createdAt: refusedAt,
+          updatedAt: refusedAt,
+        });
+
+        expect(await tick()).toMatchObject({ action: 'noop', generationStatus: 'provider_error' });
+        expect(calls()).toBe(0);
+
+        await tap();
+        expect((await tick()).action).toBe('generate');
+        expect(calls()).toBe(1);
+      },
+    );
 
     it('a tap re-opens a request the provider refused at submit (known behavior)', async () => {
       // The refusal lifts on an explicit restart (`hasRefusalContextChanged`),

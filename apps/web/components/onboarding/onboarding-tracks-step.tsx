@@ -23,6 +23,7 @@ import {
   bindingTrackCap,
   maxConcurrentTracks,
   stepLimit,
+  switchTrackCeiling,
   trackCapFloor,
   trackCeilingPatch,
   type TrackCeiling,
@@ -77,7 +78,7 @@ export function OnboardingTracksStep({
           <Switch
             checked={ceiling.enabled}
             disabled={saving}
-            onCheckedChange={(enabled) => onChange({ ...ceiling, enabled })}
+            onCheckedChange={(enabled) => onChange(switchTrackCeiling(ceiling, enabled, capFloor))}
             aria-label="Limit my Tracks"
           />
         </SettingsControlRow>

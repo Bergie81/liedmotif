@@ -176,6 +176,19 @@ describe('offline playback past the week since the last sync', () => {
     expect(api.currentTrack?.trackId).toBe('own-1');
   });
 
+  it('Back steps backward past an expired Track, never forward', async () => {
+    const player = await playOffline(['own-1', 'lounge', 'own-2', 'own-3']);
+    await player.ended();
+    expect(api.currentTrack?.trackId).toBe('lounge');
+    await player.ended();
+    expect(api.currentTrack?.trackId).toBe('own-2');
+
+    weekPasses();
+    expect(api.peekNeighbors().previous?.trackId).toBe('own-1');
+    await act(async () => api.previous());
+    expect(api.currentTrack?.trackId).toBe('own-1');
+  });
+
   it('gives an expired Track on Loop Track no further pass', async () => {
     const player = await playOffline(['lounge', 'own']);
     await act(async () => api.setPlaybackMode('loop-track'));

@@ -543,6 +543,30 @@ describe.skipIf(skip)('GET /api/sessions/queue — blend identity + analysis con
     expect(data.pendingGeneration).toBeNull();
   });
 
+  it('omits an uncertain submit past its in-flight slot, so the stuck banner offers its actions', async () => {
+    for (const [updatedAt, pending] of [
+      [new Date(), true],
+      [new Date(Date.now() - 24 * 60 * 60_000), false],
+    ] as const) {
+      const base = await seedSession();
+      const requestId = await createGenerationRequest(testDb.db, {
+        ownerUserId: base.ownerUserId,
+        activitySessionId: base.sessionId,
+      });
+      await createProviderJob(testDb.db, {
+        generationRequestId: requestId,
+        submitState: 'submit_unknown',
+        normalizedStatus: 'submit_unknown',
+        providerTaskId: null,
+        updatedAt,
+      });
+
+      const data = await callQueue(base.sessionId);
+      if (pending) expect(data.pendingGeneration).toMatchObject({ stage: 'submitting' });
+      else expect(data.pendingGeneration).toBeNull();
+    }
+  });
+
   it('offers Try again after a failed batch but not after a policy block', async () => {
     for (const [normalizedStatus, tryAgainTracks] of [
       ['failed_final', TRACKS_PER_REQUEST],

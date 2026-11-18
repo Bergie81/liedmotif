@@ -113,7 +113,13 @@ export function PlaylistTrackSheet({
                   icon={<Download />}
                   label="Download Track"
                   description="Save this track as a fully tagged MP3"
-                  note={item.downloadable ? undefined : 'Still generating'}
+                  note={
+                    item.downloadable
+                      ? undefined
+                      : item.status === 'failed'
+                        ? 'Could not be kept'
+                        : 'Still generating'
+                  }
                   disabled={!item.downloadable}
                   data-testid="playlist-download-track"
                   onClick={() => startFileDownload(trackDownloadUrl(item.id))}

@@ -143,5 +143,13 @@ describe('PlaylistTrackSheet — Download Track', () => {
     expect((screen.getByTestId('playlist-download-track') as HTMLButtonElement).disabled).toBe(
       true,
     );
+    expect(screen.getByTestId('playlist-download-track').textContent).toContain('Still generating');
+  });
+
+  it('says a failed member could not be kept, never that it is still generating', () => {
+    renderSheet({ item: { ...ITEM, status: 'failed', downloadable: false } });
+    const row = screen.getByTestId('playlist-download-track');
+    expect(row.textContent).toContain('Could not be kept');
+    expect(row.textContent).not.toContain('Still generating');
   });
 });

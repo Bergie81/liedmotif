@@ -1,4 +1,4 @@
-import { and, asc, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, lt, sql } from 'drizzle-orm';
 import type { SessionTracksData } from '@liedmotif/shared';
 import type { Database } from '../client';
 import type { Transaction } from '../transactions';
@@ -95,17 +95,25 @@ export async function listPlayableSessionTrackIds(
   return rows.map((row) => row.id);
 }
 
-/** Whether the Session has any Track its Queue can play (`listPlayableSessionTrackIds` non-empty). */
+/**
+ * Whether the Session has any Track its Queue can play (`listPlayableSessionTrackIds`
+ * non-empty). `createdBefore` counts only Tracks that existed before that moment.
+ */
 export async function hasPlayableSessionTrack(
   db: Database | Transaction,
-  args: { ownerUserId: string; sessionId: string },
+  args: { ownerUserId: string; sessionId: string; createdBefore?: Date },
 ): Promise<boolean> {
   const [row] = await db
     .select({ id: tracks.id })
     .from(generationRequests)
     .innerJoin(tracks, eq(tracks.generationRequestId, generationRequests.id))
     .leftJoin(activitySessionQueueItems, sessionTrackQueueEdge)
-    .where(playableTrackInSession(args))
+    .where(
+      and(
+        playableTrackInSession(args),
+        args.createdBefore ? lt(tracks.createdAt, args.createdBefore) : undefined,
+      ),
+    )
     .limit(1);
   return row !== undefined;
 }

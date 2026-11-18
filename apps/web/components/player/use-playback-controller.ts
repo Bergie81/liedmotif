@@ -601,6 +601,19 @@ export function usePlaybackController(
     [activeTrack, expired, nextIndex],
   );
 
+  /** The nearest earlier queue index that may still start, passing over expired
+   * offline copies; null when none precedes `from`. */
+  const previousStartableIndex = useCallback(
+    (from: number): number | null => {
+      let idx = previousPlaylistIndex(queueRef.current, from);
+      while (idx != null && expired(queueRef.current[idx]!)) {
+        idx = previousPlaylistIndex(queueRef.current, idx);
+      }
+      return idx;
+    },
+    [expired],
+  );
+
   const isDeadSource = useCallback(
     (track: PlayableTrack) => deadSourcesRef.current.get(track.queueItemId) === sourceKeyOf(track),
     [],
@@ -1353,20 +1366,32 @@ export function usePlaybackController(
   const previous = useCallback(() => {
     userStartRef.current = true;
     const traversal = playbackTraversalRef.current;
+    const current = activeTrack()?.queueItemId ?? null;
     if (traversal.mode === 'shuffle') {
-      const target = traversal.previous(queueRef.current, activeTrack()?.queueItemId ?? null);
+      // Going back passes over expired offline copies in the same direction.
+      let target = traversal.previous(queueRef.current, current);
+      while (target && expired(target.track))
+        target = traversal.previous(queueRef.current, current);
       if (target) playOnDeck(activeDeckRef.current, target.idx, 'preserve');
       else restart();
       return;
     }
-    const target = previousPlaylistIndex(queueRef.current, idxRef.current);
+    const target = previousStartableIndex(idxRef.current);
     if (target == null) {
       restart();
       return;
     }
     if (traversal.mode === 'loop-track') applyLoopEvent({ type: 'exit' });
     playIndexOrWait(target);
-  }, [activeTrack, applyLoopEvent, playIndexOrWait, playOnDeck, restart]);
+  }, [
+    activeTrack,
+    applyLoopEvent,
+    expired,
+    playIndexOrWait,
+    playOnDeck,
+    previousStartableIndex,
+    restart,
+  ]);
 
   /** Back: the universal player idiom. Mid-track it restarts the current track;
    * near the start it steps to the previous Track. Shuffle always steps, since
@@ -1401,11 +1426,11 @@ export function usePlaybackController(
       const target = traversal.peekPrevious(queueRef.current, activeTrack()?.queueItemId ?? null);
       previousTrack = target?.track ?? null;
     } else {
-      const idx = previousPlaylistIndex(queueRef.current, idxRef.current);
+      const idx = previousStartableIndex(idxRef.current);
       if (idx != null) previousTrack = queueRef.current[idx] ?? null;
     }
     return { next: explicitNextTarget()?.track ?? null, previous: previousTrack };
-  }, [activeTrack, explicitNextTarget]);
+  }, [activeTrack, explicitNextTarget, previousStartableIndex]);
 
   const toggle = useCallback(() => {
     // Pause also DISARMS a pending auto-start (armed intent, nothing loaded

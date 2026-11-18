@@ -157,15 +157,17 @@ function AddTracksContent({
           {tracks.map((track) => {
             const isMember = members.has(track.id);
             const isChecked = isMember || checked.has(track.id);
+            // A failed Track's final never arrived: it can never join a Playlist.
+            const failed = track.status === 'failed';
             return (
               <button
                 key={track.id}
                 type="button"
                 role="checkbox"
                 aria-checked={isChecked}
-                disabled={busy || isMember}
+                disabled={busy || isMember || failed}
                 onClick={() => toggle(track.id)}
-                className={cn(menuRowClass, 'w-full', isMember && 'opacity-50')}
+                className={cn(menuRowClass, 'w-full', (isMember || failed) && 'opacity-50')}
               >
                 <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-[8px] bg-panel-2">
                   {track.coverImageId ? (
@@ -183,7 +185,7 @@ function AddTracksContent({
                   {track.title ?? 'Untitled Track'}
                 </span>
                 <span className="font-mono text-[10.5px] tracking-[0.04em] text-dim">
-                  {formatTrackDuration(track.durationSeconds)}
+                  {failed ? 'Could not be kept' : formatTrackDuration(track.durationSeconds)}
                 </span>
                 <CheckIndicator checked={isChecked} />
               </button>

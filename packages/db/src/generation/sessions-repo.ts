@@ -35,6 +35,7 @@ import {
   generationRequests,
   providerJobs,
   type providerSubmitState,
+  SPEND_SUBMIT_STATES,
   tracks,
   type StyleSnapshot,
 } from '../schema';
@@ -571,13 +572,18 @@ export async function getEarliestReadySessionMusicTaskId(
  * CURRENT session style to decide whether a `blocked_by_policy` block still
  * applies (a Change Vibe lifts it). `submitState` tells a refused submit
  * waiting out a recoverable status from a submitted job that reached it.
+ * `spentOnly` skips the jobs that bought nothing (an unbilled refusal, a job
+ * that never reached the provider), so it answers with the latest batch that
+ * was paid or may have been paid.
  */
 export async function getLatestProviderJobState(
   db: DbOrTx,
   sessionId: string,
+  { spentOnly = false }: { spentOnly?: boolean } = {},
 ): Promise<{
   normalizedStatus: ProviderNormalizedStatus;
   submitState: (typeof providerSubmitState.enumValues)[number];
+  createdAt: Date;
   updatedAt: Date;
   stylePrompt: string | null;
 } | null> {
@@ -585,12 +591,18 @@ export async function getLatestProviderJobState(
     .select({
       normalizedStatus: providerJobs.normalizedStatus,
       submitState: providerJobs.submitState,
+      createdAt: providerJobs.createdAt,
       updatedAt: providerJobs.updatedAt,
       stylePrompt: generationRequests.stylePrompt,
     })
     .from(providerJobs)
     .innerJoin(generationRequests, eq(providerJobs.generationRequestId, generationRequests.id))
-    .where(eq(generationRequests.activitySessionId, sessionId))
+    .where(
+      and(
+        eq(generationRequests.activitySessionId, sessionId),
+        spentOnly ? inArray(providerJobs.submitState, [...SPEND_SUBMIT_STATES]) : undefined,
+      ),
+    )
     // The id tie-breaker makes "latest" deterministic when fast inserts share a
     // created_at timestamp (arbitrary but stable, so the signal can't flip-flop).
     .orderBy(desc(providerJobs.createdAt), desc(providerJobs.id))

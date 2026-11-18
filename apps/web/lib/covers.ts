@@ -65,6 +65,11 @@ export async function generatedCoverModel(env: NodeJS.ProcessEnv = process.env):
   );
 }
 
+/** Whether the selected music provider draws Covers once its key is set. */
+export function musicProviderDrawsCovers(): boolean {
+  return process.env.MUSIC_PROVIDER?.trim() === 'suno';
+}
+
 /**
  * Whether the Suno cover-art source is BUILDABLE, mirroring the worker's
  * `getSunoCoverArt`: the real Suno music provider selected and buildable, which
@@ -73,7 +78,7 @@ export async function generatedCoverModel(env: NodeJS.ProcessEnv = process.env):
  * yes/no leaves this process; the key never reaches the client.
  */
 export async function sunoCoverFallbackConfigured(): Promise<boolean> {
-  if (process.env.MUSIC_PROVIDER?.trim() !== 'suno') return false;
+  if (!musicProviderDrawsCovers()) return false;
   return getMusicProvider().then(
     () => true,
     () => false,

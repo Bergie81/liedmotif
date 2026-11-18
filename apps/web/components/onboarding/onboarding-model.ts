@@ -301,6 +301,17 @@ export function memberOnboardingRecord(
   ];
 }
 
+/** Whether the music provider makes Covers now: set up before the flow, or
+ *  connected in it. */
+export function musicProviderCoversReady(
+  draft: Pick<OnboardingDraft, 'musicConnected'>,
+  data: Pick<OnboardingData, 'musicProviderCoverConfigured' | 'musicProviderDrawsCovers'>,
+): boolean {
+  return (
+    data.musicProviderCoverConfigured || (draft.musicConnected && data.musicProviderDrawsCovers)
+  );
+}
+
 /**
  * The rail's "Set so far" list — the overview doubling as a record of what the owner
  * has committed. The draft carries what the flow edits, and its spend rows read the
@@ -318,7 +329,7 @@ export function onboardingRecord(
   const named = namedPeopleCount(draft.people);
   const covers = coverSource({
     imageProviderConfigured: draft.imageConnected,
-    musicProviderCoverConfigured: data.musicProviderCoverConfigured,
+    musicProviderCoverConfigured: musicProviderCoversReady(draft, data),
     ...draft.savedCoverBudget,
   });
   return [

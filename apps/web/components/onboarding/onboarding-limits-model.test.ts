@@ -6,6 +6,7 @@ import {
   coverBudgetPatch,
   maxConcurrentTracks,
   stepLimit,
+  switchTrackCeiling,
   trackCapFloor,
   trackCeilingFromLimits,
   trackCeilingPatch,
@@ -185,5 +186,22 @@ describe('cover budget', () => {
       ok: false,
       error: 'Enter a whole number of Covers (0 or more).',
     });
+  });
+});
+
+describe('switchTrackCeiling', () => {
+  const stored = { enabled: false, dailyTracks: '4', monthlyTracks: '40', concurrentTracks: '2' };
+
+  it('lifts a stored cap below the floor when the limit is switched on', () => {
+    expect(switchTrackCeiling(stored, true, 6)).toEqual({
+      enabled: true,
+      dailyTracks: '6',
+      monthlyTracks: '40',
+      concurrentTracks: '2',
+    });
+  });
+
+  it('leaves the values alone when the limit is switched off', () => {
+    expect(switchTrackCeiling({ ...stored, enabled: true }, false, 6)).toEqual(stored);
   });
 });

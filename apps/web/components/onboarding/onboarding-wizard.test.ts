@@ -71,6 +71,7 @@ function makeData(overrides: Partial<OnboardingData> = {}): OnboardingData {
       sharedKeyVendor: null,
     },
     musicProviderCoverConfigured: false,
+    musicProviderDrawsCovers: false,
     untouched: {
       playback: { blendEnabled: true, crossfadeSeconds: 6 },
       generation: { bufferEnabled: true, bufferAheadTracks: 3, defaultLanguage: 'auto' },

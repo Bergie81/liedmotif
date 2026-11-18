@@ -23,6 +23,7 @@ import { OnboardingMusicStep } from './onboarding-music-step';
 import {
   ONBOARDING_STEPS,
   initialOnboardingDraft,
+  musicProviderCoversReady,
   onboardingRecord,
   resolveInitialTimezone,
   type OnboardingDraft,
@@ -148,7 +149,7 @@ export function OnboardingWizard({
             imageModel={draft.imageModel}
             imageOwnKey={draft.imageOwnKey}
             encryptionKeyConfigured={data.encryptionKeyConfigured}
-            musicProviderCoverConfigured={data.musicProviderCoverConfigured}
+            musicProviderCoverConfigured={musicProviderCoversReady(draft, data)}
             onChange={(coverBudget) => patch({ coverBudget })}
             onConnected={({ providerKey, model, ownKey }) =>
               patch({

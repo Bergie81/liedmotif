@@ -667,26 +667,47 @@ describe('Try again on a stuck Session buys one batch', () => {
 });
 
 describe('restartCountsAsListener', () => {
-  const resumed = { resumed: true } as const;
+  const resumed = { resumed: true, hadPlayableTrack: false } as const;
 
-  it('counts a Resume or Try again while nothing is in flight or something can play', () => {
-    expect(restartCountsAsListener({ ...resumed, inFlightJobs: 0, hasPlayableTrack: false })).toBe(
-      true,
-    );
-    expect(restartCountsAsListener({ ...resumed, inFlightJobs: 1, hasPlayableTrack: true })).toBe(
-      true,
-    );
+  it('counts a Resume or Try again that found nothing to play until it buys its batch', () => {
+    expect(
+      restartCountsAsListener({ ...resumed, boughtSinceRestart: false, inFlightJobs: 0 }),
+    ).toBe(true);
   });
 
-  it('with a Resume or Try again batch in flight and nothing to play, waits for audio instead', () => {
-    expect(restartCountsAsListener({ ...resumed, inFlightJobs: 1, hasPlayableTrack: false })).toBe(
-      false,
-    );
+  it('after that batch is bought, waits for audio, in flight or landed', () => {
+    for (const inFlightJobs of [0, 1]) {
+      expect(restartCountsAsListener({ ...resumed, boughtSinceRestart: true, inFlightJobs })).toBe(
+        false,
+      );
+    }
+  });
+
+  it('with an earlier batch still in flight, waits for it', () => {
+    expect(
+      restartCountsAsListener({ ...resumed, boughtSinceRestart: false, inFlightJobs: 1 }),
+    ).toBe(false);
+  });
+
+  it('a Resume that found Tracks to play keeps its prefill window', () => {
+    expect(
+      restartCountsAsListener({
+        resumed: true,
+        hadPlayableTrack: true,
+        boughtSinceRestart: true,
+        inFlightJobs: 1,
+      }),
+    ).toBe(true);
   });
 
   it('always counts a Start, so its cold-start prefill runs before the first play', () => {
     expect(
-      restartCountsAsListener({ resumed: false, inFlightJobs: 1, hasPlayableTrack: false }),
+      restartCountsAsListener({
+        resumed: false,
+        hadPlayableTrack: false,
+        boughtSinceRestart: true,
+        inFlightJobs: 1,
+      }),
     ).toBe(true);
   });
 });

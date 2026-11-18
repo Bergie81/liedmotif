@@ -19,7 +19,11 @@ import {
   sql,
   type SQL,
 } from 'drizzle-orm';
-import { LIVE_QUEUE_ITEM_STATES, PARKED_SUBMIT_STATUSES } from '@liedmotif/shared';
+import {
+  LIVE_QUEUE_ITEM_STATES,
+  PARKED_SUBMIT_STATUSES,
+  PHANTOM_SUBMIT_PROVIDER_STATUSES,
+} from '@liedmotif/shared';
 import type {
   ProviderNormalizedStatus,
   SessionGenerationStatus,
@@ -410,7 +414,9 @@ export async function getSessionQueue(
       item.track.status !== 'failed' &&
       (item.track.hasFinalAsset || item.track.hasStreamAsset),
   );
-  const pendingGeneration = hasPlayable ? null : await latestProviderJobState(db, args.sessionId);
+  const pendingGeneration = hasPlayable
+    ? null
+    : await latestProviderJobState(db, args.sessionId, args.phantomSubmitCutoff);
   return {
     session,
     items,
@@ -563,16 +569,22 @@ function liveRevisionFillSpentColumn(db: Database): SQL<boolean> {
   return sql<boolean>`exists (${spent})`;
 }
 
-/** The session's newest provider job (id tie-break for same-timestamp inserts). */
+/**
+ * The session's newest provider job (id tie-break for same-timestamp inserts).
+ * A submit parked past its in-flight slot (`phantomSubmitCutoff`) is nothing
+ * the player can wait on, so it reads as none: the generation status owns it.
+ */
 async function latestProviderJobState(
   db: Database,
   sessionId: string,
+  phantomSubmitCutoff: Date,
 ): Promise<SessionQueuePendingGeneration | null> {
   const [row] = await db
     .select({
       normalizedStatus: providerJobs.normalizedStatus,
       lastSubmitAttemptAt: providerJobs.lastSubmitAttemptAt,
       createdAt: providerJobs.createdAt,
+      updatedAt: providerJobs.updatedAt,
       earlyTrackTitle: generationRequests.earlyTrackTitle,
     })
     .from(providerJobs)
@@ -581,6 +593,10 @@ async function latestProviderJobState(
     .orderBy(desc(providerJobs.createdAt), desc(providerJobs.id))
     .limit(1);
   if (!row) return null;
+  const phantom = (PHANTOM_SUBMIT_PROVIDER_STATUSES as readonly string[]).includes(
+    row.normalizedStatus,
+  );
+  if (phantom && row.updatedAt.getTime() <= phantomSubmitCutoff.getTime()) return null;
   return {
     normalizedStatus: row.normalizedStatus,
     submittedAt: row.lastSubmitAttemptAt ?? row.createdAt,

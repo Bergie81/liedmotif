@@ -10,6 +10,7 @@ import {
   preselectedCoverProvider,
   textAiCostLine,
   onboardingProgress,
+  musicProviderCoversReady,
   onboardingRecord,
   resolveInitialTimezone,
   trackCeilingNote,
@@ -199,6 +200,7 @@ describe('onboardingRecord', () => {
     llm: { environmentManaged: false },
     image: { environmentManaged: false },
     musicProviderCoverConfigured: false,
+    musicProviderDrawsCovers: false,
   } as unknown as OnboardingData;
   const empty: OnboardingDraft = {
     profile: EMPTY_PROFILE,
@@ -335,6 +337,16 @@ describe('onboardingRecord', () => {
       value: 'Tailored',
       muted: false,
     });
+  });
+
+  it('counts music-provider Covers once the music key is connected during the flow', () => {
+    const suno = { musicProviderDrawsCovers: true };
+    expect(rowFor(empty, 'Cover images', suno)?.muted).toBe(true);
+    expect(rowFor({ ...empty, musicConnected: true }, 'Cover images', suno)).toMatchObject({
+      muted: false,
+    });
+    expect(musicProviderCoversReady({ musicConnected: true }, { ...data, ...suno })).toBe(true);
+    expect(musicProviderCoversReady({ musicConnected: true }, data)).toBe(false);
   });
 });
 

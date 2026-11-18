@@ -31,7 +31,7 @@ import {
 import type { GenerationSettings, PlaybackSettings } from '@liedmotif/shared';
 import type { StorageProviderKey } from '@liedmotif/storage';
 import { providerDisplayName } from '@/lib/configurable-providers';
-import { sunoCoverFallbackConfigured } from '@/lib/covers';
+import { musicProviderDrawsCovers, sunoCoverFallbackConfigured } from '@/lib/covers';
 import { getDb } from '@/lib/db';
 import { isAccountEmailEnabled } from '@/lib/env';
 import { toPersonRoster } from '@/lib/people';
@@ -96,6 +96,8 @@ export interface OnboardingData {
   };
   /** The music provider can draw its own Covers, so Covers never fall to the placeholder. */
   musicProviderCoverConfigured: boolean;
+  /** The music provider draws Covers once its key is set, as it may be during the flow. */
+  musicProviderDrawsCovers: boolean;
   untouched: OnboardingUntouched;
 }
 
@@ -203,6 +205,7 @@ export async function loadOnboardingData(ownerUserId: string): Promise<Onboardin
     },
     image: imageCredential(providers.cover),
     musicProviderCoverConfigured: await sunoCoverFallbackConfigured(),
+    musicProviderDrawsCovers: musicProviderDrawsCovers(),
     untouched: {
       playback,
       generation,

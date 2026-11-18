@@ -60,6 +60,29 @@ export function trackCapFloor(minHeadroomTracks: number, tracksPerRequest: numbe
   return Math.max(yieldPerRequest, roundUpToWholeCalls(minHeadroomTracks, yieldPerRequest));
 }
 
+/**
+ * Switch the day and month caps on or off. Switching on lifts a stored cap
+ * below `floor` to it, so turning the limit on can never leave one that blocks
+ * every new Session.
+ */
+export function switchTrackCeiling(
+  ceiling: TrackCeiling,
+  enabled: boolean,
+  floor: number,
+): TrackCeiling {
+  if (!enabled) return { ...ceiling, enabled };
+  const lifted = (value: string) => {
+    const tracks = Number(value);
+    return Number.isFinite(tracks) && tracks < floor ? String(floor) : value;
+  };
+  return {
+    ...ceiling,
+    enabled,
+    dailyTracks: lifted(ceiling.dailyTracks),
+    monthlyTracks: lifted(ceiling.monthlyTracks),
+  };
+}
+
 /** The cap that runs out first: the month when it is set below the day. */
 export function bindingTrackCap(ceiling: TrackCeiling): {
   tracks: number;
