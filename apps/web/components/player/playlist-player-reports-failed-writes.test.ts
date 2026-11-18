@@ -123,20 +123,25 @@ function showPlaylist(items: PlaylistMemberItem[] = MEMBERS) {
     peekNeighbors: () => ({ next: null, previous: null }),
     advancePastDeletedTrack: vi.fn(),
   } as unknown as PlaybackControllerApi;
-  const playback: LivePlayback = {
+  const engaged = (members: PlaylistMemberItem[]): LivePlayback => ({
     source: {
       kind: 'playlist',
       playlist: PLAYLIST,
-      items,
+      items: members,
       startTrackId: null,
       foreign: false,
     },
     session: null,
     player,
     coldStartBeganAt: TIMESTAMP,
-  };
-  render(h(PlaylistNowPlaying, { playback, playlist: PLAYLIST }), { wrapper: AppShell });
-  return player;
+  });
+  const view = render(h(PlaylistNowPlaying, { playback: engaged(items), playlist: PLAYLIST }), {
+    wrapper: AppShell,
+  });
+  /** A fresh engagement of the same Playlist, as Play on it again starts one. */
+  const engageAgain = (members: PlaylistMemberItem[]) =>
+    view.rerender(h(PlaylistNowPlaying, { playback: engaged(members), playlist: PLAYLIST }));
+  return Object.assign(player, { engageAgain });
 }
 
 function openOptions() {
@@ -226,4 +231,19 @@ it('ends playback on the Playlist page when the last playable Track is removed',
   expect(provider.release).toHaveBeenCalledTimes(1);
   expect(provider.engagePlaylist).not.toHaveBeenCalled();
   expect(player.advancePastDeletedTrack).not.toHaveBeenCalled();
+});
+
+it('lists a removed Track again once a fresh engagement of the Playlist carries it', async () => {
+  api.removePlaylistTrack.mockResolvedValueOnce({ ok: true, data: {} });
+  const player = showPlaylist();
+
+  fireEvent.click(openOptions().getByTestId('player-remove-from-playlist'));
+  await act(async () => {});
+  // Added back, then the Playlist is played again while the player stays open.
+  player.engageAgain([...MEMBERS]);
+
+  fireEvent.click(screen.getByTestId('player-queue'));
+  const list = within(screen.getByTestId('playlist-queue'));
+  expect(list.getByText('Night Drive')).toBeTruthy();
+  expect(list.getByText('Morning')).toBeTruthy();
 });

@@ -54,6 +54,11 @@ import { useLyricsSurfaces } from './use-lyrics-surfaces';
 import { engagedSourceId } from './player-provider-model';
 import { clearPlayerError, showPlayerError, type PlayerAct } from './player-error-toast';
 
+/** Tracks removed from the playing Playlist, against the membership they edit. */
+type Removals = { from: readonly PlaylistMemberItem[]; trackIds: ReadonlySet<string> };
+const NO_MEMBERS: readonly PlaylistMemberItem[] = [];
+const NO_REMOVALS: ReadonlySet<string> = new Set();
+
 export function PlaylistNowPlaying({
   playback,
   playlist: engagedPlaylist,
@@ -78,12 +83,16 @@ export function PlaylistNowPlaying({
   const queueIndex = track ? player.playableQueueItemIds.indexOf(track.queueItemId) : -1;
   // The engaged membership minus the Tracks removed while it plays: the
   // controller drops them from its own projection in place, so re-engaging to
-  // carry a removal would restart playback and lose the selected mode.
-  const [removedTrackIds, setRemovedTrackIds] = useState<ReadonlySet<string>>(new Set());
-  const items: PlaylistMemberItem[] =
-    playback.source.kind === 'playlist'
-      ? playback.source.items.filter((item) => !removedTrackIds.has(item.id))
-      : [];
+  // carry a removal would restart playback and lose the selected mode. The
+  // removals belong to the engagement whose membership they edit: a fresh
+  // engagement of this Playlist brings its own membership.
+  const engagedItems = playback.source.kind === 'playlist' ? playback.source.items : NO_MEMBERS;
+  const [removals, setRemovals] = useState<Removals>(() => ({
+    from: engagedItems,
+    trackIds: new Set(),
+  }));
+  const removedTrackIds = removals.from === engagedItems ? removals.trackIds : NO_REMOVALS;
+  const items = engagedItems.filter((item) => !removedTrackIds.has(item.id));
   // The visitor scope: a foreign In-Lounge playlist plays through
   // this same surface with every owner act absent — never disabled.
   const foreign = playback.source.kind === 'playlist' && playback.source.foreign;
@@ -138,7 +147,10 @@ export function PlaylistNowPlaying({
       router.push(`/library/playlist/${playlist.id}`);
       return;
     }
-    setRemovedTrackIds((current) => new Set(current).add(removedTrackId));
+    setRemovals((current) => ({
+      from: engagedItems,
+      trackIds: new Set(current.from === engagedItems ? current.trackIds : []).add(removedTrackId),
+    }));
     playerRef.current.advancePastDeletedTrack(removedTrackId);
   }
 
