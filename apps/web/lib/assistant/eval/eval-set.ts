@@ -102,7 +102,7 @@ export const EVAL_SET: readonly EvalEntry[] = [
     role: 'admin',
     language: 'de',
     question: 'Wie schalte ich die Text AI wieder ab?',
-    docs: [{ page: 'providers-and-keys', section: 'writing-ai' }],
+    docs: [{ page: 'providers-and-keys', section: 'text-ai' }],
     link: '/settings/providers',
     goodAnswer:
       'Press Disable Text AI in Settings › AI Providers. If .env configures the text AI, those lines have to go too, or it stays on; until then the button reads Delete stored fallback.',

@@ -1,7 +1,7 @@
 ---
 title: What Liedmotif is
 description: How Liedmotif works from your first request to the music you keep, what an instance is made of, and what the words in the app mean.
-checkedOn: 2026-11-09
+checkedOn: 2026-11-18
 ---
 
 Liedmotif is an app you run yourself. You ask for music in your own words, your music provider makes it, and Liedmotif keeps making more while you listen. This page explains how that works, what you're installing, and what the app's words mean.
@@ -16,7 +16,7 @@ Type what the music is for: a mood, a moment, a place, a sound. For example, `La
 
 Your request becomes a session: one continuous listen with its own style, queue, name and cover.
 
-With a writing AI connected, your request turns into a steady style for the whole session, and the session and its tracks get proper names. Without one, your words go to the music model as you wrote them, and the names are built from your request.
+With a text AI connected, your request turns into a steady style for the whole session, and the session and its tracks get proper names. Without one, your words go to the music model as you wrote them, and the names are built from your request.
 
 You have one session running at a time. Starting a new one stops the old one, which stays in your sessions, ready to resume.
 
@@ -60,7 +60,7 @@ An instance is one install of Liedmotif. It belongs to whoever set it up, and it
 | The worker | The part that works in the background. It orders tracks from your provider, fetches the finished files and sorts out covers. |
 | The database | Postgres. It holds accounts, sessions, playlists, history and your provider keys, encrypted. |
 | Music storage | Where the audio and covers live: the machine's own disk, or an S3-compatible bucket. |
-| Your providers | Outside services you sign up for and pay directly. A music provider is required, and a writing AI and a cover image provider are optional. |
+| Your providers | Outside services you sign up for and pay directly. A music provider is required, and a text AI and a cover image provider are optional. |
 
 Two helpers run beside them: a backup service, and Caddy, which gives a server its HTTPS address.
 
@@ -87,7 +87,7 @@ Your provider keys stay on the server, and browsers never see them. Your request
 | Lounge | Where people on one instance share playlists, with everyone there or with people they pick. A share is live, nothing leaves the instance, and there are no public links. |
 | Admin | The one person who runs the instance, holds the provider keys and invites people. |
 | Member | An invited person with their own private space and a budget, using the admin's keys. |
-| Writing AI | An optional service that turns your request into a style and names your sessions and tracks. It works per session and on **Change Vibe**, and tries to add a fresh lyric angle to new tracks in vocal sessions. If that fails, the tracks are still made. `.env` calls it the text LLM. |
+| Text AI | An optional service that turns your request into a style and names your sessions and tracks. It works per session and on **Change Vibe**, and tries to add a fresh lyric angle to new tracks in vocal sessions. If that fails, the tracks are still made. `.env` calls it the text LLM. |
 | Music model | The service that turns a prompt into audio, for every new track. It's the one required provider, and today it's a Suno-compatible one. |
 | Cover | The square artwork of a session, shared by all its tracks. An image provider can paint one to suit the session. Otherwise your music provider draws one at no extra cost. Every session starts on a built-in placeholder, and keeps it if no cover can be made. Generated covers count toward the cover limits, whichever provider made them. You can also upload your own, and **Change Vibe** never replaces it. A session keeps up to ten covers. |
 

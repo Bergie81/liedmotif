@@ -1,7 +1,7 @@
 ---
 title: Members, invites and the lounge
 description: Bring people onto your Liedmotif, set what they can spend, share playlists with them, and take access back when you need to.
-checkedOn: 2026-11-17
+checkedOn: 2026-11-18
 ---
 
 Your instance can hold your whole household or a group of friends. Each person you invite becomes a member with their own account. Their music is paid from your provider keys, inside a budget you choose, so you always know the most they can cost. As the admin, you run all of this from **Settings › Members**, which only you can see.
@@ -61,7 +61,7 @@ They can check what's left at any time in **Settings › My budget**, which they
 | A member gets | A member doesn't get |
 | --- | --- |
 | Their own sessions, tracks, playlists, Favorites, covers and People | Your provider keys. Their music runs on them, but they never see, test or manage them |
-| Every listening feature, with your writing AI and cover key if you've set them up | **AI Providers**, **Cost limits**, **Diagnostics & worker**, **Backups**, **Members**, or the instance's storage settings |
+| Every listening feature, with your text AI and cover key if you've set them up | **AI Providers**, **Cost limits**, **Diagnostics & worker**, **Backups**, **Members**, or the instance's storage settings |
 | Downloads of their own tracks, and their own **Your Stats** | A way to change their sign-in email. They can change their password |
 | **Profile**, **People**, **Generation**, **Playback**, **Cover art**, **My budget**, and **Storage** for offline music on their device | Anyone else's private music |
 | The lounge | |
@@ -116,20 +116,20 @@ Starting a new session needs at least 5 tracks left in both budgets, or whatever
 
 The card shows each number with an estimated price: the count multiplied by today's price, by default $0.04 per track and $0.07 per cover. Change those under **Settings › AI Providers › Unit costs**, or set both to 0 to hide every estimate. Only you see these. They're estimates, not a bill: you pay your providers directly, so their dashboards have the real figures.
 
-Two costs sit outside every budget. Your writing AI (the text LLM in `.env`) and the fetch that syncs lyrics to the music aren't counted. Questions to Roadie use the writing AI too, and each member's daily allowance keeps that small. If you want the estimates to cover them, round your unit costs up a little.
+Two costs sit outside every budget. Your text AI (the text LLM in `.env`) and the fetch that syncs lyrics to the music aren't counted. Questions to Roadie use the text AI too, and each member's daily allowance keeps that small. If you want the estimates to cover them, round your unit costs up a little.
 
 Storage has no per-member limit either. Each track takes about 5 MB and stays until someone deletes it, so more members fill your disk faster. The card shows what each member uses.
 
 ## Who may ask Roadie
 
-Roadie, the AI assistant, answers questions about your Liedmotif and runs on your writing AI. Every member has it until you say otherwise, with 30 messages a day. You change both under **Settings › Members**.
+Roadie, the AI assistant, answers questions about your Liedmotif and runs on your text AI. Every member has it until you say otherwise, with 30 messages a day. You change both under **Settings › Members**.
 
 - **For everyone:** the **Assistant** section sets the default. **Assistant for Members** switches Roadie on or off, and **Messages per day** is each member's daily allowance, from 1 to 1,000.
 - **For one member:** their card has its own **Assistant** switch and **Messages per day**. Under each you see `Default` or `Set for this Member`, and **Use default** takes that value back to the default.
 
 A change saves as soon as you make it: flip a switch, or type a number and press Enter or leave the field. Members on the default follow it at once when you change it. A member with a value of their own keeps it.
 
-A member whose Assistant is off doesn't see the **Ask Roadie** button. One who has used up the day's messages is told when they can ask again. The allowance resets at midnight in your instance's timezone. As the admin you have no daily allowance. Without a writing AI there is no Roadie, and the page says so in place of these controls.
+A member whose Assistant is off doesn't see the **Ask Roadie** button. One who has used up the day's messages is told when they can ask again. The allowance resets at midnight in your instance's timezone. As the admin you have no daily allowance. Without a text AI there is no Roadie, and the page says so in place of these controls.
 
 ## Password help
 
@@ -202,7 +202,7 @@ Everything outside your shared playlists stays yours: your other playlists, your
 
 Nobody gets told who's listening. You see no play counts, no names and no pins, and listening to someone else's playlist doesn't appear in anyone's stats.
 
-The lounge shows your artist name if you've set one, otherwise your first name, with your picture. You can add a **Short description** of up to 80 characters in **Settings › Profile** for your profile card. It's only shown there, and never reaches the writing AI.
+The lounge shows your artist name if you've set one, otherwise your first name, with your picture. You can add a **Short description** of up to 80 characters in **Settings › Profile** for your profile card. It's only shown there, and never reaches the text AI.
 
 ### Find something in the lounge
 

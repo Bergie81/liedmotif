@@ -1,7 +1,7 @@
 ---
 title: Privacy and security
 description: What stays on your own Liedmotif instance, what each provider sees, what an admin can see, and how the instance protects itself.
-checkedOn: 2026-11-17
+checkedOn: 2026-11-18
 ---
 
 Everything on this page is about your own instance: the copy of Liedmotif you run on your laptop, your server or your cloud provider. There's no Liedmotif-run service behind it. This website, liedmotif.com, has no accounts and no connection to your instance, so we can't see your music, your prompts or even that you exist.
@@ -34,11 +34,11 @@ This is the one service Liedmotif can't work without. For each batch of tracks i
 - Your **Avoid** terms
 - For vocal tracks, the singer choice, the language and a short lyric brief
 
-**Without a writing AI,** your request reaches the music provider exactly as you wrote it. So don't type anything into a request you wouldn't send to that provider.
+**Without a text AI,** your request reaches the music provider exactly as you wrote it. So don't type anything into a request you wouldn't send to that provider.
 
-**With a writing AI,** the provider gets the direction the AI wrote rather than your raw request. The lyric brief may carry details the AI developed from your profile and from people you named, so those can reach the music provider in a vocal session.
+**With a text AI,** the provider gets the direction the AI wrote rather than your raw request. The lyric brief may carry details the AI developed from your profile and from people you named, so those can reach the music provider in a vocal session.
 
-### The writing AI
+### The text AI
 
 This is optional, and it's the service `.env` calls the text LLM. If you connect one, it receives:
 
@@ -46,24 +46,24 @@ This is optional, and it's the service `.env` calls the text LLM. If you connect
 - The earlier requests of a session, when you change its vibe
 - Your profile's name, city and country, if you filled them in
 - For a person you name exactly in your request, their name and About text, unless you picked **Instrumental**
-- Your own About text with every request, unless you picked **Instrumental**, since every session is about your life. The writing AI decides from your words whether the session is sung, and uses About text only in the lyrics of a sung one
+- Your own About text with every request, unless you picked **Instrumental**, since every session is about your life. The text AI decides from your words whether the session is sung, and uses About text only in the lyrics of a sung one
 - For **Surprise Me**, your chosen theme, the music your learned taste picked, and your city and country. Vocal proposals may also use your own About text.
 
 About text is only for lyrics. It's never used for style, titles or covers.
 
-**When you ask Roadie,** the AI assistant inside the app, the writing AI receives your question and the last few messages of that conversation. What Roadie looks up for you to answer, such as the names of your sessions, playlists and tracks, a matching line of lyrics, what is playing or how many tracks and covers you have left, goes to the writing AI provider with the conversation. So does the tone you gave Roadie under **Settings › Roadie**, which your instance stores. Nothing from your profile or your people is sent, except that a Surprise Me you ask Roadie for sends what **Surprise Me** sends, listed above. The conversation lives in your browser tab only: your instance doesn't store it or write it to its logs, and it's gone when you reload the page.
+**When you ask Roadie,** the AI assistant inside the app, the text AI receives your question and the last few messages of that conversation. What Roadie looks up for you to answer, such as the names of your sessions, playlists and tracks, a matching line of lyrics, what is playing or how many tracks and covers you have left, goes to the text AI provider with the conversation. So does the tone you gave Roadie under **Settings › Roadie**, which your instance stores. Nothing from your profile or your people is sent, except that a Surprise Me you ask Roadie for sends what **Surprise Me** sends, listed above. The conversation lives in your browser tab only: your instance doesn't store it or write it to its logs, and it's gone when you reload the page.
 
-With no writing AI, none of this leaves your instance. With a local Ollama, it stays on your own machine.
+With no text AI, none of this leaves your instance. With a local Ollama, it stays on your own machine.
 
 ### The image provider
 
 This is optional too, and it's what makes tailored covers. If you add an image key, it receives:
 
-- The session or playlist name, the cover idea from the writing AI, your request and any cover direction you give
+- The session or playlist name, the cover idea from the text AI, your request and any cover direction you give
 - The mood, activity and genres
 - Reference photos of people, when a cover uses them
 
-A photo is sent only in these cases: you name that person exactly in your request, the writing AI reads your request as putting you in the scene ("me", "we"), you ask for people on a playlist cover, or your own photo fits the frequency you set in **Settings › People**. One named person sends up to three photos, and several named people send one each. **Never** switches off all your reference photos, named people included, and refuses a cover that asks for them. When a cover uses photos of several people, their names in your request are swapped for neutral labels such as "subject one". With one person, their name stays in the request. The session name and the cover idea aren't changed, so a name in either one reaches the provider. Without an image key, the music provider makes a standard cover from a finished track, or your session keeps the free cover, and no photo is sent.
+A photo is sent only in these cases: you name that person exactly in your request, the text AI reads your request as putting you in the scene ("me", "we"), you ask for people on a playlist cover, or your own photo fits the frequency you set in **Settings › People**. One named person sends up to three photos, and several named people send one each. **Never** switches off all your reference photos, named people included, and refuses a cover that asks for them. When a cover uses photos of several people, their names in your request are swapped for neutral labels such as "subject one". With one person, their name stays in the request. The session name and the cover idea aren't changed, so a name in either one reaches the provider. Without an image key, the music provider makes a standard cover from a finished track, or your session keeps the free cover, and no photo is sent.
 
 ### Run without my profile details
 

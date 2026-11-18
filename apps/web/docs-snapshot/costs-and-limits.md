@@ -1,7 +1,7 @@
 ---
 title: Costs and limits
 description: What you pay for and to whom, what is free, how each action spends, and every limit Liedmotif offers, counted in tracks.
-checkedOn: 2026-11-17
+checkedOn: 2026-11-18
 ---
 
 Liedmotif is source-available, free for non-commercial use. The money goes straight from you to the providers you connect, and almost all of it pays for new tracks. This page shows how each action spends, which limits you can set, and what happens when one is reached.
@@ -12,7 +12,7 @@ Liedmotif is source-available, free for non-commercial use. The money goes strai
 | --- | --- | --- |
 | New tracks | Your music provider | About 4 cents per track |
 | Tailored covers (optional) | OpenRouter | About 7 cents per cover on the default model |
-| Writing AI (optional) | Your text provider, or nobody with Ollama | Small and usage-based. The 4-cent figure already rounds up a little to absorb it |
+| Text AI (optional) | Your text provider, or nobody with Ollama | Small and usage-based. The 4-cent figure already rounds up a little to absorb it |
 | Rented server (cloud only) | Your cloud provider | [See the cloud guide](/docs/install/cloud) |
 
 These are the app's own round figures for the default providers. The real price is whatever your provider charges, and your provider's dashboard shows your real bill. [Providers and keys](/docs/providers-and-keys) explains how to set each one up.
@@ -41,7 +41,7 @@ All of this buys nothing:
 - Previewing a track, and downloading tracks
 - Saving, searching, organizing and renaming
 - Resuming a session with **New music** off
-- Pressing **Try another** in Surprise Me, as far as music goes. With a writing AI connected, each try uses it a little
+- Pressing **Try another** in Surprise Me, as far as music goes. With a text AI connected, each try uses it a little
 - Basic covers from your music provider, the built-in Liedmotif cover, and uploading your own
 - Guided setup and the **Test** button
 
@@ -65,19 +65,19 @@ A session with **New music** off loops what it has and buys nothing more. A sess
 
 A duration caps how much new music a session buys. It counts the music made, not your listening time, so skipped tracks count and disliked or deleted ones don't. Past the target, the session loops what it has until you stop it.
 
-- The slider on the start card runs up to 180 minutes, in steps of 5. Sessions accept any whole number from 1 to 600 minutes, so a writing AI can pick up a longer one from your request.
-- **Auto** finds a duration in your words when a writing AI is connected. Without one, a session keeps going until you stop it.
+- The slider on the start card runs up to 180 minutes, in steps of 5. Sessions accept any whole number from 1 to 600 minutes, so a text AI can pick up a longer one from your request.
+- **Auto** finds a duration in your words when a text AI is connected. Without one, a session keeps going until you stop it.
 - You can change the target while the session plays, and raising it starts new tracks again.
 - Setting a target turns **New music** on for that session, since only new tracks can fill it.
 - At the target, a change of vibe is refused unless the same change raises or clears the target.
 
 ### Change Vibe
 
-A change of vibe buys the first new tracks in the new direction, even with **New music** off. It also uses your writing AI once, if you wrote a new direction. It needs room for one more pair within your limits. Tracks you already have stay paid for and remain in your history.
+A change of vibe buys the first new tracks in the new direction, even with **New music** off. It also uses your text AI once, if you wrote a new direction. It needs room for one more pair within your limits. Tracks you already have stay paid for and remain in your history.
 
 ### Dislike
 
-Pressing **Reroll Track** is often free. Since tracks come in pairs, Liedmotif first looks for the unplayed second track from the same pair, which you've already paid for. It buys a new pair only when there isn't one, and only if **New music** is on and your limits have room. With **New music** off, or on a track from a vibe you've since changed, it serves the second track if there is one and otherwise buys nothing. A reroll doesn't use the writing AI for direction or lyrics. If it buys a new pair in a session that's out of titles, the writing AI may write a few more.
+Pressing **Reroll Track** is often free. Since tracks come in pairs, Liedmotif first looks for the unplayed second track from the same pair, which you've already paid for. It buys a new pair only when there isn't one, and only if **New music** is on and your limits have room. With **New music** off, or on a track from a vibe you've since changed, it serves the second track if there is one and otherwise buys nothing. A reroll doesn't use the text AI for direction or lyrics. If it buys a new pair in a session that's out of titles, the text AI may write a few more.
 
 ### Covers
 
@@ -85,9 +85,9 @@ With tailored art, a new session buys one cover. Each regeneration buys another,
 
 ### Asking Roadie
 
-Each question to Roadie, the AI assistant, is a small request to your writing AI. It buys no music and counts against no track or cover limit. Two things keep it small. Nobody can send more than 20 questions in 5 minutes. And each member has a daily allowance, 30 messages unless you change it, which resets at midnight in the **Instance timezone**. Under **Settings › Members** you set the allowance for everyone or for one member, from 1 to 1,000 a day, or switch Roadie off for a member. As the admin you have no daily allowance, since the key is yours.
+Each question to Roadie, the AI assistant, is a small request to your text AI. It buys no music and counts against no track or cover limit. Two things keep it small. Nobody can send more than 20 questions in 5 minutes. And each member has a daily allowance, 30 messages unless you change it, which resets at midnight in the **Instance timezone**. Under **Settings › Members** you set the allowance for everyone or for one member, from 1 to 1,000 a day, or switch Roadie off for a member. As the admin you have no daily allowance, since the key is yours.
 
-Roadie never buys music or covers by itself. Asked for new music, a Surprise Me, a change of vibe, more like a track, New music on or a new cover, it shows a card in the chat, and nothing is generated until you press the button on it. What that starts counts against your track or cover limits like the same button in the app; a cover card shows the cover budget line the cover dialog shows. Roadie can resume a session for you without a card, because resuming is not a new purchase: the session carries on with the New music setting you gave it, as when you press **Resume** yourself. With New music on it generates again, inside your limits. Preparing a Surprise Me card uses your writing AI a little, as **Try another** does, and buys no music; the question still counts as one message.
+Roadie never buys music or covers by itself. Asked for new music, a Surprise Me, a change of vibe, more like a track, New music on or a new cover, it shows a card in the chat, and nothing is generated until you press the button on it. What that starts counts against your track or cover limits like the same button in the app; a cover card shows the cover budget line the cover dialog shows. Roadie can resume a session for you without a card, because resuming is not a new purchase: the session carries on with the New music setting you gave it, as when you press **Resume** yourself. With New music on it generates again, inside your limits. Preparing a Surprise Me card uses your text AI a little, as **Try another** does, and buys no music; the question still counts as one message.
 
 ### When nobody is listening
 
@@ -164,7 +164,7 @@ On the player, a banner above the cover says what is holding new music. If it ha
 
 New sessions and **More Like This** need more room than a running session, so that a new one has enough tracks to loop. With less room than **Headroom to start**, you see **No generation headroom right now** and no session is created. You're offered **Resume a Session** or your library instead. A member with 4 tracks left in a one-time budget can't start something new, but can resume a session and use them there.
 
-Resuming is never blocked, and **Change Vibe** needs room for just one more pair. Only one session can start at a time. Cancelling a start before it's created buys no music, though your writing AI may already have been paid for its part.
+Resuming is never blocked, and **Change Vibe** needs room for just one more pair. Only one session can start at a time. Cancelling a start before it's created buys no music, though your text AI may already have been paid for its part.
 
 ## What the estimated costs show
 

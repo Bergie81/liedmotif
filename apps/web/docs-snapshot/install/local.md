@@ -1,7 +1,7 @@
 ---
 title: Install Liedmotif on your laptop
 description: Run Liedmotif on your Mac, Windows or Linux computer with Docker, from a clean start to your first session.
-checkedOn: 2026-11-07
+checkedOn: 2026-11-18
 howTo: true
 ---
 
@@ -79,7 +79,7 @@ Guided setup starts right after your account is created and asks one thing per s
 | People | People who can appear on tailored covers | No |
 | Music model | Your provider key. Paste it and test it to continue | Yes |
 | Track limit | How many tracks Liedmotif may make | No |
-| Writing AI | A service that expands your requests and names your sessions | No |
+| Text AI | A service that expands your requests and names your sessions | No |
 | Cover art | An image key for tailored covers, and a limit on them. Every session gets a free cover without one | No |
 
 A key you save here works right away, with no restart. Setup doesn't make any music: your spending starts when you start a session.

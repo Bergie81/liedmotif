@@ -1,7 +1,7 @@
 ---
 title: Troubleshooting
 description: Real Liedmotif problems with the exact message, the reason and the fix, plus how to read logs and check health.
-checkedOn: 2026-11-17
+checkedOn: 2026-11-18
 ---
 
 Find your message or symptom below. A message about something you just did, such as a failed save or a **Test** result, shows as a notification at the top of the screen; an error stays there until you close it. A problem that lasts shows where it is, such as the banner in the player or a page that couldn't load. Most fixes are one line. Run every command in your install folder: `/opt/liedmotif` from the installer, or your `liedmotif` folder on a laptop. If your user isn't in the `docker` group, write `sudo docker` for `docker`.
@@ -246,7 +246,7 @@ The key is wrong, was revoked, or your provider account has a problem. Create a 
 
 "Could not reach the music provider to verify credentials." is different. The key may be fine, but the machine can't reach the provider. Check its internet connection.
 
-### "... rejected this API key." on the writing AI or image key
+### "... rejected this API key." on the text AI or image key
 
 This comes from the **Test** button, as a notification at the top of the screen, with your provider's name at the start. The key is wrong for that provider. A message that starts "Key works, but" and goes on to say the provider has no such model means the key is fine and the model ID has a typo.
 
@@ -268,7 +268,7 @@ The provider refused the request, often over a named artist. Nothing retries unt
 
 ### Free-text requests fail, but buttons work
 
-A writing AI is set up and it's failing. Liedmotif treats that as a retryable error and doesn't quietly go without it. Test it in **Settings › AI Providers**. To go without one, do both of these, because Liedmotif uses `.env` first and the saved one next: clear the `LLM_` lines in `.env` and run `docker compose up -d web worker`, then press **Disable Writing AI** in **Settings › AI Providers**. If `.env` still sets one up on its own, that button says **Delete stored fallback**. Your words then reach the music provider as you wrote them.
+A text AI is set up and it's failing. Liedmotif treats that as a retryable error and doesn't quietly go without it. Test it in **Settings › AI Providers**. To go without one, do both of these, because Liedmotif uses `.env` first and the saved one next: clear the `LLM_` lines in `.env` and run `docker compose up -d web worker`, then press **Disable Text AI** in **Settings › AI Providers**. If `.env` still sets one up on its own, that button says **Delete stored fallback**. Your words then reach the music provider as you wrote them.
 
 ### Every track sounds like a test, or nothing comes from the music provider
 

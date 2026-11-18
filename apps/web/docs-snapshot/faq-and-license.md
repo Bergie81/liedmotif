@@ -1,7 +1,7 @@
 ---
 title: FAQ and license
 description: Straight answers on costs, providers, rights, downloads, offline use, moving your install and the license.
-checkedOn: 2026-11-17
+checkedOn: 2026-11-18
 faq: true
 ---
 
@@ -11,15 +11,15 @@ These are the questions that come up once the basics are clear. For the basics, 
 
 ### What does it cost?
 
-There's no single number, because you put the bill together yourself. Four things decide it: your music provider and its price, how many new tracks you make, your writing AI (none, a hosted one, or a local one with Ollama), and your covers (generated, or the free ones). Playing a track you already have costs nothing, however often you play it. A rented server, if you go that way, is a separate bill. Today there's one kind of music provider to choose, a Suno-compatible one. [Costs and limits](/docs/costs-and-limits) shows how to keep it all in check.
+There's no single number, because you put the bill together yourself. Four things decide it: your music provider and its price, how many new tracks you make, your text AI (none, a hosted one, or a local one with Ollama), and your covers (generated, or the free ones). Playing a track you already have costs nothing, however often you play it. A rented server, if you go that way, is a separate bill. Today there's one kind of music provider to choose, a Suno-compatible one. [Costs and limits](/docs/costs-and-limits) shows how to keep it all in check.
 
 ### Can I use another music provider?
 
-Not yet. Liedmotif works with one kind of music provider today: a Suno-compatible service, sunoapi.org by default. `SUNO_BASE_URL` in `.env` can point it at another service with the same API, but nothing else is supported. Generated covers are the same, with OpenRouter as the one image provider. You do get a choice of writing AI and of storage. See [Providers and keys](/docs/providers-and-keys).
+Not yet. Liedmotif works with one kind of music provider today: a Suno-compatible service, sunoapi.org by default. `SUNO_BASE_URL` in `.env` can point it at another service with the same API, but nothing else is supported. Generated covers are the same, with OpenRouter as the one image provider. You do get a choice of text AI and of storage. See [Providers and keys](/docs/providers-and-keys).
 
 ### Can I run music generation on my own hardware?
 
-Not yet. That's the goal once local models sound good enough, but nothing is built, so every new track needs a music provider and an internet connection. Your writing AI can already run locally, with Ollama on the same machine, and the free covers need no extra service.
+Not yet. That's the goal once local models sound good enough, but nothing is built, so every new track needs a music provider and an internet connection. Your text AI can already run locally, with Ollama on the same machine, and the free covers need no extra service.
 
 ## Your music
 
@@ -29,7 +29,7 @@ That depends on your music provider and your plan with it, not on Liedmotif. Lie
 
 ### Can I make music that sounds like a named artist?
 
-No, Liedmotif doesn't offer that. Describe what the music is for instead: moods, moments, genres, sounds. If you name one anyway, a writing AI turns the name into a description of the sound. Without a writing AI, your words go to your music provider as typed, its rules decide what it accepts, and some providers refuse a request that names an artist.
+No, Liedmotif doesn't offer that. Describe what the music is for instead: moods, moments, genres, sounds. If you name one anyway, a text AI turns the name into a description of the sound. Without a text AI, your words go to your music provider as typed, its rules decide what it accepts, and some providers refuse a request that names an artist.
 
 ### Can I use Liedmotif commercially?
 
@@ -41,7 +41,7 @@ It stays, and it keeps playing. Liedmotif fetches every finished track to your o
 
 What stops is new music. A running session shows **Generation paused** and plays its ready tracks until the provider has credits again, and a new session has nothing to play until then. This hits everyone on your instance, because members use your keys.
 
-The optional services fail gently or clearly. A cover that can't be made leaves the session with the cover it has. A writing AI that stops answering gives you an error you can retry when you start a session or use **Change Vibe**, until you top it up or press **Disable Writing AI** in **Settings › AI Providers**. If `.env` configures it, remove those lines too. Lyrics timing is fetched from your music provider the first time someone opens a vocal track's lyrics, so a track nobody opened yet shows plain lyrics instead of synced ones.
+The optional services fail gently or clearly. A cover that can't be made leaves the session with the cover it has. A text AI that stops answering gives you an error you can retry when you start a session or use **Change Vibe**, until you top it up or press **Disable Text AI** in **Settings › AI Providers**. If `.env` configures it, remove those lines too. Lyrics timing is fetched from your music provider the first time someone opens a vocal track's lyrics, so a track nobody opened yet shows plain lyrics instead of synced ones.
 
 ### Can I download my music?
 

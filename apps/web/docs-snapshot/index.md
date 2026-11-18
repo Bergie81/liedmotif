@@ -1,7 +1,7 @@
 ---
 title: Liedmotif docs
 description: Everything about running your own Liedmotif, from the first install to backups, members and costs.
-checkedOn: 2026-11-07
+checkedOn: 2026-11-18
 ---
 
 Liedmotif is software you run yourself. These docs take you from nothing to your first session, and then cover what it takes to keep your own instance healthy.
@@ -20,7 +20,7 @@ Where you run Liedmotif decides how you install it. You can move later, so pick 
 
 - **Understand what you're installing:** [What Liedmotif is](/docs/what-is-liedmotif)
 - **Listen on your phone:** [Phone access](/docs/install/phone-access)
-- **Connect your music provider and a writing AI:** [Providers and keys](/docs/providers-and-keys)
+- **Connect your music provider and a text AI:** [Providers and keys](/docs/providers-and-keys)
 - **See what you'll spend and set limits:** [Costs and limits](/docs/costs-and-limits)
 - **Send email or keep your music in a bucket:** [Email and storage](/docs/email-and-storage)
 - **Learn what the app can do:** [Features](/docs/features)

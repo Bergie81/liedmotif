@@ -1,7 +1,7 @@
 ---
 title: Every feature, and how to use it
 description: The reference for using Liedmotif day to day, with what each feature does, where it is in the app and what to watch out for.
-checkedOn: 2026-11-17
+checkedOn: 2026-11-18
 ---
 
 Look up any feature here to see what it does, where to find it and what its limits are. Buttons and menus appear in bold, exactly as the app shows them.
@@ -35,7 +35,7 @@ Roadie is the AI assistant inside the app. Ask it how something in Liedmotif wor
 - **Set the sleep timer:** "stop the music in 30 minutes" sets the [sleep timer](#sleep-timer) to any whole number of minutes from 5 to 90, and replaces a running one. "How long is left on the timer?" and "cancel the timer" work too. It's the same timer as in the options menu, which shows it as well.
 - **If the music doesn't start:** sending your message lets the browser start the audio, so "continue" or "play my running playlist" just plays. If your browser still blocks it, the line in the chat shows **Tap to play**: one tap starts the music.
 - **Start a session from the chat:** ask Roadie for new music, such as "Start something calm for reading". Roadie prepares the session and shows a card in the chat: your request in your words, **Instrumental** or **With vocals**, the length or **No limit**, and how many tracks you have left. Say how long it should run, such as "for 45 minutes" or "with no limit"; if you say neither, Roadie asks before it shows a card, so a session never keeps generating without a limit unless you said so. Roadie skips the question when **Generate new Tracks by default** is off in **Settings › Generation**: such a session gets its first batch and then repeats. It can't start with no limit then: name a length, or switch **New music** on once it plays. Nothing starts and nothing is bought until you press **Start Session** on the card. Pressing it starts the session as **Start Session** on **Home** does: the player opens, and on a phone Roadie closes to show it. Roadie asks for instrumental music unless you ask for vocals. Its cover follows your defaults in **Settings › Cover art**, as on **Home**. A card works once, and Roadie shows one card per message. If your budget has too little left, Roadie says so and shows no card. If the start is refused after you press the button, the player shows why and the card says **This Session did not start**.
-- **Surprise Me from the chat:** say "surprise me", and Roadie prepares a suggestion from your listening the way [Surprise Me](#surprise-me) does. Add what you want: "something more adventurous", a situation such as "for the morning" or "for focus", "with vocals" or "instrumental", and a length such as "for an hour" or "with no limit". The card shows the suggestion's name, genres, mood, energy and vocals, its length (the one Surprise Me picked, unless you named one) and how many tracks you have left. Preparing it uses your writing AI a little and buys no music. Ask again for another one: it replaces the last, and **Home** shows the same suggestion, so there is only ever one. Nothing starts until you press **Start Session** on the card, which starts it as Surprise Me's own button does, with your cover defaults, and opens the player. The language stays **Auto** and your profile is used; for anything else, use Surprise Me on **Home**. If your budget has too little left, Roadie says so and shows no card. If the suggestion was replaced or dismissed elsewhere, or the start is refused after you press the button, the card says why. A suggestion you don't start stays on **Home** until you dismiss it there.
+- **Surprise Me from the chat:** say "surprise me", and Roadie prepares a suggestion from your listening the way [Surprise Me](#surprise-me) does. Add what you want: "something more adventurous", a situation such as "for the morning" or "for focus", "with vocals" or "instrumental", and a length such as "for an hour" or "with no limit". The card shows the suggestion's name, genres, mood, energy and vocals, its length (the one Surprise Me picked, unless you named one) and how many tracks you have left. Preparing it uses your text AI a little and buys no music. Ask again for another one: it replaces the last, and **Home** shows the same suggestion, so there is only ever one. Nothing starts until you press **Start Session** on the card, which starts it as Surprise Me's own button does, with your cover defaults, and opens the player. The language stays **Auto** and your profile is used; for anything else, use Surprise Me on **Home**. If your budget has too little left, Roadie says so and shows no card. If the suggestion was replaced or dismissed elsewhere, or the start is refused after you press the button, the card says why. A suggestion you don't start stays on **Home** until you dismiss it there.
 - **Change the vibe, more like this, New music on:** the three other things that generate music get the same card. "Make it slower, with a cello" prepares a **Change Vibe** for your running session, with your words on the card. "More like this" prepares **More Like This**: a new session in the style of the track that is playing, or of up to 10 tracks you name, including tracks shared with you in the Lounge. "Turn New music back on for 90 minutes" or "with no limit" prepares what the player's **New music** control offers, **Up to a duration** or **No limit**; if you say neither, Roadie asks. Nothing changes and nothing is bought until you press the button on the card: **Change Vibe**, **Start new Session** or **Save**. The button does what the app's own control does: More Like This opens the player with the new session, and the other two change the running session where you are. Roadie shows no card, and says why, when your budget has nothing left, when there is no running session, when the session has reached its duration target, or when it already holds the length you asked for. If the app refuses after you press the button, the card says so; for a change of vibe the player shows why.
 - **A new cover from the chat:** say "make a new cover for this, darker, neon city", and Roadie prepares one new cover for the session or playlist that is playing, or for one of yours you name. Your words become the art direction, up to 500 characters; say none and Roadie just makes another. The card shows what the cover is for, your art direction and the cover budget line the cover dialog shows, such as "Covers today: 3 of 10". The style stays the session's own (**Random** for a playlist), **Enhance prompts** follows your setting, and People reference photos follow the session's own setting, as in the cover dialog. For a playlist the card leaves **Use People reference photos** off; for that, use the playlist's cover sheet. Nothing is generated until you press **Generate cover**, which uses one cover from your budget, like **Reroll Cover Art**. The card then follows the cover, while the chat is open. When it is ready, the card shows it with **Use this cover**, a second tap that costs nothing: only that tap makes it your cover, and the player and your library follow. Leave the card alone and your cover stays; the new one waits in **Previous covers**. If the cover fails, the card says why. Roadie shows no card, and says why, when covers aren't set up or are switched off, when your cover budget is used up, when the session or playlist already keeps 10 covers, or when a cover for it is already being generated. Playlists shared with you in the Lounge aren't yours to give a cover. If the app refuses after you press the button, the card says why.
 - **What Roadie doesn't do:** Roadie only adds, renames and pins. It can't unfavorite or unpin, take a track out of a playlist, unsave or delete anything, and it can't dislike a track, change the volume or jump to a position in a track. Ask for one of those and Roadie points you to the page where you do it yourself. It changes only the four settings named above: every other setting is yours to change on its page, and so is anything that can spend more, such as a limit or **Tracks generated in advance**. Roadie plays and controls music you already have; anything that generates new music or a cover it only prepares, for you to confirm on the card. Picking an earlier cover, uploading one or deleting one stays in the cover dialog.
@@ -47,7 +47,7 @@ Roadie answers in the language you write in. Names of screens and buttons stay a
 
 **For members:** the admin can give each member a daily message allowance. When yours runs low, Roadie says how many messages are left today, and once it's used up, when you can ask again. The admin can also switch Roadie off for a member, and then the button isn't shown. Both are set under **Settings › Members**, see [members](/docs/members).
 
-**Good to know:** Roadie runs on your writing AI, so it only appears when one is connected, and each question is a small request to that provider. If the writing AI fails or you ask a lot in a short time, Roadie says so, and your question stays in the field so you can send it again. What Roadie sends where is in [privacy and security](/docs/privacy-and-security#the-writing-ai).
+**Good to know:** Roadie runs on your text AI, so it only appears when one is connected, and each question is a small request to that provider. If the text AI fails or you ask a lot in a short time, Roadie says so, and your question stays in the field so you can send it again. What Roadie sends where is in [privacy and security](/docs/privacy-and-security#the-text-ai).
 
 ## Ask for music
 
@@ -65,11 +65,11 @@ If your budget has too little left, no session starts and nothing is bought. A d
 
 While the field is empty, it cycles through worked examples of good requests. They're only examples: nothing is sent until you type your own.
 
-### With or without a writing AI
+### With or without a text AI
 
-A writing AI is optional. It's a text service that turns your words into one steady direction for the whole session, and gives sessions and tracks creative names. `.env` calls it a text LLM. Without one, your words reach the music model exactly as written, and your fine-tune picks apply either way. The admin connects one in **Settings › AI Providers**, and [providers and keys](/docs/providers-and-keys#writing-ai) compares the two in full.
+A text AI is optional. It's a text service that turns your words into one steady direction for the whole session, and gives sessions and tracks creative names. `.env` calls it a text LLM. Without one, your words reach the music model exactly as written, and your fine-tune picks apply either way. The admin connects one in **Settings › AI Providers**, and [providers and keys](/docs/providers-and-keys#text-ai) compares the two in full.
 
-Without one, **Home** says **No Writing AI connected**. If a connected writing AI fails, the session doesn't quietly start without it: the player shows **Your Session didn't start** with the reason, and **Try again** takes you back to Home.
+Without one, **Home** says **No Text AI connected**. If a connected text AI fails, the session doesn't quietly start without it: the player shows **Your Session didn't start** with the reason, and **Try again** takes you back to Home.
 
 ### Fine-tune picks
 
@@ -93,17 +93,17 @@ Set a target for how much new music a session makes. When it reaches the target,
 - The target counts generated music, not listening time. Played and skipped tracks count, and disliked or deleted ones don't.
 - It can overshoot by one batch, because the provider makes tracks in pairs.
 - The music keeps playing after the target. To stop it at a set time, use the [sleep timer](#sleep-timer).
-- On **Auto**, a writing AI picks up a duration you asked for in words. Without one, the session keeps going. A slider setting always wins over your words.
+- On **Auto**, a text AI picks up a duration you asked for in words. Without one, the session keeps going. A slider setting always wins over your words.
 
 While a target is set, the player's [New music](#new-music) status shows progress such as "12 / 40 min generated", then "New music finished · 42 min" when it's reached. Tap it to set, change or clear the target. You can also do that in **Change Vibe › Session Details**. Setting a target turns on new music for that session.
 
 ### Instrumental or vocals
 
-Sessions are instrumental by default. With **Vocals** on **Auto**, a writing AI still chooses instrumental unless your words ask for singing. Without a writing AI, **Auto** means instrumental. Pick **Vocals** to be sure. The choice is per session, and there's no global setting for it.
+Sessions are instrumental by default. With **Vocals** on **Auto**, a text AI still chooses instrumental unless your words ask for singing. Without a text AI, **Auto** means instrumental. Pick **Vocals** to be sure. The choice is per session, and there's no global setting for it.
 
 ### Fresh lyrics
 
-With a writing AI, each new pair of vocal tracks gets its own lyric angle within the session's direction, so songs don't keep singing the same scene. A reroll reuses the angle of the track it replaces. If that step fails, the tracks use the session's general lyric notes and still generate.
+With a text AI, each new pair of vocal tracks gets its own lyric angle within the session's direction, so songs don't keep singing the same scene. A reroll reuses the angle of the track it replaces. If that step fails, the tracks use the session's general lyric notes and still generate.
 
 ### Guardrails
 
@@ -119,7 +119,7 @@ Every track of the vibe follows them, including rerolls. You can change them lat
 
 Press the dice beside the request field. Pick a **Theme**, a **Language**, **Vocals** and **Explore** (**Familiar** or **Adventurous**), then press **Find a surprise**. You get a proposed session shaped by your listening.
 
-From the preview, **Start Session** starts it, **Try another** proposes a new one, **Change settings** goes back and **Dismiss** throws it away. A proposal buys no music, though it does use your writing AI if one is connected. It also works without one. Like starting a session, it needs budget left.
+From the preview, **Start Session** starts it, **Try another** proposes a new one, **Change settings** goes back and **Dismiss** throws it away. A proposal buys no music, though it does use your text AI if one is connected. It also works without one. Like starting a session, it needs budget left.
 
 The proposal fills in the form on **Home**, so you can edit it first. An unstarted proposal is still there on your next visit. The theme **A song about me** always has vocals.
 
@@ -397,9 +397,9 @@ Only finished tracks can be downloaded, so a track reads "Still generating" unti
 Every session has one cover, shared by all its tracks. It starts on built-in placeholder art until its own cover lands. Choose in the **Cover art** fold on **Home**:
 
 - **Use Tailored Cover Art Generation** asks your image provider for a cover in your chosen style. Turn it off to use the cover that comes with the music, at no additional cost.
-- **Cover style** asks your image provider for **Auto**, **Random**, **Record Sleeve**, **Artistic**, **Photographic**, **Manga**, **Drawing**, **Minimal** or **Custom**. Styled covers need an image provider and cover budget. **Auto** lets your writing AI pick the style that fits the session; without a writing AI, it picks from the session's name and genres. **Record Sleeve** paints an album cover from one decade between the 1960s and the 2000s: name a decade or an era's sound in your prompt ("80s synthwave", in any language), or it picks one for you.
+- **Cover style** asks your image provider for **Auto**, **Random**, **Record Sleeve**, **Artistic**, **Photographic**, **Manga**, **Drawing**, **Minimal** or **Custom**. Styled covers need an image provider and cover budget. **Auto** lets your text AI pick the style that fits the session; without a text AI, it picks from the session's name and genres. **Record Sleeve** paints an album cover from one decade between the 1960s and the 2000s: name a decade or an era's sound in your prompt ("80s synthwave", in any language), or it picks one for you.
 
-To change it later, use the **Session Cover** tile in the player, or **Change Cover Art** in a session's options. You can set a **Cover style**, write up to 500 characters of **Art direction** or press **Use session prompt**. With a writing AI, a switch lets it polish your direction first. Press **Reroll Cover Art**, or **Upload your own**, which costs nothing.
+To change it later, use the **Session Cover** tile in the player, or **Change Cover Art** in a session's options. You can set a **Cover style**, write up to 500 characters of **Art direction** or press **Use session prompt**. With a text AI, a switch lets it polish your direction first. Press **Reroll Cover Art**, or **Upload your own**, which costs nothing.
 
 A new cover is only a preview until you press **Save Cover Art**, so a cover you like is never replaced by accident. **Previous covers** keeps up to 10, uploads included. Delete one to make room for more. Changing the vibe or the name never changes the cover.
 
@@ -466,7 +466,7 @@ Add the people in your life, so a song or cover can really be about them. In **S
 
 To include someone else, use their saved name in your request. Capitals don't matter, but the word must match: "Mum" doesn't find someone saved as "Mother", and relationships or translations aren't worked out for you. Choose a distinctive name. You yourself don't need your name: see [You in your own songs](#you-in-your-own-songs).
 
-- **Lyrics:** a named person can show up in the words of vocal tracks, and **About them** / **About you** reaches the lyrics only with a writing AI.
+- **Lyrics:** a named person can show up in the words of vocal tracks, and **About them** / **About you** reaches the lyrics only with a text AI.
 - **Session covers:** a named person with photos can appear on a styled cover. Basic covers can't include anyone.
 - **Photos:** use JPEG, PNG or WebP. Two or three clear solo portraits work best, without group shots, sunglasses or heavy filters. They go only to your image provider, for covers.
 
@@ -571,8 +571,8 @@ These are the admin's features for looking after the instance. Each is explained
 | --- | --- | --- |
 | One-line install and update | One pasted line sets everything up, and the same line updates it later, with your keys and library kept | [Home server](/docs/install/home-server), [cloud provider](/docs/install/cloud), [updates](/docs/updates) |
 | Private or public access | Tailscale mode for a private box at home with real HTTPS, or your own domain on a server | [Phone access](/docs/install/phone-access) |
-| Guided setup | A first-time welcome that walks you through your profile, people, the music provider, limits, a writing AI and covers | [Cloud provider](/docs/install/cloud) |
-| Your choice of writing AI | A hosted service, any OpenAI-compatible endpoint, Ollama on your own machine, or none | [Providers and keys](/docs/providers-and-keys) |
+| Guided setup | A first-time welcome that walks you through your profile, people, the music provider, limits, a text AI and covers | [Cloud provider](/docs/install/cloud) |
+| Your choice of text AI | A hosted service, any OpenAI-compatible endpoint, Ollama on your own machine, or none | [Providers and keys](/docs/providers-and-keys) |
 | Your choice of storage | Local disk or an S3-compatible bucket | [Email and storage](/docs/email-and-storage) |
 | Backups | Scheduled, rotated backups, an encrypted download and a restore command | [Backups](/docs/backups) |
 | Safe keys and private media | Provider keys stay on the server, and music and photos only reach people signed in with access to them | [Privacy and security](/docs/privacy-and-security) |

@@ -1,7 +1,7 @@
 ---
 title: Install Liedmotif on a cloud provider
 description: Rent a small server, point your own domain at it and invite your friends, even if you have never touched a server, DNS or SSH.
-checkedOn: 2026-11-08
+checkedOn: 2026-11-18
 howTo: true
 ---
 
@@ -264,7 +264,7 @@ Keep the key in your password manager or in the private note with your setup lin
 - **Put people on your Covers.** Optional. Press **Continue**.
 - **Connect your music model.** Paste your key from step 7 into the field that says **Paste it here**, then press **Test the key**. It answers `Music provider reachable; … credits available.` Press **Save and continue**.
 - **Set a Track limit.** This is your own spending limit, and it's off by default. Turn on **Limit my Tracks**, set **Tracks per day** and **Tracks per month** to what you're happy to pay, and press **Save and continue**.
-- **Add a Writing AI.** Optional. It writes better session names and prompts, and it needs its own key. `.env` calls it a text LLM. **Skip for now** is fine.
+- **Add a Text AI.** Optional. It writes better session names and prompts, and it needs its own key. `.env` calls it a text LLM. **Skip for now** is fine.
 - **Choose your Cover art.** Optional. An image key paints covers around your session and your people, at about 7 cents each. Without one, covers come from your music provider at no extra cost. Press **Save and continue**.
 - On the last screen, press **Start your first Session**.
 

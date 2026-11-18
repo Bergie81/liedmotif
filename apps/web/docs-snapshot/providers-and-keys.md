@@ -1,7 +1,7 @@
 ---
 title: Providers and keys
 description: Which AI services Liedmotif uses, how to get a key for each, where to enter it, and what changes with and without the optional ones.
-checkedOn: 2026-11-17
+checkedOn: 2026-11-18
 ---
 
 Liedmotif doesn't make music itself. It sends your requests to AI services you choose, on your own accounts, and you pay them directly. There's one you need and two you can add later, and you can change any of them at any time. Only the admin can see or change provider keys. Members create music on the admin's keys, within [the budgets the admin sets](/docs/costs-and-limits).
@@ -9,7 +9,7 @@ Liedmotif doesn't make music itself. It sends your requests to AI services you c
 | Service | Required | What it does | Who provides it today |
 | --- | --- | --- | --- |
 | Music provider | Yes | Makes every track | One Suno-compatible provider, [sunoapi.org](https://sunoapi.org) by default |
-| Writing AI | No | Turns your words into a musical direction, and writes names and lyric ideas | OpenAI, OpenRouter, any OpenAI-compatible service, or Ollama |
+| Text AI | No | Turns your words into a musical direction, and writes names and lyric ideas | OpenAI, OpenRouter, any OpenAI-compatible service, or Ollama |
 | Cover images | No | Paints covers in your style, with your people on them | OpenRouter |
 
 ## Music provider
@@ -35,11 +35,11 @@ A successful **Test** proves the key works, not that it has credit left. Check y
 
 If the provider is busy instead, the player shows **Generation backing off** and tries again by itself within a few minutes.
 
-## Writing AI
+## Text AI
 
-The writing AI is a text service that works on your words. The app calls it the writing AI, while the comments in `.env` say "text LLM".
+The text AI is a text service that works on your words. The app calls it the Text AI, while the comments in `.env` say "text LLM".
 
-| | With a writing AI | Without one |
+| | With a text AI | Without one |
 | --- | --- | --- |
 | Your request | Becomes a stable, detailed musical direction | Reaches the music provider exactly as you wrote it, with your genre, energy, vocals and language picks applied |
 | Names | Creative session names and track titles, topped up before a long session runs out | A session name built from your request, and numbered track titles built from your first genre or your request's first words |
@@ -48,18 +48,18 @@ The writing AI is a text service that works on your words. The app calls it the 
 | Session length | Can come from your request's words, like "40 minutes" | Comes only from the slider |
 | Cost | A little text usage with your provider, or nothing with Ollama | Nothing extra |
 
-Music works well either way, and you can add a writing AI later. It runs once when a session starts and again for a written change of vibe, not for every track. The exceptions are small: Surprise Me, naming a **More Like This** session, a lyric idea for each new vocal pair with lyric notes, new titles when a long session runs out of them, and cover guidance and custom cover styles while **Enhance prompts** is on.
+Music works well either way, and you can add a text AI later. It runs once when a session starts and again for a written change of vibe, not for every track. The exceptions are small: Surprise Me, naming a **More Like This** session, a lyric idea for each new vocal pair with lyric notes, new titles when a long session runs out of them, and cover guidance and custom cover styles while **Enhance prompts** is on.
 
 ### If it fails
 
-When a writing AI is connected, it's always used for your written requests. Liedmotif doesn't quietly fall back to your raw words, because you'd get different music without knowing why. If it fails on a session request or a change of vibe, you see an error, no session is created or changed, no music is bought, and you can simply try again:
+When a text AI is connected, it's always used for your written requests. Liedmotif doesn't quietly fall back to your raw words, because you'd get different music without knowing why. If it fails on a session request or a change of vibe, you see an error, no session is created or changed, no music is bought, and you can simply try again:
 
-- **"The Writing AI took too long to respond. Try again, or use a faster model."** The model was slow. Liedmotif waits 30 seconds by default.
-- **"Could not turn that description into a music style. Check the Writing AI configuration."** Check the key, the model and your credit with that provider.
+- **"The Text AI took too long to respond. Try again, or use a faster model."** The model was slow. Liedmotif waits 30 seconds by default.
+- **"Could not turn that description into a music style. Check the Text AI configuration."** Check the key, the model and your credit with that provider.
 
 The small jobs are the exception. If naming fails, the session still starts, with a plain name. If a lyric idea fails, the track still gets made with the session's own lyric notes. If enhancing cover text fails, your own text is used.
 
-To go without it, press **Disable Writing AI** in **Settings › AI Providers**. If `.env` sets up the writing AI on its own, remove those lines and apply the change as shown under [Where keys go](#where-keys-go), or they keep it on. Until then, the button reads **Delete stored fallback** and removes only the saved key.
+To go without it, press **Disable Text AI** in **Settings › AI Providers**. If `.env` sets up the text AI on its own, remove those lines and apply the change as shown under [Where keys go](#where-keys-go), or they keep it on. Until then, the button reads **Delete stored fallback** and removes only the saved key.
 
 ### Choose a service
 
@@ -76,7 +76,7 @@ An **OpenAI-compatible** service has to be on a public address. Liedmotif refuse
 
 ## Ollama on the same machine
 
-Ollama runs a text model on your own hardware, so the writing AI costs nothing and your words stay on your machine until the music provider receives the finished direction. It needs no key.
+Ollama runs a text model on your own hardware, so the text AI costs nothing and your words stay on your machine until the music provider receives the finished direction. It needs no key.
 
 Install Ollama on the machine that runs Liedmotif, then pull a model:
 
@@ -143,7 +143,7 @@ Generated covers can be limited, in [the cover budget](/docs/costs-and-limits). 
 
 ### Add an image key
 
-Enter the OpenRouter key in the **Cover art** screen of guided setup, or under **Cover images** in **Settings › AI Providers**. It's saved separately from the writing AI, even when you paste the same key into both. Once saved, it works right away, and no paid image is made until a session needs one.
+Enter the OpenRouter key in the **Cover art** screen of guided setup, or under **Cover images** in **Settings › AI Providers**. It's saved separately from the text AI, even when you paste the same key into both. Once saved, it works right away, and no paid image is made until a session needs one.
 
 ### Try another model
 
@@ -174,7 +174,7 @@ SUNO_API_KEY=your-key
 #SUNO_BASE_URL=https://api.sunoapi.org
 #SUNO_MODEL=V5
 
-# Writing AI: openai, openrouter, openai-compatible or ollama
+# Text AI: openai, openrouter, openai-compatible or ollama
 LLM_PROVIDER=openrouter
 LLM_API_KEY=your-key
 LLM_MODEL=minimax/minimax-m3
@@ -204,9 +204,9 @@ docker compose up -d web worker
 
 This makes `CREDENTIAL_ENCRYPTION_KEY` worth protecting. If it's lost or changed, the app says "The stored value cannot be decrypted", and you have to enter your keys again. If it's missing altogether, the app says **Keys can't be stored yet**, and you can only use `.env`. A base URL isn't secret and is stored as plain text, so Liedmotif refuses one with a password or token inside it.
 
-**Tested.** **Test** makes only free, read-only requests: it never makes a track and never spends credit. It doesn't save anything either, so press **Save** afterwards. For music it reads your credit balance. For a writing AI or image key it checks the key and then looks up your model. In guided setup, a new music key has to pass before you can continue.
+**Tested.** **Test** makes only free, read-only requests: it never makes a track and never spends credit. It doesn't save anything either, so press **Save** afterwards. For music it reads your credit balance. For a text AI or image key it checks the key and then looks up your model. In guided setup, a new music key has to pass before you can continue.
 
-Tests of a writing AI or image key name your service and model, so the wording varies a little. Ollama says "Connected" where the others say "Key works".
+Tests of a text AI or image key name your service and model, so the wording varies a little. Ollama says "Connected" where the others say "Key works".
 
 | Message | What it means |
 | --- | --- |
@@ -231,10 +231,10 @@ ALLOW_INSECURE_PROVIDER_MEDIA=1
 
 ## What providers receive
 
-Each provider you connect receives what it needs to do its job, under its own terms. The music provider gets the prompt for each track. A hosted writing AI gets your requests and lyric notes. The image provider gets the cover's art direction and, when a person appears on a cover, their reference photos. Choosing Ollama keeps the writing step at home, but your music provider still receives the finished prompt. [Privacy and security](/docs/privacy-and-security) has the full picture.
+Each provider you connect receives what it needs to do its job, under its own terms. The music provider gets the prompt for each track. A hosted text AI gets your requests and lyric notes. The image provider gets the cover's art direction and, when a person appears on a cover, their reference photos. Choosing Ollama keeps the writing step at home, but your music provider still receives the finished prompt. [Privacy and security](/docs/privacy-and-security) has the full picture.
 
 ## Rights to your music
 
 What you may do with your tracks depends on your provider and your plan with them, so read their terms before you publish anything. Liedmotif gives no copyright guarantee. It's software you run yourself, and it neither licenses music nor owns what you make.
 
-Ask for moods, moments and genres, not for a named artist's sound. With a writing AI, a named artist, band or song in your request becomes a description of its sound, such as "soulful piano ballad, warm alto vocal", and the name stays out of the style it writes. Without one, your words go to your music provider as typed, and its rules apply. Some providers refuse a request that names an artist.
+Ask for moods, moments and genres, not for a named artist's sound. With a text AI, a named artist, band or song in your request becomes a description of its sound, such as "soulful piano ballad, warm alto vocal", and the name stays out of the style it writes. Without one, your words go to your music provider as typed, and its rules apply. Some providers refuse a request that names an artist.
