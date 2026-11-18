@@ -19,7 +19,7 @@
 //     egress guard (private/metadata hosts blocked, redirects re-validated, no
 //     auth header forwarded).
 
-import { ProviderConfigError } from '../errors';
+import { ProviderConfigError, ProviderUnbilledError } from '../errors';
 import {
   isSunoEnvelope,
   SUNO_DEFAULT_BASE_URL,
@@ -185,6 +185,11 @@ export function sunoCoverImageProvider(config: SunoCoverImageConfig): GeneratedI
       // not-started configuration problem.
       if (error instanceof ProviderConfigError) {
         throw new GeneratedImageProviderError('configuration', 'not_started');
+      }
+      // A host name that did not resolve was never dialed either, but nothing
+      // is misconfigured: it is an outage a later attempt may get past.
+      if (error instanceof ProviderUnbilledError && error.refusal === 'provider_unavailable') {
+        throw new GeneratedImageProviderError('unavailable', 'not_started');
       }
       // The POST may or may not have landed; the provider-side dedup makes a
       // same-key replay safe.

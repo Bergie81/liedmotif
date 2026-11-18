@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ProviderConfigError } from '../errors';
+import { pinnedProviderFetch } from '../validation/provider-fetch';
 import {
   DISCOVERY_RETRY_COOLDOWN_MS,
   FALLBACK_MAX_REFERENCE_BYTES,
@@ -711,6 +712,36 @@ describe('openRouter generated-image adapter', () => {
     ).rejects.toMatchObject({
       kind: 'configuration',
       submissionDisposition: 'not_started',
+    });
+  });
+
+  it('classifies a host whose name does not resolve as unavailable and not started', async () => {
+    // The lookup fails before any connection, so nothing could have been billed
+    // and nothing is misconfigured: a later attempt may simply resolve.
+    const fetchImpl = pinnedProviderFetch({
+      providerKey: 'openrouter',
+      resolve: async () => {
+        throw new Error('getaddrinfo EAI_AGAIN openrouter.ai');
+      },
+    });
+
+    await expect(adapter(fetchImpl).generate(request())).rejects.toMatchObject({
+      kind: 'unavailable',
+      submissionDisposition: 'not_started',
+    });
+  });
+
+  it('keeps any other transport failure as possibly paid', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(endpointDescriptor([]))
+      .mockRejectedValueOnce(new TypeError('fetch failed'));
+
+    await expect(
+      adapter(fetchImpl as unknown as typeof fetch).generate(request()),
+    ).rejects.toMatchObject({
+      kind: 'unavailable',
+      submissionDisposition: 'outcome_unknown',
     });
   });
 

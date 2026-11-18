@@ -3,6 +3,7 @@ import {
   GeneratedImageProviderError,
   type GeneratedImageRequest,
 } from './generated-image-contract';
+import { pinnedProviderFetch } from '../validation/provider-fetch';
 import { sunoCoverImageProvider } from './suno-cover';
 
 const SECRET = 'suno-test-secret';
@@ -202,6 +203,26 @@ describe('suno cover-image adapter', () => {
 
   it('maps a maintenance-window submit (455) to a retryable unavailable error', async () => {
     const fetchImpl = vi.fn(async () => json({ code: 455, msg: 'maintenance' }, 455));
+    await expectProviderError(
+      adapter(fetchImpl as unknown as typeof fetch).generate(request()),
+      'unavailable',
+      'outcome_unknown',
+    );
+  });
+
+  it('maps a host whose name does not resolve to a not-started unavailable error', async () => {
+    // The lookup fails before any connection, so no cover task can exist.
+    const fetchImpl = pinnedProviderFetch({
+      providerKey: 'suno-cover',
+      resolve: async () => [],
+    });
+    await expectProviderError(adapter(fetchImpl).generate(request()), 'unavailable', 'not_started');
+  });
+
+  it('keeps a submit that fails in transport as possibly paid', async () => {
+    const fetchImpl = vi.fn(async () => {
+      throw new TypeError('fetch failed');
+    });
     await expectProviderError(
       adapter(fetchImpl as unknown as typeof fetch).generate(request()),
       'unavailable',

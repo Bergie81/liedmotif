@@ -100,7 +100,7 @@ async function vettedAddressesMemoized(
   // to every caller for the whole TTL.
   let resolverFailed = false;
   const resolve = options.resolve ?? systemResolve;
-  const addresses = await raceWithAbort(
+  const vetted = await raceWithAbort(
     resolveVettedAddresses(hostname, {
       resolve: (host) =>
         resolve(host).catch((err: unknown) => {
@@ -110,6 +110,7 @@ async function vettedAddressesMemoized(
     }),
     options.signal,
   );
+  const addresses = Array.isArray(vetted) ? vetted : null;
   if (resolverFailed) return addresses;
   if (cache.size >= VERDICT_CACHE_MAX_ENTRIES) cache.clear();
   cache.set(hostname, { addresses, expiresAt: Date.now() + VERDICT_TTL_MS });

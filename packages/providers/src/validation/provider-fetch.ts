@@ -9,7 +9,7 @@
 // same guarantee `egress.ts` gives provider-RETURNED media URLs. The Host header
 // and TLS SNI still carry the hostname, so a vhosted provider is unaffected.
 
-import { ProviderConfigError } from '../errors';
+import { ProviderConfigError, ProviderUnbilledError } from '../errors';
 import { fetchPinnedAddresses } from './pinned-fetch';
 import {
   allowsSameMachineHost,
@@ -31,11 +31,18 @@ function targetUrl(input: Parameters<typeof fetch>[0]): string {
   return input instanceof URL ? input.href : input.url;
 }
 
+/** The one wording for a provider host whose name did not resolve. */
+export const PROVIDER_UNREACHABLE_MESSAGE =
+  'The provider could not be reached. Try again in a moment.';
+
 /**
  * A `fetch` for string or URL targets that vets the target address set and then
  * dials only it, throwing a sanitized `ProviderConfigError` when the host is (or
- * resolves to) a private/metadata address. Its Response is undici's, not the
- * platform class (see `fetchPinnedAddresses`).
+ * resolves to) a private/metadata address. A lookup that fails or answers
+ * nothing throws a `ProviderUnbilledError` with the `provider_unavailable`
+ * refusal instead: nothing was sent, nothing is misconfigured, and a later call
+ * may resolve. Its Response is undici's, not the platform class (see
+ * `fetchPinnedAddresses`).
  *
  * Resolution runs per call rather than through a verdict memo: these are API
  * calls seconds apart, not the media path's back-to-back byte fetches, so one
@@ -53,7 +60,14 @@ export function pinnedProviderFetch(options: PinnedProviderFetchOptions): typeof
       ...(options.resolve ? { resolve: options.resolve } : {}),
       allowSameMachine: allowsSameMachineHost(options.providerKey),
     });
-    if (!addresses) throw new ProviderConfigError(BLOCKED_BASE_URL_MESSAGE);
+    if (addresses === 'blocked') throw new ProviderConfigError(BLOCKED_BASE_URL_MESSAGE);
+    if (addresses === 'unresolved') {
+      throw new ProviderUnbilledError(
+        PROVIDER_UNREACHABLE_MESSAGE,
+        { lookupFailed: true },
+        'provider_unavailable',
+      );
+    }
     return fetchPinnedAddresses(input, init ?? {}, addresses);
   };
 }

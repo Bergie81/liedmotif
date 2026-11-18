@@ -3,7 +3,7 @@
 // references fit the declared limits. Vendor endpoints and request bodies stay in
 // the adapters.
 
-import { ProviderConfigError } from '../errors';
+import { ProviderConfigError, ProviderUnbilledError } from '../errors';
 import { readBoundedResponseJson } from '../validation/response-limit';
 import {
   COVER_IMAGE_MEDIA_TYPES,
@@ -198,6 +198,11 @@ export async function submitGeneratedImageRequest(
     // failure rather than an ambiguous one the caller must treat as spend.
     if (error instanceof ProviderConfigError) {
       throw new GeneratedImageProviderError('configuration', 'not_started');
+    }
+    // A host name that did not resolve was never dialed either, but nothing is
+    // misconfigured: it is an outage a later attempt may get past.
+    if (error instanceof ProviderUnbilledError && error.refusal === 'provider_unavailable') {
+      throw new GeneratedImageProviderError('unavailable', 'not_started');
     }
     const timedOut = error instanceof Error && error.name === 'TimeoutError';
     throw new GeneratedImageProviderError(timedOut ? 'timeout' : 'unavailable', 'outcome_unknown');

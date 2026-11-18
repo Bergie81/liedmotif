@@ -273,13 +273,22 @@ export interface ResolvedHostCheckOptions {
 }
 
 /**
- * The addresses `hostname` may be connected to, or null when it is blocked.
+ * What a host check found: the addresses to dial, a refusal because the host is
+ * (or answers) a blocked address, or no answer at all.
+ */
+export type VettedAddresses = string[] | 'blocked' | 'unresolved';
+
+/**
+ * The addresses `hostname` may be connected to, `'blocked'` when it is or
+ * resolves to a blocked address, or `'unresolved'` when the lookup failed or
+ * answered nothing.
  *
  * IP literals are checked directly; names are resolved and EVERY returned
  * address is vetted, so a public hostname with one private answer (DNS
  * rebinding) is refused wholesale rather than filtered down to its safe
- * entries. A name that fails to resolve (or resolves to nothing) is blocked —
- * the fetch would fail anyway, and refusing keeps the error sanitized.
+ * entries. A failed lookup says nothing about the host, so it is kept apart
+ * from a blocked one: nothing can be dialed either way, and each caller decides
+ * whether that is a refusal or a temporary outage.
  *
  * The returned set is what a caller must pin the connection to: vetting these
  * addresses and then letting the transport resolve again is the gap
@@ -288,7 +297,7 @@ export interface ResolvedHostCheckOptions {
 export async function resolveVettedAddresses(
   hostname: string,
   options: ResolvedHostCheckOptions = {},
-): Promise<string[] | null> {
+): Promise<VettedAddresses> {
   const resolve = options.resolve ?? systemResolve;
   const host = stripBrackets(hostname.toLowerCase());
   const isBlockedAddress = (address: string) =>
@@ -296,31 +305,32 @@ export async function resolveVettedAddresses(
       ? false
       : isPrivateHost(address);
 
-  if (isIP(host)) return isBlockedAddress(host) ? null : [host];
+  if (isIP(host)) return isBlockedAddress(host) ? 'blocked' : [host];
 
   // Non-IP well-known names (`localhost` etc.) are caught literally before DNS.
-  if (isBlockedAddress(host)) return null;
+  if (isBlockedAddress(host)) return 'blocked';
 
   let addresses: string[];
   try {
     addresses = await resolve(host);
   } catch {
-    return null;
+    return 'unresolved';
   }
-  if (addresses.length === 0) return null;
-  return addresses.some(isBlockedAddress) ? null : addresses;
+  if (addresses.length === 0) return 'unresolved';
+  return addresses.some(isBlockedAddress) ? 'blocked' : addresses;
 }
 
 /**
  * Whether `hostname` is (or RESOLVES to) a private/link-local/metadata address —
  * the verdict half of `resolveVettedAddresses`, for callers that only decide
- * whether to proceed and never dial themselves.
+ * whether to proceed and never dial themselves. A name that does not resolve is
+ * refused too: it cannot be vetted, so it is not let in.
  */
 export async function isBlockedResolvedHost(
   hostname: string,
   options: ResolvedHostCheckOptions = {},
 ): Promise<boolean> {
-  return (await resolveVettedAddresses(hostname, options)) === null;
+  return !Array.isArray(await resolveVettedAddresses(hostname, options));
 }
 
 /**

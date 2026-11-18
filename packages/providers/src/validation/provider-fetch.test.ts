@@ -5,8 +5,9 @@
 
 import { createServer, type Server } from 'node:http';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { ProviderConfigError } from '../errors';
+import { ProviderConfigError, ProviderUnbilledError } from '../errors';
 import { pinnedProviderFetch } from './provider-fetch';
+import { BLOCKED_BASE_URL_MESSAGE } from './ssrf';
 
 let server: Server;
 let port: number;
@@ -81,6 +82,49 @@ describe('pinnedProviderFetch', () => {
 
     await expect(fetchImpl(`http://pinned.invalid:${port}/api/tags`)).rejects.toBeInstanceOf(
       ProviderConfigError,
+    );
+    expect(seen).toEqual([]);
+  });
+
+  it.each([
+    ['a private IP literal', 'http://10.0.0.5/v1/models', resolvesTo('203.0.113.9')],
+    ['a well-known private name, caught before DNS', 'http://localhost/v1/models', resolvesTo()],
+    [
+      'a name where one of several answers is private',
+      'http://pinned.invalid/v1/models',
+      resolvesTo('8.8.8.8', '192.168.1.10'),
+    ],
+  ])('refuses %s as a private host', async (_case, url, resolve) => {
+    const fetchImpl = pinnedProviderFetch({ providerKey: 'openai-compatible', resolve });
+
+    await expect(fetchImpl(url)).rejects.toThrow(
+      expect.objectContaining({
+        name: 'ProviderConfigError',
+        message: BLOCKED_BASE_URL_MESSAGE,
+      }),
+    );
+  });
+
+  it.each([
+    [
+      'a lookup that fails',
+      async () => {
+        throw new Error('getaddrinfo EAI_AGAIN pinned.invalid');
+      },
+    ],
+    ['a lookup that answers no address', resolvesTo()],
+  ])('reports %s as unreachable and unpaid, never as a private host', async (_case, resolve) => {
+    const fetchImpl = pinnedProviderFetch({ providerKey: 'openai-compatible', resolve });
+
+    const error = await fetchImpl(`http://pinned.invalid:${port}/v1/models`).catch(
+      (caught: unknown) => caught,
+    );
+
+    expect(error).toBeInstanceOf(ProviderUnbilledError);
+    expect(error).not.toBeInstanceOf(ProviderConfigError);
+    expect((error as ProviderUnbilledError).refusal).toBe('provider_unavailable');
+    expect((error as Error).message).toBe(
+      'The provider could not be reached. Try again in a moment.',
     );
     expect(seen).toEqual([]);
   });
