@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   BLOCK_SIGNAL_COOLDOWNS_MS,
   decideBufferAction,
+  isFailedPaidBatch,
   isListenerActive,
   LISTENER_ACTIVE_WINDOW_MS,
   mapProviderBlockSignal,
@@ -29,6 +30,7 @@ const base: BufferDecisionInput = {
   providerSignal: null,
   listenerActive: true,
   loopHeld: false,
+  stuck: false,
 };
 
 describe('decideBufferAction', () => {
@@ -511,6 +513,112 @@ describe('playback-gated generation (no listener → no spend)', () => {
       costLimitScope: 'instance',
       costLimitWindow: 'day',
     });
+  });
+});
+
+describe('a Session with nothing to play stays visibly stuck', () => {
+  /**
+   * Generated before, its latest paid batch gave nothing: no playable Track,
+   * nothing in flight, the failure cooldown over (no provider block signal),
+   * and nobody listening.
+   */
+  const stuckUnheard = {
+    ...base,
+    ownReadyTrackCount: 0,
+    readyAheadCount: 0,
+    inFlightAheadCount: 0,
+    providerSignal: null,
+    listenerActive: false,
+    stuck: true,
+  };
+
+  it('a Session with no playable Track and nothing in flight keeps its failure status after the cooldown', () => {
+    expect(decideBufferAction(stuckUnheard)).toEqual({
+      action: 'noop',
+      generationStatus: 'provider_error',
+    });
+  });
+
+  it('a Repeat Session with zero Tracks keeps its failure status and buys nothing', () => {
+    for (const listenerActive of [false, true]) {
+      expect(
+        decideBufferAction({ ...stuckUnheard, sessionMode: 'repeat', listenerActive }),
+      ).toEqual({ action: 'noop', generationStatus: 'provider_error' });
+    }
+  });
+
+  it('buys nothing for a stuck Session without a listener, whatever else holds', () => {
+    for (const overrides of [
+      {},
+      { sessionMode: 'repeat' as const },
+      { rerollPending: true },
+      { hasConcurrencySlot: false },
+      { manualGenerationOnly: true },
+      { loopHeld: true },
+    ]) {
+      const decision = decideBufferAction({ ...stuckUnheard, ...overrides });
+      expect(decision.action).toBe('noop');
+      expect(decision.generationStatus).toBe('provider_error');
+    }
+  });
+
+  it('a provider block keeps its own status over the stuck one', () => {
+    expect(decideBufferAction({ ...stuckUnheard, providerSignal: 'provider_credits' })).toEqual({
+      action: 'noop',
+      generationStatus: 'provider_credits',
+    });
+  });
+
+  it('a Session with playable Tracks recovers by itself after a later failure', () => {
+    // Its latest batch failed and the cooldown is over: not stuck, because it
+    // has music. Without a listener it waits silently; with one it retries.
+    const recovered = { ...base, ownReadyTrackCount: 4, stuck: false };
+    expect(decideBufferAction({ ...recovered, listenerActive: false })).toEqual({
+      action: 'noop',
+      generationStatus: 'ok',
+    });
+    expect(decideBufferAction({ ...recovered, listenerActive: true })).toEqual({
+      action: 'generate',
+      generationStatus: 'ok',
+    });
+  });
+});
+
+describe('isFailedPaidBatch', () => {
+  it('a provider-reported failure is a failed paid batch', () => {
+    for (const normalizedStatus of ['failed_final', 'failed_retryable'] as const) {
+      expect(isFailedPaidBatch({ normalizedStatus, submitState: 'submitted' })).toBe(true);
+    }
+  });
+
+  it('a poll that timed out is a failed paid batch', () => {
+    // The poll attempt cap terminalizes the submitted job as `failed_final`.
+    expect(isFailedPaidBatch({ normalizedStatus: 'failed_final', submitState: 'submitted' })).toBe(
+      true,
+    );
+  });
+
+  it('an uncertain submit may have been paid and counts as failed', () => {
+    expect(
+      isFailedPaidBatch({ normalizedStatus: 'submit_unknown', submitState: 'submit_unknown' }),
+    ).toBe(true);
+  });
+
+  it('a successful batch or an unbilled refusal is not a failed paid batch', () => {
+    expect(isFailedPaidBatch({ normalizedStatus: 'ready', submitState: 'submitted' })).toBe(false);
+    for (const normalizedStatus of [
+      'submit_rejected',
+      'blocked_by_provider_credits',
+      'provider_rate_limited',
+    ] as const) {
+      expect(isFailedPaidBatch({ normalizedStatus, submitState: 'submit_rejected' })).toBe(false);
+    }
+    expect(
+      isFailedPaidBatch({
+        normalizedStatus: 'blocked_by_liedmotif_limit',
+        submitState: 'not_submitted',
+      }),
+    ).toBe(false);
   });
 });
 

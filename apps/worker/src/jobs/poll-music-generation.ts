@@ -23,6 +23,7 @@ import type { Database } from '@liedmotif/db';
 import {
   bumpProviderJobPollAttempt,
   countProviderJobUrlAssets,
+  failFinalLessTracksOfJob,
   getActiveSession,
   getProviderJobForPoll,
   getSessionById,
@@ -261,6 +262,10 @@ export async function runPollMusicGeneration(
     if (keepTracks.length > 0) {
       await runProcessProviderResults(deps, { job: job!, tracks: keepTracks, complete: false });
     }
+    // A provider-reported failure never delivers the finals still missing, so
+    // those Tracks fail before the wake: a refill must not count them as ready.
+    // A timeout keeps them, because its task may still finish upstream.
+    if (outcome === 'failed') await failFinalLessTracksOfJob(deps.db, job!.jobId);
     await wakeOwnerActiveSession(deps, ownerUserId);
     return { outcome, normalizedStatus, rescheduled: false, attempt };
   }
@@ -317,7 +322,8 @@ export async function runPollMusicGeneration(
     withDuration,
   });
 
-  // Terminal failure reported by the provider → CAS-terminalize (no tracks).
+  // Terminal failure reported by the provider → CAS-terminalize; any Tracks the
+  // stream stage materialized without a final fail with it.
   if (status.status === 'failed') {
     const failure = mapFailure(status.failureReason ?? 'unknown');
     return terminalize('failed', failure.normalizedStatus, failure, 'failed');

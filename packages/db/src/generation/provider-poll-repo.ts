@@ -27,12 +27,15 @@ import {
 import {
   assertNoProviderResubmitAfterTask,
   LIVE_IN_FLIGHT_PROVIDER_STATUSES,
+  LIVE_QUEUE_ITEM_STATES,
   POLL_TERMINAL_PROVIDER_STATUSES,
   type ProviderNormalizedStatus,
   type ProviderType,
 } from '@liedmotif/shared';
 import type { Database } from '../client';
+import { withTransaction } from '../transactions';
 import {
+  activitySessionQueueItems,
   activitySessions,
   generationRequests,
   providerJobs,
@@ -362,6 +365,50 @@ export async function bumpProviderJobPollAttempt(
     .update(providerJobs)
     .set({ retryCount: input.retryCount, nextPollAt: input.nextPollAt })
     .where(eq(providerJobs.id, input.jobId));
+}
+
+/**
+ * A provider-reported failure means the job's missing finals never come: its
+ * live Tracks holding no final at all — neither a stored local one nor a
+ * provider final still to download — become `failed`, and their live Queue
+ * slots `failed` with them, so neither the Queue nor the buffer counts them
+ * again. Their stream assets are left as they are: a Track playing right now
+ * plays to its end through the audio route. A Disliked or deleted Track keeps
+ * its status. Returns the ids actually failed.
+ */
+export async function failFinalLessTracksOfJob(
+  db: Database,
+  providerJobId: string,
+): Promise<{ failedTrackIds: string[] }> {
+  return withTransaction(db, async (tx) => {
+    const failed = await tx
+      .update(tracks)
+      .set({ status: 'failed' })
+      .where(
+        and(
+          eq(tracks.providerJobId, providerJobId),
+          inArray(tracks.status, ['pending', 'streamable']),
+          isNull(tracks.dislikedAt),
+          sql`not exists (select 1 from ${trackAudioAssets} a
+            where a.track_id = ${tracks.id}
+              and a.asset_type in ('provider_final', 'local_original'))`,
+        ),
+      )
+      .returning({ id: tracks.id });
+    const failedTrackIds = failed.map((row) => row.id);
+    if (failedTrackIds.length > 0) {
+      await tx
+        .update(activitySessionQueueItems)
+        .set({ state: 'failed' })
+        .where(
+          and(
+            inArray(activitySessionQueueItems.trackId, failedTrackIds),
+            inArray(activitySessionQueueItems.state, [...LIVE_QUEUE_ITEM_STATES]),
+          ),
+        );
+    }
+    return { failedTrackIds };
+  });
 }
 
 /**

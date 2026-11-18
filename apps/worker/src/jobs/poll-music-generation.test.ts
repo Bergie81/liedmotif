@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import {
+  activitySessionQueueItems,
   activitySessions,
   generationRequests,
   getProviderJobForPoll,
@@ -348,6 +349,52 @@ describeIfDb('poll-music-generation', () => {
     const { provider } = scriptedProvider(() => result('failed', [], 'generation_failed'));
     await runPollMusicGeneration(deps(provider), { providerJobId: jobId });
     expect(await jobRow(jobId)).toMatchObject({ normalizedStatus: 'failed_final' });
+  });
+
+  it('a provider failure after the stream stage fails the job’s Tracks that have no final', async () => {
+    const { jobId } = await submittedJob();
+    const partial = [
+      {
+        providerTrackId: 'A',
+        streamAudioUrl: 'https://cdn.example/s/A',
+        audioUrl: 'https://cdn.example/f/A.mp3',
+        durationSeconds: 168,
+      },
+      { providerTrackId: 'B', streamAudioUrl: 'https://cdn.example/s/B' },
+    ];
+    const { provider } = scriptedProvider((_task, call) =>
+      call === 1 ? result('first_track_ready', partial) : result('failed', [], 'generation_failed'),
+    );
+    const d = deps(provider);
+
+    await runPollMusicGeneration(d, { providerJobId: jobId });
+    const r = await runPollMusicGeneration(d, { providerJobId: jobId });
+
+    expect(r.outcome).toBe('failed');
+    const rows = await ctx.db
+      .select({
+        providerTrackId: tracks.providerTrackId,
+        status: tracks.status,
+        slotState: activitySessionQueueItems.state,
+      })
+      .from(tracks)
+      .innerJoin(activitySessionQueueItems, eq(activitySessionQueueItems.trackId, tracks.id))
+      .orderBy(tracks.providerTrackId);
+    expect(rows).toEqual([
+      { providerTrackId: 'A', status: 'streamable', slotState: 'queued' },
+      { providerTrackId: 'B', status: 'failed', slotState: 'failed' },
+    ]);
+  });
+
+  it('a job that timed out while polling keeps its stream-only Tracks live', async () => {
+    const { jobId } = await submittedJob();
+    const streamOnly = [{ providerTrackId: 'A', streamAudioUrl: 'https://cdn.example/s/A' }];
+    const { provider } = scriptedProvider(() => result('text_ready', streamOnly));
+
+    await runPollMusicGeneration(deps(provider, { maxPollAttempts: 1 }), { providerJobId: jobId });
+
+    const rows = await ctx.db.select({ status: tracks.status }).from(tracks);
+    expect(rows).toEqual([{ status: 'streamable' }]);
   });
 
   it('is idempotent: re-polling a terminal (ready) job never calls the provider again', async () => {

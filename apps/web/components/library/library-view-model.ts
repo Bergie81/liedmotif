@@ -1,4 +1,4 @@
-import type { LibraryTrackItem, TrackFlags } from '@liedmotif/shared';
+import type { LibraryTrackItem, TrackFlags, TrackSummary } from '@liedmotif/shared';
 
 /** The retention facts a row carries: the two denormalized flags, plus curated
  *  membership. The flags travel together on every retention write; membership
@@ -38,14 +38,22 @@ export function formatCollectionLength(seconds: number): string {
   return rest === 0 ? `${hours} hr` : `${hours} hr ${rest} min`;
 }
 
-export function getTrackAvailability(track: Pick<LibraryTrackItem, 'audioUrl' | 'hasPlayed'>): {
-  hasAudio: boolean;
-  hasPlayed: boolean;
-} {
-  return {
-    hasAudio: track.audioUrl !== null,
-    hasPlayed: track.hasPlayed,
-  };
+/**
+ * The row mark for a Track that cannot play: a failed Track (its final never
+ * arrived) says it could not be kept, so a saved one never reads as a healthy
+ * row; any other Track without audio is simply unavailable.
+ */
+export function trackAudioNotice(
+  track: Pick<TrackSummary, 'status' | 'audioUrl'>,
+): 'Could not be kept' | 'Audio unavailable' | null {
+  if (track.status === 'failed') return 'Could not be kept';
+  return track.audioUrl === null ? 'Audio unavailable' : null;
+}
+
+export function getTrackAvailability(
+  track: Pick<LibraryTrackItem, 'status' | 'audioUrl' | 'hasPlayed'>,
+): { audioNotice: ReturnType<typeof trackAudioNotice>; hasPlayed: boolean } {
+  return { audioNotice: trackAudioNotice(track), hasPlayed: track.hasPlayed };
 }
 
 /** Duration · Session title · up to three genres, in the row's uppercase mono style. */

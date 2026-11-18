@@ -41,6 +41,9 @@ export const dynamic = 'force-dynamic';
  * succeeded. Same-origin app paths only.
  */
 function toQueueItemAssets(track: SessionQueueTrack | null) {
+  // A failed Track's final never arrives; its stream stays stored only so a
+  // Track playing right now can finish through the audio route.
+  if (track?.status === 'failed') return { final: null, stream: null };
   return {
     final: track?.hasFinalAsset ? `/api/audio/${track.id}?asset=final` : null,
     stream: track?.hasStreamAsset ? `/api/audio/${track.id}?asset=stream` : null,

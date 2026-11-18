@@ -72,8 +72,9 @@ function trackAssetFlagsColumn(): SQL<TrackAssetFlags | null> {
 }
 
 /** The slot's Track carries a source the player's queue projection plays
- * from — the server-side twin of that projection's entry rule. */
-const slotHasPinnedSource = sql`exists (
+ * from — the server-side twin of that projection's entry rule, under which a
+ * failed Track offers none. */
+const slotHasPinnedSource = sql`${tracks.status} <> 'failed' and exists (
   select 1 from ${trackAudioAssets}
   where ${trackAudioAssets.trackId} = ${tracks.id}
     and ((${pinnedFinalAsset}) or (${pinnedStreamAsset}))
@@ -404,7 +405,10 @@ export async function getSessionQueue(
   // The same predicate the client projection plays from (a pinned final or
   // stream asset), so the signal disappears exactly when playback can begin.
   const hasPlayable = items.some(
-    (item) => item.track && (item.track.hasFinalAsset || item.track.hasStreamAsset),
+    (item) =>
+      item.track &&
+      item.track.status !== 'failed' &&
+      (item.track.hasFinalAsset || item.track.hasStreamAsset),
   );
   const pendingGeneration = hasPlayable ? null : await latestProviderJobState(db, args.sessionId);
   return {

@@ -3,6 +3,7 @@
 import type { CSSProperties, ReactNode, Ref } from 'react';
 import type { PlaylistMemberItem } from '@liedmotif/shared';
 import { cn } from '@/lib/cn';
+import { trackAudioNotice } from '@/components/library/library-view-model';
 import { TrackRow } from '@/components/library/track-row';
 import { formatPlaylistMemberMetadata } from './playlist-view-model';
 
@@ -30,6 +31,7 @@ export function PlaylistMemberRow({
   className?: string;
 }) {
   const title = item.title ?? 'Untitled Track';
+  const audioNotice = trackAudioNotice(item);
   return (
     <div
       ref={containerRef}
@@ -52,6 +54,7 @@ export function PlaylistMemberRow({
       <TrackRow
         track={item}
         metadata={formatPlaylistMemberMetadata(item)}
+        badges={audioNotice ? [{ label: audioNotice }] : []}
         previewState="idle"
         busy={false}
         onPreview={onPlay}

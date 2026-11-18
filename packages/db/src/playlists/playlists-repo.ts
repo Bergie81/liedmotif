@@ -14,6 +14,7 @@ import {
   deriveTrackRetentionClass,
   isCuratedPlaylist,
   MAX_PLAYLIST_NAME_LENGTH,
+  type TrackStatus,
 } from '@liedmotif/shared';
 import { recordTasteEvidenceInTx } from '../analytics/taste-repo';
 import { OWNER_PLAYLIST_LOCK_CLASS } from '../advisory-locks';
@@ -272,10 +273,14 @@ async function syncTrackFlagsInTx(
   await evictOrphanedTracksInTx(tx, { trackIds: turnedEphemeral, now: args.now });
 }
 
+/** Statuses a Track can never be newly filed under. */
+const UNFILEABLE_TRACK_STATUSES = new Set<TrackStatus>(['rejected', 'deleted', 'failed']);
+
 /**
  * Lock (id-ordered, deadlock-safe) and classify the owner's candidate tracks:
- * only surviving (non-rejected/deleted) owned tracks are eligible for
- * membership; everything else is refused.
+ * only surviving owned tracks are eligible for membership; everything else is
+ * refused. A failed Track holds no audio worth keeping: it stays where it was
+ * filed, but is never filed anew.
  */
 async function lockEligibleTracks(
   tx: Transaction,
@@ -289,9 +294,7 @@ async function lockEligibleTracks(
     .where(and(inArray(tracks.id, trackIds), eq(tracks.ownerUserId, ownerUserId)))
     .orderBy(asc(tracks.id))
     .for('update');
-  return new Set(
-    rows.filter((r) => r.status !== 'rejected' && r.status !== 'deleted').map((r) => r.id),
-  );
+  return new Set(rows.filter((r) => !UNFILEABLE_TRACK_STATUSES.has(r.status)).map((r) => r.id));
 }
 
 export interface AddPlaylistTracksResult {
@@ -524,7 +527,7 @@ async function lockSaveableTrack(
   tx: Transaction,
   viewerUserId: string,
   trackId: string,
-): Promise<{ id: string; ownerUserId: string } | 'removed' | null> {
+): Promise<{ id: string; ownerUserId: string; status: TrackStatus } | 'removed' | null> {
   const [track] = await tx
     .select({ id: tracks.id, status: tracks.status, ownerUserId: tracks.ownerUserId })
     .from(tracks)
@@ -544,7 +547,7 @@ async function lockSaveableTrack(
       .limit(1);
     if (!audible) return null;
   }
-  return { id: track.id, ownerUserId: track.ownerUserId };
+  return { id: track.id, ownerUserId: track.ownerUserId, status: track.status };
 }
 
 /**
@@ -616,6 +619,7 @@ export async function setTrackFavorited(
   return withOwnerPlaylistLock(db, args.ownerUserId, async (tx) => {
     const track = await lockSaveableTrack(tx, args.ownerUserId, args.trackId);
     if (track === null || track === 'removed') return track;
+    if (args.favorited && track.status === 'failed') return 'removed';
     const foreign = track.ownerUserId !== args.ownerUserId;
 
     const favorites = await ensureFavoritesPlaylist(tx, { ownerUserId: args.ownerUserId });
@@ -733,6 +737,23 @@ export async function applyTrackMemberships(
     const desired = new Set(owned.map((p) => p.id));
     const curated = new Set(owned.filter(isCuratedPlaylist).map((p) => p.id));
 
+    const current = await tx
+      .select({ playlistId: playlistTracks.playlistId, sharedAt: playlists.sharedAt })
+      .from(playlistTracks)
+      .innerJoin(playlists, eq(playlists.id, playlistTracks.playlistId))
+      .where(
+        and(eq(playlistTracks.trackId, args.trackId), eq(playlists.ownerUserId, args.ownerUserId)),
+      );
+    const currentIds = new Set(current.map((c) => c.playlistId));
+    const sharedById = new Map(current.map((c) => [c.playlistId, c.sharedAt !== null]));
+    // A failed Track may leave Playlists but never join one.
+    if (
+      track.status === 'failed' &&
+      (args.createPlaylistName || [...desired].some((id) => !currentIds.has(id)))
+    ) {
+      return 'removed';
+    }
+
     let createdPlaylistId: string | null = null;
     if (args.createPlaylistName) {
       const created = await createPlaylist(tx, {
@@ -744,16 +765,6 @@ export async function applyTrackMemberships(
       // An inline playlist is owner-named and listed by construction.
       curated.add(created.id);
     }
-
-    const current = await tx
-      .select({ playlistId: playlistTracks.playlistId, sharedAt: playlists.sharedAt })
-      .from(playlistTracks)
-      .innerJoin(playlists, eq(playlists.id, playlistTracks.playlistId))
-      .where(
-        and(eq(playlistTracks.trackId, args.trackId), eq(playlists.ownerUserId, args.ownerUserId)),
-      );
-    const currentIds = new Set(current.map((c) => c.playlistId));
-    const sharedById = new Map(current.map((c) => [c.playlistId, c.sharedAt !== null]));
 
     let leftSharingPlaylist = false;
     for (const playlistId of [...currentIds].filter((id) => !desired.has(id))) {

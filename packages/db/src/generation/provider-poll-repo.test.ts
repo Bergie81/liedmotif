@@ -1,9 +1,17 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
-import { generationRequests, providerJobs } from '../schema';
+import {
+  activitySessionQueueItems,
+  generationRequests,
+  providerJobs,
+  trackAudioAssets,
+  tracks,
+} from '../schema';
 import {
   connectTestDb,
+  createQueueItem,
   createSession,
+  createTrack,
   createUser,
   GENERATION_FIXTURE_TABLES,
   TEST_DATABASE_URL,
@@ -13,6 +21,7 @@ import {
 import { withTransaction } from '../transactions';
 import { insertSubmittingGenerationJob, markProviderJobSubmitted } from './submit-repo';
 import {
+  failFinalLessTracksOfJob,
   getProviderJobForPoll,
   markGenerationRequestFailed,
   updateProviderJobPollState,
@@ -206,5 +215,92 @@ describeIfDb('provider-poll repo', () => {
       errorCode: 'insufficient_credit',
       errorMessageSafe: 'Music provider is out of credits.',
     });
+  });
+
+  it('fails only the final-less live Tracks of the failed job and their live Queue slots', async () => {
+    const { ownerUserId, sessionId, requestId, jobId } = await submittedJob('suno-task-1');
+    const other = await submittedJob('suno-task-2');
+    const onJob = (fx: Partial<Parameters<typeof createTrack>[1]> = {}) =>
+      createTrack(ctx.db, {
+        ownerUserId,
+        generationRequestId: requestId,
+        providerJobId: jobId,
+        status: 'streamable',
+        streamEncryptedSourceUrl: 'enc:stream',
+        ...fx,
+      });
+    const streamOnly = await onJob();
+    const playing = await onJob({ savedAt: new Date() });
+    const finalOnItsWay = await onJob();
+    await ctx.db.insert(trackAudioAssets).values({
+      trackId: finalOnItsWay,
+      assetType: 'provider_final',
+      storageProvider: 'provider',
+      encryptedSourceUrl: 'enc:final',
+      isPlayable: true,
+    });
+    const storedFinal = await onJob({ status: 'ready', audioStorageKey: 'a.mp3' });
+    const disliked = await onJob({ status: 'rejected', dislikedAt: new Date() });
+    const deleted = await onJob({ status: 'deleted' });
+    const otherJobs = await createTrack(ctx.db, {
+      ownerUserId: other.ownerUserId,
+      generationRequestId: other.requestId,
+      providerJobId: other.jobId,
+      status: 'streamable',
+      streamEncryptedSourceUrl: 'enc:stream',
+    });
+    const slot = (trackId: string, position: number, state: 'queued' | 'playing') =>
+      createQueueItem(ctx.db, { activitySessionId: sessionId, trackId, position, state });
+    await slot(streamOnly, 0, 'queued');
+    await slot(playing, 1, 'playing');
+    await slot(finalOnItsWay, 2, 'queued');
+    await slot(storedFinal, 3, 'queued');
+
+    const names = new Map<string, string>([
+      [streamOnly, 'streamOnly'],
+      [playing, 'playing'],
+      [finalOnItsWay, 'finalOnItsWay'],
+      [storedFinal, 'storedFinal'],
+      [disliked, 'disliked'],
+      [deleted, 'deleted'],
+      [otherJobs, 'otherJobs'],
+    ]);
+
+    const result = await failFinalLessTracksOfJob(ctx.db, jobId);
+
+    expect(new Set(result.failedTrackIds)).toEqual(new Set([streamOnly, playing]));
+    const statuses = new Map(
+      (await ctx.db.select({ id: tracks.id, status: tracks.status }).from(tracks)).map((r) => [
+        r.id,
+        r.status,
+      ]),
+    );
+    expect(Object.fromEntries([...statuses].map(([id, s]) => [names.get(id), s]))).toEqual({
+      streamOnly: 'failed',
+      playing: 'failed',
+      finalOnItsWay: 'streamable',
+      storedFinal: 'ready',
+      disliked: 'rejected',
+      deleted: 'deleted',
+      otherJobs: 'streamable',
+    });
+    const slots = await ctx.db
+      .select({
+        trackId: activitySessionQueueItems.trackId,
+        state: activitySessionQueueItems.state,
+      })
+      .from(activitySessionQueueItems);
+    expect(Object.fromEntries(slots.map((s) => [names.get(s.trackId!), s.state]))).toEqual({
+      streamOnly: 'failed',
+      playing: 'failed',
+      finalOnItsWay: 'queued',
+      storedFinal: 'queued',
+    });
+    // The stream stays: a Track playing right now plays to its end.
+    const streams = await ctx.db
+      .select({ isPlayable: trackAudioAssets.isPlayable })
+      .from(trackAudioAssets)
+      .where(eq(trackAudioAssets.trackId, playing));
+    expect(streams).toEqual([{ isPlayable: true }]);
   });
 });

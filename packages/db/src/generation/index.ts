@@ -121,6 +121,7 @@ export {
   updateProviderJobPollState,
   bumpProviderJobPollAttempt,
   markGenerationRequestFailed,
+  failFinalLessTracksOfJob,
   listDuePollJobs,
   listReadyJobsMissingTracks,
   listLiveProviderTrackIds,
@@ -269,7 +270,11 @@ export {
   type SessionQueueTrack,
 } from './queue-view-repo';
 export { performVibeSwitchCutover } from './vibe-switch-repo';
-export { getPlayableTrackSession, listSessionTracks } from './session-tracks-repo';
+export {
+  getPlayableTrackSession,
+  hasPlayableSessionTrack,
+  listSessionTracks,
+} from './session-tracks-repo';
 export {
   getSessionDurationProgress,
   listSessionTracksMissingDuration,

@@ -165,6 +165,14 @@ describe('presentGenerationStatus — a session with no tracks yet', () => {
     }
   });
 
+  it('reports a stuck Session as a dead end with its zero-Track failure copy', () => {
+    // What the controller stores for a Session whose paid batch gave nothing:
+    // the failure status and no server message, for as long as it is stuck.
+    const p = presentGenerationStatus('provider_error', null, null, EMPTY_AND_IDLE);
+    expect(p.message).toBe('No Tracks yet — generation hit a problem before the first one landed.');
+    expect(p.isStuck).toBe(true);
+  });
+
   it('never calls a rate-limited or catching-up session a dead end', () => {
     // The controller backs off and retries within a minute (rate limit), or is
     // still polling a live submit (stall) — a session seconds from working must

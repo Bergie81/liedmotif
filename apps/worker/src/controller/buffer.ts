@@ -16,8 +16,10 @@
 //   - repeat_cost_limit     — cost limit hit → loop the session's own tracks.
 //   - provider_credits / provider_rate_limited / worker_stalled / provider_error
 //                           — generation blocked by the provider; keep playing
-//                             the ready tracks, no lifecycle change.
-//   - ok                    — generating normally (or buffer already full /
+//                             the ready tracks, no lifecycle change. A stuck
+//                             Session (see `stuck`) keeps `provider_error`
+//                             after the cooldown, for as long as it is stuck.
+//   - ok                   — generating normally (or buffer already full /
 //                             voluntary Repeat / manual-only). Returning to `ok`
 //                             when the limit window rolls over IS the auto-resume.
 
@@ -127,6 +129,13 @@ export interface BufferDecisionInput {
    */
   loopHeld: boolean;
   /**
+   * The Session has nothing to play and nothing coming: its latest request was
+   * paid or may have been paid and did not succeed (`isFailedPaidBatch`), no
+   * Track is playable, and nothing is in flight. Its failure must stay visible
+   * for as long as that holds, not only for the provider-error cooldown.
+   */
+  stuck: boolean;
+  /**
    * The Session duration target's progress, present only when the Session has
    * a target: usable generated seconds, Tracks whose duration is not yet
    * known, and whether a provider batch has results still to settle.
@@ -159,6 +168,17 @@ export interface BufferDecision {
 }
 
 export function decideBufferAction(input: BufferDecisionInput): BufferDecision {
+  const decision = decideSupplyAction(input);
+  // A stuck Session that buys nothing this tick keeps reporting its failure:
+  // an `ok` would drop the banner and leave the player narrating a connection
+  // that is not coming. Nothing here buys a retry; that still needs a listener.
+  if (input.stuck && decision.action !== 'generate' && decision.generationStatus === 'ok') {
+    return { ...decision, generationStatus: 'provider_error' };
+  }
+  return decision;
+}
+
+function decideSupplyAction(input: BufferDecisionInput): BufferDecision {
   // 0. Session duration target → outranks every other demand, the revision
   //    initial fill included. Reaching it repeats the Session; below it, a Track
   //    of unknown duration or an unsettled batch holds the next purchase, so the
@@ -269,6 +289,22 @@ export function decideBufferAction(input: BufferDecisionInput): BufferDecision {
     return { action: 'wait', generationStatus: 'ok' };
   }
   return { action: 'generate', generationStatus: 'ok' };
+}
+
+/**
+ * Whether a Session's latest provider job is a batch that was paid or may have
+ * been paid and gave nothing: a provider-reported failure, a poll that timed
+ * out (terminalized as `failed_final`), or an uncertain submit. An unbilled
+ * refusal or a job that never reached the provider bought nothing, so it is no
+ * failed paid batch. Whether the job still holds an in-flight slot is the
+ * caller's separate question.
+ */
+export function isFailedPaidBatch(job: {
+  normalizedStatus: ProviderNormalizedStatus;
+  submitState: string;
+}): boolean {
+  if (job.submitState === 'submit_rejected' || job.submitState === 'not_submitted') return false;
+  return job.normalizedStatus !== 'ready';
 }
 
 /**

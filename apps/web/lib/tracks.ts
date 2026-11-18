@@ -50,7 +50,11 @@ export function toTrackSummary(
   } = {},
 ): TrackSummary {
   const playableStatus = track.status === 'ready' || track.status === 'streamable';
-  const playable = track.hasPlayableAudio && (opts.assetPresenceOnly || playableStatus);
+  // A failed Track is never offered for play, whatever assets it still holds.
+  const playable =
+    track.hasPlayableAudio &&
+    track.status !== 'failed' &&
+    (opts.assetPresenceOnly || playableStatus);
   return {
     id: track.id,
     title: track.title,

@@ -95,6 +95,21 @@ export async function listPlayableSessionTrackIds(
   return rows.map((row) => row.id);
 }
 
+/** Whether the Session has any Track its Queue can play (`listPlayableSessionTrackIds` non-empty). */
+export async function hasPlayableSessionTrack(
+  db: Database | Transaction,
+  args: { ownerUserId: string; sessionId: string },
+): Promise<boolean> {
+  const [row] = await db
+    .select({ id: tracks.id })
+    .from(generationRequests)
+    .innerJoin(tracks, eq(tracks.generationRequestId, generationRequests.id))
+    .leftJoin(activitySessionQueueItems, sessionTrackQueueEdge)
+    .where(playableTrackInSession(args))
+    .limit(1);
+  return row !== undefined;
+}
+
 /**
  * The Session one of the owner's Tracks is selected through, as its Library
  * row is: the Session it was generated in, while that Session is there and the

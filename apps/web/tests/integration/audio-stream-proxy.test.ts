@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { decodeEncryptionKey, upsertProviderTrackWithAssets } from '@liedmotif/db';
+import { eq } from 'drizzle-orm';
+import { decodeEncryptionKey, tracks, upsertProviderTrackWithAssets } from '@liedmotif/db';
 import {
   connectTestDb,
   createGenerationRequest,
@@ -147,6 +148,18 @@ describe.skipIf(skip)('GET /api/audio/[trackId] — provider stream proxy', () =
     // dispatcher pinned to the addresses the egress guard vetted.
     expect(fetchStub).toHaveBeenCalledWith(STREAM_URL, expect.anything());
     expect((fetchStub.mock.calls[0]![1] as { dispatcher?: unknown }).dispatcher).toBeDefined();
+  });
+
+  it('keeps serving a failed Track’s stream, so the Track playing when its job failed plays to its end', async () => {
+    const owner = await createUser(testDb.db);
+    holder.ownerUserId = owner;
+    const trackId = await seedStreamOnlyTrack(owner);
+    await testDb.db.update(tracks).set({ status: 'failed' }).where(eq(tracks.id, trackId));
+
+    const res = await call(trackId, { Range: 'bytes=10-19' }, '?asset=stream');
+
+    expect(res.status).toBe(206);
+    expect(Buffer.from(await res.arrayBuffer())).toEqual(BYTES.subarray(10, 20));
   });
 
   it('forwards a Range header and mirrors the provider 206', async () => {

@@ -4,6 +4,7 @@ import {
   formatLibraryTrackMetadata,
   formatTrackDuration,
   getTrackAvailability,
+  trackAudioNotice,
 } from './library-view-model';
 
 const track = (id: string) => ({ id });
@@ -20,18 +21,24 @@ describe('Library view model', () => {
   it('formats duration and distinguishes unavailable and never-played Tracks', () => {
     expect(formatTrackDuration(185)).toBe('3:05');
     expect(formatTrackDuration(null)).toBe('—:——');
-    expect(getTrackAvailability({ audioUrl: null, hasPlayed: false })).toEqual({
-      hasAudio: false,
+    expect(getTrackAvailability({ status: 'ready', audioUrl: null, hasPlayed: false })).toEqual({
+      audioNotice: 'Audio unavailable',
       hasPlayed: false,
     });
-    expect(getTrackAvailability({ audioUrl: '/api/audio/x', hasPlayed: false })).toEqual({
-      hasAudio: true,
-      hasPlayed: false,
-    });
-    expect(getTrackAvailability({ audioUrl: '/api/audio/x', hasPlayed: true })).toEqual({
-      hasAudio: true,
-      hasPlayed: true,
-    });
+    expect(
+      getTrackAvailability({ status: 'ready', audioUrl: '/api/audio/x', hasPlayed: false }),
+    ).toEqual({ audioNotice: null, hasPlayed: false });
+    expect(
+      getTrackAvailability({ status: 'streamable', audioUrl: '/api/audio/x', hasPlayed: true }),
+    ).toEqual({ audioNotice: null, hasPlayed: true });
+  });
+
+  it('marks a Track whose final never arrived as one that could not be kept', () => {
+    expect(trackAudioNotice({ status: 'failed', audioUrl: null })).toBe('Could not be kept');
+    // The status wins even over a stale audio path.
+    expect(trackAudioNotice({ status: 'failed', audioUrl: '/api/audio/x' })).toBe(
+      'Could not be kept',
+    );
   });
 
   it('formats the metadata line as duration · Session title · genres', () => {

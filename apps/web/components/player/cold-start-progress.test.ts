@@ -86,6 +86,15 @@ describe('coldStartStagedCopy', () => {
     expect(coldStartStagedCopy(input({ pendingGeneration: null, status: 'ready' }))).toBeNull();
   });
 
+  it('a stuck Session shows neither "Connecting to provider…" nor a cold-start bar', () => {
+    // Its paid batch gave nothing: the failure status stays, nothing is pending.
+    const staged = coldStartStagedCopy(
+      input({ pendingGeneration: null, generationStatus: 'provider_error' }),
+    );
+    expect(staged).toBeNull();
+    expect(resolveColdStartSurface({ kind: 'none' }, staged, false)).toEqual({ kind: 'none' });
+  });
+
   it('names the composing track when a teased title rides the pending generation', () => {
     expect(
       coldStartStagedCopy(input({ pendingGeneration: { ...PENDING, trackTitle: 'Neon Sunset' } }))

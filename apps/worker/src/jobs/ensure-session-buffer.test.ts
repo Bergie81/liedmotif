@@ -7,11 +7,13 @@ import {
   applyLoopLease,
   countTasksInWindow,
   defaultUsageLimits,
+  failFinalLessTracksOfJob,
   generationRequests,
   providerCredentials,
   providerJobs,
   tracks,
   updateGenerationSettings,
+  updateProviderJobPollState,
   usageEvents,
   voiceProfiles,
   withOwnerGenerationLock,
@@ -1115,6 +1117,83 @@ describeIfDb('ensure-session-buffer controller', () => {
     expect(calls()).toBe(1);
   });
 
+  it.each([
+    ['buy nothing without a listener', 'keep_going', null, 0],
+    ['buy nothing in Repeat', 'repeat', 30_000, 0],
+    // The control: they no longer count as ready ahead, so a listener's
+    // Keep Going refills through the ordinary gates.
+    ['are replaced for a listener in Keep Going', 'keep_going', 30_000, 1],
+  ] as const)(
+    'Tracks failed by a provider failure after the stream stage %s',
+    async (_case, sessionMode, reportedMsAgo, expectedCalls) => {
+      const ownerUserId = await createUser(ctx.db);
+      const sessionId = await createSession(ctx.db, {
+        ownerUserId,
+        styleSnapshot: { stylePrompt: 'instrumental lofi', bpm: 96, key: 'A minor' },
+        startedAt: new Date(NOW.getTime() - 10 * 60_000),
+        ...(reportedMsAgo === null
+          ? {}
+          : { lastPlaybackReportAt: new Date(NOW.getTime() - reportedMsAgo) }),
+      });
+      if (sessionMode === 'repeat') await switchToRepeatMode(sessionId);
+      const requestId = await createGenerationRequest(ctx.db, {
+        ownerUserId,
+        activitySessionId: sessionId,
+      });
+      const providerJobId = await createProviderJob(ctx.db, {
+        generationRequestId: requestId,
+        submitState: 'submitted',
+        normalizedStatus: 'processing',
+        createdAt: NOW,
+      });
+      for (const [position, providerTrackId] of ['A', 'B'].entries()) {
+        const trackId = await createTrack(ctx.db, {
+          ownerUserId,
+          generationRequestId: requestId,
+          providerJobId,
+          providerTrackId,
+          status: 'streamable',
+          streamEncryptedSourceUrl: `enc:stream-${providerTrackId}`,
+        });
+        await createQueueItem(ctx.db, {
+          activitySessionId: sessionId,
+          trackId,
+          generationRequestId: requestId,
+          position,
+        });
+      }
+      await updateProviderJobPollState(ctx.db, {
+        jobId: providerJobId,
+        providerStatus: 'failed',
+        normalizedStatus: 'failed_final',
+        nextPollAt: null,
+        retryCount: 3,
+      });
+      expect((await failFinalLessTracksOfJob(ctx.db, providerJobId)).failedTrackIds).toHaveLength(
+        2,
+      );
+      // Past the failure's cooldown, so only the listener and mode gates decide.
+      await ctx.db
+        .update(providerJobs)
+        .set({ updatedAt: new Date(NOW.getTime() - BLOCK_SIGNAL_COOLDOWNS_MS.provider_error - 1) })
+        .where(eq(providerJobs.id, providerJobId));
+      const { provider, calls } = countingMusicProvider(async () => okTask('must-not-buy'));
+
+      await runEnsureSessionBuffer(
+        {
+          db: ctx.db,
+          music: provider,
+          now: NOW,
+          limits: ampleLimits(),
+          stallThresholdMs: NEVER_STALE,
+        },
+        { sessionId },
+      );
+
+      expect(calls()).toBe(expectedCalls);
+    },
+  );
+
   it('LOOP HOLD — a 10-minute held loop below the watermark submits ZERO new provider jobs, then a lapsed lease resumes prefill', async () => {
     const ownerUserId = await createUser(ctx.db);
     const start = NOW;
@@ -1718,6 +1797,158 @@ describeIfDb('ensure-session-buffer controller', () => {
     const jobs = await sessionJobs(sessionId);
     expect(jobs).toHaveLength(2);
     expect(jobs.map((j) => j.submitState).sort()).toEqual(['submit_unknown', 'submitted']);
+  });
+
+  describe('a Session with nothing to play stays visibly stuck', () => {
+    // Its only batch was paid (or may have been) and ended without a playable
+    // Track, long past every cooldown, and nobody is listening.
+    const ENDED_BATCHES = [
+      // A provider-reported failure and a timed-out poll both end as `failed_final`.
+      ['a failed batch', { normalizedStatus: 'failed_final', submitState: 'submitted' }],
+      [
+        'an uncertain submit past its in-flight slot',
+        { normalizedStatus: 'submit_unknown', submitState: 'submit_unknown', providerTaskId: null },
+      ],
+    ] as const;
+
+    async function stuckSession(
+      job: (typeof ENDED_BATCHES)[number][1],
+      sessionMode: 'keep_going' | 'repeat',
+    ) {
+      const { ownerUserId, sessionId } = await sessionWithLatestJob({
+        ...job,
+        updatedAt: HOUR_BEFORE,
+      });
+      await ctx.db
+        .update(activitySessions)
+        .set({ sessionMode, startedAt: new Date(NOW.getTime() - 2 * 60 * 60_000) })
+        .where(eq(activitySessions.id, sessionId));
+      const { provider, calls } = countingMusicProvider(async () => okTask('must-not-buy'));
+      const tick = () =>
+        runEnsureSessionBuffer(
+          { db: ctx.db, music: provider, now: NOW, limits: ampleLimits() },
+          { sessionId },
+        );
+      return { ownerUserId, sessionId, calls, tick };
+    }
+
+    for (const sessionMode of ['keep_going', 'repeat'] as const) {
+      for (const [ending, job] of ENDED_BATCHES) {
+        it(`keeps the failure status and buys nothing after ${ending} (${sessionMode})`, async () => {
+          const { sessionId, calls, tick } = await stuckSession(job, sessionMode);
+
+          for (let n = 0; n < 3; n += 1) {
+            const result = await tick();
+            expect(result.action).toBe('noop');
+            expect(result.generationStatus).toBe('provider_error');
+            expect((await sessionStatus(sessionId)).generationStatus).toBe('provider_error');
+          }
+          expect(calls()).toBe(0);
+
+          // The player keeps the banner with its zero-Track copy and Delete Session.
+          const shown = presentGenerationStatus(
+            'provider_error',
+            await statusMessage(sessionId),
+            null,
+            { readyTrackCount: 0, generationInFlight: false },
+          );
+          expect(shown.message).toBe(
+            'No Tracks yet — generation hit a problem before the first one landed.',
+          );
+          expect(shown.isStuck).toBe(true);
+        });
+      }
+    }
+
+    it('returns to ok once a playable Track exists', async () => {
+      const { ownerUserId, sessionId, calls, tick } = await stuckSession(
+        ENDED_BATCHES[0][1],
+        'keep_going',
+      );
+      expect((await tick()).generationStatus).toBe('provider_error');
+
+      const requestId = await createGenerationRequest(ctx.db, {
+        ownerUserId,
+        activitySessionId: sessionId,
+      });
+      const providerJobId = await createProviderJob(ctx.db, {
+        generationRequestId: requestId,
+        normalizedStatus: 'failed_final',
+        updatedAt: HOUR_BEFORE,
+      });
+      await createTrack(ctx.db, {
+        ownerUserId,
+        generationRequestId: requestId,
+        providerJobId,
+        status: 'streamable',
+        streamEncryptedSourceUrl: 'sealed-stream',
+      });
+
+      const result = await tick();
+      expect(result.generationStatus).toBe('ok');
+      expect((await sessionStatus(sessionId)).generationStatus).toBe('ok');
+      expect(calls()).toBe(0);
+    });
+
+    it('returns to ok once a generation is in flight', async () => {
+      const { ownerUserId, sessionId, calls, tick } = await stuckSession(
+        ENDED_BATCHES[0][1],
+        'keep_going',
+      );
+      expect((await tick()).generationStatus).toBe('provider_error');
+
+      const requestId = await createGenerationRequest(ctx.db, {
+        ownerUserId,
+        activitySessionId: sessionId,
+      });
+      await createProviderJob(ctx.db, {
+        generationRequestId: requestId,
+        normalizedStatus: 'processing',
+        createdAt: new Date(NOW.getTime() + 1_000),
+        updatedAt: NOW,
+      });
+
+      const result = await tick();
+      expect(result.generationStatus).toBe('ok');
+      expect(calls()).toBe(0);
+    });
+
+    it('a Session with playable Tracks recovers by itself once someone listens', async () => {
+      const { ownerUserId, sessionId, calls, tick } = await stuckSession(
+        ENDED_BATCHES[0][1],
+        'keep_going',
+      );
+      const requestId = await createGenerationRequest(ctx.db, {
+        ownerUserId,
+        activitySessionId: sessionId,
+        createdAt: new Date(NOW.getTime() - 2 * 60 * 60_000),
+      });
+      const providerJobId = await createProviderJob(ctx.db, {
+        generationRequestId: requestId,
+        normalizedStatus: 'ready',
+        createdAt: new Date(NOW.getTime() - 2 * 60 * 60_000),
+        updatedAt: HOUR_BEFORE,
+      });
+      await createTrack(ctx.db, {
+        ownerUserId,
+        generationRequestId: requestId,
+        providerJobId,
+        status: 'ready',
+        audioStorageKey: 'audio/test/earlier.mp3',
+      });
+
+      // The later batch failed and its cooldown is over: nothing to report.
+      const unheard = await tick();
+      expect(unheard).toMatchObject({ action: 'noop', generationStatus: 'ok' });
+      expect(calls()).toBe(0);
+
+      await ctx.db
+        .update(activitySessions)
+        .set({ lastPlaybackReportAt: NOW })
+        .where(eq(activitySessions.id, sessionId));
+      expect(await tick()).toMatchObject({ action: 'generate', generationStatus: 'ok' });
+      expect(calls()).toBe(1);
+    });
   });
 
   // --- Cost-control races: caps are non-bypassable ACROSS sessions ----------------

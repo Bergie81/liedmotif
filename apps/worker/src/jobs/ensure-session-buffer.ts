@@ -48,6 +48,7 @@ import {
   getLatestProviderJobState,
   getReadyVoiceProfile,
   getRecentLyricBriefs,
+  hasPlayableSessionTrack,
   getSessionForBuffer,
   getSessionDurationProgress,
   getStorageUsage,
@@ -95,6 +96,7 @@ import {
 import type { Task } from 'graphile-worker';
 import {
   decideBufferAction,
+  isFailedPaidBatch,
   isListenerActive,
   mapProviderBlockSignal,
   phantomSubmitCutoffAt,
@@ -586,6 +588,14 @@ export async function runEnsureSessionBuffer(
       }
     }
 
+    // Only a failed paid batch with nothing in flight consults the playable
+    // Tracks, so the extra read stays on the rare stuck-candidate tick.
+    const stuck =
+      latestJob !== null &&
+      isFailedPaidBatch(latestJob) &&
+      inFlightSessionJobs === 0 &&
+      !(await hasPlayableSessionTrack(tx, { ownerUserId, sessionId: payload.sessionId }));
+
     let duration: BufferDecisionInput['duration'];
     if (fresh.targetDurationMinutes != null) {
       const progress = await getSessionDurationProgress(tx, {
@@ -619,6 +629,7 @@ export async function runEnsureSessionBuffer(
       // Resume, so the cold-start prefill still runs before the first play).
       listenerActive: isListenerActive(fresh, now),
       loopHeld,
+      stuck,
     });
 
     /** Leave the lock having decided against the submit — nothing bought, nothing recorded. */

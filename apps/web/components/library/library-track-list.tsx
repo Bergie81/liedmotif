@@ -59,7 +59,7 @@ export function LibraryTrackList({
             const badges: TrackRowBadge[] = [];
             if (view === 'history' && !availability.hasPlayed)
               badges.push({ label: 'Never played' });
-            if (!availability.hasAudio) badges.push({ label: 'Audio unavailable' });
+            if (availability.audioNotice) badges.push({ label: availability.audioNotice });
             if (selection) {
               const isSelected = selection.ids.has(track.id);
               return (

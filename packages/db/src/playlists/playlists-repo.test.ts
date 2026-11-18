@@ -1642,3 +1642,71 @@ describe.skipIf(skip)('getPlaylistShare (the share picker read)', () => {
     ).toBeNull();
   });
 });
+
+describe.skipIf(skip)('a failed Track (its final never arrived)', () => {
+  /** A Track saved into `Mix` and Favorites before its job failed. */
+  async function savedThenFailed() {
+    const { ownerUserId, trackId } = await seedReadyTrack(testDb.db);
+    const mix = await createPlaylist(testDb.db, { ownerUserId, name: 'Mix' });
+    const other = await createPlaylist(testDb.db, { ownerUserId, name: 'Other' });
+    await addPlaylistTracks(testDb.db, { ownerUserId, playlistId: mix.id, trackIds: [trackId] });
+    await setTrackFavorited(testDb.db, { ownerUserId, trackId, favorited: true });
+    await testDb.pool.query("update tracks set status = 'failed' where id = $1", [trackId]);
+    return { ownerUserId, trackId, mix, other };
+  }
+
+  it('cannot be newly added to a Playlist or favorited, and keeps its memberships', async () => {
+    const { ownerUserId, trackId, mix, other } = await savedThenFailed();
+    const favorites = await ensureFavoritesPlaylist(testDb.db, { ownerUserId });
+
+    const added = await addPlaylistTracks(testDb.db, {
+      ownerUserId,
+      playlistId: other.id,
+      trackIds: [trackId],
+    });
+    expect(added).toEqual({ added: [], refused: [trackId] });
+    expect(
+      await applyTrackMemberships(testDb.db, {
+        ownerUserId,
+        trackId,
+        playlistIds: [mix.id, favorites.id, other.id],
+      }),
+    ).toBe('removed');
+    expect(await memberPositions(other.id)).toEqual([]);
+    expect(await memberPositions(mix.id)).toEqual([[trackId, 0]]);
+    expect(await memberPositions(favorites.id)).toEqual([[trackId, 0]]);
+  });
+
+  it('can still be unfavorited, unfiled and removed from a Playlist by its owner', async () => {
+    const { ownerUserId, trackId, mix } = await savedThenFailed();
+    const favorites = await ensureFavoritesPlaylist(testDb.db, { ownerUserId });
+
+    const unstarred = await setTrackFavorited(testDb.db, {
+      ownerUserId,
+      trackId,
+      favorited: false,
+    });
+    expect(unstarred).not.toBe('removed');
+    expect(await memberPositions(favorites.id)).toEqual([]);
+    expect(await setTrackFavorited(testDb.db, { ownerUserId, trackId, favorited: true })).toBe(
+      'removed',
+    );
+
+    const second = await createPlaylist(testDb.db, { ownerUserId, name: 'Second' });
+    await testDb.pool.query(
+      'insert into playlist_tracks (playlist_id, track_id, position) values ($1, $2, 0)',
+      [second.id, trackId],
+    );
+    const unfiled = await applyTrackMemberships(testDb.db, {
+      ownerUserId,
+      trackId,
+      playlistIds: [mix.id],
+    });
+    expect(unfiled).not.toBe('removed');
+    expect(await memberPositions(second.id)).toEqual([]);
+
+    expect(
+      await removePlaylistTrack(testDb.db, { ownerUserId, playlistId: mix.id, trackId }),
+    ).toEqual({ removed: true, unsaved: true });
+  });
+});

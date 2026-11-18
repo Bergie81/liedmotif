@@ -118,3 +118,27 @@ describe('TrackOptionsSheet — Download Track', () => {
     expect((screen.getByTestId('library-download-track') as HTMLButtonElement).disabled).toBe(true);
   });
 });
+
+describe('TrackOptionsSheet — a Track that could not be kept', () => {
+  const FAILED = { ...TRACK, status: 'failed', audioUrl: null, downloadable: false } as const;
+
+  it('offers no play, no star and no download, and says why', () => {
+    renderSheet(vi.fn(), FAILED);
+
+    const row = (label: string) => screen.getByText(label).closest('button') as HTMLButtonElement;
+    expect(row('Play now').disabled).toBe(true);
+    expect(row('Add to Favorites').disabled).toBe(true);
+    const download = screen.getByTestId('library-download-track') as HTMLButtonElement;
+    expect(download.disabled).toBe(true);
+    expect(download.textContent).toContain('Could not be kept');
+  });
+
+  it('can still leave Favorites, the Library and be deleted', () => {
+    renderSheet(vi.fn(), { ...FAILED, favoritedAt: TRACK.savedAt });
+
+    const row = (label: string) => screen.getByText(label).closest('button') as HTMLButtonElement;
+    expect(row('Remove from Favorites').disabled).toBe(false);
+    expect(row('Remove from Library').disabled).toBe(false);
+    expect((screen.getByTestId('library-delete-track') as HTMLButtonElement).disabled).toBe(false);
+  });
+});

@@ -418,6 +418,16 @@ describe.skipIf(skip)('GET /api/sessions/queue — blend identity + analysis con
     expect(item.blendAnalysis).toBeNull(); // pending — never analyzed
   });
 
+  it('a failed Track (its final never arrived) offers no audio, though its stream is still stored', async () => {
+    const base = await seedSession();
+    const trackId = await seedQueuedTrack(base, 0, { withFinal: false, withStream: true });
+    await testDb.db.update(tracks).set({ status: 'failed' }).where(eq(tracks.id, trackId));
+
+    const item = (await callQueue(base.sessionId)).items[0]!;
+    expect(item.assets).toEqual({ final: null, stream: null });
+    expect(item.track?.audioUrl).toBeNull();
+  });
+
   it('a legacy (pre-plan) request reports a null identity — the plain-edge signal', async () => {
     const base = await seedSession();
     await seedQueuedTrack(base, 0, { identity: null });

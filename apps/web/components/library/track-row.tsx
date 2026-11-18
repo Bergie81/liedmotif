@@ -42,7 +42,7 @@ export function TrackRow({
   /** Library and Playlist lists keep their covers' rounding to a hairline. */
   minimalCoverRounding?: boolean;
 }) {
-  const unavailable = track.audioUrl === null;
+  const unavailable = track.audioUrl === null || track.status === 'failed';
   const title = track.title ?? 'Untitled Track';
 
   return (
@@ -60,7 +60,7 @@ export function TrackRow({
         onClick={onPreview}
         disabled={unavailable}
         className="grid min-w-0 grid-cols-[48px_minmax(0,1fr)] items-center gap-3 text-left disabled:cursor-not-allowed"
-        aria-label={previewLabel(title, previewState, unavailable)}
+        aria-label={previewLabel(title, previewState, unavailable, track.status === 'failed')}
       >
         <TrackCover
           key={track.coverImageId ?? 'none'}
@@ -106,7 +106,13 @@ export function TrackRow({
 
 /** The whole row is the play control, so its label names the Track — a screen
  *  reader hears what it would act on, not a bare "Play". */
-function previewLabel(title: string, previewState: PreviewState, unavailable: boolean): string {
+function previewLabel(
+  title: string,
+  previewState: PreviewState,
+  unavailable: boolean,
+  failed: boolean,
+): string {
+  if (failed) return `${title} — could not be kept`;
   if (unavailable) return `${title} — audio unavailable`;
   switch (previewState) {
     case 'playing':

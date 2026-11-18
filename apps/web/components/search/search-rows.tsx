@@ -127,7 +127,7 @@ export function SearchTrackResults({
             const availability = getTrackAvailability(track);
             const badges: TrackRowBadge[] = [];
             if (!availability.hasPlayed) badges.push({ label: 'Never played' });
-            if (!availability.hasAudio) badges.push({ label: 'Audio unavailable' });
+            if (availability.audioNotice) badges.push({ label: availability.audioNotice });
             return (
               <TrackRow
                 key={track.id}

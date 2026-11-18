@@ -35,6 +35,8 @@ export function TrackOptionsSheet({
   onDelete: () => Promise<void> | void;
 }) {
   const locked = busyAction !== null;
+  // A failed Track's final never arrived: it can leave Favorites but not join them.
+  const failed = track.status === 'failed';
   return (
     <SheetContent side="bottom" className="overflow-y-auto">
       <SheetHeader
@@ -88,7 +90,7 @@ export function TrackOptionsSheet({
               : 'Keep it in your favorites playlist'
           }
           busy={busyAction === 'favorite'}
-          disabled={locked}
+          disabled={locked || (failed && !track.favoritedAt)}
           onClick={onToggleFavorite}
         />
         {/* The one way into the Library: retention IS membership, so
@@ -113,7 +115,7 @@ export function TrackOptionsSheet({
           icon={<Download />}
           label="Download Track"
           description="Save this track as a fully tagged MP3"
-          note={track.downloadable ? undefined : 'Still generating'}
+          note={track.downloadable ? undefined : failed ? 'Could not be kept' : 'Still generating'}
           disabled={locked || !track.downloadable}
           data-testid="library-download-track"
           onClick={() => startFileDownload(trackDownloadUrl(track.id))}
