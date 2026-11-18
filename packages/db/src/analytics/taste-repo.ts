@@ -381,8 +381,10 @@ export async function resetLearnedTaste(
 }
 
 /**
- * Turn Personalize suggestions on or off. Off stops both learning and use;
- * what was learned before stays for a later return. Either way seeding is
+ * Turn Personalize suggestions on or off. Off stops learning from new plays,
+ * Favorites and Playlist adds and stops using what was learned, which stays
+ * for a later return; taking back a Favorite or a Playlist membership still
+ * lowers or removes that Track's curation evidence. Either way seeding is
  * marked done, so curation made while off is never swept in afterwards.
  */
 export async function setPersonalizeSuggestions(
@@ -426,21 +428,23 @@ async function isLearningInTx(tx: Transaction, ownerUserId: string): Promise<boo
  * `gained` is a new act of curation or a reroll and may create the row; losing
  * a flag only ever downgrades or removes an existing one, so un-favoriting an
  * old Track after a reset teaches nothing. Owner-matched: a Shared reference
- * never becomes evidence. Skipped entirely while personalization is off.
+ * never becomes evidence. While personalization is off nothing is gained:
+ * only removals and downgrades run, and a Dislike removes the Track's
+ * curation row instead of recording a reroll.
  */
 export async function recordTasteEvidenceInTx(
   tx: Transaction,
   input: { ownerUserId: string; trackId: string; kind: TasteEvidenceKind | null; gained: boolean },
 ): Promise<void> {
-  if (!(await isLearningInTx(tx, input.ownerUserId))) return;
+  const learning = await isLearningInTx(tx, input.ownerUserId);
   const track = sql`${tracks.id} = ${input.trackId} and ${tracks.ownerUserId} = ${input.ownerUserId}`;
   const analyticsId = sql`(select ${tracks.analyticsId} from ${tracks} where ${track})`;
-  if (input.kind === null) {
+  if (input.kind === null || (!learning && input.kind === 'reroll')) {
     await tx.execute(sql`
       delete from ${tasteEvidence}
       where owner_user_id = ${input.ownerUserId} and analytics_track_id = ${analyticsId}
     `);
-  } else if (input.gained) {
+  } else if (learning && input.gained) {
     await tx.execute(sql`
       insert into ${tasteEvidence}
         (owner_user_id, analytics_track_id, kind, genre_tags, energy, vocal_mode, bpm_estimate, language)
@@ -450,9 +454,11 @@ export async function recordTasteEvidenceInTx(
       on conflict (owner_user_id, analytics_track_id) do update set kind = excluded.kind
     `);
   } else {
+    // Off, the only lower curation weight a row can take is Favorite to Playlist.
     await tx.execute(sql`
       update ${tasteEvidence} set kind = ${input.kind}
       where owner_user_id = ${input.ownerUserId} and analytics_track_id = ${analyticsId}
+        ${learning ? sql`` : sql`and kind = 'favorite'`}
     `);
   }
 }

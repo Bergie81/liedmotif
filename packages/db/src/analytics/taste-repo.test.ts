@@ -2,15 +2,19 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import type { ListeningOrigin } from '@liedmotif/shared';
 import { connectTestDb, TEST_DATABASE_URL, truncateTables, type TestDb } from '../test-support';
-import { feedbackEvents, generationRequests, tracks } from '../schema';
+import { activitySessions, feedbackEvents, generationRequests, tracks } from '../schema';
 import { createUser, GENERATION_FIXTURE_TABLES, seedReadyTrack } from '../generation/test-fixtures';
 import { deleteTrack } from '../generation/delete-track-repo';
 import { rejectDislikedTrack } from '../generation/feedback-repo';
+import { deleteSession } from '../generation/session-delete-repo';
 import {
   addPlaylistTracks,
+  applyTrackMemberships,
   createPlaylist,
+  deletePlaylist,
   removePlaylistTrack,
   setTrackFavorited,
+  unsaveTrackEverywhere,
 } from '../playlists/playlists-repo';
 import { setPlaylistShared } from '../playlists/playlist-share-repo';
 import { clearListeningHistory } from './history-repo';
@@ -415,6 +419,251 @@ describeIfDb('learned taste', () => {
       timezone: 'UTC',
     });
     expect(stats.qualifyingPlays).toBe(2);
+  });
+
+  const personalize = (ownerUserId: string, enabled: boolean) =>
+    setPersonalizeSuggestions(ctx.db, { ownerUserId, enabled });
+  const favorite = (ownerUserId: string, trackId: string, favorited: boolean) =>
+    setTrackFavorited(ctx.db, { ownerUserId, trackId, favorited });
+
+  it('drops a Favorite’s curation credit when it is un-favorited while personalization is off', async () => {
+    const owner = await createUser(ctx.db);
+    const now = new Date(T0);
+    await taste(owner, now);
+    const seeded = await seed(owner, { genre: 'Jazz' });
+    await favorite(owner, seeded.trackId, true);
+    expect(Object.keys(await genreScores(owner, now))).toEqual(['jazz']);
+
+    await personalize(owner, false);
+    await favorite(owner, seeded.trackId, false);
+    await personalize(owner, true);
+
+    expect(await genreScores(owner, now)).toEqual({});
+  });
+
+  it('lowers a Favorite still in another Playlist to a Playlist member when un-favorited while off', async () => {
+    const owner = await createUser(ctx.db);
+    const now = new Date(T0);
+    await taste(owner, now);
+    const starred = await seed(owner, { genre: 'Jazz' });
+    const picked = await seed(owner, { genre: 'House' });
+    const control = await seed(owner, { genre: 'Techno' });
+    const drive = await createPlaylist(ctx.db, { ownerUserId: owner, name: 'Drive' });
+    await addPlaylistTracks(ctx.db, {
+      ownerUserId: owner,
+      playlistId: drive.id,
+      trackIds: [starred.trackId, picked.trackId, control.trackId],
+    });
+    await favorite(owner, starred.trackId, true);
+    await favorite(owner, picked.trackId, true);
+
+    await personalize(owner, false);
+    await favorite(owner, starred.trackId, false);
+    await applyTrackMemberships(ctx.db, {
+      ownerUserId: owner,
+      trackId: picked.trackId,
+      playlistIds: [drive.id],
+    });
+    await personalize(owner, true);
+
+    const scores = await genreScores(owner, now);
+    expect(scores.jazz).toBe(scores.techno);
+    expect(scores.house).toBe(scores.techno);
+  });
+
+  it('drops curation credit for every way a Track leaves its last Playlist while off', async () => {
+    const owner = await createUser(ctx.db);
+    const now = new Date(T0);
+    await taste(owner, now);
+    const removed = await seed(owner, { genre: 'Jazz' });
+    const unsaved = await seed(owner, { genre: 'House' });
+    const unpicked = await seed(owner, { genre: 'Techno' });
+    const disbanded = await seed(owner, { genre: 'Ambient' });
+    const drive = await createPlaylist(ctx.db, { ownerUserId: owner, name: 'Drive' });
+    const doomed = await createPlaylist(ctx.db, { ownerUserId: owner, name: 'Doomed' });
+    await addPlaylistTracks(ctx.db, {
+      ownerUserId: owner,
+      playlistId: drive.id,
+      trackIds: [removed.trackId, unsaved.trackId, unpicked.trackId],
+    });
+    await addPlaylistTracks(ctx.db, {
+      ownerUserId: owner,
+      playlistId: doomed.id,
+      trackIds: [disbanded.trackId],
+    });
+    expect(Object.keys(await genreScores(owner, now))).toHaveLength(4);
+
+    await personalize(owner, false);
+    await removePlaylistTrack(ctx.db, {
+      ownerUserId: owner,
+      playlistId: drive.id,
+      trackId: removed.trackId,
+    });
+    await unsaveTrackEverywhere(ctx.db, { ownerUserId: owner, trackId: unsaved.trackId });
+    await applyTrackMemberships(ctx.db, {
+      ownerUserId: owner,
+      trackId: unpicked.trackId,
+      playlistIds: [],
+    });
+    await deletePlaylist(ctx.db, { ownerUserId: owner, playlistId: doomed.id });
+    await personalize(owner, true);
+
+    expect(await genreScores(owner, now)).toEqual({});
+  });
+
+  it('never creates evidence by taking back a Favorite or membership made while off', async () => {
+    const owner = await createUser(ctx.db);
+    const now = new Date(T0);
+    await taste(owner, now);
+    const starred = await seed(owner, { genre: 'Jazz' });
+    const filed = await seed(owner, { genre: 'House' });
+    const drive = await createPlaylist(ctx.db, { ownerUserId: owner, name: 'Drive' });
+
+    await personalize(owner, false);
+    await favorite(owner, starred.trackId, true);
+    await addPlaylistTracks(ctx.db, {
+      ownerUserId: owner,
+      playlistId: drive.id,
+      trackIds: [filed.trackId],
+    });
+    await favorite(owner, starred.trackId, false);
+    await removePlaylistTrack(ctx.db, {
+      ownerUserId: owner,
+      playlistId: drive.id,
+      trackId: filed.trackId,
+    });
+    await personalize(owner, true);
+
+    expect(await genreScores(owner, now)).toEqual({});
+    const { rows } = await ctx.pool.query(`select count(*)::int as n from taste_evidence`);
+    expect(rows[0].n).toBe(0);
+  });
+
+  it('gains nothing while off: no Favorite, Playlist add, upgrade or listening, and no catch-up', async () => {
+    const owner = await createUser(ctx.db);
+    const now = new Date(T0);
+    await taste(owner, now);
+    const upgraded = await seed(owner, { genre: 'Jazz' });
+    const control = await seed(owner, { genre: 'Pop' });
+    const drive = await createPlaylist(ctx.db, { ownerUserId: owner, name: 'Drive' });
+    await addPlaylistTracks(ctx.db, {
+      ownerUserId: owner,
+      playlistId: drive.id,
+      trackIds: [upgraded.trackId, control.trackId],
+    });
+
+    await personalize(owner, false);
+    const starred = await seed(owner, { genre: 'House' });
+    const filed = await seed(owner, { genre: 'Techno' });
+    const heard = await seed(owner, { genre: 'Ambient' });
+    await favorite(owner, upgraded.trackId, true);
+    await favorite(owner, starred.trackId, true);
+    await addPlaylistTracks(ctx.db, {
+      ownerUserId: owner,
+      playlistId: drive.id,
+      trackIds: [filed.trackId],
+    });
+    await listen(heard, now, { origin: 'user' });
+    await personalize(owner, true);
+
+    const scores = await genreScores(owner, now);
+    expect(Object.keys(scores).sort()).toEqual(['jazz', 'pop']);
+    expect(scores.jazz).toBe(scores.pop);
+  });
+
+  it('drops a disliked Track’s curation credit while off, without discounting its plays', async () => {
+    const owner = await createUser(ctx.db);
+    const now = new Date(T0);
+    await taste(owner, now);
+    const starred = await seed(owner, { genre: 'Jazz' });
+    const filed = await seed(owner, { genre: 'House' });
+    const uncurated = await seed(owner, { genre: 'Ambient' });
+    const control = await seed(owner, { genre: 'Techno' });
+    for (const s of [starred, filed, uncurated, control]) await listen(s, now);
+    await favorite(owner, starred.trackId, true);
+    const drive = await createPlaylist(ctx.db, { ownerUserId: owner, name: 'Drive' });
+    await addPlaylistTracks(ctx.db, {
+      ownerUserId: owner,
+      playlistId: drive.id,
+      trackIds: [filed.trackId],
+    });
+
+    await personalize(owner, false);
+    for (const s of [starred, filed, uncurated]) {
+      await rejectDislikedTrack(ctx.db, { ownerUserId: owner, trackId: s.trackId });
+    }
+    const { rows } = await ctx.pool.query(`select count(*)::int as n from taste_evidence`);
+    expect(rows[0].n).toBe(0);
+    await personalize(owner, true);
+
+    const scores = await genreScores(owner, now);
+    expect(scores.jazz).toBe(scores.techno);
+    expect(scores.house).toBe(scores.techno);
+    expect(scores.ambient).toBe(scores.techno);
+  });
+
+  it('uses no learned taste while off, also after a withdrawal', async () => {
+    const owner = await createUser(ctx.db);
+    const now = new Date(T0);
+    await taste(owner, now);
+    for (const genre of ['Jazz', 'House', 'Techno']) {
+      const s = await seed(owner, { genre });
+      await favorite(owner, s.trackId, true);
+      await listen(s, now, { origin: 'user' });
+    }
+    const withdrawn = await seed(owner, { genre: 'Ambient' });
+    await favorite(owner, withdrawn.trackId, true);
+    expect((await taste(owner, now)).confident).toBe(true);
+
+    await personalize(owner, false);
+    await favorite(owner, withdrawn.trackId, false);
+
+    expect(await taste(owner, now)).toMatchObject({ enabled: false, confident: false, genres: [] });
+  });
+
+  it('keeps listening learned before the switch when a withdrawal runs while off', async () => {
+    const owner = await createUser(ctx.db);
+    const now = new Date(T0);
+    await taste(owner, now);
+    const withdrawn = await seed(owner, { genre: 'Jazz' });
+    const control = await seed(owner, { genre: 'Techno' });
+    await listen(withdrawn, now);
+    await listen(control, now);
+    await favorite(owner, withdrawn.trackId, true);
+
+    await personalize(owner, false);
+    await favorite(owner, withdrawn.trackId, false);
+    await personalize(owner, true);
+
+    const scores = await genreScores(owner, now);
+    expect(scores.techno).toBeGreaterThan(0);
+    expect(scores.jazz).toBe(scores.techno);
+  });
+
+  it('keeps what deleted music taught when Track and Session are deleted while off', async () => {
+    const owner = await createUser(ctx.db);
+    const now = new Date(T0);
+    await taste(owner, now);
+    const starred = await seed(owner, { genre: 'Jazz' });
+    const heard = await seed(owner, { genre: 'Techno' });
+    await favorite(owner, starred.trackId, true);
+    await listen(starred, now);
+    await listen(heard, now);
+    const before = await genreScores(owner, now);
+    expect(Object.keys(before).sort()).toEqual(['jazz', 'techno']);
+
+    await personalize(owner, false);
+    await deleteTrack(ctx.db, { ownerUserId: owner, trackId: starred.trackId });
+    await ctx.db
+      .update(activitySessions)
+      .set({ status: 'stopped' })
+      .where(eq(activitySessions.id, heard.sessionId));
+    expect(
+      await deleteSession(ctx.db, { ownerUserId: owner, sessionId: heard.sessionId }),
+    ).toMatchObject({ ok: true });
+    await personalize(owner, true);
+
+    expect(await genreScores(owner, now)).toEqual(before);
   });
 
   it('reads only the owner’s own evidence', async () => {
