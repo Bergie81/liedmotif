@@ -1,6 +1,6 @@
 // Process-local rate limiters for the unauthenticated endpoints (setup + login)
 // and for the authenticated doors whose cost the usage windows do not meter:
-// session creation and the Assistant.
+// session creation, Change Vibe and the Assistant.
 //
 // The setup routes reach out to provider APIs (validation) or create the admin
 // (submit); login guards the password against online brute force. Those are
@@ -94,6 +94,16 @@ export function linkTokenLookupAllowed(headers: Headers): boolean {
  * listen to judge, so nobody starts ten in a minute.
  */
 export const sessionCreateLimiter = createRateLimiter({ limit: 10, windowMs: 60_000 });
+
+/**
+ * Change Vibe, per OWNER. Each change makes a writing-AI call (expansion or a
+ * picks adjustment) that the usage windows, counting music tasks, never meter,
+ * so a script or a stuck client could repeat it indefinitely on the Admin's
+ * key. Its own budget, apart from Session creation: the two are separate
+ * actions, and using up one leaves the other. The same size, far above anyone
+ * changing the vibe by hand.
+ */
+export const changeVibeLimiter = createRateLimiter({ limit: 10, windowMs: 60_000 });
 
 /**
  * Assistant messages, per USER. Each one is a tool-calling exchange with the

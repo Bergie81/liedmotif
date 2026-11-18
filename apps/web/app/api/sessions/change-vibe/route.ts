@@ -16,7 +16,8 @@
 // edit lifts or clears the target. A Stopped Session never fills a revision, so
 // it is refused too, and so is every change while the Admin has paused all new
 // music. These checks run ahead of the derivation, so a change that could
-// produce no music spends no LLM either.
+// produce no music spends no LLM either. Past them a per-owner rate limit bounds
+// the derivation itself, which no music budget counts.
 
 import { NextResponse } from 'next/server';
 import { getSessionById, restyleSession } from '@liedmotif/db';
@@ -29,7 +30,7 @@ import {
 } from '@liedmotif/shared';
 import { sessionStyleSnapshotSchema, type SessionIntentInput } from '@liedmotif/providers';
 import { getDb } from '@/lib/db';
-import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/api-response';
+import { apiError, apiOk, apiRateLimited, parseJsonBody, requireOwnerId } from '@/lib/api-response';
 import {
   deriveNamedSnapshotForIntent,
   evaluateGenerationBudget,
@@ -37,6 +38,7 @@ import {
   newMusicPausedRefusal,
   toSessionSummary,
 } from '@/lib/sessions';
+import { changeVibeLimiter } from '@/lib/request-limits';
 import { enqueueEnsureSessionBuffer } from '@/lib/worker-jobs';
 import { honoredOwnVoice, intentRequestsOwnVoice, ownVoiceBlockedMessage } from '@/lib/voice';
 
@@ -158,6 +160,13 @@ export async function POST(request: Request) {
       sessionId,
     });
   }
+  // The last gate, and the only one that meters the text LLM: the budget windows
+  // count music tasks, so nothing else bounds the derivation below. Taken after
+  // every free refusal so a request that reaches no derivation consumes none,
+  // and whether or not a text LLM is configured.
+  const changes = changeVibeLimiter.check(ownerUserId);
+  if (!changes.allowed) return apiRateLimited(changes.retryAfterMs);
+
   // The owner's listener profile is applied inside — the route never handles it. A
   // session started without the profile stays without it (the stored flag, not a
   // client resend, is authoritative).
