@@ -128,7 +128,11 @@ function sessionQueueSnapshot(
     items: data.items.filter((item) => !isLocallyRemoved(item.id)),
     earlierTracks: data.earlierTracks,
     loopHead: data.loopHead ? playableTrack(data.loopHead, isLocallyRemoved) : null,
-    queueItemIds: new Set(data.items.map((item) => item.id)),
+    // The loop head is in the Queue too, only outside the window: right after
+    // the wrap it is the audible Track while polls still answer the old window.
+    queueItemIds: new Set(
+      [...data.items, ...(data.loopHead ? [data.loopHead] : [])].map((item) => item.id),
+    ),
     currentQueueItemId: data.currentQueueItemId,
     currentTrackId: data.currentTrackId,
     generationStatus: data.generationStatus,

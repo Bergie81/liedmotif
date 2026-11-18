@@ -89,6 +89,7 @@ const SERVER_CALLS = [
   'loadPendingSurprise',
   'loadPlaylistSummaries',
   'loadSessionList',
+  'newMusicPausedRefusal',
   'requestNow',
   'resolveAssistantStanding',
   'searchPlaylists',

@@ -126,14 +126,19 @@ export async function listPlaylistCoverHistory(
  * Every cover the playlist keeps against its history cap: settled generated
  * covers, uploads, and the one attempt still in flight (it will land as a
  * cover, so its slot is already taken).
+ *
+ * The live attempt is read first: the worker settles an attempt `ready`
+ * without the admission lock, so a settle landing between the reads may count
+ * it twice for a moment, never not at all, and the cap can only err toward
+ * refusing.
  */
 export async function countPlaylistCoverHistory(
   db: DbOrTx,
   args: { ownerUserId: string; playlistId: string },
 ): Promise<number> {
+  const live = await getLivePlaylistCoverGeneration(db, args);
   const generated = await listPlaylistCoverHistory(db, args);
   const uploaded = await listUploadedPlaylistCovers(db, args);
-  const live = await getLivePlaylistCoverGeneration(db, args);
   return generated.length + uploaded.length + (live ? 1 : 0);
 }
 
