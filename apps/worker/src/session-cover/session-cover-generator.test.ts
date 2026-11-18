@@ -1809,6 +1809,101 @@ describeIfDb('SessionCoverGenerator', () => {
     });
   });
 
+  it('buys no prompt-only cover when a retry after a restart cannot send the frozen photos', async () => {
+    // Run two's adapter refuses before paying: a live descriptor that cannot take
+    // the photo, or a discovery outage that cannot tell whether it could.
+    const refusals = [
+      {
+        error: new GeneratedImageProviderError('references_unsupported', 'not_started'),
+        reason: 'references_unsupported',
+        settled: { state: 'not_admitted', failureCategory: 'references_unsupported' },
+      },
+      {
+        error: new GeneratedImageProviderError('unavailable', 'not_started'),
+        reason: 'provider_unavailable',
+        settled: { state: 'provider_unavailable', failureCategory: 'provider_unavailable' },
+      },
+    ];
+    for (const refusal of refusals) {
+      const { ownerUserId, sessionId } = await seedSession();
+      await ctx.db
+        .insert(listenerProfiles)
+        .values({ ownerUserId, coverReferenceFrequency: 'always' })
+        .onConflictDoNothing();
+      await seedReference(ownerUserId);
+      const { provider, calls } = fakeCoverArt({
+        idempotency: 'native',
+        error: (attempt) =>
+          attempt === 1
+            ? new GeneratedImageProviderError('unavailable', 'outcome_unknown')
+            : refusal.error,
+      });
+      await expect(
+        generator(ownerUserId, provider).ensureGenerated(sessionId),
+      ).rejects.toBeInstanceOf(SessionCoverRetryableError);
+      const [retrying] = await ctx.db
+        .select()
+        .from(sessionCoverGenerations)
+        .where(eq(sessionCoverGenerations.activitySessionId, sessionId));
+      expect(retrying).toMatchObject({ state: 'planned', possiblyPaid: true });
+
+      await expect(
+        generator(ownerUserId, provider).ensureGenerated(sessionId),
+      ).resolves.toMatchObject({ status: 'fallback', reason: refusal.reason });
+      expect(calls).toHaveLength(2);
+      expect(calls[1]!.references).toHaveLength(1);
+      const [settled] = await ctx.db
+        .select()
+        .from(sessionCoverGenerations)
+        .where(eq(sessionCoverGenerations.activitySessionId, sessionId));
+      expect(settled).toMatchObject({
+        ...refusal.settled,
+        possiblyPaid: true,
+        submissionDisposition: 'not_started',
+        submittedAt: retrying!.submittedAt,
+      });
+      expect(settled!.settledAt).not.toBeNull();
+    }
+  });
+
+  it('counts no spend when a first submission is refused before paying for its photos', async () => {
+    const refusals = [
+      {
+        error: new GeneratedImageProviderError('references_unsupported', 'not_started'),
+        settled: { state: 'not_admitted', failureCategory: 'references_unsupported' },
+      },
+      {
+        error: new GeneratedImageProviderError('unavailable', 'not_started'),
+        settled: { state: 'provider_unavailable', failureCategory: 'provider_unavailable' },
+      },
+    ];
+    for (const refusal of refusals) {
+      const { ownerUserId, sessionId } = await seedSession();
+      await ctx.db
+        .insert(listenerProfiles)
+        .values({ ownerUserId, coverReferenceFrequency: 'always' })
+        .onConflictDoNothing();
+      await seedReference(ownerUserId);
+      const { provider } = fakeCoverArt({ error: refusal.error });
+
+      // An outage refusal gets its one safe retry first; the reference refusal none.
+      for (let run = 0; run < 2; run += 1) {
+        await generator(ownerUserId, provider)
+          .ensureGenerated(sessionId)
+          .catch((error: unknown) => expect(error).toBeInstanceOf(SessionCoverRetryableError));
+      }
+      const [settled] = await ctx.db
+        .select()
+        .from(sessionCoverGenerations)
+        .where(eq(sessionCoverGenerations.activitySessionId, sessionId));
+      expect(settled).toMatchObject({
+        ...refusal.settled,
+        possiblyPaid: false,
+        submittedAt: null,
+      });
+    }
+  });
+
   it('buys no initial cover for a Session whose delete is pending', async () => {
     const { ownerUserId, sessionId } = await seedSession();
     await ctx.db

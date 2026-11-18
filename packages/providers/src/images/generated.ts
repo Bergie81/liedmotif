@@ -269,6 +269,16 @@ export function openRouterImageProvider(config: OpenRouterImageConfig): Generate
       const resolutionResult = await discover();
       const capabilities = resolutionResult.capabilities;
       const references = acceptedReferences(request.references, capabilities);
+      // A reference photo is never dropped from a paid request: the caller chose
+      // it, and a cover without it is a cover of a stranger. A fallback cannot
+      // tell an outage from a real capability change, so it refuses as
+      // unavailable; a live descriptor really cannot take the photo.
+      if (references.length < request.references.length) {
+        throw new GeneratedImageProviderError(
+          isDiscoveryFallback(resolutionResult) ? 'unavailable' : 'references_unsupported',
+          'not_started',
+        );
+      }
       const downgrades: GeneratedImageCapabilityDowngrade[] = [];
       if (resolutionResult.conservative) downgrades.push('capabilities_conservative');
 
@@ -292,7 +302,6 @@ export function openRouterImageProvider(config: OpenRouterImageConfig): Generate
       }
       if (!resolutionResult.supportedParameters.has('n'))
         downgrades.push('candidate_count_omitted');
-      if (request.references.length > references.length) downgrades.push('references_omitted');
       if (request.seed !== undefined && !capabilities.nativeSeed) downgrades.push('seed_omitted');
       if (capabilities.idempotency === 'absent') downgrades.push('idempotency_unavailable');
 

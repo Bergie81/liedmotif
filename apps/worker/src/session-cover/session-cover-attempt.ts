@@ -49,6 +49,7 @@ import {
 import { storedAutoPick } from './cover-plan-selection';
 import {
   classifyCoverSubmissionFailure,
+  isReferenceRefusal,
   isTerminalRejection,
   type CoverSubmissionFailure,
 } from './cover-submission-retry';
@@ -565,8 +566,9 @@ export type CoverSubmissionOutcome =
  * One paid provider call for a claimed (`submitting`) attempt. Success lands
  * the row in `storing` with the provider outcome; failure classifies the error
  * under the safe-retry rule and settles (or re-opens) the row. `claimed` is
- * the row as claimed for submission; `possiblyPaidBefore` is the pre-claim
- * paid flag a not-started failure restores.
+ * the row as claimed for submission; `possiblyPaidBefore` and
+ * `submittedAtBefore` are the pre-claim spend a not-started failure restores, so
+ * an earlier possibly-paid submission keeps counting in its own window.
  */
 export async function generateCoverSubmission(
   db: DbOrTx,
@@ -575,6 +577,7 @@ export async function generateCoverSubmission(
     ownerUserId: string;
     claimed: SessionCoverGenerationRow;
     possiblyPaidBefore: boolean;
+    submittedAtBefore: Date | null;
     capabilities: GeneratedImageCapabilities;
     now: Date;
     prompt: string;
@@ -582,8 +585,14 @@ export async function generateCoverSubmission(
     musicTaskId?: string;
     mergeDowngrades(codes: GeneratedImageResult['downgradeCodes']): string[];
   },
-): Promise<CoverSubmissionOutcome | { kind: 'pending' }> {
+): Promise<
+  CoverSubmissionOutcome | { kind: 'pending' } | { kind: 'refused'; reason: CoverReferenceRefusal }
+> {
   const { claimed, capabilities, now } = args;
+  const spendBefore = {
+    possiblyPaid: args.possiblyPaidBefore,
+    submittedAt: args.possiblyPaidBefore ? args.submittedAtBefore : null,
+  };
   let generated: GeneratedImageResult;
   try {
     generated = await args.provider.generate({
@@ -598,13 +607,30 @@ export async function generateCoverSubmission(
       count: 1,
     });
   } catch (error) {
+    // The adapter refused before the request left because the model cannot take
+    // the frozen photos: settled like the claim-time reference refusal, since no
+    // resend can carry them.
+    if (isReferenceRefusal(error)) {
+      await updateSessionCoverGeneration(db, {
+        ownerUserId: args.ownerUserId,
+        id: claimed.id,
+        state: refusedCoverState('references_unsupported'),
+        ...spendBefore,
+        submissionDisposition: 'not_started',
+        failureCategory: 'references_unsupported',
+        settledAt: now,
+        updatedAt: now,
+        expectedStates: ['submitting'],
+      });
+      return { kind: 'refused', reason: 'references_unsupported' };
+    }
     const failure = classifyCoverSubmissionFailure(error, claimed, capabilities.idempotency);
     const state = submitFailureState(failure, capabilities.idempotency);
     await updateSessionCoverGeneration(db, {
       ownerUserId: args.ownerUserId,
       id: claimed.id,
       state,
-      possiblyPaid: args.possiblyPaidBefore || failure.disposition !== 'not_started',
+      ...(failure.disposition === 'not_started' ? spendBefore : { possiblyPaid: true }),
       submissionDisposition: failure.disposition,
       safeRetryCount: failure.safeRetryCount,
       failureCategory: submitFailureCategory(failure, state),
@@ -762,6 +788,7 @@ export async function claimAndSubmitCover(
     ownerUserId: args.ownerUserId,
     claimed: current,
     possiblyPaidBefore: args.ledger.possiblyPaid,
+    submittedAtBefore: args.ledger.submittedAt,
     capabilities: args.capabilities,
     now: args.now,
     prompt: promptForCoverReferenceSubmission(current.plan.prompt, referencesOmitted),

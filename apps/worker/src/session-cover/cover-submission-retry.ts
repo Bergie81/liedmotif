@@ -19,6 +19,15 @@ export function isTerminalRejection(kind: GeneratedImageFailureKind | null): boo
   return kind === 'configuration' || kind === 'account_not_ready' || kind === 'rejection';
 }
 
+/** The adapter refused before the request left: the model cannot take every frozen photo. */
+export function isReferenceRefusal(error: unknown): boolean {
+  return (
+    error instanceof GeneratedImageProviderError &&
+    error.kind === 'references_unsupported' &&
+    error.submissionDisposition === 'not_started'
+  );
+}
+
 /**
  * Every paid image request is money, so a failed submission may only be resent under the
  * *same* idempotency key: a rejected/misconfigured request will never succeed, and an

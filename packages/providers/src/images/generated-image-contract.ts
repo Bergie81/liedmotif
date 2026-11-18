@@ -91,10 +91,15 @@ export interface GeneratedImageResult {
  * billing, an unverified organisation) although the key itself is valid. It
  * never starts work, so it is never spend, and retrying cannot help until the
  * Admin fixes the account.
+ *
+ * `references_unsupported`: the model cannot take every reference photo the
+ * request carries. It is raised before the request leaves, so it never starts
+ * work, and resending the same request cannot help.
  */
 export type GeneratedImageFailureKind =
   | 'configuration'
   | 'account_not_ready'
+  | 'references_unsupported'
   | 'rate_limit'
   | 'unavailable'
   | 'timeout'
@@ -107,6 +112,7 @@ export type GeneratedImageSubmissionDisposition =
 const FAILURE_MESSAGES: Record<GeneratedImageFailureKind, string> = {
   configuration: 'Generated image provider configuration was rejected.',
   account_not_ready: 'Generated image provider account is not ready for images.',
+  references_unsupported: 'Generated image model cannot take the requested reference images.',
   rate_limit: 'Generated image provider rate limit was reached.',
   unavailable: 'Generated image provider is unavailable.',
   timeout: 'Generated image request timed out.',

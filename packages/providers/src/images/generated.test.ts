@@ -339,18 +339,7 @@ describe('openRouter generated-image adapter', () => {
       .mockResolvedValueOnce(json({ data: [{ b64_json: PNG_B64 }] }));
     const provider = adapter(fetchImpl as unknown as typeof fetch);
 
-    const result = await provider.generate(
-      request({
-        references: [
-          {
-            id: 'ref-1',
-            role: 'subject',
-            mediaType: 'image/webp',
-            bytes: REFERENCE_BYTES,
-          },
-        ],
-      }),
-    );
+    const result = await provider.generate(request());
 
     const body = JSON.parse(
       (fetchImpl.mock.calls[1]! as unknown as [string, RequestInit])[1].body as string,
@@ -366,10 +355,46 @@ describe('openRouter generated-image adapter', () => {
       'resolution_omitted',
       'quality_omitted',
       'candidate_count_omitted',
-      'references_omitted',
       'seed_omitted',
       'idempotency_unavailable',
     ]);
+  });
+
+  it('refuses before the paid request when discovery is down and a reference would be dropped', async () => {
+    // A fallback cannot tell an outage from a real capability change, so it never
+    // buys a cover without the photos it was handed: the conservative floor takes
+    // none, an asserted floor only one.
+    const fallbacks: Array<{ assertion?: object; references: number }> = [
+      { references: 1 },
+      { assertion: { supportedParameters: ['input_references'] }, references: 2 },
+    ];
+    for (const { assertion, references } of fallbacks) {
+      const fetchImpl = vi.fn().mockResolvedValue(new Response(null, { status: 503 }));
+      const provider = adapter(
+        fetchImpl as unknown as typeof fetch,
+        assertion ? { capabilityAssertion: assertion } : {},
+      );
+
+      const failure = provider.generate(
+        request({
+          references: Array.from({ length: references }, (_, index) => ({
+            id: `ref-${index}`,
+            role: 'subject' as const,
+            mediaType: 'image/webp' as const,
+            bytes: REFERENCE_BYTES,
+          })),
+        }),
+      );
+
+      await expect(failure).rejects.toBeInstanceOf(GeneratedImageProviderError);
+      await expect(failure).rejects.toMatchObject({
+        kind: 'unavailable',
+        submissionDisposition: 'not_started',
+      });
+      expect(fetchImpl.mock.calls.map(([url]) => String(url))).toEqual([
+        expect.stringMatching(/\/endpoints$/),
+      ]);
+    }
   });
 
   it('reuses an outage fallback for the cooldown, then re-probes and recovers', async () => {
@@ -421,31 +446,58 @@ describe('openRouter generated-image adapter', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
-  it('omits values outside discovered reference limits', async () => {
-    const fetchImpl = vi
-      .fn()
-      .mockResolvedValueOnce(endpointDescriptor(['input_references']))
-      .mockResolvedValueOnce(json({ data: [{ b64_json: PNG_B64 }] }));
-    const provider = adapter(fetchImpl as unknown as typeof fetch);
+  it('refuses as unsupported references when a live descriptor cannot take a requested reference', async () => {
+    const subject = { id: 'ref-1', role: 'subject' as const, mediaType: 'image/png' as const };
+    const cases = [
+      { name: 'too large', references: [{ ...subject, bytes: new Uint8Array(2_000_001) }] },
+      {
+        name: 'media type',
+        references: [{ ...subject, mediaType: 'image/webp' as const, bytes: REFERENCE_BYTES }],
+      },
+      {
+        name: 'role',
+        references: [{ ...subject, role: 'style' as const, bytes: REFERENCE_BYTES }],
+      },
+      {
+        name: 'count',
+        references: Array.from({ length: 3 }, (_, index) => ({
+          ...subject,
+          id: `ref-${index}`,
+          bytes: REFERENCE_BYTES,
+        })),
+      },
+    ];
+    for (const { name, references } of cases) {
+      const fetchImpl = vi.fn().mockResolvedValueOnce(
+        json({
+          id: OPENROUTER_DEFAULT_COVER_MODEL,
+          endpoints: [
+            {
+              provider_tag: 'google-ai-studio',
+              supported_parameters: {
+                input_references: {
+                  type: 'array',
+                  max_items: 2,
+                  roles: ['subject'],
+                  media_types: ['image/png'],
+                  max_bytes_per_item: 2_000_000,
+                },
+              },
+            },
+          ],
+        }),
+      );
+      const provider = adapter(fetchImpl as unknown as typeof fetch);
 
-    const result = await provider.generate(
-      request({
-        references: [
-          {
-            id: 'ref-1',
-            role: 'subject',
-            mediaType: 'image/webp',
-            bytes: new Uint8Array(2_000_001),
-          },
-        ],
-      }),
-    );
+      const failure = provider.generate(request({ references }));
 
-    const body = JSON.parse(
-      (fetchImpl.mock.calls[1]! as unknown as [string, RequestInit])[1].body as string,
-    );
-    expect(body.input_references).toBeUndefined();
-    expect(result.downgradeCodes).toContain('references_omitted');
+      await expect(failure, name).rejects.toBeInstanceOf(GeneratedImageProviderError);
+      await expect(failure, name).rejects.toMatchObject({
+        kind: 'references_unsupported',
+        submissionDisposition: 'not_started',
+      });
+      expect(fetchImpl, name).toHaveBeenCalledTimes(1);
+    }
   });
 
   it('uses conservative reference limits when the endpoint exposes only boolean support', async () => {
@@ -472,11 +524,25 @@ describe('openRouter generated-image adapter', () => {
         mediaTypes: ['image/jpeg', 'image/png', 'image/webp'],
       },
     });
+    await expect(
+      provider.generate(
+        request({
+          references: [
+            { id: 'subject', role: 'subject', mediaType: 'image/webp', bytes: REFERENCE_BYTES },
+            { id: 'style', role: 'style', mediaType: 'image/png', bytes: REFERENCE_BYTES },
+          ],
+        }),
+      ),
+    ).rejects.toMatchObject({
+      kind: 'references_unsupported',
+      submissionDisposition: 'not_started',
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+
     await provider.generate(
       request({
         references: [
           { id: 'subject', role: 'subject', mediaType: 'image/webp', bytes: REFERENCE_BYTES },
-          { id: 'style', role: 'style', mediaType: 'image/png', bytes: REFERENCE_BYTES },
         ],
       }),
     );
