@@ -8,6 +8,7 @@ import { usageLimitFloor } from '@liedmotif/shared';
 import {
   normalizeTracksPerRequest,
   providerTasksToTracks,
+  roundUpToWholeCalls,
   stepNonNegativeWholeValue,
   trackLimitToTasks,
   wholeLimitNumber,
@@ -46,6 +47,27 @@ export function maxConcurrentTracks(tracksPerRequest: number): number {
     yieldPerRequest,
     Math.floor(CONCURRENT_TRACK_LIMIT / yieldPerRequest) * yieldPerRequest,
   );
+}
+
+/**
+ * The lowest day or month cap the wizard offers: the Session-start headroom
+ * rounded up to whole provider calls, since a window whose whole cap is below
+ * the headroom never lets a new Session start. A headroom of 0 turns that gate
+ * off, leaving one provider call.
+ */
+export function trackCapFloor(minHeadroomTracks: number, tracksPerRequest: number): number {
+  const yieldPerRequest = normalizeTracksPerRequest(tracksPerRequest);
+  return Math.max(yieldPerRequest, roundUpToWholeCalls(minHeadroomTracks, yieldPerRequest));
+}
+
+/** The cap that runs out first: the month when it is set below the day. */
+export function bindingTrackCap(ceiling: TrackCeiling): {
+  tracks: number;
+  window: 'day' | 'month';
+} {
+  const daily = Number(ceiling.dailyTracks);
+  const monthly = Number(ceiling.monthlyTracks);
+  return monthly < daily ? { tracks: monthly, window: 'month' } : { tracks: daily, window: 'day' };
 }
 
 /** Step a ceiling, keeping it inside the bounds its screen advertises. */

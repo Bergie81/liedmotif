@@ -27,12 +27,14 @@ export function PoolPanel({
   poolFigures,
   overSubscription,
   tracksPerCall,
+  minHeadroomTracks,
   unitCosts,
 }: {
   pool: MembersAdminData['pool'];
   poolFigures: MembersAdminData['poolFigures'];
   overSubscription: PoolOverSubscription[];
   tracksPerCall: number;
+  minHeadroomTracks: number;
   unitCosts: UnitCosts;
 }) {
   const router = useRouter();
@@ -90,6 +92,7 @@ export function PoolPanel({
           disabled={busy}
           unitCosts={unitCosts}
           tracksPerCall={tracksPerCall}
+          minHeadroomTracks={minHeadroomTracks}
           onChange={change}
         />
       </div>

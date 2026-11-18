@@ -8,6 +8,7 @@ import {
   membersCostSummary,
   memberBudgetFieldMax,
   memberBudgetFormValues,
+  memberBudgetWarnings,
   memberMetaLine,
   newInviteTotals,
   overSubscriptionMessage,
@@ -278,5 +279,47 @@ describe('estimated cost readouts', () => {
   it('has no summary while both prices are 0', () => {
     const zeroed = { perTrackUsd: 0, perCoverUsd: 0 };
     expect(membersCostSummary([{ usage: rolling }], zeroed)).toBeNull();
+  });
+});
+
+describe('budgets below the Session-start headroom', () => {
+  const values = {
+    dailyTracks: '20',
+    monthlyTracks: '100',
+    coversPerDay: '1',
+    coversPerMonth: '2',
+    totalTracks: '50',
+    totalCovers: '1',
+  };
+  const warning = 'Below 5 Tracks, no new Session can start.';
+
+  it('warns on 4 Tracks a day with headroom 5, and the budget still saves', () => {
+    const low = { ...values, dailyTracks: '4' };
+    expect(memberBudgetWarnings(low, 2, 5)).toEqual({ dailyTracks: warning });
+    expect(buildMemberBudgetPatch(low, 2)).toMatchObject({
+      ok: true,
+      patch: { dailyGenerationTasks: 2 },
+    });
+  });
+
+  it('warns on the month window and on a One-time total as it will be stored', () => {
+    // A typed 3 is stored as 4 (whole calls), still short of 5; a typed 5 becomes 6.
+    expect(memberBudgetWarnings({ ...values, monthlyTracks: '2', totalTracks: '3' }, 2, 5)).toEqual(
+      { monthlyTracks: warning, totalTracks: warning },
+    );
+    expect(memberBudgetWarnings({ ...values, totalTracks: '5' }, 2, 5)).toEqual({});
+  });
+
+  it('leaves Covers, a deliberate 0, and a headroom of 0 without a warning', () => {
+    expect(memberBudgetWarnings(values, 2, 5)).toEqual({});
+    expect(memberBudgetWarnings({ ...values, dailyTracks: '0' }, 2, 5)).toEqual({});
+    expect(memberBudgetWarnings({ ...values, dailyTracks: '2' }, 2, 0)).toEqual({});
+  });
+
+  it('keeps the existing refusals: whole calls, and the month not below the day', () => {
+    expect(buildMemberBudgetPatch({ ...values, dailyTracks: '4', monthlyTracks: '2' }, 2)).toEqual({
+      ok: false,
+      errors: { monthlyTracks: 'Enter 4 or more.' },
+    });
   });
 });

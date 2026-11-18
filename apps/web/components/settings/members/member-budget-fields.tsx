@@ -28,6 +28,7 @@ import {
   budgetKindLabel,
   formEstimateCounts,
   memberBudgetFieldMax,
+  memberBudgetWarnings,
   type MemberBudgetErrors,
   type MemberBudgetField,
   type MemberBudgetFormValues,
@@ -67,7 +68,15 @@ interface BudgetFieldsProps {
   disabled: boolean;
   unitCosts: UnitCosts;
   tracksPerCall: number;
+  /** The instance's Session-start headroom, which a Track cap below it never clears. */
+  minHeadroomTracks: number;
   onChange: (field: MemberBudgetField, value: string) => void;
+}
+
+/** A field's error, else its warning, in the row's description. */
+function fieldNotice(error: string | undefined, warning: string | undefined) {
+  const notice = error ?? warning;
+  return notice ? <span className="text-warn">{notice}</span> : undefined;
 }
 
 /**
@@ -80,8 +89,11 @@ function MemberBudgetTotalFields({
   disabled,
   onChange,
   unitCosts,
+  tracksPerCall,
+  minHeadroomTracks,
   counts,
 }: BudgetFieldsProps & { counts: CostCounts | null }) {
+  const warnings = memberBudgetWarnings(values, tracksPerCall, minHeadroomTracks);
   return (
     <>
       {TOTAL_ROWS.map(({ field, label, unit }) => {
@@ -98,7 +110,7 @@ function MemberBudgetTotalFields({
           <SettingsControlRow
             key={field}
             label={label}
-            description={error ? <span className="text-warn">{error}</span> : estimate}
+            description={fieldNotice(error, warnings[field]) ?? estimate}
           >
             <span className="inline-flex items-center gap-2">
               <input
@@ -127,10 +139,12 @@ export function MemberBudgetFields({
   errors,
   disabled,
   tracksPerCall,
+  minHeadroomTracks,
   unitCosts,
   onChange,
 }: BudgetFieldsProps) {
   const trackYield = normalizeTracksPerRequest(tracksPerCall);
+  const warnings = memberBudgetWarnings(values, tracksPerCall, minHeadroomTracks);
   return (
     <>
       {WINDOW_ROWS.map(({ field, label, unit, step }) => {
@@ -141,7 +155,7 @@ export function MemberBudgetFields({
           <SettingsControlRow
             key={field}
             label={label}
-            description={error ? <span className="text-warn">{error}</span> : undefined}
+            description={fieldNotice(error, warnings[field])}
           >
             <Stepper
               className={pricedStepperClass}

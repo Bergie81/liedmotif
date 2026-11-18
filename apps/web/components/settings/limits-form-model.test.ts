@@ -7,6 +7,7 @@ import {
   createLimitFormValues,
   limitFieldMax,
   limitFieldMin,
+  limitFieldWarnings,
   stepLimitValue,
 } from './limits-form-model';
 
@@ -172,5 +173,66 @@ describe('generation limit form units', () => {
     expect(limitFieldMax('generatedCoversPerDay', 2)).toBe(
       USAGE_LIMIT_CEILINGS.generatedCoversPerDay,
     );
+  });
+});
+
+describe('limits below the Session-start headroom', () => {
+  const base = {
+    ...createLimitFormValues(defaultUsageLimits(), 2),
+    trackCeilingEnabled: true,
+    minHeadroomTracksToStartSession: '5',
+  };
+  const warning = 'Below 5 Tracks, no new Session can start.';
+
+  it('warns on a Daily or Monthly limit below the headroom and still saves it', () => {
+    const low = { ...base, dailyTracks: '4', monthlyTracks: '2' };
+    expect(limitFieldWarnings(low)).toEqual({ dailyTracks: warning, monthlyTracks: warning });
+    expect(buildLimitsPatch(low, 2)).toEqual({
+      ok: true,
+      patch: expect.objectContaining({ dailyGenerationTasks: 2, monthlyGenerationTasks: 1 }),
+    });
+  });
+
+  it('follows the headroom in the form, not the stored one', () => {
+    expect(limitFieldWarnings({ ...base, dailyTracks: '6' })).toEqual({});
+    expect(
+      limitFieldWarnings({ ...base, dailyTracks: '6', minHeadroomTracksToStartSession: '8' }),
+    ).toEqual({ dailyTracks: 'Below 8 Tracks, no new Session can start.' });
+  });
+
+  it('leaves a monthly limit below the daily one alone while both clear the headroom', () => {
+    const tightMonth = { ...base, dailyTracks: '20', monthlyTracks: '10' };
+    expect(limitFieldWarnings(tightMonth)).toEqual({});
+    expect(buildLimitsPatch(tightMonth, 2)).toMatchObject({
+      ok: true,
+      patch: { dailyGenerationTasks: 10, monthlyGenerationTasks: 5 },
+    });
+  });
+
+  it('treats 0 as a deliberate stop: no warning, and it saves', () => {
+    const stopped = { ...base, dailyTracks: '0' };
+    expect(limitFieldWarnings(stopped)).toEqual({});
+    expect(buildLimitsPatch(stopped, 2)).toMatchObject({
+      ok: true,
+      patch: { dailyGenerationTasks: 0 },
+    });
+  });
+
+  it('says nothing while the Track ceiling is off or the headroom gate is 0', () => {
+    expect(limitFieldWarnings({ ...base, dailyTracks: '2', trackCeilingEnabled: false })).toEqual(
+      {},
+    );
+    expect(
+      limitFieldWarnings({ ...base, dailyTracks: '2', minHeadroomTracksToStartSession: '0' }),
+    ).toEqual({});
+  });
+
+  it('never touches another limit to make a value fit', () => {
+    const low = { ...base, dailyTracks: '2' };
+    const result = buildLimitsPatch(low, 2);
+    expect(result).toMatchObject({
+      ok: true,
+      patch: { dailyGenerationTasks: 1, minHeadroomTracksToStartSession: 5 },
+    });
   });
 });

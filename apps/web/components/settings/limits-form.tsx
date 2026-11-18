@@ -18,6 +18,7 @@ import {
   limitFieldMax,
   limitFieldMin,
   limitFieldSwitchedOff,
+  limitFieldWarnings,
   stepLimitValue,
   STORAGE_STEP_BYTES,
   type LimitFieldErrors,
@@ -42,6 +43,7 @@ export function LimitsForm({
   const [saving, setSaving] = useState(false);
   const { fetchChrome } = useAppChrome();
   const trackYield = normalizeTracksPerRequest(tracksPerRequest);
+  const warnings = limitFieldWarnings(values);
 
   function change<K extends keyof LimitFormValues>(field: K, value: LimitFormValues[K]) {
     setValues((current) => ({ ...current, [field]: value }));
@@ -137,6 +139,7 @@ export function LimitsForm({
             rawValue={values.dailyTracks}
             step={trackYield * 5}
             error={errors.dailyTracks}
+            warning={warnings.dailyTracks}
             disabled={saving || limitFieldSwitchedOff('dailyTracks', values)}
             onStep={step}
           />
@@ -148,6 +151,7 @@ export function LimitsForm({
             rawValue={values.monthlyTracks}
             step={trackYield * 25}
             error={errors.monthlyTracks}
+            warning={warnings.monthlyTracks}
             disabled={saving || limitFieldSwitchedOff('monthlyTracks', values)}
             onStep={step}
           />
@@ -294,6 +298,7 @@ function LimitStepperRow({
   step,
   tracksPerRequest,
   error,
+  warning,
   disabled,
   onStep,
 }: {
@@ -305,6 +310,8 @@ function LimitStepperRow({
   step: number;
   tracksPerRequest: number;
   error?: string;
+  /** A hint that never blocks the save; an error outranks it. */
+  warning?: string;
   disabled: boolean;
   onStep: (field: LimitFormField, amount: number) => void;
 }) {
@@ -314,7 +321,9 @@ function LimitStepperRow({
   return (
     <SettingsControlRow
       label={label}
-      description={error ? <span className="text-warn">{error}</span> : description}
+      description={
+        error || warning ? <span className="text-warn">{error ?? warning}</span> : description
+      }
     >
       <Stepper
         className={pricedStepperClass}

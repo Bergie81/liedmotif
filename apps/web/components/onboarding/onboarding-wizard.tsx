@@ -120,6 +120,7 @@ export function OnboardingWizard({
           <OnboardingTracksStep
             ceiling={draft.ceiling}
             tracksPerRequest={data.tracksPerRequest}
+            minHeadroomTracks={data.limits.minHeadroomTracksToStartSession}
             onChange={(ceiling) => patch({ ceiling })}
             onDone={() => {
               patch({ savedCeiling: draft.ceiling });

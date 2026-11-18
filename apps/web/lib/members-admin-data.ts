@@ -67,6 +67,8 @@ export interface MembersAdminData {
   overSubscription: PoolOverSubscription[];
   defaultBudget: MemberLimits;
   tracksPerCall: number;
+  /** The instance's Session-start headroom; a Track budget below it can never start a Session. */
+  minHeadroomTracks: number;
   /** The Admin's price per Track / Cover — Admin-only, like this whole payload. */
   unitCosts: UnitCosts;
   /** Assistant access every Member has until the Admin sets their own. */
@@ -148,6 +150,7 @@ export async function loadMembersAdminData(): Promise<MembersAdminData> {
     ),
     defaultBudget: DEFAULT_MEMBER_LIMITS,
     tracksPerCall,
+    minHeadroomTracks: instanceLimits.minHeadroomTracksToStartSession,
     unitCosts,
     assistantDefault,
   };

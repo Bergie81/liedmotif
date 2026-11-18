@@ -149,17 +149,41 @@ describe('onboarding covers step budget note', () => {
   beforeAll(() => vi.stubGlobal('React', React));
   afterAll(() => vi.unstubAllGlobals());
 
-  // The caps only bind painted Covers; with nothing painting, a daily cap and a
-  // dollar ceiling would be promised that the Admin is not under.
-  it('states no Cover cap or cost while the image model does not paint', () => {
+  // The caps bind every generated Cover; only with none coming is there no cap or
+  // cost to state.
+  it('states no Cover cap or cost while no generated Cover is coming', () => {
     for (const markup of [
       renderCovers({ imageConnected: false, ceilingEnabled: true }),
-      renderCovers({ imageConnected: false, musicProviderCoverConfigured: true }),
       renderCovers({ tailoredCoverArtEnabled: false, ceilingEnabled: true }),
     ]) {
       expect(markup).not.toContain('Covers a day');
       expect(markup).not.toContain('No cap on your own Covers');
     }
+  });
+
+  it('keeps the Cover caps inert while only the placeholder is coming', () => {
+    const markup = renderCovers({ imageConnected: false, tailoredCoverArtEnabled: false });
+    expect(markup).toMatch(/<button[^>]*aria-label="Limit my Covers"[^>]*\sdisabled=""/);
+  });
+
+  it('lets the caps be set for music-provider Covers, which count toward them at no image price', () => {
+    const music = { imageConnected: false, musicProviderCoverConfigured: true };
+    const switchOnly = renderCovers({ ...music, tailoredCoverArtEnabled: false });
+    expect(switchOnly).not.toMatch(/<button[^>]*aria-label="Limit my Covers"[^>]*\sdisabled=""/);
+    expect(switchOnly).toContain('count toward your Cover limits');
+    expect(switchOnly).not.toContain('for free');
+
+    const capped = renderCovers({ ...music, tailoredCoverArtEnabled: false, ceilingEnabled: true });
+    expect(capped).toContain('25 Covers a day');
+    expect(capped).not.toContain('$');
+    expect(capped).not.toMatch(
+      /<button[^>]*aria-label="Decrease Covers per day"[^>]*\sdisabled=""/,
+    );
+
+    const uncapped = renderCovers({ ...music, tailoredCoverArtEnabled: false });
+    expect(uncapped).toContain('No cap on your own Covers');
+    expect(uncapped).toContain('plus any you regenerate, at no extra cost.');
+    expect(uncapped).not.toMatch(/cents<\/span> each/);
   });
 
   it('explains the uncapped spend while painting with the ceiling off', () => {

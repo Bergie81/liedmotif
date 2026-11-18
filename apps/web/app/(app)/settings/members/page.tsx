@@ -64,6 +64,7 @@ export default async function MembersSettingsPage() {
             inviteByEmail={isAccountEmailEnabled()}
             defaultBudget={data.defaultBudget}
             tracksPerCall={data.tracksPerCall}
+            minHeadroomTracks={data.minHeadroomTracks}
             unitCosts={data.unitCosts}
           />
         </SettingsSection>
@@ -72,6 +73,7 @@ export default async function MembersSettingsPage() {
           <MemberCards
             members={data.members}
             tracksPerCall={data.tracksPerCall}
+            minHeadroomTracks={data.minHeadroomTracks}
             unitCosts={data.unitCosts}
             assistantDefault={assistantDefault}
           />
@@ -83,6 +85,7 @@ export default async function MembersSettingsPage() {
             poolFigures={data.poolFigures}
             overSubscription={data.overSubscription}
             tracksPerCall={data.tracksPerCall}
+            minHeadroomTracks={data.minHeadroomTracks}
             unitCosts={data.unitCosts}
           />
         </SettingsSection>

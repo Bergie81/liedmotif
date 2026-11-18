@@ -47,6 +47,7 @@ function memberCards(assistant: MemberAssistantAccess, assistantDefault = INSTAN
   return h(MemberCards, {
     members: [member(assistant)],
     tracksPerCall: 2,
+    minHeadroomTracks: 5,
     unitCosts: UNIT_COSTS,
     assistantDefault,
   });

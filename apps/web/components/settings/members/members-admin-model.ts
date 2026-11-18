@@ -21,6 +21,7 @@ import {
   limitRowMax,
   parseTrackRow,
   parseWholeRow,
+  sessionStartWarning,
   type LimitRowBound,
 } from '@/lib/limit-row-bounds';
 import type { BudgetUsage, BudgetWindowCaps, OneTimeBudgetTotals } from '@/lib/my-budget-model';
@@ -159,6 +160,28 @@ export function buildMemberBudgetPatch(
       generatedCoversPerMonth: coversPerMonth,
     },
   };
+}
+
+/**
+ * The Track fields set below the instance's Session-start headroom — warnings
+ * the forms show beside the field, never refusals. A One-time total is read as
+ * it will be stored, rounded up to whole provider calls. The headroom is the
+ * instance value; it is not a per-Member knob.
+ */
+export function memberBudgetWarnings(
+  values: MemberBudgetFormValues,
+  tracksPerCall: number,
+  minHeadroomTracks: number,
+): MemberBudgetErrors {
+  const warnings: MemberBudgetErrors = {};
+  for (const field of ['dailyTracks', 'monthlyTracks', 'totalTracks'] as const) {
+    const typed = wholeLimitNumber(values[field]);
+    const tracks =
+      typed !== null && field === 'totalTracks' ? roundUpToWholeCalls(typed, tracksPerCall) : typed;
+    const warning = sessionStartWarning(tracks, minHeadroomTracks);
+    if (warning) warnings[field] = warning;
+  }
+  return warnings;
 }
 
 /**

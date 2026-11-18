@@ -7,8 +7,9 @@
 // the Text AI's vendor, the Text AI's key is used by reference when it resolves, so
 // no second key is asked for. The switch alone opts in to paid Covers. The key is
 // optional: without one the switch is kept, just inert. The ceilings are
-// stored per instance. The music-provider source is reported, never offered: it
-// needs no choice — it simply takes over whenever the image model is off or absent.
+// stored per instance and cap every generated Cover, whichever source makes it.
+// The music-provider source is reported, never offered: it needs no choice — it
+// simply takes over whenever the image model is off or absent.
 
 'use client';
 
@@ -137,8 +138,11 @@ function CoversStepBody({
     (Boolean(editor.secret.trim()) || editor.usesSharedKey || (imageConnected && modelChanged));
   // A key typed here paints once Save stores it, so its caps can be set beforehand.
   const painting = source === 'image' || savesCredential;
-  // The switch follows the caps it governs: both are live only while Covers are painted.
-  const capped = painting && budget.ceilingEnabled;
+  // The caps count every generated Cover, the music provider's included; they are
+  // inert only while Sessions keep the placeholder.
+  const generating = painting || source === 'music-provider';
+  // The switch follows the caps it governs: both are live only while Covers are generated.
+  const capped = generating && budget.ceilingEnabled;
 
   function commit() {
     const built = coverBudgetPatch(budget);
@@ -212,14 +216,14 @@ function CoversStepBody({
         Limits
       </OnboardingSubhead>
 
-      <OnboardingCard className={cn('mt-0', !painting && 'opacity-45')}>
+      <OnboardingCard className={cn('mt-0', !generating && 'opacity-45')}>
         <SettingsControlRow
           label="Limit my Covers"
           description="Only affects you. Members have their own budgets."
         >
           <Switch
             checked={budget.ceilingEnabled}
-            disabled={busy || !painting}
+            disabled={busy || !generating}
             onCheckedChange={(ceilingEnabled) => onChange({ ...budget, ceilingEnabled })}
             aria-label="Limit my Covers"
           />
@@ -251,14 +255,14 @@ function CoversStepBody({
         />
       </OnboardingCard>
 
-      {/* The caps bind only painted Covers, so with nothing painting there is no cap or
-          cost to state; the dimmed section above already says it is inert. */}
-      {painting ? (
+      {/* With no generated Cover coming there is no cap or cost to state; the dimmed
+          section above already says it is inert. */}
+      {generating ? (
         <OnboardingNote>
           <CoverBudgetExplainer
             uncapped={!budget.ceilingEnabled}
             coversPerDay={Number(budget.coversPerDay)}
-            imageProviderKey={editor.providerKey}
+            imageProviderKey={painting ? editor.providerKey : null}
           />
         </OnboardingNote>
       ) : null}
@@ -281,20 +285,25 @@ function CoverBudgetExplainer({
 }: {
   uncapped: boolean;
   coversPerDay: number;
-  /** The image preset selected above, whose price per Cover the note states. */
-  imageProviderKey: string;
+  /**
+   * The image preset selected above, whose price per Cover the note states;
+   * `null` while the music provider makes the Covers at no extra cost.
+   */
+  imageProviderKey: string | null;
 }) {
+  const price =
+    imageProviderKey === null ? null : (
+      <span className="text-lamp">{coverPriceCents(imageProviderKey)} cents</span>
+    );
   if (uncapped) {
     return (
       <>
         <b className="font-semibold text-paper">No cap on your own Covers.</b> Each new Session gets
-        one, plus any you regenerate, at about{' '}
-        <span className="text-lamp">{coverPriceCents(imageProviderKey)} cents</span> each.
+        one, plus any you regenerate, {price ? <>at about {price} each</> : 'at no extra cost'}.
       </>
     );
   }
-  const note = coverBudgetNote(coversPerDay, imageProviderKey);
-  if (note.covers === 0) {
+  if (coversPerDay <= 0) {
     return (
       <>
         <b className="font-semibold text-paper">No generated Covers.</b> Sessions use the free{' '}
@@ -302,6 +311,15 @@ function CoverBudgetExplainer({
       </>
     );
   }
+  if (imageProviderKey === null) {
+    return (
+      <>
+        <b className="font-semibold text-paper">{coversPerDay} Covers a day</b> at most, at no extra
+        cost.
+      </>
+    );
+  }
+  const note = coverBudgetNote(coversPerDay, imageProviderKey);
   return (
     <>
       <b className="font-semibold text-paper">{note.covers} Covers a day</b> costs at most{' '}
@@ -328,7 +346,7 @@ function CoverSourceExplainer({
         <>
           Covers use your Cover style and can show your People. Turn it off and{' '}
           {withoutImageModel === 'music-provider'
-            ? 'your music provider makes them for free, from the music alone'
+            ? 'your music provider makes them at no extra cost, from the music alone'
             : 'Sessions use the free Liedmotif Cover instead'}
           .
         </>
@@ -336,9 +354,9 @@ function CoverSourceExplainer({
     case 'music-provider':
       return (
         <>
-          Covers come from <b className="font-semibold text-paper">your music provider</b>, for
-          free. They are based on the music alone, so they cannot use your Cover style or show your
-          People.
+          Covers come from <b className="font-semibold text-paper">your music provider</b>, at no
+          extra cost, and count toward your Cover limits. They are based on the music alone, so they
+          cannot use your Cover style or show your People.
           {awaitingKey ? ' Add the image key above for Tailored Cover Art.' : null}
         </>
       );

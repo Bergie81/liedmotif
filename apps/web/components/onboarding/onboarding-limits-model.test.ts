@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { UsageLimits } from '@liedmotif/db';
 import {
+  bindingTrackCap,
   coverBudgetFromLimits,
   coverBudgetPatch,
   maxConcurrentTracks,
   stepLimit,
+  trackCapFloor,
   trackCeilingFromLimits,
   trackCeilingPatch,
   type CoverBudget,
@@ -107,6 +109,41 @@ describe('stepLimit', () => {
     expect(stepLimit('8', 4, { max: 10 })).toBe('10');
     // Never below zero, even without an explicit floor.
     expect(stepLimit('5', -50)).toBe('0');
+  });
+});
+
+describe('trackCapFloor', () => {
+  it('stops a day or month cap stepping below the Tracks a new Session needs to start', () => {
+    // Headroom 5 at 2 Tracks a call: 4 Tracks could never start a Session, 6 can.
+    const min = trackCapFloor(5, 2);
+    expect(stepLimit('50', -50, { min })).toBe('6');
+    expect(stepLimit('8', -2, { min })).toBe('6');
+    expect(stepLimit('6', -2, { min })).toBe('6');
+  });
+
+  it('is one provider call while the Session-start headroom is off', () => {
+    expect(trackCapFloor(0, 2)).toBe(2);
+    expect(stepLimit('4', -10, { min: trackCapFloor(0, 2) })).toBe('2');
+  });
+
+  it('is already a whole provider call when the headroom is one', () => {
+    expect(trackCapFloor(6, 2)).toBe(6);
+    expect(trackCapFloor(5, 3)).toBe(6);
+  });
+});
+
+describe('bindingTrackCap', () => {
+  const ceiling = { enabled: true, dailyTracks: '50', monthlyTracks: '500', concurrentTracks: '2' };
+
+  it('names the day while the month allows at least as much', () => {
+    expect(bindingTrackCap(ceiling)).toEqual({ tracks: 50, window: 'day' });
+  });
+
+  it('names the month when it is set below the day', () => {
+    expect(bindingTrackCap({ ...ceiling, monthlyTracks: '10' })).toEqual({
+      tracks: 10,
+      window: 'month',
+    });
   });
 });
 

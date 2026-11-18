@@ -60,6 +60,7 @@ function renderPool(overSubscription: PoolOverSubscription[] = []) {
       poolFigures: FIGURES,
       overSubscription,
       tracksPerCall: 2,
+      minHeadroomTracks: 5,
       unitCosts: UNIT_COSTS,
     }),
   );
@@ -79,6 +80,7 @@ function renderInvites(inviteByEmail: boolean) {
       inviteByEmail,
       defaultBudget: DEFAULT_MEMBER_LIMITS,
       tracksPerCall: 2,
+      minHeadroomTracks: 5,
       unitCosts: UNIT_COSTS,
     }),
   );
@@ -102,6 +104,7 @@ function renderMember() {
     h(MemberCards, {
       members: [MEMBER],
       tracksPerCall: 2,
+      minHeadroomTracks: 5,
       unitCosts: UNIT_COSTS,
       assistantDefault: null,
     }),

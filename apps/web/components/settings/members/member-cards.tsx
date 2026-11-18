@@ -57,11 +57,13 @@ function ResetLink({ reset }: { reset: MemberResetLink }) {
 function MemberCard({
   member,
   tracksPerCall,
+  minHeadroomTracks,
   unitCosts,
   assistantDefault,
 }: {
   member: MembersAdminMember;
   tracksPerCall: number;
+  minHeadroomTracks: number;
   unitCosts: UnitCosts;
   assistantDefault: AssistantAccess | null;
 }) {
@@ -202,6 +204,7 @@ function MemberCard({
             errors={errors}
             disabled={busy === 'budget'}
             tracksPerCall={tracksPerCall}
+            minHeadroomTracks={minHeadroomTracks}
             unitCosts={unitCosts}
             onChange={change}
           />
@@ -314,11 +317,13 @@ function MemberCard({
 export function MemberCards({
   members,
   tracksPerCall,
+  minHeadroomTracks,
   unitCosts,
   assistantDefault,
 }: {
   members: MembersAdminData['members'];
   tracksPerCall: number;
+  minHeadroomTracks: number;
   unitCosts: UnitCosts;
   /** The instance default for Assistant access; null while no Text AI is connected. */
   assistantDefault: AssistantAccess | null;
@@ -337,6 +342,7 @@ export function MemberCards({
           key={member.userId}
           member={member}
           tracksPerCall={tracksPerCall}
+          minHeadroomTracks={minHeadroomTracks}
           unitCosts={unitCosts}
           assistantDefault={assistantDefault}
         />

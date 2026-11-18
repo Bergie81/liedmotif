@@ -20,8 +20,10 @@ import {
   OnboardingSubhead,
 } from './onboarding-layout';
 import {
+  bindingTrackCap,
   maxConcurrentTracks,
   stepLimit,
+  trackCapFloor,
   trackCeilingPatch,
   type TrackCeiling,
 } from './onboarding-limits-model';
@@ -33,22 +35,27 @@ type TrackField = Exclude<keyof TrackCeiling, 'enabled'>;
 export function OnboardingTracksStep({
   ceiling,
   tracksPerRequest,
+  minHeadroomTracks,
   onChange,
   onDone,
 }: {
   ceiling: TrackCeiling;
   tracksPerRequest: number;
+  /** The stored Session-start headroom; a cap below it would block every new Session. */
+  minHeadroomTracks: number;
   onChange: (ceiling: TrackCeiling) => void;
   onDone: () => void;
 }) {
   const { saving, error, save } = useLimitSave(onDone);
   const trackYield = normalizeTracksPerRequest(tracksPerRequest);
   const concurrentMax = maxConcurrentTracks(tracksPerRequest);
-  const note = trackCeilingNote(Number(ceiling.dailyTracks));
+  const capFloor = trackCapFloor(minHeadroomTracks, tracksPerRequest);
+  const binding = bindingTrackCap(ceiling);
+  const note = trackCeilingNote(binding.tracks);
   const capsDisabled = saving || !ceiling.enabled;
 
-  function step(field: TrackField, amount: number, max?: number) {
-    onChange({ ...ceiling, [field]: stepLimit(ceiling[field], amount, { min: trackYield, max }) });
+  function step(field: TrackField, amount: number, bounds: { min: number; max?: number }) {
+    onChange({ ...ceiling, [field]: stepLimit(ceiling[field], amount, bounds) });
   }
 
   return (
@@ -83,9 +90,9 @@ export function OnboardingTracksStep({
           value={ceiling.dailyTracks}
           unit="trk"
           step={trackYield * 5}
-          min={trackYield}
+          min={capFloor}
           disabled={capsDisabled}
-          onStep={(amount) => step('dailyTracks', amount)}
+          onStep={(amount) => step('dailyTracks', amount, { min: capFloor })}
         />
         <OnboardingLimitRow
           label="Tracks per month"
@@ -93,16 +100,19 @@ export function OnboardingTracksStep({
           value={ceiling.monthlyTracks}
           unit="trk"
           step={trackYield * 25}
-          min={trackYield}
+          min={capFloor}
           disabled={capsDisabled}
-          onStep={(amount) => step('monthlyTracks', amount)}
+          onStep={(amount) => step('monthlyTracks', amount, { min: capFloor })}
         />
       </OnboardingCard>
 
       <OnboardingNote>
         {ceiling.enabled ? (
           <>
-            <b className="font-semibold text-paper">Up to {note.tracks} Tracks a day</b>, about{' '}
+            <b className="font-semibold text-paper">
+              Up to {note.tracks} Tracks a {binding.window}
+            </b>
+            , about{' '}
             <span className="text-lamp">
               {note.hours > 0 ? `${note.hours} h ` : ''}
               {note.minutes} min
@@ -131,7 +141,9 @@ export function OnboardingTracksStep({
           min={trackYield}
           max={concurrentMax}
           disabled={saving}
-          onStep={(amount) => step('concurrentTracks', amount, concurrentMax)}
+          onStep={(amount) =>
+            step('concurrentTracks', amount, { min: trackYield, max: concurrentMax })
+          }
         />
       </OnboardingCard>
 

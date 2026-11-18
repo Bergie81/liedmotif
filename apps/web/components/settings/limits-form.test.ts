@@ -39,3 +39,26 @@ it('shows the admin generation ceilings in Tracks and Covers with bracketed doll
   expect(text).toContain('20 Covers ($0.80)');
   expect(text).toContain('100 Covers ($4.00)');
 });
+
+it('warns under a Track limit that no new Session could start under, without blocking it', () => {
+  const initial = {
+    ...defaultUsageLimits(),
+    trackCeilingEnabled: true,
+    dailyGenerationTasks: 2,
+    minHeadroomTracksToStartSession: 5,
+  };
+  const html = renderToStaticMarkup(
+    createElement(
+      AppChromeContext.Provider,
+      { value: chrome },
+      createElement(LimitsForm, {
+        initial,
+        tracksPerRequest: 2,
+        unitCosts: { perTrackUsd: 0.07, perCoverUsd: 0.04 },
+      }),
+    ),
+  );
+  const text = html.replace(/<[^>]*>/g, '');
+  // Only the daily cap (4 Tracks) is below the headroom; the monthly default clears it.
+  expect(text.split('Below 5 Tracks, no new Session can start.')).toHaveLength(2);
+});

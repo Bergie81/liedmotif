@@ -41,6 +41,7 @@ export function InviteMembersSection({
   inviteByEmail,
   defaultBudget,
   tracksPerCall,
+  minHeadroomTracks,
   unitCosts,
 }: {
   invites: MembersAdminData['invites'];
@@ -48,6 +49,7 @@ export function InviteMembersSection({
   inviteByEmail: boolean;
   defaultBudget: MemberLimits;
   tracksPerCall: number;
+  minHeadroomTracks: number;
   unitCosts: UnitCosts;
 }) {
   const router = useRouter();
@@ -154,6 +156,7 @@ export function InviteMembersSection({
           errors={errors}
           disabled={busy}
           tracksPerCall={tracksPerCall}
+          minHeadroomTracks={minHeadroomTracks}
           unitCosts={unitCosts}
           onChange={change}
         />

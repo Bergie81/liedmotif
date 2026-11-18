@@ -7,10 +7,15 @@ import {
   limitRowMin,
   parseTrackRow,
   parseWholeRow,
+  sessionStartWarning,
   type LimitRowBound,
   type ParsedLimitRow,
 } from '@/lib/limit-row-bounds';
-import { providerTasksToTracks, stepNonNegativeWholeValue } from '@/lib/track-units';
+import {
+  providerTasksToTracks,
+  stepNonNegativeWholeValue,
+  wholeLimitNumber,
+} from '@/lib/track-units';
 
 const GIB = 1024 ** 3;
 
@@ -48,6 +53,7 @@ export type LimitFormField = keyof Pick<
 >;
 
 export type LimitFieldErrors = Partial<Record<LimitFormField, string>>;
+export type LimitFieldWarnings = Partial<Record<'dailyTracks' | 'monthlyTracks', string>>;
 
 export function createLimitFormValues(
   initial: UsageLimits,
@@ -124,6 +130,23 @@ export function limitFieldSwitchedOff(field: LimitFormField, values: LimitFormVa
     default:
       return false;
   }
+}
+
+/**
+ * The Track caps set below "Headroom to start", read from the form so the
+ * warning moves with either figure. A warning, never a refusal: the save goes
+ * through as typed.
+ */
+export function limitFieldWarnings(values: LimitFormValues): LimitFieldWarnings {
+  const warnings: LimitFieldWarnings = {};
+  const headroom = wholeLimitNumber(values.minHeadroomTracksToStartSession);
+  if (headroom === null) return warnings;
+  for (const field of ['dailyTracks', 'monthlyTracks'] as const) {
+    if (limitFieldSwitchedOff(field, values)) continue;
+    const warning = sessionStartWarning(wholeLimitNumber(values[field]), headroom);
+    if (warning) warnings[field] = warning;
+  }
+  return warnings;
 }
 
 /** Each editable row and the stored limit it writes. */

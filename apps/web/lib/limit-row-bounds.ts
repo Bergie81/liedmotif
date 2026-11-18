@@ -82,3 +82,17 @@ export function parseWholeRow(
   const refusal = ceilingRefusal(row, value, tracksPerRequest);
   return refusal ? { error: refusal } : { value };
 }
+
+/**
+ * The warning for a Track cap too small for any new Session to start under, or
+ * null. The creation gate wants `minHeadroomTracks` left in the window, which a
+ * whole cap below it never has; this warns and never refuses. 0 is a deliberate
+ * stop, not this mistake, and a headroom of 0 turns the gate off.
+ */
+export function sessionStartWarning(
+  capTracks: number | null,
+  minHeadroomTracks: number,
+): string | null {
+  if (capTracks === null || capTracks === 0 || capTracks >= minHeadroomTracks) return null;
+  return `Below ${minHeadroomTracks} Tracks, no new Session can start.`;
+}
