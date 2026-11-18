@@ -117,6 +117,7 @@ function snapshot(
     pendingGeneration: null,
     vibe: null,
     switchPending: false,
+    tryAgainTracks: null,
   } as SessionQueueSnapshot;
 }
 

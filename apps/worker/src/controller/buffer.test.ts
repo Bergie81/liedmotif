@@ -7,6 +7,7 @@ import {
   LISTENER_ACTIVE_WINDOW_MS,
   mapProviderBlockSignal,
   PHANTOM_SUBMIT_MAX_AGE_MS,
+  restartCountsAsListener,
   type BufferDecisionInput,
 } from './buffer';
 
@@ -31,6 +32,7 @@ const base: BufferDecisionInput = {
   listenerActive: true,
   loopHeld: false,
   stuck: false,
+  retryRequested: false,
 };
 
 describe('decideBufferAction', () => {
@@ -363,7 +365,11 @@ describe('mapProviderBlockSignal', () => {
   const at = (
     normalizedStatus: Parameters<typeof mapProviderBlockSignal>[0]['normalizedStatus'],
     ageMs: number,
-    lifts: { blockedStyleUnchanged?: boolean; refusalContextChanged?: boolean } = {},
+    lifts: {
+      blockedStyleUnchanged?: boolean;
+      refusalContextChanged?: boolean;
+      listenerRestartedSince?: boolean;
+    } = {},
   ) =>
     mapProviderBlockSignal({
       normalizedStatus,
@@ -371,6 +377,7 @@ describe('mapProviderBlockSignal', () => {
       stallThresholdMs: STALL,
       blockedStyleUnchanged: lifts.blockedStyleUnchanged ?? true,
       refusalContextChanged: lifts.refusalContextChanged ?? false,
+      listenerRestartedSince: lifts.listenerRestartedSince ?? false,
     });
 
   it('maps fresh blocking provider-job conditions to generation block signals', () => {
@@ -391,6 +398,19 @@ describe('mapProviderBlockSignal', () => {
     expect(at('failed_retryable', BLOCK_SIGNAL_COOLDOWNS_MS.provider_error)).toBeNull();
     // Just inside the window it still blocks.
     expect(at('failed_final', BLOCK_SIGNAL_COOLDOWNS_MS.provider_error - 1)).toBe('provider_error');
+  });
+
+  it('a listener restart newer than a failed job lifts its cooldown', () => {
+    // Try again and Resume are the listener's explicit request for another
+    // batch; the cooldown only spaces unattended retries.
+    for (const status of ['failed_final', 'failed_retryable'] as const) {
+      expect(at(status, 2 * 60_000, { listenerRestartedSince: true })).toBeNull();
+      expect(at(status, 2 * 60_000)).toBe('provider_error');
+    }
+  });
+
+  it('a listener restart never lifts a policy block', () => {
+    expect(at('blocked_by_policy', 0, { listenerRestartedSince: true })).toBe('provider_error');
   });
 
   it('blocks a policy-blocked prompt until the user changes the vibe, never on a clock', () => {
@@ -584,6 +604,79 @@ describe('a Session with nothing to play stays visibly stuck', () => {
   });
 });
 
+describe('Try again on a stuck Session buys one batch', () => {
+  /** Stuck, and the listener tapped Try again (or resumed) after the failure. */
+  const retried = {
+    ...base,
+    ownReadyTrackCount: 0,
+    readyAheadCount: 0,
+    inFlightAheadCount: 0,
+    providerSignal: null,
+    listenerActive: true,
+    stuck: true,
+    retryRequested: true,
+  };
+
+  it('buys one batch in Keep Going and in Repeat', () => {
+    for (const sessionMode of ['keep_going', 'repeat'] as const) {
+      expect(decideBufferAction({ ...retried, sessionMode })).toEqual({
+        action: 'generate',
+        generationStatus: 'ok',
+      });
+    }
+  });
+
+  it('needs the listener the tap opened: a stale request buys nothing', () => {
+    expect(decideBufferAction({ ...retried, listenerActive: false })).toEqual({
+      action: 'noop',
+      generationStatus: 'provider_error',
+    });
+  });
+
+  it('passes every guard: a limit, a full concurrency, manual-only buy nothing', () => {
+    expect(decideBufferAction({ ...retried, sessionMode: 'repeat', costLimit: overDay })).toEqual({
+      action: 'session_repeat',
+      generationStatus: 'repeat_cost_limit',
+      costLimitScope: 'instance',
+      costLimitWindow: 'day',
+    });
+    for (const overrides of [{ hasConcurrencySlot: false }, { manualGenerationOnly: true }]) {
+      const decision = decideBufferAction({ ...retried, sessionMode: 'repeat', ...overrides });
+      expect(decision.action).not.toBe('generate');
+      expect(decision.generationStatus).toBe('provider_error');
+    }
+  });
+
+  it('a policy block stays blocked under a retry', () => {
+    expect(decideBufferAction({ ...retried, providerSignal: 'provider_error' })).toEqual({
+      action: 'noop',
+      generationStatus: 'provider_error',
+    });
+  });
+
+  it('a Repeat Session that is not stuck gains no demand from a restart', () => {
+    expect(
+      decideBufferAction({
+        ...retried,
+        sessionMode: 'repeat',
+        stuck: false,
+        retryRequested: false,
+      }),
+    ).toEqual({ action: 'noop', generationStatus: 'ok' });
+  });
+});
+
+describe('restartCountsAsListener', () => {
+  it('counts a restart while nothing is in flight or something can play', () => {
+    expect(restartCountsAsListener({ inFlightJobs: 0, hasPlayableTrack: false })).toBe(true);
+    expect(restartCountsAsListener({ inFlightJobs: 1, hasPlayableTrack: true })).toBe(true);
+  });
+
+  it('with a batch in flight and nothing to play, waits for audio instead', () => {
+    expect(restartCountsAsListener({ inFlightJobs: 1, hasPlayableTrack: false })).toBe(false);
+  });
+});
+
 describe('isFailedPaidBatch', () => {
   it('a provider-reported failure is a failed paid batch', () => {
     for (const normalizedStatus of ['failed_final', 'failed_retryable'] as const) {
@@ -674,5 +767,23 @@ describe('isListenerActive', () => {
     expect(
       isListenerActive({ startedAt: old, lastResumedAt: old, lastPlaybackReportAt: old }, now),
     ).toBe(false);
+  });
+
+  it('counts only playing audio when restarts do not count', () => {
+    const playbackOnly = { restartsCount: false };
+    expect(
+      isListenerActive(
+        { startedAt: recent, lastResumedAt: recent, lastPlaybackReportAt: null },
+        now,
+        playbackOnly,
+      ),
+    ).toBe(false);
+    expect(
+      isListenerActive(
+        { startedAt: old, lastResumedAt: old, lastPlaybackReportAt: recent },
+        now,
+        playbackOnly,
+      ),
+    ).toBe(true);
   });
 });

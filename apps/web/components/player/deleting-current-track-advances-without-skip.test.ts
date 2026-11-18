@@ -115,6 +115,7 @@ function snapshot(tracks: PlayableTrack[]): SessionQueueSnapshot {
     pendingGeneration: null,
     vibe: null,
     switchPending: false,
+    tryAgainTracks: null,
   } as SessionQueueSnapshot;
 }
 

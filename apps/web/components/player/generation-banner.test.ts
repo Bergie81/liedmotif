@@ -15,6 +15,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   DeleteSessionAction,
   GenerationBanner,
+  TryAgainAction,
   type GenerationBannerPlayer,
 } from './generation-banner';
 
@@ -145,5 +146,81 @@ describe('delete session action', () => {
     });
 
     expect(onDelete).toHaveBeenCalledOnce();
+  });
+});
+
+describe('try again action', () => {
+  function tryAgainControl(): HTMLElement | null {
+    return screen.queryByRole('button', { name: /Try again/ });
+  }
+
+  /** The banner as the Session's own player fills it: Try again beside Delete. */
+  function stuckBanner(
+    {
+      tryAgainTracks = 2,
+      ...overrides
+    }: Partial<GenerationBannerPlayer> & {
+      tryAgainTracks?: number | null;
+    },
+    onTryAgain = vi.fn(async () => {}),
+  ) {
+    render(
+      h(GenerationBanner, {
+        player: player({ queueLength: 0, ...overrides }),
+        action: h(
+          'div',
+          null,
+          h(TryAgainAction, { tracks: tryAgainTracks, onTryAgain }),
+          DELETE_ACTION,
+        ),
+      }),
+    );
+    return onTryAgain;
+  }
+
+  it('offers Try again with its cost in Tracks beside Delete Session on a stuck Session', () => {
+    stuckBanner({ tryAgainTracks: 2 });
+    expect(tryAgainControl()?.textContent).toBe('Try again · 2 Tracks');
+    expect(deleteControl()).not.toBeNull();
+    cleanup();
+
+    stuckBanner({ tryAgainTracks: 1 });
+    expect(tryAgainControl()?.textContent).toBe('Try again · 1 Track');
+  });
+
+  it('sends the command once, however often it is tapped while it runs', async () => {
+    let finish: () => void = () => {};
+    const onTryAgain = vi.fn(() => new Promise<void>((resolve) => (finish = resolve)));
+    stuckBanner({}, onTryAgain);
+
+    act(() => tryAgainControl()!.click());
+    act(() => tryAgainControl()!.click());
+    await act(async () => finish());
+
+    expect(onTryAgain).toHaveBeenCalledOnce();
+  });
+
+  it('is absent for a Session with Tracks, with work in flight, and for a policy block', () => {
+    for (const overrides of [
+      { queueLength: 2 },
+      { pendingGeneration: IN_FLIGHT },
+      {
+        tryAgainTracks: null,
+        statusMessageSafe: 'The music provider blocked this prompt — use Change Vibe to adjust it.',
+      },
+    ]) {
+      stuckBanner(overrides);
+      expect(tryAgainControl()).toBeNull();
+      cleanup();
+    }
+  });
+
+  it('keeps Delete Session and the Change Vibe sentence for a policy block', () => {
+    stuckBanner({
+      tryAgainTracks: null,
+      statusMessageSafe: 'The music provider blocked this prompt — use Change Vibe to adjust it.',
+    });
+    expect(screen.getByTestId('generation-status').textContent).toContain('use Change Vibe');
+    expect(deleteControl()).not.toBeNull();
   });
 });

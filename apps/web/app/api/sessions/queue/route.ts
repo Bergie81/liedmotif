@@ -136,11 +136,12 @@ export async function GET(request: Request) {
   );
   if (parsed instanceof NextResponse) return parsed;
 
+  const tracksPerRequest = getTypicalTracksPerMusicRequest();
   const view = await getSessionQueue(getDb(), {
     ownerUserId,
     sessionId: parsed.sessionId,
     phantomSubmitCutoff: phantomSubmitCutoffAt(),
-    tracksPerRequest: getTypicalTracksPerMusicRequest(),
+    tracksPerRequest,
   });
   if (!view) return apiError('not_found', 'Session not found.');
 
@@ -193,5 +194,9 @@ export async function GET(request: Request) {
     // its early advance when the post-cutover queue arrives (the flag drops
     // back to false in the same poll that delivers that queue).
     switchPending: vibeSwitchPending(view),
+    // A content block refuses the same request again, so retrying it would be
+    // pointless; Change Vibe is that banner's way forward.
+    tryAgainTracks:
+      view.pendingGeneration?.normalizedStatus === 'blocked_by_policy' ? null : tracksPerRequest,
   });
 }

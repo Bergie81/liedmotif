@@ -4,6 +4,7 @@ import {
   ownerScope,
   activitySessions,
   refreshStorageUsage,
+  resumeSession,
   applyLoopLease,
   countTasksInWindow,
   defaultUsageLimits,
@@ -1947,6 +1948,189 @@ describeIfDb('ensure-session-buffer controller', () => {
         .set({ lastPlaybackReportAt: NOW })
         .where(eq(activitySessions.id, sessionId));
       expect(await tick()).toMatchObject({ action: 'generate', generationStatus: 'ok' });
+      expect(calls()).toBe(1);
+    });
+  });
+
+  describe('Try again on a Session whose first batch failed', () => {
+    const TWO_MINUTES_BEFORE = new Date(NOW.getTime() - 2 * 60_000);
+    /** The listener's tap: recorded as a restart moments before the tick. */
+    const TAPPED_AT = new Date(NOW.getTime() - 1_000);
+
+    /** A Session whose only batch failed two minutes ago, inside its cooldown. */
+    async function failedFirstBatch(
+      sessionMode: 'keep_going' | 'repeat',
+      job: { normalizedStatus?: string; submitState?: 'submitted' | 'submit_rejected' } = {},
+    ) {
+      const { ownerUserId, sessionId } = await sessionWithLatestJob({
+        normalizedStatus: job.normalizedStatus ?? 'failed_final',
+        submitState: job.submitState ?? 'submitted',
+        updatedAt: TWO_MINUTES_BEFORE,
+        requestStylePrompt: COMPILED_STYLE,
+      });
+      await ctx.db
+        .update(activitySessions)
+        .set({ sessionMode, startedAt: new Date(NOW.getTime() - 10 * 60_000) })
+        .where(eq(activitySessions.id, sessionId));
+      const { provider, calls } = countingMusicProvider(async (_, n) => okTask(`retry-${n}`));
+      const tick = (usageLimits: UsageLimits = ampleLimits()) =>
+        runEnsureSessionBuffer(
+          { db: ctx.db, music: provider, now: NOW, limits: usageLimits },
+          { sessionId },
+        );
+      const tap = (at: Date = TAPPED_AT) =>
+        ctx.db
+          .update(activitySessions)
+          .set({ lastResumedAt: at })
+          .where(eq(activitySessions.id, sessionId));
+      return { ownerUserId, sessionId, calls, tick, tap };
+    }
+
+    it('Try again buys one batch for a Session whose first batch failed, inside the cooldown', async () => {
+      const { ownerUserId, calls, tick, tap } = await failedFirstBatch('keep_going');
+      expect(await tick()).toMatchObject({ action: 'noop', generationStatus: 'provider_error' });
+      expect(calls()).toBe(0);
+
+      await tap();
+      expect(await tick()).toMatchObject({ action: 'generate', generationStatus: 'ok' });
+      expect(calls()).toBe(1);
+
+      // Counted like any generation: in the limit windows and the usage log.
+      expect(
+        await countTasksInWindow(ctx.db, { scope: ownerScope(ownerUserId), since: new Date(0) }),
+      ).toBe(2);
+      expect(
+        await ctx.db.select().from(usageEvents).where(eq(usageEvents.userId, ownerUserId)),
+      ).toHaveLength(1);
+    });
+
+    it('one tap buys one batch: no top-up to a higher target and nothing for a second tap', async () => {
+      const { ownerUserId, sessionId, calls, tick, tap } = await failedFirstBatch('keep_going');
+      await updateGenerationSettings(ctx.db, { ownerUserId, patch: { bufferAheadTracks: 6 } });
+
+      await tap();
+      expect((await tick()).action).toBe('generate');
+      expect(calls()).toBe(1);
+
+      // The retry is in flight and nothing plays: the tap's listener window
+      // buys no top-up toward the ready-ahead target.
+      expect(await tick()).toMatchObject({ action: 'noop', generationStatus: 'ok' });
+      await tap(NOW);
+      expect(await tick()).toMatchObject({ action: 'noop', generationStatus: 'ok' });
+      expect(calls()).toBe(1);
+
+      // Audio playing reports the listener; top-ups follow the usual rules.
+      await ctx.db
+        .update(activitySessions)
+        .set({ lastPlaybackReportAt: NOW })
+        .where(eq(activitySessions.id, sessionId));
+      expect((await tick()).action).toBe('generate');
+      expect(calls()).toBe(2);
+    });
+
+    it('in Repeat with zero Tracks the tap buys one batch, which the Session then loops', async () => {
+      const { ownerUserId, sessionId, calls, tick, tap } = await failedFirstBatch('repeat');
+      expect((await tick()).action).toBe('noop');
+
+      await tap();
+      const bought = await tick();
+      expect(bought).toMatchObject({ action: 'generate', generationStatus: 'ok' });
+      expect(await tick()).toMatchObject({ action: 'noop', generationStatus: 'ok' });
+      expect(calls()).toBe(1);
+
+      const [retryJob] = await ctx.db
+        .select()
+        .from(providerJobs)
+        .where(eq(providerJobs.id, bought.submittedProviderJobId!));
+      await ctx.db
+        .update(providerJobs)
+        .set({ normalizedStatus: 'ready' })
+        .where(eq(providerJobs.id, retryJob!.id));
+      await createTrack(ctx.db, {
+        ownerUserId,
+        generationRequestId: retryJob!.generationRequestId,
+        providerJobId: retryJob!.id,
+        status: 'ready',
+        audioStorageKey: 'audio/test/retry.mp3',
+      });
+      await ctx.db
+        .update(activitySessions)
+        .set({ lastPlaybackReportAt: NOW })
+        .where(eq(activitySessions.id, sessionId));
+
+      expect(await tick()).toMatchObject({ action: 'voluntary_repeat', generationStatus: 'ok' });
+      expect(calls()).toBe(1);
+    });
+
+    it('a Resume newer than the failed job lifts the cooldown too', async () => {
+      const { ownerUserId, sessionId, calls, tick } = await failedFirstBatch('keep_going');
+      await ctx.db
+        .update(activitySessions)
+        .set({ status: 'stopped', stoppedAt: TWO_MINUTES_BEFORE, endReason: 'user_stopped' })
+        .where(eq(activitySessions.id, sessionId));
+      expect((await resumeSession(ctx.db, { ownerUserId, sessionId, now: TAPPED_AT })).ok).toBe(
+        true,
+      );
+
+      expect((await tick()).action).toBe('generate');
+      expect(calls()).toBe(1);
+    });
+
+    it('a limit refuses the retry: nothing is bought and the limit status shows', async () => {
+      const { calls, tick, tap } = await failedFirstBatch('keep_going');
+      await tap();
+      const result = await tick(limits({ dailyGenerationTasks: 1, maxConcurrentJobs: 5 }));
+      expect(result).toMatchObject({
+        action: 'session_repeat',
+        generationStatus: 'repeat_cost_limit',
+      });
+      expect(calls()).toBe(0);
+    });
+
+    it('a full concurrency refuses the retry: nothing is bought', async () => {
+      const { ownerUserId, calls, tick, tap } = await failedFirstBatch('keep_going');
+      const otherSessionId = await createSession(ctx.db, {
+        ownerUserId,
+        styleSnapshot: SNAPSHOT,
+        status: 'stopped',
+      });
+      const otherRequestId = await createGenerationRequest(ctx.db, {
+        ownerUserId,
+        activitySessionId: otherSessionId,
+      });
+      await createProviderJob(ctx.db, {
+        generationRequestId: otherRequestId,
+        normalizedStatus: 'processing',
+        updatedAt: NOW,
+      });
+      await tap();
+
+      const result = await tick(limits({ ...ampleLimits(), maxConcurrentJobs: 1 }));
+      expect(result.action).toBe('wait');
+      expect(result.generationStatus).toBe('provider_error');
+      expect(calls()).toBe(0);
+    });
+
+    it('a tap on a policy block does not resubmit the blocked request', async () => {
+      const { sessionId, calls, tick, tap } = await failedFirstBatch('keep_going', {
+        normalizedStatus: 'blocked_by_policy',
+      });
+      await tap();
+      expect(await tick()).toMatchObject({ action: 'noop', generationStatus: 'provider_error' });
+      expect(calls()).toBe(0);
+      expect(await statusMessage(sessionId)).toContain('Change Vibe');
+    });
+
+    it('a tap re-opens a request the provider refused at submit (known behavior)', async () => {
+      // The refusal lifts on an explicit restart (`hasRefusalContextChanged`),
+      // so the tap resubmits the same request once.
+      const { calls, tick, tap } = await failedFirstBatch('keep_going', {
+        normalizedStatus: 'submit_rejected',
+        submitState: 'submit_rejected',
+      });
+      expect((await tick()).action).toBe('noop');
+      await tap();
+      expect((await tick()).action).toBe('generate');
       expect(calls()).toBe(1);
     });
   });

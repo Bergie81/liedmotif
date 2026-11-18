@@ -59,6 +59,8 @@ import {
   renameTrackResponseSchema,
   type ResumeSessionResponse,
   resumeSessionResponseSchema,
+  type TryAgainSessionResponse,
+  tryAgainSessionResponseSchema,
   type SaveTrackResponse,
   saveTrackResponseSchema,
   type AddPlaylistTracksResponse,
@@ -256,6 +258,7 @@ type ChangeVibeData = SuccessData<ChangeVibeResponse>;
 type StopSessionData = SuccessData<StopSessionResponse>;
 type DeleteSessionData = SuccessData<DeleteSessionResponse>;
 type ResumeSessionData = SuccessData<ResumeSessionResponse>;
+type TryAgainSessionData = SuccessData<TryAgainSessionResponse>;
 type ListSessionsData = SuccessData<ListSessionsResponse>;
 type SessionQueueData = SuccessData<GetSessionQueueResponse>;
 export type DiagnosticsData = SuccessData<GetDiagnosticsResponse>;
@@ -417,6 +420,15 @@ export function resumeSession(
   return callApi<ResumeSessionData>('/api/sessions/resume', resumeSessionResponseSchema, {
     method: 'POST',
     body: { sessionId, clientId },
+  });
+}
+
+/** Try again on an Active Session with nothing to play: one more paid batch,
+ *  which the worker decides and spends under the usual limits. */
+export function tryAgainSession(sessionId: string): Promise<ApiResult<TryAgainSessionData>> {
+  return callApi<TryAgainSessionData>('/api/sessions/try-again', tryAgainSessionResponseSchema, {
+    method: 'POST',
+    body: { sessionId },
   });
 }
 

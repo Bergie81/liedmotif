@@ -18,7 +18,8 @@ export type PlayerAct =
   | 'more-like-this'
   | 'remove-from-playlist'
   | 'section-loop'
-  | 'stop';
+  | 'stop'
+  | 'try-again';
 
 /** `sourceId` is the engaged source's id (`engagedSourceId`). */
 function keyOf(sourceId: string, act?: PlayerAct): string {

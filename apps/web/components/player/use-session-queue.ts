@@ -64,6 +64,8 @@ export interface SessionQueueSnapshot {
   vibe: SessionVibe | null;
   /** True while a switch-now vibe change is armed server-side. */
   switchPending: boolean;
+  /** Tracks one Try again buys; null when Try again is not offered. */
+  tryAgainTracks: number | null;
 }
 
 /** The playable projection: only items with a resolved track AND at least one
@@ -133,6 +135,7 @@ function sessionQueueSnapshot(
     pendingGeneration: data.pendingGeneration,
     vibe: data.vibe,
     switchPending: data.switchPending,
+    tryAgainTracks: data.tryAgainTracks,
   };
 }
 

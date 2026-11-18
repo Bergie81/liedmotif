@@ -1606,6 +1606,7 @@ export function usePlaybackController(
             styleRevision: sessionSnapshot.styleRevision,
             vibe: sessionSnapshot.vibe,
             switchPending: sessionSnapshot.switchPending,
+            tryAgainTracks: sessionSnapshot.tryAgainTracks,
           }
         : {};
       // Most polls confirm what the player already shows; keep the previous

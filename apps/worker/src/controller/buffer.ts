@@ -136,6 +136,13 @@ export interface BufferDecisionInput {
    */
   stuck: boolean;
   /**
+   * The listener asked a stuck Session for another batch: its last restart
+   * (Try again, Resume) is newer than the failed batch. It is demand for one
+   * batch in either mode, because a Repeat Session's revision has already spent
+   * its initial fill; the listener gate still applies.
+   */
+  retryRequested: boolean;
+  /**
    * The Session duration target's progress, present only when the Session has
    * a target: usable generated seconds, Tracks whose duration is not yet
    * known, and whether a provider batch has results still to settle.
@@ -171,7 +178,8 @@ export function decideBufferAction(input: BufferDecisionInput): BufferDecision {
   const decision = decideSupplyAction(input);
   // A stuck Session that buys nothing this tick keeps reporting its failure:
   // an `ok` would drop the banner and leave the player narrating a connection
-  // that is not coming. Nothing here buys a retry; that still needs a listener.
+  // that is not coming. Only the listener's own restart buys a retry
+  // (`retryRequested`).
   if (input.stuck && decision.action !== 'generate' && decision.generationStatus === 'ok') {
     return { ...decision, generationStatus: 'provider_error' };
   }
@@ -242,6 +250,7 @@ function decideSupplyAction(input: BufferDecisionInput): BufferDecision {
   // generated nothing in Repeat mode would be a dead control.
   const hasGenerationDemand =
     needsRevisionInitialFill ||
+    input.retryRequested ||
     (input.sessionMode === 'keep_going' && (belowWatermark || input.rerollPending));
 
   // 3. Voluntary Repeat (user intent): loop whatever the session already has —
@@ -325,13 +334,29 @@ export const LISTENER_ACTIVE_WINDOW_MS = 2 * 60_000;
 export function isListenerActive(
   session: { startedAt: Date; lastResumedAt: Date | null; lastPlaybackReportAt: Date | null },
   now: Date,
+  /** False: only playing audio counts (see `restartCountsAsListener`). */
+  { restartsCount = true }: { restartsCount?: boolean } = {},
 ): boolean {
   const latest = Math.max(
-    session.startedAt.getTime(),
-    session.lastResumedAt?.getTime() ?? 0,
+    restartsCount ? session.startedAt.getTime() : 0,
+    restartsCount ? (session.lastResumedAt?.getTime() ?? 0) : 0,
     session.lastPlaybackReportAt?.getTime() ?? 0,
   );
   return now.getTime() - latest < LISTENER_ACTIVE_WINDOW_MS;
+}
+
+/**
+ * Whether a restart (Start, Resume, Try again) still counts as a listener. While
+ * the Session has nothing to play, a restart stands for one batch: once that
+ * batch is in flight, a further paid attempt waits until audio plays. This is
+ * what keeps a Try again labelled with one batch's Tracks from topping up to a
+ * larger ready-ahead target before anything has played.
+ */
+export function restartCountsAsListener(state: {
+  inFlightJobs: number;
+  hasPlayableTrack: boolean;
+}): boolean {
+  return state.inFlightJobs === 0 || state.hasPlayableTrack;
 }
 
 /**
@@ -384,6 +409,12 @@ export function mapProviderBlockSignal(input: {
    * the listener explicitly restarted the session.
    */
   refusalContextChanged: boolean;
+  /**
+   * The Session's last listener restart (Try again, Resume) is newer than the
+   * job's last write. The provider-error cooldown spaces unattended retries, so
+   * an explicit restart after the failure lifts it.
+   */
+  listenerRestartedSince: boolean;
 }): GenerationBlockSignal | null {
   const status = input.normalizedStatus;
   switch (status) {
@@ -395,7 +426,9 @@ export function mapProviderBlockSignal(input: {
         : null;
     case 'failed_retryable':
     case 'failed_final':
-      return input.ageMs < BLOCK_SIGNAL_COOLDOWNS_MS.provider_error ? 'provider_error' : null;
+      return input.ageMs < BLOCK_SIGNAL_COOLDOWNS_MS.provider_error && !input.listenerRestartedSince
+        ? 'provider_error'
+        : null;
     // A definitive refusal reads as a provider error rather than the phantom
     // stall bucket below — nothing is in flight to be waiting on — and it never
     // decays on a clock. The cooldown above is bounded by the cost limits every

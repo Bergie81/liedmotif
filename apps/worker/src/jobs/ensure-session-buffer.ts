@@ -99,6 +99,7 @@ import {
   isFailedPaidBatch,
   isListenerActive,
   mapProviderBlockSignal,
+  restartCountsAsListener,
   phantomSubmitCutoffAt,
   type BufferAction,
   type BufferDecisionInput,
@@ -557,6 +558,9 @@ export async function runEnsureSessionBuffer(
     }
 
     let providerSignal: GenerationBlockSignal | null = null;
+    // Try again and Resume record the listener's restart on the Session.
+    const listenerRestartedSinceLatestJob =
+      latestJob !== null && (fresh.lastResumedAt?.getTime() ?? 0) > latestJob.updatedAt.getTime();
     if (latestJob) {
       // Only a definitive refusal consults the re-open triggers, so the extra
       // read stays on the rare blocked tick instead of every sweep.
@@ -573,6 +577,7 @@ export async function runEnsureSessionBuffer(
         ageMs: now.getTime() - latestJob.updatedAt.getTime(),
         stallThresholdMs,
         refusalContextChanged,
+        listenerRestartedSince: listenerRestartedSinceLatestJob,
         // Compare the blocked style against the style THIS tick would submit —
         // a pending reroll must stay blocked when ITS style is the blocked one,
         // and a reroll of a different, safe style may proceed while the live
@@ -588,13 +593,26 @@ export async function runEnsureSessionBuffer(
       }
     }
 
+    const hasPlayableTrack = () =>
+      hasPlayableSessionTrack(tx, { ownerUserId, sessionId: payload.sessionId });
     // Only a failed paid batch with nothing in flight consults the playable
     // Tracks, so the extra read stays on the rare stuck-candidate tick.
     const stuck =
       latestJob !== null &&
       isFailedPaidBatch(latestJob) &&
       inFlightSessionJobs === 0 &&
-      !(await hasPlayableSessionTrack(tx, { ownerUserId, sessionId: payload.sessionId }));
+      !(await hasPlayableTrack());
+    // Paid top-ups only while someone is listening (or right after a restart,
+    // so the cold-start prefill still runs before the first play). A restart
+    // whose batch is in flight before anything plays waits for that audio; the
+    // playable read runs only on a tick where the restart alone is the listener.
+    const listenerActive =
+      isListenerActive(fresh, now) &&
+      (isListenerActive(fresh, now, { restartsCount: false }) ||
+        restartCountsAsListener({
+          inFlightJobs: inFlightSessionJobs,
+          hasPlayableTrack: inFlightSessionJobs > 0 && (await hasPlayableTrack()),
+        }));
 
     let duration: BufferDecisionInput['duration'];
     if (fresh.targetDurationMinutes != null) {
@@ -625,11 +643,10 @@ export async function runEnsureSessionBuffer(
       hasConcurrencySlot: budget.hasConcurrencySlot,
       costLimit: budget.costLimit,
       providerSignal,
-      // Paid top-ups only while someone is listening (or right after Start/
-      // Resume, so the cold-start prefill still runs before the first play).
-      listenerActive: isListenerActive(fresh, now),
+      listenerActive,
       loopHeld,
       stuck,
+      retryRequested: stuck && listenerRestartedSinceLatestJob,
     });
 
     /** Leave the lock having decided against the submit — nothing bought, nothing recorded. */

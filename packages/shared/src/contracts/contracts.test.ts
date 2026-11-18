@@ -481,6 +481,7 @@ describe('diagnostics & queue expose generation-controller state', () => {
     pendingGeneration: null,
     vibe: null,
     switchPending: false,
+    tryAgainTracks: 2,
   };
 
   it('getDiagnostics activeSession carries the full controller-aware summary (or null)', () => {

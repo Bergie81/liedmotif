@@ -1,7 +1,7 @@
 'use client';
 
-// The now-playing generation-controller banner, and the one action it
-// can offer.
+// The now-playing generation-controller banner, and the ways out it can
+// offer.
 //
 // Renders WHY generation is degraded — cost-limit Session Repeat, provider
 // blocks, worker stalls — straight from `generationStatus` + the server's safe
@@ -17,10 +17,11 @@
 
 import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { AlertTriangle, Info, Loader2, Repeat, Trash2 } from 'lucide-react';
+import { AlertTriangle, Info, Loader2, Repeat, RotateCcw, Trash2 } from 'lucide-react';
 import { presentGenerationStatus } from '@liedmotif/shared';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { compactDangerButtonClass } from '@/components/ui/design-system';
+import { compactPrimaryButtonClass } from '@/components/ui/form-styles';
 import { OnlineOnly } from '@/components/ui/online-only';
 import { cn } from '@/lib/cn';
 import type { PlaybackControllerState } from './playback-controller-api';
@@ -99,9 +100,51 @@ export function GenerationBanner({
             {p.costSettingsLabel}
           </Link>
         ) : null}
-        {p.isStuck && action ? <div className="mt-2">{action}</div> : null}
+        {p.isStuck && action ? <div className="mt-2 flex flex-wrap gap-2">{action}</div> : null}
       </div>
     </div>
+  );
+}
+
+/** Try again from the banner: the listener's consent to pay for one more batch,
+ *  labelled with what it buys. Absent when the server offers no retry (a
+ *  request the provider blocked for its content). */
+export function TryAgainAction({
+  tracks,
+  onTryAgain,
+}: {
+  /** Tracks one Try again buys; null when Try again is not offered. */
+  tracks: number | null;
+  /** Sends the command; reports its own failures on the player's error surface
+   *  rather than throwing. */
+  onTryAgain: () => Promise<void>;
+}) {
+  const [sending, setSending] = useState(false);
+  if (tracks == null) return null;
+
+  async function send() {
+    if (sending) return;
+    setSending(true);
+    try {
+      await onTryAgain();
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <OnlineOnly>
+      <button
+        type="button"
+        data-testid="generation-status-try-again"
+        disabled={sending}
+        onClick={() => void send()}
+        className={compactPrimaryButtonClass}
+      >
+        <RotateCcw className="h-4 w-4" aria-hidden />
+        {`Try again · ${tracks} ${tracks === 1 ? 'Track' : 'Tracks'}`}
+      </button>
+    </OnlineOnly>
   );
 }
 

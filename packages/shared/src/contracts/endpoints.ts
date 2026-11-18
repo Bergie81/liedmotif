@@ -470,6 +470,17 @@ export const resumeSessionResponseSchema = apiResponse(
 );
 export type ResumeSessionResponse = z.infer<typeof resumeSessionResponseSchema>;
 
+// --- tryAgainSession (one more batch for a stuck Active session) -------------------
+// The listener's consent to pay for one more provider batch when the Session has
+// nothing to play. Recorded as a listener restart; the worker's buffer tick
+// decides and spends under the usual limits.
+
+export const tryAgainSessionRequestSchema = z.strictObject({ sessionId: uuidSchema });
+export type TryAgainSessionRequest = z.infer<typeof tryAgainSessionRequestSchema>;
+
+export const tryAgainSessionResponseSchema = apiResponse(z.strictObject({ id: uuidSchema }));
+export type TryAgainSessionResponse = z.infer<typeof tryAgainSessionResponseSchema>;
+
 // Play one of a session's own Tracks through the session (the track rows'
 // tap-to-play): a Stopped session resumes positioned at that track, an Active
 // one only moves its queue cursor. Like Resume, never cost-gated — it plays
@@ -641,6 +652,10 @@ export const getSessionQueueResponseSchema = apiResponse(
     // generated to cut over to); the player narrates it and triggers the early
     // advance when the post-cutover queue arrives.
     switchPending: z.boolean(),
+    // The Tracks one Try again buys (the provider's tracks per call), offered
+    // when nothing can play. Null for a request the provider blocked for its
+    // content: the same request cannot pass, so only Change Vibe helps.
+    tryAgainTracks: z.number().int().positive().nullable(),
   }),
 );
 export type GetSessionQueueResponse = z.infer<typeof getSessionQueueResponseSchema>;

@@ -224,6 +224,8 @@ export {
   stopSession,
   playSessionTrack,
   resumeSession,
+  tryAgainSession,
+  type TryAgainSessionResult,
   restyleSession,
   renameSession,
   setSessionMode,

@@ -462,6 +462,39 @@ export async function resumeSession(
   });
 }
 
+// --- tryAgainSession ------------------------------------------------------------
+
+export type TryAgainSessionResult =
+  { ok: true } | { ok: false; reason: 'not_found' | 'not_active' };
+
+/**
+ * Try again on the owner's Active Session: record the tap as a listener restart
+ * (`lastResumedAt`), the listener's consent to one more paid batch. It submits
+ * nothing and leaves the generation status to the worker: the buffer tick
+ * decides under the owner lock, through every budget, concurrency and storage
+ * check, and is the only place that spends.
+ */
+export async function tryAgainSession(
+  db: Database,
+  args: { ownerUserId: string; sessionId: string; now?: Date },
+): Promise<TryAgainSessionResult> {
+  const target = await getSessionById(db, args);
+  if (!target || target.deleteRequestedAt) return { ok: false, reason: 'not_found' };
+  const [updated] = await db
+    .update(activitySessions)
+    .set({ lastResumedAt: args.now ?? new Date() })
+    .where(
+      and(
+        eq(activitySessions.id, args.sessionId),
+        eq(activitySessions.ownerUserId, args.ownerUserId),
+        eq(activitySessions.status, 'active'),
+        sessionNotPendingDelete(),
+      ),
+    )
+    .returning({ id: activitySessions.id });
+  return updated ? { ok: true } : { ok: false, reason: 'not_active' };
+}
+
 // --- playSessionTrack -----------------------------------------------------------
 
 export type PlaySessionTrackResult =

@@ -139,6 +139,9 @@ export interface PlaybackControllerState {
   vibe: SessionVibe | null;
   /** True while a switch-now vibe change is armed server-side. */
   switchPending: boolean;
+  /** Tracks one Try again buys when the Session has nothing to play; null when
+   *  the server offers no Try again (a request blocked for its content). */
+  tryAgainTracks: number | null;
   /** Whether the current track is Favorited — the star's pressed state. */
   currentFavorited: boolean;
   /** The Add to Playlist control's pressed state. Favorites is excluded, so it
@@ -208,6 +211,7 @@ export function initialPlaybackControllerState(
     styleRevision: null,
     vibe: null,
     switchPending: false,
+    tryAgainTracks: null,
     currentFavorited: false,
     currentInCuratedPlaylist: false,
     loopActive: false,

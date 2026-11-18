@@ -44,6 +44,7 @@ import {
   resumeSession,
   setSessionMode,
   stopSession,
+  tryAgainSession,
 } from './session-command-repo';
 import { listPinnedSessions, listResumableSessions } from './session-list-repo';
 import { getSessionQueue } from './queue-view-repo';
@@ -865,6 +866,57 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
       const sessionId = await createSession(ctx.db, { ownerUserId: otherId, status: 'stopped' });
       const result = await resumeSession(ctx.db, { ownerUserId, sessionId });
       expect(result).toEqual({ ok: false, reason: 'not_found' });
+    });
+  });
+
+  describe('tryAgainSession', () => {
+    const TAPPED_AT = new Date('2026-06-29T12:00:00Z');
+
+    it('records the tap as a listener restart on the owner’s Active Session and buys nothing', async () => {
+      const ownerUserId = await createUser(ctx.db);
+      const sessionId = await createSession(ctx.db, {
+        ownerUserId,
+        status: 'active',
+        generationStatus: 'provider_error',
+      });
+
+      const result = await tryAgainSession(ctx.db, { ownerUserId, sessionId, now: TAPPED_AT });
+      expect(result).toEqual({ ok: true });
+
+      const row = await readSession(ctx, sessionId);
+      expect(row.status).toBe('active');
+      expect(row.lastResumedAt).toEqual(TAPPED_AT);
+      // The worker's tick decides and reports; the command neither clears the
+      // status nor submits anything.
+      expect(row.generationStatus).toBe('provider_error');
+      expect(await ctx.db.select().from(generationRequests)).toHaveLength(0);
+    });
+
+    it('refuses a Stopped Session and records nothing', async () => {
+      const ownerUserId = await createUser(ctx.db);
+      const sessionId = await createSession(ctx.db, { ownerUserId, status: 'stopped' });
+
+      const result = await tryAgainSession(ctx.db, { ownerUserId, sessionId, now: TAPPED_AT });
+      expect(result).toEqual({ ok: false, reason: 'not_active' });
+      expect((await readSession(ctx, sessionId)).lastResumedAt).toBeNull();
+    });
+
+    it('answers not_found for another owner’s Session and a missing one', async () => {
+      const ownerUserId = await createUser(ctx.db);
+      const otherId = await createUser(ctx.db);
+      const sessionId = await createSession(ctx.db, { ownerUserId: otherId, status: 'active' });
+
+      expect(await tryAgainSession(ctx.db, { ownerUserId, sessionId })).toEqual({
+        ok: false,
+        reason: 'not_found',
+      });
+      expect((await readSession(ctx, sessionId)).lastResumedAt).toBeNull();
+      expect(
+        await tryAgainSession(ctx.db, {
+          ownerUserId,
+          sessionId: '00000000-0000-4000-8000-000000000000',
+        }),
+      ).toEqual({ ok: false, reason: 'not_found' });
     });
   });
 

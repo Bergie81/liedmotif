@@ -14,6 +14,7 @@ import {
   renameSession,
   renameTrack,
   stopSession,
+  tryAgainSession,
 } from '@/lib/api-client';
 import { nowPlayingDetailsClass, nowPlayingLayoutClass } from '@/components/ui/design-system';
 import { OnlineOnly } from '@/components/ui/online-only';
@@ -22,7 +23,7 @@ import { coldStartStagedCopy } from './cold-start-progress';
 import { CoverFallback } from './cover-art';
 import { HeroCoverArt } from './hero-cover-art';
 import { CoverChip } from './cover-chip';
-import { DeleteSessionAction, GenerationBanner } from './generation-banner';
+import { DeleteSessionAction, GenerationBanner, TryAgainAction } from './generation-banner';
 import { PlayerCoverSleeve } from './player-cover-sleeve';
 import { PlayerDirectionActions } from './player-direction-actions';
 import { PlayerLyricsSheet } from './player-lyrics-sheet';
@@ -383,6 +384,18 @@ export function NowPlaying({
     }
   }
 
+  /** Try again from the banner: records the tap and polls at once, so the
+   *  generation the worker starts replaces the banner without waiting. */
+  async function tryAgainCurrentSession(): Promise<void> {
+    clearPlayerError(session.id, 'try-again');
+    const result = await tryAgainSession(session.id);
+    if (!result.ok) {
+      showPlayerError(session.id, 'try-again', `Try again failed. ${result.error.message}`);
+      return;
+    }
+    playerRef.current.refreshQueue();
+  }
+
   const sessionOptions = (
     <PlayerSessionOptions
       sessionId={session.id}
@@ -433,7 +446,10 @@ export function NowPlaying({
         <GenerationBanner
           player={player}
           action={
-            <DeleteSessionAction sessionTitle={sessionTitle} onDelete={deleteCurrentSession} />
+            <>
+              <TryAgainAction tracks={player.tryAgainTracks} onTryAgain={tryAgainCurrentSession} />
+              <DeleteSessionAction sessionTitle={sessionTitle} onDelete={deleteCurrentSession} />
+            </>
           }
         />
 

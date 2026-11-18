@@ -543,6 +543,22 @@ describe.skipIf(skip)('GET /api/sessions/queue — blend identity + analysis con
     expect(data.pendingGeneration).toBeNull();
   });
 
+  it('offers Try again after a failed batch but not after a policy block', async () => {
+    for (const [normalizedStatus, tryAgainTracks] of [
+      ['failed_final', TRACKS_PER_REQUEST],
+      ['blocked_by_policy', null],
+    ] as const) {
+      const base = await seedSession();
+      const requestId = await createGenerationRequest(testDb.db, {
+        ownerUserId: base.ownerUserId,
+        activitySessionId: base.sessionId,
+      });
+      await createProviderJob(testDb.db, { generationRequestId: requestId, normalizedStatus });
+
+      expect((await callQueue(base.sessionId)).tryAgainTracks).toBe(tryAgainTracks);
+    }
+  });
+
   it('a partial analysis (LUFS measured, BPM anchored) surfaces as status=partial', async () => {
     const base = await seedSession();
     await seedQueuedTrack(base, 0, {
