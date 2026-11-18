@@ -160,6 +160,7 @@ function queueBody(
       pendingGeneration: null,
       vibe: null,
       switchPending: false,
+      tryAgainTracks: null,
     },
   };
 }
