@@ -93,16 +93,21 @@ export class PlaybackTraversal {
     return targetById(tracks, target.queueItemId);
   }
 
-  /** The Track `previous` would return to, without stepping back. */
+  /** The Track `previous` would return to, without stepping back, passing
+   * over every Track `skip` rejects. */
   peekPrevious(
     tracks: readonly PlayableTrack[],
     currentQueueItemId: string | null,
+    skip: (track: PlayableTrack) => boolean = () => false,
   ): QueueTarget | null {
     if (this.currentMode !== 'shuffle') return null;
-    return targetById(
-      tracks,
-      popShuffleHistory(this.shuffleState, idsOf(tracks), currentQueueItemId).queueItemId,
-    );
+    let state = this.shuffleState;
+    for (;;) {
+      const popped = popShuffleHistory(state, idsOf(tracks), currentQueueItemId);
+      const target = targetById(tracks, popped.queueItemId);
+      if (!target || !skip(target.track)) return target;
+      state = popped.state;
+    }
   }
 
   remove(queueItemId: string): void {

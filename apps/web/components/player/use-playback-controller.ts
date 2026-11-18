@@ -1423,14 +1423,18 @@ export function usePlaybackController(
     const traversal = playbackTraversalRef.current;
     let previousTrack: PlayableTrack | null = null;
     if (traversal.mode === 'shuffle') {
-      const target = traversal.peekPrevious(queueRef.current, activeTrack()?.queueItemId ?? null);
+      const target = traversal.peekPrevious(
+        queueRef.current,
+        activeTrack()?.queueItemId ?? null,
+        expired,
+      );
       previousTrack = target?.track ?? null;
     } else {
       const idx = previousStartableIndex(idxRef.current);
       if (idx != null) previousTrack = queueRef.current[idx] ?? null;
     }
     return { next: explicitNextTarget()?.track ?? null, previous: previousTrack };
-  }, [activeTrack, explicitNextTarget, previousStartableIndex]);
+  }, [activeTrack, expired, explicitNextTarget, previousStartableIndex]);
 
   const toggle = useCallback(() => {
     // Pause also DISARMS a pending auto-start (armed intent, nothing loaded
