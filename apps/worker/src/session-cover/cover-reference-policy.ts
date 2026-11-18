@@ -144,7 +144,10 @@ export async function selectCoverReferencesForPlan(
       promptText: namingWish ?? args.promptText,
       capabilities: args.capabilities,
       explicitOptIn: args.explicitOptIn,
-      owner: coverReferenceOwner(namingWish === null ? args : { skipProfile: args.skipProfile }),
+      owner: coverReferenceOwner({
+        skipProfile: args.skipProfile,
+        includesListener: namingWish === null && args.includesListener,
+      }),
     }),
     capabilityDowngrades: [],
   };

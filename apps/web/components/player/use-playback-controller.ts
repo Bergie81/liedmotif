@@ -757,6 +757,17 @@ export function usePlaybackController(
     unloadDeck,
   ]);
 
+  /** The next target may have changed around the audible `currentTrackId`: an
+   * in-flight preparation for another Track is dropped, and the decode cache is
+   * trimmed to current + next. */
+  const retargetNext = useCallback(
+    (currentTrackId: string | undefined) => {
+      transitions().syncTarget(resolveNextTarget());
+      bufferDecks().retainOnly([currentTrackId, resolveNextTarget()?.track.trackId]);
+    },
+    [bufferDecks, resolveNextTarget, transitions],
+  );
+
   /** Only expired Tracks are left: playback ends, with nothing parked to
    * retry or loop. */
   const endPlayback = useCallback(() => {
@@ -1025,19 +1036,10 @@ export function usePlaybackController(
       const current = activeTrack();
       armLoopTrackPin(activeDeckRef.current, current);
 
-      transitions().syncTarget(resolveNextTarget());
-      bufferDecks().retainOnly([current?.trackId, resolveNextTarget()?.track.trackId]);
+      retargetNext(current?.trackId);
       patch({ playbackMode: next });
     },
-    [
-      activeTrack,
-      applyLoopEvent,
-      armLoopTrackPin,
-      bufferDecks,
-      patch,
-      resolveNextTarget,
-      transitions,
-    ],
+    [activeTrack, applyLoopEvent, armLoopTrackPin, patch, retargetNext],
   );
 
   const cyclePlaybackMode = useCallback(() => {
@@ -1305,24 +1307,21 @@ export function usePlaybackController(
   const advancePastDeletedTrack = useCallback(
     (trackId: string) => {
       const audible = activeTrack();
-      const track =
-        audible?.trackId === trackId
-          ? audible
-          : queueRef.current.find((queued) => queued.trackId === trackId);
-      if (!track) return;
-      locallyRemovedRef.current.add(track.queueItemId);
-      if (track === audible) {
-        removeFromQueue(track.queueItemId);
+      if (audible?.trackId === trackId) {
+        locallyRemovedRef.current.add(audible.queueItemId);
+        removeFromQueue(audible.queueItemId);
         advancePastCurrent();
         return;
       }
-      const removedIdx = queueRef.current.indexOf(track);
-      removeFromQueue(track.queueItemId);
+      const removedIdx = queueRef.current.findIndex((queued) => queued.trackId === trackId);
+      if (removedIdx === -1) return;
+      const { queueItemId } = queueRef.current[removedIdx]!;
+      locallyRemovedRef.current.add(queueItemId);
+      removeFromQueue(queueItemId);
       if (removedIdx < idxRef.current) idxRef.current -= 1;
-      transitions().syncTarget(resolveNextTarget());
-      bufferDecks().retainOnly([audible?.trackId, resolveNextTarget()?.track.trackId]);
+      retargetNext(audible?.trackId);
     },
-    [activeTrack, advancePastCurrent, bufferDecks, removeFromQueue, resolveNextTarget, transitions],
+    [activeTrack, advancePastCurrent, removeFromQueue, retargetNext],
   );
 
   const skip = useCallback(() => {
@@ -1681,11 +1680,7 @@ export function usePlaybackController(
       // Queue replacement invalidates an in-flight preparation whose track is
       // no longer the transition target (the driver re-checks by queue item),
       // and trims the decode cache to current + next.
-      transitions().syncTarget(resolveNextTarget());
-      bufferDecks().retainOnly([
-        deckTrackRef.current[activeDeckRef.current]?.trackId,
-        resolveNextTarget()?.track.trackId,
-      ]);
+      retargetNext(deckTrackRef.current[activeDeckRef.current]?.trackId);
 
       // Both preparing states recover here: the first startable track flips
       // `loading` AND `waiting` to `ready`. A cursor parked on audio that
@@ -1775,7 +1770,6 @@ export function usePlaybackController(
       }
     },
     [
-      bufferDecks,
       activeTrack,
       applyLoopEvent,
       isDeadSource,
@@ -1784,10 +1778,9 @@ export function usePlaybackController(
       onSectionLoopQueueSnapshot,
       playIndexOrWait,
       playOnDeck,
-      resolveNextTarget,
+      retargetNext,
       setMediaMetadata,
       setPlaybackMode,
-      transitions,
     ],
   );
   // Ref-backed so cadence probes never restart the polling effect.

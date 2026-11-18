@@ -492,16 +492,14 @@ const liveQueueItemStatesSql = sql.join(
  * The outer columns are table-qualified by hand: a single-table select renders
  * its columns bare, which inside these subqueries would bind to `q`.
  */
-const outerSession = (column: { name: string }) =>
-  sql`${activitySessions}.${sql.identifier(column.name)}`;
 const anchorPositionColumn = sql<number | null>`coalesce(
     (select q.position from ${activitySessionQueueItems} q
-      where q.id = ${outerSession(activitySessions.currentQueueItemId)}),
+      where q.id = ${activitySessions}."current_queue_item_id"),
     (select coalesce(
         min(q.position) filter (where q.state in (${liveQueueItemStatesSql})),
         max(q.position) + 1
       ) from ${activitySessionQueueItems} q
-      where q.activity_session_id = ${outerSession(activitySessions.id)})
+      where q.activity_session_id = ${activitySessions}."id")
   )`;
 
 /** The whole Session: no window start, nothing elided. */

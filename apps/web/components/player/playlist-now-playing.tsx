@@ -55,7 +55,6 @@ import { useLyricsSurfaces } from './use-lyrics-surfaces';
 import { engagedSourceId } from './player-provider-model';
 import { clearPlayerError, showPlayerError, type PlayerAct } from './player-error-toast';
 
-/** Tracks removed from the playing Playlist, against the membership they edit. */
 const NO_MEMBERS: readonly PlaylistMemberItem[] = [];
 
 /** The Tracks removed while an engagement plays, keyed by the membership it

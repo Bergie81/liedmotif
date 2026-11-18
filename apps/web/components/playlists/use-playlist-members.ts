@@ -210,10 +210,7 @@ export function usePlaylistMembers({
       if (result.data.unsaved) {
         const { deletedForGood } = result.data;
         setPlaylist((p) => (p ? withoutSoleMember(p, deletedForGood) : p));
-        onUnsaved({
-          deletedForGood: result.data.deletedForGood,
-          sharedReference: member.owner !== null,
-        });
+        onUnsaved({ deletedForGood, sharedReference: member.owner !== null });
       }
     });
   }
