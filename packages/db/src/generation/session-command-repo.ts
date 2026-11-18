@@ -7,8 +7,10 @@
 //   - stopSession writes `endReason='user_stopped'`;
 //   - resumeSession (and playSessionTrack on a Stopped session) re-activates it in
 //     place — same identity, stored Style Snapshot + queue — sets `lastResumedAt`,
-//     and resets `generationStatus` to `ok` (the one route-side write of that
-//     controller field);
+//     resets `generationStatus` to `ok` (the one route-side write of that
+//     controller field), and cancels every pending Dislike reroll intent: a
+//     Resume buys only what the buffer needs, never a replacement wished for
+//     before the Stop;
 //   - setSessionMode is the mode switch (user intent; the worker only consumes
 //     the mode) — createSession seeds the starting mode from the owner's Buffer
 //     default, and this is the only writer afterwards.
@@ -45,6 +47,7 @@ import { viewerCanReadTrack } from '../playlists/lounge-audible';
 import { withTransaction, type Transaction } from '../transactions';
 import { sessionDurationColumns } from './session-duration-repo';
 import { withOwnerGenerationLock } from './limits-repo';
+import { clearPendingRerolls } from './reroll-repo';
 import { sessionNotPendingDelete } from './session-list-repo';
 import { resolvePlayableSessionTrackSlot } from './session-tracks-repo';
 import {
@@ -422,6 +425,8 @@ function resumeLifecycleSet(now: Date) {
  * superseding the owner's current active session. NEVER cost-gated (the route does
  * not run the headroom gate here). The opening buffer is reseeded by the worker
  * controller from the session's own surviving Ephemeral tracks → Saved → snapshot.
+ * Pending Dislike reroll intents are cancelled in the same transaction, so the
+ * first tick after a Resume buys only what the buffer needs.
  */
 export async function resumeSession(
   db: Database,
@@ -458,6 +463,7 @@ export async function resumeSession(
     if (!session) throw new Error('Resume lost the session to a pending delete.');
     // The lifecycle move must be exactly stopped → active, same identity.
     assertResumeReactivates({ id: target.id, status: 'stopped' }, session);
+    await clearPendingRerolls(tx, args.sessionId);
     return { ok: true as const, session, supersededSessionId };
   });
 }
@@ -547,7 +553,10 @@ export async function playSessionTrack(
       .returning(sessionColumns);
     // No row: a delete was requested after the read above; throwing rolls back the supersede.
     if (!session) throw new Error('Play lost the session to a pending delete.');
-    if (resuming) assertResumeReactivates({ id: target.id, status: 'stopped' }, session);
+    if (resuming) {
+      assertResumeReactivates({ id: target.id, status: 'stopped' }, session);
+      await clearPendingRerolls(tx, args.sessionId);
+    }
     return { ok: true as const, session, supersededSessionId };
   });
 }

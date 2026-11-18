@@ -76,6 +76,35 @@ function snapshot(stylePrompt = 'instrumental lofi, low energy'): StyleSnapshot 
   };
 }
 
+/** A Disliked Track of the session that still carries a fresh-call reroll intent. */
+async function seedPendingReroll(
+  ctx: TestDb,
+  ownerUserId: string,
+  sessionId: string,
+): Promise<string> {
+  const requestId = await createGenerationRequest(ctx.db, {
+    ownerUserId,
+    activitySessionId: sessionId,
+  });
+  const providerJobId = await createProviderJob(ctx.db, { generationRequestId: requestId });
+  return createTrack(ctx.db, {
+    ownerUserId,
+    generationRequestId: requestId,
+    providerJobId,
+    status: 'rejected',
+    dislikedAt: new Date(),
+    rerollPendingAt: new Date(),
+  });
+}
+
+async function readRerollPendingAt(ctx: TestDb, trackId: string): Promise<Date | null> {
+  const [row] = await ctx.db
+    .select({ rerollPendingAt: tracks.rerollPendingAt })
+    .from(tracks)
+    .where(eq(tracks.id, trackId));
+  return row!.rerollPendingAt;
+}
+
 async function readSession(ctx: TestDb, id: string) {
   const [row] = await ctx.db.select().from(activitySessions).where(eq(activitySessions.id, id));
   return row!;
@@ -888,6 +917,16 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
       expect(actives.map((a) => a.id)).toEqual([stoppedId]);
     });
 
+    it('Resume drops reroll intents recorded before the Stop', async () => {
+      const ownerUserId = await createUser(ctx.db);
+      const sessionId = await createSession(ctx.db, { ownerUserId, status: 'stopped' });
+      const dislikedId = await seedPendingReroll(ctx, ownerUserId, sessionId);
+
+      const result = await resumeSession(ctx.db, { ownerUserId, sessionId });
+      expect(result.ok).toBe(true);
+      expect(await readRerollPendingAt(ctx, dislikedId)).toBeNull();
+    });
+
     it('refuses to resume a session that is not Stopped', async () => {
       const ownerUserId = await createUser(ctx.db);
       const sessionId = await createSession(ctx.db, { ownerUserId, status: 'active' });
@@ -999,6 +1038,16 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
       expect(row.lastResumedAt).not.toBeNull();
       expect(row.currentQueueItemId).toBe(queueItemId);
       expect(row.currentTrackId).toBe(trackId);
+    });
+
+    it('playing a Track of a Stopped Session drops its reroll intents', async () => {
+      const ownerUserId = await createUser(ctx.db);
+      const { sessionId, trackId } = await seedSessionTrack(ownerUserId, 'stopped');
+      const dislikedId = await seedPendingReroll(ctx, ownerUserId, sessionId);
+
+      const result = await playSessionTrack(ctx.db, { ownerUserId, sessionId, trackId });
+      expect(result.ok).toBe(true);
+      expect(await readRerollPendingAt(ctx, dislikedId)).toBeNull();
     });
 
     it('only moves the cursor of an Active session (no lifecycle write, no supersede)', async () => {

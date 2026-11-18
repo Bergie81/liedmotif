@@ -1,14 +1,19 @@
 // Sibling-reroll query. On a Dislike,
-// the reroll prefers the disliked track's already-generated, UNPLAYED sibling —
-// the other Track from the same ProviderJob (N=2 for Suno), a pre-paid same-vibe
-// alternate — before spending a fresh music-model call. "Unplayed" = no persisted
-// `started` playback event. The query never crosses ProviderJob boundaries and
-// never returns a Reject (disliked) sibling.
+// the reroll prefers the disliked track's already-generated sibling still
+// waiting in the Queue — the other Track from the same ProviderJob (N=2 for
+// Suno), a pre-paid same-vibe alternate — before spending a fresh music-model
+// call. The sibling counts only while its slot in the disliked Track's own
+// Session is `queued` and it has no persisted `started` playback event: a
+// skipped or Change-Vibe-set-aside sibling is not in front of the listener, so
+// serving it as the replacement would leave them with nothing new. The query
+// never crosses ProviderJob or Session boundaries and never returns a Reject
+// (disliked) sibling.
 
 import { and, asc, eq, inArray, isNotNull, isNull, lt, ne, sql } from 'drizzle-orm';
 import type { BlendIdentity, SessionMode } from '@liedmotif/shared';
 import type { DbOrTx, Transaction } from '../transactions';
 import {
+  activitySessionQueueItems,
   activitySessions,
   generationRequests,
   playbackEvents,
@@ -17,20 +22,25 @@ import {
 } from '../schema';
 
 /**
- * Find an unplayed sibling of `dislikedTrackId` (same `providerJobId`, playable —
- * `ready` or `streamable` — not itself disliked, never `started`), or null when none remains. Deterministic
- * (orders by `providerTrackId`) so repeated calls agree.
+ * Find a queued sibling of `dislikedTrackId` (same `providerJobId`, playable —
+ * `ready` or `streamable` — not itself disliked, never `started`, with a
+ * `queued` slot in the disliked Track's Session), or null when none remains.
+ * Deterministic (orders by `providerTrackId`) so repeated calls agree.
  */
 export async function findUnplayedSibling(
   db: DbOrTx,
   args: { dislikedTrackId: string },
 ): Promise<string | null> {
   const [disliked] = await db
-    .select({ providerJobId: tracks.providerJobId })
+    .select({
+      providerJobId: tracks.providerJobId,
+      sessionId: generationRequests.activitySessionId,
+    })
     .from(tracks)
+    .innerJoin(generationRequests, eq(tracks.generationRequestId, generationRequests.id))
     .where(eq(tracks.id, args.dislikedTrackId))
     .limit(1);
-  if (!disliked) return null;
+  if (!disliked?.sessionId) return null;
 
   const [sibling] = await db
     .select({ id: tracks.id })
@@ -41,7 +51,12 @@ export async function findUnplayedSibling(
         ne(tracks.id, args.dislikedTrackId),
         inArray(tracks.status, ['ready', 'streamable']),
         isNull(tracks.dislikedAt),
-        // Unplayed: no persisted `started` event for this track.
+        sql`exists (
+          select 1 from ${activitySessionQueueItems}
+          where ${activitySessionQueueItems.trackId} = ${tracks.id}
+            and ${activitySessionQueueItems.activitySessionId} = ${disliked.sessionId}
+            and ${activitySessionQueueItems.state} = 'queued'
+        )`,
         sql`not exists (
           select 1 from ${playbackEvents}
           where ${playbackEvents.trackId} = ${tracks.id}
@@ -197,7 +212,7 @@ export async function clearPendingRerolls(
 
 /**
  * What governs a Track's reroll (track → request → session): the Session's
- * mode, and whether the Track's request predates the Session's live Style
+ * status and mode, and whether the Track's request predates the Session's live Style
  * Snapshot revision (`vibeSuperseded` — a Change Vibe since; a request with no
  * recorded revision is never superseded). Null when the Track has no session
  * (a standalone request, or a row whose session was deleted). Takes a
@@ -207,9 +222,14 @@ export async function clearPendingRerolls(
 export async function getTrackRerollContext(
   db: DbOrTx,
   args: { trackId: string },
-): Promise<{ sessionMode: SessionMode; vibeSuperseded: boolean } | null> {
+): Promise<{
+  sessionStatus: 'active' | 'stopped';
+  sessionMode: SessionMode;
+  vibeSuperseded: boolean;
+} | null> {
   const [row] = await db
     .select({
+      sessionStatus: activitySessions.status,
       sessionMode: activitySessions.sessionMode,
       vibeSuperseded: sql<boolean>`coalesce(${lt(generationRequests.styleRevision, activitySessions.styleRevision)}, false)`,
     })

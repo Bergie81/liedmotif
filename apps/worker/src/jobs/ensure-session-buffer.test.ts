@@ -5,6 +5,7 @@ import {
   activitySessions,
   refreshStorageUsage,
   resumeSession,
+  stopSession,
   applyLoopLease,
   countTasksInWindow,
   defaultUsageLimits,
@@ -3140,6 +3141,53 @@ describeIfDb('ensure-session-buffer controller', () => {
       expect(result.action).toBe('generate');
       expect(await pendingRerollCount(sessionId)).toBe(0);
       expect(await sessionJobs(sessionId)).toHaveLength(2);
+    });
+
+    it('a Resume after a Stop buys only what the buffer needs, never the earlier Dislike’s reroll', async () => {
+      // Disliked while Active: the Track's own request has a vibe of its own,
+      // so a reroll would be visible in what the tick submits.
+      const seed = await seedSessionWithOwnTracks(2);
+      const { ownerUserId, sessionId } = seed;
+      const dislikedRequestId = await createGenerationRequest(ctx.db, {
+        ownerUserId,
+        activitySessionId: sessionId,
+        stylePrompt: 'disliked vibe, 120 bpm, C major',
+        styleSnapshot: { stylePrompt: 'disliked vibe', bpm: 120, key: 'C major' },
+      });
+      const dislikedJobId = await createProviderJob(ctx.db, {
+        generationRequestId: dislikedRequestId,
+        submitState: 'submitted',
+        normalizedStatus: 'ready',
+        createdAt: NOW,
+      });
+      await seedPendingReroll({
+        ownerUserId,
+        requestId: dislikedRequestId,
+        providerJobId: dislikedJobId,
+      });
+
+      // Stopped before any tick ran, resumed later.
+      await stopSession(ctx.db, { ownerUserId, sessionId });
+      expect((await resumeSession(ctx.db, { ownerUserId, sessionId })).ok).toBe(true);
+
+      const submitted: MusicGenerationInput[] = [];
+      const { provider } = countingMusicProvider(async (input, n) => {
+        submitted.push(input);
+        return okTask(`mock-after-resume-${n}`);
+      });
+      const jobsBefore = (await sessionJobs(sessionId)).length;
+      await runEnsureSessionBuffer(
+        { db: ctx.db, music: provider, now: NOW, limits: ampleLimits() },
+        { sessionId },
+      );
+
+      expect(submitted.length).toBeLessThanOrEqual(1);
+      expect((await sessionJobs(sessionId)).length - jobsBefore).toBe(submitted.length);
+      for (const input of submitted) {
+        expect(input.style).toContain('instrumental lofi');
+        expect(input.style).not.toContain('disliked vibe');
+      }
+      expect(await pendingRerollCount(sessionId)).toBe(0);
     });
 
     it('Repeat mode stops topping up and loops the session’s own tracks', async () => {

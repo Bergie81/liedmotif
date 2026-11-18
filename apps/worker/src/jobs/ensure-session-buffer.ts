@@ -496,10 +496,12 @@ export async function runEnsureSessionBuffer(
     // CANCEL the pending fresh-call reroll intents the Session can no longer
     // honor rather than letting them sit: every one in Repeat ("stop
     // generating", not "defer"), and in Keep Going those of a vibe a Change
-    // Vibe replaced (old-vibe rerolls buy nothing). This is the ONE
-    // cancellation point, and it must run BEFORE the plan, because the planner
-    // is reroll-first: a lingering intent would hijack the next legitimate
-    // generate (a Change Vibe revision fill would submit the OLD vibe).
+    // Vibe replaced (old-vibe rerolls buy nothing). Resume (and playing a
+    // Stopped Session's Track) is the only other cancellation point: it drops
+    // every intent in the stopped → active write. This one must run BEFORE the
+    // plan, because the planner is reroll-first: a lingering intent would
+    // hijack the next legitimate generate (a Change Vibe revision fill would
+    // submit the OLD vibe).
     await clearPendingRerolls(
       tx,
       payload.sessionId,

@@ -3,6 +3,7 @@ import { connectTestDb, TEST_DATABASE_URL, truncateTables, type TestDb } from '.
 import {
   createGenerationRequest,
   createProviderJob,
+  createQueueItem,
   createSession,
   createTrack,
   createUser,
@@ -18,7 +19,7 @@ import {
   markTrackRerollPending,
   peekPendingRerollIdentity,
 } from './reroll-repo';
-import { activitySessions, tracks } from '../schema';
+import { activitySessionQueueItems, activitySessions, tracks } from '../schema';
 import { eq } from 'drizzle-orm';
 
 const describeIfDb = TEST_DATABASE_URL ? describe : describe.skip;
@@ -42,6 +43,7 @@ describeIfDb('reroll repo — unplayed sibling', () => {
     jobId: string;
     a: string;
     b: string;
+    bSlot: string;
   }> {
     const ownerUserId = await createUser(ctx.db);
     const sessionId = await createSession(ctx.db, { ownerUserId });
@@ -58,8 +60,43 @@ describeIfDb('reroll repo — unplayed sibling', () => {
     };
     const a = await createTrack(ctx.db, { ...base, providerTrackId: 'job-a' });
     const b = await createTrack(ctx.db, { ...base, providerTrackId: 'job-b' });
-    return { ownerUserId, sessionId, jobId, a, b };
+    await createQueueItem(ctx.db, { activitySessionId: sessionId, trackId: a, position: 0 });
+    const bSlot = await createQueueItem(ctx.db, {
+      activitySessionId: sessionId,
+      trackId: b,
+      position: 1,
+    });
+    return { ownerUserId, sessionId, jobId, a, b, bSlot };
   }
+
+  it('a skipped sibling is not a replacement', async () => {
+    const { a, bSlot } = await siblingPair();
+    await ctx.db
+      .update(activitySessionQueueItems)
+      .set({ state: 'skipped' })
+      .where(eq(activitySessionQueueItems.id, bSlot));
+
+    expect(await findUnplayedSibling(ctx.db, { dislikedTrackId: a })).toBeNull();
+  });
+
+  it('a sibling set aside by a switch-now Change Vibe is not a replacement', async () => {
+    const { a, bSlot } = await siblingPair();
+    await ctx.db
+      .update(activitySessionQueueItems)
+      .set({ state: 'skipped', vibeSwitchSetAside: true })
+      .where(eq(activitySessionQueueItems.id, bSlot));
+
+    expect(await findUnplayedSibling(ctx.db, { dislikedTrackId: a })).toBeNull();
+  });
+
+  it('a sibling queued only in another Session is not a replacement', async () => {
+    const { ownerUserId, a, b, bSlot } = await siblingPair();
+    await ctx.db.delete(activitySessionQueueItems).where(eq(activitySessionQueueItems.id, bSlot));
+    const otherSessionId = await createSession(ctx.db, { ownerUserId, status: 'stopped' });
+    await createQueueItem(ctx.db, { activitySessionId: otherSessionId, trackId: b, position: 0 });
+
+    expect(await findUnplayedSibling(ctx.db, { dislikedTrackId: a })).toBeNull();
+  });
 
   it('returns the unplayed sibling of a disliked track (no fresh call needed)', async () => {
     const { ownerUserId, sessionId, a, b } = await siblingPair();
@@ -304,19 +341,21 @@ describeIfDb('reroll repo — fresh-call reroll identity', () => {
     expect((await claim(b.sessionId))?.trackId).toBe(b.trackId);
   });
 
-  it('reads the Session mode and vibe revision that govern a Track’s reroll', async () => {
+  it('reads the Session status, mode and vibe revision that govern a Track’s reroll', async () => {
     const { sessionId, trackId } = await seedDisliked(); // request at revision 1
     expect(await getTrackRerollContext(ctx.db, { trackId })).toEqual({
+      sessionStatus: 'active',
       sessionMode: 'keep_going',
       vibeSuperseded: false,
     });
 
-    // A Change Vibe since (live revision 2) and a switch to Repeat.
+    // A Change Vibe since (live revision 2), a switch to Repeat, and a Stop.
     await ctx.db
       .update(activitySessions)
-      .set({ sessionMode: 'repeat', styleRevision: 2 })
+      .set({ sessionMode: 'repeat', styleRevision: 2, status: 'stopped' })
       .where(eq(activitySessions.id, sessionId));
     expect(await getTrackRerollContext(ctx.db, { trackId })).toEqual({
+      sessionStatus: 'stopped',
       sessionMode: 'repeat',
       vibeSuperseded: true,
     });

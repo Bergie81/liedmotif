@@ -89,6 +89,36 @@ async function seedTrack(
   return { sessionId, requestId, providerJobId, trackId, queueItemId };
 }
 
+/** The other Track of `a`'s ProviderJob, with a slot in `a`'s Session (`queued` unless given). */
+async function seedSibling(
+  ownerUserId: string,
+  a: { sessionId: string; requestId: string; providerJobId: string },
+  state: 'queued' | 'skipped' = 'queued',
+) {
+  const trackId = await createTrack(testDb.db, {
+    ownerUserId,
+    generationRequestId: a.requestId,
+    providerJobId: a.providerJobId,
+    providerTrackId: 'b',
+    audioStorageKey: `fb/${ownerUserId}/b.mp3`,
+  });
+  const queueItemId = await createQueueItem(testDb.db, {
+    activitySessionId: a.sessionId,
+    trackId,
+    position: 1,
+    state,
+  });
+  return { trackId, queueItemId };
+}
+
+/** Stop a seeded Session, as the listener's Stop (or the idle sweep) does. */
+async function stopSession(sessionId: string): Promise<void> {
+  await testDb.pool.query(
+    `update activity_sessions set status = 'stopped', end_reason = 'user_stopped', stopped_at = now() where id = $1`,
+    [sessionId],
+  );
+}
+
 /** Switch a seeded Session to "Play existing Tracks" — the mode that buys nothing. */
 async function switchToRepeatMode(sessionId: string): Promise<void> {
   await testDb.pool.query(`update activity_sessions set session_mode = 'repeat' where id = $1`, [
@@ -218,13 +248,7 @@ describe.skipIf(skip)('POST /api/tracks/dislike (= reroll + reject)', () => {
     holder.ownerUserId = owner;
     // Two tracks from ONE provider job → the unplayed one is the sibling.
     const a = await seedTrack(owner, { providerTrackId: 'a' });
-    await createTrack(testDb.db, {
-      ownerUserId: owner,
-      generationRequestId: a.requestId,
-      providerJobId: a.providerJobId,
-      providerTrackId: 'b',
-      audioStorageKey: `fb/${owner}/b.mp3`,
-    });
+    await seedSibling(owner, a);
 
     const res = await (await postJson(dislikePost, { trackId: a.trackId })).json();
     expect(res.ok).toBe(true);
@@ -262,13 +286,7 @@ describe.skipIf(skip)('POST /api/tracks/dislike (= reroll + reject)', () => {
     const owner = await createUser(testDb.db);
     holder.ownerUserId = owner;
     const a = await seedTrack(owner, { providerTrackId: 'a' });
-    const b = await createTrack(testDb.db, {
-      ownerUserId: owner,
-      generationRequestId: a.requestId,
-      providerJobId: a.providerJobId,
-      providerTrackId: 'b',
-      audioStorageKey: `fb/${owner}/b.mp3`,
-    });
+    const { trackId: b } = await seedSibling(owner, a);
 
     // Two tabs dislike the two siblings at the same instant. Without the
     // ProviderJob serialization each would see the OTHER still ready, both
@@ -289,13 +307,7 @@ describe.skipIf(skip)('POST /api/tracks/dislike (= reroll + reject)', () => {
     const owner = await createUser(testDb.db);
     holder.ownerUserId = owner;
     const a = await seedTrack(owner, { providerTrackId: 'a' });
-    await createTrack(testDb.db, {
-      ownerUserId: owner,
-      generationRequestId: a.requestId,
-      providerJobId: a.providerJobId,
-      providerTrackId: 'b',
-      audioStorageKey: `fb/${owner}/b.mp3`,
-    });
+    await seedSibling(owner, a);
 
     const res = await (await postJson(dislikePost, { trackId: a.trackId })).json();
     expect(res.data.replacementSource).toBe('sibling');
@@ -359,14 +371,72 @@ describe.skipIf(skip)('POST /api/tracks/dislike (= reroll + reject)', () => {
     const owner = await createUser(testDb.db);
     holder.ownerUserId = owner;
     const a = await seedTrack(owner, { providerTrackId: 'a' });
-    await createTrack(testDb.db, {
-      ownerUserId: owner,
-      generationRequestId: a.requestId,
-      providerJobId: a.providerJobId,
-      providerTrackId: 'b',
-      audioStorageKey: `fb/${owner}/b.mp3`,
-    });
+    await seedSibling(owner, a);
     await switchToRepeatMode(a.sessionId);
+
+    const res = await (await postJson(dislikePost, { trackId: a.trackId })).json();
+    expect(res.data.replacementSource).toBe('sibling');
+    expect(res.data.rerollQueued).toBe(true);
+    expect(await countRows('tracks', 'reroll_pending_at is not null')).toBe(0);
+  });
+
+  it('a skipped sibling is no replacement: Keep Going records a fresh-call intent', async () => {
+    const owner = await createUser(testDb.db);
+    holder.ownerUserId = owner;
+    const a = await seedTrack(owner, { providerTrackId: 'a' });
+    await seedSibling(owner, a, 'skipped');
+
+    const res = await (await postJson(dislikePost, { trackId: a.trackId })).json();
+    expect(res.data.replacementSource).toBe('generation');
+    expect(res.data.rerollQueued).toBe(true);
+    expect(await countRows('tracks', 'id = $1 and reroll_pending_at is not null', a.trackId)).toBe(
+      1,
+    );
+  });
+
+  it('a skipped sibling is no replacement: Repeat buys nothing either', async () => {
+    const owner = await createUser(testDb.db);
+    holder.ownerUserId = owner;
+    const a = await seedTrack(owner, { providerTrackId: 'a' });
+    await seedSibling(owner, a, 'skipped');
+    await switchToRepeatMode(a.sessionId);
+
+    const res = await (await postJson(dislikePost, { trackId: a.trackId })).json();
+    expect(res.data.replacementSource).toBe('none');
+    expect(res.data.rerollQueued).toBe(false);
+    expect(await countRows('tracks', 'reroll_pending_at is not null')).toBe(0);
+  });
+
+  it('a Dislike in a Stopped Session records no fresh-call intent', async () => {
+    const owner = await createUser(testDb.db);
+    holder.ownerUserId = owner;
+    const { trackId, sessionId, queueItemId } = await seedTrack(owner); // Keep Going, no sibling
+    await stopSession(sessionId);
+
+    const res = await (await postJson(dislikePost, { trackId })).json();
+    expect(res.data.replacementSource).toBe('none');
+    expect(res.data.rerollQueued).toBe(false);
+    expect(await countRows('tracks', 'reroll_pending_at is not null')).toBe(0);
+    // The Track is still rejected and audited.
+    expect(await countRows('tracks', "id = $1 and status = 'rejected'", trackId)).toBe(1);
+    expect(
+      await countRows(
+        'activity_session_queue_items',
+        "id = $1 and state = 'rejected'",
+        queueItemId,
+      ),
+    ).toBe(1);
+    expect(
+      await countRows('feedback_events', "track_id = $1 and feedback_type = 'dislike'", trackId),
+    ).toBe(1);
+  });
+
+  it('a Dislike in a Stopped Session still serves a sibling queued in it', async () => {
+    const owner = await createUser(testDb.db);
+    holder.ownerUserId = owner;
+    const a = await seedTrack(owner, { providerTrackId: 'a' });
+    await seedSibling(owner, a);
+    await stopSession(a.sessionId);
 
     const res = await (await postJson(dislikePost, { trackId: a.trackId })).json();
     expect(res.data.replacementSource).toBe('sibling');

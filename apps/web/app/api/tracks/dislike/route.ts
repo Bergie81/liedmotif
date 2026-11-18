@@ -5,14 +5,16 @@
 //      `rejectDislikedTrack` flips it to the Reject retention class, removes it from the
 //      queue, drops its audio, and queues the ~24h purge (it does NOT hand-roll deletion);
 //   2. writes a `dislike` audit row;
-//   3. REPORTS the sibling-first reroll: a pre-paid unplayed sibling ($0) beats a fresh
-//      call beats nothing. The route NEVER spends — removing the track shortens the
+//   3. REPORTS the sibling-first reroll: a pre-paid sibling still queued in the
+//      Session ($0) beats a fresh call beats nothing. The route NEVER spends — removing the track shortens the
 //      session buffer, and the worker buffer controller performs the actual top-up
 //      through its EXISTING cost gate (so usage limits still apply; no second spend path).
 // The fresh-call branch is `keep_going`-only: a Session set to "Play existing Tracks"
 // loses the disliked Track and buys nothing. It also never buys a vibe the Session
 // has left: a Track whose request predates the live Style Snapshot revision loses
-// its place, and only a pre-paid sibling can stand in for it.
+// its place, and only a pre-paid sibling can stand in for it. A Stopped Session
+// buys nothing either: Resume cancels pending intents, so one recorded now
+// could only ever be dropped.
 // Dislike NEVER steers future generation. Idempotent: a second Dislike is a no-op.
 
 import { NextResponse } from 'next/server';
@@ -65,22 +67,19 @@ export async function POST(request: Request) {
       return { rejected, replacement: { source: 'none' } as RerollReplacement };
     }
 
-    // The mode and live revision are read INSIDE this transaction so the gate,
-    // the reject, and the intent write all commit against one state — a
-    // concurrent switch to Repeat or Change Vibe either loses to this dislike or
-    // is swept up by the worker's cancellation.
-    // A Track with no Session at all (a Library survivor of a deleted one) reads
-    // as `repeat`: no Session means no buffer tick, so nothing would ever consume
-    // a fresh-call intent — reporting `generation` there would promise a
-    // replacement that can never arrive.
-    const { sessionMode, vibeSuperseded } = (await getTrackRerollContext(tx, { trackId })) ?? {
-      sessionMode: 'repeat' as const,
-      vibeSuperseded: false,
-    };
+    // The status, mode and live revision are read INSIDE this transaction so
+    // the gate, the reject, and the intent write all commit against one state —
+    // a concurrent switch to Repeat, Change Vibe or Stop either loses to this
+    // dislike or is swept up by the worker's (or Resume's) cancellation.
+    // A Track with no Session at all (a Library survivor of a deleted one), or
+    // one whose Session is Stopped, reads as `repeat`: no buffer tick runs for
+    // it, and Resume drops pending intents, so reporting `generation` there
+    // would promise a replacement that can never arrive.
+    const context = await getTrackRerollContext(tx, { trackId });
     const unplayedSiblingId = await findUnplayedSibling(tx, { dislikedTrackId: trackId });
     const replacement = selectRerollReplacement({
-      sessionMode,
-      vibeSuperseded,
+      sessionMode: context?.sessionStatus === 'active' ? context.sessionMode : 'repeat',
+      vibeSuperseded: context?.vibeSuperseded ?? false,
       unplayedSiblingId,
       canGenerate,
     });
