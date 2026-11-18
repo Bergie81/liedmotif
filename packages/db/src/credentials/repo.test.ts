@@ -274,6 +274,34 @@ describeIfDb('provider credential repository (env overrides DB, masked never raw
     });
   });
 
+  it('keeps one Cover images credential: saving another image provider drops the old key', async () => {
+    await upsertProviderCredential(ctx.db, {
+      providerType: 'image',
+      providerKey: 'openai',
+      displayName: 'OpenAI',
+      secret: 'sk-old-cover-key-1234',
+      encryptionKey: KEY,
+    });
+    await upsertProviderCredential(ctx.db, {
+      providerType: 'image',
+      providerKey: 'gemini',
+      displayName: 'Gemini',
+      secret: 'AIza-cover-key-5678',
+      encryptionKey: KEY,
+    });
+
+    const rows = await ctx.db.select().from(providerCredentials);
+    expect(rows.map((row) => `${row.providerType}:${row.providerKey}`)).toEqual(['image:gemini']);
+    expect(
+      await getCredentialStatus(ctx.db, {
+        providerType: 'image',
+        providerKey: 'openai',
+        env: EMPTY_ENV,
+        encryptionKey: KEY,
+      }),
+    ).toMatchObject({ configured: false });
+  });
+
   it('leaves other provider types alone when replacing the LLM row', async () => {
     await upsertProviderCredential(ctx.db, {
       providerType: 'music',

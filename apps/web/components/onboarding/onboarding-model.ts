@@ -140,6 +140,8 @@ export interface OnboardingDraft {
   imageModel: string;
   /** The Cover provider stored, set in `.env`, or saved on its step; `null` when none is. */
   imageProviderKey: string | null;
+  /** That Cover provider keeps a key of its own rather than sharing the Text AI's. */
+  imageOwnKey: boolean;
   /** The image provider that can use the Text AI's key as saved now, or `null`. */
   sharedKeyVendor: string | null;
   ceiling: TrackCeiling;
@@ -160,6 +162,7 @@ export function initialOnboardingDraft(data: OnboardingData): OnboardingDraft {
     imageConnected: data.image.configured,
     imageModel: data.image.model ?? '',
     imageProviderKey: data.image.chosen ? data.image.providerKey : null,
+    imageOwnKey: data.image.chosen && !data.image.sharesKey && Boolean(data.image.masked),
     sharedKeyVendor: data.image.sharedKeyVendor,
     ceiling: trackCeilingFromLimits(data.limits, data.tracksPerRequest),
     coverBudget: coverBudgetFromLimits(data.limits),

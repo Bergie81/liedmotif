@@ -11,6 +11,7 @@ import {
   getUnitCosts,
   readEnvLayer,
   resolveSharedImageKey,
+  selectProviderKey,
   updateUnitCosts,
   upsertProviderCredential,
   type ProviderConfig,
@@ -176,7 +177,11 @@ export async function POST(request: Request) {
     encryptionKey,
   });
 
-  if (providerType === 'image') {
+  // A provider `.env` outranks is only a fallback row: Covers keep their price.
+  if (
+    providerType === 'image' &&
+    selectProviderKey('image', process.env, providerKey) === providerKey
+  ) {
     const current = (await getUnitCosts(getDb())).perCoverUsd;
     const perCoverUsd = followedCoverUnitCost(current, providerKey);
     if (perCoverUsd !== current) await updateUnitCosts(getDb(), { perCoverUsd });

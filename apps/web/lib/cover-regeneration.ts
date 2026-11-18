@@ -22,8 +22,6 @@ const FAILURE_MESSAGES: Readonly<Record<string, string>> = {
     'No usable reference photo for this cover — check the photos under Settings → People and whether your image model accepts reference images.',
   invalid_session_name: 'The Session name could not be used to plan a cover.',
   unsupported_capability: 'This cover request is too long for the selected image model.',
-  account_not_ready:
-    "Your image provider's account isn't ready for images. Check Settings › AI Providers.",
   provider_rejected: 'The image provider rejected this cover request.',
   provider_unavailable: 'The image provider is unavailable right now. Try again later.',
   submission_unknown:
@@ -34,6 +32,13 @@ const FAILURE_MESSAGES: Readonly<Record<string, string>> = {
 };
 
 export type CoverViewerRole = 'admin' | 'member';
+
+/** Only the Admin can fix the image account, so a Member is told who can, never the page. */
+const ACCOUNT_NOT_READY_MESSAGES: Readonly<Record<CoverViewerRole, string>> = {
+  admin: "Your image provider's account isn't ready for images. Check Settings › AI Providers.",
+  member:
+    "The image provider's account on this server isn't ready for images. Ask the Admin to check it.",
+};
 
 /** A profile-less owner is the instance owner, so only a Member row reads as `member`. */
 export async function coverViewerRole(db: Database, ownerUserId: string): Promise<CoverViewerRole> {
@@ -48,6 +53,7 @@ function isCoverSetupGap(category: string | null): category is CoverSetupGap {
 export function coverFailureMessage(row: SessionCoverGenerationRow, role: CoverViewerRole): string {
   const setupGap = [row.failureCategory, row.state].find(isCoverSetupGap);
   if (setupGap) return coverSetupMessage(setupGap, role);
+  if (row.failureCategory === 'account_not_ready') return ACCOUNT_NOT_READY_MESSAGES[role];
   return (
     FAILURE_MESSAGES[row.failureCategory ?? ''] ??
     FAILURE_MESSAGES[row.state] ??

@@ -34,6 +34,9 @@ import { coverBudgetPatch, stepLimit, type CoverBudget } from './onboarding-limi
 import { coverBudgetNote, preselectedCoverProvider } from './onboarding-model';
 import { useLimitSave } from './use-limit-save';
 
+/** Stands in for the preview of a key saved on this step. */
+const SAVED_KEY = '••••';
+
 interface CoversStepProps {
   budget: CoverBudget;
   /** The image provider's key, as resolved when the flow loaded. */
@@ -46,10 +49,15 @@ interface CoversStepProps {
   imageConnected: boolean;
   /** The image model — as loaded, or saved on this step since. */
   imageModel: string;
+  /**
+   * `imageProviderKey` keeps a key of its own (stored or `.env`) rather than
+   * sharing the Text AI's — as loaded, or saved on this step since.
+   */
+  imageOwnKey: boolean;
   encryptionKeyConfigured: boolean;
   musicProviderCoverConfigured: boolean;
   onChange: (budget: CoverBudget) => void;
-  onConnected: (saved: { providerKey: string; model: string }) => void;
+  onConnected: (saved: { providerKey: string; model: string; ownKey: boolean }) => void;
   onDone: () => void;
 }
 
@@ -70,6 +78,7 @@ function CoversStepBody({
   sharedKeyVendor,
   imageConnected,
   imageModel,
+  imageOwnKey,
   encryptionKeyConfigured,
   musicProviderCoverConfigured,
   onChange,
@@ -84,9 +93,11 @@ function CoversStepBody({
   });
   // The loaded model belongs to a chosen provider; a preselected one starts on its default.
   const initialModel = lockedModel || preselected !== imageProviderKey ? undefined : imageModel;
-  // A shared key's preview is the Text AI's key, never one a Cover provider keeps.
+  // Only the provider that keeps a key of its own has one to keep; a shared key
+  // is the Text AI's. The field reads only whether there is one, so a key saved
+  // on this step, newer than `credential`, needs no preview of its own.
   const ownKeyMasked = (providerKey: string) =>
-    providerKey === credential.providerKey && !credential.sharesKey ? credential.masked : null;
+    providerKey === imageProviderKey && imageOwnKey ? (credential.masked ?? SAVED_KEY) : null;
   const editor = useCredentialEditor({
     providerType: 'image',
     options: IMAGE_PROVIDERS,
@@ -99,7 +110,10 @@ function CoversStepBody({
     sharedKeyVendor,
     // The key is stored first, and the Cover budget follows it in the same commit.
     onSaved: (saved) => {
-      onConnected({ providerKey: saved.providerKey, model: saved.model ?? '' });
+      const ownKey =
+        !editor.usesSharedKey &&
+        (Boolean(editor.secret.trim()) || ownKeyMasked(saved.providerKey) !== null);
+      onConnected({ providerKey: saved.providerKey, model: saved.model ?? '', ownKey });
       void save(coverBudgetPatch(budget));
     },
   });

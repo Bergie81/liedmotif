@@ -210,6 +210,7 @@ describe('onboardingRecord', () => {
     imageConnected: false,
     imageModel: '',
     imageProviderKey: null,
+    imageOwnKey: false,
     sharedKeyVendor: null,
     ceiling: { enabled: true, dailyTracks: '40', monthlyTracks: '400', concurrentTracks: '2' },
     coverBudget: {

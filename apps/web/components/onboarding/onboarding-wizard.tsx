@@ -145,11 +145,17 @@ export function OnboardingWizard({
             sharedKeyVendor={draft.sharedKeyVendor}
             imageConnected={draft.imageConnected}
             imageModel={draft.imageModel}
+            imageOwnKey={draft.imageOwnKey}
             encryptionKeyConfigured={data.encryptionKeyConfigured}
             musicProviderCoverConfigured={data.musicProviderCoverConfigured}
             onChange={(coverBudget) => patch({ coverBudget })}
-            onConnected={({ providerKey, model }) =>
-              patch({ imageConnected: true, imageModel: model, imageProviderKey: providerKey })
+            onConnected={({ providerKey, model, ownKey }) =>
+              patch({
+                imageConnected: true,
+                imageModel: model,
+                imageProviderKey: providerKey,
+                imageOwnKey: ownKey,
+              })
             }
             onDone={() => {
               patch({ savedCoverBudget: draft.coverBudget });

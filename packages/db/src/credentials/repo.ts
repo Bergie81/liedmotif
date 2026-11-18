@@ -123,6 +123,11 @@ export interface UpsertCredentialInput extends CredentialRef {
  * unique index `provider_credentials_instance_llm_singleton` backstops it at the
  * database boundary: a racing save loses with a unique violation instead of
  * persisting a second LLM row.
+ *
+ * Cover images keep the same single row, without the index: the image editor
+ * shows only the selected provider's key, so a key kept for another vendor
+ * would be invisible yet come back, or be dropped by a shared-key save, on a
+ * later switch to that vendor.
  */
 export async function upsertProviderCredential(
   db: Database,
@@ -138,13 +143,13 @@ export async function upsertProviderCredential(
   }
 
   await db.transaction(async (tx) => {
-    if (input.providerType === 'llm') {
+    if (input.providerType === 'llm' || input.providerType === 'image') {
       await tx
         .delete(providerCredentials)
         .where(
           and(
             isNull(providerCredentials.ownerUserId),
-            eq(providerCredentials.providerType, 'llm'),
+            eq(providerCredentials.providerType, input.providerType),
             ne(providerCredentials.providerKey, input.providerKey),
           ),
         );

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { chunkedJsonRequest, fillerChunks } from '../../../../tests/helpers/chunked-request';
 
 const mocks = vi.hoisted(() => ({
@@ -18,7 +18,8 @@ const mocks = vi.hoisted(() => ({
   })),
 }));
 
-vi.mock('@liedmotif/db', () => ({
+vi.mock('@liedmotif/db', async (importOriginal) => ({
+  selectProviderKey: (await importOriginal<typeof import('@liedmotif/db')>()).selectProviderKey,
   getCredentialStatus: mocks.credentialStatus,
   getStoredProviderConfig: mocks.storedConfig,
   readEnvLayer: mocks.envLayer,
@@ -55,6 +56,12 @@ describe('provider credential writes', () => {
     mocks.updateUnitCosts.mockClear();
     mocks.credentialStatus.mockResolvedValue({ configured: false });
     mocks.sharedImageKey.mockResolvedValue(undefined);
+    // The developer's .env must not pick the Cover provider these saves price.
+    vi.stubEnv('IMAGE_PROVIDER', '');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('refuses a base URL carrying credentials before it can be stored', async () => {
@@ -348,6 +355,14 @@ describe('provider credential writes', () => {
     mocks.unitCosts.mockResolvedValue({ perTrackUsd: 0.04, perCoverUsd: 0.06 });
     expect((await saveImage('openrouter')).status).toBe(200);
     expect(mocks.updateUnitCosts).toHaveBeenLastCalledWith({}, { perCoverUsd: 0.07 });
+  });
+
+  it('leaves the price per Cover alone when .env selects another Cover provider', async () => {
+    mocks.encryptionKey.mockReturnValue(Buffer.alloc(32));
+    vi.stubEnv('IMAGE_PROVIDER', 'openrouter');
+    expect((await saveImage('gemini')).status).toBe(200);
+
+    expect(mocks.updateUnitCosts).not.toHaveBeenCalled();
   });
 
   it("leaves the Admin's own price per Cover alone when the provider changes", async () => {

@@ -382,6 +382,28 @@ describe.skipIf(skip)('POST /api/setup/validate credential fallback', () => {
     expect(probeCalls.map((call) => call.authorization)).toEqual(['Bearer stored-text-key']);
   });
 
+  it('still tests the env Cover key when the form shares, because saving cannot remove it', async () => {
+    await upsertProviderCredential(testDb.db, {
+      providerType: 'llm',
+      providerKey: 'openai',
+      displayName: 'OpenAI',
+      secret: 'stored-text-key',
+      encryptionKey: ENCRYPTION_KEY,
+    });
+    vi.stubEnv('IMAGE_PROVIDER', 'openai');
+    vi.stubEnv('IMAGE_API_KEY', 'env-image-key');
+    stubProbeFetch(200, { id: 'gpt-image-2.6-flare', object: 'model' });
+
+    const res = await postJson({
+      providerType: 'image',
+      providerKey: 'openai',
+      shareTextLlmKey: true,
+    });
+
+    expect(await res.json()).toMatchObject({ ok: true, reason: 'ok' });
+    expect(probeCalls.map((call) => call.authorization)).toEqual(['Bearer env-image-key']);
+  });
+
   it('refuses a Test that both shares the Text AI key and types its own', async () => {
     stubProbeFetch();
 

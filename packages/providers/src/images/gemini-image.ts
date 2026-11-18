@@ -39,9 +39,14 @@ const MAX_TOTAL_REFERENCE_BYTES = 12 * 1024 * 1024;
  * Google's documented refusals of a project that is not set up to pay:
  * `FAILED_PRECONDITION` (a prerequisite such as billing is not met) and
  * `PERMISSION_DENIED` carrying the `FREE_TIER_VERIFICATION_REQUIRED` reason
- * (verify the project or turn on billing). Every other refusal keeps its
- * status classification.
+ * (verify the project or turn on billing) or the `BILLING_DISABLED` reason.
+ * Every other refusal keeps its status classification.
  */
+const ACCOUNT_NOT_READY_REASONS: readonly unknown[] = [
+  'FREE_TIER_VERIFICATION_REQUIRED',
+  'BILLING_DISABLED',
+];
+
 const classifyRefusal: GeneratedImageRefusalClassifier = (status, error) => {
   const reasons = Array.isArray(error.details)
     ? error.details.map((detail) => (detail as { reason?: unknown } | null)?.reason)
@@ -50,7 +55,7 @@ const classifyRefusal: GeneratedImageRefusalClassifier = (status, error) => {
     (status === 400 && error.status === 'FAILED_PRECONDITION') ||
     (status === 403 &&
       error.status === 'PERMISSION_DENIED' &&
-      reasons.includes('FREE_TIER_VERIFICATION_REQUIRED'));
+      reasons.some((reason) => ACCOUNT_NOT_READY_REASONS.includes(reason)));
   return accountNotReady
     ? new GeneratedImageProviderError('account_not_ready', 'not_started')
     : null;

@@ -25,6 +25,8 @@ interface CoversOptions extends Partial<CoverBudget> {
   /** The Cover provider stored, set in `.env` or saved on the step; `null` when none is. */
   imageProviderKey?: string | null;
   imageModel?: string;
+  /** The stored Cover provider keeps a key of its own — as loaded, or saved on the step. */
+  imageOwnKey?: boolean;
   sharedKeyVendor?: string | null;
   musicProviderCoverConfigured?: boolean;
   onDone?: () => void;
@@ -35,6 +37,7 @@ function coversStep({
   credential = { ...openRouter, configured: imageConnected },
   imageProviderKey = credential.providerKey,
   imageModel = credential.model ?? '',
+  imageOwnKey = Boolean(credential.masked) && !credential.sharesKey,
   sharedKeyVendor = null,
   musicProviderCoverConfigured = false,
   onDone = noop,
@@ -52,6 +55,7 @@ function coversStep({
     imageProviderKey,
     imageConnected,
     imageModel,
+    imageOwnKey,
     sharedKeyVendor,
     encryptionKeyConfigured: true,
     musicProviderCoverConfigured,
@@ -315,6 +319,58 @@ describe('onboarding covers step provider', () => {
 
     pick('Gemini');
     expect(screen.queryByText('LEAVE BLANK TO KEEP')).toBeNull();
+  });
+
+  // The flow loads once, so a key saved on this step is newer than `credential`.
+  it('keeps a separate key saved on this step when the step is revisited', () => {
+    fresh({
+      imageConnected: true,
+      imageProviderKey: 'openai',
+      imageOwnKey: true,
+      sharedKeyVendor: 'openai',
+    });
+
+    expect(screen.queryByText('Uses your OpenAI key')).toBeNull();
+    expect(keyField()).toBeTruthy();
+    expect(screen.getByText('LEAVE BLANK TO KEEP')).toBeTruthy();
+  });
+
+  it('shares the Text AI key on revisit once this step switched to it', () => {
+    fresh({
+      imageConnected: true,
+      imageProviderKey: 'openai',
+      imageOwnKey: false,
+      sharedKeyVendor: 'openai',
+      credential: {
+        ...openRouter,
+        providerKey: 'openai',
+        displayName: 'OpenAI',
+        configured: true,
+        masked: 'sk-…abcd',
+      },
+    });
+
+    expect(screen.getByText('Uses your OpenAI key')).toBeTruthy();
+    expect(keyField()).toBeNull();
+  });
+
+  it('reports whether the saved Cover key is its own', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json({ ok: true, limits: {} })),
+    );
+    const onConnected = vi.fn();
+    render(
+      React.cloneElement(
+        coversStep({ imageConnected: false, imageProviderKey: null, sharedKeyVendor: 'openai' }),
+        { onConnected },
+      ),
+    );
+    pick('Save and continue');
+    await waitFor(() => expect(onConnected).toHaveBeenCalled());
+    expect(onConnected).toHaveBeenLastCalledWith(
+      expect.objectContaining({ providerKey: 'openai', ownKey: false }),
+    );
   });
 
   it('names the selected vendor and its price on the switch', () => {

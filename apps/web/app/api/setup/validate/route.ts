@@ -7,6 +7,7 @@
 
 import { NextResponse } from 'next/server';
 import {
+  readEnvLayer,
   resolveProviderCredential,
   resolveProviderSettings,
   resolveSharedImageKey,
@@ -76,7 +77,10 @@ export async function POST(request: Request) {
   if (!secret) {
     try {
       const encryptionKey = encryptionKeyIfConfigured();
-      if (!sharesTextLlmKey) secret = credential?.readApiKey(encryptionKey);
+      // Sharing drops only the stored key; an `.env` key still outranks the share.
+      secret = sharesTextLlmKey
+        ? readEnvLayer(providerType, providerKey).apiKey
+        : credential?.readApiKey(encryptionKey);
       if (!secret && providerType === 'image') {
         secret = await resolveSharedImageKey(getDb(), providerKey, { encryptionKey });
       }

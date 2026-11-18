@@ -16,18 +16,23 @@ function settled(failureCategory: string): SessionCoverGenerationRow {
 }
 
 describe('a failed Cover regeneration', () => {
-  it.each(['admin', 'member'] as const)(
-    'tells the %s the image account is not ready and where to look',
-    (role) => {
-      expect(toSessionCoverAttempt(settled('account_not_ready'), role)).toEqual({
-        coverGenerationId: 'cover-generation-1',
-        coverImageId: 'cover-1',
-        status: 'failed',
-        failureMessageSafe:
-          "Your image provider's account isn't ready for images. Check Settings › AI Providers.",
-      });
-    },
-  );
+  it.each([
+    [
+      'admin',
+      "Your image provider's account isn't ready for images. Check Settings › AI Providers.",
+    ],
+    [
+      'member',
+      "The image provider's account on this server isn't ready for images. Ask the Admin to check it.",
+    ],
+  ] as const)('tells the %s the image account is not ready and who can fix it', (role, message) => {
+    expect(toSessionCoverAttempt(settled('account_not_ready'), role)).toEqual({
+      coverGenerationId: 'cover-generation-1',
+      coverImageId: 'cover-1',
+      status: 'failed',
+      failureMessageSafe: message,
+    });
+  });
 
   it('keeps the plain rejection wording for any other provider refusal', () => {
     expect(toSessionCoverAttempt(settled('provider_rejected'), 'admin').failureMessageSafe).toBe(

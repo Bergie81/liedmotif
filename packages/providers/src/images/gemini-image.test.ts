@@ -241,7 +241,8 @@ describe('Gemini generated-image adapter', () => {
 
   // Google's documented codes: FAILED_PRECONDITION is a prerequisite such as
   // disabled billing; PERMISSION_DENIED with FREE_TIER_VERIFICATION_REQUIRED is
-  // a project that must verify or set up billing.
+  // a project that must verify or set up billing, with BILLING_DISABLED one
+  // whose billing is off.
   it.each([
     [
       400,
@@ -265,6 +266,23 @@ describe('Gemini generated-image adapter', () => {
             {
               '@type': 'type.googleapis.com/google.rpc.ErrorInfo',
               reason: 'FREE_TIER_VERIFICATION_REQUIRED',
+              domain: 'googleapis.com',
+            },
+          ],
+        },
+      },
+    ],
+    [
+      403,
+      {
+        error: {
+          code: 403,
+          message: 'This API method requires billing to be enabled.',
+          status: 'PERMISSION_DENIED',
+          details: [
+            {
+              '@type': 'type.googleapis.com/google.rpc.ErrorInfo',
+              reason: 'BILLING_DISABLED',
               domain: 'googleapis.com',
             },
           ],
