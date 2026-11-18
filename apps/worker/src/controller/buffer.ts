@@ -29,6 +29,7 @@ import {
   PHANTOM_SUBMIT_MAX_AGE_MS,
   PHANTOM_SUBMIT_PROVIDER_STATUSES,
   phantomSubmitCutoffAt,
+  SPEND_SUBMIT_STATES,
   type CostLimitDecision,
   type CostLimitScope,
   type CostLimitWindow,
@@ -316,10 +317,10 @@ export function isFailedPaidBatch(job: {
   return isSpentSubmit(job) && job.normalizedStatus !== 'ready';
 }
 
-/** Whether a provider job was paid or may have been paid: it reached a submit
- * that was not refused unbilled. */
+/** Whether a provider job was paid or may have been paid: its submit state
+ * counts as spend (`SPEND_SUBMIT_STATES`). */
 export function isSpentSubmit(job: { submitState: string }): boolean {
-  return job.submitState !== 'submit_rejected' && job.submitState !== 'not_submitted';
+  return (SPEND_SUBMIT_STATES as readonly string[]).includes(job.submitState);
 }
 
 /**
@@ -340,14 +341,25 @@ export const LISTENER_ACTIVE_WINDOW_MS = 2 * 60_000;
 export function isListenerActive(
   session: { startedAt: Date; lastResumedAt: Date | null; lastPlaybackReportAt: Date | null },
   now: Date,
-  /** False: only playing audio counts (see `restartCountsAsListener`). */
-  { restartsCount = true }: { restartsCount?: boolean } = {},
 ): boolean {
   const latest = Math.max(
-    restartsCount ? session.startedAt.getTime() : 0,
-    restartsCount ? (session.lastResumedAt?.getTime() ?? 0) : 0,
+    session.startedAt.getTime(),
+    session.lastResumedAt?.getTime() ?? 0,
     session.lastPlaybackReportAt?.getTime() ?? 0,
   );
+  return now.getTime() - latest < LISTENER_ACTIVE_WINDOW_MS;
+}
+
+/**
+ * Whether audio is playing: a playback report within the liveness window. The
+ * stricter half of `isListenerActive`, for a restart that does not count as a
+ * listener (see `restartCountsAsListener`).
+ */
+export function isPlaybackActive(
+  session: { lastPlaybackReportAt: Date | null },
+  now: Date,
+): boolean {
+  const latest = session.lastPlaybackReportAt?.getTime() ?? 0;
   return now.getTime() - latest < LISTENER_ACTIVE_WINDOW_MS;
 }
 

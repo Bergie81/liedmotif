@@ -56,8 +56,13 @@ export function presentCreationFailure(
 ): string | null {
   const refusal = creationRefusalFor(error);
   if (!refusal) return `${failureLabel}: ${error.message}`;
-  commit(refusal);
+  showCreationRefusal(refusal);
   return null;
+}
+
+/** Open the blocked dialog for a refusal the caller already classified. */
+export function showCreationRefusal(refusal: CreationRefusal): void {
+  commit(refusal);
 }
 
 /** The refusal the blocked dialog shows now, for tests. */

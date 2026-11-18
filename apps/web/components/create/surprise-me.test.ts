@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { createElement } from 'react';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SurpriseProposal } from '@liedmotif/shared';
 import { AppChromeContext, type AppChromeContextValue } from '@/components/app-chrome-context';
@@ -12,6 +12,8 @@ vi.mock('@/lib/api-client', () => api);
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 const { SurpriseMe } = await import('./surprise-me');
+const { CreationRefusalHost } = await import('./creation-blocked-dialog');
+const { closeCreationRefusal } = await import('./creation-refusal');
 
 const TIDE: SurpriseProposal = {
   id: '11111111-1111-4111-8111-111111111111',
@@ -49,6 +51,7 @@ beforeEach(() => {
   onStart.mockReset();
 });
 afterEach(() => {
+  act(() => closeCreationRefusal());
   cleanup();
   toast.dismiss();
 });
@@ -75,6 +78,8 @@ const mount = (props: { skipProfile?: boolean; initialProposal?: SurpriseProposa
         onStart,
         ...props,
       }),
+      // The app shell's one blocked dialog, which a refused proposal opens.
+      createElement(CreationRefusalHost),
     ),
   );
 

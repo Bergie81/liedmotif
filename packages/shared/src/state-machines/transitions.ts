@@ -267,6 +267,20 @@ export const PARKED_SUBMIT_STATUSES = [
 ] as const satisfies readonly ProviderNormalizedStatus[];
 
 /**
+ * Provider-job submit states that count as (possible) SPEND — the daily/monthly
+ * limit windows' whole definition of a paid task, and the buffer controller's
+ * test of a batch that was paid or may have been. `submit_unknown` counts: the
+ * network failed before a task id was captured, so the provider may have
+ * accepted a paid call, and counting it keeps limits money-conservative.
+ * `submit_rejected` is the one submit state deliberately absent: the provider
+ * definitively refused the call before charging, so counting it would burn a
+ * whole budget window on an outage or a bad credential with zero tracks to show
+ * for it. Adding a state here must always be the safe direction — when in
+ * doubt, count it.
+ */
+export const SPEND_SUBMIT_STATES = ['submitting', 'submitted', 'submit_unknown'] as const;
+
+/**
  * Phantom submit states NOTHING advances: `queued` (a submit that crashed
  * mid-call), `submit_unknown` (an uncertain paid submit, parked — terminal for
  * the automatic machine, see the map above) and `submit_rejected` (a definitive

@@ -4,6 +4,7 @@ import {
   decideBufferAction,
   isFailedPaidBatch,
   isListenerActive,
+  isPlaybackActive,
   LISTENER_ACTIVE_WINDOW_MS,
   mapProviderBlockSignal,
   PHANTOM_SUBMIT_MAX_AGE_MS,
@@ -804,21 +805,9 @@ describe('isListenerActive', () => {
     ).toBe(false);
   });
 
-  it('counts only playing audio when restarts do not count', () => {
-    const playbackOnly = { restartsCount: false };
-    expect(
-      isListenerActive(
-        { startedAt: recent, lastResumedAt: recent, lastPlaybackReportAt: null },
-        now,
-        playbackOnly,
-      ),
-    ).toBe(false);
-    expect(
-      isListenerActive(
-        { startedAt: old, lastResumedAt: old, lastPlaybackReportAt: recent },
-        now,
-        playbackOnly,
-      ),
-    ).toBe(true);
+  it('counts only playing audio for playback activity, never a restart', () => {
+    expect(isPlaybackActive({ lastPlaybackReportAt: null }, now)).toBe(false);
+    expect(isPlaybackActive({ lastPlaybackReportAt: old }, now)).toBe(false);
+    expect(isPlaybackActive({ lastPlaybackReportAt: recent }, now)).toBe(true);
   });
 });

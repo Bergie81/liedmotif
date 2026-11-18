@@ -1369,9 +1369,7 @@ export function usePlaybackController(
     const current = activeTrack()?.queueItemId ?? null;
     if (traversal.mode === 'shuffle') {
       // Going back passes over expired offline copies in the same direction.
-      let target = traversal.previous(queueRef.current, current);
-      while (target && expired(target.track))
-        target = traversal.previous(queueRef.current, current);
+      const target = traversal.previous(queueRef.current, current, expired);
       if (target) playOnDeck(activeDeckRef.current, target.idx, 'preserve');
       else restart();
       return;

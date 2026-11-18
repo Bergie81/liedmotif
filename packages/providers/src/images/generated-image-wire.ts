@@ -163,6 +163,24 @@ export function acceptedReferences(
 }
 
 /**
+ * The not-started failure for an image request whose dial never happened, or
+ * null when the request may have reached the provider. A refused dial (the host
+ * resolved somewhere it may not be reached) is provably a configuration
+ * failure rather than an ambiguous one the caller must treat as spend. A host
+ * name that did not resolve was never dialed either, but nothing is
+ * misconfigured: it is an outage a later attempt may get past.
+ */
+export function notDialedImageError(error: unknown): GeneratedImageProviderError | null {
+  if (error instanceof ProviderConfigError) {
+    return new GeneratedImageProviderError('configuration', 'not_started');
+  }
+  if (error instanceof ProviderUnbilledError && error.refusal === 'provider_unavailable') {
+    return new GeneratedImageProviderError('unavailable', 'not_started');
+  }
+  return null;
+}
+
+/**
  * POST one generation as JSON and return the parsed reply, read under the
  * response ceiling. Every failure becomes a sanitized `GeneratedImageProviderError`
  * carrying whether the vendor may have started (and billed) the work; nothing from
@@ -193,17 +211,8 @@ export async function submitGeneratedImageRequest(
       signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (error) {
-    // A refused dial (the host resolved somewhere it may not be reached)
-    // never left the process, so it is provably a not-started configuration
-    // failure rather than an ambiguous one the caller must treat as spend.
-    if (error instanceof ProviderConfigError) {
-      throw new GeneratedImageProviderError('configuration', 'not_started');
-    }
-    // A host name that did not resolve was never dialed either, but nothing is
-    // misconfigured: it is an outage a later attempt may get past.
-    if (error instanceof ProviderUnbilledError && error.refusal === 'provider_unavailable') {
-      throw new GeneratedImageProviderError('unavailable', 'not_started');
-    }
+    const notDialed = notDialedImageError(error);
+    if (notDialed) throw notDialed;
     const timedOut = error instanceof Error && error.name === 'TimeoutError';
     throw new GeneratedImageProviderError(timedOut ? 'timeout' : 'unavailable', 'outcome_unknown');
   }

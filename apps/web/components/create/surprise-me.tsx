@@ -34,8 +34,7 @@ import {
 import { syntheticProgressFraction } from '@/components/player/cold-start-progress';
 import { primaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
 import { LiedmotifLoader } from '@/components/ui/loading';
-import { CreationBlockedDialog } from './creation-blocked-dialog';
-import { creationRefusalFor, type CreationRefusal } from './creation-refusal';
+import { creationRefusalFor, showCreationRefusal } from './creation-refusal';
 import { SegmentedControl } from './session-start-controls';
 import {
   surpriseExploreLabel,
@@ -288,7 +287,6 @@ export function SurpriseMe({
   // The proposal request in flight; Cancel aborts it and nothing it answers lands.
   const [proposing, setProposing] = useState<AbortController | null>(null);
   const [dismissing, setDismissing] = useState(false);
-  const [blocked, setBlocked] = useState<CreationRefusal | null>(null);
 
   const busy = proposing !== null || dismissing;
   const step = proposing ? 'proposing' : proposal && !editingSettings ? 'preview' : 'settings';
@@ -328,7 +326,7 @@ export function SurpriseMe({
     const refusal = creationRefusalFor(result.error);
     if (refusal) {
       setOpen(false);
-      setBlocked(refusal);
+      showCreationRefusal(refusal);
     } else toast.error(result.error.message, { key: REQUEST_KEY });
   }
 
@@ -424,16 +422,6 @@ export function SurpriseMe({
           </div>
         </DialogContent>
       </Dialog>
-
-      {blocked ? (
-        <CreationBlockedDialog
-          open
-          onOpenChange={(next) => {
-            if (!next) setBlocked(null);
-          }}
-          refusal={blocked}
-        />
-      ) : null}
     </>
   );
 }

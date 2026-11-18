@@ -141,8 +141,11 @@ beforeEach(async () => {
   if (skip) return;
   await truncateTables(testDb.pool, GENERATION_FIXTURE_TABLES);
   holder.ownerUserId = null;
-  // Generous default budget unless a test overrides it.
+  // Generous default budget unless a test overrides it. The Admin's Track
+  // ceiling is opt-in, and settings outlive the truncate, so it is switched on
+  // here: with it off the seeded owner (an Admin) has no budget to exhaust.
   await updateUsageLimits(testDb.db, {
+    trackCeilingEnabled: true,
     dailyGenerationTasks: 40,
     monthlyGenerationTasks: 400,
     resetTimezone: 'UTC',

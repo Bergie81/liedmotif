@@ -83,31 +83,26 @@ export class PlaybackTraversal {
     );
   }
 
+  /** Step back through the shuffle history, passing over every Track `skip` rejects. */
   previous(
     tracks: readonly PlayableTrack[],
     currentQueueItemId: string | null,
+    skip: (track: PlayableTrack) => boolean = () => false,
   ): QueueTarget | null {
     if (this.currentMode !== 'shuffle') return null;
-    const target = popShuffleHistory(this.shuffleState, idsOf(tracks), currentQueueItemId);
-    this.shuffleState = target.state;
-    return targetById(tracks, target.queueItemId);
+    const popped = popPrevious(this.shuffleState, tracks, currentQueueItemId, skip);
+    this.shuffleState = popped.state;
+    return popped.target;
   }
 
-  /** The Track `previous` would return to, without stepping back, passing
-   * over every Track `skip` rejects. */
+  /** The Track `previous` would return to, without stepping back. */
   peekPrevious(
     tracks: readonly PlayableTrack[],
     currentQueueItemId: string | null,
     skip: (track: PlayableTrack) => boolean = () => false,
   ): QueueTarget | null {
     if (this.currentMode !== 'shuffle') return null;
-    let state = this.shuffleState;
-    for (;;) {
-      const popped = popShuffleHistory(state, idsOf(tracks), currentQueueItemId);
-      const target = targetById(tracks, popped.queueItemId);
-      if (!target || !skip(target.track)) return target;
-      state = popped.state;
-    }
+    return popPrevious(this.shuffleState, tracks, currentQueueItemId, skip).target;
   }
 
   remove(queueItemId: string): void {
@@ -117,6 +112,21 @@ export class PlaybackTraversal {
   sync(tracks: readonly PlayableTrack[], currentQueueItemId: string | null): void {
     if (this.currentMode !== 'shuffle') return;
     this.shuffleState = syncShuffleState(this.shuffleState, idsOf(tracks), currentQueueItemId);
+  }
+}
+
+/** Pop the shuffle history until a Track `skip` accepts, or it runs out. */
+function popPrevious(
+  state: ShuffleState,
+  tracks: readonly PlayableTrack[],
+  currentQueueItemId: string | null,
+  skip: (track: PlayableTrack) => boolean,
+): { state: ShuffleState; target: QueueTarget | null } {
+  for (;;) {
+    const popped = popShuffleHistory(state, idsOf(tracks), currentQueueItemId);
+    const target = targetById(tracks, popped.queueItemId);
+    if (!target || !skip(target.track)) return { state: popped.state, target };
+    state = popped.state;
   }
 }
 

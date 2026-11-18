@@ -9,6 +9,7 @@
 // `status`, `storageProvider`, and `deletion_queue_items.reason`.
 
 import { pgEnum } from 'drizzle-orm/pg-core';
+import { SPEND_SUBMIT_STATES as SHARED_SPEND_SUBMIT_STATES } from '@liedmotif/shared';
 
 /** `providerType` discriminator shared by credentials, usage, requests, jobs. */
 export const providerType = pgEnum('provider_type', ['music', 'llm', 'image', 'storage']);
@@ -41,21 +42,14 @@ export const providerSubmitState = pgEnum('provider_submit_state', [
 ]);
 
 /**
- * Submit states that count as (possible) SPEND — the daily/monthly limit
- * windows' whole definition of a paid task. `submit_unknown` counts: the network
- * failed before a task id was captured, so the provider may have accepted a paid
- * call, and counting it keeps limits money-conservative. `submit_rejected` is the
- * one submit state deliberately absent: the provider definitively refused the
- * call before charging, so counting it would burn a whole budget window on an
- * outage or a bad credential with zero tracks to show for it. Adding a state here
- * must always be the safe direction — when in doubt, count it.
- *
- * Lives beside the enum because BOTH the counting query (`countTasksInWindow`)
- * and the partial index that serves it (`provider_jobs_spend_window_idx`) are
- * built from this one list; were they to drift, the index would silently stop
- * covering the money path's hottest read.
+ * The submit states that count as (possible) spend, defined in `@liedmotif/shared`
+ * so the worker's pure buffer controller reads the same rule. BOTH the counting
+ * query (`countTasksInWindow`) and the partial index that serves it
+ * (`provider_jobs_spend_window_idx`) are built from this one list; were they to
+ * drift, the index would silently stop covering the money path's hottest read.
  */
-export const SPEND_SUBMIT_STATES = ['submitting', 'submitted', 'submit_unknown'] as const;
+export const SPEND_SUBMIT_STATES =
+  SHARED_SPEND_SUBMIT_STATES satisfies readonly (typeof providerSubmitState.enumValues)[number][];
 
 /** The list above as SQL literals, for the index predicate. */
 export const spendSubmitStateSqlList = SPEND_SUBMIT_STATES.map((state) => `'${state}'`).join(', ');

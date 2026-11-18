@@ -98,6 +98,7 @@ import {
   decideBufferAction,
   isFailedPaidBatch,
   isListenerActive,
+  isPlaybackActive,
   isSpentSubmit,
   mapProviderBlockSignal,
   restartCountsAsListener,
@@ -629,9 +630,8 @@ export async function runEnsureSessionBuffer(
         inFlightJobs: inFlightSessionJobs,
       });
     const listenerActive =
-      isListenerActive(fresh, now) &&
-      (isListenerActive(fresh, now, { restartsCount: false }) ||
-        (await restartIsListener(fresh.lastResumedAt)));
+      isPlaybackActive(fresh, now) ||
+      (isListenerActive(fresh, now) && (await restartIsListener(fresh.lastResumedAt)));
 
     let duration: BufferDecisionInput['duration'];
     if (fresh.targetDurationMinutes != null) {
