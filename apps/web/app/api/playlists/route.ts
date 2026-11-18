@@ -67,6 +67,7 @@ export async function POST(request: Request) {
       downloadableTrackCount: 0,
       mosaicCoverImageIds: [],
       soleMemberTrackCount: 0,
+      soleMemberDeletedTrackCount: 0,
       containsTrack: null,
     }),
   });

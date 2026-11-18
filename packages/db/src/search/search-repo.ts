@@ -13,6 +13,7 @@ import {
   playlistDownloadableCountColumn,
   playlistMosaicCoverColumn,
   playlistSoleMemberCountColumn,
+  playlistSoleMemberDeletedCountColumn,
   playlistTotalDurationColumn,
   playlistTrackCountColumn,
   type PlaylistSummary,
@@ -417,6 +418,7 @@ interface PlaylistHitRow extends RankedRow {
   downloadableTrackCount: number;
   mosaicCoverImageIds: string[];
   soleMemberTrackCount: number;
+  soleMemberDeletedTrackCount: number;
   memberMatchCount: number;
 }
 
@@ -440,6 +442,7 @@ function toPlaylistHit(row: PlaylistHitRow, match: SearchMatch): SearchPlaylistH
     downloadableTrackCount: row.downloadableTrackCount,
     mosaicCoverImageIds: row.mosaicCoverImageIds,
     soleMemberTrackCount: row.soleMemberTrackCount,
+    soleMemberDeletedTrackCount: row.soleMemberDeletedTrackCount,
     containsTrack: null,
     memberMatchCount: row.memberMatchCount,
     owner: null,
@@ -506,6 +509,7 @@ export async function searchPlaylists(
         downloadableTrackCount: playlistDownloadableCountColumn(),
         mosaicCoverImageIds: playlistMosaicCoverColumn(viewer),
         soleMemberTrackCount: playlistSoleMemberCountColumn(viewer),
+        soleMemberDeletedTrackCount: playlistSoleMemberDeletedCountColumn(viewer),
         memberMatchCount: memberTitleMatchCount(buildMatchPatterns(args.query).anywhere, viewer),
       },
       from: sql`from ${playlists}`,

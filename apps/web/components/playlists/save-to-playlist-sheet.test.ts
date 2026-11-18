@@ -72,6 +72,7 @@ function playlist(over: Partial<PlaylistSummaryItem> & { id: string }): Playlist
     coverImageId: null,
     mosaicCoverImageIds: [],
     soleMemberTrackCount: 0,
+    soleMemberDeletedTrackCount: 0,
     containsTrack: false,
     sharedAt: null,
     pinnedAt: null,

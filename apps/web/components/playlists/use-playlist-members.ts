@@ -52,7 +52,7 @@ export function usePlaylistMembers({
   /** Curation/paging failures, named by the act that failed. */
   onError: (message: string, act: PlaylistMembersAct) => void;
   /** A removal took the track's LAST membership (the caller's Library-exit notice). */
-  onUnsaved: () => void;
+  onUnsaved: (removal: { deletedForGood: boolean; sharedReference: boolean }) => void;
 }) {
   const router = useRouter();
   const [playlist, setPlaylist] = useState<PlaylistSummaryItem | null>(initial?.playlist ?? null);
@@ -206,7 +206,12 @@ export function usePlaylistMembers({
         return;
       }
       router.refresh();
-      if (result.data.unsaved) onUnsaved();
+      if (result.data.unsaved) {
+        onUnsaved({
+          deletedForGood: result.data.deletedForGood,
+          sharedReference: member.owner !== null,
+        });
+      }
     });
   }
 

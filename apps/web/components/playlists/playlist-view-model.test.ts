@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { MAX_PLAYLIST_ORDER_TRACKS } from '@liedmotif/shared';
 import {
   canDownloadPlaylist,
+  deletePlaylistConfirmBody,
   formatPlaylistCardMeta,
   formatPlaylistMemberMetadata,
   hasUnloadedMembers,
+  lastRemovalNotice,
   nextMemberCursor,
   playlistMenuRows,
   sameTrackOrder,
@@ -165,5 +167,85 @@ describe('sameTrackOrder', () => {
     expect(sameTrackOrder([{ id: 'a' }, { id: 'b' }], ['a', 'b'])).toBe(true);
     expect(sameTrackOrder([{ id: 'a' }, { id: 'b' }], ['b', 'a'])).toBe(false);
     expect(sameTrackOrder([{ id: 'a' }], ['a', 'b'])).toBe(false);
+  });
+});
+
+describe('deletePlaylistConfirmBody', () => {
+  it('names how many sole members a delete removes for good', () => {
+    expect(
+      deletePlaylistConfirmBody({
+        name: 'Rain',
+        soleMemberTrackCount: 3,
+        soleMemberDeletedTrackCount: 1,
+      }),
+    ).toBe(
+      '3 Tracks are only in this playlist and will leave your Library. 1 of them will be deleted for good, because its Session is gone. Delete “Rain”?',
+    );
+    expect(
+      deletePlaylistConfirmBody({
+        name: 'Rain',
+        soleMemberTrackCount: 3,
+        soleMemberDeletedTrackCount: 2,
+      }),
+    ).toBe(
+      '3 Tracks are only in this playlist and will leave your Library. 2 of them will be deleted for good, because their Session is gone. Delete “Rain”?',
+    );
+    expect(
+      deletePlaylistConfirmBody({
+        name: 'Rain',
+        soleMemberTrackCount: 2,
+        soleMemberDeletedTrackCount: 2,
+      }),
+    ).toBe(
+      '2 Tracks are only in this playlist and will be deleted for good, because their Session is gone. Delete “Rain”?',
+    );
+    expect(
+      deletePlaylistConfirmBody({
+        name: 'Rain',
+        soleMemberTrackCount: 1,
+        soleMemberDeletedTrackCount: 1,
+      }),
+    ).toBe(
+      '1 Track is only in this playlist and will be deleted for good, because its Session is gone. Delete “Rain”?',
+    );
+  });
+
+  it('promises History only for Tracks from the owner’s own Sessions when none is deleted', () => {
+    expect(
+      deletePlaylistConfirmBody({
+        name: 'Rain',
+        soleMemberTrackCount: 1,
+        soleMemberDeletedTrackCount: 0,
+      }),
+    ).toBe(
+      '1 Track is only in this playlist and will leave your Library (Tracks from your Sessions stay in History). Delete “Rain”?',
+    );
+  });
+
+  it('keeps every member when each lives in another playlist', () => {
+    expect(
+      deletePlaylistConfirmBody({
+        name: 'Rain',
+        soleMemberTrackCount: 0,
+        soleMemberDeletedTrackCount: 0,
+      }),
+    ).toBe('Delete “Rain”? Its Tracks stay in your Library through their other playlists.');
+  });
+});
+
+describe('lastRemovalNotice', () => {
+  it('says a Track whose Session is gone was deleted for good', () => {
+    expect(lastRemovalNotice({ deletedForGood: true, sharedReference: false })).toBe(
+      'Removed — that was its last playlist and its Session is gone, so the track was deleted for good.',
+    );
+  });
+
+  it('promises History only for a Track from the user’s own Session', () => {
+    expect(lastRemovalNotice({ deletedForGood: false, sharedReference: false })).toBe(
+      'Removed — that was its last playlist, so the track left your Library (it stays in History).',
+    );
+    expect(lastRemovalNotice({ deletedForGood: false, sharedReference: true })).toBe(
+      'Removed — that was its last playlist, so the track left your Library.',
+    );
   });
 });

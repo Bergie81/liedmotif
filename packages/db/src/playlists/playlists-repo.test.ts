@@ -1346,6 +1346,71 @@ describe.skipIf(skip)('orphan cleanup on membership loss', () => {
     expect(await queuedReasons(keeper)).toEqual([]);
   });
 
+  it('counts the sole members a delete will remove for good', async () => {
+    const { ownerUserId, trackId: withSession } = await seedReadyTrack(testDb.db);
+    const orphans = [
+      await seedSessionlessTrack(ownerUserId),
+      await seedSessionlessTrack(ownerUserId),
+    ];
+    const keeper = await seedSessionlessTrack(ownerUserId);
+    const doomed = await createPlaylist(testDb.db, { ownerUserId, name: 'Doomed' });
+    const haven = await createPlaylist(testDb.db, { ownerUserId, name: 'Haven' });
+    await addPlaylistTracks(testDb.db, {
+      ownerUserId,
+      playlistId: doomed.id,
+      trackIds: [withSession, ...orphans, keeper],
+      now: NOW,
+    });
+    await addPlaylistTracks(testDb.db, {
+      ownerUserId,
+      playlistId: haven.id,
+      trackIds: [keeper],
+      now: NOW,
+    });
+
+    const summary = (await listPlaylists(testDb.db, { ownerUserId })).find(
+      (p) => p.id === doomed.id,
+    );
+    expect(summary?.soleMemberTrackCount).toBe(3);
+    expect(summary?.soleMemberDeletedTrackCount).toBe(2);
+
+    await deletePlaylist(testDb.db, { ownerUserId, playlistId: doomed.id, now: at(1) });
+
+    const states = await Promise.all([withSession, ...orphans, keeper].map((id) => trackState(id)));
+    expect(states.filter((state) => state === 'deleted')).toHaveLength(2);
+    expect(await trackState(withSession)).toBe('ready');
+    expect(await trackState(keeper)).toBe('ready');
+  });
+
+  it('removePlaylistTrack reports whether the Track was deleted for good', async () => {
+    const ownerUserId = await createUser(testDb.db);
+    const orphan = await seedSessionlessTrack(ownerUserId);
+    const { trackId: withSession } = await seedReadyTrack(testDb.db, { ownerUserId });
+    const playlist = await createPlaylist(testDb.db, { ownerUserId, name: 'P' });
+    await addPlaylistTracks(testDb.db, {
+      ownerUserId,
+      playlistId: playlist.id,
+      trackIds: [orphan, withSession],
+      now: NOW,
+    });
+
+    const orphanResult = await removePlaylistTrack(testDb.db, {
+      ownerUserId,
+      playlistId: playlist.id,
+      trackId: orphan,
+      now: at(1),
+    });
+    const sessionResult = await removePlaylistTrack(testDb.db, {
+      ownerUserId,
+      playlistId: playlist.id,
+      trackId: withSession,
+      now: at(2),
+    });
+
+    expect(orphanResult).toEqual({ removed: true, unsaved: true, deletedForGood: true });
+    expect(sessionResult).toEqual({ removed: true, unsaved: true, deletedForGood: false });
+  });
+
   it('un-favoriting the last membership of a session-less track deletes it', async () => {
     const ownerUserId = await createUser(testDb.db);
     const trackId = await seedSessionlessTrack(ownerUserId);
@@ -1707,6 +1772,6 @@ describe.skipIf(skip)('a failed Track (its final never arrived)', () => {
 
     expect(
       await removePlaylistTrack(testDb.db, { ownerUserId, playlistId: mix.id, trackId }),
-    ).toEqual({ removed: true, unsaved: true });
+    ).toEqual({ removed: true, unsaved: true, deletedForGood: false });
   });
 });

@@ -192,14 +192,43 @@ export function playlistMenuRows(
 /** Rows only a playlist the owner made and named can answer for. */
 const OWNER_NAMED_ROW_IDS: readonly PlaylistMenuRowId[] = ['rename', 'delete'];
 
+/**
+ * What deleting the playlist costs. A sole member leaves the Library; one whose
+ * Session is gone has no History to fall back to and is deleted for good. A
+ * Shared reference was never in the viewer's History, so History is promised
+ * only for Tracks from the viewer's own Sessions.
+ */
 export function deletePlaylistConfirmBody(
-  playlist: Pick<PlaylistSummaryItem, 'name' | 'soleMemberTrackCount'>,
+  playlist: Pick<
+    PlaylistSummaryItem,
+    'name' | 'soleMemberTrackCount' | 'soleMemberDeletedTrackCount'
+  >,
 ): string {
   const sole = playlist.soleMemberTrackCount;
-  if (sole === 0) {
-    return `Delete “${playlist.name}”? Its Tracks stay in your Library through their other playlists.`;
+  const gone = playlist.soleMemberDeletedTrackCount;
+  const ask = `Delete “${playlist.name}”?`;
+  if (sole === 0) return `${ask} Its Tracks stay in your Library through their other playlists.`;
+  const only = `${sole} ${sole === 1 ? 'Track is' : 'Tracks are'} only in this playlist and will`;
+  const sessionGone = `because ${gone === 1 ? 'its' : 'their'} Session is gone`;
+  if (gone === 0) {
+    return `${only} leave your Library (Tracks from your Sessions stay in History). ${ask}`;
   }
-  return `${sole} ${sole === 1 ? 'Track is' : 'Tracks are'} only in this playlist and will leave your Library (they stay in History). Delete “${playlist.name}”?`;
+  if (gone === sole) return `${only} be deleted for good, ${sessionGone}. ${ask}`;
+  return `${only} leave your Library. ${gone} of them will be deleted for good, ${sessionGone}. ${ask}`;
+}
+
+/** The notice after a removal took a Track's last playlist. */
+export function lastRemovalNotice(removal: {
+  deletedForGood: boolean;
+  sharedReference: boolean;
+}): string {
+  if (removal.deletedForGood) {
+    return 'Removed — that was its last playlist and its Session is gone, so the track was deleted for good.';
+  }
+  if (removal.sharedReference) {
+    return 'Removed — that was its last playlist, so the track left your Library.';
+  }
+  return 'Removed — that was its last playlist, so the track left your Library (it stays in History).';
 }
 
 /** What a refused Pin toggle reports, on every surface that offers one. */

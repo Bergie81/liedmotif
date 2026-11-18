@@ -39,7 +39,7 @@ import {
   type OwnedTrackSummary,
   type TrackFlagWriteResult,
 } from '../generation/feedback-repo';
-import { evictOrphanedTracksInTx } from '../generation/eviction-repo';
+import { evictOrphanedTracksInTx, orphanedOnceUnsaved } from '../generation/eviction-repo';
 import { servableLocalFinalConditions } from '../generation/audio-asset-predicates';
 import { sessionNotPendingDelete } from '../generation/session-list-repo';
 import { listPlayableSessionTrackIds } from '../generation/session-tracks-repo';
@@ -93,6 +93,8 @@ export interface PlaylistSummary extends PlaylistRow {
   mosaicCoverImageIds: string[];
   /** Members whose ONLY playlist is this one (they go Ephemeral on delete). */
   soleMemberTrackCount: number;
+  /** The sole members the delete removes for good: their Session is gone, so no History holds them. */
+  soleMemberDeletedTrackCount: number;
   /** Membership of the `containsTrackId` passed to the list (the picker read); null when none was. */
   containsTrack: boolean | null;
 }
@@ -214,8 +216,8 @@ export async function lockOwnedPlaylist(
 async function syncTrackFlagsInTx(
   tx: Transaction,
   args: { ownerUserId: string; trackIds: string[]; now: Date },
-): Promise<void> {
-  if (args.trackIds.length === 0) return;
+): Promise<{ evictedTrackIds: string[] }> {
+  if (args.trackIds.length === 0) return { evictedTrackIds: [] };
   const flagRows = await tx
     .select({ id: tracks.id, savedAt: tracks.savedAt, favoritedAt: tracks.favoritedAt })
     .from(tracks)
@@ -270,7 +272,7 @@ async function syncTrackFlagsInTx(
   // The orphan rule: a track that ends the mutation
   // Ephemeral AND whose originating session is gone has no surface left that
   // can reach it — reclaim it in the same commit as the membership loss.
-  await evictOrphanedTracksInTx(tx, { trackIds: turnedEphemeral, now: args.now });
+  return evictOrphanedTracksInTx(tx, { trackIds: turnedEphemeral, now: args.now });
 }
 
 /** Statuses a Track can never be newly filed under. */
@@ -409,7 +411,7 @@ function playlistNameForSession(title: string | null): string {
 export async function removePlaylistTrack(
   db: Database,
   args: { ownerUserId: string; playlistId: string; trackId: string; now?: Date },
-): Promise<{ removed: boolean; unsaved: boolean } | null> {
+): Promise<{ removed: boolean; unsaved: boolean; deletedForGood: boolean } | null> {
   const now = args.now ?? new Date();
   return withOwnerPlaylistLock(db, args.ownerUserId, async (tx) => {
     const playlist = await lockOwnedPlaylist(tx, args.ownerUserId, args.playlistId);
@@ -422,7 +424,7 @@ export async function removePlaylistTrack(
         and(eq(playlistTracks.playlistId, playlist.id), eq(playlistTracks.trackId, args.trackId)),
       )
       .returning({ id: playlistTracks.id });
-    if (deleted.length === 0) return { removed: false, unsaved: false };
+    if (deleted.length === 0) return { removed: false, unsaved: false, deletedForGood: false };
 
     await resequencePlaylistInTx(tx, playlist.id);
     // Leaving an In-Lounge playlist can end the track's audibility:
@@ -432,7 +434,11 @@ export async function removePlaylistTrack(
       await purgeRevokedSharedReferencesInTx(tx, { trackIds: [args.trackId] });
     }
     await tx.update(playlists).set({ updatedAt: now }).where(eq(playlists.id, playlist.id));
-    await syncTrackFlagsInTx(tx, { ownerUserId: args.ownerUserId, trackIds: [args.trackId], now });
+    const { evictedTrackIds } = await syncTrackFlagsInTx(tx, {
+      ownerUserId: args.ownerUserId,
+      trackIds: [args.trackId],
+      now,
+    });
     // Whether this was the track's LAST playlist — the caller's cue to say
     // "removed from your Library", not just "removed from this playlist". For
     // a Shared reference the question is about the CALLER's library: the
@@ -447,7 +453,12 @@ export async function removePlaylistTrack(
       trackRow && trackRow.ownerUserId !== args.ownerUserId
         ? await readViewerReferenceFlagsInTx(tx, args.ownerUserId, args.trackId)
         : await readTrackFlagsInTx(tx, args.trackId);
-    return { removed: true, unsaved: flags.savedAt === null };
+    return {
+      removed: true,
+      unsaved: flags.savedAt === null,
+      // Its Session was gone, so no History holds it either.
+      deletedForGood: evictedTrackIds.length > 0,
+    };
   });
 }
 
@@ -1012,12 +1023,33 @@ export function playlistSoleMemberCountColumn(viewer?: string): SQL<number> {
     select count(*)::int from ${playlistTracks} pt
     join ${tracks} t on t.id = pt.track_id
     where pt.playlist_id = ${playlists}."id" ${visibleMemberCondition(viewer)}
-      and not exists (
-        select 1 from ${playlistTracks} pt2
-        join ${playlists} p2 on p2.id = pt2.playlist_id
-        where pt2.track_id = pt.track_id and pt2.playlist_id <> pt.playlist_id
-          and p2.owner_user_id = ${playlists}."owner_user_id"
-      )
+      and ${inNoOtherOwnerPlaylist()}
+  )`;
+}
+
+/**
+ * The sole members the delete removes for good (`orphanedOnceUnsaved`: their
+ * Session is gone, so no History holds them) — exactly the Tracks
+ * `deletePlaylist` then flips to `deleted`. Only the owner's own Tracks: a
+ * Shared reference is never the visitor's to delete.
+ */
+export function playlistSoleMemberDeletedCountColumn(viewer?: string): SQL<number> {
+  return sql<number>`(
+    select count(*)::int from ${playlistTracks} pt
+    join ${tracks} t on t.id = pt.track_id and t.owner_user_id = ${playlists}."owner_user_id"
+    where pt.playlist_id = ${playlists}."id" ${visibleMemberCondition(viewer)}
+      and ${inNoOtherOwnerPlaylist()}
+      and ${orphanedOnceUnsaved(sql`t`)}
+  )`;
+}
+
+/** The member row `pt` is in no other playlist of this playlist's owner. */
+function inNoOtherOwnerPlaylist(): SQL {
+  return sql`not exists (
+    select 1 from ${playlistTracks} pt2
+    join ${playlists} p2 on p2.id = pt2.playlist_id
+    where pt2.track_id = pt.track_id and pt2.playlist_id <> pt.playlist_id
+      and p2.owner_user_id = ${playlists}."owner_user_id"
   )`;
 }
 
@@ -1077,6 +1109,7 @@ function playlistSummaryQuery(db: Database, filter: PlaylistListFilter, where?: 
       downloadableTrackCount: playlistDownloadableCountColumn(),
       mosaicCoverImageIds: playlistMosaicCoverColumn(),
       soleMemberTrackCount: playlistSoleMemberCountColumn(),
+      soleMemberDeletedTrackCount: playlistSoleMemberDeletedCountColumn(),
       containsTrack,
     })
     .from(playlists)

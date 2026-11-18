@@ -29,6 +29,7 @@ function summary(over: Partial<PlaylistSummaryItem> = {}): PlaylistSummaryItem {
     coverImageId: null,
     mosaicCoverImageIds: [],
     soleMemberTrackCount: 0,
+    soleMemberDeletedTrackCount: 0,
     containsTrack: null,
     sharedAt: null,
     pinnedAt: null,
@@ -99,6 +100,21 @@ describe('usePlaylistMembers', () => {
     expect(api.getPlaylist).toHaveBeenCalledWith(PLAYLIST_ID, '1', expect.any(Number));
     expect(result.current.items).toHaveLength(3);
     expect(result.current.hasMore).toBe(false);
+  });
+
+  it('tells the last-removal notice whether the Track was deleted for good', async () => {
+    api.removePlaylistTrack.mockResolvedValueOnce({
+      ok: true,
+      data: { removed: true, unsaved: true, deletedForGood: true },
+    });
+    const only = member('01', 0);
+    const { result, onUnsaved } = renderMembers([only], 1);
+
+    act(() => result.current.removeMember(only.id));
+
+    await waitFor(() =>
+      expect(onUnsaved).toHaveBeenCalledWith({ deletedForGood: true, sharedReference: false }),
+    );
   });
 
   it('holds paging while an optimistic removal commits, then pages from the reindexed prefix', async () => {

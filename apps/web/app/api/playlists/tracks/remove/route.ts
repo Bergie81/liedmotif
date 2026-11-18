@@ -32,5 +32,6 @@ export async function POST(request: Request) {
     trackId: parsed.trackId,
     removed: result.removed,
     unsaved: result.unsaved,
+    deletedForGood: result.deletedForGood,
   });
 }

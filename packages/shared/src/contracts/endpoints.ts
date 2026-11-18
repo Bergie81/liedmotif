@@ -924,6 +924,8 @@ export const playlistSummarySchema = z.strictObject({
   mosaicCoverImageIds: z.array(uuidSchema).max(4),
   /** Members whose ONLY playlist is this one — they leave the Library if it is deleted (the confirm copy). */
   soleMemberTrackCount: z.number().int().nonnegative(),
+  /** The sole members that delete removes for good: their Session is gone, so no History holds them. */
+  soleMemberDeletedTrackCount: z.number().int().nonnegative(),
   /** Whether the `trackId` passed to listPlaylists is a member; null when none was passed. */
   containsTrack: z.boolean().nullable(),
   /** The Lounge share state: null = Private, set = In Lounge —
@@ -1246,8 +1248,11 @@ export const removePlaylistTrackResponseSchema = apiResponse(
     /** False = the track was not a member (a no-op, not an error). */
     removed: z.boolean(),
     /** True when this was the track's LAST playlist — it left the Library
-     *  (Ephemeral; still in History). Drives the removal notice. */
+     *  (Ephemeral). Drives the removal notice. */
     unsaved: z.boolean(),
+    /** True when the track left the Library with its Session already gone:
+     *  no History holds it, so it was deleted for good. */
+    deletedForGood: z.boolean(),
   }),
 );
 export type RemovePlaylistTrackResponse = z.infer<typeof removePlaylistTrackResponseSchema>;

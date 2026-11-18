@@ -212,7 +212,7 @@ describe.skipIf(skip)('Shared reference save', () => {
       playlistId: first.id,
       trackId,
     });
-    expect(removed).toEqual({ removed: true, unsaved: false });
+    expect(removed).toEqual({ removed: true, unsaved: false, deletedForGood: false });
   });
 
   it('a reference never lights the owner’s In a Playlist', async () => {
@@ -370,6 +370,24 @@ describe.skipIf(skip)('Shared reference reads', () => {
     expect(ownerRows.find((p) => p.id === sharedPlaylistId)?.soleMemberTrackCount).toBe(1);
     const visitorRows = await listPlaylists(testDb.db, { ownerUserId: visitor });
     expect(visitorRows.find((p) => p.id === mine.id)?.soleMemberTrackCount).toBe(1);
+  });
+
+  it('never counts a Shared reference among the Tracks a delete removes for good', async () => {
+    const { ownerUserId, sessionId, sharedPlaylistId, trackId } = await seedAudibleForeignTrack();
+    // The owner's track loses its Session: only the owner's own delete could reclaim it.
+    await testDb.pool.query('delete from activity_sessions where id = $1', [sessionId]);
+    const visitor = await createUser(testDb.db);
+    const mine = await createPlaylist(testDb.db, { ownerUserId: visitor, name: 'My mixtape' });
+    await applyTrackMemberships(testDb.db, {
+      ownerUserId: visitor,
+      trackId,
+      playlistIds: [mine.id],
+    });
+
+    const ownerRows = await listPlaylists(testDb.db, { ownerUserId });
+    expect(ownerRows.find((p) => p.id === sharedPlaylistId)?.soleMemberDeletedTrackCount).toBe(1);
+    const visitorRows = await listPlaylists(testDb.db, { ownerUserId: visitor });
+    expect(visitorRows.find((p) => p.id === mine.id)?.soleMemberDeletedTrackCount).toBe(0);
   });
 });
 

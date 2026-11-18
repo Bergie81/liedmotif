@@ -11,7 +11,7 @@
 // handful of statements as a one-track one.
 
 import { LIVE_QUEUE_ITEM_STATES } from '@liedmotif/shared';
-import { and, eq, inArray, isNull, or, sql, type SQL } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql, type SQL } from 'drizzle-orm';
 import type { Database } from '../client';
 import { withTransaction, type Transaction } from '../transactions';
 import {
@@ -31,28 +31,49 @@ export const EPHEMERAL_EVICTION_REASON = 'ephemeral_eviction';
 export const ORPHAN_CLEANUP_REASON = 'orphan_cleanup';
 
 /**
+ * The tracks row a predicate reads: the `tracks` table itself, or the alias a
+ * caller's subquery gave it (`t`). Spelled as raw columns off this
+ * reference because a bare column renders unqualified in a single-table
+ * select list, where it would bind to the subquery's own tables.
+ */
+const TRACKS_ROW: SQL = sql`${tracks}`;
+
+/**
  * The "Ephemeral track" predicate: a `ready` track, or a `streamable` one whose
  * final download was given up on (no final can land, so it never becomes
  * `ready`), carrying NO retention flag (Saved/Favorited/Disliked). Shared by
  * both reclaim paths so they can never drift on what counts as Ephemeral.
  */
 function ephemeralTrackConditions(): SQL[] {
-  return [
-    or(eq(tracks.status, 'ready'), and(eq(tracks.status, 'streamable'), downloadGivenUp()))!,
-    isNull(tracks.savedAt),
-    isNull(tracks.favoritedAt),
-    isNull(tracks.dislikedAt),
-  ];
+  return [isNull(tracks.savedAt), isNull(tracks.favoritedAt), ephemeralOnceUnsaved()];
+}
+
+/** Ephemeral as soon as its Saved/Favorited flags are gone: the status gate and no Dislike. */
+function ephemeralOnceUnsaved(track: SQL = TRACKS_ROW): SQL {
+  return sql`((${track}."status" = 'ready'
+      or (${track}."status" = 'streamable' and ${downloadGivenUp(track)}))
+    and ${track}."disliked_at" is null)`;
 }
 
 /** `download-final-audio` marked the give-up on the Track's ledger row. */
-function downloadGivenUp(): SQL {
+function downloadGivenUp(track: SQL): SQL {
   return sql`exists (
     select 1
     from ${generationOutputs} as given_up_output
-    where given_up_output.track_id = ${tracks.id}
+    where given_up_output.track_id = ${track}."id"
       and given_up_output.storage_failed_at is not null
   )`;
+}
+
+/**
+ * The orphan rule over a track about to lose its Saved/Favorited flags: true
+ * exactly when `evictOrphanedTracksInTx` would then delete it for good. Lets a
+ * caller say up front what a membership loss will delete.
+ */
+export function orphanedOnceUnsaved(track: SQL = TRACKS_ROW): SQL {
+  return sql`(${ephemeralOnceUnsaved(track)}
+    and ${notHeldByActiveSessionQueue(track)}
+    and ${hasNoLivingSessionEdge(track)})`;
 }
 
 /**
@@ -82,13 +103,13 @@ const liveQueueItemStatesSql = sql.join(
  * buffer fill. Part of the reclaim write's own predicate, so a track queued while
  * the reclaim is being decided is still protected (as a concurrent Save is).
  */
-function notHeldByActiveSessionQueue(): SQL {
+function notHeldByActiveSessionQueue(track: SQL = TRACKS_ROW): SQL {
   return sql`not exists (
     select 1
     from ${activitySessionQueueItems} as held_item
     inner join ${activitySessions} as held_session
       on held_session.id = held_item.activity_session_id
-    where held_item.track_id = ${tracks.id}
+    where held_item.track_id = ${track}."id"
       and held_session.status = 'active'
       and held_item.state in (${liveQueueItemStatesSql})
   )`;
@@ -117,13 +138,13 @@ async function failLiveQueueItemsFor(tx: Transaction, trackIds: string[]): Promi
  * still-existing session (deleting the session severed the edge `set null`, or
  * the request never had one).
  */
-function hasNoLivingSessionEdge(): SQL {
+function hasNoLivingSessionEdge(track: SQL = TRACKS_ROW): SQL {
   return sql`not exists (
     select 1
     from ${generationRequests} as origin_request
     inner join ${activitySessions} as origin_session
       on origin_session.id = origin_request.activity_session_id
-    where origin_request.id = ${tracks.generationRequestId}
+    where origin_request.id = ${track}."generation_request_id"
   )`;
 }
 
@@ -186,9 +207,9 @@ export async function evictOrphanedTracksInTx(
   const evictedTrackIds = await reclaimTracksInTx(tx, {
     conditions: [
       inArray(tracks.id, args.trackIds),
-      ...ephemeralTrackConditions(),
-      notHeldByActiveSessionQueue(),
-      hasNoLivingSessionEdge(),
+      isNull(tracks.savedAt),
+      isNull(tracks.favoritedAt),
+      orphanedOnceUnsaved(),
     ],
     reason: ORPHAN_CLEANUP_REASON,
     now: args.now ?? new Date(),

@@ -60,7 +60,12 @@ import { PlaylistHeader } from './playlist-header';
 import { PlaylistMemberList } from './playlist-member-list';
 import { PlaylistTrackSheet } from './playlist-track-sheet';
 import { SaveToPlaylistSheet, type SavePickerTrack } from './save-to-playlist-sheet';
-import { deletePlaylistConfirmBody, pinToggleFailure, reindexMembers } from './playlist-view-model';
+import {
+  deletePlaylistConfirmBody,
+  lastRemovalNotice,
+  pinToggleFailure,
+  reindexMembers,
+} from './playlist-view-model';
 import {
   usePlaylistMembers,
   type PlaylistMembersAct,
@@ -142,10 +147,7 @@ export function PlaylistDetail({
     ...(initial ? { initial } : {}),
     ...(isVisitor ? { fetchPage: fetchLoungePage } : {}),
     onError: (message, act) => toast.error(message, { key: MEMBERS_KEY[act] }),
-    onUnsaved: () =>
-      toast.info(
-        'Removed — that was its last playlist, so the track left your Library (it stays in History).',
-      ),
+    onUnsaved: (removal) => toast.info(lastRemovalNotice(removal)),
   });
   const { playlist, items, hasMore, setPlaylist, setItems } = members;
 

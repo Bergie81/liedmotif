@@ -373,6 +373,7 @@ export async function getLoungePlaylistDetail(
       ...playlist,
       downloadableTrackCount: 0,
       soleMemberTrackCount: 0,
+      soleMemberDeletedTrackCount: 0,
       containsTrack: null,
       // A Library pin is the owner's alone; a visitor never sees one.
       pinnedAt: null,

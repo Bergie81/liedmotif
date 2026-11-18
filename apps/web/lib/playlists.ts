@@ -28,6 +28,7 @@ export function toPlaylistSummaryItem(playlist: PlaylistSummary): PlaylistSummar
     coverImageId: playlist.coverImageId,
     mosaicCoverImageIds: playlist.mosaicCoverImageIds,
     soleMemberTrackCount: playlist.soleMemberTrackCount,
+    soleMemberDeletedTrackCount: playlist.soleMemberDeletedTrackCount,
     containsTrack: playlist.containsTrack,
     sharedAt: playlist.sharedAt ? playlist.sharedAt.toISOString() : null,
     pinnedAt: playlist.pinnedAt ? playlist.pinnedAt.toISOString() : null,

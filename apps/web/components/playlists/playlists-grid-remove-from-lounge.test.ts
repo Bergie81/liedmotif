@@ -47,6 +47,7 @@ const PRIVATE: PlaylistSummaryItem = {
   coverImageId: null,
   mosaicCoverImageIds: [],
   soleMemberTrackCount: 0,
+  soleMemberDeletedTrackCount: 0,
   containsTrack: null,
   sharedAt: null,
   pinnedAt: null,

@@ -61,6 +61,7 @@ const PLAYLIST: PlaylistSummaryItem = {
   coverImageId: null,
   mosaicCoverImageIds: [],
   soleMemberTrackCount: 0,
+  soleMemberDeletedTrackCount: 0,
   containsTrack: null,
   sharedAt: '2026-10-30T10:00:00.000Z',
   pinnedAt: null,

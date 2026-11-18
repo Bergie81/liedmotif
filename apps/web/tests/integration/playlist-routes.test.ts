@@ -239,6 +239,30 @@ describe.skipIf(skip)('membership routes', () => {
     expect(flags.rows[0].saved_at).toBeNull();
   });
 
+  it('remove reports a Track deleted for good when its Session is gone', async () => {
+    const owner = await createUser(testDb.db);
+    holder.ownerUserId = owner;
+    const kept = await seedTrack(owner, 'kept');
+    const orphan = await seedTrack(owner, 'orphan');
+    await testDb.pool.query(
+      `delete from activity_sessions where id = (
+        select activity_session_id from generation_requests r
+        join tracks t on t.generation_request_id = r.id where t.id = $1)`,
+      [orphan],
+    );
+    const created = await (await postJson(createPost, { name: 'Mix' })).json();
+    const playlistId = created.data.playlist.id as string;
+    await postJson(addPost, { playlistId, trackIds: [kept, orphan] });
+
+    const keptRemoved = await (await postJson(removePost, { playlistId, trackId: kept })).json();
+    const orphanRemoved = await (
+      await postJson(removePost, { playlistId, trackId: orphan })
+    ).json();
+
+    expect(keptRemoved.data).toMatchObject({ unsaved: true, deletedForGood: false });
+    expect(orphanRemoved.data).toMatchObject({ unsaved: true, deletedForGood: true });
+  });
+
   it('memberships apply commits the full picker diff atomically', async () => {
     const owner = await createUser(testDb.db);
     holder.ownerUserId = owner;
