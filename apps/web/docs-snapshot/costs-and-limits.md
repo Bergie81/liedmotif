@@ -11,7 +11,7 @@ Liedmotif is source-available, free for non-commercial use. The money goes strai
 | What | Who you pay | Typical price |
 | --- | --- | --- |
 | New tracks | Your music provider | About 4 cents per track |
-| Tailored covers (optional) | OpenRouter | About 7 cents per cover on the default model |
+| Tailored covers (optional) | OpenAI, Gemini or OpenRouter | About 6, 4 or 7 cents per cover on their default models |
 | Text AI (optional) | Your text provider, or nobody with Ollama | Small and usage-based. The 4-cent figure already rounds up a little to absorb it |
 | Rented server (cloud only) | Your cloud provider | [See the cloud guide](/docs/install/cloud) |
 
@@ -120,7 +120,7 @@ These apply whether or not your own limits are switched on:
 | **Idle auto-stop** | 15 minutes | 1–10,080 | How long a session without a listener stays active |
 | **Storage quota** | 10 GiB | | [Room for your whole library](/docs/email-and-storage), about 2,000 tracks |
 | **Manual generation only** | Off | | Stops all new music |
-| **Generate Tailored Cover Art** | On | | Needs an image key. Off, covers come from your music provider |
+| **Generate Tailored Cover Art** | On | | Needs an image provider with a key, its own or your text AI's. Off, covers come from your music provider |
 
 Zero is a valid limit where the range allows it, and it deliberately blocks that kind of generation. Daily limits reset at midnight and monthly limits on the 1st, in the **Instance timezone** at the top of **Cost controls**. It starts from guided setup, or from `INSTANCE_TIMEZONE` in `.env`, and it applies to members as well.
 
@@ -168,7 +168,9 @@ Resuming is never blocked, and **Change Vibe** needs room for just one more pair
 
 ## What the estimated costs show
 
-Enter your own prices under **Unit costs** in **Settings › AI Providers**, as **Per Track** and **Per Cover** in US dollars, to the cent: `0.04` for four cents, not `4`. They start at $0.04 and $0.07, the default providers' prices rounded up. On other providers or models, change them to match. Set both to zero, and every dollar figure disappears.
+Enter your own prices under **Unit costs** in **Settings › AI Providers**, as **Per Track** and **Per Cover** in US dollars, to the cent: `0.04` for four cents, not `4`. They start at $0.04 and $0.07, the default providers' prices rounded up. On another music provider or model, change them to match. Set both to zero, and every dollar figure disappears.
+
+**Per Cover** follows the image provider you save: $0.06 for OpenAI, $0.04 for Gemini and $0.07 for OpenRouter, the default models' prices rounded up. It follows only while it holds one of those three prices. Any other price, zero included, is your own, and changing provider leaves it alone. If you paint with a model that costs more or less, enter its price yourself.
 
 The admin then sees dollar figures next to the counts:
 

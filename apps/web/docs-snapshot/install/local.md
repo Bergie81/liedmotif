@@ -80,7 +80,7 @@ Guided setup starts right after your account is created and asks one thing per s
 | Music model | Your provider key. Paste it and test it to continue | Yes |
 | Track limit | How many tracks Liedmotif may make | No |
 | Text AI | A service that expands your requests and names your sessions | No |
-| Cover art | An image key for tailored covers, and a limit on them. Every session gets a free cover without one | No |
+| Cover art | An image provider for tailored covers, and a limit on them. Your text AI's key works when it's the same service. Every session gets a free cover without one | No |
 
 A key you save here works right away, with no restart. Setup doesn't make any music: your spending starts when you start a session.
 

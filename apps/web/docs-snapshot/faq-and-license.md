@@ -15,7 +15,7 @@ There's no single number, because you put the bill together yourself. Four thing
 
 ### Can I use another music provider?
 
-Not yet. Liedmotif works with one kind of music provider today: a Suno-compatible service, sunoapi.org by default. `SUNO_BASE_URL` in `.env` can point it at another service with the same API, but nothing else is supported. Generated covers are the same, with OpenRouter as the one image provider. You do get a choice of text AI and of storage. See [Providers and keys](/docs/providers-and-keys).
+Not yet. Liedmotif works with one kind of music provider today: a Suno-compatible service, sunoapi.org by default. `SUNO_BASE_URL` in `.env` can point it at another service with the same API, but nothing else is supported. You do get a choice of text AI, of image provider for covers (OpenAI, Gemini or OpenRouter) and of storage. See [Providers and keys](/docs/providers-and-keys).
 
 ### Can I run music generation on my own hardware?
 

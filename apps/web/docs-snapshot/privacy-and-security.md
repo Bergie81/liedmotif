@@ -40,7 +40,7 @@ This is the one service Liedmotif can't work without. For each batch of tracks i
 
 ### The text AI
 
-This is optional, and it's the service `.env` calls the text LLM. If you connect one, it receives:
+This is optional, and it's the service `.env` calls the text LLM: OpenAI, Gemini, OpenRouter, a service of your own, or Ollama on your machine. If you connect one, it receives:
 
 - Your request and your fine-tuning picks
 - The earlier requests of a session, when you change its vibe
@@ -57,13 +57,27 @@ With no text AI, none of this leaves your instance. With a local Ollama, it stay
 
 ### The image provider
 
-This is optional too, and it's what makes tailored covers. If you add an image key, it receives:
+This is optional too, and it's what makes tailored covers: OpenAI, Gemini or OpenRouter. When it shares your text AI's key, it's the same company with the same account. If you turn tailored covers on, it receives:
 
 - The session or playlist name, the cover idea from the text AI, your request and any cover direction you give
 - The mood, activity and genres
 - Reference photos of people, when a cover uses them
 
 A photo is sent only in these cases: you name that person exactly in your request, the text AI reads your request as putting you in the scene ("me", "we"), you ask for people on a playlist cover, or your own photo fits the frequency you set in **Settings › People**. One named person sends up to three photos, and several named people send one each. **Never** switches off all your reference photos, named people included, and refuses a cover that asks for them. When a cover uses photos of several people, their names in your request are swapped for neutral labels such as "subject one". With one person, their name stays in the request. The session name and the cover idea aren't changed, so a name in either one reaches the provider. Without an image key, the music provider makes a standard cover from a finished track, or your session keeps the free cover, and no photo is sent.
+
+### What OpenAI and Google do with it
+
+Their terms decide this, not Liedmotif, and they can change, so check them yourself. This is what they said when we read them on 18 November 2026.
+
+**OpenAI** doesn't use what you send through its API to train its models unless you opt in. It keeps abuse-monitoring logs for up to 30 days, unless the law requires longer, and that includes the requests that paint covers and their reference photos. See [OpenAI's data controls](https://developers.openai.com/api/docs/guides/your-data).
+
+**Google** treats a Gemini key differently on its free tier and with billing turned on. See the [Gemini API terms](https://aistudio.google.com/docs/terms), section "How Google Uses Your Data".
+
+- **On the free tier**, Google uses what you send and what Gemini answers to provide, improve and develop its products and machine learning. Human reviewers may read it, after Google has disconnected it from your account, key and project. Google asks you not to send sensitive, confidential or personal information. For a text AI, that's your requests, your profile's name, city and country, and the About text of you and the people you name.
+- **With billing turned on** for the key's project, Google doesn't use your prompts or its answers to improve its products. It logs them for a limited time, only to detect abuse. Gemini covers need billing anyway, so once you use them, the key's project is on these terms.
+- **In the European Economic Area, Switzerland and the United Kingdom,** the billing terms apply to free use as well.
+
+So if you'd rather keep Google from learning from your words, turn on billing for the key's project before you use Gemini as your text AI.
 
 ### Run without my profile details
 

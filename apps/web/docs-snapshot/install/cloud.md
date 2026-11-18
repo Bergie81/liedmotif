@@ -264,8 +264,8 @@ Keep the key in your password manager or in the private note with your setup lin
 - **Put people on your Covers.** Optional. Press **Continue**.
 - **Connect your music model.** Paste your key from step 7 into the field that says **Paste it here**, then press **Test the key**. It answers `Music provider reachable; … credits available.` Press **Save and continue**.
 - **Set a Track limit.** This is your own spending limit, and it's off by default. Turn on **Limit my Tracks**, set **Tracks per day** and **Tracks per month** to what you're happy to pay, and press **Save and continue**.
-- **Add a Text AI.** Optional. It writes better session names and prompts, and it needs its own key. `.env` calls it a text LLM. **Skip for now** is fine.
-- **Choose your Cover art.** Optional. An image key paints covers around your session and your people, at about 7 cents each. Without one, covers come from your music provider at no extra cost. Press **Save and continue**.
+- **Add a Text AI.** Optional. It writes better session names and prompts. Pick **OpenAI**, **Gemini** or **Ollama**, or open **More options** for OpenRouter or another OpenAI-compatible service. The line under the picker says what it costs and whether its key can also paint covers. `.env` calls it a text LLM. **Skip for now** is fine.
+- **Choose your Cover art.** Optional. Turn on **Generate Tailored Cover Art** to paint covers around your session and your people, on OpenAI at about 6 cents each, Gemini at about 4, or OpenRouter at about 7. If that's your text AI's service, it uses the same key and asks for none. Without it, covers come from your music provider at no extra cost. Press **Save and continue**.
 - On the last screen, press **Start your first Session**.
 
 **You should now see** Liedmotif's home screen. Describe the moment you're in and start a session.

@@ -9,8 +9,10 @@ Liedmotif doesn't make music itself. It sends your requests to AI services you c
 | Service | Required | What it does | Who provides it today |
 | --- | --- | --- | --- |
 | Music provider | Yes | Makes every track | One Suno-compatible provider, [sunoapi.org](https://sunoapi.org) by default |
-| Text AI | No | Turns your words into a musical direction, and writes names and lyric ideas | OpenAI, OpenRouter, any OpenAI-compatible service, or Ollama |
-| Cover images | No | Paints covers in your style, with your people on them | OpenRouter |
+| Text AI | No | Turns your words into a musical direction, and writes names and lyric ideas | OpenAI, Gemini, Ollama, OpenRouter, or any OpenAI-compatible service |
+| Cover images | No | Paints covers in your style, with your people on them | OpenAI, Gemini or OpenRouter |
+
+OpenAI, Gemini and OpenRouter can do both optional jobs on one key, so you never paste the same key twice. See [One key for text and covers](#one-key-for-text-and-covers).
 
 ## Music provider
 
@@ -59,18 +61,27 @@ When a text AI is connected, it's always used for your written requests. Liedmot
 
 The small jobs are the exception. If naming fails, the session still starts, with a plain name. If a lyric idea fails, the track still gets made with the session's own lyric notes. If enhancing cover text fails, your own text is used.
 
-To go without it, press **Disable Text AI** in **Settings › AI Providers**. If `.env` sets up the text AI on its own, remove those lines and apply the change as shown under [Where keys go](#where-keys-go), or they keep it on. Until then, the button reads **Delete stored fallback** and removes only the saved key.
+To go without it, press **Disable Text AI** in **Settings › AI Providers**. If `.env` sets up the text AI on its own, remove those lines and apply the change as shown under [Where keys go](#where-keys-go), or they keep it on. Until then, the button reads **Delete stored fallback** and removes only the saved key. If your covers use the Text AI's key, the confirmation says so: Tailored Cover Art then stops until **Cover images** has a key of its own.
 
 ### Choose a service
 
-| Option in the app | Key | Base URL | Model |
-| --- | --- | --- | --- |
-| **OpenAI** | Required | Not needed | Optional, `gpt-6-luna` by default |
-| **OpenRouter** | Required | Not needed | Required |
-| **OpenAI-compatible** | Required | Required, ending in `/v1` | Required |
-| **Ollama** | Not needed | Required, without `/v1` | Required |
+The picker shows **OpenAI**, **Gemini** and **Ollama**. **OpenRouter** and **OpenAI-compatible** wait behind **More options**. If your instance already uses one of those two, the picker opens with it shown and selected. Under the picker, one line says what the choice costs and whether its key can also paint covers.
 
-For an OpenRouter key: create an account at [openrouter.ai](https://openrouter.ai), add credit under **Settings › Credits**, then open **Keys** and create one. The same key can also paint your covers.
+| Option in the app | Key | Base URL | Model | Cost | Paints covers too |
+| --- | --- | --- | --- | --- | --- |
+| **OpenAI** | Required | Not needed | Optional, `gpt-6-luna` by default | Under 1 cent per session | Yes, about 6 cents each |
+| **Gemini** | Required | Not needed | Optional, `gemini-3.8-flash` by default | Free to start | Yes, about 4 cents each, once billing is on at Google |
+| **Ollama** | Not needed | Required, without `/v1` | Required | Free, runs on your machine | No |
+| **OpenRouter** | Required | Not needed | Required | Depends on the model | Yes, about 7 cents each |
+| **OpenAI-compatible** | Required | Required, ending in `/v1` | Required | Depends on your service | No |
+
+Guided setup shows how to get a key for OpenAI, Gemini and OpenRouter under the key field:
+
+- **OpenAI:** open [platform.openai.com/api-keys](https://platform.openai.com/api-keys) and sign in, add credit under **Settings › Billing**, then click **Create new secret key**.
+- **Gemini:** open [aistudio.google.com/apikey](https://aistudio.google.com/apikey), sign in with your Google account, and click **Create API key**. The text AI works on Google's free tier. Covers don't, see [Cover art](#cover-art).
+- **OpenRouter:** create an account at [openrouter.ai](https://openrouter.ai), add credit under **Settings › Credits**, then open **Keys** and create one.
+
+What Google may do with your words on its free tier is in [Privacy and security](/docs/privacy-and-security#what-openai-and-google-do-with-it).
 
 An **OpenAI-compatible** service has to be on a public address. Liedmotif refuses addresses on your own network and Tailscale addresses for every option except the Ollama exception below.
 
@@ -133,23 +144,49 @@ Every session gets a cover, and you never need a key for that. Three sources can
 
 | Source | Needs | Cost | What you get |
 | --- | --- | --- | --- |
-| Tailored cover art | An OpenRouter key, and **Generate Tailored Cover Art** switched on | About 7 cents per cover on the default model | Art in your chosen style, with your people on it. You can regenerate it, and generate playlist covers too |
+| Tailored cover art | An OpenAI, Gemini or OpenRouter key, and **Generate Tailored Cover Art** switched on | About 6 cents per cover on OpenAI, 4 on Gemini, 7 on OpenRouter, on the default models | Art in your chosen style, with your people on it. You can regenerate it, and generate playlist covers too |
 | Basic cover art | Your music provider's key | No extra cost | The provider's own art, drawn from the finished music alone, with no style choice and no people |
 | Liedmotif cover | Nothing | Free | The built-in placeholder, used when neither source above can paint |
 
-Each session can switch **Use Tailored Cover Art Generation** on or off on the start card, and **Settings › Cover art** sets the default. If tailored art is off, or no image key exists, covers come from the music provider. Uploading your own image is free and works with every source.
+Each session can switch **Use Tailored Cover Art Generation** on or off on the start card, and **Settings › Cover art** sets the default. If tailored art is off, or the image provider has no key, its own or a shared one, covers come from the music provider. Uploading your own image is free and works with every source.
 
 Generated covers can be limited, in [the cover budget](/docs/costs-and-limits). That budget counts tailored and basic covers alike. Covers are only decoration, so a failed one never holds up your music: the session just keeps the cover it has.
 
-### Add an image key
+### Choose the image provider
 
-Enter the OpenRouter key in the **Cover art** screen of guided setup, or under **Cover images** in **Settings › AI Providers**. It's saved separately from the text AI, even when you paste the same key into both. Once saved, it works right away, and no paid image is made until a session needs one.
+Choose it on the **Cover art** screen of guided setup, or under **Cover images** in **Settings › AI Providers**. The picker shows **OpenAI** and **Gemini**, with **OpenRouter** behind **More options**. You choose it separately from the text AI, so any combination works.
+
+| Provider | Default model | About per cover | Before the first cover |
+| --- | --- | --- | --- |
+| **OpenAI** | `gpt-image-2.6-flare` | 6 cents | OpenAI may ask you to verify your organisation before it allows image models |
+| **Gemini** | `gemini-nano-banana-2.1` | 4 cents | Turn on billing for the key's project at Google. Image models have no free tier |
+| **OpenRouter** | `google/gemini-3.1-flash-image` | 7 cents | Credit on your OpenRouter account |
+
+In guided setup, the screen opens on the provider you already have, else on your text AI's service when its key can paint, else on OpenAI. The switch then reads, for example, "Uses OpenAI · about 6 cents a Cover", and follows your choice. Turning it on is what allows paid covers: a shared key never starts painting by itself. Once saved, the key works right away, and no paid image is made until a session needs one.
+
+### One key for text and covers
+
+When the image provider is the same service as your text AI, OpenAI, Gemini or OpenRouter, it uses the text AI's key. There's no key field: the screen says "Uses your OpenAI key", or Gemini, or OpenRouter, and **Settings** shows the source as "Shared OpenAI key". The key is stored once, so when you rotate it, you change it once, on the **Text AI** card, and covers follow.
+
+- **Any combination works.** Text on OpenAI and covers on Gemini, the other way round, or covers with Ollama or no text AI at all. A provider that differs from your text AI's asks for its own key, right there.
+- **A key of its own always wins.** Press **Use a separate key** to give covers their own, for example to keep the two bills apart. **Use the same OpenAI key** (or your service's name) switches back.
+- **A custom endpoint shares nothing.** If your text AI runs on its own base URL, its key belongs to that endpoint and never goes to the image service.
+- **Changing the text AI can turn covers off.** While covers share its key, the **Text AI** card warns: "Cover images use this key too. Changing the provider or removing this key turns Tailored Cover Art off until Cover images has its own key." If that happens, the **Cover images** card says **Needs a key**, and covers come from your music provider or the free Liedmotif cover until you add one. Covers with a key of their own don't notice a text AI change.
+
+### When the account isn't ready
+
+A new OpenAI or Google account may refuse image models even with a working key, and **Test** can't tell, because it never pays for an image. The first cover then fails, the session keeps the cover it has, and Liedmotif doesn't count the attempt as spending. The **Cover images** card says why:
+
+- "Google needs billing turned on for image models." Turn on billing for the key's project in Google AI Studio.
+- "OpenAI needs your organisation verified for image models." Verify your organisation in your OpenAI platform settings.
+
+Regenerating a cover says "Your image provider's account isn't ready for images. Check Settings › AI Providers." The card's message goes away when the next cover succeeds, or when you save the provider again. If covers share your text AI's key, saving the **Text AI** card counts too.
 
 ### Try another model
 
-The default model is `google/gemini-3.1-flash-image`. To try another, enter its OpenRouter ID in the **Model** field next to the key. It has to support OpenRouter's Images API, and **Test** checks that it does. Save it, and the next new cover uses it, while existing covers stay as they are. Prices differ between models, so update your [estimated price per cover](/docs/costs-and-limits) as well.
+To try a model other than the default, enter its ID in the **Model** field: OpenAI's or Google's own model ID, or the model's ID on OpenRouter. **Test** checks the key and that the model exists. On OpenRouter, the model has to support OpenRouter's Images API, and **Test** checks that too. Save it, and the next new cover uses it, while existing covers stay as they are. Prices differ between models, so check your [estimated price per cover](/docs/costs-and-limits) as well.
 
-Models don't all accept the same settings, so Liedmotif asks OpenRouter what the chosen one takes and sends only that. If OpenRouter can't answer, covers go out with just the model and the prompt, and Liedmotif asks again after five minutes. Until then, covers can lose their resolution, aspect ratio and the photos of your people.
+OpenAI and Gemini always paint one square image. On OpenRouter, models don't all accept the same settings, so Liedmotif asks OpenRouter what the chosen one takes and sends only that. If OpenRouter can't answer, covers go out with just the model and the prompt, and Liedmotif asks again after five minutes. Until then, covers can lose their resolution, aspect ratio and the photos of your people.
 
 If your network blocks that question for good, set `IMAGE_SUPPORTED_PARAMS` in `.env` to the fields the model's OpenRouter page confirms, separated by commas, chosen from `resolution`, `aspect_ratio`, `quality`, `negative_prompt`, `n`, `seed` and `input_references`. Otherwise leave it blank. It can only narrow what OpenRouter reports, never widen it. A wrong value silently drops your resolution and aspect ratio, and leaving out `input_references` turns off the photos of your people.
 
@@ -174,22 +211,36 @@ SUNO_API_KEY=your-key
 #SUNO_BASE_URL=https://api.sunoapi.org
 #SUNO_MODEL=V5
 
-# Text AI: openai, openrouter, openai-compatible or ollama
-LLM_PROVIDER=openrouter
-LLM_API_KEY=your-key
-LLM_MODEL=minimax/minimax-m3
+# Text AI: openai, gemini, ollama, openrouter or openai-compatible
+LLM_PROVIDER=gemini
+LLM_API_KEY=your-gemini-key
+#LLM_MODEL=gemini-3.8-flash
 #LLM_BASE_URL=
 
-# Cover images
-IMAGE_PROVIDER=openrouter
-IMAGE_API_KEY=your-key
-#IMAGE_MODEL=google/gemini-3.1-flash-image
+# Cover images: openai, gemini or openrouter
+IMAGE_PROVIDER=gemini
+# Blank uses LLM_API_KEY, because LLM_PROVIDER names the same service
+IMAGE_API_KEY=
+#IMAGE_MODEL=gemini-nano-banana-2.1
 ```
 
-Three details catch people out:
+For covers on another service, give them their own key. This writes with Gemini and paints with OpenAI:
+
+```bash
+LLM_PROVIDER=gemini
+LLM_API_KEY=your-gemini-key
+
+IMAGE_PROVIDER=openai
+IMAGE_API_KEY=your-openai-key
+#IMAGE_MODEL=gpt-image-2.6-flare
+```
+
+These details catch people out:
 
 - **A key needs its provider line.** `LLM_API_KEY` without `LLM_PROVIDER`, or `IMAGE_API_KEY` without `IMAGE_PROVIDER`, does nothing.
-- **`IMAGE_MODEL` locks the model field** in the app, the same way a key locks its own.
+- **A blank `IMAGE_API_KEY` shares only with the same service.** It uses `LLM_API_KEY` when `LLM_PROVIDER` names the same service as `IMAGE_PROVIDER`, or uses the Text AI key saved in the app when that one does. It never shares when `LLM_BASE_URL` is set. An `IMAGE_API_KEY` you fill in always wins.
+- **`IMAGE_RESOLUTION`, `IMAGE_ASPECT_RATIO` and `IMAGE_SUPPORTED_PARAMS` are for OpenRouter only.** OpenAI and Gemini always paint one square image, and ignore them.
+- **`IMAGE_MODEL` locks the model field** in the app, the same way a key locks its own. Blank uses the provider's default model.
 - **`SUNO_MODEL` exists only in `.env`.** The app has no field for it.
 
 After editing `.env`, run this from the folder that holds it: `/opt/liedmotif` after a one-line install, `liedmotif` on a laptop. `docker compose restart` won't do, because it doesn't read the file again. If your user isn't in the `docker` group, put `sudo` in front:
@@ -204,7 +255,7 @@ docker compose up -d web worker
 
 This makes `CREDENTIAL_ENCRYPTION_KEY` worth protecting. If it's lost or changed, the app says "The stored value cannot be decrypted", and you have to enter your keys again. If it's missing altogether, the app says **Keys can't be stored yet**, and you can only use `.env`. A base URL isn't secret and is stored as plain text, so Liedmotif refuses one with a password or token inside it.
 
-**Tested.** **Test** makes only free, read-only requests: it never makes a track and never spends credit. It doesn't save anything either, so press **Save** afterwards. For music it reads your credit balance. For a text AI or image key it checks the key and then looks up your model. In guided setup, a new music key has to pass before you can continue.
+**Tested.** **Test** makes only free, read-only requests: it never makes a track and never spends credit. It doesn't save anything either, so press **Save** afterwards. For music it reads your credit balance. For a text AI or image key it checks the key and then looks up your model. Cover images that share the text AI's key are tested with that key, so there's nothing to type. In guided setup, a new music key has to pass before you can continue.
 
 Tests of a text AI or image key name your service and model, so the wording varies a little. Ollama says "Connected" where the others say "Key works".
 

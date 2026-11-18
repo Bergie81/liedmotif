@@ -114,7 +114,7 @@ Starting a new session needs at least 5 tracks left in both budgets, or whatever
 
 ### What it costs you
 
-The card shows each number with an estimated price: the count multiplied by today's price, by default $0.04 per track and $0.07 per cover. Change those under **Settings › AI Providers › Unit costs**, or set both to 0 to hide every estimate. Only you see these. They're estimates, not a bill: you pay your providers directly, so their dashboards have the real figures.
+The card shows each number with an estimated price: the count multiplied by today's price, by default $0.04 per track and, per cover, your image provider's price ($0.07 until you choose one). Change those under **Settings › AI Providers › Unit costs**, or set both to 0 to hide every estimate. Only you see these. They're estimates, not a bill: you pay your providers directly, so their dashboards have the real figures.
 
 Two costs sit outside every budget. Your text AI (the text LLM in `.env`) and the fetch that syncs lyrics to the music aren't counted. Questions to Roadie use the text AI too, and each member's daily allowance keeps that small. If you want the estimates to cover them, round your unit costs up a little.
 
