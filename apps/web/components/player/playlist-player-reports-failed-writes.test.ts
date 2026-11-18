@@ -20,6 +20,7 @@ import { showPlayerError } from './player-error-toast';
 import { PlaylistNowPlaying } from './playlist-now-playing';
 
 const api = vi.hoisted(() => ({ removePlaylistTrack: vi.fn() }));
+const provider = vi.hoisted(() => ({ engagePlaylist: vi.fn(), release: vi.fn() }));
 
 vi.mock('@/lib/api-client', async (original) => ({
   ...(await original<typeof import('@/lib/api-client')>()),
@@ -28,8 +29,8 @@ vi.mock('@/lib/api-client', async (original) => ({
 vi.mock('./player-provider', () => ({
   usePlayerContext: () => ({
     engage: vi.fn(),
-    engagePlaylist: vi.fn(),
-    release: vi.fn(),
+    engagePlaylist: provider.engagePlaylist,
+    release: provider.release,
     beginOtherMusic: vi.fn(),
     sleepTimer: { endsAt: null, start: vi.fn(), cancel: vi.fn() },
   }),
@@ -62,6 +63,8 @@ beforeAll(() => {
 afterEach(() => {
   cleanup();
   api.removePlaylistTrack.mockReset();
+  provider.engagePlaylist.mockReset();
+  provider.release.mockReset();
   toast.dismiss();
 });
 
@@ -111,19 +114,20 @@ function AppShell({ children }: { children?: ReactNode }) {
   return h(TooltipProvider, null, h(AppChromeContext.Provider, { value: CHROME }, children));
 }
 
-function showPlaylist() {
+function showPlaylist(items: PlaylistMemberItem[] = MEMBERS) {
   const player = {
     ...initialPlaybackControllerState(),
     status: 'playing',
     currentTrack: CURRENT_TRACK,
     getPlaybackSample: () => ({ positionSeconds: 12, durationSeconds: 180, playbackRate: 1 }),
     peekNeighbors: () => ({ next: null, previous: null }),
+    advancePastDeletedTrack: vi.fn(),
   } as unknown as PlaybackControllerApi;
   const playback: LivePlayback = {
     source: {
       kind: 'playlist',
       playlist: PLAYLIST,
-      items: MEMBERS,
+      items,
       startTrackId: null,
       foreign: false,
     },
@@ -132,6 +136,7 @@ function showPlaylist() {
     coldStartBeganAt: TIMESTAMP,
   };
   render(h(PlaylistNowPlaying, { playback, playlist: PLAYLIST }), { wrapper: AppShell });
+  return player;
 }
 
 function openOptions() {
@@ -193,4 +198,32 @@ it('drops a failed Remove once the retry lands', async () => {
   await act(async () => {});
 
   expect(shownErrors()).toEqual([]);
+});
+
+it('takes a removed Track out of the playing list without engaging the Playlist again', async () => {
+  api.removePlaylistTrack.mockResolvedValueOnce({ ok: true, data: {} });
+  const player = showPlaylist();
+
+  fireEvent.click(openOptions().getByTestId('player-remove-from-playlist'));
+  await act(async () => {});
+
+  expect(provider.engagePlaylist).not.toHaveBeenCalled();
+  expect(provider.release).not.toHaveBeenCalled();
+  expect(player.advancePastDeletedTrack).toHaveBeenCalledWith('track-1');
+  fireEvent.click(screen.getByTestId('player-queue'));
+  const list = within(screen.getByTestId('playlist-queue'));
+  expect(list.queryByText('Night Drive')).toBeNull();
+  expect(list.getByText('Morning')).toBeTruthy();
+});
+
+it('ends playback on the Playlist page when the last playable Track is removed', async () => {
+  api.removePlaylistTrack.mockResolvedValueOnce({ ok: true, data: {} });
+  const player = showPlaylist([MEMBERS[0]!, { ...MEMBERS[1]!, audioUrl: null }]);
+
+  fireEvent.click(openOptions().getByTestId('player-remove-from-playlist'));
+  await act(async () => {});
+
+  expect(provider.release).toHaveBeenCalledTimes(1);
+  expect(provider.engagePlaylist).not.toHaveBeenCalled();
+  expect(player.advancePastDeletedTrack).not.toHaveBeenCalled();
 });

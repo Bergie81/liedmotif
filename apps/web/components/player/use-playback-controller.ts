@@ -1297,18 +1297,32 @@ export function usePlaybackController(
     },
   );
 
-  /** Delete Track is not feedback: unlike Skip, moving past the
-   * deleted Track records neither a `skip` event nor a `skipped` report. A
-   * Track that is no longer the audible one leaves playback alone. */
+  /** Delete Track and a removal from the playing Playlist are not feedback:
+   * unlike Skip, moving past the removed Track records neither a `skip` event
+   * nor a `skipped` report. A Track that is no longer the audible one only
+   * leaves the projection: the audible Track plays on where it is, and a deck
+   * already prepared with the removed one is struck. */
   const advancePastDeletedTrack = useCallback(
     (trackId: string) => {
-      const track = activeTrack();
-      if (!track || track.trackId !== trackId) return;
+      const audible = activeTrack();
+      const track =
+        audible?.trackId === trackId
+          ? audible
+          : queueRef.current.find((queued) => queued.trackId === trackId);
+      if (!track) return;
       locallyRemovedRef.current.add(track.queueItemId);
+      if (track === audible) {
+        removeFromQueue(track.queueItemId);
+        advancePastCurrent();
+        return;
+      }
+      const removedIdx = queueRef.current.indexOf(track);
       removeFromQueue(track.queueItemId);
-      advancePastCurrent();
+      if (removedIdx < idxRef.current) idxRef.current -= 1;
+      transitions().syncTarget(resolveNextTarget());
+      bufferDecks().retainOnly([audible?.trackId, resolveNextTarget()?.track.trackId]);
     },
-    [activeTrack, advancePastCurrent, removeFromQueue],
+    [activeTrack, advancePastCurrent, bufferDecks, removeFromQueue, resolveNextTarget, transitions],
   );
 
   const skip = useCallback(() => {

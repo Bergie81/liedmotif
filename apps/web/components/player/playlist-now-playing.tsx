@@ -62,7 +62,7 @@ export function PlaylistNowPlaying({
   playlist: PlaylistSummaryItem;
 }) {
   const { player } = playback;
-  const { engage, engagePlaylist, release, beginOtherMusic, sleepTimer } = usePlayerContext();
+  const { engage, release, beginOtherMusic, sleepTimer } = usePlayerContext();
   const router = useRouter();
   const clientId = useClientId();
   // The playlist's own editable facts (name, cover) follow the sheet's writes
@@ -76,8 +76,14 @@ export function PlaylistNowPlaying({
   const coverId = resolveCoverImageId(player, null);
   const trackGenres = presentTrackGenres(track?.genreTags ?? []);
   const queueIndex = track ? player.playableQueueItemIds.indexOf(track.queueItemId) : -1;
+  // The engaged membership minus the Tracks removed while it plays: the
+  // controller drops them from its own projection in place, so re-engaging to
+  // carry a removal would restart playback and lose the selected mode.
+  const [removedTrackIds, setRemovedTrackIds] = useState<ReadonlySet<string>>(new Set());
   const items: PlaylistMemberItem[] =
-    playback.source.kind === 'playlist' ? playback.source.items : [];
+    playback.source.kind === 'playlist'
+      ? playback.source.items.filter((item) => !removedTrackIds.has(item.id))
+      : [];
   // The visitor scope: a foreign In-Lounge playlist plays through
   // this same surface with every owner act absent — never disabled.
   const foreign = playback.source.kind === 'playlist' && playback.source.foreign;
@@ -92,10 +98,10 @@ export function PlaylistNowPlaying({
   const [queueSheetOpen, setQueueSheetOpen] = useState(false);
   const seedingRef = useRef(false);
   const removingRef = useRef(false);
-  // A confirm pins its tap-time closures, so the audible Track is read live.
-  const currentTrackIdRef = useRef<string | null>(null);
+  // A Remove resolves after its tap-time render, so it acts on the live player.
+  const playerRef = useRef(player);
   useEffect(() => {
-    currentTrackIdRef.current = track?.trackId ?? null;
+    playerRef.current = player;
   });
   const sourceId = engagedSourceId(playback.source);
   const failed = (act: PlayerAct, message: string) => showPlayerError(sourceId, act, message);
@@ -121,34 +127,24 @@ export function PlaylistNowPlaying({
     }
   }
 
-  /** Continue playback without `removedTrackId`: re-engage the playlist on the
-   * remaining members, starting at the member after the removed one (wrapping),
-   * or at the audible Track when playback has already moved past it; nothing
-   * left = stop. A hard re-engage keeps the live projection and the ordered
-   * list truthful — the removed track can never replay from a loop. */
+  /** Continue playback without `removedTrackId`, the way a Session does after
+   * a Delete Track: the controller moves past it when it is the audible Track
+   * and otherwise only drops it, so the mode, the shuffle state and the
+   * position stay. Nothing playable left = stop. */
   function continueWithout(removedTrackId: string) {
-    const remaining = items.filter((item) => item.id !== removedTrackId);
-    const playable = remaining.filter((item) => item.audioUrl !== null);
+    const playable = items.filter((item) => item.id !== removedTrackId && item.audioUrl !== null);
     if (playable.length === 0) {
       release();
       router.push(`/library/playlist/${playlist.id}`);
       return;
     }
-    const audible = playable.find((item) => item.id === currentTrackIdRef.current);
-    if (audible) {
-      engagePlaylist(playlist, remaining, audible.id, { foreign });
-      return;
-    }
-    const oldIndex = items.findIndex((item) => item.id === removedTrackId);
-    const next =
-      remaining.slice(oldIndex === -1 ? 0 : oldIndex).find((item) => item.audioUrl !== null) ??
-      playable[0]!;
-    engagePlaylist(playlist, remaining, next.id, { foreign });
+    setRemovedTrackIds((current) => new Set(current).add(removedTrackId));
+    playerRef.current.advancePastDeletedTrack(removedTrackId);
   }
 
   /** Remove-from-this-playlist while listening: curation, never feedback. */
   async function removeFromPlaylist(trackId: string) {
-    // A repeat tap would re-engage a second time and restart the next Track.
+    // A repeat tap would send a second Remove for the same Track.
     if (removingRef.current) return;
     removingRef.current = true;
     try {

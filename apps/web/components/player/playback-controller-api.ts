@@ -255,8 +255,9 @@ export interface PlaybackControllerApi extends PlaybackControllerState {
   dislike: () => void;
   /** Permanently delete the current Track without recording feedback. */
   deleteTrack: () => void;
-  /** After a Delete Track has landed, move past it when it is still the
-   * audible Track — the removal advance, never a Skip. */
+  /** After a Delete Track or a removal from the playing Playlist has landed:
+   * move past the Track when it is still the audible one (the removal advance,
+   * never a Skip), else only drop it from the projection. */
   advancePastDeletedTrack: (trackId: string) => void;
   /** Sync a settled save-picker commit's flags and curated membership onto the
    * current track (retention is membership — the picker sheet is the only save
