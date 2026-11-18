@@ -99,8 +99,9 @@ describeIfDb('ensure-session-buffer controller', () => {
     const requestId = await createGenerationRequest(ctx.db, {
       ownerUserId,
       activitySessionId: sessionId,
+      status: 'materialized',
     });
-    // One submitted (spent) task this window, normalizedStatus ready (not in flight).
+    // One submitted (spent) task this window, ready and settled (owes no Tracks).
     const jobId = await createProviderJob(ctx.db, {
       generationRequestId: requestId,
       submitState: 'submitted',
@@ -236,6 +237,32 @@ describeIfDb('ensure-session-buffer controller', () => {
     expect(repeat.action).toBe('session_repeat');
     expect(counted.calls()).toBe(1);
     expect(await sessionStatus(sessionId)).toMatchObject({ status: 'active' });
+  });
+
+  it("buys no extra batch while a ready job's Tracks are not created yet", async () => {
+    const { ownerUserId, sessionId } = await freshGeneratingSession();
+    await ctx.db
+      .update(activitySessions)
+      .set({ lastPlaybackReportAt: NOW })
+      .where(eq(activitySessions.id, sessionId));
+    await updateGenerationSettings(ctx.db, { ownerUserId, patch: { bufferAheadTracks: 2 } });
+    // The provider reported the batch ready; its two Tracks are not written yet.
+    const requestId = await createGenerationRequest(ctx.db, {
+      ownerUserId,
+      activitySessionId: sessionId,
+      status: 'awaiting_results',
+    });
+    await createProviderJob(ctx.db, {
+      generationRequestId: requestId,
+      normalizedStatus: 'ready',
+      submitState: 'submitted',
+    });
+    const counted = countingMusicProvider(async () => okTask('extra-batch'));
+    await runEnsureSessionBuffer(
+      { db: ctx.db, music: counted.provider, limits: ampleLimits(), now: NOW },
+      { sessionId },
+    );
+    expect(counted.calls()).toBe(0);
   });
 
   it('waits for a ready provider batch to finish materializing all results', async () => {
@@ -1445,6 +1472,8 @@ describeIfDb('ensure-session-buffer controller', () => {
       ownerUserId,
       activitySessionId: sessionId,
       stylePrompt: job.requestStylePrompt ?? null,
+      // A staged ready batch is a settled one: it owes no further Tracks.
+      ...(job.normalizedStatus === 'ready' ? { status: 'materialized' } : {}),
     });
     await createProviderJob(ctx.db, {
       generationRequestId: requestId,
@@ -2602,6 +2631,10 @@ describeIfDb('ensure-session-buffer controller', () => {
         .update(providerJobs)
         .set({ normalizedStatus: 'ready' })
         .where(eq(providerJobs.generationRequestId, request.id));
+      await ctx.db
+        .update(generationRequests)
+        .set({ status: 'materialized' })
+        .where(eq(generationRequests.id, request.id));
     }
   }
 
@@ -3688,7 +3721,7 @@ describeIfDb('ensure-session-buffer controller', () => {
     /** Complete the session's single in-flight job so the next tick generates again. */
     async function completeSessionJobs(sessionId: string): Promise<void> {
       const jobs = await ctx.db
-        .select({ id: providerJobs.id })
+        .select({ id: providerJobs.id, requestId: generationRequests.id })
         .from(providerJobs)
         .innerJoin(generationRequests, eq(providerJobs.generationRequestId, generationRequests.id))
         .where(eq(generationRequests.activitySessionId, sessionId));
@@ -3697,6 +3730,10 @@ describeIfDb('ensure-session-buffer controller', () => {
           .update(providerJobs)
           .set({ normalizedStatus: 'ready' })
           .where(eq(providerJobs.id, job.id));
+        await ctx.db
+          .update(generationRequests)
+          .set({ status: 'materialized' })
+          .where(eq(generationRequests.id, job.requestId));
       }
     }
 

@@ -15,6 +15,7 @@ import {
   countInFlightSessionJobs,
   countReadyAheadTracks,
   countSessionOwnReadyTracks,
+  getBufferSessionCounts,
   getLatestProviderJobState,
   getSessionForBuffer,
   listSessionLoopCandidates,
@@ -176,6 +177,144 @@ describeIfDb('sessions repo — buffer controller reads/writes', () => {
     expect(await countInFlightSessionJobs(ctx.db, { sessionId, phantomSubmitCutoff: CUTOFF })).toBe(
       2,
     );
+  });
+
+  describe('incoming supply in Tracks', () => {
+    const NOW = new Date('2026-06-29T12:00:00Z');
+    const CUTOFF = new Date(NOW.getTime() - 15 * 60_000);
+
+    async function session(): Promise<{ ownerUserId: string; sessionId: string }> {
+      const ownerUserId = await createUser(ctx.db);
+      const sessionId = await createSession(ctx.db, { ownerUserId });
+      return { ownerUserId, sessionId };
+    }
+
+    /** One request (2 Tracks asked for) with its provider job. */
+    async function batch(
+      s: { ownerUserId: string; sessionId: string },
+      fx: {
+        normalizedStatus: string;
+        submitState?: 'submitting' | 'submitted' | 'submit_unknown';
+        requestStatus?: string;
+        styleRevision?: number;
+        updatedAt?: Date;
+      },
+    ): Promise<{ requestId: string; jobId: string }> {
+      const requestId = await createGenerationRequest(ctx.db, {
+        ownerUserId: s.ownerUserId,
+        activitySessionId: s.sessionId,
+        status: fx.requestStatus ?? 'awaiting_results',
+        ...(fx.styleRevision !== undefined ? { styleRevision: fx.styleRevision } : {}),
+      });
+      const jobId = await createProviderJob(ctx.db, {
+        generationRequestId: requestId,
+        normalizedStatus: fx.normalizedStatus,
+        submitState: fx.submitState ?? 'submitted',
+        ...(fx.submitState === 'submit_unknown' ? { providerTaskId: null } : {}),
+        ...(fx.updatedAt ? { updatedAt: fx.updatedAt } : {}),
+      });
+      return { requestId, jobId };
+    }
+
+    async function incoming(sessionId: string, supplyAtOrAboveStyleRevision?: number) {
+      return getBufferSessionCounts(ctx.db, {
+        sessionId,
+        phantomSubmitCutoff: CUTOFF,
+        supplyAtOrAboveStyleRevision,
+      });
+    }
+
+    it('a job whose Tracks are already in the Queue owes no further supply', async () => {
+      const s = await session();
+      const { requestId, jobId } = await batch(s, { normalizedStatus: 'partially_ready' });
+      const base = {
+        ownerUserId: s.ownerUserId,
+        generationRequestId: requestId,
+        providerJobId: jobId,
+      };
+      const played = await createTrack(ctx.db, { ...base, status: 'streamable' });
+      const waiting = await createTrack(ctx.db, { ...base, status: 'streamable' });
+      await createQueueItem(ctx.db, {
+        activitySessionId: s.sessionId,
+        trackId: played,
+        position: 0,
+        state: 'played',
+      });
+      await createQueueItem(ctx.db, {
+        activitySessionId: s.sessionId,
+        trackId: waiting,
+        position: 1,
+        state: 'queued',
+      });
+
+      const counts = await incoming(s.sessionId);
+      expect(counts.readyAhead).toBe(1);
+      expect(counts.incomingTracks).toBe(0);
+    });
+
+    it('a job with one of two Tracks created owes one', async () => {
+      const s = await session();
+      const { requestId, jobId } = await batch(s, { normalizedStatus: 'processing' });
+      await createTrack(ctx.db, {
+        ownerUserId: s.ownerUserId,
+        generationRequestId: requestId,
+        providerJobId: jobId,
+        status: 'pending',
+      });
+      expect((await incoming(s.sessionId)).incomingTracks).toBe(1);
+    });
+
+    it('a ready job with no Tracks yet owes two; a settled or failed one owes nothing', async () => {
+      const s = await session();
+      await batch(s, { normalizedStatus: 'ready' });
+      const settled = await batch(s, { normalizedStatus: 'ready', requestStatus: 'materialized' });
+      await createTrack(ctx.db, {
+        ownerUserId: s.ownerUserId,
+        generationRequestId: settled.requestId,
+        providerJobId: settled.jobId,
+      });
+      await batch(s, { normalizedStatus: 'failed_final' });
+      expect((await incoming(s.sessionId)).incomingTracks).toBe(2);
+    });
+
+    it('a job whose created Track was rejected does not owe it again', async () => {
+      const s = await session();
+      const { requestId, jobId } = await batch(s, { normalizedStatus: 'partially_ready' });
+      await createTrack(ctx.db, {
+        ownerUserId: s.ownerUserId,
+        generationRequestId: requestId,
+        providerJobId: jobId,
+        status: 'rejected',
+        dislikedAt: NOW,
+      });
+      expect((await incoming(s.sessionId)).incomingTracks).toBe(1);
+    });
+
+    it('an older-revision job is left out while a switch-now is armed', async () => {
+      const s = await session();
+      await batch(s, { normalizedStatus: 'processing', styleRevision: 1 });
+      await batch(s, { normalizedStatus: 'processing', styleRevision: 2 });
+      expect((await incoming(s.sessionId)).incomingTracks).toBe(4);
+      expect((await incoming(s.sessionId, 2)).incomingTracks).toBe(2);
+    });
+
+    it('a phantom submit stops counting at its cutoff', async () => {
+      const young = await session();
+      await batch(young, {
+        normalizedStatus: 'submit_unknown',
+        submitState: 'submit_unknown',
+        updatedAt: NOW,
+      });
+      expect((await incoming(young.sessionId)).incomingTracks).toBe(2);
+
+      const expired = await session();
+      await batch(expired, {
+        normalizedStatus: 'submit_unknown',
+        submitState: 'submit_unknown',
+        updatedAt: CUTOFF,
+      });
+      expect((await incoming(expired.sessionId)).incomingTracks).toBe(0);
+    });
   });
 
   it('returns null provider-job state for a session that never generated', async () => {

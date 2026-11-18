@@ -63,10 +63,10 @@ export interface BufferDecisionInput {
   /** Ready-ahead queue items (planned/generating/queued). */
   readyAheadCount: number;
   /**
-   * Track-equivalent in-flight provider work for THIS session (submitting/submitted/
-   * processing/partially_ready/submit_unknown jobs × tracks-per-call). Counted into
-   * the buffer measure so overlapping sweeps and post-submit retries don't re-submit
-   * a paid job before its tracks exist (money safety).
+   * Tracks THIS session's provider jobs still owe: per job, the Tracks asked for
+   * minus the Tracks already created from it (those already sit in the Queue).
+   * Counted into the buffer measure so overlapping sweeps and post-submit retries
+   * don't re-submit a paid job before its tracks exist (money safety).
    */
   inFlightAheadCount: number;
   /**

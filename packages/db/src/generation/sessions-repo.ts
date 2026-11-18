@@ -16,6 +16,7 @@ import {
   isNotNull,
   ne,
   notExists,
+  or,
   sql,
   type SQL,
 } from 'drizzle-orm';
@@ -307,6 +308,42 @@ function inFlightSessionJobsQuery(
 }
 
 /**
+ * Tracks the session's provider jobs still owe — the Buffer's incoming supply,
+ * counted in Tracks so it never overlaps the Queue: a job's Tracks enter the
+ * Queue while it streams, still in flight. Per job it is the request's
+ * `requestedTrackCount` minus every Track row created from it (any status: a
+ * Disliked or deleted Track is replaced by its reroll, not owed again), floored
+ * at 0. A job owes while it holds an in-flight slot, and after `ready` until its
+ * request is `materialized` — `ready` is written before the Tracks are, and that
+ * gap must not read as no supply. Failed and timed-out jobs owe nothing.
+ */
+function incomingSessionTracksQuery(
+  db: DbOrTx,
+  args: { sessionId: string; phantomSubmitCutoff: Date; atOrAboveStyleRevision?: number },
+) {
+  const created = sql`(select count(*) from ${tracks} where ${tracks.providerJobId} = ${providerJobs.id})`;
+  return db
+    .select({
+      value: sql<number>`coalesce(sum(greatest(${generationRequests.requestedTrackCount} - ${created}, 0)), 0)`,
+    })
+    .from(providerJobs)
+    .innerJoin(generationRequests, eq(providerJobs.generationRequestId, generationRequests.id))
+    .where(
+      and(
+        eq(generationRequests.activitySessionId, args.sessionId),
+        or(
+          inFlightProviderJobCondition(args.phantomSubmitCutoff),
+          and(
+            eq(providerJobs.normalizedStatus, 'ready'),
+            ne(generationRequests.status, 'materialized'),
+          ),
+        ),
+        ...styleRevisionAtLeast(args.atOrAboveStyleRevision),
+      ),
+    );
+}
+
+/**
  * ALL generation requests the session has EVER created, in any state. This is the
  * buffer controller's per-track compile index: it must be MONOTONIC, and ready-track
  * counts are not (a dislike flips tracks to `rejected`, eviction/deletion remove
@@ -379,11 +416,14 @@ function sessionOwnReadyTracksQuery(db: DbOrTx, sessionId: string) {
     .where(and(eq(generationRequests.activitySessionId, sessionId), eq(tracks.status, 'ready')));
 }
 
-/** The six per-session buffer counts, named for what the tick decides with them. */
+/** The per-session buffer counts, named for what the tick decides with them. */
 export interface BufferSessionCounts {
   readyAhead: number;
   ownReady: number;
+  /** In-flight provider jobs — the stuck and restart checks, never the Buffer measure. */
   inFlightJobs: number;
+  /** Tracks the session's provider jobs still owe — the Buffer's incoming supply. */
+  incomingTracks: number;
   /** Every request, refused ones included — the monotonic compile index. */
   totalRequests: number;
   /** Requests that bought (or may have bought) a batch: all but unbilled refusals. */
@@ -393,14 +433,14 @@ export interface BufferSessionCounts {
 }
 
 /**
- * The buffer tick's six per-session counts in ONE statement — the tick runs
- * them inside the owner advisory lock, so six round trips of scalar counts
- * collapse to one (same transaction, same snapshot). Each column embeds exactly
- * the query the standalone count function runs; the counts can never drift from
- * the one-at-a-time reads. `supplyAtOrAboveStyleRevision` scopes the two supply
- * counts (an armed switch-now Change Vibe); `requestsAtOrAboveStyleRevision`
- * scopes only `currentRevisionUnrefusedRequests` (omitted = the unscoped count,
- * the revision-1 shape).
+ * The buffer tick's per-session counts in ONE statement — the tick runs them
+ * inside the owner advisory lock, so the round trips of scalar counts collapse
+ * to one (same transaction, same snapshot). A column with a standalone count
+ * function embeds exactly that function's query, so the two can never drift.
+ * `supplyAtOrAboveStyleRevision` scopes the in-flight and supply counts (an
+ * armed switch-now Change Vibe); `requestsAtOrAboveStyleRevision` scopes only
+ * `currentRevisionUnrefusedRequests` (omitted = the unscoped count, the
+ * revision-1 shape).
  */
 export async function getBufferSessionCounts(
   db: DbOrTx,
@@ -424,6 +464,13 @@ export async function getBufferSessionCounts(
       ownReady: scalar(sessionOwnReadyTracksQuery(db, args.sessionId)),
       inFlightJobs: scalar(
         inFlightSessionJobsQuery(db, {
+          sessionId: args.sessionId,
+          phantomSubmitCutoff: args.phantomSubmitCutoff,
+          atOrAboveStyleRevision: args.supplyAtOrAboveStyleRevision,
+        }),
+      ),
+      incomingTracks: scalar(
+        incomingSessionTracksQuery(db, {
           sessionId: args.sessionId,
           phantomSubmitCutoff: args.phantomSubmitCutoff,
           atOrAboveStyleRevision: args.supplyAtOrAboveStyleRevision,

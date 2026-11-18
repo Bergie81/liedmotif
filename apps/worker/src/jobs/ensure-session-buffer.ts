@@ -463,12 +463,13 @@ export async function runEnsureSessionBuffer(
     // changing the Queue supply scope used for play-out. Generation history
     // leaves out unbilled refusals: a refused fill bought nothing, so once its
     // cooldown clears the fill is still owed — in Repeat it is the revision's
-    // only batch. All six counts arrive from one statement — one
-    // lock-held round trip.
+    // only batch. All counts arrive from one statement — one lock-held round
+    // trip.
     const {
       readyAhead,
       ownReady,
       inFlightJobs: inFlightSessionJobs,
+      incomingTracks,
       totalRequests: priorSessionRequests,
       unrefusedRequests,
       currentRevisionUnrefusedRequests,
@@ -489,11 +490,7 @@ export async function runEnsureSessionBuffer(
     // and an in-flight job may complete — so lease writes deliberately do NOT serialize against the sweep.
     const loopHeld = await hasLiveLoopLease(tx, { sessionId: payload.sessionId, now });
 
-    // Each in-flight provider job yields ~`typicalTracksPerRequest` tracks; counting
-    // that toward the buffer keeps a second sweep (or a retried submit) from issuing a
-    // duplicate paid job before the first job's tracks are ready.
     const capabilities = deps.music.getCapabilities();
-    const inFlightAhead = inFlightSessionJobs * capabilities.typicalTracksPerRequest;
 
     // CANCEL the pending fresh-call reroll intents the Session can no longer
     // honor rather than letting them sit: every one in Repeat ("stop
@@ -651,7 +648,7 @@ export async function runEnsureSessionBuffer(
       duration,
       sessionMode: fresh.sessionMode,
       readyAheadCount: readyAhead,
-      inFlightAheadCount: inFlightAhead,
+      inFlightAheadCount: incomingTracks,
       bufferAheadTracks: generationSettings.bufferAheadTracks,
       maxQueuedTracks: budget.maxQueuedTracks,
       hasEverGenerated: unrefusedRequests > 0,

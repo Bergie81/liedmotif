@@ -363,7 +363,7 @@ describeIfDb('buffer session counts — combined statement', () => {
     return { ownerUserId, sessionId };
   }
 
-  it('matches the six standalone counts (unscoped)', async () => {
+  it('matches the standalone counts (unscoped)', async () => {
     const { sessionId } = await seedMixedSession();
     const phantomSubmitCutoff = new Date(Date.now() - 15 * 60_000);
 
@@ -372,6 +372,9 @@ describeIfDb('buffer session counts — combined statement', () => {
       readyAhead: await countReadyAheadTracks(ctx.db, sessionId),
       ownReady: await countSessionOwnReadyTracks(ctx.db, sessionId),
       inFlightJobs: await countInFlightSessionJobs(ctx.db, { sessionId, phantomSubmitCutoff }),
+      // Each queue slot's unsettled ready job created 1 of 2 Tracks (3 × 1); the two
+      // processing jobs and the ready job with no Tracks owe 2 each (3 × 2).
+      incomingTracks: 9,
       totalRequests: await countSessionGenerationRequests(ctx.db, sessionId),
       unrefusedRequests: await countSessionGenerationRequests(ctx.db, sessionId, {
         excludeUnbilledRefusals: true,
@@ -384,7 +387,7 @@ describeIfDb('buffer session counts — combined statement', () => {
     expect(combined.totalRequests - combined.unrefusedRequests).toBe(2);
   });
 
-  it('matches the six standalone counts under revision scoping', async () => {
+  it('matches the standalone counts under revision scoping', async () => {
     const { sessionId } = await seedMixedSession();
     const phantomSubmitCutoff = new Date(Date.now() - 15 * 60_000);
 
@@ -402,6 +405,8 @@ describeIfDb('buffer session counts — combined statement', () => {
         phantomSubmitCutoff,
         atOrAboveStyleRevision: 2,
       }),
+      // Revision 2 only: its queue slot's job (1) plus its processing and ready jobs (2 + 2).
+      incomingTracks: 5,
       totalRequests: await countSessionGenerationRequests(ctx.db, sessionId),
       unrefusedRequests: await countSessionGenerationRequests(ctx.db, sessionId, {
         excludeUnbilledRefusals: true,
@@ -429,6 +434,7 @@ describeIfDb('buffer session counts — combined statement', () => {
       readyAhead: 0,
       ownReady: 0,
       inFlightJobs: 0,
+      incomingTracks: 0,
       totalRequests: 0,
       unrefusedRequests: 0,
       currentRevisionUnrefusedRequests: 0,
