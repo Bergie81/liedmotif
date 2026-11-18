@@ -335,6 +335,20 @@ describe('Gemini generated-image adapter', () => {
     );
   });
 
+  it("accepts a model named in Google's models/<id> form, as the key Test does", async () => {
+    const fetchImpl = vi.fn().mockResolvedValueOnce(imageReply());
+
+    const provider = adapter(fetchImpl as unknown as typeof fetch, {
+      model: 'models/gemini-3-pro-image',
+    });
+    await provider.generate(request());
+
+    expect(provider.model).toBe('gemini-3-pro-image');
+    expect(sent(fetchImpl).url).toBe(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image:generateContent',
+    );
+  });
+
   it('never logs the key, prompt or photo bytes', async () => {
     const spies = (['log', 'info', 'warn', 'error'] as const).map((method) =>
       vi.spyOn(console, method).mockImplementation(() => {}),

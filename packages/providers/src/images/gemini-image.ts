@@ -53,7 +53,9 @@ interface GeminiPart {
 export function geminiImageProvider(config: GeminiImageConfig): GeneratedImageProvider {
   const apiKey = config.apiKey.trim();
   if (!apiKey) throw new GeneratedImageProviderError('configuration', 'not_started');
-  const model = config.model?.trim() || GEMINI_DEFAULT_COVER_MODEL;
+  // Google names models `models/<id>` in its lists, and the key Test accepts
+  // either form, but the request path takes the bare id.
+  const model = config.model?.trim().replace(/^models\//, '') || GEMINI_DEFAULT_COVER_MODEL;
   const timeoutMs = config.requestTimeoutMs ?? DEFAULT_TIMEOUT_MS;
   const fetchImpl = config.fetch ?? pinnedProviderFetch({ providerKey: 'gemini' });
   const authHeaders = { 'x-goog-api-key': apiKey };
