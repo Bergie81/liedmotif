@@ -66,20 +66,53 @@ describe('refuseCrossOrigin', () => {
 // anything: the image still ships the localhost default while the operator
 // browses by LAN IP.
 describe('refuseSetupCrossOrigin', () => {
-  const post = (origin: string, url = 'http://192.168.1.10/api/setup') =>
-    refuseSetupCrossOrigin(new Request(url, { method: 'POST', headers: { origin } }));
+  // The request is always addressed to the host the browser sent: the host it
+  // reached no longer counts, only the host `APP_PUBLIC_URL` names.
+  const post = (origin: string) => {
+    const addressed = origin === 'null' ? 'http://192.168.1.10' : origin;
+    return refuseSetupCrossOrigin(
+      new Request(`${addressed}/api/setup`, { method: 'POST', headers: { origin } }),
+    );
+  };
 
-  it('accepts the host the request was addressed to, whatever the scheme', () => {
-    // TLS terminates at the proxy: the browser reports https on a plain-http hop.
-    expect(post('http://192.168.1.10')).toBeNull();
-    expect(post('https://192.168.1.10')).toBeNull();
-    expect(post('http://box.local:2206', 'http://box.local:2206/api/setup')).toBeNull();
+  const hosts = [
+    '192.168.1.10',
+    '[::1]:2206',
+    'localhost:2206',
+    'music.example',
+    'evil.example',
+    'box.local:2206',
+  ];
+
+  it.each(hosts)(
+    'accepts a setup post from %s when APP_PUBLIC_URL names it, whatever the scheme',
+    (host) => {
+      // TLS terminates at the proxy: the browser reports https on a plain-http hop.
+      process.env.APP_PUBLIC_URL = `https://${host}`;
+      expect(post(`http://${host}`)).toBeNull();
+      expect(post(`https://${host}`)).toBeNull();
+    },
+  );
+
+  it.each(hosts)('refuses a setup post from %s when APP_PUBLIC_URL names another host', (host) => {
+    for (const configured of hosts.filter((other) => other !== host)) {
+      process.env.APP_PUBLIC_URL = `http://${configured}`;
+      expect(post(`http://${host}`)?.status, `${host} vs ${configured}`).toBe(403);
+      expect(post(`https://${host}`)?.status, `${host} vs ${configured}`).toBe(403);
+    }
   });
 
-  it('still refuses a foreign host and a mismatched port', () => {
-    for (const origin of ['https://evil.example', 'http://192.168.1.10:2206', 'null']) {
+  it('refuses a different port on the configured host, and an opaque Origin', () => {
+    process.env.APP_PUBLIC_URL = 'http://192.168.1.10';
+    for (const origin of ['http://192.168.1.10:2206', 'null']) {
       expect(post(origin)?.status, origin).toBe(403);
     }
+  });
+
+  it('accepts a setup post with no Origin at all', () => {
+    expect(
+      refuseSetupCrossOrigin(new Request('http://192.168.1.10/api/setup', { method: 'POST' })),
+    ).toBeNull();
   });
 
   it('answers in the shape the setup wizard reads', async () => {

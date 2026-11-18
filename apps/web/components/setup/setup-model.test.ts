@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildSetupPayload,
   EMPTY_SETUP_STATE,
+  setupAddressNotice,
   validateSetup,
   type SetupState,
 } from './setup-model';
@@ -38,5 +39,28 @@ describe('setup model', () => {
     expect(buildSetupPayload(form({ email: '  admin@example.test  ' }))).toEqual({
       admin: { email: 'admin@example.test', password: 'Correct-Horse-42' },
     });
+  });
+});
+
+describe('setup address notice', () => {
+  const PUBLIC_URL = 'http://localhost:2206';
+
+  it('names the configured address when the page was opened at another host', () => {
+    expect(setupAddressNotice('127.0.0.1:2206', PUBLIC_URL)).toBe(
+      'This install is set up for http://localhost:2206. Open it there, or set APP_PUBLIC_URL to this address and restart.',
+    );
+  });
+
+  it('shows nothing at the configured host, whatever the scheme or case', () => {
+    expect(setupAddressNotice('localhost:2206', PUBLIC_URL)).toBeNull();
+    expect(setupAddressNotice('Music.Example', 'https://music.example/')).toBeNull();
+  });
+
+  it('treats a different port as a different host', () => {
+    expect(setupAddressNotice('localhost:3000', PUBLIC_URL)).not.toBeNull();
+  });
+
+  it('shows nothing when the request carries no host to compare', () => {
+    expect(setupAddressNotice(null, PUBLIC_URL)).toBeNull();
   });
 });

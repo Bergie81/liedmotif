@@ -26,3 +26,26 @@ export function validateSetup(form: SetupState): string | null {
 export function buildSetupPayload(form: SetupState): SetupPayload {
   return { admin: { email: form.email.trim(), password: form.password } };
 }
+
+/**
+ * The notice the setup screen shows above the form when it was opened at a host
+ * other than the one `APP_PUBLIC_URL` names, or `null` when they match. Setup
+ * accepts a post only from that host, so the form would fail on submit; this
+ * says so before anything is typed. Hosts are compared without the scheme, as
+ * the route does, because TLS terminates at the proxy.
+ */
+export function setupAddressNotice(requestHost: string | null, publicUrl: string): string | null {
+  const opened = hostOf(requestHost === null ? null : `http://${requestHost}`);
+  const configured = hostOf(publicUrl);
+  if (opened === null || configured === null || opened === configured) return null;
+  return `This install is set up for ${publicUrl}. Open it there, or set APP_PUBLIC_URL to this address and restart.`;
+}
+
+function hostOf(url: string | null): string | null {
+  if (url === null) return null;
+  try {
+    return new URL(url).host;
+  } catch {
+    return null;
+  }
+}

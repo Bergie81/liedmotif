@@ -111,25 +111,29 @@ function parseUrl(value: string): URL | null {
  * (sandboxed iframe, some redirect chains) parses to nothing and is refused,
  * which is the right answer for a write.
  *
- * `allowSelfHost` additionally accepts an `Origin` whose HOST is the one this
- * request was addressed to. It belongs to the first-run setup routes only:
- * before the wizard finishes, `APP_PUBLIC_URL` is still whatever the image
- * shipped (the localhost default) while the operator browses by LAN IP, so the
- * configured origin is not yet authority over the instance's own address. Hosts
- * are compared without the scheme because TLS terminates at the proxy — the
- * browser reports `https:` on a request that arrives as plain http. A forged
- * post still fails: an attacker page's `Origin` carries the attacker's host,
- * never the instance's.
+ * `setupHost` relaxes the match for the first-run setup routes to the HOST of
+ * `APP_PUBLIC_URL`, with the scheme left out because TLS terminates at the
+ * proxy — the browser reports `https:` on a request that arrives as plain http.
+ * The host the request was addressed to never counts. After setup every gate
+ * accepts only `APP_PUBLIC_URL`, so an Admin created from any other address
+ * would be refused on the first save; one address everywhere avoids that, and
+ * it closes DNS rebinding, where an attacker's name resolves to this instance
+ * and the browser sends that name as both `Host` and `Origin`.
+ *
+ * The check protects browsers only. A non-browser client sets whatever
+ * `Origin` it likes or none at all; authenticating the first-run setup against
+ * such a client is the setup token's job.
  */
-function isCrossOriginWrite(request: Request, opts: { allowSelfHost?: boolean } = {}): boolean {
+function isCrossOriginWrite(request: Request, opts: { setupHost?: boolean } = {}): boolean {
   if (SAFE_METHODS.has(request.method)) return false;
   const header = request.headers.get('origin');
   if (header === null) return false;
   const sent = parseUrl(header);
   if (sent === null) return true;
-  if (sent.origin === parseUrl(getPublicUrl())?.origin) return false;
-  if (!opts.allowSelfHost) return true;
-  return sent.host !== new URL(request.url).host;
+  const configured = parseUrl(getPublicUrl());
+  if (sent.origin === configured?.origin) return false;
+  if (!opts.setupHost) return true;
+  return sent.host !== configured?.host;
 }
 
 /** The cross-origin refusal as a contract-envelope 403, or null to proceed. */
@@ -138,14 +142,12 @@ export function refuseCrossOrigin(request: Request): NextResponse | null {
 }
 
 /**
- * `refuseCrossOrigin` for the first-run setup route: self-host comparison, and
+ * `refuseCrossOrigin` for the first-run setup route: host-only comparison, and
  * the plain `{ ok, error }` shape that route answers in — the wizard reads
  * `error` as a string, and the envelope's nested error would reach it as one.
  */
 export function refuseSetupCrossOrigin(request: Request): NextResponse | null {
-  return isCrossOriginWrite(request, { allowSelfHost: true })
-    ? forbidden(CROSS_ORIGIN_REFUSAL)
-    : null;
+  return isCrossOriginWrite(request, { setupHost: true }) ? forbidden(CROSS_ORIGIN_REFUSAL) : null;
 }
 
 /**

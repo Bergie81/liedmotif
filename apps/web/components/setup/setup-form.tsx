@@ -28,7 +28,14 @@ import {
   type SetupState,
 } from './setup-model';
 
-export function SetupForm({ setupToken }: { setupToken?: string }) {
+export function SetupForm({
+  setupToken,
+  addressNotice,
+}: {
+  setupToken?: string;
+  /** Shown above the form when the page was opened away from `APP_PUBLIC_URL`. */
+  addressNotice?: string | null;
+}) {
   const [form, setForm] = useState<SetupState>(EMPTY_SETUP_STATE);
   const confirmation = usePasswordConfirmation(form.password);
   const [error, setError] = useState<string | null>(null);
@@ -74,6 +81,8 @@ export function SetupForm({ setupToken }: { setupToken?: string }) {
         <LiedmotifMark className="h-8 w-8" />
         <LiedmotifWordmark className="text-[22px]" />
       </div>
+
+      {addressNotice ? <AlertBanner className="mb-6">{addressNotice}</AlertBanner> : null}
 
       <form onSubmit={submit}>
         <h1 id="setup-heading" className={displayHeadingClass}>

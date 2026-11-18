@@ -6,8 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // `SETUP_TOKEN` decides *who may ask* — a token-less (or wrong-token) request
 // must never reach account creation, and an instance with no token configured
 // must leave the route open. The Origin check decides *which page may ask on a
-// browser's behalf*, and it compares against the host the request was addressed
-// to, because first-run `APP_PUBLIC_URL` is still whatever the image shipped.
+// browser's behalf*: only a page on the host `APP_PUBLIC_URL` names, the one
+// address every gate accepts once the Admin exists.
 //
 // `/api/setup/validate` sits alongside it for the door the token does NOT open:
 // the credential probe is admin-only whatever the setup state, so neither a
@@ -170,11 +170,12 @@ describe('with SETUP_TOKEN unset', () => {
 });
 
 describe('cross-origin posts', () => {
-  /** The LAN address the operator browses, which `APP_PUBLIC_URL` does not name. */
-  const SELF = 'http://192.168.1.10';
+  /** The host `APP_PUBLIC_URL` names, the one address setup accepts. */
+  const CONFIGURED = 'http://localhost:2206';
 
   function originRequest(path: string, body: unknown, origin: string): Request {
-    return new Request(`${SELF}${path}`, {
+    // Addressed to the host the page was opened at: that host never counts.
+    return new Request(`${origin}${path}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', origin },
       body: JSON.stringify(body),
@@ -183,7 +184,7 @@ describe('cross-origin posts', () => {
 
   beforeEach(() => {
     vi.stubEnv('SETUP_TOKEN', '');
-    vi.stubEnv('APP_PUBLIC_URL', 'http://localhost:2206');
+    vi.stubEnv('APP_PUBLIC_URL', CONFIGURED);
   });
 
   it('refuses a forged post, creating no administrator', async () => {
@@ -201,8 +202,16 @@ describe('cross-origin posts', () => {
     expect(response.status).toBe(403);
   });
 
-  it('accepts the wizard on an address APP_PUBLIC_URL does not name', async () => {
-    const response = await setupPost(originRequest('/api/setup', ADMIN_BODY, SELF));
+  it('refuses the wizard on an address APP_PUBLIC_URL does not name, creating no administrator', async () => {
+    const response = await setupPost(
+      originRequest('/api/setup', ADMIN_BODY, 'http://127.0.0.1:2206'),
+    );
+    expect(response.status).toBe(403);
+    expect(holder.signUps).toEqual([]);
+  });
+
+  it('creates the administrator from the host APP_PUBLIC_URL names', async () => {
+    const response = await setupPost(originRequest('/api/setup', ADMIN_BODY, CONFIGURED));
     expect(response.status).toBe(200);
     expect(holder.signUps).toEqual(['owner@example.test']);
   });
