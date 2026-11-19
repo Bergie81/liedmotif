@@ -59,10 +59,11 @@ export function creationHeadroomMessage(
     decision;
   const needs = `A new Session needs ${minHeadroomTracks} ${trackNoun(minHeadroomTracks)}`;
   const admin = adminName ?? 'the Admin';
+  const noReset = `Your budget doesn’t reset — ask ${admin} for more.`;
 
   if (window === 'total') {
     if (remainingTracks === 0) return headroomBlockedMessage(decision, adminName);
-    return `${needs}; you have ${remainingTracks} left. Your budget doesn’t reset — ask ${admin} for more. ${WAY_OUT}`;
+    return `${needs}; you have ${remainingTracks} left. ${noReset} ${WAY_OUT}`;
   }
 
   if (windowCapTracks < minHeadroomTracks) {
@@ -82,11 +83,9 @@ export function creationHeadroomMessage(
   }
   const left = remainingTracks === 0 ? 'none' : String(remainingTracks);
   const holder = scope === 'pool' ? 'the shared budget has' : 'you have';
-  const period = `${needs}; ${holder} ${left} left${HEADROOM_PERIOD[window]}.`;
-  if (resetWindow === 'total') {
-    return `${period} Your budget doesn’t reset — ask ${admin} for more. ${WAY_OUT}`;
-  }
-  return `${period} More Tracks ${RESET[resetWindow]} (${resetTimezone}). ${WAY_OUT}`;
+  const shortfall = `${needs}; ${holder} ${left} left${HEADROOM_PERIOD[window]}.`;
+  if (resetWindow === 'total') return `${shortfall} ${noReset} ${WAY_OUT}`;
+  return `${shortfall} More Tracks ${RESET[resetWindow]} (${resetTimezone}). ${WAY_OUT}`;
 }
 
 /**

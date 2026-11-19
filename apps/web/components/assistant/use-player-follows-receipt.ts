@@ -41,11 +41,10 @@ export function usePlayerFollowsReceipt(
         engage(next, { autoplay: false });
       };
       switch (receipt.action) {
-        case 'favoriteTrack': {
+        case 'favoriteTrack':
           if (live?.player.currentTrack?.trackId !== receipt.track.id) return;
           live.player.applyRetentionAdded(receipt.track.id, { favorited: true, curated: false });
           return;
-        }
         case 'addToPlaylist': {
           const track = live?.player.currentTrack;
           if (!live || !track || !receipt.tracks.some(({ id }) => id === track.trackId)) return;

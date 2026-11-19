@@ -52,9 +52,9 @@ self.addEventListener('fetch', (event) => {
   }
 
   // The Offline Library's own scripts, styles, fonts and textures, as the
-  // network serves them while it can. With no network at all, the cached copy answers first,
-  // rather than after a request that can only fail; what it lacks still goes
-  // out (a server on this machine answers without one).
+  // network serves them while it can. With no network at all, the cached copy
+  // answers first, rather than after a request that can only fail; what it
+  // lacks still goes out (a server on this machine answers without one).
   if (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/textures/')) {
     const path = url.pathname + url.search;
     event.respondWith(
