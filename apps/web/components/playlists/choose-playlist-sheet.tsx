@@ -104,7 +104,7 @@ function ChooseContent({
       created.current = { name, playlistId };
     }
     const result = await onChoose(playlistId);
-    if (!result.ok) return result.error.message;
+    if (!result.ok) return `Adding failed: ${result.error.message}`;
     confirmAdded(name, result.data);
     return null;
   }

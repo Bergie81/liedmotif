@@ -42,10 +42,15 @@ export function useTrackRowPlayback(failureKey: string) {
    * The preview has its own audio element, so whenever it starts making sound
    * (a row tap or a resume from the mini player's mirror) the transport's
    * music, a Session or a Playlist, is paused rather than heard alongside it.
+   * A transport armed to start (waiting for its first Track) is disarmed too,
+   * and a row still waiting to hand its Track over is dropped: either would
+   * otherwise start later over the preview.
    * Nothing resumes it when the preview ends: the listener does, from the player.
    */
   function pauseTransport() {
-    if (playback?.player.status === 'playing') playback.player.pause();
+    sessionPlay.supersede();
+    const player = playback?.player;
+    if (player?.status === 'playing' || player?.playIntentPending) player.pause();
   }
 
   /**

@@ -237,6 +237,39 @@ describe('direct Session track playback', () => {
     expect(result.current.busyTrackId).toBeNull();
   });
 
+  it('drops a pending selection once a preview takes over', async () => {
+    success();
+    const response = await fetch('/selection-response');
+    let complete!: (response: Response) => void;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        () =>
+          new Promise<Response>((resolve) => {
+            complete = resolve;
+          }),
+      ),
+    );
+    context.playback.session = { id: 'other-session' };
+    const { result } = renderHook(() => usePlaySessionTrack(vi.fn()));
+    let selection!: Promise<boolean>;
+    await act(async () => {
+      selection = result.current.playViaSession({ id: trackId, originSessionId: sessionId });
+      await Promise.resolve();
+    });
+    expect(result.current.busyTrackId).toBe(trackId);
+
+    act(() => result.current.supersede());
+    await act(async () => {
+      complete(response);
+      await selection;
+    });
+
+    expect(context.engage).not.toHaveBeenCalled();
+    expect(context.playback.player.playQueueItem).not.toHaveBeenCalled();
+    expect(result.current.busyTrackId).toBeNull();
+  });
+
   it.each(['playing', 'paused'])(
     'toggles the audible Playlist Track when transport is %s',
     async (status) => {

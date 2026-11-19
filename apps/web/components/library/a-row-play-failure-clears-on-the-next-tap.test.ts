@@ -15,6 +15,7 @@ vi.mock('@/components/player/use-play-session-track', () => ({
     },
     busyTrackId: null,
     transportRowPreview: { trackId: null, state: 'paused' },
+    supersede: () => {},
   }),
 }));
 vi.mock('@/components/player/player-provider', () => ({

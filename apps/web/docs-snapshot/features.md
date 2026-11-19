@@ -455,7 +455,7 @@ Each of these does something different. **Delete Track**, **Delete Playlist** an
 | **Remove from Library** | The track leaves Favorites and every playlist, and stays in **History** |
 | **Reroll Track** | A dislike: the track goes and a new one comes in the same vibe |
 | **Delete Track** | The audio is deleted for good, from every playlist and your library. Nothing is steered |
-| **Delete Playlist** | The playlist goes. Tracks only in it leave your library and stay in **History**. Tracks whose Session was already deleted are deleted for good; the confirmation says how many |
+| **Delete Playlist** | The playlist goes. Tracks only in it leave your library and stay in **History**. Of those, tracks whose Session was already deleted are deleted for good; the confirmation says how many |
 | **Delete Session** | The session stops and goes for good, with its unsaved tracks. Tracks in a playlist stay |
 
 A deleted track still counts in your generated totals, and it lives on in [backups](/docs/backups) until they rotate out.

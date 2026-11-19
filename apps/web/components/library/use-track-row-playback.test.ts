@@ -6,6 +6,7 @@ import { useTrackPreviewAnnouncement } from '@/components/player/preview-announc
 
 const transportPlay = vi.hoisted(() => ({
   state: { trackId: null as string | null, state: 'paused' as 'playing' | 'paused' },
+  supersede: (() => {}) as () => void,
 }));
 vi.mock('@/components/player/use-play-session-track', () => ({
   usePlaySessionTrack: () => ({
@@ -14,13 +15,15 @@ vi.mock('@/components/player/use-play-session-track', () => ({
     },
     busyTrackId: null,
     transportRowPreview: transportPlay.state,
+    supersede: () => transportPlay.supersede(),
   }),
 }));
 
 // The player's transport, as `usePlayerContext` hands it out: whatever is
 // engaged (a Session or a Playlist), paused through the same controller.
 const transportPlayer = vi.hoisted(() => ({
-  status: 'paused' as 'playing' | 'paused',
+  status: 'paused' as 'playing' | 'paused' | 'waiting',
+  playIntentPending: false,
   pause: () => {},
 }));
 vi.mock('@/components/player/player-provider', () => ({
@@ -106,6 +109,7 @@ describe('useTrackRowPlayback — a preview and the music playing', () => {
   afterEach(() => {
     cleanup();
     transportPlayer.status = 'paused';
+    transportPlayer.playIntentPending = false;
     vi.restoreAllMocks();
   });
 
@@ -123,6 +127,7 @@ describe('useTrackRowPlayback — a preview and the music playing', () => {
   function mount() {
     const pause = vi.spyOn(transportPlayer, 'pause').mockImplementation(() => {
       transportPlayer.status = 'paused';
+      transportPlayer.playIntentPending = false;
     });
     const hook = renderHook(() => ({
       playback: useTrackRowPlayback('library-play'),
@@ -200,6 +205,28 @@ describe('useTrackRowPlayback — a preview and the music playing', () => {
     expect(audio.play).toHaveBeenCalledTimes(2);
     expect(pause).toHaveBeenCalledTimes(2);
     expect(transportPlayer.status).toBe('paused');
+  });
+
+  it('disarms a transport that is waiting to start, so it cannot start over the preview', () => {
+    transportPlayer.status = 'waiting';
+    transportPlayer.playIntentPending = true;
+    const { result, pause } = mount();
+
+    act(() => result.current.playback.playRow(orphan('orphan-1')));
+    act(() => result.current.playback.audioEvents.onPlay());
+
+    expect(pause).toHaveBeenCalledTimes(1);
+    expect(transportPlayer.playIntentPending).toBe(false);
+  });
+
+  it('cancels a row still waiting to hand its Track to the transport', () => {
+    const supersede = vi.spyOn(transportPlay, 'supersede');
+    const { result } = mount();
+
+    act(() => result.current.playback.playRow(orphan('orphan-1')));
+    act(() => result.current.playback.audioEvents.onPlay());
+
+    expect(supersede).toHaveBeenCalledTimes(1);
   });
 
   it('changes nothing in the transport when nothing is playing there', () => {

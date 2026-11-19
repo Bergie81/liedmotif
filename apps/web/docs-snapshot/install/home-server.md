@@ -203,7 +203,7 @@ Your existing Docker is too old for Tailscale mode, because Caddy couldn't be li
 
 Liedmotif already runs from the folder the message names, so the installer stops before it changes anything. Two installs in different folders would share the same containers and database, and the running one would stop working. To update, run the same line with `--dir` and that folder, as the message says.
 
-If the message says the folder cannot be found, list the installs on this machine with `sudo docker compose ls -a`, and use the folder it shows. If that folder is gone for good, the old install can only be removed with its data: `sudo docker compose -p liedmotif down -v` deletes its database, music and backups, and can't be undone. A plain `down` is not enough, because a new install would meet the old database with a new password.
+If the message says the folder cannot be found, list the installs on this machine with `sudo docker compose ls -a`, and use the folder it shows. If that folder is gone but you kept your [copy of `.env`](#5-copy-env-somewhere-safe), your library is still there: create that folder again, put the copy in it as `.env`, and run the same line with `--dir` and that folder. The installer keeps an existing `.env`, so the old database opens with its own password. Only without that copy is the old install lost: `sudo docker compose -p liedmotif down -v` then removes it with its database, music and backups, and can't be undone. A plain `down` is not enough, because a new install would meet the old database with a new password.
 
 ### "Liedmotif did not answer within 300 seconds"
 

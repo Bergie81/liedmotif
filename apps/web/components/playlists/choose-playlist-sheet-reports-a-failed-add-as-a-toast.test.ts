@@ -11,20 +11,24 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { shownToasts, toast } from '@/lib/toast';
 import { ChoosePlaylistSheet } from './choose-playlist-sheet';
 
-const holder = vi.hoisted(() => ({ loadFails: false }));
+const holder = vi.hoisted(() => ({ loadFails: false, createWorks: false }));
 
 vi.mock('@/lib/api-client', () => ({
   getAllPlaylists: async () =>
     holder.loadFails
       ? { ok: false as const, error: { code: 'internal_error', message: 'Offline.' } }
       : { ok: true as const, data: { playlists: [BEACH], nextCursor: null } },
-  createPlaylist: async () => ({ ok: false as const, error: { message: 'unused' } }),
+  createPlaylist: async () =>
+    holder.createWorks
+      ? { ok: true as const, data: { playlist: { id: 'new-id', name: 'Road trip' } } }
+      : { ok: false as const, error: { message: 'unused' } },
 }));
 
 afterEach(() => {
   toast.dismiss();
   cleanup();
   holder.loadFails = false;
+  holder.createWorks = false;
 });
 
 const BEACH = {
@@ -82,6 +86,20 @@ describe('choose playlist sheet', () => {
       expect.objectContaining({ tone: 'success', message: 'Added 3 tracks to Beach' }),
     ]);
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('names a failed add into a playlist it just created as an add failure', async () => {
+    holder.createWorks = true;
+    openSheet(async () => failed('Network down.'));
+
+    const newPlaylist = await screen.findByRole('button', { name: /New playlist/ });
+    await act(async () => fireEvent.click(newPlaylist));
+    fireEvent.change(screen.getByLabelText('New name'), { target: { value: 'Road trip' } });
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Create' })));
+
+    expect(shownToasts()).toEqual([
+      expect.objectContaining({ tone: 'error', message: 'Adding failed: Network down.' }),
+    ]);
   });
 
   it('keeps a list that failed to load in the sheet, not in a toast', async () => {

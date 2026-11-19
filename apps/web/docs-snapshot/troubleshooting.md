@@ -197,7 +197,7 @@ The setup page needs the token in its address. Open the link the installer print
 
 ### "This install is set up for <address>. Open it there, or set `APP_PUBLIC_URL` to this address and restart."
 
-The setup page was opened at another address than the one in `APP_PUBLIC_URL`, for example `127.0.0.1` when `.env` says `localhost`, or a home network name such as `nas.local`. Setup only works at that one address, so the form would be refused. Open the address the message names, with the setup token if you have one. Or, if the address in your browser is the one you want to keep, set `APP_PUBLIC_URL` (and `APP_DOMAIN` on a server) to it and run `docker compose up -d`.
+The setup page was opened at another address than the one in `APP_PUBLIC_URL`, for example `127.0.0.1` when `.env` says `localhost`, or a home network name such as `nas.local`. Setup only works at that one address, so the form would be refused. Open the address the message names, with the setup token if you have one. Or, if the address in your browser is the one you want to keep, set `APP_PUBLIC_URL` to it (and, on a server, `APP_DOMAIN` to its host name alone, such as `music.example.com`) and run `docker compose up -d`.
 
 ### `Setup is already complete.`
 
@@ -256,7 +256,7 @@ The key is wrong, was revoked, or your provider account has a problem. Create a 
 
 ### "The music key is missing or can't be read." or "Music isn't set up on this server yet."
 
-Starting a session, More Like This or Surprise Me is refused because Liedmotif has no music key it can use. Nothing is created or spent. The admin sees "The music key is missing or can't be read. Enter it under Settings › AI Providers." Enter or re-enter the music key there, then press **Test**. If that doesn't help, check `.env`: `MUSIC_PROVIDER` must say `suno`, and `CREDENTIAL_ENCRYPTION_KEY` must be the key the saved one was stored with. A changed or missing `CREDENTIAL_ENCRYPTION_KEY` makes a saved key unreadable, so enter the key again. A member sees "Music isn't set up on this server yet. Ask the Admin to set it up." and should ask the admin.
+Starting a session, More Like This or Surprise Me is refused because Liedmotif has no music key it can use. Nothing is created or spent. The admin sees "The music key is missing or can't be read. Enter it under Settings › AI Providers." Enter or re-enter the music key there, then press **Test**. If that doesn't help, check `.env`: `MUSIC_PROVIDER` must say `suno`, and `CREDENTIAL_ENCRYPTION_KEY` must be the key the saved one was stored with. A changed `CREDENTIAL_ENCRYPTION_KEY` makes a saved key unreadable: put the original back as in [Secrets changed](#secrets-changed), and enter the key again only if it's lost. With no `CREDENTIAL_ENCRYPTION_KEY` at all, no key can be saved in the app: set one first, as in [`CREDENTIAL_ENCRYPTION_KEY must decode to 32 bytes`](#credential_encryption_key-must-decode-to-32-bytes). A member sees "Music isn't set up on this server yet. Ask the Admin to set it up." and should ask the admin.
 
 ### "... rejected this API key." on the text AI or image key
 

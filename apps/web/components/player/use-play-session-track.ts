@@ -26,6 +26,9 @@ export function usePlaySessionTrack(onError: (message: string) => void, onStarte
     tapSourceId: string | null;
   } | null>(null);
   const busy = useRef(false);
+  // Bumped when something else takes the audio (a preview), so a selection
+  // still waiting on the server never starts over it.
+  const selection = useRef(0);
   const latest = useRef({ playback, onError, onStarted, sourceId });
   latest.current = { playback, onError, onStarted, sourceId };
 
@@ -75,7 +78,9 @@ export function usePlaySessionTrack(onError: (message: string) => void, onStarte
     }
     busy.current = true;
     setBusyTrackId(track.id);
+    const tap = ++selection.current;
     const result = await playSessionTrack(intent.sessionId, track.id, clientId);
+    if (selection.current !== tap) return true;
     // A newer source selection owns playback even if this request finishes later.
     if (latest.current.sourceId !== sourceId) {
       settle();
@@ -100,6 +105,13 @@ export function usePlaySessionTrack(onError: (message: string) => void, onStarte
     return true;
   }
 
+  /** Drop a selection still waiting on the server or the Queue: other audio took over. */
+  function supersede() {
+    if (!busy.current) return;
+    selection.current += 1;
+    settle();
+  }
+
   // The transport's answer to "how should this row render" — the same shape
   // the page-local preview reports, so rows read one state either way.
   const transportRowPreview: { trackId: string | null; state: PreviewState } = {
@@ -107,5 +119,5 @@ export function usePlaySessionTrack(onError: (message: string) => void, onStarte
     state: playback?.player.status === 'playing' ? 'playing' : 'paused',
   };
 
-  return { playViaSession, busyTrackId, transportRowPreview };
+  return { playViaSession, busyTrackId, transportRowPreview, supersede };
 }
