@@ -40,8 +40,13 @@ export const playlists = pgTable(
     coverImageId: uuid('cover_image_id').references((): AnyPgColumn => coverImages.id, {
       onDelete: 'set null',
     }),
-    // When playlist playback last engaged. Together with `updatedAt` (bumped on
-    // every membership write) it forms the Playlists tab's activity sort key.
+    // When playlist playback last engaged. Together with `updatedAt` it forms
+    // the Playlists tab's activity sort key. `updatedAt` moves when the owner
+    // curates that Playlist directly. Purging a Track from every Playlist at
+    // once (Remove from Library via `unsaveTrackEverywhere`, Dislike, Delete
+    // Track) and the Lounge revocation purge remove memberships without moving
+    // it, because a Library-wide removal is not curation of each Playlist and a
+    // reorder must not reveal that a Track was removed or revoked.
     lastPlayedAt: timestamp('last_played_at', { withTimezone: true }),
     // The Lounge share state: null = Private, set = In Lounge —
     // live, revocable, reaching `shareAudience`. Doubles as the Lounge's

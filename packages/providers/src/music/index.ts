@@ -15,6 +15,8 @@ export type MusicGenerationMode = 'non_custom' | 'custom';
  * voice profile. `supported` reflects the CONFIGURED endpoint and default
  * model — the pre-spend gate callers check — while `supportedModels` names the
  * full set so a per-input model override is still validated inside the adapter.
+ * Own voice is parked (ADR 0010, amended 2026-11-17), so this description is
+ * not reconciled with the Suno adapter, which ties `supported` to the endpoint.
  */
 export interface MusicCustomVoiceCapability {
   supported: boolean;

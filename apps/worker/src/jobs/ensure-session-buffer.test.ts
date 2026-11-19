@@ -3860,7 +3860,7 @@ describeIfDb('ensure-session-buffer controller', () => {
       expect(await frozenLyricContext(sessionId)).toBe(clamped);
     });
 
-    it('a reroll submit never calls the text LLM and reuses its frozen brief', async () => {
+    it('a reroll submit writes no new lyric brief and reuses its frozen one', async () => {
       const frozenBrief = 'focus 2: harbor lights; a promise kept';
       const { ownerUserId, sessionId } = await seedVocalSession();
       const requestId = await createGenerationRequest(ctx.db, {
