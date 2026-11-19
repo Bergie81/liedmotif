@@ -182,6 +182,7 @@ export function AssistantDock({
       cardHost
         ? {
             headroom: cardHost.headroom,
+            vibeChangeInFlight: cardHost.vibeChangeInFlight,
             coverStatus: cardHost.coverStatus,
             confirm,
             followCover: (action, signal) =>

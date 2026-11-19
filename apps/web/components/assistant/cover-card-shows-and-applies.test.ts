@@ -32,7 +32,12 @@ const player = vi.hoisted(() => ({
 }));
 vi.mock('@/components/player/player-provider', () => ({
   usePlayerActions: () => player,
-  usePlayerContext: () => ({ ...player, playback: null, submitChangeVibe: () => null }),
+  usePlayerContext: () => ({
+    ...player,
+    playback: null,
+    submitChangeVibe: () => null,
+    vibeChange: { pendingSessionId: null, error: null },
+  }),
 }));
 
 afterEach(() => {

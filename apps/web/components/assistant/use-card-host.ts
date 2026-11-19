@@ -81,6 +81,11 @@ export interface CardHost {
    */
   changeVibe: (sessionId: string, input: ChangeVibeIntentInput) => CardFlow;
   /**
+   * A Change Vibe request is in flight: the player's own, a duration save from
+   * its sheet, or a card's. Until it ends `changeVibe` sends nothing.
+   */
+  vibeChangeInFlight: boolean;
+  /**
    * Starts More Like This the way the Library's Track menu does, hand-off to
    * the Player included, with the length the card carries. Null when a Start
    * is still in flight: the app goes to the Player that narrates it.
@@ -124,7 +129,8 @@ export function useCardHost(
   const seedMoreLikeThis = useSeedMoreLikeThis();
   const clientId = useClientId();
   const router = useRouter();
-  const { playback, engage, submitChangeVibe } = usePlayerContext();
+  const { playback, engage, submitChangeVibe, vibeChange } = usePlayerContext();
+  const vibeChangeInFlight = vibeChange.pendingSessionId !== null;
   // A flow runs long after the render that handed it out, and the seeding
   // hook returns a new function with every render.
   const live = useRef({ playback, seedMoreLikeThis });
@@ -145,6 +151,7 @@ export function useCardHost(
         ) ?? null,
       changeVibe: (sessionId, input) =>
         submitChangeVibe(sessionId, input, {})?.then((carriedOut) => ({ carriedOut })) ?? null,
+      vibeChangeInFlight,
       moreLikeThis({ seedTrackIds, targetDurationMinutes }) {
         // The seed flow would ask whether to replace a Start that is still
         // setting up. A card leaves that Start alone, as a Session card does.
@@ -213,6 +220,15 @@ export function useCardHost(
         return { carriedOut: true };
       },
     }),
-    [headroom, refreshChrome, handOffStart, clientId, router, engage, submitChangeVibe],
+    [
+      headroom,
+      refreshChrome,
+      handOffStart,
+      clientId,
+      router,
+      engage,
+      submitChangeVibe,
+      vibeChangeInFlight,
+    ],
   );
 }

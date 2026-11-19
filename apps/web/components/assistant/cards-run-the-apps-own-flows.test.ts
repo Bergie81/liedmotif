@@ -31,7 +31,7 @@ vi.mock('@/components/player/player-provider', async () => {
   const { useVibeChangeRequest } = await import('@/components/player/use-vibe-change-request');
   const usePlayer = () => ({
     ...player,
-    submitChangeVibe: useVibeChangeRequest(player.applyRestyledSession).submitChangeVibe,
+    ...useVibeChangeRequest(player.applyRestyledSession),
   });
   return { usePlayerActions: usePlayer, usePlayerContext: usePlayer };
 });
@@ -143,8 +143,58 @@ describe('a Change Vibe card', () => {
     fireEvent.click(second!);
 
     expect(server.sent).toHaveLength(1);
-    expect(second).toHaveProperty('disabled', false);
+    expect(second).toHaveProperty('disabled', true);
     expect(screen.getAllByRole('button', { name: 'Change Vibe' })).toEqual([second]);
+
+    server.sent[0]!.answer(saved(summary()));
+
+    await waitFor(() => expect(second).toHaveProperty('disabled', false));
+    expect(server.sent).toHaveLength(1);
+  });
+
+  it('cannot be confirmed while another Change Vibe is in flight, says so, and can be confirmed again once that one ended', async () => {
+    const { server } = await ask();
+    askAgain('And another.');
+    await waitFor(() =>
+      expect(screen.getAllByRole('group', { name: 'Change Vibe' })).toHaveLength(2),
+    );
+    const [firstCard, secondCard] = screen.getAllByRole('group', { name: 'Change Vibe' });
+
+    fireEvent.click(within(firstCard!).getByRole('button', { name: 'Change Vibe' }));
+
+    // The card whose own request is out keeps its own state.
+    expect(within(firstCard!).getByRole('button', { name: 'Changing…' })).toHaveProperty(
+      'disabled',
+      true,
+    );
+    expect(firstCard!.textContent).not.toContain('Changing vibe…');
+    // The other one waits, and says why, in the player's own words.
+    const waiting = within(secondCard!).getByRole('button', { name: 'Change Vibe' });
+    expect(waiting).toHaveProperty('disabled', true);
+    expect(secondCard!.textContent).toContain('Changing vibe…');
+    fireEvent.click(waiting);
+    expect(server.sent).toHaveLength(1);
+
+    server.sent[0]!.answer(refused('You have reached your generation headroom for now.'));
+
+    await waitFor(() => expect(waiting).toHaveProperty('disabled', false));
+    expect(firstCard!.textContent).toContain('The vibe did not change');
+    // The waiting card was never settled, and nothing went out by itself.
+    expect(secondCard!.textContent).not.toContain('Changing vibe…');
+    expect(secondCard!.textContent).not.toContain('The vibe did not change');
+    expect(server.sent).toHaveLength(1);
+
+    askAgain('Is it still there?');
+    await waitFor(() => expect(server.asked).toHaveLength(3));
+    expect(server.asked[2]!.join('\n')).toContain(
+      'The user has not confirmed it, so it has not happened.',
+    );
+
+    fireEvent.click(waiting);
+
+    expect(server.sent).toHaveLength(2);
+    expect(server.sent[1]!.path).toBe('/api/sessions/change-vibe');
+    expect(within(secondCard!).getByRole('button', { name: 'Changing…' })).toBeTruthy();
   });
 });
 

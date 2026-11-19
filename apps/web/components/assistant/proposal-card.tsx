@@ -12,6 +12,7 @@ import type { AssistantCard, AssistantCoverCard } from '@liedmotif/shared';
 import { headroomLine, type GenerationHeadroom } from '@/components/app-shell-model';
 import { CoverArt, CoverFallback } from '@/components/player/cover-art';
 import { coverUsageLine } from '@/components/player/cover-usage-line';
+import { VIBE_CHANGE_PENDING_CAPTION } from '@/components/player/vibe-switch-view';
 import { compactPrimaryButtonClass } from '@/components/ui/form-styles';
 import { LiedmotifLoader } from '@/components/ui/loading';
 import { OnlineOnly } from '@/components/ui/online-only';
@@ -27,6 +28,8 @@ const COVER_POLL_MS = 3000;
 export interface Cards {
   /** What is left of the budget, as the app's own readout has it; null when nothing counts down. */
   headroom: GenerationHeadroom | null;
+  /** A Change Vibe request is in flight: a Change Vibe card waits until it ends. */
+  vibeChangeInFlight: boolean;
   /** Reads the cover status a cover card shows its budget line from, as the cover dialog reads it. */
   coverStatus: CardHost['coverStatus'];
   /** The user said yes to this card. */
@@ -45,6 +48,10 @@ export function ProposalCard({ action }: { action: ProposedChatAction }) {
   const wording = cardWording(action.card);
   const { outcome } = action;
   const open = !outcome || outcome === 'confirming';
+  // Prepared against the vibe that is being changed: it is not queued behind
+  // that change, it waits for the user to tap it again once the change ended.
+  const waitsForVibeChange =
+    !outcome && action.card.kind === 'changeVibe' && cards?.vibeChangeInFlight === true;
   return (
     <div
       role="group"
@@ -66,7 +73,7 @@ export function ProposalCard({ action }: { action: ProposedChatAction }) {
           <OnlineOnly>
             <button
               type="button"
-              disabled={!cards || outcome === 'confirming'}
+              disabled={!cards || outcome === 'confirming' || waitsForVibeChange}
               onClick={() => cards?.confirm(action)}
               className={cn(compactPrimaryButtonClass, 'mt-1 self-start')}
             >
@@ -74,6 +81,11 @@ export function ProposalCard({ action }: { action: ProposedChatAction }) {
               {outcome === 'confirming' ? wording.confirming : wording.confirm}
             </button>
           </OnlineOnly>
+          {waitsForVibeChange ? (
+            <p role="status" className="text-muted">
+              {VIBE_CHANGE_PENDING_CAPTION}
+            </p>
+          ) : null}
         </>
       ) : (
         <SettledCard action={action} wording={wording} />
