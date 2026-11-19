@@ -36,6 +36,10 @@ folder's `.env` sets `COMPOSE_PROJECT_NAME`. Folders compare by inode, so a
 symlink to the install folder is the same install. The message names the
 folder to pass as `--dir`, or, when the containers' folder is gone, points at
 `docker compose ls -a`; the installer never stops or removes the other install.
+Removing a stale install whose folder is gone takes
+`docker compose -p <project> down -v`, which deletes its database and files: a
+plain `down` keeps its volumes, and the next install would meet that database
+with a new password.
 
 ### Update
 

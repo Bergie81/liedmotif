@@ -7,6 +7,12 @@ import { ENV_EXAMPLE, machine, parseEnv, SECRET_KEYS, type Machine } from './ins
 // test runs it twice: on a busy machine that passes Vitest's 5 s default.
 vi.setConfig({ testTimeout: 30_000 });
 
+const exists = (path: string) =>
+  stat(path).then(
+    () => true,
+    () => false,
+  );
+
 describe('installer: fresh install with --domain', () => {
   it('writes .env with every secret generated, distinct, mode 600 and a matching database URL', async () => {
     const box = await machine();
@@ -466,11 +472,6 @@ describe('installer: Docker', () => {
 // another, so a second folder for the same project would replace the running
 // app's containers and meet its database with a new password.
 describe('installer: Liedmotif already installed in another folder', () => {
-  const exists = (path: string) =>
-    stat(path).then(
-      () => true,
-      () => false,
-    );
   /** The folder the other install runs from, next to this machine's install folder. */
   async function otherFolder(box: Machine) {
     const folder = join(box.installDir, '..', 'srv-liedmotif');
@@ -513,7 +514,7 @@ describe('installer: Liedmotif already installed in another folder', () => {
   it.each([
     ['names no folder', () => ''],
     ['names a folder that is gone', (box: Machine) => join(box.installDir, '..', 'gone')],
-  ])('refuses, and says how to find or remove it, when the install %s', async (_, folder) => {
+  ])('refuses, and says how to find it, when the install %s', async (_, folder) => {
     const box = await machine();
     await box.addContainer({ workingDir: folder(box) });
 
@@ -522,7 +523,9 @@ describe('installer: Liedmotif already installed in another folder', () => {
     expect(code).not.toBe(0);
     expect(output).toContain('Liedmotif is already installed on this machine');
     expect(output).toContain('docker compose ls -a');
-    expect(output).toContain('docker compose -p liedmotif down');
+    // Removing it keeps its volumes, so a fresh install would meet its database
+    // with a new password: the message never suggests that.
+    expect(output).not.toMatch(/compose -p \S+ down/);
     expect(await exists(box.installDir)).toBe(false);
     expect(await dockerChanges(box)).toEqual([]);
   });
@@ -576,11 +579,6 @@ describe('installer: from a checkout (LIEDMOTIF_SOURCE_DIR)', () => {
     await mkdir(join(dir, path, '..'), { recursive: true });
     await writeFile(join(dir, path), content);
   }
-  const exists = (path: string) =>
-    stat(path).then(
-      () => true,
-      () => false,
-    );
 
   // Copying the checkout into a directory inside it would copy every earlier
   // install along, one level deeper on each run.

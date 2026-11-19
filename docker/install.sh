@@ -354,7 +354,7 @@ check_other_install() {
       "to update it, run the same command with --dir $(printf '%q' "$other")."
   [ "$unknown" = false ] ||
     fail "Liedmotif is already installed on this machine (Compose project $project), but the folder it runs from cannot be found. Nothing was changed." \
-      "'$DOCKER_SHOWN compose ls -a' lists it with its folder; to update it, run the same command with --dir <that folder>. To remove it instead, run '$DOCKER_SHOWN compose -p $project down' by hand; its data stays in its volumes."
+      "'$DOCKER_SHOWN compose ls -a' lists it with its folder; to update it, run the same command with --dir <that folder>."
 }
 
 # Debian-family systems install their security updates on their own once
