@@ -15,7 +15,7 @@ import type { Database } from '../client';
 import type { DbOrTx } from '../transactions';
 import { providerCredentials } from '../schema';
 import type { EncryptedSecret, ProviderConfig } from '../schema/types';
-import { decryptSecret, encryptSecret } from './crypto';
+import { decryptSecret, EncryptionKeyError, encryptSecret } from './crypto';
 import { maskSecret } from './masking';
 import {
   parseTimeoutMs,
@@ -73,7 +73,9 @@ interface WithEnvAndKey {
 /** Decrypt a stored envelope, requiring the key to be present. */
 function decryptStored(secret: EncryptedSecret, key: Buffer | undefined): string {
   if (!key) {
-    throw new Error('CREDENTIAL_ENCRYPTION_KEY is required to read a DB-stored secret');
+    throw new EncryptionKeyError(
+      'CREDENTIAL_ENCRYPTION_KEY is required to read a DB-stored secret',
+    );
   }
   return decryptSecret(secret, key);
 }

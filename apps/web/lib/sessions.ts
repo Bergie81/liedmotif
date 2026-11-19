@@ -9,16 +9,20 @@ import {
   deriveSessionMetadata,
   deriveSessionTitle,
   inheritedGuardrails,
+  ProviderConfigError,
   ProviderError,
   sessionStyleSnapshotSchema,
   type ExpansionOptions,
   type ListenerContext,
+  type MusicProvider,
   type SessionIntentInput,
   type SessionStyleSnapshot,
   type VocalMode,
 } from '@liedmotif/providers';
 import {
   countTaskBounds,
+  DecryptionError,
+  EncryptionKeyError,
   getActiveSession,
   getAdminDisplayName,
   getGenerationSettings,
@@ -64,6 +68,7 @@ import {
   headroomBlockedMessage,
   newMusicPausedMessage,
 } from './headroom-copy';
+import { musicSetupMessage } from './music-setup-copy';
 import { getLlmProvider, getMusicProvider } from '@/lib/providers';
 import { cachedUserProfile, requestNow } from './request-cache';
 import { providerTasksToTracks } from './track-units';
@@ -537,9 +542,12 @@ export async function evaluateSessionHeadroom(
   now: Date = new Date(),
   /** Stored limits the caller already read — one settings read per request. */
   knownLimits?: UsageLimits,
+  /** The music provider the caller already built. */
+  knownMusic?: MusicProvider,
 ): Promise<CreationHeadroomDecision> {
   const { limits, bounds } = await loadCostBounds(db, ownerUserId, now, knownLimits);
-  const tracksPerCall = (await getMusicProvider()).getCapabilities().typicalTracksPerRequest;
+  const music = knownMusic ?? (await getMusicProvider());
+  const tracksPerCall = music.getCapabilities().typicalTracksPerRequest;
   // The threshold stays the instance value for every role — it is not a
   // per-Member knob.
   return evaluateCreationHeadroom(bounds, tracksPerCall, limits.minHeadroomTracksToStartSession);
@@ -667,9 +675,36 @@ export async function newMusicPausedRefusal(
   return newMusicPausedMessage({ role: 'member', adminName: await getAdminDisplayName(db) });
 }
 
+/**
+ * The active music provider, or why it cannot be built from its configuration
+ * in the words the requester sees: no key anywhere, a stored key that cannot be
+ * read (wrong or missing `CREDENTIAL_ENCRYPTION_KEY`), or an unknown
+ * `MUSIC_PROVIDER`. Any other failure still throws. The log gets the error's
+ * class only: its text can name the configuration.
+ */
+async function musicProviderOrRefusal(
+  db: Database,
+  ownerUserId: string,
+): Promise<{ music: MusicProvider } | { refusal: string }> {
+  try {
+    return { music: await getMusicProvider() };
+  } catch (error) {
+    const configuration =
+      error instanceof ProviderConfigError ||
+      error instanceof DecryptionError ||
+      error instanceof EncryptionKeyError;
+    if (!configuration) throw error;
+    logger.warn('music provider is not configured; new Session refused', {
+      errorName: error.name,
+    });
+    const profile = await cachedUserProfile(db, ownerUserId);
+    return { refusal: musicSetupMessage(profile?.role === 'member' ? 'member' : 'admin') };
+  }
+}
+
 /** A refused new Session: the API error it answers with, and the words the requester sees. */
 export interface SessionCreationRefusal {
-  code: 'new_music_paused' | 'session_headroom_blocked';
+  code: 'new_music_paused' | 'provider_error' | 'session_headroom_blocked';
   message: string;
 }
 
@@ -677,7 +712,9 @@ export interface SessionCreationRefusal {
  * Why a new Session would be refused right now, whichever door starts it
  * (Start Session, More Like This, Surprise Me, the Assistant's cards); null
  * when it would not. Paused new music answers first, since a budget reset
- * would not lift it, then the creation headroom. Free reads, nothing spent.
+ * would not lift it, then a music provider that cannot be built (fixing the
+ * key is the only way out, so it is not retryable), then the creation
+ * headroom. Free reads, nothing spent.
  */
 export async function sessionCreationRefusal(
   db: Database,
@@ -686,7 +723,15 @@ export async function sessionCreationRefusal(
   const limits = await getUsageLimits(db);
   const paused = await newMusicPausedRefusal(db, ownerUserId, limits);
   if (paused) return { code: 'new_music_paused', message: paused };
-  const headroom = await evaluateSessionHeadroom(db, ownerUserId, undefined, limits);
+  const provider = await musicProviderOrRefusal(db, ownerUserId);
+  if ('refusal' in provider) return { code: 'provider_error', message: provider.refusal };
+  const headroom = await evaluateSessionHeadroom(
+    db,
+    ownerUserId,
+    undefined,
+    limits,
+    provider.music,
+  );
   if (headroom.allowed) return null;
   return { code: 'session_headroom_blocked', message: await headroomRefusalMessage(db, headroom) };
 }

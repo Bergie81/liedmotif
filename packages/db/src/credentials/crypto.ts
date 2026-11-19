@@ -25,7 +25,10 @@ const IV_BYTES = 12;
 /** GCM produces a 128-bit (16-byte) authentication tag. */
 const TAG_BYTES = 16;
 
-/** Thrown for invalid encryption-key configuration — boot should fail fast on it. */
+/**
+ * Thrown for invalid encryption-key configuration — boot should fail fast on it —
+ * and when a stored secret is read with no key configured.
+ */
 export class EncryptionKeyError extends Error {
   constructor(message: string) {
     super(message);

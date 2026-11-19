@@ -42,7 +42,7 @@ export type MusicProviderSelection = (typeof MUSIC_PROVIDER_SELECTIONS)[number];
 export function musicProviderSelection(value: string | undefined): MusicProviderSelection {
   const selection = value?.trim() || 'mock';
   if (!(MUSIC_PROVIDER_SELECTIONS as readonly string[]).includes(selection)) {
-    throw new Error(`Unknown music provider: ${selection}`);
+    throw new ProviderConfigError(`Unknown music provider: ${selection}`);
   }
   return selection as MusicProviderSelection;
 }
