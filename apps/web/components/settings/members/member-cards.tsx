@@ -277,8 +277,9 @@ function MemberCard({
             This permanently deletes{' '}
             <b className="font-semibold text-paper">{member.name || 'this member'}</b> — their{' '}
             {member.trackCount} {member.trackCount === 1 ? 'Track' : 'Tracks'}, Sessions, Playlists,
-            People, and at least {formatBinaryBytes(member.storageBytes)} of stored files. It cannot
-            be undone. Type the member&apos;s name to confirm.
+            People, and at least {formatBinaryBytes(member.storageBytes)} of stored files. Music
+            they kept offline on their own devices stays there. It cannot be undone. Type the
+            member&apos;s name to confirm.
           </p>
           <input
             type="text"

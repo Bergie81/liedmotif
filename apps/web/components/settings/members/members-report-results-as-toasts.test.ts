@@ -269,3 +269,17 @@ describe('Member cards — results as toasts', () => {
     expect(screen.queryByRole('status')).toBeNull();
   });
 });
+
+describe('Member cards — delete confirmation', () => {
+  // Liedmotif cannot reach into a device, so the confirmation must not read as
+  // if deleting a Member removes their offline copies too.
+  it('says the music a Member kept offline stays on their own devices', () => {
+    renderMember();
+
+    click('Delete');
+
+    expect(
+      screen.getByText(/Music they kept offline on their own devices stays there\./),
+    ).toBeTruthy();
+  });
+});

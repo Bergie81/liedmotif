@@ -6,6 +6,7 @@ import type {
   TrackLyrics,
 } from '@liedmotif/shared';
 import { memoryOfflineBacking } from '@/tests/helpers/memory-offline-backing';
+import { offlineServer } from './offline-server';
 import { createOfflineStore, type OfflineStore } from './offline-store';
 import {
   createOfflineSync,
@@ -217,6 +218,32 @@ describe('offline sync', () => {
     expect(await store.marks()).toEqual([]);
     expect(await store.list()).toEqual([]);
     expect(offline.status().has('playlist:p1')).toBe(false);
+  });
+
+  // A 401 is also an expired sign-in, so it never reads as "gone": a disabled
+  // or deleted Member's device keeps its own copies until its site data is cleared.
+  it('a sync the server answers with 401 keeps every stored Track and mark', async () => {
+    const { remote, store, offline } = await setup();
+    remote.setPlaylist('p1', [track('a'), track('b')]);
+    remote.setSession('s1', [track('c')]);
+    await markAndSettle(offline, 'p1');
+    await offline.mark('session', 's1');
+    await offline.settled();
+    const marksBefore = await store.marks();
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ ok: false }), { status: 401 })),
+    );
+    try {
+      const signedOut = createOfflineSync({ store, server: offlineServer, capBytes: 100 * MB });
+      await signedOut.sync();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    expect(await storedIds(store)).toEqual(['a', 'b', 'c']);
+    expect(await store.marks()).toEqual(marksBefore);
   });
 
   it('drops a deleted Session’s mark and Tracks, keeping one an offline Playlist still lists', async () => {
