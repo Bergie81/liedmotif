@@ -45,12 +45,12 @@ export function deriveSessionsListView({
    *  server view names it while it still runs, or it has a Pinned or History row. */
   liveSessionKnown: boolean;
 } {
-  const stoppedId = liveSessionStatus === 'stopped' ? (liveSession?.id ?? null) : null;
-  const live = stoppedId === null ? liveSession : null;
-  const server = serverActive?.id === stoppedId ? null : serverActive;
+  const liveId = liveSession?.id ?? null;
+  const liveStopped = liveId !== null && liveSessionStatus === 'stopped';
+  const live = liveStopped ? null : liveSession;
+  const server = liveStopped && serverActive?.id === liveId ? null : serverActive;
   const base = live ?? server;
   const rows = [...(items ?? []), ...pinned];
-  const liveId = liveSession?.id ?? null;
   const liveSessionKnown =
     liveId === null || server?.id === liveId || rows.some((item) => item.id === liveId);
   if (!base) return { active: null, pinned, earlier: items, liveSessionKnown };
