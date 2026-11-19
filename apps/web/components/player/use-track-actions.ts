@@ -67,6 +67,10 @@ export function useTrackActions(deps: TrackActionDeps): TrackActions {
   // Serialize Save and Favorite writes per Track because both mutate the Save
   // floor (`favoritedAt ⇒ savedAt`); responses must never settle out of order.
   const retentionPendingRef = useRef<Set<string>>(new Set());
+  // Each star tap and picker commit moves its Track's version forward. A star
+  // answer lands only if its Track's version is still the one from its tap;
+  // otherwise a newer choice already stands and the answer writes nothing.
+  const retentionVersionRef = useRef<Map<string, number>>(new Map());
   // A removal advances before its request settles, so a second tap in that
   // window would remove the next, unheard Track (for Reroll, possibly buying a
   // fresh generation). Held for the request only, not until a new Track arrives.
@@ -131,6 +135,7 @@ export function useTrackActions(deps: TrackActionDeps): TrackActions {
   const applyRetentionFlags = useCallback(
     (trackId: string, flags: TrackRetentionFlags, inCuratedPlaylist: boolean) => {
       const { activeTrack, patch } = depsRef.current;
+      bumpVersion(retentionVersionRef.current, trackId);
       const track = activeTrack();
       if (!track || track.trackId !== trackId) return;
       applyFlags(track, flags);
@@ -145,6 +150,7 @@ export function useTrackActions(deps: TrackActionDeps): TrackActions {
     const track = activeTrack();
     if (!track || retentionPendingRef.current.has(track.trackId)) return;
     retentionPendingRef.current.add(track.trackId);
+    const version = bumpVersion(retentionVersionRef.current, track.trackId);
     clearPlayerError(sourceId, 'favorite');
     const previous = flagsOf(track);
     const favorited = previous.favoritedAt == null;
@@ -152,6 +158,7 @@ export function useTrackActions(deps: TrackActionDeps): TrackActions {
     patchFlags(track, patch);
     void favoriteTrack(track.trackId, favorited).then((res) => {
       retentionPendingRef.current.delete(track.trackId);
+      if (retentionVersionRef.current.get(track.trackId) !== version) return;
       applyFlags(track, settleTrackFlags(previous, res.ok ? res.data : null));
       if (activeTrack()?.trackId === track.trackId) {
         patchFlags(track, patch);
@@ -182,6 +189,12 @@ export function useTrackActions(deps: TrackActionDeps): TrackActions {
   }, []);
 
   return { dislike, deleteTrack, applyRetentionFlags, toggleFavorite, reportSkip };
+}
+
+function bumpVersion(versions: Map<string, number>, trackId: string): number {
+  const next = (versions.get(trackId) ?? 0) + 1;
+  versions.set(trackId, next);
+  return next;
 }
 
 function flagsOf(track: PlayableTrack): TrackRetentionFlags {
