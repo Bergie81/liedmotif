@@ -159,7 +159,7 @@ describe('member budget form', () => {
 });
 
 describe('member meta line', () => {
-  it('reads joined, activity, tracks, and bytes in one line', () => {
+  it('reads joined, sign-in activity, tracks, and bytes in one line', () => {
     expect(
       memberMetaLine(
         {
@@ -170,21 +170,22 @@ describe('member meta line', () => {
         },
         'UTC',
       ),
-    ).toBe('Joined Jul 12, 2026 · Active Jul 29, 2026 · 1 Track · 3.0 MiB');
+    ).toBe('Joined Jul 12, 2026 · Sign-in active Jul 29, 2026 · 1 Track · 3.0 MiB');
   });
 
-  it('says so when a Member never signed in', () => {
-    expect(
-      memberMetaLine(
-        {
-          joinedAt: '2026-07-12T08:00:00.000Z',
-          lastActiveAt: null,
-          trackCount: 0,
-          storageBytes: 0,
-        },
-        'UTC',
-      ),
-    ).toContain('Never signed in');
+  it('says a Member without a current sign-in has none, without claiming they never signed in', () => {
+    const line = memberMetaLine(
+      {
+        joinedAt: '2026-07-12T08:00:00.000Z',
+        lastActiveAt: null,
+        trackCount: 0,
+        storageBytes: 0,
+      },
+      'UTC',
+    );
+
+    expect(line).toBe('Joined Jul 12, 2026 · No active sign-in · 0 Tracks · 0 B');
+    expect(line).not.toContain('Never');
   });
 
   it('formatShortDate answers a dash for garbage', () => {
@@ -196,7 +197,7 @@ describe('member meta line', () => {
     expect(formatShortDate('2026-11-03T23:30:00.000Z', 'Europe/Berlin')).toBe('Nov 4, 2026');
   });
 
-  it('dates Joined and Active in the Instance timezone', () => {
+  it('dates Joined and sign-in activity in the Instance timezone', () => {
     expect(
       memberMetaLine(
         {
@@ -207,7 +208,7 @@ describe('member meta line', () => {
         },
         'Europe/Berlin',
       ),
-    ).toMatch(/^Joined Nov 4, 2026 · Active Nov 5, 2026 · /);
+    ).toMatch(/^Joined Nov 4, 2026 · Sign-in active Nov 5, 2026 · /);
   });
 
   it("states an Invite's exact expiry with the day, time and timezone it is in", () => {

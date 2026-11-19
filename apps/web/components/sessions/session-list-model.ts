@@ -1,6 +1,7 @@
 import {
   EMPTY_SESSION_TRACK_ACTIVITY,
   type ActiveSessionOverview,
+  type ActivitySessionStatus,
   type SessionListItem,
   type SessionSummary,
 } from '@liedmotif/shared';
@@ -14,12 +15,16 @@ import { formatCollectionLength } from '@/components/library/library-view-model'
  * (count, total length, genres) comes from the server view when it names the same
  * Session, else from the Session's own Pinned or History entry. The live summary is
  * frozen at engage time, so its cover can predate the generated art — the
- * controller's queue-poll cover (`liveCoverImageId`) outranks it.
+ * controller's queue-poll cover (`liveCoverImageId`) outranks it, and only the
+ * queue poll's `liveSessionStatus` says whether the live Session still runs: one it
+ * reports stopped holds no Active now slot, however audible it still is, and stays
+ * in Pinned or History.
  */
 export function deriveSessionsListView({
   serverActive,
   liveSession,
   liveCoverImageId,
+  liveSessionStatus,
   items,
   pinned,
 }: {
@@ -28,6 +33,8 @@ export function deriveSessionsListView({
   /** The live controller's self-updating session cover; null when nothing is
    * engaged (or the controller has not published one). */
   liveCoverImageId: string | null;
+  /** The live Session's lifecycle as its queue poll last reported it. */
+  liveSessionStatus: ActivitySessionStatus;
   items: SessionListItem[] | null;
   pinned: SessionListItem[];
 }): {
@@ -35,15 +42,18 @@ export function deriveSessionsListView({
   pinned: SessionListItem[];
   earlier: SessionListItem[] | null;
 } {
-  const base = liveSession ?? serverActive;
+  const stoppedId = liveSessionStatus === 'stopped' ? (liveSession?.id ?? null) : null;
+  const live = stoppedId === null ? liveSession : null;
+  const server = serverActive?.id === stoppedId ? null : serverActive;
+  const base = live ?? server;
   if (!base) return { active: null, pinned, earlier: items };
   const activity =
-    serverActive?.id === base.id
-      ? serverActive
+    server?.id === base.id
+      ? server
       : [...(items ?? []), ...pinned].find((item) => item.id === base.id);
   // Only the live summary can be stale against the controller; the server view
   // is read fresh, so its own cover stands.
-  const liveCover = liveSession ? liveCoverImageId : null;
+  const liveCover = live ? liveCoverImageId : null;
   const { trackCount, totalDurationSeconds, genreTags } = activity ?? EMPTY_SESSION_TRACK_ACTIVITY;
   return {
     active: {

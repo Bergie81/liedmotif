@@ -180,6 +180,16 @@ describe('Settings hub model', () => {
     expect(buildSettingsHubData(input).coverArt.text).toContain('generated covers available');
   });
 
+  it("names the Admin's default cover style by its label, not its stored key", () => {
+    const input = configuredInput();
+    input.coverArt = { ok: true, value: { defaultStyle: 'poster_art' } };
+
+    const text = buildSettingsHubData(input).coverArt.text;
+
+    expect(text).toMatch(/^Default Artistic · generated covers /);
+    expect(text).not.toContain('poster_art');
+  });
+
   it('names the owner default language in the generation summary when one is set', () => {
     const input = configuredInput();
     input.generation = {

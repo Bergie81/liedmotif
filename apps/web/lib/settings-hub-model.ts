@@ -370,7 +370,7 @@ export function buildSettingsHubData(input: SettingsHubInput): SettingsHubData {
   const coverArt = !input.coverArt.ok
     ? unhealthy('Cover-art settings could not be read')
     : configured(
-        `Default ${input.coverArt.value.defaultStyle} · generated covers ${COVER_AVAILABILITY[generatedCoverSource]}`,
+        `Default ${COVER_STYLE_LABELS[input.coverArt.value.defaultStyle]} · generated covers ${COVER_AVAILABILITY[generatedCoverSource]}`,
       );
   const profile = profileSummary(input.profile);
   const people = peopleSummary(input.peopleCount);

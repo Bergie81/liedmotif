@@ -244,7 +244,11 @@ export function formatInviteExpiry(iso: string, timeZone: string): string {
   return `${formatShortDate(iso, timeZone)}, ${time} ${timeZone}`;
 }
 
-/** The one aggregate line under a Member's name, its dates in the Instance timezone. */
+/**
+ * The one aggregate line under a Member's name, its dates in the Instance timezone.
+ * `lastActiveAt` is the newest of the Member's current sign-ins and nothing more:
+ * a signed-out Member has none, whatever their history.
+ */
 export function memberMetaLine(
   member: {
     joinedAt: string;
@@ -257,8 +261,8 @@ export function memberMetaLine(
   return [
     `Joined ${formatShortDate(member.joinedAt, timeZone)}`,
     member.lastActiveAt
-      ? `Active ${formatShortDate(member.lastActiveAt, timeZone)}`
-      : 'Never signed in',
+      ? `Sign-in active ${formatShortDate(member.lastActiveAt, timeZone)}`
+      : 'No active sign-in',
     `${member.trackCount} ${member.trackCount === 1 ? 'Track' : 'Tracks'}`,
     formatBinaryBytes(member.storageBytes),
   ].join(' · ');

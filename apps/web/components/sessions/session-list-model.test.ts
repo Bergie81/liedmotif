@@ -90,6 +90,7 @@ describe('deriveSessionsListView', () => {
       serverActive,
       liveSession: null,
       liveCoverImageId: null,
+      liveSessionStatus: 'active',
       items: [listItem('srv'), listItem('b')],
       pinned: [],
     });
@@ -103,6 +104,7 @@ describe('deriveSessionsListView', () => {
       serverActive: null,
       liveSession: live,
       liveCoverImageId: null,
+      liveSessionStatus: 'active',
       items: [
         listItem('live', { trackCount: 9, totalDurationSeconds: 900, genreTags: ['dream-pop'] }),
         listItem('b'),
@@ -124,6 +126,7 @@ describe('deriveSessionsListView', () => {
       serverActive: null,
       liveSession: live,
       liveCoverImageId: null,
+      liveSessionStatus: 'active',
       items: [listItem('b')],
       pinned: [listItem('live', { trackCount: 5, pinned: true }), listItem('p', { pinned: true })],
     });
@@ -137,12 +140,54 @@ describe('deriveSessionsListView', () => {
     expect(view.earlier).toEqual([listItem('b')]);
   });
 
+  it('gives Active now to the server-known Session when the live one is reported stopped', () => {
+    const stopped = summary('live', { status: 'active' });
+    const view = deriveSessionsListView({
+      serverActive,
+      liveSession: stopped,
+      liveCoverImageId: 'live-cover',
+      liveSessionStatus: 'stopped',
+      items: [listItem('live'), listItem('srv'), listItem('b')],
+      pinned: [listItem('p', { pinned: true })],
+    });
+    expect(view.active).toEqual(serverActive);
+    expect(view.earlier).toEqual([listItem('live'), listItem('b')]);
+    expect(view.pinned).toEqual([listItem('p', { pinned: true })]);
+  });
+
+  it('leaves Active now empty when the live Session is stopped and the server knows no Active one', () => {
+    const view = deriveSessionsListView({
+      serverActive: null,
+      liveSession: summary('live', { status: 'active' }),
+      liveCoverImageId: null,
+      liveSessionStatus: 'stopped',
+      items: [listItem('live'), listItem('b')],
+      pinned: [listItem('pinned-live', { pinned: true })],
+    });
+    expect(view.active).toBeNull();
+    expect(view.earlier).toEqual([listItem('live'), listItem('b')]);
+  });
+
+  it('keeps a stopped live Session out of Active now even while a stale server view still names it', () => {
+    const view = deriveSessionsListView({
+      serverActive: { ...serverActive, id: 'live' },
+      liveSession: summary('live'),
+      liveCoverImageId: null,
+      liveSessionStatus: 'stopped',
+      items: [listItem('live')],
+      pinned: [],
+    });
+    expect(view.active).toBeNull();
+    expect(view.earlier).toEqual([listItem('live')]);
+  });
+
   it('pairs the fresher live summary with the server activity when both name the same Session', () => {
     const live = summary('srv', { title: 'Fresher title' });
     const view = deriveSessionsListView({
       serverActive,
       liveSession: live,
       liveCoverImageId: null,
+      liveSessionStatus: 'active',
       items: [],
       pinned: [],
     });
@@ -161,6 +206,7 @@ describe('deriveSessionsListView', () => {
       serverActive,
       liveSession: live,
       liveCoverImageId: 'generated-cover',
+      liveSessionStatus: 'active',
       items: [],
       pinned: [],
     });
@@ -173,6 +219,7 @@ describe('deriveSessionsListView', () => {
       serverActive,
       liveSession: live,
       liveCoverImageId: null,
+      liveSessionStatus: 'active',
       items: [],
       pinned: [],
     });
@@ -184,6 +231,7 @@ describe('deriveSessionsListView', () => {
       serverActive: { ...serverActive, coverImageId: 'server-cover' },
       liveSession: null,
       liveCoverImageId: 'left-over',
+      liveSessionStatus: 'active',
       items: [],
       pinned: [],
     });
@@ -197,6 +245,7 @@ describe('deriveSessionsListView', () => {
         serverActive: null,
         liveSession: null,
         liveCoverImageId: null,
+        liveSessionStatus: 'active',
         items,
         pinned: [],
       }),
@@ -210,6 +259,7 @@ describe('deriveSessionsListView', () => {
         serverActive: null,
         liveSession: summary('live'),
         liveCoverImageId: null,
+        liveSessionStatus: 'active',
         items: null,
         pinned: [],
       }),

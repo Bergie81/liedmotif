@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_NOVELTY, DEFAULT_STYLE_STRENGTH } from '@liedmotif/shared';
+import { DEFAULT_NOVELTY, DEFAULT_STYLE_STRENGTH, type SurpriseProposal } from '@liedmotif/shared';
 import {
   buildPromptIntent,
   buildStartRequest,
   DEFAULT_GUARDRAIL_DRAFT,
+  formMatchesSurprise,
+  surpriseFineTune,
   type GuardrailDraft,
 } from './create-session-model';
 
@@ -114,6 +116,40 @@ describe('create Session model', () => {
     expect(buildPromptIntent('   ')).toEqual({
       ok: false,
       error: 'Describe a vibe first.',
+    });
+  });
+
+  describe('Surprise Me proposal in the form', () => {
+    const NO_LANGUAGE: SurpriseProposal['edit'] = {
+      prompt: 'Surprise me with a fresh Indie session.',
+      genres: ['indie'],
+      energy: 'medium',
+      vocal: 'vocal',
+      language: null,
+      durationMinutes: 45,
+    };
+    const untouchedForm = (edit: SurpriseProposal['edit']) => ({
+      ...surpriseFineTune(edit),
+      guardrails: DEFAULT_GUARDRAIL_DRAFT,
+    });
+
+    it('shows a proposal without a language as Auto Detect', () => {
+      expect(surpriseFineTune(NO_LANGUAGE).language).toBe('auto');
+    });
+
+    it('shows the language a proposal names', () => {
+      expect(surpriseFineTune({ ...NO_LANGUAGE, language: 'Spanish' }).language).toBe('Spanish');
+    });
+
+    it('matches the untouched form to a proposal without a language', () => {
+      expect(formMatchesSurprise(NO_LANGUAGE.prompt, untouchedForm(NO_LANGUAGE), NO_LANGUAGE)).toBe(
+        true,
+      );
+    });
+
+    it("makes picking a language the User's own request", () => {
+      const picked = { ...untouchedForm(NO_LANGUAGE), language: 'German' as const };
+      expect(formMatchesSurprise(NO_LANGUAGE.prompt, picked, NO_LANGUAGE)).toBe(false);
     });
   });
 

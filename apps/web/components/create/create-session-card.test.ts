@@ -184,6 +184,31 @@ describe('Surprise Me in the creation card', () => {
     expect(onStart).not.toHaveBeenCalled();
   });
 
+  it('shows a proposal without a language as Auto Detect under a German Default language and starts it by identity', () => {
+    const onStart = vi.fn();
+    const onStartSurprise = vi.fn();
+    const noLanguage: SurpriseProposal = {
+      ...EMBER,
+      language: null,
+      edit: { ...EMBER.edit, language: null },
+    };
+    render(
+      createElement(CreateSessionCard, {
+        onStart,
+        llmConfigured: true,
+        defaultLanguage: 'German',
+        surprise: { pending: noLanguage, onStart: onStartSurprise },
+      }),
+    );
+
+    expect(screen.getByTestId('session-language').textContent).toContain('Auto Detect');
+    fireEvent.click(screen.getByTestId('start-vibe'));
+    expect(onStartSurprise).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ proposalId: EMBER.id }),
+    );
+    expect(onStart).not.toHaveBeenCalled();
+  });
+
   it('sets the duration to the proposal’s own and starts with it', () => {
     const { onStartSurprise } = mount();
     expect(

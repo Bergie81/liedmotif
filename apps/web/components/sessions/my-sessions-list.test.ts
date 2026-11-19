@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { createElement, type FunctionComponent } from 'react';
 import type { SessionListItem } from '@liedmotif/shared';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { shownToasts, toast } from '@/lib/toast';
 import { MySessionsList } from './my-sessions-list';
@@ -178,6 +178,55 @@ describe('My Sessions active card', () => {
     renderList([session(1)]);
     await screen.findByText('6 Tracks · 18 min');
     expect(screen.getByText('Lo-fi')).toBeTruthy();
+    expect(fetcher).toHaveBeenCalledOnce();
+  });
+});
+
+describe('My Sessions with a stopped live Session', () => {
+  it('gives Active now to the server-known Session and lists the stopped one in History', async () => {
+    const stopped = activeSummary(70, 'Stopped on the player');
+    const running = activeSummary(80, 'Running elsewhere');
+    player.playback = {
+      session: stopped,
+      player: { sessionCoverImageId: null, sessionStatus: 'stopped' },
+    };
+    const fetcher = vi.fn(async () => ({
+      json: async () => ({
+        ok: true,
+        data: {
+          items: [session(70, { title: 'Stopped on the player' }), session(1)],
+          nextCursor: null,
+          pinned: [],
+          activeSession: { ...running, trackCount: 3, totalDurationSeconds: 540, genreTags: [] },
+        },
+      }),
+    }));
+    vi.stubGlobal('fetch', fetcher);
+    render(
+      createElement(
+        MySessionsList as FunctionComponent<{ initial: ResumableSessionsInitialData }>,
+        {
+          initial: {
+            items: [session(1)],
+            activeSession: {
+              ...stopped,
+              trackCount: 2,
+              totalDurationSeconds: 360,
+              genreTags: [],
+            } as ResumableSessionsInitialData['activeSession'],
+            nextCursor: null,
+            pinned: [],
+          },
+        },
+      ),
+    );
+
+    const history = await screen.findByRole('region', { name: /History/ });
+    expect(await within(history).findByText('Stopped on the player')).toBeTruthy();
+    expect(within(history).getByLabelText('Options for Stopped on the player')).toBeTruthy();
+    const activeNow = screen.getByRole('region', { name: 'Active now' });
+    expect(within(activeNow).getByText('Running elsewhere')).toBeTruthy();
+    expect(within(activeNow).queryByText('Stopped on the player')).toBeNull();
     expect(fetcher).toHaveBeenCalledOnce();
   });
 });

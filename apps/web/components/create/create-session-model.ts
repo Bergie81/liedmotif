@@ -136,19 +136,19 @@ export function buildPromptIntent(
   };
 }
 
-/** The fine-tune picks a Surprise Me proposal asks for, as the form holds them. */
-export function surpriseFineTune(
-  edit: SurpriseProposal['edit'],
-  defaultLanguage: SessionLanguageChoice,
-): DescribeFineTune {
+/**
+ * The fine-tune picks a Surprise Me proposal asks for, as the form holds them.
+ * A proposal without a language shows Auto Detect: it was made without a
+ * language pick, so the owner's Default language would ask for something else.
+ */
+export function surpriseFineTune(edit: SurpriseProposal['edit']): DescribeFineTune {
   return {
     genres: edit.genres.slice(0, MAX_GENRES),
     energy: edit.energy ?? 'auto',
     vocal: edit.vocal ?? 'auto',
     voice: 'any',
     ownVoice: false,
-    language:
-      SESSION_LANGUAGE_CHOICES.find((choice) => choice === edit.language) ?? defaultLanguage,
+    language: SESSION_LANGUAGE_CHOICES.find((choice) => choice === edit.language) ?? 'auto',
   };
 }
 
@@ -161,11 +161,10 @@ export function formMatchesSurprise(
   prompt: string,
   picks: DescribePicks,
   edit: SurpriseProposal['edit'],
-  defaultLanguage: SessionLanguageChoice,
 ): boolean {
   const form = buildPromptIntent(prompt, picks);
   const proposed = buildPromptIntent(edit.prompt, {
-    ...surpriseFineTune(edit, defaultLanguage),
+    ...surpriseFineTune(edit),
     guardrails: DEFAULT_GUARDRAIL_DRAFT,
   });
   return form.ok && proposed.ok && JSON.stringify(form.intent) === JSON.stringify(proposed.intent);

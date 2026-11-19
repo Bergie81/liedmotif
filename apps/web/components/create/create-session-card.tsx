@@ -89,7 +89,7 @@ export function CreateSessionCard({
     voice: 'any',
     ownVoice: false,
     language: defaultLanguage,
-    ...(seed ? surpriseFineTune(seed.edit, defaultLanguage) : {}),
+    ...(seed ? surpriseFineTune(seed.edit) : {}),
     guardrails: DEFAULT_GUARDRAIL_DRAFT,
   }));
   const [targetDurationMinutes, setTargetDurationMinutes] = useState<number | null>(
@@ -131,7 +131,7 @@ export function CreateSessionCard({
       surprise &&
       proposal &&
       proposal.skipProfile === skipProfile &&
-      formMatchesSurprise(prompt, draft, proposal.edit, defaultLanguage)
+      formMatchesSurprise(prompt, draft, proposal.edit)
     ) {
       startProposal(proposal, targetDurationMinutes);
       return;
@@ -174,7 +174,7 @@ export function CreateSessionCard({
     }
     const result = buildPromptIntent(next.edit.prompt, {
       ...draft,
-      ...surpriseFineTune(next.edit, defaultLanguage),
+      ...surpriseFineTune(next.edit),
     });
     if (result.ok) startOwnRequest(result.intent, minutes);
     else toast.error(result.error, { key: START_KEY });
@@ -188,7 +188,7 @@ export function CreateSessionCard({
     setFormHoldsProposal(true);
     toast.dismiss(START_KEY);
     setPrompt(next.edit.prompt);
-    setDraft((current) => ({ ...current, ...surpriseFineTune(next.edit, defaultLanguage) }));
+    setDraft((current) => ({ ...current, ...surpriseFineTune(next.edit) }));
     setTargetDurationMinutes(next.edit.durationMinutes);
   }
 

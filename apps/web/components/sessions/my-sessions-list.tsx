@@ -6,6 +6,7 @@ import {
   SEARCH_SCOPED_GROUP_LIMIT,
   type ActiveSessionOverview,
   type SearchSessionItem,
+  type ActivitySessionStatus,
   type SessionListItem,
   type SessionSummary,
 } from '@liedmotif/shared';
@@ -55,6 +56,7 @@ export function MySessionsList({
         initial={initial}
         liveSession={playback?.session ?? null}
         liveCoverImageId={playback?.player.sessionCoverImageId ?? null}
+        liveSessionStatus={playback?.player.sessionStatus ?? 'active'}
         engagedSource={engagedSource}
       />
     </SessionTracksProvider>
@@ -65,11 +67,13 @@ const MySessionsListContent = memo(function MySessionsListContent({
   initial,
   liveSession,
   liveCoverImageId,
+  liveSessionStatus,
   engagedSource,
 }: {
   initial?: ResumableSessionsInitialData;
   liveSession: SessionSummary | null;
   liveCoverImageId: string | null;
+  liveSessionStatus: ActivitySessionStatus;
   engagedSource: EngagedSource | null;
 }) {
   const list = useResumableSessions({ includeActive: true, includePinned: true, initial });
@@ -88,15 +92,17 @@ const MySessionsListContent = memo(function MySessionsListContent({
     serverActive: activeSession,
     liveSession,
     liveCoverImageId,
+    liveSessionStatus,
     items,
     pinned,
   });
   // Playing a Session found through search leaves no list row to read its Track
-  // activity from, so the Active now card asks the server.
+  // activity from, so the Active now card asks the server. A live Session stopped
+  // since the list loaded has no History row yet, so the list asks again for it.
   const liveSessionId = liveSession?.id ?? null;
   const liveSessionKnown =
     liveSessionId === null ||
-    activeSession?.id === liveSessionId ||
+    (liveSessionStatus !== 'stopped' && activeSession?.id === liveSessionId) ||
     [...(items ?? []), ...pinned].some((item) => item.id === liveSessionId);
   useEffect(() => {
     if (!liveSessionKnown) retry();
