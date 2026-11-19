@@ -147,6 +147,7 @@ describe('evaluateCreationHeadroom', () => {
       minHeadroomTracks: 5,
       scope: 'instance',
       window: 'month',
+      resetWindow: 'month',
       windowCapTracks: 800,
     });
   });
@@ -175,6 +176,7 @@ describe('evaluateCreationHeadroom', () => {
       minHeadroomTracks: 5,
       scope: 'instance',
       window: 'day',
+      resetWindow: 'day',
       windowCapTracks: 80,
     });
   });
@@ -191,6 +193,7 @@ describe('evaluateCreationHeadroom', () => {
       minHeadroomTracks: 5,
       scope: 'instance',
       window: 'day',
+      resetWindow: 'day',
       windowCapTracks: 80,
     });
   });
@@ -230,6 +233,44 @@ describe('evaluateCreationHeadroom', () => {
     ).toBe(800);
   });
 
+  it('names the month reset when the month still refuses once the day resets', () => {
+    // Day used up (0 left), month 2 tasks left → 4 tracks: midnight brings back
+    // only what the month still has, so the Session waits for the 1st.
+    const decision = evaluateCreationHeadroom(
+      [instance({ dailyTasksUsed: 40, monthlyTasksUsed: 398 })],
+      2,
+      5,
+    );
+    expect(decision).toMatchObject({ allowed: false, window: 'day', resetWindow: 'month' });
+    // A month with room left: the day reset is the one that helps.
+    expect(
+      evaluateCreationHeadroom([instance({ dailyTasksUsed: 40, monthlyTasksUsed: 0 })], 2, 5),
+    ).toMatchObject({ allowed: false, window: 'day', resetWindow: 'day' });
+  });
+
+  it('names the month reset when another bound’s month still refuses after midnight', () => {
+    const decision = evaluateCreationHeadroom(
+      [
+        {
+          scope: 'member',
+          windows: rolling({ ...LIMITS, dailyTasksUsed: 40, monthlyTasksUsed: 0 }),
+        },
+        {
+          scope: 'pool',
+          windows: rolling({ ...LIMITS, dailyTasksUsed: 0, monthlyTasksUsed: 399 }),
+        },
+      ],
+      2,
+      5,
+    );
+    expect(decision).toMatchObject({
+      allowed: false,
+      scope: 'member',
+      window: 'day',
+      resetWindow: 'month',
+    });
+  });
+
   it('treats a zero threshold as the gate being disabled (always allowed)', () => {
     const decision = evaluateCreationHeadroom(
       [instance({ dailyTasksUsed: 40, monthlyTasksUsed: 400 })],
@@ -263,6 +304,7 @@ describe('evaluateCreationHeadroom — the Member two-bound list', () => {
       minHeadroomTracks: 5,
       scope: 'pool',
       window: 'day',
+      resetWindow: 'day',
       windowCapTracks: 6,
     });
   });
@@ -326,6 +368,7 @@ describe('One-time bounds', () => {
       minHeadroomTracks: 5,
       scope: 'member',
       window: 'total',
+      resetWindow: 'total',
       windowCapTracks: 26,
     });
     expect(evaluateCreationHeadroom([oneTime(13, 10), openPool], 2, 5).allowed).toBe(true);

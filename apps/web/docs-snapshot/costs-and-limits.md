@@ -1,7 +1,7 @@
 ---
 title: Costs and limits
 description: What you pay for and to whom, what is free, how each action spends, and every limit Liedmotif offers, counted in tracks.
-checkedOn: 2026-11-18
+checkedOn: 2026-11-19
 ---
 
 Liedmotif is source-available, free for non-commercial use. The money goes straight from you to the providers you connect, and almost all of it pays for new tracks. This page shows how each action spends, which limits you can set, and what happens when one is reached.
@@ -166,7 +166,7 @@ On the player, a banner above the cover says what is holding new music. If it ha
 
 ### Starting something new
 
-New sessions and **More Like This** need more room than a running session, so that a new one has enough tracks to loop. With less room than **Headroom to start**, you see **Not enough Tracks left to start** and no session is created, wherever you started it: Home, Surprise Me, the player, the library, a playlist or the Lounge. The message says what a new session needs and what is left, for example "A new Session needs 5 Tracks; you have 4 left today.", and when more come back: at midnight for a daily limit, on the 1st for a monthly one, both in the instance timezone. If the limit itself is lower than **Headroom to start**, waiting won't help, and it says so: the admin raises the limit or lowers **Headroom to start**, and a member is told to ask the admin. You're offered **Resume a Session** or your library instead. A member with 4 tracks left in a one-time budget can't start something new, but can resume a session and use them there.
+New sessions and **More Like This** need more room than a running session, so that a new one has enough tracks to loop. With less room than **Headroom to start**, you see **Not enough Tracks left to start** and no session is created, wherever you started it: Home, Surprise Me, the player, the library, a playlist or the Lounge. The message says what a new session needs and what is left, for example "A new Session needs 5 Tracks; you have 4 left today.", and when more come back: at midnight for a daily limit, on the 1st for a monthly one, both in the instance timezone. When the monthly limit would still fall short after midnight, it names the 1st. If the limit itself is lower than **Headroom to start**, waiting won't help, and it says so: the admin raises the limit or lowers **Headroom to start**, and a member is told to ask the admin. You're offered **Resume a Session** or your library instead. A member with 4 tracks left in a one-time budget can't start something new, but can resume a session and use them there.
 
 Resuming is never blocked, and **Change Vibe** needs room for just one more pair. Only one session can start at a time. Cancelling a start before it's created buys no music, though your text AI may already have been paid for its part.
 

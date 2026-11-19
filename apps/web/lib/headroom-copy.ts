@@ -44,16 +44,19 @@ const WINDOW_NAME = { day: 'daily', month: 'monthly' } as const;
 
 /**
  * A refused new Session, in numbers: what it needs, what is left, and when
- * more comes back. When the binding window's own cap is below what a Session
- * needs no reset helps, so the text says so instead of promising one. A Member
- * with nothing left keeps the used-up texts; the Pool is always "the shared
- * budget", never something the Member could change.
+ * more comes back. The reset named is the one that lets a Session start: not
+ * midnight while a month window still refuses. When the binding window's own
+ * cap is below what a Session needs no reset helps, so the text says so
+ * instead of promising one. A Member with nothing left keeps the used-up
+ * texts; the Pool is always "the shared budget", never something the Member
+ * could change.
  */
 export function creationHeadroomMessage(
   decision: CreationHeadroomDecision,
   { adminName, resetTimezone }: HeadroomCopyContext,
 ): string {
-  const { scope, window, remainingTracks, minHeadroomTracks, windowCapTracks } = decision;
+  const { scope, window, resetWindow, remainingTracks, minHeadroomTracks, windowCapTracks } =
+    decision;
   const needs = `A new Session needs ${minHeadroomTracks} ${trackNoun(minHeadroomTracks)}`;
   const admin = adminName ?? 'the Admin';
 
@@ -79,7 +82,8 @@ export function creationHeadroomMessage(
   }
   const left = remainingTracks === 0 ? 'none' : String(remainingTracks);
   const holder = scope === 'pool' ? 'the shared budget has' : 'you have';
-  return `${needs}; ${holder} ${left} left${HEADROOM_PERIOD[window]}. More Tracks ${RESET[window]} (${resetTimezone}). ${WAY_OUT}`;
+  const reset = RESET[resetWindow === 'month' ? 'month' : window];
+  return `${needs}; ${holder} ${left} left${HEADROOM_PERIOD[window]}. More Tracks ${reset} (${resetTimezone}). ${WAY_OUT}`;
 }
 
 /**

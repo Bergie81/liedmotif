@@ -170,6 +170,12 @@ export interface CreationHeadroomDecision {
    */
   window: CostLimitWindow;
   /**
+   * The window whose reset lets a refused Session start: the binding window,
+   * or the month when a month window would still refuse once every day window
+   * resets — midnight alone then brings back too little.
+   */
+  resetWindow: CostLimitWindow;
+  /**
    * That window's own cap in tracks (Infinity when unbounded). Below
    * `minHeadroomTracks`, no reset ever lets a Session start, so the refusal
    * must not promise one.
@@ -193,24 +199,57 @@ export function evaluateCreationHeadroom(
   tracksPerCall: number,
   minHeadroomTracks: number,
 ): CreationHeadroomDecision {
-  let tightest = bounds[0];
-  let remainingTracks = remainingHeadroomTracks(tightest.windows, tracksPerCall);
-  // Strictly tighter wins, so ties keep the earlier bound — the same precedence
-  // `checkCostLimits` refuses in.
-  for (const bound of bounds) {
-    const remaining = remainingHeadroomTracks(bound.windows, tracksPerCall);
+  const { bound, remainingTracks } = tightestBound(bounds, tracksPerCall);
+  const binding = tightestWindow(bound.windows);
+  const allowed = remainingTracks >= minHeadroomTracks;
+  return {
+    allowed,
+    remainingTracks,
+    minHeadroomTracks,
+    scope: bound.scope,
+    window: binding.window,
+    resetWindow:
+      !allowed &&
+      binding.window === 'day' &&
+      monthRefusesAfterMidnight(bounds, tracksPerCall, minHeadroomTracks)
+        ? 'month'
+        : binding.window,
+    windowCapTracks: binding.cap * tracksPerCall,
+  };
+}
+
+/**
+ * The bound with the least headroom, in tracks. Strictly tighter wins, so ties
+ * keep the earlier bound — the same precedence `checkCostLimits` refuses in.
+ */
+function tightestBound(
+  bounds: CostBounds,
+  tracksPerCall: number,
+): { bound: CostBound; remainingTracks: number } {
+  let bound = bounds[0];
+  let remainingTracks = remainingHeadroomTracks(bound.windows, tracksPerCall);
+  for (const candidate of bounds) {
+    const remaining = remainingHeadroomTracks(candidate.windows, tracksPerCall);
     if (remaining < remainingTracks) {
-      tightest = bound;
+      bound = candidate;
       remainingTracks = remaining;
     }
   }
-  const binding = tightestWindow(tightest.windows);
-  return {
-    allowed: remainingTracks >= minHeadroomTracks,
-    remainingTracks,
-    minHeadroomTracks,
-    scope: tightest.scope,
-    window: binding.window,
-    windowCapTracks: binding.cap * tracksPerCall,
-  };
+  return { bound, remainingTracks };
+}
+
+/** Whether a month window still holds a Session back once every day window resets. */
+function monthRefusesAfterMidnight(
+  bounds: CostBounds,
+  tracksPerCall: number,
+  minHeadroomTracks: number,
+): boolean {
+  const afterMidnight = bounds.map((bound) => ({
+    ...bound,
+    windows: bound.windows.map((window) =>
+      window.window === 'day' ? { ...window, used: 0 } : window,
+    ) as unknown as BoundWindows,
+  })) as unknown as CostBounds;
+  const { bound, remainingTracks } = tightestBound(afterMidnight, tracksPerCall);
+  return remainingTracks < minHeadroomTracks && tightestWindow(bound.windows).window === 'month';
 }

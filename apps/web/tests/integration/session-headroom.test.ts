@@ -91,6 +91,7 @@ describe.skipIf(skip)('evaluateSessionHeadroom (creation-time money-gate)', () =
       minHeadroomTracks: 5,
       scope: 'instance',
       window: 'day',
+      resetWindow: 'day',
       windowCapTracks: 80,
     });
   });
@@ -106,6 +107,7 @@ describe.skipIf(skip)('evaluateSessionHeadroom (creation-time money-gate)', () =
       minHeadroomTracks: 5,
       scope: 'instance',
       window: 'day',
+      resetWindow: 'day',
       windowCapTracks: 6,
     });
   });
@@ -121,6 +123,7 @@ describe.skipIf(skip)('evaluateSessionHeadroom (creation-time money-gate)', () =
       minHeadroomTracks: 5,
       scope: 'instance',
       window: 'day',
+      resetWindow: 'day',
       windowCapTracks: 4,
     });
   });
@@ -146,6 +149,7 @@ describe.skipIf(skip)('evaluateSessionHeadroom (creation-time money-gate)', () =
       minHeadroomTracks: 4,
       scope: 'instance',
       window: 'day',
+      resetWindow: 'day',
       windowCapTracks: 4,
     });
     // The over-spent owner is blocked on the same limits.
@@ -165,6 +169,7 @@ describe.skipIf(skip)('evaluateSessionHeadroom (creation-time money-gate)', () =
       minHeadroomTracks: 2,
       scope: 'instance',
       window: 'day',
+      resetWindow: 'day',
       windowCapTracks: 2,
     });
   });
@@ -194,6 +199,7 @@ describe.skipIf(skip)('evaluateSessionHeadroom — Member two-bound gate', () =>
       minHeadroomTracks: 5,
       scope: 'pool',
       window: 'day',
+      resetWindow: 'day',
       windowCapTracks: 2,
     });
   });
@@ -212,6 +218,7 @@ describe.skipIf(skip)('evaluateSessionHeadroom — Member two-bound gate', () =>
       minHeadroomTracks: 5,
       scope: 'member',
       window: 'day',
+      resetWindow: 'day',
       windowCapTracks: 2,
     });
   });
@@ -240,6 +247,7 @@ describe.skipIf(skip)('evaluateSessionHeadroom — Member two-bound gate', () =>
       minHeadroomTracks: 5,
       scope: 'member',
       window: 'day',
+      resetWindow: 'day',
       windowCapTracks: 20,
     });
   });
@@ -253,6 +261,7 @@ describe.skipIf(skip)('evaluateSessionHeadroom — Member two-bound gate', () =>
       minHeadroomTracks: 5,
       scope: 'instance',
       window: 'day',
+      resetWindow: 'day',
       windowCapTracks: 80,
     });
   });
@@ -285,6 +294,7 @@ describe.skipIf(skip)('evaluateSessionHeadroom — One-time Member budget', () =
       minHeadroomTracks: 5,
       scope: 'member',
       window: 'total',
+      resetWindow: 'total',
       windowCapTracks: 8,
     });
   });

@@ -53,6 +53,7 @@ describe('creationHeadroomMessage', () => {
     remainingTracks: 4,
     minHeadroomTracks: 5,
     windowCapTracks: 80,
+    resetWindow: decision.window,
     ...decision,
   });
 
@@ -75,6 +76,25 @@ describe('creationHeadroomMessage', () => {
       ),
     ).toBe(
       `A new Session needs 5 Tracks; you have none left today. More Tracks at midnight (Europe/Berlin). ${WAY_OUT}`,
+    );
+  });
+
+  it('names the 1st, not midnight, when the month still refuses after the day resets', () => {
+    expect(
+      creationHeadroomMessage(
+        refused({ scope: 'instance', window: 'day', remainingTracks: 0, resetWindow: 'month' }),
+        context,
+      ),
+    ).toBe(
+      `A new Session needs 5 Tracks; you have none left today. More Tracks on the 1st (Europe/Berlin). ${WAY_OUT}`,
+    );
+    expect(
+      creationHeadroomMessage(
+        refused({ scope: 'pool', window: 'day', resetWindow: 'month' }),
+        context,
+      ),
+    ).toBe(
+      `A new Session needs 5 Tracks; the shared budget has 4 left today. More Tracks on the 1st (Europe/Berlin). ${WAY_OUT}`,
     );
   });
 
