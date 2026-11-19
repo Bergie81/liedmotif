@@ -103,7 +103,7 @@ export async function listTracksForMetadataEmbed(
     trackCreatedAt: row.trackCreatedAt,
     // An anchored (or unsourced) tempo is an estimate from the Session's ask;
     // written as `TBPM` it would read as fact to a DJ tool or music library.
-    bpmEstimate: row.bpmSource === 'measured' ? row.bpmEstimate : null,
+    measuredBpm: row.bpmSource === 'measured' ? row.bpmEstimate : null,
     userPrompt: resolveTrackDataPrompt(row.stampedPrompt, row.sessionPrompt),
     stylePrompt: row.stylePrompt,
     providerModel: row.providerModel,

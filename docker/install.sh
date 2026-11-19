@@ -61,6 +61,8 @@ MODE=''
 # what `.env` holds on an update, what a first install writes into it.
 APP_DOMAIN=''
 TAILSCALE_IP=''
+# `.env`'s CADDY_TLS on an update; a first install sets none.
+CADDY_TLS_SETTING=''
 PREVIOUS_VERSION=''
 STEP=''
 TMP=''
@@ -439,6 +441,7 @@ choose_mode() {
     UPDATE=true
     APP_DOMAIN=$(env_value "$env" APP_DOMAIN)
     TAILSCALE_IP=$(env_value "$env" TAILSCALE_IP)
+    CADDY_TLS_SETTING=$(env_value "$env" CADDY_TLS)
     PREVIOUS_VERSION=$(env_value "$env" LIEDMOTIF_VERSION)
     case $(env_value "$env" COMPOSE_FILE) in
       *docker-compose.tailscale.yml*) MODE=tailnet ;;
@@ -732,9 +735,7 @@ migrate_hint() {
 # public certificate or none.
 caddy_internal_cert() {
   local name
-  if [ -f "$DIR/.env" ] && [ "$(env_value "$DIR/.env" CADDY_TLS)" = internal ]; then
-    return 0
-  fi
+  [ "$CADDY_TLS_SETTING" != internal ] || return 0
   name=$(printf '%s' "${APP_DOMAIN%.}" | tr '[:upper:]' '[:lower:]')
   case $name in
     localhost | *.localhost | *.local | *.internal | *.home.arpa) return 0 ;;

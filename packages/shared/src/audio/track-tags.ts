@@ -35,7 +35,7 @@ export interface TrackTagContext {
   trackCreatedAt: Date;
   /** Tempo measured from the audio (`TBPM`); null until the analysis lands, and
    *  for a tempo that is only an estimate. */
-  bpmEstimate: number | null;
+  measuredBpm: number | null;
   /** The prompt history frozen when this Track was generated (`TXXX:Prompt`). */
   userPrompt: string | null;
   /** What the music model actually received (`TXXX:StylePrompt`). */
@@ -105,7 +105,7 @@ export function assembleTrackTags(context: TrackTagContext): TrackTagPlan {
     lyrics: context.lyrics,
     genre: context.genreTags.join(', '),
     year: context.trackCreatedAt.getFullYear(),
-    bpm: context.bpmEstimate,
+    bpm: context.measuredBpm,
     userText,
   };
   return {

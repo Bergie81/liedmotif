@@ -88,6 +88,7 @@ const MySessionsListContent = memo(function MySessionsListContent({
     active,
     pinned: pinnedSessions,
     earlier,
+    liveSessionKnown,
   } = deriveSessionsListView({
     serverActive: activeSession,
     liveSession,
@@ -100,10 +101,6 @@ const MySessionsListContent = memo(function MySessionsListContent({
   // activity from, so the Active now card asks the server. A live Session stopped
   // since the list loaded has no History row yet, so the list asks again for it.
   const liveSessionId = liveSession?.id ?? null;
-  const liveSessionKnown =
-    liveSessionId === null ||
-    (liveSessionStatus !== 'stopped' && activeSession?.id === liveSessionId) ||
-    [...(items ?? []), ...pinned].some((item) => item.id === liveSessionId);
   useEffect(() => {
     if (!liveSessionKnown) retry();
     // Runs once per unknown Session: a reload that still doesn't name it changes neither dep.

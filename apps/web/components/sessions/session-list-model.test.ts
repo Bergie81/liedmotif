@@ -179,6 +179,19 @@ describe('deriveSessionsListView', () => {
     });
     expect(view.active).toBeNull();
     expect(view.earlier).toEqual([listItem('live')]);
+    expect(view.liveSessionKnown).toBe(true);
+  });
+
+  it('does not know a stopped live Session that only a stale server view still names', () => {
+    const view = deriveSessionsListView({
+      serverActive: { ...serverActive, id: 'live' },
+      liveSession: summary('live'),
+      liveCoverImageId: null,
+      liveSessionStatus: 'stopped',
+      items: [listItem('b')],
+      pinned: [],
+    });
+    expect(view.liveSessionKnown).toBe(false);
   });
 
   it('pairs the fresher live summary with the server activity when both name the same Session', () => {
@@ -253,6 +266,7 @@ describe('deriveSessionsListView', () => {
       active: null,
       pinned: [],
       earlier: items,
+      liveSessionKnown: true,
     });
     expect(
       deriveSessionsListView({
@@ -267,6 +281,7 @@ describe('deriveSessionsListView', () => {
       active: { ...summary('live'), trackCount: 0, totalDurationSeconds: 0, genreTags: [] },
       pinned: [],
       earlier: null,
+      liveSessionKnown: false,
     });
   });
 });

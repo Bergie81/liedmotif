@@ -41,16 +41,20 @@ export function deriveSessionsListView({
   active: ActiveSessionOverview | null;
   pinned: SessionListItem[];
   earlier: SessionListItem[] | null;
+  /** Nothing is live, or the list holds the live Session's Track activity: the
+   *  server view names it while it still runs, or it has a Pinned or History row. */
+  liveSessionKnown: boolean;
 } {
   const stoppedId = liveSessionStatus === 'stopped' ? (liveSession?.id ?? null) : null;
   const live = stoppedId === null ? liveSession : null;
   const server = serverActive?.id === stoppedId ? null : serverActive;
   const base = live ?? server;
-  if (!base) return { active: null, pinned, earlier: items };
-  const activity =
-    server?.id === base.id
-      ? server
-      : [...(items ?? []), ...pinned].find((item) => item.id === base.id);
+  const rows = [...(items ?? []), ...pinned];
+  const liveId = liveSession?.id ?? null;
+  const liveSessionKnown =
+    liveId === null || server?.id === liveId || rows.some((item) => item.id === liveId);
+  if (!base) return { active: null, pinned, earlier: items, liveSessionKnown };
+  const activity = server?.id === base.id ? server : rows.find((item) => item.id === base.id);
   // Only the live summary can be stale against the controller; the server view
   // is read fresh, so its own cover stands.
   const liveCover = live ? liveCoverImageId : null;
@@ -65,6 +69,7 @@ export function deriveSessionsListView({
     },
     pinned: pinned.filter((item) => item.id !== base.id),
     earlier: items?.filter((item) => item.id !== base.id) ?? null,
+    liveSessionKnown,
   };
 }
 
