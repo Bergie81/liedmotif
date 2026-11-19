@@ -15,6 +15,13 @@ import { runDrizzleMigrations } from './migrate';
 export const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
 
 /**
+ * The host the parallel `isolated` Vitest project gives `TEST_DATABASE_URL`, kept
+ * in step with vitest.config.ts. Files there run side by side, so one that opened
+ * the shared test database would race the sequential `shared-state` files.
+ */
+const ISOLATED_PROJECT_HOST = 'move-this-file-to-shared-state-in-vitest-config.invalid';
+
+/**
  * Refuse to run table-truncating tests against anything that doesn't look like a
  * throwaway test database. Mirrors the migrate-from-clean suite's gate: the var must be set,
  * differ from the runtime `DATABASE_URL`, and name a database containing "test".
@@ -24,6 +31,12 @@ export const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
 export function assertSafeTestDatabase(url: string | undefined): asserts url is string {
   if (!url) {
     throw new Error('TEST_DATABASE_URL must be set to run integration tests');
+  }
+  if (url.includes(`@${ISOLATED_PROJECT_HOST}/`)) {
+    throw new Error(
+      'This test file uses the test database, so it must run one file at a time: ' +
+        'add it to SHARED_STATE_FILES in vitest.config.ts',
+    );
   }
   if (process.env.DATABASE_URL && url === process.env.DATABASE_URL) {
     throw new Error(
