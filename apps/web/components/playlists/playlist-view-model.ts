@@ -94,6 +94,11 @@ export function addedToPlaylistMessage(added: number, playlistName: string): str
   return `Added ${added} ${added === 1 ? 'track' : 'tracks'} to ${playlistName}`;
 }
 
+/** What the User reads when an add into one Playlist failed. */
+export function addToPlaylistFailedMessage(reason: string): string {
+  return `Adding failed: ${reason}`;
+}
+
 /**
  * A card's first meta line: member count, then total playtime. An empty playlist
  * claims no playtime at all.

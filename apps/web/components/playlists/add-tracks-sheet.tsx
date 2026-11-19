@@ -21,7 +21,7 @@ import { FAILED_TRACK_NOTICE, formatTrackDuration } from '@/components/library/l
 import { appendUniqueById } from '@/lib/append-unique';
 import { toast } from '@/lib/toast';
 import { addTracksInBatches } from './add-tracks-in-batches';
-import { addedToPlaylistMessage } from './playlist-view-model';
+import { addedToPlaylistMessage, addToPlaylistFailedMessage } from './playlist-view-model';
 
 const ADD_KEY = 'add-tracks';
 const LOAD_MORE_KEY = 'add-tracks-load-more';
@@ -119,7 +119,7 @@ function AddTracksContent({
     const result = await addTracksInBatches(playlistId, trackIds);
     if (!result.ok) {
       setBusy(false);
-      toast.error(`Adding failed: ${result.error.message}`, { key: ADD_KEY });
+      toast.error(addToPlaylistFailedMessage(result.error.message), { key: ADD_KEY });
       if (result.partial) {
         router.refresh();
         onAdded();

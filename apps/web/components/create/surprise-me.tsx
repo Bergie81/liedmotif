@@ -284,8 +284,7 @@ export function SurpriseMe({
   if (initialProposal?.id !== seenInitial?.id) {
     setSeenInitial(initialProposal);
     if (initialProposal && initialProposal.id !== proposal?.id) {
-      setProposal(initialProposal);
-      setSettings((current) => ({ ...current, adventurous: initialProposal.adventurous }));
+      showPending(initialProposal);
       setEditingSettings(false);
     }
   }
@@ -356,6 +355,12 @@ export function SurpriseMe({
     void rereadPending();
   }
 
+  /** A pending proposal made outside this modal's settings: it brings its own Adventurous pick. */
+  function showPending(next: SurpriseProposal | null) {
+    setProposal(next);
+    if (next) setSettings((current) => ({ ...current, adventurous: next.adventurous }));
+  }
+
   /** The pending proposal as the server holds it now, or undefined when the
    * read failed and the page keeps what it had. Spends nothing. */
   async function rereadPending(): Promise<SurpriseProposal | null | undefined> {
@@ -364,8 +369,7 @@ export function SurpriseMe({
     setRereading(false);
     if (!result.ok) return undefined;
     const current = result.data.proposal;
-    setProposal(current);
-    if (current) setSettings((settings) => ({ ...settings, adventurous: current.adventurous }));
+    showPending(current);
     onProposalReread?.(current);
     return current;
   }

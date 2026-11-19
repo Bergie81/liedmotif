@@ -26,13 +26,14 @@ export function usePlaySessionTrack(onError: (message: string) => void, onStarte
     tapSourceId: string | null;
   } | null>(null);
   const busy = useRef(false);
-  // Bumped when something else takes the audio (a preview), so a selection
-  // still waiting on the server never starts over it.
+  // One selection lives from its tap to `settle`; an answer that arrives after
+  // its selection was settled (other audio took over) never starts playback.
   const selection = useRef(0);
   const latest = useRef({ playback, onError, onStarted, sourceId });
   latest.current = { playback, onError, onStarted, sourceId };
 
   function settle() {
+    selection.current += 1;
     busy.current = false;
     setBusyTrackId(null);
     setPendingJump(null);
@@ -107,9 +108,7 @@ export function usePlaySessionTrack(onError: (message: string) => void, onStarte
 
   /** Drop a selection still waiting on the server or the Queue: other audio took over. */
   function supersede() {
-    if (!busy.current) return;
-    selection.current += 1;
-    settle();
+    if (busy.current) settle();
   }
 
   // The transport's answer to "how should this row render" — the same shape

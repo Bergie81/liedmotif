@@ -21,7 +21,7 @@ import { RenameDialog } from '@/components/rename-dialog';
 import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { AlertBanner, menuRowClass } from '@/components/ui/design-system';
 import { LoadingRow } from '@/components/ui/loading';
-import { addedToPlaylistMessage } from './playlist-view-model';
+import { addedToPlaylistMessage, addToPlaylistFailedMessage } from './playlist-view-model';
 
 const ADD_KEY = 'choose-playlist-add';
 
@@ -80,7 +80,7 @@ function ChooseContent({
     const result = await onChoose(playlist.id);
     setBusy(false);
     if (!result.ok) {
-      toast.error(`Adding failed: ${result.error.message}`, { key: ADD_KEY });
+      toast.error(addToPlaylistFailedMessage(result.error.message), { key: ADD_KEY });
       return;
     }
     confirmAdded(playlist.name, result.data);
@@ -104,7 +104,7 @@ function ChooseContent({
       created.current = { name, playlistId };
     }
     const result = await onChoose(playlistId);
-    if (!result.ok) return `Adding failed: ${result.error.message}`;
+    if (!result.ok) return addToPlaylistFailedMessage(result.error.message);
     confirmAdded(name, result.data);
     return null;
   }
