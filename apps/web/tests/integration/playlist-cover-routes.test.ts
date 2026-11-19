@@ -583,6 +583,29 @@ describe.skipIf(skip)('GET /api/playlists/cover/status', () => {
     expect(body.data.latestRegeneration.failureMessageSafe).toMatch(/unavailable/i);
   });
 
+  it('a Playlist cover that failed on its name does not blame a Session', async () => {
+    const { ownerUserId, playlistId } = await seedOwnedPlaylist();
+    const started = (await (await postJson(regeneratePost, { playlistId })).json()) as {
+      data: { coverGenerationId: string };
+    };
+    await updateSessionCoverGeneration(testDb.db, {
+      ownerUserId,
+      id: started.data.coverGenerationId,
+      state: 'not_admitted',
+      failureCategory: 'invalid_session_name',
+      settledAt: new Date(),
+    });
+
+    const body = (await (await getStatus(playlistId)).json()) as {
+      data: { latestRegeneration: { status: string; failureMessageSafe: string } };
+    };
+    expect(body.data.latestRegeneration.status).toBe('failed');
+    expect(body.data.latestRegeneration.failureMessageSafe).toBe(
+      'The name could not be used to plan a cover.',
+    );
+    expect(body.data.latestRegeneration.failureMessageSafe).not.toContain('Session');
+  });
+
   it('rejects a foreign playlist', async () => {
     const ownerUserId = await createUser(testDb.db);
     const otherOwnerUserId = await createUser(testDb.db);

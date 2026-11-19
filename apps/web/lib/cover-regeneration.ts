@@ -20,7 +20,7 @@ const FAILURE_MESSAGES: Readonly<Record<string, string>> = {
   not_admitted: 'The cover generation limit is reached. It resets with the usage window.',
   references_unsupported:
     'No usable reference photo for this cover — check the photos under Settings → People and whether your image model accepts reference images.',
-  invalid_session_name: 'The Session name could not be used to plan a cover.',
+  invalid_session_name: 'The name could not be used to plan a cover.',
   unsupported_capability: 'This cover request is too long for the selected image model.',
   provider_rejected: 'The image provider rejected this cover request.',
   provider_unavailable: 'The image provider is unavailable right now. Try again later.',

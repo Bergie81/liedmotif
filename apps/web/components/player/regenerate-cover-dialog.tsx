@@ -241,7 +241,9 @@ export function RegenerateCoverDialog({
     setHistoryBusyId(null);
     reportCoverFailure(result.ok ? null : result.error.message);
     if (!result.ok) return;
-    if (historyCoverImageId === pendingCoverId) setRequestedId(null);
+    // Any saved cover ends the preview; an unchosen fresh attempt stays in the
+    // history, one tap away.
+    setDismissed(true);
     setSelectedCoverId(null);
     onCoverChanged?.(historyCoverImageId);
     void refresh();
