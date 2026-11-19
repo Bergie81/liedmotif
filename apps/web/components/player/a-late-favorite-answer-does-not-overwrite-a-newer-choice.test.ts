@@ -115,7 +115,7 @@ describe('Favorite answer vs a newer picker commit', () => {
     ]);
   });
 
-  it('a failed Favorite after a Roadie add rolls the star back and keeps what Roadie saved', async () => {
+  it('a failed Favorite after an Assistant add rolls the star back and keeps what the Assistant saved', async () => {
     const { actions, track, starLit } = setup({ savedAt: null, favoritedAt: null });
 
     actions().toggleFavorite();
@@ -128,7 +128,7 @@ describe('Favorite answer vs a newer picker commit', () => {
     expect(starLit()).toBe(false);
   });
 
-  it('a failed Unfavorite after Roadie favorited the Track keeps the star lit', async () => {
+  it('a failed Unfavorite after the Assistant favorited the Track keeps the star lit', async () => {
     const { actions, track, starLit } = setup({ savedAt: SAVED, favoritedAt: STARRED });
 
     actions().toggleFavorite();
@@ -139,7 +139,7 @@ describe('Favorite answer vs a newer picker commit', () => {
     expect(starLit()).toBe(true);
   });
 
-  it('a Roadie add with no star answer on its way shows the Track as kept', () => {
+  it('an Assistant add with no star answer on its way shows the Track as kept', () => {
     const { actions, track, starLit } = setup({ savedAt: null, favoritedAt: null });
 
     actions().applyRetentionAdded('a', { favorited: true, curated: false });

@@ -18,8 +18,8 @@ export function OfflineSheetMark() {
       </PopoverTrigger>
       <PopoverContent align="end" aria-label="Offline">
         <p>
-          Offline — only downloaded music plays. Options that need the server come back when
-          you&rsquo;re online.
+          Offline — only music kept on this device plays. Options that need the server come back
+          when you&rsquo;re online.
         </p>
       </PopoverContent>
     </Popover>

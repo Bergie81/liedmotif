@@ -52,7 +52,7 @@ describe('options sheet header offline mark', () => {
     expect(mark!.compareDocumentPosition(close) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     fireEvent.click(mark!);
-    expect(screen.getByText(/only downloaded music plays/i)).not.toBeNull();
+    expect(screen.getByText(/only music kept on this device plays/i)).not.toBeNull();
 
     setBrowserOnline(true);
     expect(queryMark()).toBeNull();
