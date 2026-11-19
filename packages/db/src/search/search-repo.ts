@@ -16,8 +16,8 @@ import {
   playlistSoleMemberDeletedCountColumn,
   playlistTotalDurationColumn,
   playlistTrackCountColumn,
-  type PlaylistSummary,
-} from '../playlists/playlists-repo';
+} from '../playlists/playlist-summary-columns';
+import type { PlaylistSummary } from '../playlists/playlists-repo';
 import { viewerCanSearchPlaylist } from '../playlists/lounge-audible';
 import { ownerAttributionColumns, type OwnerAttribution } from '../playlists/owner-attribution';
 import {

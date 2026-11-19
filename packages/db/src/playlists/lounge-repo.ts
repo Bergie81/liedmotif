@@ -49,11 +49,13 @@ import {
 } from '../search/match';
 import { cutSnippet } from '../search/snippet';
 import {
-  afterPlaylistPosition,
   playlistHasMembersCondition,
   playlistMosaicCoverColumn,
   playlistTotalDurationColumn,
   playlistTrackCountColumn,
+} from './playlist-summary-columns';
+import {
+  afterPlaylistPosition,
   type PlaylistMemberTrack,
   type PlaylistSummary,
 } from './playlists-repo';
