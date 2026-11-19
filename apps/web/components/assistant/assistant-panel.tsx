@@ -27,7 +27,7 @@ import type { AssistantConversation, ConversationMessage } from './conversation'
 
 const GREETING_HELLO = `Hi, I'm ${ASSISTANT_NAME}`;
 const GREETING_ABOUT =
-  'I can start music, control the player, manage your Tracks and Playlists, change settings, or answer questions about Liedmotif.';
+  "I'm your personal AI assistant. I can start music, control the player, manage your Tracks and Playlists, change settings, or answer questions about Liedmotif.";
 
 // Each works with nothing playing and spends nothing when tapped (a Session
 // starts only from its confirmed card); together they show doing, knowing
