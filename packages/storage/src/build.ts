@@ -129,7 +129,9 @@ export async function assertStorageRootWritable(config: StorageRuntimeConfig): P
       // Filesystem errors contain private paths, including owner/session names.
       // eslint-disable-next-line preserve-caught-error
       throw new Error(
-        'The storage tree (DATA_DIR) contains a directory this process cannot read, write, or traverse',
+        'The storage tree (DATA_DIR) contains a directory this process cannot read, write, ' +
+          'or traverse. Check the permissions of its existing sub-folders. If DATA_DIR is the ' +
+          'top level of a mounted disk, use a dedicated sub-folder instead.',
       );
     }
   }

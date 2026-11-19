@@ -188,9 +188,17 @@ describe('DATA_DIR validation', () => {
       await mkdir(memberFolder, { recursive: true });
       await chmod(memberFolder, 0o555);
       try {
-        await expect(assertStorageRootWritable({ dataRoot })).rejects.toThrow(
-          'The storage tree (DATA_DIR) contains a directory this process cannot read, write, or traverse',
+        const refusal = await assertStorageRootWritable({ dataRoot }).then(
+          () => undefined,
+          (err: unknown) => (err as Error).message,
         );
+        expect(refusal).toBe(
+          'The storage tree (DATA_DIR) contains a directory this process cannot read, write, ' +
+            'or traverse. Check the permissions of its existing sub-folders. If DATA_DIR is the ' +
+            'top level of a mounted disk, use a dedicated sub-folder instead.',
+        );
+        expect(refusal).not.toContain(dataRoot);
+        expect(refusal).not.toContain('member-private-id');
       } finally {
         await chmod(memberFolder, 0o700);
       }

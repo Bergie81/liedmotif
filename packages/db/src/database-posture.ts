@@ -84,12 +84,14 @@ function ipv4Reach([a, b]: [number, number]): DatabaseReach {
  * Assert the connection posture of `databaseUrl`, warning through `warn` for
  * the weak-but-deliberate cases and throwing for the ones no deployment wants.
  *
- * Fatal: an external host with no verifying `sslmode`, which is a plaintext
- * connection carrying credentials and every row across the public internet.
- * Warned: the Compose default password (a sparse `.env` yields a
- * known-password database), and `require` (encrypted, verification not
- * guaranteed). Blank and unparseable values pass through — presence and shape
- * are each validated by their own caller.
+ * Fatal: a public host without a verifying `sslmode`. The check reads only
+ * the explicit `sslmode` spelling, so a driver-specific form such as
+ * `ssl=true` is refused too, whether or not the driver would have encrypted.
+ * Warned: a LAN or VPC host without a verifying `sslmode`, `sslmode=require`
+ * (encrypted, verification not guaranteed), and the Compose default password
+ * (a sparse `.env` yields a known-password database). Blank and unparseable
+ * values pass through — presence and shape are each validated by their own
+ * caller.
  *
  * No message ever echoes the URL: it carries the password.
  */
@@ -127,15 +129,15 @@ export function assertDatabaseUrlPosture(
     );
     return;
   }
+  const variable = 'DATABASE_URL (DOCKER_DATABASE_URL in Docker)';
   const remedy =
-    'Append sslmode=verify-full (or sslmode=verify-ca) to the connection string — ' +
-    'without it the driver connects in the clear and the credentials cross the ' +
-    'network unencrypted.';
-  // A private address is a network the operator runs, so plaintext there is
-  // their call to make; a public one is not, and no deployment wants it.
+    'Add sslmode=verify-full (or sslmode=verify-ca). If the address uses ssl=true, ' +
+    'replace it with sslmode=verify-full.';
+  // A private address is a network the operator runs, so an unverified
+  // connection there is their call to make; a public one is not.
   if (reach === 'private-network') {
-    warn(`DATABASE_URL reaches a LAN or VPC host with no TLS mode. ${remedy}`);
+    warn(`${variable} reaches a LAN or VPC host without a verifying sslmode. ${remedy}`);
     return;
   }
-  throw new Error(`DATABASE_URL points at a public host with no verifying TLS mode. ${remedy}`);
+  throw new Error(`${variable} points at a public host without a verifying sslmode. ${remedy}`);
 }

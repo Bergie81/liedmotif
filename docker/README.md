@@ -335,8 +335,10 @@ at a database somewhere else and the same string suddenly describes a public
 connection, so both processes check its posture at boot:
 
 - **A public host must speak verifying TLS.** Append `?sslmode=verify-full` (or
-  `verify-ca` where the provider has no verifiable hostname); without an
-  `sslmode` the driver connects in the clear and the boot fails.
+  `verify-ca` where the provider has no verifiable hostname); without a
+  verifying `sslmode` the boot fails. Only the explicit `sslmode` spelling
+  counts: an address with `ssl=true` is refused too, even though the driver
+  would encrypt it — replace it with `sslmode=verify-full`.
   `sslmode=require` boots with a warning — it encrypts, but whether it verifies
   the certificate depends on the driver version. A LAN or VPC address
   (including its IPv4-mapped IPv6 form) and a well-known private name
@@ -667,6 +669,11 @@ which is how a library ends up written under one tree while deletes silently
 no-op against another; an unwritable root is usually a volume left `root`-owned
 (see "Upgrading an instance that ran as root" below). The failure names the
 variable, never the path.
+
+Every folder inside the storage root must be readable and writable too. Mount a
+dedicated sub-folder at `/data`, never the top level of a disk: a freshly
+formatted disk's top level holds a root-only `lost+found` folder, and the app
+refuses to start on it.
 
 Two ceilings bound growth. **The storage quota** (Settings → Generation,
 `storageQuotaBytes`, 10 GiB by default) covers track audio, covers and their

@@ -57,9 +57,31 @@ describe('assertDatabaseUrlPosture', () => {
   });
 
   it('refuses a public database host with no TLS mode', () => {
-    // Without `sslmode` pg leaves `ssl` undefined and connects in the clear —
-    // credentials and every row cross the public internet unencrypted.
+    // Without `sslmode` pg leaves `ssl` undefined and connects in the clear.
     expect(() => assertDatabaseUrlPosture(EXTERNAL, vi.fn())).toThrow(/sslmode/);
+  });
+
+  it('tells an operator who wrote ssl=true to use sslmode=verify-full', () => {
+    let refusal = '';
+    try {
+      assertDatabaseUrlPosture(`${EXTERNAL}?ssl=true`, vi.fn());
+    } catch (err) {
+      refusal = (err as Error).message;
+    }
+    expect(refusal).toContain('ssl=true');
+    expect(refusal).toContain('sslmode=verify-full');
+    expect(refusal).toContain('DOCKER_DATABASE_URL');
+    expect(refusal).not.toContain('in the clear');
+    expect(refusal).not.toContain('s3cret');
+  });
+
+  it('names both connection-string variables when warning about a LAN host', () => {
+    const warn = vi.fn();
+    assertDatabaseUrlPosture('postgres://liedmotif:strong@192.168.1.20:5432/liedmotif', warn);
+    const warning = warn.mock.calls.flat().join(' ');
+    expect(warning).toContain('DOCKER_DATABASE_URL');
+    expect(warning).toContain('ssl=true');
+    expect(warning).not.toContain('in the clear');
   });
 
   it('refuses external TLS modes that do not verify', () => {
