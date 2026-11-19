@@ -1,7 +1,14 @@
 import { mkdir, readdir, readFile, stat, symlink, writeFile } from 'node:fs/promises';
 import { isAbsolute, join, relative, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { ENV_EXAMPLE, machine, parseEnv, SECRET_KEYS, type Machine } from './install-test-machine';
+import {
+  CADDYFILE,
+  ENV_EXAMPLE,
+  machine,
+  parseEnv,
+  SECRET_KEYS,
+  type Machine,
+} from './install-test-machine';
 
 // One installer run spawns a few hundred short-lived processes, and an update
 // test runs it twice: on a busy machine that passes Vitest's 5 s default.
@@ -34,6 +41,20 @@ describe('installer: fresh install with --domain', () => {
       `postgres://liedmotif:${env.POSTGRES_PASSWORD}@postgres:5432/liedmotif`,
     );
     expect((await stat(join(box.installDir, '.env'))).mode & 0o777).toBe(0o600);
+  });
+
+  it('sets neither Caddy setting and installs the shipped Caddyfile', async () => {
+    const box = await machine();
+
+    const { code, output } = await box.run('--domain', 'music.example.com');
+
+    expect(code, output).toBe(0);
+    const env = await box.env();
+    expect(env).not.toHaveProperty('CADDY_TLS');
+    expect(env).not.toHaveProperty('CADDY_TRUSTED_PROXIES');
+    expect(await readFile(join(box.installDir, 'Caddyfile'), 'utf8')).toBe(
+      await readFile(CADDYFILE, 'utf8'),
+    );
   });
 
   it('never rewrites an existing .env, and prints no setup link for it', async () => {
@@ -139,6 +160,27 @@ describe('installer: rerun is the update', () => {
       'LIEDMOTIF_VERSION=1.4.0',
       'LIEDMOTIF_VERSION=1.5.0',
     ]);
+  });
+
+  // A Cloudflare Tunnel and a load balancer each need a Caddy setting. They live
+  // in .env because every update unpacks a fresh Caddyfile over the old one.
+  it('keeps the Caddy settings in .env and replaces the Caddyfile with the shipped one', async () => {
+    const box = await machine();
+    await box.run('--domain', 'music.example.com', '--version', '1.4.0');
+    const settings = 'CADDY_TLS=internal\nCADDY_TRUSTED_PROXIES=10.0.0.0/8 172.16.0.0/12\n';
+    await writeFile(join(box.installDir, '.env'), `${await box.envFile()}${settings}`);
+    await writeFile(join(box.installDir, 'Caddyfile'), '# edited by hand\n');
+    const before = await box.envFile();
+
+    const { code, output } = await box.run('--domain', 'music.example.com', '--version', '1.5.0');
+
+    expect(code, output).toBe(0);
+    expect(await box.envFile()).toBe(
+      before.replace('\nLIEDMOTIF_VERSION=1.4.0\n', '\nLIEDMOTIF_VERSION=1.5.0\n'),
+    );
+    expect(await readFile(join(box.installDir, 'Caddyfile'), 'utf8')).toBe(
+      await readFile(CADDYFILE, 'utf8'),
+    );
   });
 
   it('pulls while the old app plays, stops it, migrates to completion, then starts the new one', async () => {

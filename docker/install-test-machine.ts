@@ -17,11 +17,13 @@ import { onTestFinished } from 'vitest';
  * them. The stubbed `curl` also answers the public-IP lookup and the DNS-over-HTTPS lookup of
  * the domain's records, so the DNS check never goes to the network.
  *
- * The release tarball the stubbed `curl` serves carries the real `.env.example`,
- * so the generated `.env` is proven against the file that actually ships.
+ * The release tarball the stubbed `curl` serves carries the real `.env.example`
+ * and `Caddyfile`, so the generated `.env` and the installed `Caddyfile` are
+ * proven against the files that actually ship.
  */
 const INSTALL_SCRIPT = fileURLToPath(new URL('./install.sh', import.meta.url));
 export const ENV_EXAMPLE = fileURLToPath(new URL('../.env.example', import.meta.url));
+export const CADDYFILE = fileURLToPath(new URL('../Caddyfile', import.meta.url));
 
 const LATEST_TAG = 'v9.9.9';
 
@@ -192,6 +194,7 @@ export async function machine(options: MachineOptions = {}): Promise<Machine> {
   const containersFile = join(root, 'containers');
 
   await copyFile(ENV_EXAMPLE, join(release, '.env.example'));
+  await copyFile(CADDYFILE, join(release, 'Caddyfile'));
   await writeFile(join(release, 'docker-compose.yml'), 'name: liedmotif\n');
   await execFileAsync('tar', ['-czf', tarball, '-C', join(root, 'release'), 'liedmotif-9.9.9']);
   if (docker) await writeFile(dockerInstalled, '');

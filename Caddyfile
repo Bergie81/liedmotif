@@ -6,6 +6,35 @@
 # the host's static LAN IP with the root cert installed on clients, and set
 # CADDY_HTTP_PORT=80 and CADDY_HTTPS_PORT=443 so other devices can reach it (see
 # https://liedmotif.com/docs/install/phone-access/ for the documented paths).
+#
+# Two more settings come from `.env` through docker-compose.yml, so an update
+# that replaces this file keeps them:
+#   CADDY_TLS=internal           signs APP_DOMAIN with Caddy's internal CA
+#                                (`tls internal`), as a Cloudflare Tunnel needs.
+#   CADDY_TRUSTED_PROXIES=<...>  names the proxies in front of Caddy
+#                                (`trusted_proxies static <...>`): a range such
+#                                as 10.0.0.0/8, several separated by spaces, or
+#                                private_ranges.
+# Unset, Caddy picks the certificate by its own rules and trusts no proxy.
+# Neither directive may appear without its argument, and a Caddyfile cannot
+# branch, so each setting names one of the snippets below and an unset one
+# names the empty snippet.
+
+(tls-auto) {
+}
+
+(tls-internal) {
+	tls internal
+}
+
+# docker-compose.yml names `trusted-proxies-static` once CADDY_TRUSTED_PROXIES
+# is set, `trusted-proxies` otherwise.
+(trusted-proxies) {
+}
+
+(trusted-proxies-static) {
+	trusted_proxies static {$CADDY_TRUSTED_PROXIES}
+}
 
 {
 	# The admin API listens on localhost:2019 INSIDE the container and is
@@ -26,18 +55,22 @@
 	servers {
 		protocols h1 h2
 
-		# Only needed when something else fronts Caddy (a cloud load balancer).
-		# Name ITS address range here so Caddy keeps the client hop that range
-		# forwarded instead of treating it as caller-supplied, and set
-		# TRUSTED_PROXY_HOPS to the number of proxies in the chain — 2 for
-		# client -> LB -> Caddy. Both halves must agree or every client keys as
-		# the load balancer and one bad-password run locks out everyone.
-		# As shipped, Caddy IS the edge and nothing here is trusted.
-		#trusted_proxies static 10.0.0.0/8
+		# CADDY_TRUSTED_PROXIES, for when something else fronts Caddy (a cloud
+		# load balancer, a tunnel). Naming ITS address range makes Caddy keep the
+		# client hop that range forwarded instead of treating it as
+		# caller-supplied. TRUSTED_PROXY_HOPS must count the same chain — 2 for
+		# client -> LB -> Caddy — or every client keys as the load balancer and
+		# one bad-password run locks out everyone. Unset, Caddy IS the edge and
+		# trusts no proxy.
+		import {$CADDY_TRUSTED_PROXIES_SNIPPET:trusted-proxies}
 	}
 }
 
 {$APP_DOMAIN:localhost} {
+	# CADDY_TLS: `internal` signs this site with Caddy's internal CA; unset,
+	# Caddy picks the certificate by its own rules.
+	import tls-{$CADDY_TLS:auto}
+
 	# Defense-in-depth response headers, mirrored in `apps/web/next.config.mjs`
 	# so a `npm run dev` origin behaves like this one — edit both together.
 	# Every CSP relaxation is load-bearing against a shipped feature (theme

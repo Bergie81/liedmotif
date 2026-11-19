@@ -214,12 +214,24 @@ TRUSTED_PROXY_HOPS=2   # client -> cloud load balancer -> Caddy
 TRUSTED_PROXY_HOPS=0   # nothing in front of the app at all
 ```
 
-With a load balancer in front, also uncomment `trusted_proxies` in the
-`Caddyfile` and name the balancer's address range, so Caddy keeps the client hop
-it forwards. Both halves must agree: set too low, every client keys as the load
-balancer and ten failed logins by anyone lock out everybody; set too high, the
-key comes from a header the caller wrote and every limit is bypassable per
-request. A malformed value fails the boot rather than defaulting.
+With a load balancer in front, also name the balancer's address range in
+`.env`, so Caddy keeps the client hop it forwards:
+
+```bash
+CADDY_TRUSTED_PROXIES=10.0.0.0/8                # one range, or several separated by spaces
+CADDY_TRUSTED_PROXIES=private_ranges            # every private and loopback range
+```
+
+Compose hands it to Caddy, whose `Caddyfile` turns it into `trusted_proxies
+static <ranges>` in the global `servers` block; unset, Caddy trusts no proxy.
+Because it lives in `.env`, an update that replaces the `Caddyfile` keeps it.
+Name the range your real proxy chain uses: `private_ranges` is what the
+Cloudflare Tunnel guide uses, not a fit for every proxy. It does not change
+`TRUSTED_PROXY_HOPS`, and both halves must agree: set too low, every client
+keys as the load balancer and ten failed logins by anyone lock out everybody;
+set too high, the key comes from a header the caller wrote and every limit is
+bypassable per request. A malformed value fails the boot rather than
+defaulting.
 
 At `0` the app is assumed directly reachable, both forwarding headers are
 ignored, and all callers share one limiter bucket — the limits still bite, but

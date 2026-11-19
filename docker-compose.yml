@@ -398,6 +398,11 @@ services:
     pids_limit: ${CADDY_PIDS_LIMIT:-256}
     environment:
       APP_DOMAIN: ${APP_DOMAIN:-localhost}
+      # The two Caddy settings in `.env`, each as the name of a Caddyfile
+      # snippet: unset or empty selects the one that adds nothing.
+      CADDY_TLS: ${CADDY_TLS:-auto}
+      CADDY_TRUSTED_PROXIES: ${CADDY_TRUSTED_PROXIES:-}
+      CADDY_TRUSTED_PROXIES_SNIPPET: trusted-proxies${CADDY_TRUSTED_PROXIES:+-static}
     # This machine only when unset, because whoever reaches `/setup` first becomes
     # the Admin: a laptop on shared Wi-Fi stays closed until someone chooses
     # otherwise. A plain port publishes on every interface, IPv4 and IPv6; a value
