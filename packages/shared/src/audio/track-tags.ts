@@ -33,7 +33,8 @@ export interface TrackTagContext {
   genreTags: string[];
   /** When the track was generated (`TYER`). */
   trackCreatedAt: Date;
-  /** Measured tempo (`TBPM`); null until the analysis lands. */
+  /** Tempo measured from the audio (`TBPM`); null until the analysis lands, and
+   *  for a tempo that is only an estimate. */
   bpmEstimate: number | null;
   /** The prompt history frozen when this Track was generated (`TXXX:Prompt`). */
   userPrompt: string | null;

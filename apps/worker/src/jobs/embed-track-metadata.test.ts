@@ -84,6 +84,7 @@ describeIfDb('embed-track-metadata', () => {
       stylePrompt?: string;
       genreTags?: string[];
       bpmEstimate?: number;
+      bpmSource?: 'measured' | 'anchored';
       providerModel?: string;
       rightsNote?: string;
     } = {},
@@ -130,6 +131,7 @@ describeIfDb('embed-track-metadata', () => {
       ...(options.lyrics ? { vocalMode: 'vocal' as const, lyrics: options.lyrics } : {}),
       ...(options.genreTags ? { genreTags: options.genreTags } : {}),
       ...(options.bpmEstimate !== undefined ? { bpmEstimate: options.bpmEstimate } : {}),
+      ...(options.bpmSource ? { bpmSource: options.bpmSource } : {}),
       ...(options.providerModel ? { providerModel: options.providerModel } : {}),
       ...(options.rightsNote ? { rightsNote: options.rightsNote } : {}),
     });
@@ -292,6 +294,7 @@ describeIfDb('embed-track-metadata', () => {
       stylePrompt: 'lofi hip hop, mellow, 80 bpm, instrumental',
       genreTags: ['lofi', 'ambient'],
       bpmEstimate: 87.6,
+      bpmSource: 'measured',
       providerModel: 'V4_5',
       rightsNote: 'Personal, non-commercial use.',
     });
@@ -334,11 +337,57 @@ describeIfDb('embed-track-metadata', () => {
     );
     expect(readId3Tags(await readAudio(seeded.audioKey))!.bpm).toBeNull();
 
-    await ctx.db.update(tracks).set({ bpmEstimate: 92.3 }).where(eq(tracks.id, seeded.trackId));
+    await ctx.db
+      .update(tracks)
+      .set({ bpmEstimate: 92.3, bpmSource: 'measured' })
+      .where(eq(tracks.id, seeded.trackId));
     expect((await runEmbedTrackMetadata(deps(render), { trackId: seeded.trackId })).outcome).toBe(
       'tagged',
     );
     expect(readId3Tags(await readAudio(seeded.audioKey))!.bpm).toBe(92);
+    expect((await runEmbedTrackMetadata(deps(render), { trackId: seeded.trackId })).outcome).toBe(
+      'already_tagged',
+    );
+  });
+
+  it('writes no tempo tag for a tempo that was not measured', async () => {
+    const seeded = await seedMp3Track({
+      sessionTitle: 'Estimated',
+      bpmEstimate: 87,
+      bpmSource: 'anchored',
+    });
+    const { render } = fakeRenderAlbumArt();
+    await runEmbedTrackMetadata(deps(render), { trackId: seeded.trackId });
+
+    expect(readId3Tags(await readAudio(seeded.audioKey))!.bpm).toBeNull();
+  });
+
+  it('writes no tempo tag for a tempo with no recorded source', async () => {
+    const seeded = await seedMp3Track({ sessionTitle: 'Unsourced', bpmEstimate: 87 });
+    const { render } = fakeRenderAlbumArt();
+    await runEmbedTrackMetadata(deps(render), { trackId: seeded.trackId });
+
+    expect(readId3Tags(await readAudio(seeded.audioKey))!.bpm).toBeNull();
+  });
+
+  it('retags exactly once when a measured tempo turns out to be an estimate', async () => {
+    const seeded = await seedMp3Track({
+      sessionTitle: 'Re-analysed',
+      bpmEstimate: 92.3,
+      bpmSource: 'measured',
+    });
+    const { render } = fakeRenderAlbumArt();
+    await runEmbedTrackMetadata(deps(render), { trackId: seeded.trackId });
+    expect(readId3Tags(await readAudio(seeded.audioKey))!.bpm).toBe(92);
+
+    await ctx.db
+      .update(tracks)
+      .set({ bpmEstimate: 90, bpmSource: 'anchored' })
+      .where(eq(tracks.id, seeded.trackId));
+    expect((await runEmbedTrackMetadata(deps(render), { trackId: seeded.trackId })).outcome).toBe(
+      'tagged',
+    );
+    expect(readId3Tags(await readAudio(seeded.audioKey))!.bpm).toBeNull();
     expect((await runEmbedTrackMetadata(deps(render), { trackId: seeded.trackId })).outcome).toBe(
       'already_tagged',
     );

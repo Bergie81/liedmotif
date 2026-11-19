@@ -59,6 +59,7 @@ export async function listTracksForMetadataEmbed(
       genreTags: tracks.genreTags,
       trackCreatedAt: tracks.createdAt,
       bpmEstimate: tracks.bpmEstimate,
+      bpmSource: tracks.bpmSource,
       stampedPrompt: generationRequests.userPrompt,
       sessionPrompt: activitySessions.userPrompt,
       stylePrompt: generationRequests.stylePrompt,
@@ -100,7 +101,9 @@ export async function listTracksForMetadataEmbed(
     lyrics: row.lyrics,
     genreTags: row.genreTags,
     trackCreatedAt: row.trackCreatedAt,
-    bpmEstimate: row.bpmEstimate,
+    // An anchored (or unsourced) tempo is an estimate from the Session's ask;
+    // written as `TBPM` it would read as fact to a DJ tool or music library.
+    bpmEstimate: row.bpmSource === 'measured' ? row.bpmEstimate : null,
     userPrompt: resolveTrackDataPrompt(row.stampedPrompt, row.sessionPrompt),
     stylePrompt: row.stylePrompt,
     providerModel: row.providerModel,
