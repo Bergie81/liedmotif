@@ -722,16 +722,34 @@ migrate_hint() {
   printf '%s: see https://liedmotif.com/docs/updates/#if-an-update-fails.' "$hint"
 }
 
-# `localhost` gets its certificate from Caddy's internal CA, which this machine
-# does not trust; every other name must present a certificate that verifies.
-# On the tailnet, Caddy listens on the Tailscale address alone, so the check
-# goes there whatever this machine's own DNS makes of the name.
+# Whether Caddy serves APP_DOMAIN with a certificate from its own internal CA:
+# `localhost`, a name ending in .localhost, .local, .internal or .home.arpa, or
+# an IP address. The list mirrors Caddy's, as its documentation states it
+# (https://caddyserver.com/docs/automatic-https, "Hostname requirements") and
+# its source applies it (certmagic SubjectIsInternal; every IP address goes to
+# the internal CA while the Caddyfile names no issuer). Any other name gets a
+# public certificate or none.
+caddy_internal_cert() {
+  local name
+  name=$(printf '%s' "${APP_DOMAIN%.}" | tr '[:upper:]' '[:lower:]')
+  case $name in
+    localhost | *.localhost | *.local | *.internal | *.home.arpa | *:*) return 0 ;;
+  esac
+  [[ $name =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]
+}
+
+# A name Caddy serves with its internal certificate is one this machine does
+# not trust, so the check skips verification for it alone; every other name
+# must present a certificate that verifies. On the tailnet, Caddy listens on the
+# Tailscale address alone, so the check goes there whatever this machine's own
+# DNS makes of the name.
 health_check() {
   local opts=(-fsS -o /dev/null --max-time 10)
-  case $MODE in
-    localhost) opts+=(--insecure) ;;
-    tailnet) opts+=(--resolve "$APP_DOMAIN:443:$TAILSCALE_IP") ;;
-  esac
+  if [ "$MODE" = tailnet ]; then
+    opts+=(--resolve "$APP_DOMAIN:443:$TAILSCALE_IP")
+  elif caddy_internal_cert; then
+    opts+=(--insecure)
+  fi
   curl "${opts[@]}" "$1" 2>&1
 }
 
@@ -753,7 +771,10 @@ verify() {
           esac
           ;;
         domain)
-          hint="make sure the DNS record for $APP_DOMAIN points at this server and ports 80 and 443 are open to the internet (Caddy needs both to get its certificate), and $hint"
+          # A home network address needs no DNS record and no port open to
+          # the internet.
+          caddy_internal_cert ||
+            hint="make sure the DNS record for $APP_DOMAIN points at this server and ports 80 and 443 are open to the internet (Caddy needs both to get its certificate), and $hint"
           ;;
       esac
       fail "Liedmotif did not answer within $HEALTH_TIMEOUT seconds (last answer: ${last:-none})." \

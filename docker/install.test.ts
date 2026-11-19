@@ -429,6 +429,72 @@ describe('installer: health check', () => {
     ]);
     expect(await health(domain)).toEqual([expect.not.stringContaining('--insecure')]);
   });
+
+  // The phone-access guide moves an installed app to a home network address by
+  // editing APP_DOMAIN and APP_PUBLIC_URL in `.env`; the next update keeps it.
+  const updateServing = async (box: Machine, name: string, healthy = true) => {
+    await box.run('--domain', 'music.example.com');
+    const env = join(box.installDir, '.env');
+    await writeFile(
+      env,
+      (await readFile(env, 'utf8'))
+        .replace(/^APP_DOMAIN=.*$/m, `APP_DOMAIN=${name}`)
+        .replace(/^APP_PUBLIC_URL=.*$/m, `APP_PUBLIC_URL=https://${name}`),
+    );
+    await box.setHealthy(healthy);
+    const since = (await box.calls()).length;
+    const result = await box.run();
+    const health = (await box.calls()).slice(since).filter((call) => call.includes('/api/health'));
+    return { ...result, health };
+  };
+
+  it("an update of a LAN-address install accepts Caddy's internal certificate", async () => {
+    const { code, output, health } = await updateServing(await machine(), '192.168.1.20');
+
+    expect(code, output).toBe(0);
+    expect(health).toEqual([
+      expect.stringMatching(/--insecure .*https:\/\/192\.168\.1\.20\/api\/health/),
+    ]);
+  });
+
+  // Caddy's own list of names it serves with its internal certificate.
+  it.each([
+    '10.0.0.5',
+    'localhost',
+    'music.localhost',
+    'nas.local',
+    'music.internal',
+    'nas.home.arpa',
+  ])("an update serving %s accepts Caddy's internal certificate", async (name) => {
+    const { code, output, health } = await updateServing(await machine(), name);
+
+    expect(code, output).toBe(0);
+    expect(health).toEqual([expect.stringContaining('--insecure')]);
+  });
+
+  it.each(['music.example.com', 'nas.fritz.box'])(
+    'an update serving %s still verifies the certificate',
+    async (name) => {
+      const { code, output, health } = await updateServing(await machine(), name);
+
+      expect(code, output).toBe(0);
+      expect(health).toEqual([expect.not.stringContaining('--insecure')]);
+    },
+  );
+
+  it('sends a home network address to the logs when the app never answers, never to the internet', async () => {
+    const internet = /open to the internet/;
+    const publicDomain = await machine({ healthy: false });
+
+    const atHome = await updateServing(await machine(), '192.168.1.20', false);
+    const online = await publicDomain.run('--domain', 'music.example.com');
+
+    expect(atHome.code).not.toBe(0);
+    expect(atHome.output).not.toMatch(internet);
+    expect(atHome.output).not.toMatch(/DNS/);
+    expect(atHome.output).toMatch(/docker compose ps.*docker compose logs caddy web/);
+    expect(online.output).toMatch(internet);
+  });
 });
 
 describe('installer: Docker', () => {

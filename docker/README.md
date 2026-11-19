@@ -971,6 +971,14 @@ certificate reissues for a changed IP do not require reinstalling it.
 A WireGuard tunnel that routes the home LAN subnet reaches the same
 `https://<LAN-IP>` origin — one bookmark works at home and remote.
 
+An update through the installer (`docker/install.sh`) keeps this `APP_DOMAIN`,
+and its closing health check accepts Caddy's internal certificate for exactly
+the names Caddy serves with it: an IP address, `localhost`, or a name ending in
+`.localhost`, `.local`, `.internal` or `.home.arpa`. Every other name, and every
+download the installer makes, is still verified. A timeout then points at
+`docker compose ps` and `docker compose logs caddy web`, not at DNS or open
+ports.
+
 ### One-time library migration (dev → prod)
 
 Non-destructive to dev by construction: dump, never move. With the production
