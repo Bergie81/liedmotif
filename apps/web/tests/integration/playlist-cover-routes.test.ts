@@ -839,14 +839,20 @@ describe.skipIf(skip)('POST /api/playlists/cover/upload', () => {
     return upload(playlistId, new File([new Uint8Array(jpeg)], 'art.jpg', { type: 'image/jpeg' }));
   }
 
-  it('stores an unbadged square WebP and applies it as the playlist cover', async () => {
+  it('stores an unbadged square WebP in the history without changing the playlist cover', async () => {
     const { ownerUserId, playlistId } = await seedOwnedPlaylist();
 
     const response = await uploadImage(playlistId);
     expect(response.status).toBe(200);
     const body = (await response.json()) as { data: { coverImageId: string } };
     const { coverImageId } = body.data;
-    expect(await playlistCoverId(playlistId)).toBe(coverImageId);
+    expect(await playlistCoverId(playlistId)).toBeNull();
+    const status = (await (await getStatus(playlistId)).json()) as {
+      data: { history: { coverImageId: string; style: string; isCurrent: boolean }[] };
+    };
+    expect(status.data.history).toEqual([
+      expect.objectContaining({ coverImageId, style: 'uploaded', isCurrent: false }),
+    ]);
 
     const [key, bytes] = [...holder.stored.entries()][0]!;
     expect(key).toBe(`covers/uploaded/${ownerUserId}/${coverImageId}.webp`);
@@ -863,22 +869,24 @@ describe.skipIf(skip)('POST /api/playlists/cover/upload', () => {
     }
   });
 
-  it('retires a replaced upload and keeps generated history re-selectable', async () => {
+  it('keeps every upload re-selectable, even after another cover was selected', async () => {
     const { playlistId } = await seedOwnedPlaylist();
     const generated = await seedReadyAttempt(holder.ownerUserId!, playlistId);
     const first = (await (await uploadImage(playlistId)).json()) as {
       data: { coverImageId: string };
     };
+    await select(playlistId, first.data.coverImageId);
     const second = (await (await uploadImage(playlistId)).json()) as {
       data: { coverImageId: string };
     };
 
-    expect(await playlistCoverId(playlistId)).toBe(second.data.coverImageId);
+    expect(await playlistCoverId(playlistId)).toBe(first.data.coverImageId);
     const remaining = await testDb.db.select({ id: coverImages.id }).from(coverImages);
     expect(remaining.map((row) => row.id).sort()).toEqual(
-      [generated.coverImageId, second.data.coverImageId].sort(),
+      [generated.coverImageId, first.data.coverImageId, second.data.coverImageId].sort(),
     );
-    expect(first.data.coverImageId).not.toBe(second.data.coverImageId);
+    await select(playlistId, second.data.coverImageId);
+    expect(await playlistCoverId(playlistId)).toBe(second.data.coverImageId);
   });
 
   async function select(playlistId: string, coverImageId: string) {
@@ -889,15 +897,12 @@ describe.skipIf(skip)('POST /api/playlists/cover/upload', () => {
     return (await testDb.db.select({ id: coverImages.id }).from(coverImages)).length;
   }
 
-  it('counts uploads kept behind a selected generated cover against the Playlist cap', async () => {
+  it('counts uploads against the Playlist cap', async () => {
     const { ownerUserId, playlistId } = await seedOwnedPlaylist();
     await updateUsageLimits(testDb.db, { generatedCoversPerDay: 50, generatedCoversPerMonth: 200 });
-    // Each round keeps two covers: a generated one is selected, so the upload
-    // after it replaces a generated cover and the earlier upload stays.
     let lastGenerated = '';
     for (let round = 0; round < MAX_PLAYLIST_COVER_HISTORY / 2; round += 1) {
       lastGenerated = (await seedReadyAttempt(ownerUserId, playlistId)).coverImageId;
-      await select(playlistId, lastGenerated);
       expect((await uploadImage(playlistId)).status).toBe(200);
     }
     expect(await keptCoverRows()).toBe(MAX_PLAYLIST_COVER_HISTORY);
@@ -939,21 +944,6 @@ describe.skipIf(skip)('POST /api/playlists/cover/upload', () => {
     expect((await uploadImage(playlistId)).status).toBe(429);
     expect(holder.stored.size).toBe(0);
     expect(await playlistCoverId(playlistId)).toBeNull();
-  });
-
-  it('refuses an upload at the cap even when it would replace the current upload', async () => {
-    const { ownerUserId, playlistId } = await seedOwnedPlaylist();
-    for (let i = 0; i < MAX_PLAYLIST_COVER_HISTORY - 1; i += 1) {
-      await seedReadyAttempt(ownerUserId, playlistId);
-    }
-    const current = (await (await uploadImage(playlistId)).json()) as {
-      data: { coverImageId: string };
-    };
-
-    expect((await uploadImage(playlistId)).status).toBe(429);
-    expect(await playlistCoverId(playlistId)).toBe(current.data.coverImageId);
-    expect(holder.stored.size).toBe(1);
-    expect(await keptCoverRows()).toBe(MAX_PLAYLIST_COVER_HISTORY);
   });
 
   it('lets exactly one of an upload and a generation racing for the tenth slot have it', async () => {

@@ -264,12 +264,12 @@ export {
   listUploadedPlaylistCovers,
   reservePlaylistCoverRegeneration,
   setPlaylistCoverImage,
-  setUploadedPlaylistCover,
+  addUploadedPlaylistCover,
   type DeletePlaylistCoverResult,
   type InsertGeneratedPlaylistCoverInput,
   type PlaylistCoverSubject,
   type ReservePlaylistCoverRegenerationInput,
-  type SetUploadedPlaylistCoverResult,
+  type AddUploadedPlaylistCoverResult,
 } from './covers/playlist-cover-repo';
 export {
   addUploadedSessionCover,

@@ -1,14 +1,12 @@
-// `POST /api/playlists/cover/upload` — set a custom Playlist cover by upload
-// (upload or generation, same surface; the derived mosaic is always
-// the fallback). The raw upload is never stored: re-encoded to a square,
-// metadata-free WebP, then registered + pointed at in ONE repo transaction
-// (`setUploadedPlaylistCover`) — which also retires a replaced uploaded cover.
-// Unlike a Session cover, a Playlist upload applies immediately: this surface
-// has no preview step. An upload takes one of the playlist's
+// `POST /api/playlists/cover/upload` — put the owner's own image into a
+// Playlist's cover history. The raw upload is never stored: it is re-encoded
+// to a square, metadata-free WebP and registered as an ordinary history entry
+// — previewed before it is applied (the swap goes through `select`),
+// re-selectable later, and deletable — so it takes one of the playlist's
 // MAX_PLAYLIST_COVER_HISTORY slots, like a generated cover.
 
 import { NextResponse } from 'next/server';
-import { setUploadedPlaylistCover } from '@liedmotif/db';
+import { addUploadedPlaylistCover } from '@liedmotif/db';
 import { MAX_PLAYLIST_COVER_HISTORY, uuidSchema } from '@liedmotif/shared';
 import { apiError, apiOk, requireOwnerId } from '@/lib/api-response';
 import { processCoverUpload, storeUploadedCover } from '@/lib/cover-upload-image';
@@ -52,13 +50,13 @@ async function storePlaylistCover(
     processed,
     recordStored,
     register: (cover) =>
-      setUploadedPlaylistCover(getDb(), {
+      addUploadedPlaylistCover(getDb(), {
         ownerUserId,
         playlistId: playlistId.data,
         maxHistory: MAX_PLAYLIST_COVER_HISTORY,
         ...cover,
       }),
-    kept: 'applied',
+    kept: 'added',
   });
   if ('refused' in stored) {
     return stored.refused === 'history_full'

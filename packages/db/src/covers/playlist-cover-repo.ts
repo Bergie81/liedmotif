@@ -16,7 +16,6 @@ import {
   type CoverMetadata,
 } from '../schema';
 import type { DbOrTx } from '../transactions';
-import { queueCoverFileDeletions } from './cover-reclaim';
 import {
   deleteCoverFromHistoryForSubject,
   findCoverInSubjectHistory,
@@ -221,7 +220,7 @@ export async function setPlaylistCoverImage(
   return updated.length > 0;
 }
 
-export interface SetUploadedPlaylistCoverInput {
+export interface AddUploadedPlaylistCoverInput {
   ownerUserId: string;
   playlistId: string;
   /** The freshly stored upload's identity + location (bytes already written). */
@@ -232,34 +231,29 @@ export interface SetUploadedPlaylistCoverInput {
   byteSize: number;
   /** Covers the playlist may keep, uploads and generated covers alike. */
   maxHistory: number;
-  now?: Date;
 }
 
-export type SetUploadedPlaylistCoverResult = 'applied' | 'not_found' | 'history_full';
+export type AddUploadedPlaylistCoverResult = 'added' | 'not_found' | 'history_full';
 
 /**
- * Register an uploaded cover and make it the playlist's current cover — ONE
- * transaction: the `cover_images` row, the pointer swap, and the cleanup of a
- * REPLACED uploaded cover (its row goes and its bytes are queued for
- * reclamation; a replaced generated cover stays re-selectable in the history).
+ * Register an uploaded cover in the playlist's history. It is an ordinary
+ * history entry, previewed and applied like a generated one (the swap goes
+ * through `setPlaylistCoverImage`), so the playlist keeps its current cover.
  * The cap is checked before anything changes, under the per-owner lock the
  * generation admission takes, so an upload and a generation cannot both take
- * the last slot. A full history refuses even when the upload would replace
- * the current upload. On `not_found` or `history_full` the caller compensates
- * by deleting the just-written bytes.
+ * the last slot. On `not_found` or `history_full` the caller compensates by
+ * deleting the just-written bytes.
  */
-export async function setUploadedPlaylistCover(
+export async function addUploadedPlaylistCover(
   db: Database,
-  args: SetUploadedPlaylistCoverInput,
-): Promise<SetUploadedPlaylistCoverResult> {
-  const now = args.now ?? new Date();
+  args: AddUploadedPlaylistCoverInput,
+): Promise<AddUploadedPlaylistCoverResult> {
   return withOwnerCoverAdmissionLock(db, args.ownerUserId, async (tx) => {
     const [playlist] = await tx
-      .select({ id: playlists.id, coverImageId: playlists.coverImageId })
+      .select({ id: playlists.id })
       .from(playlists)
       .where(and(eq(playlists.id, args.playlistId), eq(playlists.ownerUserId, args.ownerUserId)))
-      .limit(1)
-      .for('update');
+      .limit(1);
     if (!playlist) return 'not_found';
     const kept = await countPlaylistCoverHistory(tx, args);
     if (kept >= args.maxHistory) return 'history_full';
@@ -273,28 +267,7 @@ export async function setUploadedPlaylistCover(
       tags: { label: 'Uploaded playlist cover' },
       provenance: { ownerUserId: args.ownerUserId, playlistId: args.playlistId },
     });
-    await tx
-      .update(playlists)
-      .set({ coverImageId: args.coverImageId, updatedAt: now })
-      .where(eq(playlists.id, playlist.id));
-
-    if (playlist.coverImageId) {
-      const [previous] = await tx
-        .select({ sourceType: coverImages.sourceType, storageKey: coverImages.storageKey })
-        .from(coverImages)
-        .where(eq(coverImages.id, playlist.coverImageId))
-        .limit(1);
-      if (previous?.sourceType === 'uploaded') {
-        await tx.delete(coverImages).where(eq(coverImages.id, playlist.coverImageId));
-        await queueCoverFileDeletions(tx, {
-          ownerUserId: args.ownerUserId,
-          covers: [{ coverImageId: playlist.coverImageId, storageKey: previous.storageKey }],
-          reason: 'playlist_cover_upload_replaced',
-          now,
-        });
-      }
-    }
-    return 'applied';
+    return 'added';
   });
 }
 

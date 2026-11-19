@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
 // The cover sheet's style list, and its per-attempt "Use People reference
-// photos" switch: it rides one Generate press, never persists, and is only
-// offered when the owner has a Person who could actually appear.
+// photos" switch: on by default whenever the owner has a Person who could
+// actually appear, it rides one Generate press and never persists.
 
 import { createElement as h } from 'react';
 import type { SessionCoverGenerationRow } from '@liedmotif/db';
@@ -17,6 +17,7 @@ import {
   deletePlaylistCover,
   playlistCoverStatus,
   regeneratePlaylistCover,
+  selectPlaylistCover,
   type PlaylistCoverStatusData,
 } from '@/lib/api-client';
 import { coverFailureMessage } from '@/lib/cover-regeneration';
@@ -76,6 +77,11 @@ function sheet(open: boolean) {
   );
 }
 
+/** What the big stage shows: the current cover or a previewed candidate. */
+function showing() {
+  return screen.getByTestId('playlist-cover-stage').getAttribute('data-showing');
+}
+
 async function renderSheet(overrides: Partial<PlaylistCoverStatusData> = {}) {
   vi.mocked(playlistCoverStatus).mockResolvedValue({
     ok: true,
@@ -110,10 +116,9 @@ describe('PlaylistCoverSheet — cover style', () => {
     expect(trigger.textContent).toContain(COVER_STYLE_LABELS.random);
     fireEvent.click(screen.getByTestId('playlist-cover-generate'));
     await waitFor(() =>
-      expect(regeneratePlaylistCover).toHaveBeenCalledWith({
-        playlistId: PLAYLIST.id,
-        coverStyle: 'random',
-      }),
+      expect(regeneratePlaylistCover).toHaveBeenCalledWith(
+        expect.objectContaining({ playlistId: PLAYLIST.id, coverStyle: 'random' }),
+      ),
     );
 
     fireEvent.keyDown(trigger, { key: 'Enter' });
@@ -127,32 +132,32 @@ describe('PlaylistCoverSheet — cover style', () => {
 });
 
 describe('PlaylistCoverSheet — People reference photos', () => {
-  it('starts off and sends the request flag only for that Generate press', async () => {
+  it('starts on when a Person could appear, and off drops the flag for that Generate press', async () => {
     await renderSheet();
     const toggle = screen.getByTestId('playlist-cover-use-people');
-    expect(toggle.getAttribute('aria-checked')).toBe('false');
+    expect(toggle.getAttribute('aria-checked')).toBe('true');
 
     fireEvent.click(screen.getByTestId('playlist-cover-generate'));
     await waitFor(() =>
       expect(regeneratePlaylistCover).toHaveBeenCalledWith({
         playlistId: PLAYLIST.id,
         coverStyle: 'random',
+        usePeopleReferences: true,
       }),
     );
 
     fireEvent.click(toggle);
-    expect(toggle.getAttribute('aria-checked')).toBe('true');
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
     fireEvent.click(screen.getByTestId('playlist-cover-generate'));
     await waitFor(() =>
       expect(regeneratePlaylistCover).toHaveBeenLastCalledWith({
         playlistId: PLAYLIST.id,
         coverStyle: 'random',
-        usePeopleReferences: true,
       }),
     );
   });
 
-  it('reopens the sheet with the switch back off', async () => {
+  it('reopens the sheet with the switch back on', async () => {
     const { rerender } = await renderSheet();
     fireEvent.click(screen.getByTestId('playlist-cover-use-people'));
 
@@ -164,7 +169,7 @@ describe('PlaylistCoverSheet — People reference photos', () => {
     // state under test is the real one and not the pre-load placeholder.
     const toggle = await screen.findByTestId('playlist-cover-use-people');
     await waitFor(() => expect((toggle as HTMLButtonElement).disabled).toBe(false));
-    expect(toggle.getAttribute('aria-checked')).toBe('false');
+    expect(toggle.getAttribute('aria-checked')).toBe('true');
   });
 
   it('disables the switch with a hint when no Person could appear', async () => {
@@ -257,5 +262,116 @@ describe('PlaylistCoverSheet — cover cap', () => {
       `${MAX_PLAYLIST_COVER_HISTORY - 1}/${MAX_PLAYLIST_COVER_HISTORY}`,
     );
     expect(screen.queryByText(/Delete a previous cover to make room/)).toBeNull();
+  });
+});
+
+describe('PlaylistCoverSheet — preview before applying', () => {
+  const CURRENT = '00000000-0000-4000-8000-000000000001';
+  const FRESH = '00000000-0000-4000-8000-000000000002';
+  const EARLIER = '00000000-0000-4000-8000-000000000003';
+
+  function entry(coverImageId: string, isCurrent = false) {
+    return { coverImageId, isCurrent, style: 'minimal', createdAt: '2026-11-18T10:00:00.000Z' };
+  }
+
+  const READY = {
+    coverImageId: CURRENT,
+    history: [entry(FRESH), entry(CURRENT, true)],
+    latestRegeneration: {
+      coverGenerationId: 'cover-generation-1',
+      coverImageId: FRESH,
+      status: 'ready' as const,
+      failureMessageSafe: null,
+    },
+  };
+
+  /** Press Generate; the status the sheet then reads holds the finished attempt. */
+  async function generateFresh() {
+    await renderSheet(READY);
+    fireEvent.click(screen.getByTestId('playlist-cover-generate'));
+    await waitFor(() => expect(showing()).toBe('new'));
+  }
+
+  it('shows an attempt started in this sheet big beside the current cover and applies it only on confirm', async () => {
+    vi.mocked(selectPlaylistCover).mockResolvedValue({ ok: true, data: { coverImageId: FRESH } });
+    await generateFresh();
+
+    expect(screen.getByTestId('playlist-cover-peek')).toBeTruthy();
+    expect(selectPlaylistCover).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId('playlist-cover-confirm'));
+    await waitFor(() => expect(selectPlaylistCover).toHaveBeenCalledWith(PLAYLIST.id, FRESH));
+  });
+
+  it('keeps the chosen cover on the stage while the swap saves, never flashing the old one', async () => {
+    const seen: (string | null)[] = [];
+    vi.mocked(selectPlaylistCover).mockImplementation(async () => {
+      seen.push(showing());
+      vi.mocked(playlistCoverStatus).mockResolvedValue({
+        ok: true,
+        data: {
+          ...STATUS,
+          ...READY,
+          coverImageId: FRESH,
+          history: [entry(FRESH, true), entry(CURRENT)],
+        },
+      });
+      return { ok: true, data: { coverImageId: FRESH } };
+    });
+    await generateFresh();
+    const stage = screen.getByTestId('playlist-cover-stage');
+    const observer = new MutationObserver(() => seen.push(showing()));
+    observer.observe(stage, { attributes: true, attributeFilter: ['data-showing'] });
+
+    fireEvent.click(screen.getByTestId('playlist-cover-confirm'));
+    await waitFor(() => expect(screen.queryByTestId('playlist-cover-confirm')).toBeNull());
+    observer.disconnect();
+
+    expect(seen[0]).toBe('new');
+    // The only switch is to the new current cover; the old one never returns.
+    expect(seen.slice(1).every((value) => value === 'new' || value === 'current')).toBe(true);
+    expect(stage.querySelector('img')?.getAttribute('src')).toContain(FRESH);
+  });
+
+  it('shows no status chip on the stage', async () => {
+    await generateFresh();
+    expect(screen.getByTestId('playlist-cover-stage').textContent).not.toMatch(/New|Preview/);
+  });
+
+  it('an unconfirmed attempt from an earlier open waits in Previous covers instead of previewing', async () => {
+    await renderSheet(READY);
+
+    expect(showing()).toBe('current');
+    expect(screen.queryByTestId('playlist-cover-confirm')).toBeNull();
+    expect(screen.queryByTestId('playlist-cover-peek')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Preview this previous cover' })).toBeTruthy();
+  });
+
+  it('keeping the current cover ends the preview without applying anything', async () => {
+    await generateFresh();
+
+    fireEvent.click(screen.getByTestId('playlist-cover-keep'));
+    expect(screen.queryByTestId('playlist-cover-confirm')).toBeNull();
+    expect(showing()).toBe('current');
+    expect(selectPlaylistCover).not.toHaveBeenCalled();
+  });
+
+  it('tapping a previous cover previews it instead of applying it', async () => {
+    vi.mocked(selectPlaylistCover).mockResolvedValue({ ok: true, data: { coverImageId: EARLIER } });
+    await renderSheet({ coverImageId: CURRENT, history: [entry(CURRENT, true), entry(EARLIER)] });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Preview this previous cover' }));
+    expect(selectPlaylistCover).not.toHaveBeenCalled();
+    expect(showing()).toBe('earlier');
+
+    fireEvent.click(screen.getByTestId('playlist-cover-confirm'));
+    await waitFor(() => expect(selectPlaylistCover).toHaveBeenCalledWith(PLAYLIST.id, EARLIER));
+  });
+
+  it('offers two lines for the art direction', async () => {
+    await renderSheet();
+    const field = screen.getByLabelText('Cover art direction');
+    expect(field.tagName).toBe('TEXTAREA');
+    expect(field.getAttribute('rows')).toBe('2');
   });
 });
