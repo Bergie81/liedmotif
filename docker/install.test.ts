@@ -1,4 +1,4 @@
-import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, stat, symlink, writeFile } from 'node:fs/promises';
 import { isAbsolute, join, relative, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { ENV_EXAMPLE, machine, parseEnv, SECRET_KEYS, type Machine } from './install-test-machine';
@@ -459,6 +459,115 @@ describe('installer: Docker', () => {
       `docker compose pull (in ${box.installDir})`,
       `docker compose up -d --no-build (in ${box.installDir})`,
     ]);
+  });
+});
+
+// Every install runs as the Compose project `liedmotif` unless its `.env` names
+// another, so a second folder for the same project would replace the running
+// app's containers and meet its database with a new password.
+describe('installer: Liedmotif already installed in another folder', () => {
+  const exists = (path: string) =>
+    stat(path).then(
+      () => true,
+      () => false,
+    );
+  /** The folder the other install runs from, next to this machine's install folder. */
+  async function otherFolder(box: Machine) {
+    const folder = join(box.installDir, '..', 'srv-liedmotif');
+    await mkdir(folder, { recursive: true });
+    return folder;
+  }
+  /** Every Docker call that could change a container, a volume or an image. */
+  const dockerChanges = async (box: Machine) =>
+    (await box.calls()).filter(
+      (call) => /^docker /.test(call) && !/^docker (compose version|info|ps)\b/.test(call),
+    );
+
+  it('refuses a first install while Liedmotif runs from another folder, before installing anything', async () => {
+    const box = await machine();
+    const other = await otherFolder(box);
+    await box.addContainer({ workingDir: other });
+
+    const { code, output } = await box.run('--domain', 'music.example.com');
+
+    expect(code).not.toBe(0);
+    expect(output).toContain(`Liedmotif is already installed on this machine, in ${other}.`);
+    expect(output).toContain(`run the same command with --dir ${other}`);
+    expect(await exists(box.installDir)).toBe(false);
+    expect(await dockerChanges(box)).toEqual([]);
+    expect((await box.calls()).filter((call) => call.includes('github.com'))).toEqual([]);
+  });
+
+  it('counts a stopped install too', async () => {
+    const box = await machine();
+    const other = await otherFolder(box);
+    await box.addContainer({ workingDir: other, running: false });
+
+    const { code, output } = await box.run('--domain', 'music.example.com');
+
+    expect(code).not.toBe(0);
+    expect(output).toContain(`--dir ${other}`);
+    expect(await exists(box.installDir)).toBe(false);
+  });
+
+  it.each([
+    ['names no folder', () => ''],
+    ['names a folder that is gone', (box: Machine) => join(box.installDir, '..', 'gone')],
+  ])('refuses, and says how to find or remove it, when the install %s', async (_, folder) => {
+    const box = await machine();
+    await box.addContainer({ workingDir: folder(box) });
+
+    const { code, output } = await box.run('--domain', 'music.example.com');
+
+    expect(code).not.toBe(0);
+    expect(output).toContain('Liedmotif is already installed on this machine');
+    expect(output).toContain('docker compose ls -a');
+    expect(output).toContain('docker compose -p liedmotif down');
+    expect(await exists(box.installDir)).toBe(false);
+    expect(await dockerChanges(box)).toEqual([]);
+  });
+
+  it('updates through a symlink to the install folder', async () => {
+    const box = await machine();
+    await box.run('--domain', 'music.example.com', '--version', '1.4.0');
+    const link = join(box.installDir, '..', 'liedmotif-link');
+    await symlink(box.installDir, link);
+
+    const { code, output } = await box.run('--dir', link, '--version', '1.5.0');
+
+    expect(code, output).toBe(0);
+    expect((await box.env()).LIEDMOTIF_VERSION).toBe('1.5.0');
+  });
+
+  it('installs a second stack whose .env names its own Compose project', async () => {
+    const box = await machine();
+    await box.addContainer({ workingDir: await otherFolder(box) });
+    await mkdir(box.installDir, { recursive: true });
+    await writeFile(
+      join(box.installDir, '.env'),
+      'COMPOSE_PROJECT_NAME=liedmotif-prod\nAPP_DOMAIN=music.example.com\n',
+    );
+
+    const { code, output } = await box.run();
+
+    expect(code, output).toBe(0);
+  });
+
+  it("refuses to take over a second stack's Compose project from another folder", async () => {
+    const box = await machine();
+    const other = await otherFolder(box);
+    await box.addContainer({ project: 'liedmotif-prod', workingDir: other });
+    await mkdir(box.installDir, { recursive: true });
+    const env = 'COMPOSE_PROJECT_NAME=liedmotif-prod\nAPP_DOMAIN=music.example.com\n';
+    await writeFile(join(box.installDir, '.env'), env);
+
+    const { code, output } = await box.run();
+
+    expect(code).not.toBe(0);
+    expect(output).toContain(`--dir ${other}`);
+    expect(await readdir(box.installDir)).toEqual(['.env']);
+    expect(await box.envFile()).toBe(env);
+    expect(await dockerChanges(box)).toEqual([]);
   });
 });
 

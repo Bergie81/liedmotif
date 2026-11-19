@@ -327,6 +327,36 @@ ensure_docker() {
   fi
 }
 
+# Every install runs as one Compose project: `liedmotif` (docker-compose.yml),
+# unless its `.env` sets COMPOSE_PROJECT_NAME. Containers of that project started
+# from another folder, stopped ones included, are a running install: a start
+# from here would replace them and meet their database with a new password. So
+# the install stops before it changes anything. Folders compare by inode, so a
+# symlink to the install folder is the same install.
+check_other_install() {
+  step "Checking for another Liedmotif install on this machine"
+  local project='' containers folder other='' unknown=false
+  [ ! -f "$DIR/.env" ] || project=$(env_value "$DIR/.env" COMPOSE_PROJECT_NAME)
+  project=${project:-liedmotif}
+  containers=$("${DOCKER[@]}" docker ps -a --filter "label=com.docker.compose.project=$project" \
+    --format '{{.ID}} {{.Label "com.docker.compose.project.working_dir"}}' </dev/null)
+  [ -n "$containers" ] || return 0
+  while IFS=' ' read -r _ folder; do
+    [ -n "$folder" ] && [ "$folder" -ef "$DIR" ] && continue
+    if [ -n "$folder" ] && [ -d "$folder" ] && [ -r "$folder" ]; then
+      other=$folder
+    else
+      unknown=true
+    fi
+  done <<<"$containers"
+  [ -z "$other" ] ||
+    fail "Liedmotif is already installed on this machine, in $other. Nothing was changed." \
+      "to update it, run the same command with --dir $(printf '%q' "$other")."
+  [ "$unknown" = false ] ||
+    fail "Liedmotif is already installed on this machine (Compose project $project), but the folder it runs from cannot be found. Nothing was changed." \
+      "'$DOCKER_SHOWN compose ls -a' lists it with its folder; to update it, run the same command with --dir <that folder>. To remove it instead, run '$DOCKER_SHOWN compose -p $project down' by hand; its data stays in its volumes."
+}
+
 # Debian-family systems install their security updates on their own once
 # unattended-upgrades is on, with the distribution's default choice of updates.
 # A setting already in place, on or off, is the owner's and stays, and nothing
@@ -784,6 +814,7 @@ main() {
   choose_mode
   check_dns
   ensure_docker
+  check_other_install
   check_storage
   ensure_security_updates
   if [ -n "$SOURCE_DIR" ]; then copy_checkout; else download_release; fi

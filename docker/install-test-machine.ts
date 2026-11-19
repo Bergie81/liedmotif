@@ -1,5 +1,5 @@
 import { execFile, spawn } from 'node:child_process';
-import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { appendFile, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,7 +12,9 @@ import { onTestFinished } from 'vitest';
  * `id`, `sudo`, `curl`, `docker`, `tailscale`, `apt-get`, `sysctl`,
  * `systemctl`) and a temp install directory and `/etc`. The stubs log each call
  * so a test can assert what was installed, downloaded and started. The stubbed
- * `curl` also answers the public-IP lookup and the DNS-over-HTTPS lookup of
+ * `docker` keeps the machine's containers: `compose up` adds the stack's, labeled
+ * with its Compose project and folder as Compose labels them, and `ps` lists
+ * them. The stubbed `curl` also answers the public-IP lookup and the DNS-over-HTTPS lookup of
  * the domain's records, so the DNS check never goes to the network.
  *
  * The release tarball the stubbed `curl` serves carries the real `.env.example`,
@@ -41,6 +43,15 @@ export const SECRET_KEYS = [
   'SETUP_TOKEN',
   'BACKUP_ENCRYPTION_PASSPHRASE',
 ] as const;
+
+/** A container on the machine, as Compose labels it. */
+export interface Container {
+  /** Its `com.docker.compose.project` label. */
+  project?: string;
+  /** Its `com.docker.compose.project.working_dir` label: the folder it was started from; none when unset. */
+  workingDir?: string;
+  running?: boolean;
+}
 
 export interface MachineOptions {
   /** What `uname -m` reports. */
@@ -118,6 +129,8 @@ export interface Machine {
   failTailscaleUp: (fails: boolean) => Promise<void>;
   /** Points the domain's A records somewhere else. */
   setDnsA: (records: string[]) => Promise<void>;
+  /** Puts a container on the machine, as another install would have. */
+  addContainer: (container: Container) => Promise<void>;
   envFile: () => Promise<string>;
   env: () => Promise<Record<string, string>>;
 }
@@ -174,6 +187,9 @@ export async function machine(options: MachineOptions = {}): Promise<Machine> {
   const publicIp6File = join(root, 'public-ip6');
   const dnsAFile = join(root, 'dns-a');
   const dnsAAAAFile = join(root, 'dns-aaaa');
+  // One line per container: project, `running` or `exited`, then its folder, last
+  // because it may be empty.
+  const containersFile = join(root, 'containers');
 
   await copyFile(ENV_EXAMPLE, join(release, '.env.example'));
   await writeFile(join(release, 'docker-compose.yml'), 'name: liedmotif\n');
@@ -280,6 +296,22 @@ if [ -f '${dockerFails}' ] && printf '%s\\n' "$*" | grep -qF -f '${dockerFails}'
   exit 1
 fi
 [ "$1 $2" = 'info --format' ] && echo /var/lib/docker
+if [ "$1 $2" = 'compose up' ]; then
+  project=$(sed -n 's/^COMPOSE_PROJECT_NAME=//p' .env 2>/dev/null | tail -n 1)
+  printf '%s\\trunning\\t%s\\n' "\${project:-liedmotif}" "$(pwd)" >>'${containersFile}'
+fi
+if [ "$1" = ps ]; then
+  all=false project=''
+  for arg; do
+    case $arg in
+      -a | --all) all=true ;;
+      label=com.docker.compose.project=*) project=\${arg#label=com.docker.compose.project=} ;;
+    esac
+  done
+  [ -f '${containersFile}' ] && while IFS="$(printf '\\t')" read -r p state dir; do
+    [ "$p" = "$project" ] && { [ "$all" = true ] || [ "$state" = running ]; } && printf '0123456789ab %s\\n' "$dir"
+  done <'${containersFile}'
+fi
 [ "$1 $2 $3" = 'compose version --short' ] && echo '${composeVersion}'
 exit 0`,
     tailscale: `[ -f '${tailscaleInstalled}' ] || { echo 'tailscale: command not found' >&2; exit 127; }
@@ -403,6 +435,8 @@ esac`,
     failTailscaleUp: (fails) =>
       fails ? writeFile(tailscaleUpFails, '') : rm(tailscaleUpFails, { force: true }),
     setDnsA: (records) => writeFile(dnsAFile, lines(records)),
+    addContainer: ({ project = 'liedmotif', workingDir = '', running = true }) =>
+      appendFile(containersFile, `${project}\t${running ? 'running' : 'exited'}\t${workingDir}\n`),
     envFile,
     env: async () => parseEnv(await envFile()),
   };

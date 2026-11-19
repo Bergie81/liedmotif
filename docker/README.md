@@ -27,6 +27,16 @@ and generates `APP_SECRET`, `BETTER_AUTH_SECRET`, `CREDENTIAL_ENCRYPTION_KEY`,
 `CADDY_HTTPS_PORT=443` (not for `--domain localhost`); in Tailscale mode also
 `COMPOSE_FILE` and `TAILSCALE_IP`. A rerun changes only `LIEDMOTIF_VERSION`.
 
+Once Docker is reachable, and before it downloads, copies or writes anything,
+the installer refuses a folder when containers of the same Compose project
+(`docker ps -a`, stopped ones included) were started from another folder: a
+start from there would replace the running app's containers and meet its
+database with a new password. The project is `liedmotif`, unless the target
+folder's `.env` sets `COMPOSE_PROJECT_NAME`. Folders compare by inode, so a
+symlink to the install folder is the same install. The message names the
+folder to pass as `--dir`, or, when the containers' folder is gone, points at
+`docker compose ls -a`; the installer never stops or removes the other install.
+
 ### Update
 
 User guide: [Update Liedmotif](https://liedmotif.com/docs/updates/). The installer always
@@ -892,6 +902,11 @@ the compose file's `name: liedmotif`. Compose namespaces containers, networks,
 and volumes per project, so dev-side compose commands — including
 `docker compose down -v` — physically cannot see or delete production state.
 No compose-file changes are needed; the stack is fully env-driven.
+
+The project name is also what keeps two stacks separate for
+`docker/install.sh`: it refuses a folder whose project already has containers
+started from another folder ("Install with one command"). A second stack needs
+its own `COMPOSE_PROJECT_NAME` in its `.env` before its first start.
 
 ### Port map
 
