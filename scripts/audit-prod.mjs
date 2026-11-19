@@ -6,15 +6,7 @@
 // with the problem.
 import { execFileSync } from 'node:child_process';
 
-const ACCEPTED = [
-  {
-    url: 'https://github.com/advisories/GHSA-fc5q-39xc-vjpf',
-    reason:
-      'picomatch <= 4.0.7 (ReDoS), no fixed release yet. It reaches the production tree only ' +
-      "through vitest, which better-auth lists as an optional peer; the images ship Next's " +
-      'traced output, the bundled worker and sharp, none of which contain it.',
-  },
-];
+const ACCEPTED = [];
 
 const BLOCKING_SEVERITIES = new Set(['high', 'critical']);
 
