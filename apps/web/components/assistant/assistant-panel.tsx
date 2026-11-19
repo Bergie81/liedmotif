@@ -25,13 +25,16 @@ import { AllowanceNotice, useAllowance } from './allowance-notice';
 import { AssistantMarkdown } from './assistant-markdown';
 import type { AssistantConversation, ConversationMessage } from './conversation';
 
-const GREETING = `Hi, I'm ${ASSISTANT_NAME}. Ask me anything about your Liedmotif.`;
+const GREETING = `Hi, I'm ${ASSISTANT_NAME}. I can start music, control the player, manage your Tracks and Playlists, change settings, or answer questions about Liedmotif.`;
 
+// Each works with nothing playing and spends nothing when tapped (a Session
+// starts only from its confirmed card); together they show doing, knowing
+// the listener's data, and help.
 const SUGGESTED_QUESTIONS = [
-  'How do I create new music?',
-  'How do I change the vibe of a Session?',
-  'How do I keep a Track?',
-  'How do I listen offline?',
+  'Play something calm for reading',
+  'Surprise me',
+  'How many Tracks can I still make today?',
+  'What can you do?',
 ];
 
 /** The field stops growing here and scrolls instead. */
@@ -268,7 +271,7 @@ function Composer({
         disabled={disabled}
         maxLength={ASSISTANT_MAX_MESSAGE_LENGTH}
         aria-label={`Ask ${ASSISTANT_NAME}`}
-        placeholder="Ask about Liedmotif"
+        placeholder={`Ask or tell ${ASSISTANT_NAME} anything`}
         onChange={(event) => onDraftChange(event.target.value)}
         onKeyDown={onKeyDown}
         className="min-w-0 flex-1 resize-none self-center bg-transparent py-1.5 text-[15px] leading-[1.45] text-paper outline-none placeholder:text-dim disabled:cursor-not-allowed disabled:opacity-50"

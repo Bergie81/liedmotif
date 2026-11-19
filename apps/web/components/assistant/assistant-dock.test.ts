@@ -87,7 +87,7 @@ function askAndGetReply(events: AssistantStreamEvent[]): void {
     ),
   );
   fireEvent.click(screen.getByRole('button', { name: 'Ask Roadie' }));
-  fireEvent.click(screen.getByRole('button', { name: 'How do I create new music?' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Play something calm for reading' }));
 }
 
 it('sends what the player has engaged along with a question', () => {
@@ -111,8 +111,8 @@ it('opens from the launcher with a greeting and questions to start from', () => 
   fireEvent.click(screen.getByRole('button', { name: 'Ask Roadie' }));
 
   const panel = screen.getByRole('dialog', { name: 'Roadie' });
-  expect(panel.textContent).toContain("Hi, I'm Roadie. Ask me anything about your Liedmotif.");
-  expect(screen.getByRole('button', { name: 'How do I create new music?' })).toBeTruthy();
+  expect(panel.textContent).toContain("Hi, I'm Roadie. I can start music, control the player, manage your Tracks and Playlists, change settings, or answer questions about Liedmotif.");
+  expect(screen.getByRole('button', { name: 'Play something calm for reading' })).toBeTruthy();
 });
 
 it('puts the cursor in the question field when it opens beside the page', () => {
@@ -206,9 +206,9 @@ it('asks a suggested question and can stop the answer from the field', () => {
   renderDock({ desk: true });
   fireEvent.click(screen.getByRole('button', { name: 'Ask Roadie' }));
 
-  fireEvent.click(screen.getByRole('button', { name: 'How do I create new music?' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Play something calm for reading' }));
 
-  expect(screen.getByRole('log').textContent).toContain('How do I create new music?');
+  expect(screen.getByRole('log').textContent).toContain('Play something calm for reading');
   expect(screen.getByRole('status').textContent).toContain('Roadie is looking it up');
   expect(screen.queryByRole('button', { name: 'Send' })).toBeNull();
 
@@ -216,7 +216,7 @@ it('asks a suggested question and can stop the answer from the field', () => {
 
   // Nothing was answered: the question is back in the field, ready to send again.
   const field = screen.getByRole('textbox', { name: 'Ask Roadie' }) as HTMLTextAreaElement;
-  expect(field.value).toBe('How do I create new music?');
+  expect(field.value).toBe('Play something calm for reading');
   expect(document.activeElement).toBe(field);
   expect(screen.getByRole('button', { name: 'Send' })).toBeTruthy();
 });

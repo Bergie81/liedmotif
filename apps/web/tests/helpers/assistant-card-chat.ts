@@ -106,7 +106,7 @@ export async function askForCard(
   const refresh = vi.fn();
   render(h(Shell, { headroom, refresh }));
   fireEvent.click(screen.getByRole('button', { name: 'Ask Roadie' }));
-  fireEvent.click(screen.getByRole('button', { name: 'How do I create new music?' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Play something calm for reading' }));
   const card = await screen.findByRole('group', { name: title });
   return { server, refresh, card };
 }
