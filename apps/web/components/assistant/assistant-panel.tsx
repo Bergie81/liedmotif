@@ -105,24 +105,28 @@ export function AssistantPanel({
       </header>
 
       {messages.length === 0 ? (
-        <div className="flex min-h-0 flex-1 flex-col justify-end gap-4 overflow-y-auto overscroll-contain px-4 py-5">
-          <p className="font-display text-[19px] font-bold leading-[1.3] tracking-[-0.01em]">
-            {GREETING}
-          </p>
-          <ul className="flex flex-col items-start gap-2">
-            {SUGGESTED_QUESTIONS.map((question) => (
-              <li key={question}>
-                <button
-                  type="button"
-                  disabled={usedUp}
-                  onClick={() => ask(question)}
-                  className={cn(chipClass, 'text-left disabled:opacity-35')}
-                >
-                  {question}
-                </button>
-              </li>
-            ))}
-          </ul>
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 py-5">
+          {/* my-auto, not justify-center: a greeting taller than the panel
+              still scrolls from its top instead of being clipped above it. */}
+          <div className="my-auto flex flex-col items-center gap-8 text-center">
+            <p className="font-display text-[19px] font-bold leading-[1.3] tracking-[-0.01em]">
+              {GREETING}
+            </p>
+            <ul className="flex flex-col items-center gap-2">
+              {SUGGESTED_QUESTIONS.map((question) => (
+                <li key={question}>
+                  <button
+                    type="button"
+                    disabled={usedUp}
+                    onClick={() => ask(question)}
+                    className={cn(chipClass, 'text-center disabled:opacity-35')}
+                  >
+                    {question}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       ) : (
         <Transcript messages={messages} answering={answering} />
