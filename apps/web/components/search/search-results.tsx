@@ -25,6 +25,7 @@ import {
   type SearchScope,
   type SearchSort,
   type SearchState,
+  type SearchTruncationNote,
 } from './search-model';
 import {
   SearchPlaylistResults,
@@ -256,21 +257,30 @@ function GroupSection({
         </span>
       </h2>
       {children}
-      {note?.view === 'all' ? (
-        <p className="mt-3 text-[13px] text-muted">
-          {note.shown} ·{' '}
-          <button
-            type="button"
-            onClick={() => onScopeChange(note.scope)}
-            className="font-semibold text-lamp hover:underline"
-          >
-            {note.action}
-          </button>
-        </p>
-      ) : note ? (
-        <p className="mt-3 text-[13px] text-muted">{note.text}</p>
-      ) : null}
+      {note ? <TruncationNote note={note} onScopeChange={onScopeChange} /> : null}
     </section>
+  );
+}
+
+function TruncationNote({
+  note,
+  onScopeChange,
+}: {
+  note: SearchTruncationNote;
+  onScopeChange: (scope: SearchScope) => void;
+}) {
+  if (note.view === 'single') return <p className="mt-3 text-[13px] text-muted">{note.text}</p>;
+  return (
+    <p className="mt-3 text-[13px] text-muted">
+      {note.shown} ·{' '}
+      <button
+        type="button"
+        onClick={() => onScopeChange(note.scope)}
+        className="font-semibold text-lamp hover:underline"
+      >
+        {note.action}
+      </button>
+    </p>
   );
 }
 

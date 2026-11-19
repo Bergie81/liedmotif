@@ -117,8 +117,8 @@ function AddTracksContent({
     toast.dismiss(ADD_KEY);
     const trackIds = [...checked];
     const result = await addTracksInBatches(playlistId, trackIds);
+    setBusy(false);
     if (!result.ok) {
-      setBusy(false);
       toast.error(addToPlaylistFailedMessage(result.error.message), { key: ADD_KEY });
       if (result.partial) {
         router.refresh();
@@ -126,7 +126,6 @@ function AddTracksContent({
       }
       return;
     }
-    setBusy(false);
     toast.success(addedToPlaylistMessage(trackIds.length, playlistName));
     router.refresh();
     onAdded();
