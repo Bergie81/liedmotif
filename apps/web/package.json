@@ -33,7 +33,7 @@
     "chart.js": "^4.6.1",
     "lucide-react": "^1.61.0",
     "markdown-to-jsx": "^9.10.6",
-    "next": "^16.4.5",
+    "next": "^16.4.6",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-easy-crop": "^6.2.4",
