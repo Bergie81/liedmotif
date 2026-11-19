@@ -23,13 +23,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   crossfadeStartSeconds,
   mediaSessionPositionState,
-  nextPlaylistIndex,
   type PlaybackReportType,
   type PlaybackMode,
-  previousPlaylistIndex,
-  reanchorPlaylistIndex,
-  resolveOrderedNextIndex,
-  resolveInitialPlaylistIndex,
   resolveSeekTarget,
   soloLoudnessGainDb,
 } from '@liedmotif/shared';
@@ -56,8 +51,9 @@ import {
   type QueueTarget,
 } from './playable-track';
 import { rejectedPlayFallbackStatus, snapshotPlayerStatus, toggleIntent } from './player-status';
-import { PlaybackTraversal, type ShuffleTransition } from './playback-traversal';
-import { loopHeadLeads, sessionTrackNumbering, withLeadingLoopHead } from './session-loop-head';
+import type { ShuffleTransition } from './playback-traversal';
+import { QueueCursor } from './queue-cursor';
+import { sessionTrackNumbering } from './session-loop-head';
 import {
   initialPlaybackControllerState,
   type PlaybackSample,
@@ -120,16 +116,10 @@ export function usePlaybackController(
   const clientId = useClientId();
 
   // Playback bookkeeping in refs (handlers/intervals must not read stale React state).
-  // The playable projection of the Session Queue. Queue membership and normal
-  // order are authoritative; alternate traversal modes remain client-local.
-  const queueRef = useRef<PlayableTrack[]>([]);
-  // The Session's first Track when the read window left it out. It leads the
-  // projection, so every ordered wrap reaches it the way it reaches index 0.
-  const loopHeadRef = useRef<string | null>(null);
-  const idxRef = useRef<number>(0);
-  // Whether the stored resume position has been applied to `idxRef` yet — done once,
-  // on the first non-empty queue load, so later polls never yank playback backwards.
-  const startIndexAppliedRef = useRef<boolean>(false);
+  // The queue cursor (queue-cursor.ts), built once: the playable projection of
+  // the Session Queue, its cursor index, the loop head and the traversal.
+  const cursorRef = useRef<QueueCursor | null>(null);
+  const cursor = (cursorRef.current ??= new QueueCursor(expired));
   // The deck lifecycle's ports while bound; the buffer transport's natural
   // end reaches the lifecycle semantics through this ref.
   const lifecyclePortsRef = useRef<DeckLifecyclePorts | null>(null);
@@ -185,7 +175,6 @@ export function usePlaybackController(
   // audio is never re-requested in a loop, and a Track whose sources changed
   // since is worth trying again.
   const deadSourcesRef = useRef<Map<string, string>>(new Map());
-  const playbackTraversalRef = useRef(new PlaybackTraversal());
   // Armed at mount for a session the user just started: the
   // start-session click is the play intent, so the first playable track
   // auto-starts from the queue poll. Pause disarms; a rejected play falls
@@ -298,9 +287,7 @@ export function usePlaybackController(
       // Shuffle's order is client-only: the server must not read a later slot's
       // start as proof that earlier slots Shuffle has not reached were skipped.
       const shuffled =
-        type === 'started' &&
-        playbackTraversalRef.current.mode === 'shuffle' &&
-        !queueTapStartRef.current;
+        type === 'started' && cursor.traversal.mode === 'shuffle' && !queueTapStartRef.current;
       if (type === 'started') queueTapStartRef.current = false;
       // A Playlist sends no playback report: those are the Session top-up
       // gate, and playing a Playlist must leave the Active Session idle.
@@ -355,55 +342,12 @@ export function usePlaybackController(
     [],
   );
 
-  /** The index navigation should try next: past the audible track when it still sits
-   * at the cursor, the cursor slot itself when it vanished from the projection
-   * (later items shifted left into it) or when nothing is loaded. */
-  const nextIndex = useCallback(
-    (): number =>
-      nextPlaylistIndex(queueRef.current, rig.activeTrack()?.queueItemId ?? null, idxRef.current),
-    [],
-  );
-
-  /** The next Track that may start, passing over expired ones and any `skip` rejects. */
+  /** The next Track after the audible one that may start, passing over expired
+   * ones and any `skip` rejects. */
   const explicitNextTarget = useCallback(
-    (skip?: (track: PlayableTrack) => boolean): QueueTarget | null => {
-      const next = nextIndex();
-      const start = resolveOrderedNextIndex(queueRef.current.length, next - 1) ?? 0;
-      const target = playbackTraversalRef.current.next(
-        queueRef.current,
-        rig.activeTrack()?.queueItemId ?? null,
-        start,
-        (track) => expired(track) || (skip?.(track) ?? false),
-      );
-      // An ordered advance past the projection's end is the Queue loop restarting;
-      // the target carries that so its `started` report can prove the wrap to the
-      // server. Shuffle traversal owns its own ordering (the bag) and never wraps.
-      if (
-        target &&
-        playbackTraversalRef.current.mode !== 'shuffle' &&
-        (next >= queueRef.current.length || target.idx < start)
-      ) {
-        return { ...target, wrapped: true };
-      }
-      return target;
-    },
-    [expired, nextIndex],
-  );
-
-  /** The nearest earlier queue index that may still start, passing over expired
-   * offline copies; null when none precedes `from`. */
-  const previousStartableIndex = useCallback(
-    (from: number): number | null => {
-      let idx = previousPlaylistIndex(queueRef.current, from);
-      while (idx != null && expired(queueRef.current[idx]!)) {
-        idx = previousPlaylistIndex(queueRef.current, idx);
-      }
-      // Back stays inside the window: the Tracks between the loop head and
-      // the window are not in hand.
-      if (idx === 0 && loopHeadLeads(queueRef.current, loopHeadRef.current)) return null;
-      return idx;
-    },
-    [expired],
+    (skip?: (track: PlayableTrack) => boolean): QueueTarget | null =>
+      cursor.nextTarget(rig.activeTrack()?.queueItemId ?? null, skip),
+    [],
   );
 
   const isDeadSource = useCallback(
@@ -424,7 +368,7 @@ export function usePlaybackController(
       const seam = loopSeamTarget();
       return seam && !expired(seam.track) ? seam : null;
     }
-    if (playbackTraversalRef.current.mode === 'loop-track') {
+    if (cursor.traversal.mode === 'loop-track') {
       return null;
     }
     return explicitNextTarget();
@@ -436,7 +380,7 @@ export function usePlaybackController(
    * A no-op outside Loop Track, with no Track, or while a pin is already live. */
   const armLoopTrackPin = useCallback(
     (deck: DeckId, track: PlayableTrack | null) => {
-      if (playbackTraversalRef.current.mode !== 'loop-track' || !track || loopPinned()) return;
+      if (cursor.traversal.mode !== 'loop-track' || !track || loopPinned()) return;
       if (rig.sources().committedKind(deck) !== 'final') {
         holdLease('loop-track', true);
         return;
@@ -455,10 +399,10 @@ export function usePlaybackController(
   const commitHandoff = useCallback(
     (deck: DeckId, track: PlayableTrack, idx: number, queueWrapped = false) => {
       const outgoing = rig.activeTrack();
-      playbackTraversalRef.current.commit(outgoing?.queueItemId ?? null, track.queueItemId);
+      cursor.traversal.commit(outgoing?.queueItemId ?? null, track.queueItemId);
       rig.carry(deck, track);
       rig.activeDeck = deck;
-      idxRef.current = idx;
+      cursor.idx = idx;
       // The loop pin reacts to what became current BEFORE the next-target
       // reads below: a seam replay keeps the pin and a different track ends it,
       // so `retainOnly` sees the post-pin truth.
@@ -653,7 +597,7 @@ export function usePlaybackController(
       shuffleTransition: ShuffleTransition = 'record',
       queueWrapped = false,
     ) => {
-      let track = queueRef.current[idx];
+      let track = cursor.tracks[idx];
       if (!track) return;
       // Every hard-cut start passes here: an expired Track is passed over for
       // the next one that may still play.
@@ -672,7 +616,7 @@ export function usePlaybackController(
       const previousDeck = rig.activeDeck;
       if (!cutOverTo(deck, track, queueWrapped)) return;
 
-      playbackTraversalRef.current.commit(
+      cursor.traversal.commit(
         rig.activeTrack()?.queueItemId ?? null,
         track.queueItemId,
         shuffleTransition,
@@ -684,7 +628,7 @@ export function usePlaybackController(
 
       rig.carry(deck, track);
       rig.activeDeck = deck;
-      idxRef.current = idx;
+      cursor.idx = idx;
       // A cut-over to a DIFFERENT track ends a loop pin (Back to previous, the
       // failure path); replaying the pinned track (loop restart, Back-restart)
       // keeps it. The fresh load has no committed source yet — the toggle
@@ -730,7 +674,7 @@ export function usePlaybackController(
       transitions().cancel();
       rig.unload('a');
       rig.unload('b');
-      idxRef.current = Math.min(idx, queueRef.current.length);
+      cursor.idx = Math.min(idx, cursor.tracks.length);
       patch({
         status: 'waiting',
         playIntentPending: wantPlayRef.current,
@@ -748,9 +692,9 @@ export function usePlaybackController(
   const playIndexOrWait = useCallback(
     (idx: number, shuffleTransition: ShuffleTransition = 'record', queueWrapped = false) => {
       const other: DeckId = rig.activeDeck === 'a' ? 'b' : 'a';
-      if (queueRef.current[idx]) {
+      if (cursor.tracks[idx]) {
         playOnDeck(other, idx, shuffleTransition, queueWrapped);
-      } else if (queueRef.current.some(expired)) {
+      } else if (cursor.tracks.some(expired)) {
         // Nothing arrives to replace an expired copy.
         endPlayback();
       } else {
@@ -768,29 +712,25 @@ export function usePlaybackController(
    * too-short track, `blendEnabled: false`, or a failed seam preparation). */
   const advance = useCallback(() => {
     const loop = loopRestartTarget();
-    if (loop || playbackTraversalRef.current.mode === 'loop-track') {
+    if (loop || cursor.traversal.mode === 'loop-track') {
       const current = rig.activeTrack();
       const currentIdx = current
-        ? queueRef.current.findIndex((track) => track.queueItemId === current.queueItemId)
+        ? cursor.tracks.findIndex((track) => track.queueItemId === current.queueItemId)
         : -1;
-      playIndexOrWait(loop?.idx ?? (currentIdx >= 0 ? currentIdx : queueRef.current.length));
+      playIndexOrWait(loop?.idx ?? (currentIdx >= 0 ? currentIdx : cursor.tracks.length));
       return;
     }
     const target = explicitNextTarget();
-    playIndexOrWait(target?.idx ?? queueRef.current.length, 'record', target?.wrapped ?? false);
+    playIndexOrWait(target?.idx ?? cursor.tracks.length, 'record', target?.wrapped ?? false);
   }, [explicitNextTarget, loopRestartTarget, playIndexOrWait]);
 
   const setPlaybackMode = useCallback(
     (next: PlaybackMode) => {
-      const previous = playbackTraversalRef.current.mode;
+      const previous = cursor.traversal.mode;
       if (next === previous) return;
 
       if (previous === 'loop-track') applyLoopEvent({ type: 'exit' });
-      playbackTraversalRef.current.select(
-        next,
-        queueRef.current,
-        rig.activeTrack()?.queueItemId ?? null,
-      );
+      cursor.traversal.select(next, cursor.tracks, rig.activeTrack()?.queueItemId ?? null);
 
       const current = rig.activeTrack();
       armLoopTrackPin(rig.activeDeck, current);
@@ -802,7 +742,7 @@ export function usePlaybackController(
   );
 
   const cyclePlaybackMode = useCallback(() => {
-    setPlaybackMode(playbackTraversalRef.current.nextMode());
+    setPlaybackMode(cursor.traversal.nextMode());
   }, [setPlaybackMode]);
 
   const play = useCallback(() => {
@@ -839,8 +779,8 @@ export function usePlaybackController(
       playAndConfirm(deck, el, track, false);
       return;
     }
-    if (queueRef.current[idxRef.current]) {
-      playOnDeck(deck, idxRef.current);
+    if (cursor.tracks[cursor.idx]) {
+      playOnDeck(deck, cursor.idx);
       return;
     }
     // Nothing buffered to start. Playback reports are what mark the session as
@@ -1006,13 +946,12 @@ export function usePlaybackController(
   const pollQueueNowRef = useRef<() => void>(() => {});
 
   const removeFromQueue = useCallback((queueItemId: string) => {
-    queueRef.current = queueRef.current.filter((t) => t.queueItemId !== queueItemId);
-    playbackTraversalRef.current.remove(queueItemId);
+    cursor.remove(queueItemId);
     setState((current) => ({
       ...current,
       queueItems: current.queueItems.filter((item) => item.id !== queueItemId),
-      queueLength: queueRef.current.length,
-      playableQueueItemIds: queueRef.current.map((track) => track.queueItemId),
+      queueLength: cursor.tracks.length,
+      playableQueueItemIds: cursor.tracks.map((track) => track.queueItemId),
     }));
   }, []);
 
@@ -1021,7 +960,7 @@ export function usePlaybackController(
   const advancePastCurrent = useCallback(() => {
     applyLoopEvent({ type: 'exit' });
     const target = explicitNextTarget();
-    playIndexOrWait(target?.idx ?? queueRef.current.length, 'discard', target?.wrapped ?? false);
+    playIndexOrWait(target?.idx ?? cursor.tracks.length, 'discard', target?.wrapped ?? false);
   }, [applyLoopEvent, explicitNextTarget, playIndexOrWait]);
 
   // Feedback-loop actions — semantics in use-track-actions.
@@ -1058,12 +997,12 @@ export function usePlaybackController(
         advancePastCurrent();
         return;
       }
-      const removedIdx = queueRef.current.findIndex((queued) => queued.trackId === trackId);
+      const removedIdx = cursor.tracks.findIndex((queued) => queued.trackId === trackId);
       if (removedIdx === -1) return;
-      const { queueItemId } = queueRef.current[removedIdx]!;
+      const { queueItemId } = cursor.tracks[removedIdx]!;
       locallyRemovedRef.current.add(queueItemId);
       removeFromQueue(queueItemId);
-      if (removedIdx < idxRef.current) idxRef.current -= 1;
+      cursor.shiftForRemovalAt(removedIdx);
       retargetNext(audible?.trackId);
     },
     [advancePastCurrent, removeFromQueue, retargetNext],
@@ -1077,7 +1016,7 @@ export function usePlaybackController(
     report('skipped', track, rig.position(rig.activeDeck));
     reportSkip(track);
     const target = explicitNextTarget();
-    playIndexOrWait(target?.idx ?? queueRef.current.length, 'record', target?.wrapped ?? false);
+    playIndexOrWait(target?.idx ?? cursor.tracks.length, 'record', target?.wrapped ?? false);
   }, [explicitNextTarget, playIndexOrWait, applyLoopEvent, report, reportSkip]);
 
   /** Restart the current track. It RE-RUNS the pinned source ladder:
@@ -1095,7 +1034,7 @@ export function usePlaybackController(
       return;
     }
     userStartRef.current = true;
-    const idx = queueRef.current.findIndex((t) => t.queueItemId === track.queueItemId);
+    const idx = cursor.tracks.findIndex((t) => t.queueItemId === track.queueItemId);
     if (idx >= 0) {
       playOnDeck(rig.activeDeck, idx);
       return;
@@ -1122,23 +1061,23 @@ export function usePlaybackController(
    * when none precedes the cursor — never to silence. */
   const previous = useCallback(() => {
     userStartRef.current = true;
-    const traversal = playbackTraversalRef.current;
+    const traversal = cursor.traversal;
     const current = rig.activeTrack()?.queueItemId ?? null;
     if (traversal.mode === 'shuffle') {
       // Going back passes over expired offline copies in the same direction.
-      const target = traversal.previous(queueRef.current, current, expired);
+      const target = traversal.previous(cursor.tracks, current, expired);
       if (target) playOnDeck(rig.activeDeck, target.idx, 'preserve');
       else restart();
       return;
     }
-    const target = previousStartableIndex(idxRef.current);
+    const target = cursor.previousStartableIndex(cursor.idx);
     if (target == null) {
       restart();
       return;
     }
     if (traversal.mode === 'loop-track') applyLoopEvent({ type: 'exit' });
     playIndexOrWait(target);
-  }, [applyLoopEvent, expired, playIndexOrWait, playOnDeck, previousStartableIndex, restart]);
+  }, [applyLoopEvent, expired, playIndexOrWait, playOnDeck, restart]);
 
   /** Back: the universal player idiom. Mid-track it restarts the current track;
    * near the start it steps to the previous Track. Shuffle always steps, since
@@ -1153,7 +1092,7 @@ export function usePlaybackController(
       return;
     }
     const underway =
-      playbackTraversalRef.current.mode !== 'shuffle' &&
+      cursor.traversal.mode !== 'shuffle' &&
       rig.activeTrack() !== null &&
       rig.el(rig.activeDeck) !== null &&
       (rig.position(rig.activeDeck) ?? 0) > BACK_RESTART_SECONDS;
@@ -1167,21 +1106,9 @@ export function usePlaybackController(
     next: PlayableTrack | null;
     previous: PlayableTrack | null;
   } => {
-    const traversal = playbackTraversalRef.current;
-    let previousTrack: PlayableTrack | null = null;
-    if (traversal.mode === 'shuffle') {
-      const target = traversal.peekPrevious(
-        queueRef.current,
-        rig.activeTrack()?.queueItemId ?? null,
-        expired,
-      );
-      previousTrack = target?.track ?? null;
-    } else {
-      const idx = previousStartableIndex(idxRef.current);
-      if (idx != null) previousTrack = queueRef.current[idx] ?? null;
-    }
+    const previousTrack = cursor.peekPrevious(rig.activeTrack()?.queueItemId ?? null);
     return { next: explicitNextTarget()?.track ?? null, previous: previousTrack };
-  }, [expired, explicitNextTarget, previousStartableIndex]);
+  }, [explicitNextTarget]);
 
   const toggle = useCallback(() => {
     // Pause also DISARMS a pending auto-start (armed intent, nothing loaded
@@ -1230,11 +1157,9 @@ export function usePlaybackController(
         // once per poll, so the retry moves along the Queue and playback returns
         // once ANY Track's audio does, not only the last one to fail.
         const failedIdx = failed
-          ? queueRef.current.findIndex((t) => t.queueItemId === failed.queueItemId)
+          ? cursor.tracks.findIndex((t) => t.queueItemId === failed.queueItemId)
           : -1;
-        waitAt(
-          failedIdx >= 0 ? (failedIdx + 1) % queueRef.current.length : queueRef.current.length,
-        );
+        waitAt(failedIdx >= 0 ? (failedIdx + 1) % cursor.tracks.length : cursor.tracks.length);
       },
       resumePlay: (deck, el, track) => playAndConfirm(deck, el, track, false),
       unloadDeck: (deck) => rig.unload(deck),
@@ -1246,7 +1171,7 @@ export function usePlaybackController(
         patch(sourcePatch);
         const track = rig.deckTrack(deck);
         if (
-          playbackTraversalRef.current.mode === 'loop-track' &&
+          cursor.traversal.mode === 'loop-track' &&
           sourcePatch.sourceKind !== 'final' &&
           loopPinned()
         ) {
@@ -1309,24 +1234,17 @@ export function usePlaybackController(
   const applyQueueSnapshot = useCallback(
     (snapshot: PlaybackSourceSnapshot) => {
       const sessionSnapshot = snapshot.kind === 'session' ? snapshot : null;
-      const projection = withLeadingLoopHead(sessionSnapshot?.loopHead ?? null, snapshot.tracks);
-      loopHeadRef.current = projection.loopHeadId;
-      let queueTracks = projection.tracks;
+      // A loop holds the audible Track in the projection while its Queue item remains.
       const pinnedTrack = loopPinned() || sectionLoopRegion() ? rig.activeTrack() : null;
-      // A Queue item may remain authoritative while temporarily dropping out of
-      // the playable projection (for example while its source availability is
-      // being refreshed). Repeat-one pins the already-audible Track, so retain
-      // that known-good projection until the raw Queue item actually vanishes.
-      if (
-        pinnedTrack &&
-        snapshot.queueItemIds.has(pinnedTrack.queueItemId) &&
-        !queueTracks.some((track) => track.queueItemId === pinnedTrack.queueItemId)
-      ) {
-        queueTracks = [...queueTracks];
-        queueTracks.splice(Math.min(idxRef.current, queueTracks.length), 0, pinnedTrack);
-      }
-      queueRef.current = queueTracks;
-      playbackTraversalRef.current.sync(queueTracks, rig.activeTrack()?.queueItemId ?? null);
+      const queueTracks = cursor.applyProjection(
+        {
+          loopHead: sessionSnapshot?.loopHead ?? null,
+          tracks: snapshot.tracks,
+          queueItemIds: snapshot.queueItemIds,
+        },
+        pinnedTrack,
+        rig.activeTrack()?.queueItemId ?? null,
+      );
 
       // Repeat-one invalidations: a Change Vibe (moved
       // style revision), a stopped session, or a pinned item that vanished
@@ -1343,7 +1261,7 @@ export function usePlaybackController(
           sessionStatus,
           queueItemIds,
         };
-        if (loopSnapshot.revisionMoved && playbackTraversalRef.current.mode === 'loop-track') {
+        if (loopSnapshot.revisionMoved && cursor.traversal.mode === 'loop-track') {
           setPlaybackMode('loop-session');
         }
         onLoopQueueSnapshot(loopSnapshot);
@@ -1369,30 +1287,17 @@ export function usePlaybackController(
         if (audible) setMediaMetadata(audible);
       }
 
-      // Resume restores the stored queue POSITION, not just the style: on the first
-      // non-empty queue load, start at the server's current item, or at the next
-      // remaining Track after its slot when that Track is gone. Resolved over the
-      // whole projection, so the fallback index 0 is the Session's start: the
-      // loop head when it leads. Applied once so subsequent polls don't reset a
-      // session that is already playing.
-      if (!startIndexAppliedRef.current && queueTracks.length > 0) {
-        idxRef.current = resolveInitialPlaylistIndex(queueTracks, {
+      // Resume restores the stored queue POSITION, not just the style, once;
+      // every later poll re-anchors the cursor onto the Track the active deck
+      // carries, so advance/resume continue from the audible Track.
+      cursor.placeCursor(
+        {
           currentQueueItemId: snapshot.currentQueueItemId,
           currentTrackId: snapshot.currentTrackId,
           anchorPosition: sessionSnapshot?.anchorPosition,
-        });
-        startIndexAppliedRef.current = true;
-      } else {
-        // Each poll replaces the projection, and removals (e.g. dislike) shift
-        // later indices left — re-anchor the navigation cursor onto the track the
-        // active deck is actually carrying so advance/resume continue from the
-        // audible track (actions target the deck track directly via activeTrack).
-        idxRef.current = reanchorPlaylistIndex(
-          queueTracks,
-          rig.activeTrack()?.queueItemId ?? null,
-          idxRef.current,
-        );
-      }
+        },
+        rig.activeTrack()?.queueItemId ?? null,
+      );
 
       // Queue replacement invalidates an in-flight preparation whose track is
       // no longer the transition target (the driver re-checks by queue item),
@@ -1403,7 +1308,7 @@ export function usePlaybackController(
       // `loading` AND `waiting` to `ready`. A cursor parked on audio that
       // failed is not startable: the resume path's retry below runs under the
       // honest `waiting`.
-      const cursorTrack = queueRef.current[idxRef.current];
+      const cursorTrack = cursor.tracks[cursor.idx];
       const nextStatus = snapshotPlayerStatus(
         statusRef.current,
         cursorTrack != null && !isDeadSource(cursorTrack),
@@ -1478,8 +1383,8 @@ export function usePlaybackController(
       // first track arrived, or the queue played out): start the track at the cursor
       // as soon as it exists. A hard cut on the active deck — never `advance`, which
       // would skip past the cursor's (possibly first, paid) track.
-      if (wantPlayRef.current && !rig.activeTrack() && queueRef.current[idxRef.current]) {
-        playOnDeck(rig.activeDeck, idxRef.current);
+      if (wantPlayRef.current && !rig.activeTrack() && cursor.tracks[cursor.idx]) {
+        playOnDeck(rig.activeDeck, cursor.idx);
       }
     },
     [
@@ -1599,7 +1504,7 @@ export function usePlaybackController(
   // next poll (which would confirm the same server truth anyway). The
   // lock-screen republish rides the shared titles-changed effect below.
   const applyTrackTitle = useCallback((trackId: string, title: string) => {
-    for (const track of queueRef.current) {
+    for (const track of cursor.tracks) {
       if (track.trackId === trackId) track.title = title;
     }
     for (const deck of ['a', 'b'] as const) {
@@ -1618,15 +1523,15 @@ export function usePlaybackController(
 
   const playQueueItem = useCallback(
     (queueItemId: string) => {
-      const idx = queueRef.current.findIndex((track) => track.queueItemId === queueItemId);
-      const tapped = queueRef.current[idx];
+      const idx = cursor.tracks.findIndex((track) => track.queueItemId === queueItemId);
+      const tapped = cursor.tracks[idx];
       if (!tapped || expired(tapped)) return;
       userStartRef.current = true;
       queueTapStartRef.current = true;
       wantPlayRef.current = true;
       patch({ playIntentPending: true });
       void rig.ensureEngine()?.resume();
-      if (playbackTraversalRef.current.mode === 'loop-track') {
+      if (cursor.traversal.mode === 'loop-track') {
         applyLoopEvent({ type: 'exit' });
       }
       playOnDeck(rig.activeDeck, idx);
@@ -1637,7 +1542,7 @@ export function usePlaybackController(
   // The repeat-one surface: assigned EVERY render, after everything it reads
   // exists; the coordinator reads it only at event time (never during render).
   repeatOneDepsRef.current = {
-    queue: () => queueRef.current,
+    queue: () => cursor.tracks,
     activeDurationSeconds: () => rig.sample(rig.activeDeck).durationSeconds,
     crossfadeSetting: () => settingsRef.current.crossfadeSeconds,
     syncPreparedTarget: () => transitions().syncTarget(resolveNextTarget()),
@@ -1694,7 +1599,7 @@ export function usePlaybackController(
   return useMemo<PlaybackControllerApi>(() => {
     // The projection and `state` refresh together (every queue poll writes
     // state), so this index is never staler than the rendered queue length.
-    const currentIndex = queueRef.current.findIndex(
+    const currentIndex = cursor.tracks.findIndex(
       (t) => t.queueItemId === state.currentTrack?.queueItemId,
     );
     return {
@@ -1703,7 +1608,7 @@ export function usePlaybackController(
         currentIndex,
         earlierTracks: state.earlierTracks,
         projectionLength: state.queueLength,
-        headLeads: loopHeadLeads(queueRef.current, loopHeadRef.current),
+        headLeads: cursor.headLeads(),
       }),
       deckARef,
       deckBRef,
