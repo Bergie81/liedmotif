@@ -17,6 +17,9 @@ vi.mock('@/components/player/use-play-session-track', () => ({
     transportRowPreview: { trackId: null, state: 'paused' },
   }),
 }));
+vi.mock('@/components/player/player-provider', () => ({
+  usePlayerContext: () => ({ playback: null }),
+}));
 
 const { useTrackRowPlayback } = await import('./use-track-row-playback');
 

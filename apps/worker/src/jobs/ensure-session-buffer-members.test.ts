@@ -141,6 +141,7 @@ describeIfDb('ensure-session-buffer — Member budgets and the Members Pool', ()
     const requestId = await createGenerationRequest(ctx.db, {
       ownerUserId,
       activitySessionId: sessionId,
+      status: 'materialized',
     });
     const jobId = await createProviderJob(ctx.db, {
       generationRequestId: requestId,
@@ -355,9 +356,11 @@ describeIfDb('ensure-session-buffer — Member cost-limit status payload', () =>
       ownerUserId: memberId,
       styleSnapshot: { stylePrompt: 'instrumental lofi', bpm: 96, key: 'A minor' },
     });
+    // The spent batch is settled: ready and materialized, so it owes no Tracks.
     const requestId = await createGenerationRequest(ctx.db, {
       ownerUserId: memberId,
       activitySessionId: sessionId,
+      status: 'materialized',
     });
     await createProviderJob(ctx.db, {
       generationRequestId: requestId,

@@ -70,6 +70,7 @@ const ITEM = {
   addedAt: '2026-07-21T10:00:00.000Z',
   genreTags: [],
   downloadable: true,
+  owner: null,
 } as unknown as PlaylistMemberItem;
 
 function renderPage() {
@@ -141,7 +142,10 @@ describe('PlaylistDetail — results as toasts', () => {
   });
 
   it('says so in an info toast when a removal took the Track out of the Library', async () => {
-    api.removePlaylistTrack.mockResolvedValue({ ok: true, data: { unsaved: true } });
+    api.removePlaylistTrack.mockResolvedValue({
+      ok: true,
+      data: { unsaved: true, deletedForGood: false },
+    });
     renderPage();
 
     openTrackOptions();
