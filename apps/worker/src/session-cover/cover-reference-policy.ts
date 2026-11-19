@@ -110,6 +110,10 @@ export async function selectCoverReferencesForPlan(
      *  `promptText` and `includesListener` are set aside, while `skipProfile`
      *  still keeps the owner out. */
     coverWish?: string;
+    /** The text LLM's reading of whether `coverWish` puts the listener in the
+     *  picture. True lets the wish decide even when it names nobody else, and
+     *  names the owner beside the People it names. */
+    wishIncludesListener?: boolean;
   },
 ): Promise<CoverReferencePlanSelection> {
   // A music-task-driven provider consumes no prompt and no references — the
@@ -131,7 +135,8 @@ export async function selectCoverReferencesForPlan(
     listPersonReferencePhotos(db, { ownerUserId: args.ownerUserId }),
   ]);
   const namingWish =
-    args.coverWish && matchConfiguredPeople(args.coverWish, people).length > 0
+    args.coverWish &&
+    (args.wishIncludesListener || matchConfiguredPeople(args.coverWish, people).length > 0)
       ? args.coverWish
       : null;
   return {
@@ -146,7 +151,7 @@ export async function selectCoverReferencesForPlan(
       explicitOptIn: args.explicitOptIn,
       owner: coverReferenceOwner({
         skipProfile: args.skipProfile,
-        includesListener: namingWish === null && args.includesListener,
+        includesListener: namingWish === null ? args.includesListener : args.wishIncludesListener,
       }),
     }),
     capabilityDowngrades: [],

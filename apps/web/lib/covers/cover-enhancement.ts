@@ -1,21 +1,21 @@
 // The one effective-rule implementation for cover prompt enhancement, shared by
-// every web-boundary surface (regenerate, status, custom-style save): a
-// configured text LLM is the hard gate, and a per-request override beats the
-// owner's cover-art setting (the LLM stays optional — with none
-// configured every path stays byte-for-byte deterministic).
+// every web-boundary surface (cover regenerate, custom-style save): a
+// configured text LLM is the hard gate, and the custom-style save's own
+// setting patch beats the owner's stored cover-art setting (the LLM stays
+// optional — with none configured every path stays byte-for-byte deterministic).
 
-import { getCoverArtSettings, type Database } from '@liedmotif/db';
+import { getCoverArtSettings, type CoverRequestProvenance, type Database } from '@liedmotif/db';
 import type { CoverDirectionInput, LlmProvider } from '@liedmotif/providers';
 import { getLlmProvider } from '@/lib/providers/providers';
 
-export interface CoverEnhancementDecision {
+interface CoverEnhancementDecision {
   /** The configured text LLM, or null — the hard gate. */
   llm: LlmProvider | null;
   /** Whether enhancement should run (LLM present AND policy says yes). */
   active: boolean;
 }
 
-export async function resolveCoverEnhancement(
+async function resolveCoverEnhancement(
   db: Database,
   ownerUserId: string,
   override?: boolean,
@@ -35,6 +35,9 @@ export interface CoverTextEnhancement {
   /** Whether an LLM call was actually made (policy said yes and text was present). */
   attempted: boolean;
   llmConfigured: boolean;
+  /** The text LLM's reading of whether the text puts the listener in the
+   *  picture; absent when no call ran or it gave no valid answer. */
+  includesListener?: boolean;
 }
 
 /**
@@ -61,11 +64,36 @@ export async function enhanceCoverText(
   const enhanced = await llm
     .enhanceCoverDirection({ text: args.text, context: args.context })
     .catch(() => null);
-  if (!enhanced?.applied) {
-    return { text: args.text, applied: false, attempted: true, llmConfigured };
-  }
+  const unchanged: CoverTextEnhancement = {
+    text: args.text,
+    applied: false,
+    attempted: true,
+    llmConfigured,
+    includesListener: enhanced?.includesListener,
+  };
+  if (!enhanced?.applied) return unchanged;
   const clamped = args.clamp ? args.clamp(enhanced.text) : enhanced.text;
-  return clamped
-    ? { text: clamped, applied: true, attempted: true, llmConfigured }
-    : { text: args.text, applied: false, attempted: true, llmConfigured };
+  return clamped ? { ...unchanged, text: clamped, applied: true } : unchanged;
+}
+
+/**
+ * The request part of a regeneration attempt, frozen at reservation: the typed
+ * art direction, what the text LLM made of it, and the People switch. Without a
+ * configured text LLM there is no enhancement outcome and no listener reading.
+ */
+export function coverRequestProvenance(args: {
+  guidance: string | undefined;
+  enhancement: CoverTextEnhancement | null;
+  usePeopleReferences: boolean | undefined;
+}): CoverRequestProvenance {
+  const reading = args.enhancement?.llmConfigured ? args.enhancement : null;
+  return {
+    userGuidance: args.guidance,
+    usePeopleReferences: args.usePeopleReferences,
+    ...(reading && {
+      enhancementApplied: reading.applied,
+      effectiveGuidance: reading.applied ? reading.text : undefined,
+      wishIncludesListener: reading.includesListener,
+    }),
+  };
 }

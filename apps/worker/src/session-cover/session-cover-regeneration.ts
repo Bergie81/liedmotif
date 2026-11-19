@@ -119,18 +119,14 @@ export async function planAndExecuteRegeneration(
         now,
         excludeGenerationId: ledger.id,
       });
-      const guidance = current.plan.effectiveGuidance ?? current.plan.userGuidance;
+      const request = reservedRequestProvenance(current.plan);
       const frozen = await freezePlanInputs(tx, locked, capabilities, {
         limits,
         withinLimits: decision.admitted,
-        ...(guidance ? { guidance } : {}),
-        ...(current.plan.userGuidance ? { typedGuidance: current.plan.userGuidance } : {}),
+        request,
         textLlmConfigured: runtime.deps.textLlmConfigured,
       });
-      const plan: SessionCoverPlanRecord = {
-        ...frozen.plan,
-        ...reservedRequestProvenance(current.plan),
-      };
+      const plan: SessionCoverPlanRecord = { ...frozen.plan, ...request };
       const applied = await planReservedSessionCoverGeneration(tx, {
         ownerUserId: runtime.deps.ownerUserId,
         id: ledger.id,

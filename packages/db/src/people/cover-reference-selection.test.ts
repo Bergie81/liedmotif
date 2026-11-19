@@ -4,11 +4,12 @@ import {
   type CoverReferenceEndpointCapabilities,
 } from './cover-reference-selection';
 
-// Explicit opt-in mode: the caller (a Playlist cover attempt whose owner switched
-// the People toggle on) asked for reference photos, so the selection must be
-// deterministic — no frequency roll — and must refuse rather than hand back a
-// prompt-only selection. The frequency-driven callers are covered beside the
-// worker's cover reference policy.
+// Explicit opt-in mode: the caller (a cover attempt whose owner switched the
+// People toggle on) asked for reference photos, so the selection is
+// deterministic — no frequency roll. When nobody it selects has a photo, the
+// cover is made without one; only `never` and an endpoint that cannot take the
+// photos refuse. The frequency-driven callers are covered beside the worker's
+// cover reference policy.
 
 const OWNER_ID = 'explicit-opt-in-owner';
 
@@ -111,11 +112,23 @@ describe('explicit opt-in cover reference selection', () => {
   it.each([
     ['no configured People at all', { people: [] }],
     ['no reference photos to send', { photos: [] }],
-  ])('refuses when the opt-in has nothing to send: %s', (_case, overrides) => {
-    const result = select({ explicitOptIn: true, ...overrides });
-    expect(result.selectedReferences).toEqual([]);
-    expect(result.terminalReason).toBe('references_unsupported');
-  });
+    [
+      'the owner has no photo while another Person does',
+      { photos: photos.filter((photo) => photo.personId !== 'owner-person') },
+    ],
+    [
+      'the named Person has no photo',
+      { promptText: 'A song for Julia', photos: photos.slice(0, 2) },
+    ],
+    ['the owner is left out and nobody is named', { owner: 'exclude' as const }],
+  ])(
+    'selects nothing and refuses nothing when nobody selected has a photo: %s',
+    (_case, overrides) => {
+      const result = select({ explicitOptIn: true, ...overrides });
+      expect(result.selectedReferences).toEqual([]);
+      expect(result.terminalReason).toBeNull();
+    },
+  );
 
   it('refuses when the endpoint accepts no references, recording the frozen choice', () => {
     const result = select({ explicitOptIn: true, capabilities: { references: null } });

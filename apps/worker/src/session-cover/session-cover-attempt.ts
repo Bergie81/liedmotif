@@ -7,6 +7,7 @@
 
 import type {
   CoverReferenceRefusal,
+  CoverRequestProvenance,
   Database,
   DbOrTx,
   FrozenAttemptFields,
@@ -55,6 +56,7 @@ import {
 } from './cover-submission-retry';
 import {
   coverReferenceTreatment,
+  EMPTY_COVER_REFERENCE_SELECTION,
   mergeCapabilityDowngrades,
   prepareCoverReferencesForSubmission,
   promptForCoverReferenceSubmission,
@@ -342,28 +344,33 @@ export async function freezePlanInputs(
     limits: UsageLimits;
     withinLimits: boolean;
     forcedTerminalReason?: string;
-    /** Effective user art direction for a regeneration attempt. */
-    guidance?: string;
-    /** The art direction as the user typed it: the only text a regeneration
-     *  matches Person names in, so the Writing AI's rewrite can neither add nor
-     *  drop a Person. */
-    typedGuidance?: string;
+    /** What a regeneration request froze at reservation. Names match only in
+     *  the typed `userGuidance`, so the Writing AI's rewrite can neither add nor
+     *  drop a Person; `usePeopleReferences` false sends no photos, true asks
+     *  for them without the frequency roll, absent keeps the Session's rules. */
+    request?: CoverRequestProvenance;
     textLlmConfigured: boolean;
   },
 ): Promise<FrozenPlanInputs> {
+  const request = args.request ?? {};
   const recentPlans = await listRecentSessionCoverGenerations(tx, {
     ownerUserId: session.ownerUserId,
     limit: 24,
   });
-  const referenceSelection = await selectCoverReferencesForPlan(tx, {
-    ownerUserId: session.ownerUserId,
-    contextId: session.id,
-    promptText: coverReferenceContext(session),
-    capabilities,
-    skipProfile: session.skipProfile,
-    includesListener: session.includesListener,
-    ...(args.typedGuidance ? { coverWish: args.typedGuidance } : {}),
-  });
+  const referenceSelection =
+    request.usePeopleReferences === false
+      ? EMPTY_COVER_REFERENCE_SELECTION
+      : await selectCoverReferencesForPlan(tx, {
+          ownerUserId: session.ownerUserId,
+          contextId: session.id,
+          promptText: coverReferenceContext(session),
+          capabilities,
+          skipProfile: session.skipProfile,
+          includesListener: session.includesListener,
+          explicitOptIn: request.usePeopleReferences === true,
+          coverWish: request.userGuidance,
+          wishIncludesListener: request.wishIncludesListener,
+        });
   const customDefinition =
     session.coverStyle === 'custom'
       ? sanitizeCoverStyleHint(session.coverStyleHintNormalized ?? session.coverStyleHint ?? '')
@@ -385,7 +392,7 @@ export async function freezePlanInputs(
     customDefinition,
     snapshot: session.sessionStyleSnapshot ?? {},
     sessionIntent: session.userPrompt,
-    userGuidance: args.guidance ?? null,
+    userGuidance: request.effectiveGuidance || request.userGuidance || null,
     capabilities,
     referenceTreatment: coverReferenceTreatment(referenceSelection.selectedReferences),
     referenceSubjectCount: new Set(
@@ -438,13 +445,20 @@ export async function freezePlanInputs(
  */
 export function reservedRequestProvenance(
   reserved: SessionCoverPlanRecord,
-): Partial<SessionCoverPlanRecord> {
-  const { userGuidance, effectiveGuidance, enhancementApplied, usePeopleReferences } = reserved;
+): CoverRequestProvenance {
+  const {
+    userGuidance,
+    effectiveGuidance,
+    enhancementApplied,
+    wishIncludesListener,
+    usePeopleReferences,
+  } = reserved;
   return {
-    ...(userGuidance === undefined ? {} : { userGuidance }),
-    ...(effectiveGuidance === undefined ? {} : { effectiveGuidance }),
-    ...(enhancementApplied === undefined ? {} : { enhancementApplied }),
-    ...(usePeopleReferences === undefined ? {} : { usePeopleReferences }),
+    userGuidance,
+    effectiveGuidance,
+    enhancementApplied,
+    wishIncludesListener,
+    usePeopleReferences,
   };
 }
 

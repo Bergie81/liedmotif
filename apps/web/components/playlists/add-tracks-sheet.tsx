@@ -3,28 +3,28 @@
 // Multi-select "Add Tracks" for a playlist (add-to-playlist is a
 // track-level action with multi-select): browse the full History, check any
 // number of tracks, committed through `addTracksInBatches`. Existing members
-// are shown checked and locked (no duplicates). Adding implies Save.
+// are shown checked and locked (no duplicates). Adding implies Save. The search
+// box asks the Library server-side, so Tracks past the loaded pages are found;
+// picks are ids, so they survive a search.
 
-import { useEffect, useMemo, useState } from 'react';
-import type { LibraryTrackItem } from '@liedmotif/shared';
+import { useMemo, useState } from 'react';
 import { Disc3 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { getLibrary } from '@/lib/http/api-client';
 import { cn } from '@/lib/cn';
 import { coverArtSrc } from '@/components/player/player-presentation';
 import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { AlertBanner, CheckIndicator, menuRowClass } from '@/components/ui/design-system';
 import { primaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
 import { LoadingRow, LiedmotifLoader } from '@/components/ui/loading';
+import { LibrarySearchField } from '@/components/library/library-search-field';
+import { useLibraryQuery } from '@/components/library/use-library-query';
 import { FAILED_TRACK_NOTICE, formatTrackDuration } from '@/components/library/library-view-model';
-import { appendUniqueById } from '@/lib/append-unique';
 import { toast } from '@/lib/toast';
 import { addTracksInBatches } from './add-tracks-in-batches';
 import { addedToPlaylistToast, addToPlaylistFailedMessage } from './playlist-view-model';
 
 const ADD_KEY = 'add-tracks';
-const LOAD_MORE_KEY = 'add-tracks-load-more';
 
 export function AddTracksSheet({
   open,
@@ -72,34 +72,17 @@ function AddTracksContent({
   onAdded: () => void;
 }) {
   const router = useRouter();
-  const [tracks, setTracks] = useState<LibraryTrackItem[] | null>(null);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [search, setSearch] = useState('');
+  const {
+    items: tracks,
+    nextCursor,
+    error: loadError,
+    loadingMore,
+    loadMore,
+  } = useLibraryQuery('history', search);
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const members = useMemo(() => new Set(existingTrackIds), [existingTrackIds]);
-
-  async function loadPage(cursor: string | null) {
-    if (cursor) toast.dismiss(LOAD_MORE_KEY);
-    const result = await getLibrary('history', { cursor });
-    if (!result.ok) {
-      // A later page failing leaves the Tracks already shown in place.
-      if (cursor) {
-        toast.error(`Couldn’t load more Tracks: ${result.error.message}`, { key: LOAD_MORE_KEY });
-      } else {
-        setLoadError(`Couldn’t load your tracks: ${result.error.message}`);
-      }
-      return;
-    }
-    setTracks((current) => appendUniqueById(current ?? [], result.data.items));
-    setNextCursor(result.data.nextCursor);
-  }
-
-  // Initial load only; paging goes through the explicit "Load more" button.
-  useEffect(() => {
-    void loadPage(null);
-  }, []);
 
   function toggle(trackId: string) {
     if (members.has(trackId)) return;
@@ -140,12 +123,22 @@ function AddTracksContent({
         closeDisabled={busy}
         description="Pick any generated tracks — adding keeps them in your Library."
       />
-      {loadError ? <AlertBanner className="mt-4">{loadError}</AlertBanner> : null}
+      <LibrarySearchField
+        width="fill"
+        placeholder="Search titles, prompts, genres, moods…"
+        onSearch={setSearch}
+      />
+      {loadError ? (
+        <AlertBanner className="mt-4">Couldn’t load your tracks: {loadError}</AlertBanner>
+      ) : null}
       {tracks === null && !loadError ? (
         <LoadingRow className="mt-6 py-6" label="Loading Tracks…" />
       ) : null}
       {tracks ? (
         <div className="mt-4" role="group" aria-label="Tracks">
+          {tracks.length === 0 && search ? (
+            <p className="px-1 text-[13.5px] text-muted">No tracks match “{search}”.</p>
+          ) : null}
           {tracks.map((track) => {
             const isMember = members.has(track.id);
             const isChecked = isMember || checked.has(track.id);
@@ -189,10 +182,7 @@ function AddTracksContent({
               className={cn(secondaryButtonClass, 'mt-3 w-full')}
               disabled={loadingMore || busy}
               aria-busy={loadingMore}
-              onClick={() => {
-                setLoadingMore(true);
-                void loadPage(nextCursor).finally(() => setLoadingMore(false));
-              }}
+              onClick={() => void loadMore()}
             >
               {loadingMore ? <LiedmotifLoader /> : null}
               Load more

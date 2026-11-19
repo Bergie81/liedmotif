@@ -47,8 +47,8 @@ describe('playlistMenuRows', () => {
   it('says which of the two cover acts it is', () => {
     const label = (playlist: Parameters<typeof playlistMenuRows>[0]) =>
       playlistMenuRows(playlist).find((row) => row.id === 'cover')?.label;
-    expect(label(userPlaylist)).toBe('Add Playlist Cover');
-    expect(label({ ...userPlaylist, coverImageId: 'cover-id' })).toBe('Edit Playlist Cover');
+    expect(label(userPlaylist)).toBe('Add Playlist Cover Art');
+    expect(label({ ...userPlaylist, coverImageId: 'cover-id' })).toBe('Edit Playlist Cover Art');
   });
 
   it('leaves reorder dark until there is an order to change, and past what one write carries', () => {

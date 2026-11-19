@@ -57,6 +57,8 @@ interface CoverStatusBase {
   latestRegeneration: SessionCoverAttempt | null;
   usage: SessionCoverUsage;
   history: SessionCoverHistoryEntry[];
+  /** A Person has a reference photo and cover references are not `never`. */
+  peopleReferencesAvailable: boolean;
 }
 
 /** The subject's routes; a module constant, so its identity never changes. */
@@ -326,10 +328,10 @@ export function CoverSheetContent<S extends CoverStatusBase>({
       <SheetHeader
         title={
           <>
-            {kind} Cover: <span className="text-lamp">{title}</span>
+            {kind} Cover Art: <span className="text-lamp">{title}</span>
           </>
         }
-        closeLabel={`Close ${kind} Cover`}
+        closeLabel={`Close ${kind} Cover Art`}
         closeDisabled={working}
       />
       {loadError ? <AlertBanner className="mt-4">{loadError}</AlertBanner> : null}
@@ -583,31 +585,24 @@ export function CoverStyleField<T extends CoverStyleChoice>({
   );
 }
 
-/** The optional art direction: two lines, with the subject's own action and hint. */
+/** The optional art direction: two lines. */
 export function ArtDirectionField({
   value,
   onChange,
   disabled,
   testId,
-  action,
-  hint,
 }: {
   value: string;
   onChange: (value: string) => void;
   disabled: boolean;
   testId: string;
-  action?: ReactNode;
-  hint?: string;
 }) {
   const id = useId();
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-3">
-        <label htmlFor={id} className="text-[13px] font-semibold text-paper">
-          Art direction
-        </label>
-        {action}
-      </div>
+      <label htmlFor={id} className="text-[13px] font-semibold text-paper">
+        Art direction
+      </label>
       <textarea
         id={id}
         className={cn(inputClass, 'w-full resize-none')}
@@ -620,41 +615,58 @@ export function ArtDirectionField({
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
       />
-      {hint ? <span className="text-[11.5px] leading-relaxed text-dim">{hint}</span> : null}
     </div>
   );
 }
 
-/** A per-attempt switch with its label and a line saying what it does. */
-export function CoverToggleRow({
-  label,
-  hint,
+/** What the People switch asks of one Generate press: nothing while no Person
+ *  could appear, else the switch as set. */
+export function peopleReferencesRequest(
+  status: CoverStatusBase,
+  on: boolean,
+): { usePeopleReferences?: boolean } {
+  return status.peopleReferencesAvailable ? { usePeopleReferences: on } : {};
+}
+
+/**
+ * The Use People reference photos switch. Its state belongs to the sheet, per
+ * attempt and never persisted, so every open starts on; it only shows on while
+ * a Person could actually appear.
+ */
+export function PeopleReferencesField({
+  status,
   checked,
   onChange,
   disabled,
+  namedIn,
+  ownerNote,
   testId,
-  hintTestId,
 }: {
-  label: string;
-  hint: string;
+  status: CoverStatusBase | null;
   checked: boolean;
   onChange: (checked: boolean) => void;
   disabled: boolean;
+  /** Where names are read besides the art direction, e.g. "this Playlist’s name". */
+  namedIn: string;
+  /** When the owner stands in, if not always, e.g. "unless …". */
+  ownerNote?: string;
   testId: string;
-  hintTestId?: string;
 }) {
+  const available = status?.peopleReferencesAvailable ?? false;
+  const label = 'Use People reference photos';
+  const hint = available
+    ? `Draws the People named in ${namedIn} or art direction — you when nobody is named${ownerNote ? `, ${ownerNote}` : ''}.`
+    : 'Needs a Person with a reference photo under Settings → People, with cover references not set to Never.';
   return (
     <div className="mt-1 flex items-center justify-between gap-3">
       <div className="min-w-0">
         <div className="text-[13px] font-semibold text-paper">{label}</div>
-        <p className="mt-0.5 text-[11.5px] leading-[1.5] text-dim" data-testid={hintTestId}>
-          {hint}
-        </p>
+        <p className="mt-0.5 text-[11.5px] leading-[1.5] text-dim">{hint}</p>
       </div>
       <Switch
-        checked={checked}
+        checked={checked && available}
         onCheckedChange={onChange}
-        disabled={disabled}
+        disabled={disabled || !available}
         aria-label={label}
         data-testid={testId}
       />

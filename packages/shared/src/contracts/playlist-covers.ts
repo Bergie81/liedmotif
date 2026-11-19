@@ -35,8 +35,6 @@ export const regeneratePlaylistCoverRequestSchema = z.strictObject({
   coverStyle: z.enum(PLAYLIST_COVER_STYLE_CHOICES).optional(),
   /** Free-text art direction, frozen privately into the attempt's plan. */
   guidance: z.string().max(MAX_COVER_GUIDANCE_LENGTH).optional(),
-  /** Per-generation LLM-enhancement override; absent → the global setting. */
-  enhance: z.boolean().optional(),
   /** Carry the owner's People reference photos on THIS attempt.
    *  Off by default; nothing about it is persisted on the Playlist. */
   usePeopleReferences: z.boolean().optional(),
@@ -68,10 +66,6 @@ export const playlistCoverStatusResponseSchema = apiResponse(
     /** Whether offering the People-reference toggle makes sense: the owner has
      *  at least one Person with a reference photo and has not opted out. */
     peopleReferencesAvailable: z.boolean(),
-    promptEnhancement: z.strictObject({
-      llmConfigured: z.boolean(),
-      active: z.boolean(),
-    }),
   }),
 );
 export type PlaylistCoverStatusResponse = z.infer<typeof playlistCoverStatusResponseSchema>;

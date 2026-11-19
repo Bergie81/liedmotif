@@ -13,6 +13,7 @@ import {
   updatePerson,
   updateUsageLimits,
   type CoverReferenceFrequency,
+  type CoverRequestProvenance,
 } from '@liedmotif/db';
 import {
   connectTestDb,
@@ -169,6 +170,7 @@ describeIfDb('SessionCoverGenerator regeneration', () => {
     sessionId: string,
     guidance?: string,
     rewrittenGuidance?: string,
+    wishIncludesListener?: boolean,
   ) {
     const attemptId = randomUUID();
     const coverImageId = randomUUID();
@@ -178,10 +180,13 @@ describeIfDb('SessionCoverGenerator regeneration', () => {
       activitySessionId: sessionId,
       coverImageId,
       storageKey: storageKeys.generatedCover(ownerUserId, sessionId, coverImageId, 'webp'),
-      ...(guidance === undefined ? {} : { userGuidance: guidance }),
-      ...(rewrittenGuidance === undefined
-        ? {}
-        : { effectiveGuidance: rewrittenGuidance, enhancementApplied: true }),
+      request: {
+        userGuidance: guidance,
+        wishIncludesListener,
+        ...(rewrittenGuidance === undefined
+          ? {}
+          : { effectiveGuidance: rewrittenGuidance, enhancementApplied: true }),
+      },
     });
     expect(row).not.toBeNull();
     return row!;
@@ -543,12 +548,14 @@ describeIfDb('SessionCoverGenerator regeneration', () => {
       seeded: { ownerUserId: string; sessionId: string },
       typedWish: string,
       rewrittenWish?: string,
+      wishIncludesListener?: boolean,
     ) {
       const attempt = await reserveAttempt(
         seeded.ownerUserId,
         seeded.sessionId,
         typedWish,
         rewrittenWish,
+        wishIncludesListener,
       );
       const { provider, calls } = fakeCoverArt({ acceptsReferences: true });
       const result = await generator(seeded.ownerUserId, provider).processRegeneration(
@@ -651,6 +658,59 @@ describeIfDb('SessionCoverGenerator regeneration', () => {
       expect(session!.includesListener).toBe(true);
     });
 
+    it('a wish the Text AI reads as including the listener adds the owner beside the People it names', async () => {
+      const seeded = await seedPeopleSession({
+        userPrompt: 'Roadtrip with Jonas',
+        photos: { Thomas: 1, Jonas: 1, Anna: 1 },
+      });
+
+      const { attempt } = await referencesFor(
+        seeded,
+        'Ich tanze mit Anna',
+        'two figures dancing',
+        true,
+      );
+
+      expect((await frozenPersonIds(attempt.id)).sort()).toEqual(
+        [seeded.people.Thomas!.personId, seeded.people.Anna!.personId].sort(),
+      );
+    });
+
+    it('a wish read as the listener alone brings only the owner, not the Session’s People', async () => {
+      const seeded = await seedPeopleSession({
+        userPrompt: 'Roadtrip with Jonas',
+        photos: { Thomas: 1, Jonas: 1 },
+      });
+
+      const { sent } = await referencesFor(seeded, 'moi sur la plage', 'a figure on a beach', true);
+
+      expect(sent).toEqual(seeded.people.Thomas!.photoIds);
+    });
+
+    it('a wish read as not including the listener leaves the owner out of a named scene', async () => {
+      const seeded = await seedPeopleSession({
+        userPrompt: 'A slow drive along the coast',
+        photos: { Thomas: 1, Anna: 1 },
+        includesListener: true,
+      });
+
+      const { sent } = await referencesFor(seeded, 'Anna at the beach', 'Anna on a beach', false);
+
+      expect(sent).toEqual(seeded.people.Anna!.photoIds);
+    });
+
+    it('start without profile keeps the owner out even when the wish is read as including them', async () => {
+      const seeded = await seedPeopleSession({
+        userPrompt: 'Roadtrip with Jonas',
+        photos: { Thomas: 1, Anna: 1 },
+        skipProfile: true,
+      });
+
+      const { sent } = await referencesFor(seeded, 'me dancing with Anna', 'two dancers', true);
+
+      expect(sent).toEqual(seeded.people.Anna!.photoIds);
+    });
+
     it('a name only in the rewritten wish brings no photo', async () => {
       const seeded = await seedPeopleSession({
         userPrompt: 'Roadtrip with Jonas',
@@ -723,6 +783,119 @@ describeIfDb('SessionCoverGenerator regeneration', () => {
       expect(calls[0]!.references.map((reference) => reference.id)).toEqual(
         calls[1]!.references.map((reference) => reference.id),
       );
+    });
+
+    async function reserveRequest(
+      seeded: { ownerUserId: string; sessionId: string },
+      request: CoverRequestProvenance,
+    ) {
+      const coverImageId = randomUUID();
+      const attempt = await reserveSessionCoverRegeneration(ctx.db, {
+        id: randomUUID(),
+        ownerUserId: seeded.ownerUserId,
+        activitySessionId: seeded.sessionId,
+        coverImageId,
+        storageKey: storageKeys.generatedCover(
+          seeded.ownerUserId,
+          seeded.sessionId,
+          coverImageId,
+          'webp',
+        ),
+        request,
+      });
+      return attempt!;
+    }
+
+    it('with People photos switched off, a named Person brings no photo and none is read', async () => {
+      const seeded = await seedPeopleSession({
+        userPrompt: 'Roadtrip with Jonas',
+        photos: { Thomas: 1, Jonas: 1, Anna: 1 },
+        includesListener: true,
+      });
+      const attempt = await reserveRequest(seeded, {
+        userGuidance: 'Anna at the beach',
+        usePeopleReferences: false,
+      });
+      const readSpy = vi.spyOn(store.provider, 'readStream');
+      const { provider, calls } = fakeCoverArt({ acceptsReferences: true });
+
+      const result = await generator(seeded.ownerUserId, provider).processRegeneration(
+        seeded.sessionId,
+        attempt.id,
+      );
+
+      expect(result).toMatchObject({ status: 'ready', generatedNow: true });
+      expect(calls[0]!.references).toEqual([]);
+      expect(calls[0]!.positivePrompt).not.toContain('Reference treatment:');
+      expect(readSpy).not.toHaveBeenCalled();
+      const settled = await ledgerRow(attempt.id);
+      expect(settled?.selectedReferences).toEqual([]);
+      expect(settled?.plan.usePeopleReferences).toBe(false);
+      readSpy.mockRestore();
+    });
+
+    it('with People photos switched on and nobody named, the owner appears on every attempt', async () => {
+      const seeded = await seedPeopleSession({
+        userPrompt: 'A slow drive along the coast',
+        photos: { Thomas: 1, Anna: 1 },
+        // `seldom` would normally roll the owner fallback; the switch wins.
+        frequency: 'seldom',
+      });
+      const attempt = await reserveRequest(seeded, { usePeopleReferences: true });
+      const { provider, calls } = fakeCoverArt({ acceptsReferences: true });
+
+      await generator(seeded.ownerUserId, provider).processRegeneration(
+        seeded.sessionId,
+        attempt.id,
+      );
+
+      expect(calls[0]!.references.map((reference) => reference.id)).toEqual(
+        seeded.people.Thomas!.photoIds,
+      );
+      expect((await ledgerRow(attempt.id))?.plan.usePeopleReferences).toBe(true);
+    });
+
+    it.each([
+      ['the owner has no photo', { Anna: 1 }, false],
+      ['the Session runs without profile', { Thomas: 1, Anna: 1 }, true],
+    ])(
+      'with People photos switched on and nobody named, %s: the cover is made without references',
+      async (_case, photos, skipProfile) => {
+        const seeded = await seedPeopleSession({
+          userPrompt: 'A slow drive along the coast',
+          photos,
+          frequency: 'seldom',
+          skipProfile,
+        });
+        const attempt = await reserveRequest(seeded, { usePeopleReferences: true });
+        const { provider, calls } = fakeCoverArt({ acceptsReferences: true });
+
+        const result = await generator(seeded.ownerUserId, provider).processRegeneration(
+          seeded.sessionId,
+          attempt.id,
+        );
+
+        expect(result).toMatchObject({ status: 'ready', generatedNow: true });
+        expect(calls[0]!.references).toEqual([]);
+        expect((await ledgerRow(attempt.id))?.selectedReferences).toEqual([]);
+      },
+    );
+
+    it('with People photos switched on, a named Person without a photo leaves the cover prompt-only', async () => {
+      const seeded = await seedPeopleSession({
+        userPrompt: 'Roadtrip with Jonas',
+        photos: { Thomas: 1, Jonas: 0, Anna: 1 },
+      });
+      const attempt = await reserveRequest(seeded, { usePeopleReferences: true });
+      const { provider, calls } = fakeCoverArt({ acceptsReferences: true });
+
+      const result = await generator(seeded.ownerUserId, provider).processRegeneration(
+        seeded.sessionId,
+        attempt.id,
+      );
+
+      expect(result).toMatchObject({ status: 'ready', generatedNow: true });
+      expect(calls[0]!.references).toEqual([]);
     });
 
     it('never: a named Person brings no photo and the cover is made without references', async () => {

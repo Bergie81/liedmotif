@@ -13,10 +13,12 @@ import { createSearchDebouncer, type SearchDebouncer } from './search-debounce';
 export function LibrarySearchField({
   placeholder,
   onSearch,
+  width,
   className = 'mt-4',
 }: {
   placeholder: string;
   onSearch: (query: string) => void;
+  width?: 'page' | 'fill';
   className?: string;
 }) {
   const [value, setValue] = useState('');
@@ -33,6 +35,7 @@ export function LibrarySearchField({
 
   return (
     <SearchInput
+      width={width}
       className={className}
       value={value}
       onValueChange={update}

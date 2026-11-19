@@ -439,6 +439,27 @@ describe.skipIf(skip)('POST /api/playlists/cover/regenerate', () => {
     });
   });
 
+  it('freezes the Text AI reading of whether the wish includes the listener', async () => {
+    holder.llm = {
+      enhanceCoverDirection: async (input) => ({
+        text: `ENHANCED ${input.text}`,
+        applied: true,
+        includesListener: true,
+      }),
+    };
+    const { playlistId } = await seedOwnedPlaylist();
+
+    const body = (await (
+      await postJson(regeneratePost, { playlistId, guidance: 'me dancing with Jonas' })
+    ).json()) as { data: { coverGenerationId: string } };
+
+    const [attempt] = await testDb.db
+      .select()
+      .from(sessionCoverGenerations)
+      .where(eq(sessionCoverGenerations.id, body.data.coverGenerationId));
+    expect(attempt?.plan.wishIncludesListener).toBe(true);
+  });
+
   it('refuses at the cover limit without reserving or spending', async () => {
     const { playlistId } = await seedOwnedPlaylist();
     await updateUsageLimits(testDb.db, { generatedCoversPerDay: 0 });

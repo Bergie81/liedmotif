@@ -14,7 +14,9 @@ import {
   activitySessions,
   createPool,
   DEFAULT_USAGE_LIMITS,
+  ensureOwnerPerson,
   insertGeneratedCoverImage,
+  insertPersonReferencePhoto,
   lockAndResolveBudgetScopes,
   lockSessionForBuffer,
   planSessionCoverGeneration,
@@ -377,6 +379,54 @@ describe.skipIf(skip)('POST /api/sessions/cover/regenerate', () => {
     });
   });
 
+  it.each([true, false])(
+    'freezes the Text AI reading of whether the wish includes the listener (%s)',
+    async (includesListener) => {
+      holder.llm = {
+        enhanceCoverDirection: async (input) => ({
+          text: `ENHANCED ${input.text}`,
+          applied: true,
+          includesListener,
+        }),
+      };
+      const ownerUserId = await createUser(testDb.db);
+      const sessionId = await createSession(testDb.db, { ownerUserId });
+      holder.ownerUserId = ownerUserId;
+
+      const body = (await (
+        await postJson(regeneratePost, {
+          activitySessionId: sessionId,
+          guidance: 'Ich tanze mit Jonas',
+        })
+      ).json()) as { data: { coverGenerationId: string } };
+
+      const [attempt] = await testDb.db
+        .select()
+        .from(sessionCoverGenerations)
+        .where(eq(sessionCoverGenerations.id, body.data.coverGenerationId));
+      expect(attempt?.plan.wishIncludesListener).toBe(includesListener);
+    },
+  );
+
+  it('freezes no listener reading when the Text AI gives none', async () => {
+    holder.llm = {
+      enhanceCoverDirection: async (input) => ({ text: input.text, applied: false }),
+    };
+    const ownerUserId = await createUser(testDb.db);
+    const sessionId = await createSession(testDb.db, { ownerUserId });
+    holder.ownerUserId = ownerUserId;
+
+    const body = (await (
+      await postJson(regeneratePost, { activitySessionId: sessionId, guidance: 'me at the beach' })
+    ).json()) as { data: { coverGenerationId: string } };
+
+    const [attempt] = await testDb.db
+      .select()
+      .from(sessionCoverGenerations)
+      .where(eq(sessionCoverGenerations.id, body.data.coverGenerationId));
+    expect(attempt?.plan.wishIncludesListener).toBeUndefined();
+  });
+
   it('gives the wish rewrite the preset an Auto cover plans in', async () => {
     holder.llm = {
       enhanceCoverDirection: async (input) => {
@@ -426,7 +476,30 @@ describe.skipIf(skip)('POST /api/sessions/cover/regenerate', () => {
     expect(attempt?.plan.enhancementApplied).toBe(false);
   });
 
-  it('skips enhancement when the global setting is off, unless overridden per generation', async () => {
+  it.each([
+    ['on', { usePeopleReferences: true }, true],
+    ['off', { usePeopleReferences: false }, false],
+    ['omitted', {}, undefined],
+  ])(
+    'freezes the People switch onto the reserved attempt when %s',
+    async (_case, extra, frozen) => {
+      const ownerUserId = await createUser(testDb.db);
+      const sessionId = await createSession(testDb.db, { ownerUserId });
+      holder.ownerUserId = ownerUserId;
+
+      const body = (await (
+        await postJson(regeneratePost, { activitySessionId: sessionId, ...extra })
+      ).json()) as { data: { coverGenerationId: string } };
+
+      const [attempt] = await testDb.db
+        .select()
+        .from(sessionCoverGenerations)
+        .where(eq(sessionCoverGenerations.id, body.data.coverGenerationId));
+      expect(attempt?.plan.usePeopleReferences).toBe(frozen);
+    },
+  );
+
+  it('skips enhancement when the Enhance prompts setting is off', async () => {
     holder.llm = {
       enhanceCoverDirection: async (input) => {
         holder.enhanceCalls.push(input);
@@ -438,7 +511,7 @@ describe.skipIf(skip)('POST /api/sessions/cover/regenerate', () => {
     const sessionId = await createSession(testDb.db, { ownerUserId });
     holder.ownerUserId = ownerUserId;
 
-    // Global off, no override → deterministic even though an LLM is configured.
+    // Setting off → deterministic even though an LLM is configured.
     const offBody = (await (
       await postJson(regeneratePost, { activitySessionId: sessionId, guidance: 'dusk skyline' })
     ).json()) as { data: { coverGenerationId: string } };
@@ -449,56 +522,6 @@ describe.skipIf(skip)('POST /api/sessions/cover/regenerate', () => {
     expect(holder.enhanceCalls).toHaveLength(0);
     expect(offAttempt?.plan.effectiveGuidance).toBeUndefined();
     expect(offAttempt?.plan.enhancementApplied).toBe(false);
-
-    // A per-generation override in the other direction affects only this attempt.
-    await updateSessionCoverGeneration(testDb.db, {
-      ownerUserId,
-      id: offBody.data.coverGenerationId,
-      state: 'provider_rejected',
-      settledAt: new Date(),
-    });
-    const onBody = (await (
-      await postJson(regeneratePost, {
-        activitySessionId: sessionId,
-        guidance: 'dusk skyline',
-        enhance: true,
-      })
-    ).json()) as { data: { coverGenerationId: string } };
-    const [onAttempt] = await testDb.db
-      .select()
-      .from(sessionCoverGenerations)
-      .where(eq(sessionCoverGenerations.id, onBody.data.coverGenerationId));
-    expect(holder.enhanceCalls).toHaveLength(1);
-    expect(onAttempt?.plan.effectiveGuidance).toBe('ENHANCED dusk skyline');
-    expect(onAttempt?.plan.enhancementApplied).toBe(true);
-  });
-
-  it('honors a per-generation enhance=false override while the global default is on', async () => {
-    holder.llm = {
-      enhanceCoverDirection: async (input) => {
-        holder.enhanceCalls.push(input);
-        return { text: `ENHANCED ${input.text}`, applied: true };
-      },
-    };
-    const ownerUserId = await createUser(testDb.db);
-    const sessionId = await createSession(testDb.db, { ownerUserId });
-    holder.ownerUserId = ownerUserId;
-
-    const body = (await (
-      await postJson(regeneratePost, {
-        activitySessionId: sessionId,
-        guidance: 'dusk skyline',
-        enhance: false,
-      })
-    ).json()) as { data: { coverGenerationId: string } };
-    const [attempt] = await testDb.db
-      .select()
-      .from(sessionCoverGenerations)
-      .where(eq(sessionCoverGenerations.id, body.data.coverGenerationId));
-    expect(holder.enhanceCalls).toHaveLength(0);
-    expect(attempt?.plan.userGuidance).toBe('dusk skyline');
-    expect(attempt?.plan.effectiveGuidance).toBeUndefined();
-    expect(attempt?.plan.enhancementApplied).toBe(false);
   });
 
   it('runs the deterministic path byte-for-byte when no LLM is configured', async () => {
@@ -636,7 +659,6 @@ describe.skipIf(skip)('POST /api/sessions/cover/regenerate', () => {
     const response = await postJson(regeneratePost, {
       activitySessionId: sessionId,
       guidance: 'a lighthouse',
-      enhance: true,
     });
 
     expect(response.status).toBe(404);
@@ -828,27 +850,31 @@ describe.skipIf(skip)('POST /api/sessions/cover/status', () => {
     expect(body.data.history[1]!.isCurrent).toBe(false);
   });
 
-  it('reports enhancement as active only when an LLM is configured AND the setting is on', async () => {
+  it('offers People photos only once a Person has a reference photo and the frequency allows it', async () => {
     const ownerUserId = await createUser(testDb.db);
     const sessionId = await createSession(testDb.db, { ownerUserId });
     holder.ownerUserId = ownerUserId;
+    const available = async () =>
+      (
+        (await (await postJson(statusPost, { activitySessionId: sessionId })).json()) as {
+          data: { peopleReferencesAvailable: boolean };
+        }
+      ).data.peopleReferencesAvailable;
 
-    const noLlm = (await (await postJson(statusPost, { activitySessionId: sessionId })).json()) as {
-      data: { promptEnhancement: { llmConfigured: boolean; active: boolean } };
-    };
-    expect(noLlm.data.promptEnhancement).toEqual({ llmConfigured: false, active: false });
+    expect(await available()).toBe(false);
 
-    holder.llm = { enhanceCoverDirection: async (input) => ({ text: input.text, applied: false }) };
-    const withLlm = (await (
-      await postJson(statusPost, { activitySessionId: sessionId })
-    ).json()) as { data: { promptEnhancement: { llmConfigured: boolean; active: boolean } } };
-    expect(withLlm.data.promptEnhancement).toEqual({ llmConfigured: true, active: true });
-
-    await updateCoverArtSettings(testDb.db, ownerUserId, { promptEnhancementEnabled: false });
-    const settingOff = (await (
-      await postJson(statusPost, { activitySessionId: sessionId })
-    ).json()) as { data: { promptEnhancement: { llmConfigured: boolean; active: boolean } } };
-    expect(settingOff.data.promptEnhancement).toEqual({ llmConfigured: true, active: false });
+    const person = await ensureOwnerPerson(testDb.db, ownerUserId);
+    const photoId = randomUUID();
+    await insertPersonReferencePhoto(testDb.db, {
+      id: photoId,
+      ownerUserId,
+      personId: person.id,
+      storageProvider: 'local-fs',
+      storageKey: `people/${ownerUserId}/${person.id}/${photoId}.webp`,
+      mediaType: 'image/webp',
+      byteSize: 4,
+    });
+    expect(await available()).toBe(true);
   });
 
   it('reflects disabled tailored cover art and a missing provider in the usage block', async () => {

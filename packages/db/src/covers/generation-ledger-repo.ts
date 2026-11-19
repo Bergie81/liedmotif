@@ -6,6 +6,7 @@ import {
   emptySessionCoverPlan,
   SESSION_COVER_LIVE_STATES,
   sessionCoverGenerations,
+  type CoverRequestProvenance,
   type SessionCoverPlanRecord,
   type SessionCoverSelectedReference,
 } from '../schema';
@@ -605,11 +606,8 @@ export interface ReserveSessionCoverRegenerationInput {
   activitySessionId: string;
   coverImageId: string;
   storageKey: string;
-  /** Raw user art direction, frozen privately into the attempt (never logged). */
-  userGuidance?: string;
-  /** LLM-enhanced art direction that replaces the raw text when enhancement ran. */
-  effectiveGuidance?: string;
-  enhancementApplied?: boolean;
+  /** The request's art direction and People switch, frozen privately into the attempt (never logged). */
+  request?: CoverRequestProvenance;
 }
 
 /**
@@ -625,17 +623,7 @@ export async function reserveSessionCoverRegeneration(
   return planCoverGenerationForSubject(db, sessionLedgerSubject(input.activitySessionId), {
     id: input.id,
     ownerUserId: input.ownerUserId,
-    ...reservedCoverAttemptFields(
-      emptySessionCoverPlan({
-        ...(input.userGuidance === undefined ? {} : { userGuidance: input.userGuidance }),
-        ...(input.effectiveGuidance === undefined
-          ? {}
-          : { effectiveGuidance: input.effectiveGuidance }),
-        ...(input.enhancementApplied === undefined
-          ? {}
-          : { enhancementApplied: input.enhancementApplied }),
-      }),
-    ),
+    ...reservedCoverAttemptFields(emptySessionCoverPlan(input.request)),
     idempotencyKey: `session-cover:regen:${input.id}`,
     coverImageId: input.coverImageId,
     storageKey: input.storageKey,

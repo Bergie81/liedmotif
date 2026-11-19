@@ -154,7 +154,7 @@ describeIfDb('recover-session-covers job', () => {
       activitySessionId: sessionId,
       coverImageId,
       storageKey: storageKeys.generatedCover(ownerUserId, sessionId, coverImageId, 'webp'),
-      userGuidance: 'by Picasso',
+      request: { userGuidance: 'by Picasso' },
     });
     await ctx.pool.query(
       `update session_cover_generations set updated_at = now() - interval '1 hour' where id = $1`,

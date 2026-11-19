@@ -173,7 +173,7 @@ The lounge is where people on your instance share playlists with each other, and
 
 1. Open **Library**, then **Playlists**.
 2. Select the **⋮** menu on a playlist's card, then **Share Playlist in the Lounge**.
-3. Press **All**, or tick the people you want. **All** includes anyone who joins later. Ticking everyone by hand doesn't.
+3. Press **All**, or tick the people you want. **All** includes anyone who joins later. Ticking everyone by hand doesn't. To find someone fast, type part of their name or artist name in the search box above the list.
 4. Press **Share**. The card now says **In the Lounge**.
 
 If you're the only one on your instance, **Share** reaches everyone, including people you invite later.

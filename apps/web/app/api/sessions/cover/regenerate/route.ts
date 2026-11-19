@@ -26,7 +26,7 @@ import {
   SESSION_COVERS_FULL_MESSAGE,
 } from '@/lib/covers/cover-attempt-gate';
 import { COVER_LIMIT_REACHED_MESSAGE } from '@/lib/covers/cover-budget';
-import { enhanceCoverText } from '@/lib/covers/cover-enhancement';
+import { coverRequestProvenance, enhanceCoverText } from '@/lib/covers/cover-enhancement';
 import { generatedCoverModel, resolveCoverArtChoice } from '@/lib/covers/covers';
 import { getDb } from '@/lib/db';
 import { enqueueRegenerateSessionCover } from '@/lib/worker-jobs';
@@ -70,28 +70,26 @@ export async function POST(request: Request) {
   // Enhancement happens HERE, before the attempt's inputs are frozen — the
   // cover generator stays LLM-free. The call never fails the
   // action; without an LLM the path is byte-for-byte the deterministic one.
-  let effectiveGuidance: string | undefined;
-  let enhancementApplied: boolean | undefined;
-  if (guidance) {
-    const style = styleChange?.coverStyle ?? session.coverStyle;
-    const enhancement = await enhanceCoverText(db, {
-      ownerUserId,
-      text: guidance,
-      override: parsed.enhance,
-      context: {
-        sessionName: session.title,
-        // Auto plans in the preset the text LLM picked, so the rewrite writes for it.
-        style: style === 'auto' ? (session.autoCoverStyle ?? 'auto') : style,
-        mood: session.sessionStyleSnapshot?.mood ?? null,
-        genres: session.sessionStyleSnapshot?.genreTags ?? [],
-        imageModel: await generatedCoverModel(),
-      },
-    });
-    if (enhancement.llmConfigured) {
-      enhancementApplied = enhancement.applied;
-      if (enhancement.applied) effectiveGuidance = enhancement.text;
-    }
-  }
+  const style = styleChange?.coverStyle ?? session.coverStyle;
+  const enhancement = guidance
+    ? await enhanceCoverText(db, {
+        ownerUserId,
+        text: guidance,
+        context: {
+          sessionName: session.title,
+          // Auto plans in the preset the text LLM picked, so the rewrite writes for it.
+          style: style === 'auto' ? (session.autoCoverStyle ?? 'auto') : style,
+          mood: session.sessionStyleSnapshot?.mood ?? null,
+          genres: session.sessionStyleSnapshot?.genreTags ?? [],
+          imageModel: await generatedCoverModel(),
+        },
+      })
+    : null;
+  const coverRequest = coverRequestProvenance({
+    guidance,
+    enhancement,
+    usePeopleReferences: parsed.usePeopleReferences,
+  });
 
   const reservation = await withOwnerCoverAdmissionLock(db, ownerUserId, async (tx) => {
     // The Session row is locked before the admission check takes a Member's Pool
@@ -139,9 +137,7 @@ export async function POST(request: Request) {
       activitySessionId: session.id,
       coverImageId,
       storageKey: storageKeys.generatedCover(ownerUserId, session.id, coverImageId, 'webp'),
-      ...(guidance ? { userGuidance: guidance } : {}),
-      ...(effectiveGuidance ? { effectiveGuidance } : {}),
-      ...(enhancementApplied === undefined ? {} : { enhancementApplied }),
+      request: coverRequest,
     });
     return reserved ? { outcome: 'started' as const, coverGenerationId: reserved.id } : null;
   });

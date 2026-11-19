@@ -57,7 +57,6 @@ const STATUS: PlaylistCoverStatusData = {
   },
   history: [],
   peopleReferencesAvailable: true,
-  promptEnhancement: { llmConfigured: false, active: false },
 };
 
 const CHROME: AppChromeContextValue = {
@@ -132,7 +131,7 @@ describe('PlaylistCoverSheet — cover style', () => {
 });
 
 describe('PlaylistCoverSheet — People reference photos', () => {
-  it('starts on when a Person could appear, and off drops the flag for that Generate press', async () => {
+  it('starts on when a Person could appear, and off asks for no photos on that Generate press', async () => {
     await renderSheet();
     const toggle = screen.getByTestId('playlist-cover-use-people');
     expect(toggle.getAttribute('aria-checked')).toBe('true');
@@ -153,6 +152,7 @@ describe('PlaylistCoverSheet — People reference photos', () => {
       expect(regeneratePlaylistCover).toHaveBeenLastCalledWith({
         playlistId: PLAYLIST.id,
         coverStyle: 'random',
+        usePeopleReferences: false,
       }),
     );
   });
@@ -387,7 +387,7 @@ describe('PlaylistCoverSheet — preview before applying', () => {
 describe('PlaylistCoverSheet — header', () => {
   it('heads the sheet with the Playlist it covers, its name in the highlight color', async () => {
     await renderSheet();
-    const heading = screen.getByRole('heading', { name: 'Playlist Cover: Focus Nights' });
+    const heading = screen.getByRole('heading', { name: 'Playlist Cover Art: Focus Nights' });
     expect(heading.querySelector('.text-lamp')?.textContent).toBe('Focus Nights');
   });
 });

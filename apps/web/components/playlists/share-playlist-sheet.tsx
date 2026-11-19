@@ -21,8 +21,10 @@ import {
 } from '@/components/ui/design-system';
 import { primaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
 import { LoadingRow, LiedmotifLoader } from '@/components/ui/loading';
+import { SearchInput } from '@/components/ui/search-input';
 import { PlaylistCover } from './playlist-cover';
 import {
+  filterShareCandidates,
   initialShareSelection,
   isShareTicked,
   shareCommit,
@@ -74,6 +76,7 @@ function ShareContent({
   const [selection, setSelection] = useState<ShareSelection>(new Set());
   const [busy, setBusy] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -92,6 +95,7 @@ function ShareContent({
   }, [playlist.id]);
 
   const candidates = share?.candidates ?? [];
+  const shown = filterShareCandidates(candidates, query);
   const commit = share ? shareCommit({ selection, candidates, current: share.audience }) : null;
 
   async function confirm() {
@@ -164,8 +168,24 @@ function ShareContent({
                   None
                 </button>
               </div>
+              <SearchInput
+                width="fill"
+                className="mt-3"
+                value={query}
+                onValueChange={setQuery}
+                onClear={() => setQuery('')}
+                maxLength={200}
+                placeholder="Search by name or artist name"
+                aria-label="Search people"
+                data-testid="share-search"
+              />
+              {shown.length === 0 ? (
+                <p className="mt-3 px-1 text-[13.5px] text-muted">
+                  No one matches “{query.trim()}”.
+                </p>
+              ) : null}
               <div className="mt-2" role="group" aria-label="People">
-                {candidates.map((candidate) => {
+                {shown.map((candidate) => {
                   const label = loungeOwnerDisplayName(candidate.artistName, candidate.name);
                   const isChecked = isShareTicked(selection, candidate.userId);
                   return (

@@ -279,6 +279,7 @@ export function mockLlmProvider(
           MAX_COVER_GUIDANCE_LENGTH,
         ),
         applied: true,
+        ...(LISTENER_HINT.test(trimmed) ? { includesListener: true } : {}),
       };
     },
 

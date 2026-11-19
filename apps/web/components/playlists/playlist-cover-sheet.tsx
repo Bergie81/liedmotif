@@ -23,7 +23,8 @@ import {
   ArtDirectionField,
   CoverSheetContent,
   CoverStyleField,
-  CoverToggleRow,
+  PeopleReferencesField,
+  peopleReferencesRequest,
   type CoverApi,
 } from '@/components/covers/cover-sheet';
 import { Sheet } from '@/components/ui/sheet';
@@ -74,8 +75,6 @@ function PlaylistCoverContent({
   /** A Playlist persists no style of its own, so every sheet opens on Random. */
   const [styleChoice, setStyleChoice] = useState<PlaylistCoverStyleChoice>('random');
   const [guidance, setGuidance] = useState('');
-  /** Per attempt, never persisted: every open starts with People on, and it
-   *  only takes effect when a Person could actually appear. */
   const [usePeople, setUsePeople] = useState(true);
 
   return (
@@ -101,41 +100,34 @@ function PlaylistCoverContent({
           playlistId: playlist.id,
           coverStyle: styleChoice,
           ...(guidance.trim() ? { guidance: guidance.trim() } : {}),
-          ...(usePeople && status.peopleReferencesAvailable ? { usePeopleReferences: true } : {}),
+          ...peopleReferencesRequest(status, usePeople),
         })
       }
-      renderFields={({ status, disabled }) => {
-        const peopleAvailable = status?.peopleReferencesAvailable ?? false;
-        return (
-          <>
-            <CoverStyleField
-              choices={PLAYLIST_COVER_STYLE_CHOICES}
-              value={styleChoice}
-              onChange={setStyleChoice}
-              disabled={disabled}
-              testId="playlist-cover-style"
-            />
-            <ArtDirectionField
-              value={guidance}
-              onChange={setGuidance}
-              disabled={disabled}
-              testId="playlist-cover-guidance"
-            />
-            <CoverToggleRow
-              label="Use People reference photos"
-              hint={
-                peopleAvailable
-                  ? 'Draws the People named in this Playlist’s name or art direction — you when nobody is named.'
-                  : 'Needs a Person with a reference photo under Settings → People, with cover references not set to Never.'
-              }
-              checked={usePeople && peopleAvailable}
-              onChange={setUsePeople}
-              disabled={disabled || !peopleAvailable}
-              testId="playlist-cover-use-people"
-            />
-          </>
-        );
-      }}
+      renderFields={({ status, disabled }) => (
+        <>
+          <CoverStyleField
+            choices={PLAYLIST_COVER_STYLE_CHOICES}
+            value={styleChoice}
+            onChange={setStyleChoice}
+            disabled={disabled}
+            testId="playlist-cover-style"
+          />
+          <ArtDirectionField
+            value={guidance}
+            onChange={setGuidance}
+            disabled={disabled}
+            testId="playlist-cover-guidance"
+          />
+          <PeopleReferencesField
+            status={status}
+            checked={usePeople}
+            onChange={setUsePeople}
+            disabled={disabled}
+            namedIn="this Playlist’s name"
+            testId="playlist-cover-use-people"
+          />
+        </>
+      )}
     />
   );
 }

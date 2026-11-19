@@ -8,7 +8,7 @@
 
 import {
   type ApiErrorCode,
-  type CoverStyleChoice,
+  type RegenerateSessionCoverRequest,
   type ChangeVibeResponse,
   changeVibeResponseSchema,
   type DeleteSessionResponse,
@@ -504,7 +504,7 @@ export function getSessionQueue(
 
 export function regenerateSessionCover(
   activitySessionId: string,
-  options: { coverStyle?: CoverStyleChoice; guidance?: string; enhance?: boolean } = {},
+  options: Omit<RegenerateSessionCoverRequest, 'activitySessionId'> = {},
 ): Promise<ApiResult<RegenerateSessionCoverData>> {
   return callApi<RegenerateSessionCoverData>(
     '/api/sessions/cover/regenerate',

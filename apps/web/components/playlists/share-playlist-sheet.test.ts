@@ -138,4 +138,35 @@ describe('share picker', () => {
     await waitFor(() => expect(onShared).toHaveBeenCalled());
     expect(shownToasts()).toEqual([]);
   });
+
+  it('narrows the list by name or artist name without changing what All sends', async () => {
+    await renderSheet();
+    const search = screen.getByRole('searchbox', { name: 'Search people' });
+
+    fireEvent.change(search, { target: { value: 'night' } });
+    expect(screen.getByTestId('share-candidate-u-anna')).toBeTruthy();
+    expect(screen.queryByTestId('share-candidate-u-jonas')).toBeNull();
+
+    fireEvent.change(search, { target: { value: 'weber' } });
+    expect(screen.queryByTestId('share-candidate-u-anna')).toBeNull();
+    fireEvent.click(screen.getByTestId('share-candidate-u-jonas'));
+    fireEvent.click(screen.getByTestId('share-commit'));
+
+    await waitFor(() =>
+      expect(holder.writes).toEqual([{ kind: 'selected', userIds: ['u-jonas'] }]),
+    );
+
+    fireEvent.click(screen.getByTestId('share-select-all'));
+    fireEvent.click(screen.getByTestId('share-commit'));
+
+    await waitFor(() => expect(holder.writes.at(-1)).toEqual({ kind: 'everyone' }));
+  });
+
+  it('says so when nobody matches the search', async () => {
+    await renderSheet();
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search people' }), {
+      target: { value: 'zed' },
+    });
+    expect(screen.getByText('No one matches “zed”.')).toBeTruthy();
+  });
 });

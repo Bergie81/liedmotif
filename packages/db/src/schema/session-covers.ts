@@ -49,9 +49,15 @@ export interface SessionCoverPlanRecord {
   effectiveGuidance?: string;
   /** Whether LLM prompt enhancement produced `effectiveGuidance` for this attempt. */
   enhancementApplied?: boolean;
-  /** The owner asked THIS attempt to carry Person reference photos (Playlist
-   *  covers, where nothing else would select People). Frozen at reservation so
-   *  re-planning, retries, and recovery all honor the same request. */
+  /** The text LLM's reading of whether a regeneration's typed art direction
+   *  puts the listener in the picture ("me dancing with Jonas", any language);
+   *  absent without a reading. Frozen at reservation like the guidance. */
+  wishIncludesListener?: boolean;
+  /** The sheet's People switch for THIS attempt: true asks for Person
+   *  reference photos, false sends none. Absent on a Playlist attempt sends
+   *  none; on a Session attempt it keeps the Session's own rules. Frozen at
+   *  reservation so re-planning, retries, and recovery all honor the same
+   *  request. */
   usePeopleReferences?: boolean;
   prompt: string;
   exclusions: string[];
@@ -59,6 +65,20 @@ export interface SessionCoverPlanRecord {
   candidateCount: number;
   diversityRelaxedAxes?: string[];
 }
+
+/**
+ * What a user regeneration request freezes onto its attempt at reservation and
+ * the worker's own planning cannot reconstruct: the art direction, its
+ * enhancement and listener reading, and the People switch.
+ */
+export type CoverRequestProvenance = Pick<
+  SessionCoverPlanRecord,
+  | 'userGuidance'
+  | 'effectiveGuidance'
+  | 'enhancementApplied'
+  | 'wishIncludesListener'
+  | 'usePeopleReferences'
+>;
 
 /**
  * A structurally valid but empty plan — the placeholder persisted before a real

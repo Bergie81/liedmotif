@@ -203,8 +203,8 @@ export interface SelectPersonCoverReferencesInput {
   capabilities: CoverReferenceEndpointCapabilities;
   /**
    * The user asked for reference photos on THIS attempt: the owner fallback
-   * applies without the frequency roll, and any outcome that would send no
-   * reference refuses instead of degrading to a prompt-only cover.
+   * applies without the frequency roll, and `never` refuses instead of staying
+   * silent. When nobody selected has a photo, the cover is made without one.
    */
   explicitOptIn?: boolean;
   /** How the owner Person takes part; omitted means `fallback`. */
@@ -226,10 +226,7 @@ export function selectPersonCoverReferences(
       terminalReason: args.explicitOptIn ? 'privacy_rejected' : null,
     };
   }
-  const selection = matchedOrOwnerReferences(args);
-  return args.explicitOptIn && selection.selectedReferences.length === 0
-    ? { ...selection, terminalReason: 'references_unsupported' }
-    : selection;
+  return matchedOrOwnerReferences(args);
 }
 
 /** The owner Person, when an explicit request or the frequency roll admits the no-name fallback. */

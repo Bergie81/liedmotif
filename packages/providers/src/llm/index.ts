@@ -78,6 +78,12 @@ export interface CoverDirectionEnhancement {
   text: string;
   /** False whenever the raw text came back (no rewrite, failure, or empty input). */
   applied: boolean;
+  /**
+   * The model's reading of whether the direction places the listener themself
+   * in the picture ("me dancing with Jonas", in any language); absent when it
+   * gave no valid answer.
+   */
+  includesListener?: boolean;
 }
 
 // The canonical `ListenerContext` (produced by `@liedmotif/db`, consumed here)

@@ -67,18 +67,17 @@ export async function listPersonReferencePhotos(
  * Whether asking for Person reference photos on a cover could produce anything
  * for this owner: someone has a photo on file, and the hard opt-out is off.
  * Advisory — the cover machinery still re-checks both at plan and submission
- * time, when it is the frequency and the rows that count.
+ * time, when it is the frequency and the rows that count. `never` answers
+ * before any photo row is read, so the opt-out covers the reads too.
  */
 export async function coverReferencesAvailable(db: DbOrTx, ownerUserId: string): Promise<boolean> {
-  const [frequency, [photo]] = await Promise.all([
-    getCoverReferenceFrequency(db, ownerUserId),
-    db
-      .select({ id: personReferencePhotos.id })
-      .from(personReferencePhotos)
-      .where(eq(personReferencePhotos.ownerUserId, ownerUserId))
-      .limit(1),
-  ]);
-  return frequency !== 'never' && photo !== undefined;
+  if ((await getCoverReferenceFrequency(db, ownerUserId)) === 'never') return false;
+  const [photo] = await db
+    .select({ id: personReferencePhotos.id })
+    .from(personReferencePhotos)
+    .where(eq(personReferencePhotos.ownerUserId, ownerUserId))
+    .limit(1);
+  return photo !== undefined;
 }
 
 export async function getPersonReferencePhoto(

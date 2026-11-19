@@ -7,7 +7,6 @@
 
 import { NextResponse } from 'next/server';
 import {
-  coverReferencesAvailable,
   getLatestPlaylistCoverRegeneration,
   getLivePlaylistCoverGeneration,
   getPlaylistCoverSubject,
@@ -43,18 +42,20 @@ export async function GET(request: Request) {
   if (!playlist) return apiError('not_found', 'Playlist not found.');
 
   const subject = { ownerUserId, playlistId: playlist.id };
-  const [
-    { limits, live, latestRegeneration, usageView, enhancement, generated, uploaded },
+  const {
+    limits,
+    live,
+    latestRegeneration,
+    usageView,
     peopleReferencesAvailable,
-  ] = await Promise.all([
-    loadCoverStatusReads(db, ownerUserId, {
-      live: () => getLivePlaylistCoverGeneration(db, subject),
-      latestRegeneration: () => getLatestPlaylistCoverRegeneration(db, subject),
-      generatedHistory: () => listPlaylistCoverHistory(db, subject),
-      uploadedHistory: () => listUploadedPlaylistCovers(db, subject),
-    }),
-    coverReferencesAvailable(db, ownerUserId),
-  ]);
+    generated,
+    uploaded,
+  } = await loadCoverStatusReads(db, ownerUserId, {
+    live: () => getLivePlaylistCoverGeneration(db, subject),
+    latestRegeneration: () => getLatestPlaylistCoverRegeneration(db, subject),
+    generatedHistory: () => listPlaylistCoverHistory(db, subject),
+    uploadedHistory: () => listUploadedPlaylistCovers(db, subject),
+  });
   const { usage, remaining } = usageView;
   const history = toCoverHistory({
     generated,
@@ -82,9 +83,5 @@ export async function GET(request: Request) {
     },
     history,
     peopleReferencesAvailable,
-    promptEnhancement: {
-      llmConfigured: enhancement.llm !== null,
-      active: enhancement.active,
-    },
   });
 }

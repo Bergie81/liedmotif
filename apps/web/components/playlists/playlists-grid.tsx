@@ -539,7 +539,7 @@ function PlaylistCardMenu({
         <MenuRow
           onlineOnly
           icon={<ImageIcon />}
-          label={playlist.coverImageId ? 'Change Cover' : 'Add Cover'}
+          label={playlist.coverImageId ? 'Edit Playlist Cover Art' : 'Add Playlist Cover Art'}
           description={MENU_COPY.chooseCover}
           onClick={() => pick(actions.onManageCover)}
         />

@@ -99,7 +99,6 @@ const STATUS: PlaylistCoverStatusData = {
   },
   history: [entry(CURRENT, 'minimal', true)],
   peopleReferencesAvailable: false,
-  promptEnhancement: { llmConfigured: false, active: false },
 };
 
 /** What the big stage shows: the current cover or a previewed candidate. */

@@ -30,8 +30,10 @@ export const regenerateSessionCoverRequestSchema = z.strictObject({
   coverStyle: z.enum(COVER_STYLE_CHOICES).optional(),
   /** Free-text art direction, frozen privately into the attempt's plan. */
   guidance: z.string().max(MAX_COVER_GUIDANCE_LENGTH).optional(),
-  /** Per-generation LLM-enhancement override; absent → the global setting. */
-  enhance: z.boolean().optional(),
+  /** The People switch for THIS attempt: true uses the People named in the
+   *  Session prompt or art direction, the owner when nobody is named; false
+   *  sends no photos. Absent keeps the Session's own rules. */
+  usePeopleReferences: z.boolean().optional(),
 });
 export type RegenerateSessionCoverRequest = z.infer<typeof regenerateSessionCoverRequestSchema>;
 
@@ -105,20 +107,15 @@ export const sessionCoverStatusResponseSchema = apiResponse(
     coverImageId: uuidSchema.nullable(),
     /** The session's persisted cover style — the Advanced fold's preselection. */
     coverStyle: z.enum(COVER_STYLES),
-    /** The session's original free-text prompt (the "Use session prompt" chip). */
-    sessionPrompt: z.string().nullable(),
     /** Whether ANY generation attempt (initial or regeneration) is in flight. */
     generating: z.boolean(),
     latestRegeneration: sessionCoverAttemptSchema.nullable(),
     usage: sessionCoverUsageSchema,
     /** Settled generated covers and uploads, newest first (empty when none exist). */
     history: z.array(sessionCoverHistoryEntrySchema),
-    promptEnhancement: z.strictObject({
-      /** A text LLM is configured — the hard gate for enhancement. */
-      llmConfigured: z.boolean(),
-      /** Whether guidance submitted right now would be enhanced by default. */
-      active: z.boolean(),
-    }),
+    /** Whether offering the People-reference switch makes sense: the owner has
+     *  at least one Person with a reference photo and has not opted out. */
+    peopleReferencesAvailable: z.boolean(),
   }),
 );
 export type SessionCoverStatusResponse = z.infer<typeof sessionCoverStatusResponseSchema>;

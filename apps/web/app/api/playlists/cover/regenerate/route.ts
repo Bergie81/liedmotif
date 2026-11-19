@@ -29,7 +29,7 @@ import {
   PLAYLIST_COVERS_FULL_MESSAGE,
 } from '@/lib/covers/cover-attempt-gate';
 import { COVER_LIMIT_REACHED_MESSAGE } from '@/lib/covers/cover-budget';
-import { enhanceCoverText } from '@/lib/covers/cover-enhancement';
+import { coverRequestProvenance, enhanceCoverText } from '@/lib/covers/cover-enhancement';
 import { generatedCoverModel, resolvePlaylistCoverStyle } from '@/lib/covers/covers';
 import { getDb } from '@/lib/db';
 import { enqueueRegeneratePlaylistCover } from '@/lib/worker-jobs';
@@ -77,26 +77,26 @@ export async function POST(request: Request) {
   // Enhancement happens HERE, before the attempt's inputs are frozen — the
   // cover generator stays LLM-free. The call never fails the
   // action; without an LLM the path is byte-for-byte the deterministic one.
-  let effectiveGuidance: string | undefined;
-  let enhancementApplied: boolean | undefined;
-  if (guidance) {
-    const enhancement = await enhanceCoverText(db, {
-      ownerUserId,
-      text: guidance,
-      override: parsed.enhance,
-      context: {
-        sessionName: playlist.name,
-        style: coverStyle,
-        mood: null,
-        genres: playlist.genreTags,
-        imageModel: await generatedCoverModel(),
-      },
-    });
-    if (enhancement.llmConfigured) {
-      enhancementApplied = enhancement.applied;
-      if (enhancement.applied) effectiveGuidance = enhancement.text;
-    }
-  }
+  const enhancement = guidance
+    ? await enhanceCoverText(db, {
+        ownerUserId,
+        text: guidance,
+        context: {
+          sessionName: playlist.name,
+          style: coverStyle,
+          mood: null,
+          genres: playlist.genreTags,
+          imageModel: await generatedCoverModel(),
+        },
+      })
+    : null;
+  // Frozen with the style pick: the worker's People selection, refusals
+  // included, is decided by what THIS attempt asked for.
+  const coverRequest = coverRequestProvenance({
+    guidance,
+    enhancement,
+    usePeopleReferences: parsed.usePeopleReferences,
+  });
 
   const reservation = await withOwnerCoverAdmissionLock(db, ownerUserId, async (tx) => {
     const live = await getLivePlaylistCoverGeneration(tx, {
@@ -135,12 +135,7 @@ export async function POST(request: Request) {
       ),
       coverStyle,
       customDefinition: coverStyleHint ?? null,
-      ...(guidance ? { userGuidance: guidance } : {}),
-      ...(effectiveGuidance ? { effectiveGuidance } : {}),
-      ...(enhancementApplied === undefined ? {} : { enhancementApplied }),
-      // Frozen with the style pick: the worker's People selection, refusals
-      // included, is decided by what THIS attempt asked for.
-      ...(parsed.usePeopleReferences ? { usePeopleReferences: true } : {}),
+      request: coverRequest,
     });
     return reserved ? { outcome: 'started' as const, coverGenerationId: reserved.id } : null;
   });

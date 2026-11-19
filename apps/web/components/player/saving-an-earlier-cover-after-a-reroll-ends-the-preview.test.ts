@@ -47,7 +47,6 @@ function serveCovers() {
     const data = {
       coverImageId: server.current,
       coverStyle: 'auto',
-      sessionPrompt: null,
       generating: false,
       latestRegeneration: server.rerolled
         ? {
@@ -74,7 +73,7 @@ function serveCovers() {
         createdAt: `2026-11-17T1${3 - index}:00:00.000Z`,
         isCurrent: coverImageId === server.current,
       })),
-      promptEnhancement: { llmConfigured: false, active: false },
+      peopleReferencesAvailable: false,
     } as SessionCoverStatusData;
     return { ok: true, data };
   });

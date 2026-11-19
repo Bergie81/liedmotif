@@ -37,13 +37,20 @@ export async function POST(request: Request) {
   if (!session) return apiError('not_found', 'Session not found.');
 
   const subject = { ownerUserId, activitySessionId: session.id };
-  const { limits, live, latestRegeneration, usageView, enhancement, generated, uploaded } =
-    await loadCoverStatusReads(db, ownerUserId, {
-      live: () => getLiveSessionCoverGeneration(db, subject),
-      latestRegeneration: () => getLatestSessionCoverRegeneration(db, subject),
-      generatedHistory: () => listSessionCoverHistory(db, subject),
-      uploadedHistory: () => listUploadedSessionCovers(db, subject),
-    });
+  const {
+    limits,
+    live,
+    latestRegeneration,
+    usageView,
+    peopleReferencesAvailable,
+    generated,
+    uploaded,
+  } = await loadCoverStatusReads(db, ownerUserId, {
+    live: () => getLiveSessionCoverGeneration(db, subject),
+    latestRegeneration: () => getLatestSessionCoverRegeneration(db, subject),
+    generatedHistory: () => listSessionCoverHistory(db, subject),
+    uploadedHistory: () => listUploadedSessionCovers(db, subject),
+  });
   const { usage, remaining } = usageView;
   const history = toCoverHistory({
     generated,
@@ -59,7 +66,6 @@ export async function POST(request: Request) {
   return apiOk({
     coverImageId: session.coverImageId,
     coverStyle: session.coverStyle,
-    sessionPrompt: session.userPrompt,
     generating: live !== null,
     latestRegeneration: latestRegeneration
       ? toSessionCoverAttempt(latestRegeneration, await coverViewerRole(db, ownerUserId))
@@ -76,9 +82,6 @@ export async function POST(request: Request) {
       sunoFallbackActive: activeCoverSource === 'music-provider',
     },
     history,
-    promptEnhancement: {
-      llmConfigured: enhancement.llm !== null,
-      active: enhancement.active,
-    },
+    peopleReferencesAvailable,
   });
 }

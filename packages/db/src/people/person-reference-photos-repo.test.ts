@@ -1,8 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPerson, deletePerson, ensureOwnerPerson } from './people-repo';
+import { updateCoverReferenceFrequency } from './people-settings-repo';
 import {
+  coverReferencesAvailable,
   deletePersonReferencePhoto,
   getPersonReferencePhoto,
   insertPersonReferencePhoto,
@@ -11,6 +13,7 @@ import {
 } from './person-reference-photos-repo';
 import { deletionQueueItems, people, personReferencePhotos, user } from '../schema';
 import { connectTestDb, TEST_DATABASE_URL, truncateTables, type TestDb } from '../test-support';
+import type { Database } from '../client';
 
 const describeIfDb = TEST_DATABASE_URL ? describe : describe.skip;
 
@@ -19,6 +22,23 @@ async function seedUser(ctx: TestDb, name: string, email: string): Promise<strin
   await ctx.db.insert(user).values({ id, name, email });
   await ensureOwnerPerson(ctx.db, id);
   return id;
+}
+
+/** The tables every `select().from(...)` on `db` reads, from now on. */
+function recordTablesRead(db: Database): unknown[] {
+  const tables: unknown[] = [];
+  const select = db.select.bind(db);
+  vi.spyOn(db, 'select').mockImplementation(((...args: Parameters<typeof select>) => {
+    const builder = select(...args);
+    const from = builder.from.bind(builder);
+    return Object.assign(builder, {
+      from: (table: Parameters<typeof from>[0]) => {
+        tables.push(table);
+        return from(table);
+      },
+    });
+  }) as typeof db.select);
+  return tables;
 }
 
 function photoInput(ownerUserId: string, personId: string, suffix: string = randomUUID()) {
@@ -49,6 +69,31 @@ describeIfDb('Person reference photos repository', () => {
 
   beforeEach(async () => {
     await truncateTables(ctx.pool, ['user', 'deletion_queue_items']);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('offers cover references once a Person has a photo', async () => {
+    const ownerUserId = await seedUser(ctx, 'Owner', 'owner@example.test');
+    expect(await coverReferencesAvailable(ctx.db, ownerUserId)).toBe(false);
+
+    const person = await createPerson(ctx.db, { ownerUserId, name: 'Julia' });
+    await insertPersonReferencePhoto(ctx.db, photoInput(ownerUserId, person.id));
+
+    expect(await coverReferencesAvailable(ctx.db, ownerUserId)).toBe(true);
+  });
+
+  it('answers no for cover references set to never without reading a photo row', async () => {
+    const ownerUserId = await seedUser(ctx, 'Owner', 'owner@example.test');
+    const person = await createPerson(ctx.db, { ownerUserId, name: 'Julia' });
+    await insertPersonReferencePhoto(ctx.db, photoInput(ownerUserId, person.id));
+    await updateCoverReferenceFrequency(ctx.db, ownerUserId, 'never');
+    const tablesRead = recordTablesRead(ctx.db);
+
+    expect(await coverReferencesAvailable(ctx.db, ownerUserId)).toBe(false);
+    expect(tablesRead).not.toContain(personReferencePhotos);
   });
 
   it('serializes concurrent uploads at three photos per Person', async () => {

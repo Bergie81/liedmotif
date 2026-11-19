@@ -1632,7 +1632,12 @@ describe('enhanceCoverDirection', () => {
     const provider = createOpenAiLlmProvider({
       apiKey: 'k',
       languageModel: promptCapturingModel(
-        ['a serene paper skyline at dusk, warm rim light, muted amber palette'],
+        [
+          JSON.stringify({
+            direction: 'a serene paper skyline at dusk, warm rim light, muted amber palette',
+            includesListener: false,
+          }),
+        ],
         captured,
       ),
     });
@@ -1643,6 +1648,7 @@ describe('enhanceCoverDirection', () => {
     expect(result).toEqual({
       text: 'a serene paper skyline at dusk, warm rim light, muted amber palette',
       applied: true,
+      includesListener: false,
     });
     expect(captured[0]).toContain('warm dusk skyline');
     expect(captured[0]).toContain('Rain Session');
@@ -1653,7 +1659,10 @@ describe('enhanceCoverDirection', () => {
     const captured: string[] = [];
     const provider = createOpenAiLlmProvider({
       apiKey: 'k',
-      languageModel: promptCapturingModel(['a red apple on a harbor wall'], captured),
+      languageModel: promptCapturingModel(
+        [JSON.stringify({ direction: 'a red apple on a harbor wall', includesListener: false })],
+        captured,
+      ),
     });
     await provider.enhanceCoverDirection({ text: 'one red apple by the sea', context: {} });
     expect(captured[0]).toMatch(
@@ -1674,10 +1683,59 @@ describe('enhanceCoverDirection', () => {
     ).resolves.toEqual({ text: 'warm dusk skyline', applied: false });
   });
 
+  it('reads in the same call whether the direction puts the listener in the scene, in any language', async () => {
+    const captured: string[] = [];
+    const provider = createOpenAiLlmProvider({
+      apiKey: 'k',
+      languageModel: promptCapturingModel(
+        [
+          JSON.stringify({
+            direction: 'two figures dancing under festival lights',
+            includesListener: true,
+          }),
+        ],
+        captured,
+      ),
+    });
+
+    const result = await provider.enhanceCoverDirection({
+      text: 'Ich tanze mit Jonas',
+      context: {},
+    });
+
+    expect(result).toEqual({
+      text: 'two figures dancing under festival lights',
+      applied: true,
+      includesListener: true,
+    });
+    expect(captured).toHaveLength(1);
+    expect(captured[0]).toMatch(/includesListener/);
+    expect(captured[0]).toMatch(/in any language/i);
+  });
+
+  it('keeps the listener answer even when the rewrite is unusable, and drops an invalid one', async () => {
+    const answer = async (response: string) =>
+      createOpenAiLlmProvider({
+        apiKey: 'k',
+        languageModel: promptCapturingModel([response], []),
+      }).enhanceCoverDirection({ text: 'me at the beach', context: {} });
+
+    await expect(
+      answer(JSON.stringify({ direction: '  ', includesListener: true })),
+    ).resolves.toEqual({ text: 'me at the beach', applied: false, includesListener: true });
+    await expect(
+      answer(JSON.stringify({ direction: 'a beach at noon', includesListener: 'yes' })),
+    ).resolves.toEqual({ text: 'a beach at noon', applied: true });
+    await expect(answer('a beach at noon, no JSON here')).resolves.toEqual({
+      text: 'me at the beach',
+      applied: false,
+    });
+  });
+
   it('treats an empty rewrite as not applied', async () => {
     const provider = createOpenAiLlmProvider({
       apiKey: 'k',
-      languageModel: promptCapturingModel(['   '], []),
+      languageModel: promptCapturingModel([JSON.stringify({ direction: '   ' })], []),
     });
     await expect(
       provider.enhanceCoverDirection({ text: 'warm dusk skyline', context: {} }),

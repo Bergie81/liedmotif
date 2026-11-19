@@ -13,16 +13,25 @@ export function SearchInput({
   value,
   onValueChange,
   onClear,
+  width = 'page',
   className,
   ...inputProps
 }: {
   value: string;
   onValueChange: (value: string) => void;
   onClear: () => void;
+  /** `page` sizes the box for a page's top bar; `fill` takes the container's width (a sheet). */
+  width?: 'page' | 'fill';
   className?: string;
 } & Omit<ComponentProps<'input'>, 'type' | 'value' | 'onChange' | 'className'>) {
   return (
-    <div className={cn('relative max-w-[560px] desk:w-1/2 desk:max-w-none', className)}>
+    <div
+      className={cn(
+        'relative',
+        width === 'page' ? 'max-w-[560px] desk:w-1/2 desk:max-w-none' : 'w-full',
+        className,
+      )}
+    >
       <Search
         className="pointer-events-none absolute left-4 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-dim"
         aria-hidden

@@ -42,7 +42,6 @@ import {
   hashSessionCoverValue,
   SESSION_COVER_PLAN_VERSION,
   SESSION_COVER_PROMPT_VERSION,
-  withOrdinalSubjectNames,
 } from './cover-plan';
 import {
   coverReferenceTreatment,
@@ -164,6 +163,7 @@ async function selectPlaylistCoverReferences(
     promptText: [args.subject.name, plan.userGuidance].filter(Boolean).join('\n'),
     capabilities: args.capabilities,
     explicitOptIn: true,
+    includesListener: plan.wishIncludesListener,
   });
 }
 
@@ -220,8 +220,7 @@ async function planReserved(
       // The art direction is a Playlist's only free text, so it is where a
       // multi-subject scene's real names would otherwise reach the provider —
       // the association a Session applies to its music prompt applies here.
-      userGuidance:
-        withOrdinalSubjectNames(guidance, referenceSubjectsForSelection(references)) ?? null,
+      userGuidance: guidance ?? null,
       textLlmConfigured: runtime.deps.textLlmConfigured,
       capabilities,
       referenceTreatment: coverReferenceTreatment(references.selectedReferences),
@@ -229,6 +228,7 @@ async function planReserved(
         references.selectedReferences.map((reference) => reference.personId),
       ).size,
       selectedPersonIds: references.selectedPersonIds,
+      referenceSubjects: referenceSubjectsForSelection(references),
       recentFingerprints: recentPlans.map((row) => row.fingerprint),
     };
     const { planned, planningFailure } = buildPlanWithRelaxedRetry(planInput);

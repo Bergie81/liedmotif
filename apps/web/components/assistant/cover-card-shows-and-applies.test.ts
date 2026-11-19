@@ -111,14 +111,11 @@ function coverStatus(
     latestRegeneration: latest,
     usage: USAGE,
     history: history.map((id) => historyEntry(id, id === current)),
-    promptEnhancement: { llmConfigured: false, active: false },
+    peopleReferencesAvailable: false,
   };
   return Response.json({
     ok: true,
-    data:
-      kind === 'session'
-        ? { ...common, coverStyle: 'auto', sessionPrompt: null }
-        : { ...common, peopleReferencesAvailable: false },
+    data: kind === 'session' ? { ...common, coverStyle: 'auto' } : common,
   });
 }
 

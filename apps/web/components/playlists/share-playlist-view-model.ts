@@ -19,6 +19,25 @@ export function initialShareSelection(
   return new Set(candidates.filter((c) => listed.has(c.userId)).map((c) => c.userId));
 }
 
+/** The Users whose name or artist name contains the query, ignoring case and accents. */
+export function filterShareCandidates(
+  candidates: ShareCandidate[],
+  query: string,
+): ShareCandidate[] {
+  const needle = fold(query.trim());
+  if (!needle) return candidates;
+  return candidates.filter(
+    (c) => fold(c.name).includes(needle) || fold(c.artistName ?? '').includes(needle),
+  );
+}
+
+function fold(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLocaleLowerCase();
+}
+
 export function isShareTicked(selection: ShareSelection, userId: string): boolean {
   return selection === 'everyone' || selection.has(userId);
 }

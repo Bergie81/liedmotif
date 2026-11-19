@@ -100,7 +100,6 @@ const STATUS: PlaylistCoverStatusData = {
   },
   history: [],
   peopleReferencesAvailable: false,
-  promptEnhancement: { llmConfigured: false, active: false },
 };
 
 const CHROME = { viewerRole: 'admin' } as AppChromeContextValue;

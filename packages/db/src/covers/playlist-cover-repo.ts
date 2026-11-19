@@ -14,6 +14,7 @@ import {
   playlistTracks,
   tracks,
   type CoverMetadata,
+  type CoverRequestProvenance,
 } from '../schema';
 import type { DbOrTx } from '../transactions';
 import {
@@ -281,13 +282,8 @@ export interface ReservePlaylistCoverRegenerationInput {
   coverStyle: string;
   /** The Custom lane's definition, frozen with the pick (null for preset lanes). */
   customDefinition?: string | null;
-  /** Raw user art direction, frozen privately into the attempt (never logged). */
-  userGuidance?: string;
-  /** LLM-enhanced art direction that replaces the raw text when enhancement ran. */
-  effectiveGuidance?: string;
-  enhancementApplied?: boolean;
-  /** The owner asked this attempt to carry their People reference photos. */
-  usePeopleReferences?: boolean;
+  /** The request's art direction and People switch, frozen privately into the attempt (never logged). */
+  request?: CoverRequestProvenance;
 }
 
 /**
@@ -308,16 +304,7 @@ export async function reservePlaylistCoverRegeneration(
         selectedStyle: input.coverStyle,
         resolvedStyle: input.coverStyle,
         customDefinition: input.customDefinition ?? null,
-        ...(input.userGuidance === undefined ? {} : { userGuidance: input.userGuidance }),
-        ...(input.effectiveGuidance === undefined
-          ? {}
-          : { effectiveGuidance: input.effectiveGuidance }),
-        ...(input.enhancementApplied === undefined
-          ? {}
-          : { enhancementApplied: input.enhancementApplied }),
-        ...(input.usePeopleReferences === undefined
-          ? {}
-          : { usePeopleReferences: input.usePeopleReferences }),
+        ...input.request,
       }),
     ),
     idempotencyKey: `playlist-cover:regen:${input.id}`,

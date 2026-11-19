@@ -280,7 +280,10 @@ function coverDirectionPrompt(input: CoverDirectionInput): string {
     `subjects, composition, palette, materials, and lighting. Keep the user's intent and subjects. ` +
     `${NAMED_VISUAL_REFERENCE_RULE} ` +
     `Never add artist names, brands, quality tokens ("masterpiece", "8k"), or requests for text or lettering. ` +
-    `Respond with ONLY the rewritten direction as one short paragraph.\n\n` +
+    `Respond with ONLY a JSON object: direction (string, the rewritten direction as one short paragraph), ` +
+    `includesListener (boolean: true ONLY when the user's direction places the listener themself in the ` +
+    `picture, in any language — "me dancing with Jonas", "my friends and I", "wir am Strand"; false when ` +
+    `the picture belongs to other people or to no one).\n\n` +
     (context ? `Context (informs, never overrides):\n${context}\n\n` : '') +
     `User direction:\n${input.text.trim()}`
   );
@@ -289,6 +292,12 @@ function coverDirectionPrompt(input: CoverDirectionInput): string {
 function clampCoverDirection(text: string): string {
   return text.replace(/\s+/g, ' ').trim().slice(0, MAX_COVER_GUIDANCE_LENGTH).trim();
 }
+
+/** The cover-direction answer; each field is kept or dropped on its own. */
+const coverDirectionSchema = z.object({
+  direction: z.string().catch(''),
+  includesListener: z.boolean().optional().catch(undefined),
+});
 
 /** The track-title refill response shape (`createTrackTitles`). */
 const trackTitlesSchema = z.object({ trackTitles: z.array(z.string()).default([]) });
@@ -749,8 +758,14 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
           prompt: coverDirectionPrompt(input),
           ...callSettings(COVER_DIRECTION_TIMEOUT_MS),
         });
-        const enhanced = clampCoverDirection(text);
-        if (enhanced) return { text: enhanced, applied: true };
+        const parsed = coverDirectionSchema.safeParse(parseJsonObject(text));
+        if (parsed.success) {
+          const { direction, includesListener } = parsed.data;
+          const enhanced = clampCoverDirection(direction);
+          return enhanced
+            ? { text: enhanced, applied: true, includesListener }
+            : { text: input.text, applied: false, includesListener };
+        }
       } catch {
         // Enhancement is best-effort; the raw direction is always usable.
       }

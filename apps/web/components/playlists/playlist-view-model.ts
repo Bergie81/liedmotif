@@ -195,7 +195,7 @@ export function playlistMenuRows(
     },
     {
       id: 'cover',
-      label: playlist.coverImageId ? 'Edit Playlist Cover' : 'Add Playlist Cover',
+      label: playlist.coverImageId ? 'Edit Playlist Cover Art' : 'Add Playlist Cover Art',
       description: MENU_COPY.chooseCover,
       disabled: false,
     },

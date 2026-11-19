@@ -62,8 +62,6 @@ const USAGE: SessionCoverUsage = {
   sunoFallbackActive: false,
 };
 
-const ENHANCEMENT = { llmConfigured: false, active: false };
-
 /** The cover status route's answer for a Session, as the cover dialog reads it. */
 const sessionStatus = (usage: SessionCoverUsage) =>
   Response.json({
@@ -71,12 +69,11 @@ const sessionStatus = (usage: SessionCoverUsage) =>
     data: {
       coverImageId: null,
       coverStyle: 'auto',
-      sessionPrompt: null,
       generating: false,
       latestRegeneration: null,
       usage,
       history: [],
-      promptEnhancement: ENHANCEMENT,
+      peopleReferencesAvailable: false,
     },
   });
 
@@ -90,7 +87,6 @@ const playlistStatus = (usage: SessionCoverUsage) =>
       usage,
       history: [],
       peopleReferencesAvailable: false,
-      promptEnhancement: ENHANCEMENT,
     },
   });
 

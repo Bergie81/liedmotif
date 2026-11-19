@@ -109,7 +109,7 @@ describe('SessionOptionsSheet — Pin Session', () => {
   });
 });
 
-describe('SessionOptionsSheet — Change Cover Art', () => {
+describe('SessionOptionsSheet — Edit Session Cover Art', () => {
   it('opens the cover dialog for the Session', () => {
     const onChangeCover = vi.fn();
     renderSheet(SESSION, { onChangeCover });

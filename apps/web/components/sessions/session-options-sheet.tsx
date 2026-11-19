@@ -95,7 +95,7 @@ export function SessionOptionsSheet({
         <MenuRow
           onlineOnly
           icon={<ImagePlus />}
-          label="Change Cover Art"
+          label="Edit Session Cover Art"
           description="Reroll, upload or pick a previous cover"
           disabled={busy}
           data-testid="change-session-cover"

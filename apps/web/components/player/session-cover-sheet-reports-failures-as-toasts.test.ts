@@ -40,7 +40,6 @@ function status(overrides: Partial<SessionCoverStatusData> = {}): SessionCoverSt
   return {
     coverImageId: CURRENT,
     coverStyle: 'auto',
-    sessionPrompt: null,
     generating: false,
     latestRegeneration: null,
     usage: {
@@ -62,7 +61,7 @@ function status(overrides: Partial<SessionCoverStatusData> = {}): SessionCoverSt
         isCurrent: true,
       },
     ],
-    promptEnhancement: { llmConfigured: false, active: false },
+    peopleReferencesAvailable: false,
     ...overrides,
   } as SessionCoverStatusData;
 }

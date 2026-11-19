@@ -174,9 +174,7 @@ describe('streamAssistantReply (OpenAI-compatible adapter)', () => {
     expect(chunks).toEqual(['Open the settings and']);
     expect(error).toBeInstanceOf(ProviderError);
     const failure = error as ProviderError;
-    expect(failure.message).toBe(
-      'The Text AI stopped before the answer was finished. Try again.',
-    );
+    expect(failure.message).toBe('The Text AI stopped before the answer was finished. Try again.');
     expect(failure.safeDetail).toEqual({ finishReason: 'length' });
   });
 

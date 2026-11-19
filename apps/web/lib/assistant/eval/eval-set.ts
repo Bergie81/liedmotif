@@ -805,6 +805,6 @@ export const EVAL_SET: readonly EvalEntry[] = [
     link: '/sessions',
     calls: [],
     goodAnswer:
-      'A no in German: it does not pick an earlier cover; the user does that under Previous covers with Change Cover Art in the Session’s options in Sessions, with the link. Offers no card for a new cover. Never says the cover is changed.',
+      'A no in German: it does not pick an earlier cover; the user does that under Previous covers with Edit Session Cover Art in the Session’s options in Sessions, with the link. Offers no card for a new cover. Never says the cover is changed.',
   },
 ];

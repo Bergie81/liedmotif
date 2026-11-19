@@ -1,6 +1,7 @@
 import type { ShareCandidate } from '@liedmotif/shared';
 import { describe, expect, it } from 'vitest';
 import {
+  filterShareCandidates,
   initialShareSelection,
   isShareTicked,
   shareCommit,
@@ -195,5 +196,33 @@ describe('shareCommit', () => {
         shareCommit({ selection: 'everyone', candidates: [], current: { kind: 'everyone' } }),
       ).toEqual({ audience: null, label: 'Return to Private', disabled: false });
     });
+  });
+});
+
+describe('filterShareCandidates', () => {
+  const PEOPLE: ShareCandidate[] = [
+    { userId: 'u-anna', name: 'Anna Schmidt', artistName: 'Nightowl', imageUrl: null },
+    { userId: 'u-jonas', name: 'Jonas Weber', artistName: null, imageUrl: null },
+    { userId: 'u-jurgen', name: 'Jürgen Kühn', artistName: 'Lärm', imageUrl: null },
+  ];
+  const found = (query: string) => filterShareCandidates(PEOPLE, query).map((c) => c.userId);
+
+  it('lists everyone for an empty or blank query', () => {
+    expect(found('')).toEqual(['u-anna', 'u-jonas', 'u-jurgen']);
+    expect(found('   ')).toEqual(['u-anna', 'u-jonas', 'u-jurgen']);
+  });
+
+  it('matches the name or the artist name, case-insensitively', () => {
+    expect(found('weber')).toEqual(['u-jonas']);
+    expect(found('NIGHT')).toEqual(['u-anna']);
+  });
+
+  it('matches without the accents the user may not type', () => {
+    expect(found('jurgen')).toEqual(['u-jurgen']);
+    expect(found('larm')).toEqual(['u-jurgen']);
+  });
+
+  it('finds nobody when nothing matches', () => {
+    expect(found('zed')).toEqual([]);
   });
 });

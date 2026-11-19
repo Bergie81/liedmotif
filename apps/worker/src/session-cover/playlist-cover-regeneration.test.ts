@@ -179,6 +179,7 @@ describeIfDb('PlaylistCoverGenerator regeneration', () => {
       effectiveGuidance?: string;
       coverStyle?: string;
       usePeopleReferences?: boolean;
+      wishIncludesListener?: boolean;
     } = {},
   ) {
     const attemptId = opts.id ?? randomUUID();
@@ -190,13 +191,12 @@ describeIfDb('PlaylistCoverGenerator regeneration', () => {
       coverImageId,
       storageKey: storageKeys.generatedPlaylistCover(ownerUserId, playlistId, coverImageId, 'webp'),
       coverStyle: opts.coverStyle ?? 'minimal',
-      ...(opts.guidance === undefined ? {} : { userGuidance: opts.guidance }),
-      ...(opts.effectiveGuidance === undefined
-        ? {}
-        : { effectiveGuidance: opts.effectiveGuidance }),
-      ...(opts.usePeopleReferences === undefined
-        ? {}
-        : { usePeopleReferences: opts.usePeopleReferences }),
+      request: {
+        userGuidance: opts.guidance,
+        effectiveGuidance: opts.effectiveGuidance,
+        usePeopleReferences: opts.usePeopleReferences,
+        wishIncludesListener: opts.wishIncludesListener,
+      },
     });
     expect(row).not.toBeNull();
     return row!;
@@ -570,6 +570,28 @@ describeIfDb('PlaylistCoverGenerator regeneration', () => {
       expect(cover?.provenance).toMatchObject({ referenceIds: [photoId] });
     });
 
+    it('adds the owner beside a named Person when the Text AI reads the wish as including them', async () => {
+      const { ownerUserId, playlistId, person } = await seedOwnerWithPhoto();
+      const julia = await createPerson(ctx.db, { ownerUserId, name: 'Julia' });
+      await seedPhoto(ownerUserId, julia.id);
+      const attempt = await reserveAttempt(ownerUserId, playlistId, {
+        guidance: 'me dancing with Julia',
+        effectiveGuidance: 'two dancers under festival lights',
+        usePeopleReferences: true,
+        wishIncludesListener: true,
+      });
+      const { provider, calls } = fakeCoverArt({ supportsReferences: true });
+
+      await generator(ownerUserId, provider).processRegeneration(playlistId, attempt.id);
+
+      const settled = await ledgerRow(attempt.id);
+      expect([...(settled?.plan.selectedPersonIds ?? [])].sort()).toEqual(
+        [person.id, julia.id].sort(),
+      );
+      // The image model learns which reference is the wish's "me".
+      expect(calls[0]!.positivePrompt).toMatch(/subject (one|two) is also the request's own "I"/);
+    });
+
     it('selects a configured Person named in the Playlist name', async () => {
       const { ownerUserId, playlistId } = await seedOwnerWithPhoto('Julia’s Running Mix');
       const julia = await createPerson(ctx.db, { ownerUserId, name: 'Julia' });
@@ -659,8 +681,11 @@ describeIfDb('PlaylistCoverGenerator regeneration', () => {
       readSpy.mockRestore();
     });
 
-    it('refuses without spending when the owner has no Person with a photo', async () => {
+    it('makes the cover without references when nobody named and the owner has no photo', async () => {
       const { ownerUserId, playlistId } = await seedPlaylistWithMembers();
+      await seedOwnerPerson(ownerUserId);
+      const julia = await createPerson(ctx.db, { ownerUserId, name: 'Julia' });
+      await seedPhoto(ownerUserId, julia.id);
       const attempt = await reserveAttempt(ownerUserId, playlistId, { usePeopleReferences: true });
       const { provider, calls } = fakeCoverArt({ supportsReferences: true });
 
@@ -669,8 +694,24 @@ describeIfDb('PlaylistCoverGenerator regeneration', () => {
         attempt.id,
       );
 
-      expect(result).toMatchObject({ status: 'failed', reason: 'references_unsupported' });
-      expect(calls).toHaveLength(0);
+      expect(result).toMatchObject({ status: 'ready', generatedNow: true });
+      expect(calls[0]!.references).toEqual([]);
+      expect((await ledgerRow(attempt.id))?.selectedReferences).toEqual([]);
+    });
+
+    it('makes the cover without references when the named Person has no photo', async () => {
+      const { ownerUserId, playlistId } = await seedOwnerWithPhoto('Julia’s Running Mix');
+      await createPerson(ctx.db, { ownerUserId, name: 'Julia' });
+      const attempt = await reserveAttempt(ownerUserId, playlistId, { usePeopleReferences: true });
+      const { provider, calls } = fakeCoverArt({ supportsReferences: true });
+
+      const result = await generator(ownerUserId, provider).processRegeneration(
+        playlistId,
+        attempt.id,
+      );
+
+      expect(result).toMatchObject({ status: 'ready', generatedNow: true });
+      expect(calls[0]!.references).toEqual([]);
     });
 
     /** Drive an attempt to a `planned` retry, so the caller can change the world
