@@ -203,17 +203,17 @@ export function evaluateCreationHeadroom(
   const { bound, remainingTracks } = tightestBound(bounds, tracksPerCall);
   const binding = tightestWindow(bound.windows);
   const allowed = remainingTracks >= minHeadroomTracks;
+  const resetWindow =
+    !allowed && binding.window === 'day'
+      ? (windowRefusingAfterMidnight(bounds, tracksPerCall, minHeadroomTracks) ?? 'day')
+      : binding.window;
   return {
     allowed,
     remainingTracks,
     minHeadroomTracks,
     scope: bound.scope,
     window: binding.window,
-    resetWindow:
-      (!allowed &&
-        binding.window === 'day' &&
-        windowRefusingAfterMidnight(bounds, tracksPerCall, minHeadroomTracks)) ||
-      binding.window,
+    resetWindow,
     windowCapTracks: binding.cap * tracksPerCall,
   };
 }
@@ -245,14 +245,19 @@ function windowRefusingAfterMidnight(
   tracksPerCall: number,
   minHeadroomTracks: number,
 ): CostLimitWindow | null {
-  const afterMidnight = bounds.map((bound) => ({
+  const afterMidnight = mapNonEmpty(bounds, (bound) => ({
     ...bound,
-    windows: bound.windows.map((window) =>
+    windows: mapNonEmpty(bound.windows, (window) =>
       window.window === 'day' ? { ...window, used: 0 } : window,
-    ) as unknown as BoundWindows,
-  })) as unknown as CostBounds;
+    ),
+  }));
   const { bound, remainingTracks } = tightestBound(afterMidnight, tracksPerCall);
   if (remainingTracks >= minHeadroomTracks) return null;
   const { window } = tightestWindow(bound.windows);
   return window === 'day' ? null : window;
+}
+
+function mapNonEmpty<T, U>(items: readonly [T, ...T[]], fn: (item: T) => U): [U, ...U[]] {
+  const [first, ...rest] = items;
+  return [fn(first), ...rest.map(fn)];
 }

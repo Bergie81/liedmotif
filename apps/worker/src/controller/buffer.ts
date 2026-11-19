@@ -297,7 +297,7 @@ function decideSupplyAction(input: BufferDecisionInput): BufferDecision {
     return { action: 'noop', generationStatus: 'ok' };
   }
 
-  // 8. Live listener (or first fill) and admitted demand → submit if a
+  // 8. Live listener (or an unheard fill) and admitted demand → submit if a
   //    concurrency slot is free.
   if (!input.hasConcurrencySlot) {
     return { action: 'wait', generationStatus: 'ok' };

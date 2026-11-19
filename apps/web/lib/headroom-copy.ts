@@ -46,11 +46,10 @@ const WINDOW_NAME = { day: 'daily', month: 'monthly' } as const;
  * A refused new Session, in numbers: what it needs, what is left, and when
  * more comes back. The reset named is the one that lets a Session start: not
  * midnight while a month window still refuses, and none while a One-time
- * budget does. When the binding window's own
- * cap is below what a Session needs no reset helps, so the text says so
- * instead of promising one. A Member with nothing left keeps the used-up
- * texts; the Pool is always "the shared budget", never something the Member
- * could change.
+ * budget does. When the binding window's own cap is below what a Session
+ * needs no reset helps, so the text says so instead of promising one. A
+ * Member with nothing left keeps the used-up texts; the Pool is always "the
+ * shared budget", never something the Member could change.
  */
 export function creationHeadroomMessage(
   decision: CreationHeadroomDecision,
@@ -87,8 +86,7 @@ export function creationHeadroomMessage(
   if (resetWindow === 'total') {
     return `${period} Your budget doesn’t reset — ask ${admin} for more. ${WAY_OUT}`;
   }
-  const reset = RESET[resetWindow === 'month' ? 'month' : window];
-  return `${period} More Tracks ${reset} (${resetTimezone}). ${WAY_OUT}`;
+  return `${period} More Tracks ${RESET[resetWindow]} (${resetTimezone}). ${WAY_OUT}`;
 }
 
 /**
