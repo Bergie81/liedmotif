@@ -19,17 +19,17 @@ import {
   type InstanceAlertsState,
 } from '@liedmotif/db';
 import { createLogger } from '@liedmotif/shared';
-import { mailInstanceAlert } from '@/lib/account-mail';
-import { alertTokenRefusal } from '@/lib/alert-token';
-import { postAlertWebhook } from '@/lib/alert-webhook';
+import { mailInstanceAlert } from '@/lib/auth/account-mail';
+import { alertTokenRefusal } from '@/lib/admin/alert-token';
+import { postAlertWebhook } from '@/lib/admin/alert-webhook';
 import { getDb } from '@/lib/db';
 import { alertWebhookUrl, getPublicUrl, isAccountEmailEnabled } from '@/lib/env';
-import { getTypicalTracksPerMusicRequest } from '@/lib/providers';
+import { getTypicalTracksPerMusicRequest } from '@/lib/providers/providers';
 import {
   evaluateInstanceAlerts,
   type InstanceAlertNotification,
   type InstanceAlertsSnapshot,
-} from '@/lib/instance-alerts-model';
+} from '@/lib/admin/instance-alerts-model';
 
 export const dynamic = 'force-dynamic';
 

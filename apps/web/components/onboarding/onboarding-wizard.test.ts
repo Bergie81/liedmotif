@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import type { OnboardingData } from '@/lib/onboarding-data';
+import type { OnboardingData } from '@/lib/onboarding/onboarding-data';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: () => {} }) }));
 

@@ -15,7 +15,7 @@ import {
   getPlaylist,
   removePlaylistTrack,
   type PlaylistPageFetcher,
-} from '@/lib/api-client';
+} from '@/lib/http/api-client';
 import { appendUniqueById } from '@/lib/append-unique';
 import { useOutsideLibraryWrite } from '@/components/library/use-outside-library-write';
 import { usePageEpoch } from '@/components/use-page-epoch';

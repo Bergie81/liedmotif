@@ -7,7 +7,7 @@
 import { useCallback, useState } from 'react';
 import { mergePersonNames } from '@/components/settings/people-form-model';
 import type { PersonEditorValue } from '@/components/settings/people-types';
-import { loadPeopleNames } from '@/lib/settings-client';
+import { loadPeopleNames } from '@/lib/settings/settings-client';
 
 export function useOnboardingNav<Step>(steps: readonly Step[]) {
   const [index, setIndex] = useState(0);

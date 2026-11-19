@@ -12,7 +12,7 @@ import { PlaylistDetail } from './playlist-detail';
 const deletePlaylist = vi.hoisted(() => vi.fn());
 const moderate = vi.hoisted(() => vi.fn());
 
-vi.mock('@/lib/api-client', () => ({
+vi.mock('@/lib/http/api-client', () => ({
   deletePlaylist,
   deleteTrack: vi.fn(),
   getLoungePlaylist: vi.fn(),

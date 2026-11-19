@@ -7,7 +7,7 @@ import { MenuMoreLikeThisGlyph } from '@/components/ui/glyphs';
 import { coverArtSrc } from '@/components/player/player-presentation';
 import { SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { MenuRow } from '@/components/ui/menu-row';
-import { startFileDownload, trackDownloadUrl } from '@/lib/downloads';
+import { startFileDownload, trackDownloadUrl } from '@/lib/downloads/downloads';
 import { DeleteTrackMenuRow } from './delete-track-menu-row';
 import { formatTrackDuration, trackDownloadNote } from './library-view-model';
 import type { LibraryActionName } from './use-library-actions';

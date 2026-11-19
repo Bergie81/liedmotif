@@ -11,9 +11,9 @@
 import { NextResponse } from 'next/server';
 import { setSessionModeRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
-import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/api-response';
-import { switchSessionMode } from '@/lib/session-mode';
-import { toSessionSummary } from '@/lib/sessions';
+import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/http/api-response';
+import { switchSessionMode } from '@/lib/sessions/session-mode';
+import { toSessionSummary } from '@/lib/sessions/sessions';
 
 export const dynamic = 'force-dynamic';
 

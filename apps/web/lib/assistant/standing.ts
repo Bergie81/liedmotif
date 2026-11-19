@@ -3,7 +3,7 @@
 
 import type { NextResponse } from 'next/server';
 import { ASSISTANT_STANDING_HEADER, type AssistantStanding } from '@liedmotif/shared';
-import { apiError } from '@/lib/api-response';
+import { apiError } from '@/lib/http/api-response';
 import { ASSISTANT_NAME } from '@/lib/assistant/persona';
 
 /** Whether a message sent on this standing would be accepted. */

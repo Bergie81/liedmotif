@@ -8,7 +8,7 @@ import { primaryButtonClass, secondaryButtonClass } from '@/components/ui/form-s
 import { OnlineOnly } from '@/components/ui/online-only';
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTrigger } from '@/components/ui/sheet';
 import { WithTooltip } from '@/components/ui/tooltip';
-import type { ChangeVibeOptions } from '@/lib/api-client';
+import type { ChangeVibeOptions } from '@/lib/http/api-client';
 import { cn } from '@/lib/cn';
 import { ChangeVibeSheet } from './change-vibe-sheet';
 import { MoreLikeThisGlyph } from '@/components/ui/glyphs';

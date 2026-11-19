@@ -5,7 +5,7 @@
 // asked on first login (`/welcome`), where the owner is present to answer them.
 
 import { validatePassword } from '@liedmotif/shared';
-import type { SetupPayload } from '@/lib/setup-validation';
+import type { SetupPayload } from '@/lib/auth/setup-validation';
 
 export interface SetupState {
   email: string;

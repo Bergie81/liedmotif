@@ -6,7 +6,7 @@
 import { NextResponse } from 'next/server';
 import { deleteSessionCoverFromHistory, getSessionById } from '@liedmotif/db';
 import { deleteSessionCoverRequestSchema } from '@liedmotif/shared';
-import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/api-response';
+import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';

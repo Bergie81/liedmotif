@@ -25,7 +25,7 @@ const holder = vi.hoisted(() => ({
   expansions: [] as { listener: unknown; skipProfile: boolean | undefined }[],
 }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
   getAppSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
 }));
@@ -33,7 +33,7 @@ vi.mock('@/lib/session', () => ({
 // notes) and the mock music provider — no network, no spend. The LLM sits behind
 // a capturing stub, so a test can assert what personalization context reached the
 // model rather than inferring it from the notes the mock happened to write.
-vi.mock('@/lib/providers', async () => {
+vi.mock('@/lib/providers/providers', async () => {
   const { mockLlmProvider, mockMusicProvider } = await import('@liedmotif/providers');
   const music = mockMusicProvider();
   const llm = mockLlmProvider();

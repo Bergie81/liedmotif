@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from '@/lib/toast';
-import { processCapturedAudio, type EncodedVoiceRecording } from '@/lib/voice-recording';
+import { processCapturedAudio, type EncodedVoiceRecording } from '@/lib/voice/voice-recording';
 
 export type VoiceRecorderState = 'idle' | 'requesting' | 'recording' | 'processing';
 

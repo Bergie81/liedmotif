@@ -16,9 +16,9 @@ import {
   Waves,
   type LucideIcon,
 } from 'lucide-react';
-import { COVER_STYLE_LABELS } from '@/lib/cover-styles';
-import type { OnboardingUntouched } from '@/lib/onboarding-data';
-import { sessionLanguageLabel } from '@/lib/session-languages';
+import { COVER_STYLE_LABELS } from '@/lib/covers/cover-styles';
+import type { OnboardingUntouched } from '@/lib/onboarding/onboarding-data';
+import { sessionLanguageLabel } from '@/lib/sessions/session-languages';
 import { OnboardingConfetti } from './onboarding-confetti';
 import {
   EnvVar,

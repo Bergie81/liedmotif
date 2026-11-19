@@ -20,7 +20,7 @@ const holder = vi.hoisted(() => ({
 
 vi.mock('next/headers', () => ({ headers: async () => new Headers() }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/lib/auth/auth', () => ({
   getAuth: () => ({
     api: {
       getSession: async () =>
@@ -31,7 +31,7 @@ vi.mock('@/lib/auth', () => ({
   }),
 }));
 
-const { requireOwnerId, requireAdminOwnerId } = await import('@/lib/api-response');
+const { requireOwnerId, requireAdminOwnerId } = await import('@/lib/http/api-response');
 
 /** A plain same-origin call: no `Origin` header, as a browser sends it. */
 const apiRequest = () => new Request('http://localhost:2206/api/sessions', { method: 'POST' });

@@ -5,7 +5,7 @@
 import { updateMemberAssistantAccess } from '@liedmotif/db';
 import { updateMemberAssistantAccessRequestSchema } from '@liedmotif/shared';
 import { NextResponse } from 'next/server';
-import { apiOk, parseJsonBody } from '@/lib/api-response';
+import { apiOk, parseJsonBody } from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
 import { requireAdminAndMember } from '../../member-route';
 

@@ -8,7 +8,7 @@ import {
   requireOwnerId,
   validateInput,
   validateKeysetCursor,
-} from '@/lib/api-response';
+} from '@/lib/http/api-response';
 
 export const dynamic = 'force-dynamic';
 

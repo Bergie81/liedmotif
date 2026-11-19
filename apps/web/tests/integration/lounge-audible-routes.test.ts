@@ -41,7 +41,7 @@ const holder = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/providers', () => ({
+vi.mock('@/lib/providers/providers', () => ({
   getStorageProvider: () => holder.storage,
   // A provider whose every use is counted: a visitor reaches it only for word timing.
   getMusicProvider: () => {
@@ -62,7 +62,7 @@ vi.mock('@/lib/providers', () => ({
 vi.mock('@/lib/worker-jobs', () => ({
   enqueueEmbedTrackMetadataBatch: async () => undefined,
 }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.viewerUserId ? { user: { id: holder.viewerUserId } } : null),
   getAppSession: async () => (holder.viewerUserId ? { user: { id: holder.viewerUserId } } : null),
 }));

@@ -34,7 +34,7 @@ type GetSessionInput = { headers: Headers; query?: { disableCookieCache?: boolea
 // getSession (disableCookieCache) — that read is what re-signs the cookie cache
 // with the just-written name/email. The refresh swallows failures, so a missing
 // header is recorded rather than thrown; a throw here would pass silently.
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/lib/auth/auth', () => ({
   getAuth: () => ({
     api: {
       getSession: async ({ headers, query }: GetSessionInput) => {
@@ -48,8 +48,8 @@ vi.mock('@/lib/auth', () => ({
     },
   }),
 }));
-vi.mock('@/lib/session', async (importActual) => {
-  const actual = await importActual<typeof import('@/lib/session')>();
+vi.mock('@/lib/auth/session', async (importActual) => {
+  const actual = await importActual<typeof import('@/lib/auth/session')>();
   return {
     ...actual,
     getAdminSession: async () => (holder.authed ? { user: { id: 'owner-1' } } : null),
@@ -57,7 +57,7 @@ vi.mock('@/lib/session', async (importActual) => {
     currentLoginToken: async () => holder.loginToken,
   };
 });
-vi.mock('@/lib/account-mail', () => ({
+vi.mock('@/lib/auth/account-mail', () => ({
   mailConfirmLink: async () => {
     holder.mailed.push('confirm-link');
     return true;

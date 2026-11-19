@@ -24,15 +24,15 @@ import {
 const holder = vi.hoisted(() => ({ db: null as unknown, admin: true }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
 // A Member holds an app session and no admin session.
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.admin ? { user: { id: 'admin-1' } } : null),
   getAppSession: async () => ({ user: { id: holder.admin ? 'admin-1' : 'member-1' } }),
 }));
-vi.mock('@/lib/providers', () => ({ getTypicalTracksPerMusicRequest: () => 2 }));
+vi.mock('@/lib/providers/providers', () => ({ getTypicalTracksPerMusicRequest: () => 2 }));
 
 const instanceDefault = await import('@/app/api/settings/members/assistant/route');
 const oneMember = await import('@/app/api/settings/members/[userId]/assistant/route');
-const { loadMembersAdminData } = await import('@/lib/members-admin-data');
+const { loadMembersAdminData } = await import('@/lib/settings/members-admin-data');
 
 const skip = !TEST_DATABASE_URL;
 let testDb: TestDb;

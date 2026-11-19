@@ -46,11 +46,11 @@ const holder = vi.hoisted(() => ({
 }));
 vi.mock('next/headers', () => ({ headers: async () => new Headers() }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
   getAppSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
 }));
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/lib/auth/auth', () => ({
   getAuth: () => ({
     api: {
       getSession: async () =>
@@ -58,8 +58,8 @@ vi.mock('@/lib/auth', () => ({
     },
   }),
 }));
-vi.mock('@/lib/providers', async (importOriginal) => {
-  const real = await importOriginal<typeof import('@/lib/providers')>();
+vi.mock('@/lib/providers/providers', async (importOriginal) => {
+  const real = await importOriginal<typeof import('@/lib/providers/providers')>();
   return {
     ...real,
     getLlmProvider: async () => {
@@ -75,8 +75,8 @@ const { POST: moreLikeThisRoute } = await import('@/app/api/sessions/more-like-t
 const { POST: proposeRoute } = await import('@/app/api/surprise-me/route');
 const { POST: startSurpriseRoute } = await import('@/app/api/surprise-me/start/route');
 const { POST: assistantRoute } = await import('@/app/api/assistant/route');
-const { sessionCreateLimiter } = await import('@/lib/request-limits');
-const { getMusicProvider } = await import('@/lib/providers');
+const { sessionCreateLimiter } = await import('@/lib/http/request-limits');
+const { getMusicProvider } = await import('@/lib/providers/providers');
 
 const skip = !TEST_DATABASE_URL;
 let testDb: TestDb;

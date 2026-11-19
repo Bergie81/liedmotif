@@ -7,11 +7,11 @@
 
 import { NextResponse } from 'next/server';
 import { getConfirmedEmail } from '@liedmotif/db';
-import { mailPasswordResetLink } from '@/lib/account-mail';
-import { apiError, apiOk, apiRateLimited, requireOwnerId } from '@/lib/api-response';
+import { mailPasswordResetLink } from '@/lib/auth/account-mail';
+import { apiError, apiOk, apiRateLimited, requireOwnerId } from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
 import { isAccountEmailEnabled } from '@/lib/env';
-import { resetLinkMailLimiter } from '@/lib/request-limits';
+import { resetLinkMailLimiter } from '@/lib/http/request-limits';
 
 export const dynamic = 'force-dynamic';
 

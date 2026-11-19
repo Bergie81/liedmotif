@@ -19,7 +19,7 @@ const holder = vi.hoisted(() => ({
 }));
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
-vi.mock('@/lib/api-client', () => ({
+vi.mock('@/lib/http/api-client', () => ({
   getLibrary: async (_view: string, { cursor }: { cursor: string | null }) =>
     holder.pages.shift() === 'refuse'
       ? { ok: false as const, error: { code: 'internal_error', message: 'Offline.' } }

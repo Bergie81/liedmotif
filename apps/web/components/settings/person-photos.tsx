@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { Trash2, Upload } from 'lucide-react';
 import { useImageCropPicker } from '@/components/media/use-image-crop-picker';
-import { REFERENCE_PHOTO_UPLOAD } from '@/lib/image-upload-targets';
-import type { PersonReferencePhotoSummary } from '@/lib/person-reference-photos';
+import { REFERENCE_PHOTO_UPLOAD } from '@/lib/media/image-upload-targets';
+import type { PersonReferencePhotoSummary } from '@/lib/settings/person-reference-photos';
 import { toast } from '@/lib/toast';
 import { peopleErrorMessage, peopleResponseMessage, type PersonEditorValue } from './people-types';
 

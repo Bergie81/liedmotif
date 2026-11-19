@@ -1,4 +1,4 @@
-// Admin-only: download one backup as an encrypted tar (`lib/backup-download.ts`).
+// Admin-only: download one backup as an encrypted tar (`lib/admin/backup-download.ts`).
 // Only a complete folder on the backups volume is served: the id must be a
 // backup folder name, which also rules out traversal and in-progress
 // `.partial-*` runs.
@@ -7,9 +7,9 @@ import { lstat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { NextResponse } from 'next/server';
 import { createLogger } from '@liedmotif/shared';
-import { requireAdminOwnerId } from '@/lib/api-response';
-import { BACKUP_ID_PATTERN, getBackupDir } from '@/lib/backups';
-import { encryptedBackupStream, getBackupPassphrase } from '@/lib/backup-download';
+import { requireAdminOwnerId } from '@/lib/http/api-response';
+import { BACKUP_ID_PATTERN, getBackupDir } from '@/lib/admin/backups';
+import { encryptedBackupStream, getBackupPassphrase } from '@/lib/admin/backup-download';
 
 export const dynamic = 'force-dynamic';
 

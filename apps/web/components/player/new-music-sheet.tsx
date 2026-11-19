@@ -17,7 +17,7 @@ import { SessionDurationControl } from '@/components/create/session-duration-con
 import { primaryButtonClass } from '@/components/ui/form-styles';
 import { OnlineOnly } from '@/components/ui/online-only';
 import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';
-import { setSessionMode } from '@/lib/api-client';
+import { setSessionMode } from '@/lib/http/api-client';
 import { cn } from '@/lib/cn';
 import { toast } from '@/lib/toast';
 import {

@@ -6,7 +6,7 @@
 // ownership does not change under a playing Track, and repeating the question
 // every few seconds would only be noise.
 
-import { reportListening } from '@/lib/api-client';
+import { reportListening } from '@/lib/http/api-client';
 import { makeUuid } from '@/lib/uuid';
 import { createListeningMeter, type ListeningMeter, type ListeningReport } from './listening-meter';
 

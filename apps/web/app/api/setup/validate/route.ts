@@ -13,13 +13,16 @@ import {
   resolveSharedImageKey,
 } from '@liedmotif/db';
 import { isBlockedValidationTargetResolved, validateCredential } from '@liedmotif/providers';
-import { configurableProviderMeta, isConfigurableProviderType } from '@/lib/configurable-providers';
-import { credentialTestMessage } from '@/lib/credential-test-copy';
-import { encryptionKeyIfConfigured } from '@/lib/credentials';
+import {
+  configurableProviderMeta,
+  isConfigurableProviderType,
+} from '@/lib/providers/configurable-providers';
+import { credentialTestMessage } from '@/lib/providers/credential-test-copy';
+import { encryptionKeyIfConfigured } from '@/lib/providers/credentials';
 import { getDb } from '@/lib/db';
-import { badRequest, clientIp, tooManyRequests } from '@/lib/http';
-import { readJsonObjectBody, requireAdminOwnerId } from '@/lib/api-response';
-import { validateLimiter } from '@/lib/request-limits';
+import { badRequest, clientIp, tooManyRequests } from '@/lib/http/http';
+import { readJsonObjectBody, requireAdminOwnerId } from '@/lib/http/api-response';
+import { validateLimiter } from '@/lib/http/request-limits';
 
 export const dynamic = 'force-dynamic';
 

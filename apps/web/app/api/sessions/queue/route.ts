@@ -32,9 +32,9 @@ import {
 } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
 import { ownVoiceEnabled } from '@/lib/env';
-import { apiError, apiOk, requireOwnerId, validateInput } from '@/lib/api-response';
-import { getTypicalTracksPerMusicRequest } from '@/lib/providers';
-import { toTrackSummary } from '@/lib/tracks';
+import { apiError, apiOk, requireOwnerId, validateInput } from '@/lib/http/api-response';
+import { getTypicalTracksPerMusicRequest } from '@/lib/providers/providers';
+import { toTrackSummary } from '@/lib/library/tracks';
 
 export const dynamic = 'force-dynamic';
 

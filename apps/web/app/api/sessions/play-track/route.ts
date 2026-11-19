@@ -10,8 +10,8 @@ import { NextResponse } from 'next/server';
 import { playSessionTrack } from '@liedmotif/db';
 import { playSessionTrackRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
-import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/api-response';
-import { toSessionSummary } from '@/lib/sessions';
+import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/http/api-response';
+import { toSessionSummary } from '@/lib/sessions/sessions';
 import { enqueueEnsureSessionBuffer } from '@/lib/worker-jobs';
 
 export const dynamic = 'force-dynamic';

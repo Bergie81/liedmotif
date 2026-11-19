@@ -16,7 +16,7 @@ const api = vi.hoisted(() => ({
   removePlaylistTrack: vi.fn(),
 }));
 
-vi.mock('@/lib/api-client', () => ({
+vi.mock('@/lib/http/api-client', () => ({
   ...api,
   deletePlaylist: vi.fn(),
   getAllPlaylistMembers: vi.fn(),

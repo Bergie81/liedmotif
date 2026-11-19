@@ -10,7 +10,7 @@ import {
 } from '@/components/settings/settings-ui';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { secondaryButtonClass } from '@/components/ui/form-styles';
-import { clearListeningHistory } from '@/lib/api-client';
+import { clearListeningHistory } from '@/lib/http/api-client';
 import {
   coverageNote,
   dailySeries,

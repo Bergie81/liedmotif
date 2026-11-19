@@ -13,7 +13,7 @@ import {
   primaryButtonClass,
   secondaryButtonClass,
 } from '@/components/ui/form-styles';
-import { updateAssistantTone } from '@/lib/api-client';
+import { updateAssistantTone } from '@/lib/http/api-client';
 import { ASSISTANT_NAME, TONE_PRESETS } from '@/lib/assistant/persona';
 import { toast } from '@/lib/toast';
 

@@ -4,7 +4,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SessionSummary } from '@liedmotif/shared';
 import { AppChromeContext, type AppChromeContextValue } from '@/components/app-chrome-context';
-import type { ChromeData } from '@/lib/api-client';
+import type { ChromeData } from '@/lib/http/api-client';
 import { shownToasts, toast } from '@/lib/toast';
 import { NewMusicSheet } from './new-music-sheet';
 import { presentNewMusicStatus } from './new-music-status';

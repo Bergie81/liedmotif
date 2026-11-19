@@ -15,7 +15,7 @@ const api = vi.hoisted(() => ({
   dislikeTrack: vi.fn<(trackId: string) => Promise<{ ok: boolean }>>(),
 }));
 
-vi.mock('@/lib/api-client', () => ({
+vi.mock('@/lib/http/api-client', () => ({
   dislikeTrack: api.dislikeTrack,
   deleteTrack: vi.fn(),
   favoriteTrack: api.favoriteTrack,

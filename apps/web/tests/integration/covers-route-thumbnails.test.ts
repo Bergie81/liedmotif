@@ -53,7 +53,7 @@ const render = vi.hoisted(() => ({
 const rows = vi.hoisted(() => ({ coverExists: true }));
 
 vi.mock('@/lib/db', () => ({ getDb: () => ({}) }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => ({ user: { id: 'admin' } }),
   getAppSession: async () => ({ user: { id: 'admin' } }),
 }));
@@ -81,7 +81,7 @@ vi.mock('@liedmotif/media', () => ({
     return RENDITION_BYTES;
   },
 }));
-vi.mock('@/lib/providers', () => ({ getStorageProvider: () => storage }));
+vi.mock('@/lib/providers/providers', () => ({ getStorageProvider: () => storage }));
 
 // The single-flight map is module state, so each test starts from a fresh route module.
 async function call(query = `?w=${COVER_THUMBNAIL_EDGE}`) {

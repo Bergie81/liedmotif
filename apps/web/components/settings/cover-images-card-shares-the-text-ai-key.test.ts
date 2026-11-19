@@ -7,8 +7,8 @@
 import { createElement as h } from 'react';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { IMAGE_PROVIDERS } from '@/lib/configurable-providers';
-import { COVER_KEY_NOTICE } from '@/lib/provider-settings-model';
+import { IMAGE_PROVIDERS } from '@/lib/providers/configurable-providers';
+import { COVER_KEY_NOTICE } from '@/lib/settings/provider-settings-model';
 import { shownToasts, toast } from '@/lib/toast';
 import { CredentialEditor } from './credential-editor';
 import { CredentialMutationGroup } from './credential-mutation-group';

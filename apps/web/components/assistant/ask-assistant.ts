@@ -14,7 +14,7 @@ import {
   type AssistantRequest,
   type AssistantStanding,
 } from '@liedmotif/shared';
-import { OFFLINE_MESSAGE } from '@/lib/api-fetch';
+import { OFFLINE_MESSAGE } from '@/lib/http/api-fetch';
 import { ASSISTANT_NAME } from '@/lib/assistant/persona';
 import { isOnline, reportServerAnswered, reportServerUnreachable } from '@/lib/online-state';
 

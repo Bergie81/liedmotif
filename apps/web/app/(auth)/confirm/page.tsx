@@ -4,7 +4,7 @@
 
 import { OneShotLinkPage } from '@/components/auth/one-shot-link-page';
 import { displayHeadingClass, eyebrowClass } from '@/components/ui/design-system';
-import { CONFIRM_BASE_PATH } from '@/lib/link-urls';
+import { CONFIRM_BASE_PATH } from '@/lib/auth/link-urls';
 
 export default function ConfirmWithoutTokenPage() {
   return (

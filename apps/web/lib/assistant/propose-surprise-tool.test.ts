@@ -7,8 +7,8 @@ const mocks = vi.hoisted(() => ({
   proposeSurprise: vi.fn(),
 }));
 vi.mock('@liedmotif/db', () => ({ getCoverArtSettings: mocks.getCoverArtSettings }));
-vi.mock('@/lib/sessions', () => ({ startingSessionMode: vi.fn() }));
-vi.mock('@/lib/surprise-me', () => ({
+vi.mock('@/lib/sessions/sessions', () => ({ startingSessionMode: vi.fn() }));
+vi.mock('@/lib/sessions/surprise-me', () => ({
   loadPendingSurprise: mocks.loadPendingSurprise,
   proposeSurprise: mocks.proposeSurprise,
 }));

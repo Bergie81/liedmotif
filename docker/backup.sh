@@ -69,7 +69,7 @@ ATTEMPT_FILE="$BACKUP_DIR/.last-attempt"
 # the healthcheck.
 HEALTHY_FILE="$BACKUP_DIR/.healthy"
 ISO='%Y-%m-%dT%H:%M:%SZ'
-# The `openssl enc` format of the dumps, the download (apps/web/lib/backup-download.ts)
+# The `openssl enc` format of the dumps, the download (apps/web/lib/admin/backup-download.ts)
 # and the restore; `-md sha256` is the PBKDF2 digest the download's key derivation uses.
 CIPHER='-aes-256-cbc -pbkdf2 -iter 600000 -md sha256'
 

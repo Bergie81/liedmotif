@@ -6,7 +6,7 @@ import { Info } from 'lucide-react';
 import { MAX_USER_PROMPT_LENGTH } from '@liedmotif/shared';
 import { cn } from '@/lib/cn';
 import { cardClass } from '@/components/ui/design-system';
-import type { OwnVoiceOffer } from '@/lib/voice';
+import type { OwnVoiceOffer } from '@/lib/voice/voice';
 import {
   FoldSection,
   OwnVoiceToggle,
@@ -107,8 +107,8 @@ export function DescribeSessionPanel({
         <div className="mt-4 flex items-start gap-2 rounded-card-sm border border-line-2 bg-paper/[0.03] px-4 py-3 text-[13.5px]">
           <Info className="mt-px h-[17px] w-[17px] shrink-0 text-dim" aria-hidden />
           <p className="text-muted">
-            <strong className="font-semibold text-paper">No Text AI connected.</strong> Your
-            words go to the music model exactly as written; your picks still apply.
+            <strong className="font-semibold text-paper">No Text AI connected.</strong> Your words
+            go to the music model exactly as written; your picks still apply.
           </p>
           <Link
             href="/settings/llm"

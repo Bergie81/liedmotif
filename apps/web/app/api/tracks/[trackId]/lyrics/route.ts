@@ -35,8 +35,8 @@ import {
   type TrackLyrics,
 } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
-import { apiError, apiOk, requireOwnerId } from '@/lib/api-response';
-import { getMusicProvider } from '@/lib/providers';
+import { apiError, apiOk, requireOwnerId } from '@/lib/http/api-response';
+import { getMusicProvider } from '@/lib/providers/providers';
 import { enqueueEmbedTrackMetadataBatch } from '@/lib/worker-jobs';
 
 export const dynamic = 'force-dynamic';

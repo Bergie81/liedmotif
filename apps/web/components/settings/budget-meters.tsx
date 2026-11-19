@@ -1,6 +1,6 @@
 import type { UnitCosts } from '@liedmotif/shared';
 import { SettingsUsageMeter } from '@/components/settings/settings-ui';
-import type { BudgetUsage, BudgetWindow } from '@/lib/my-budget-model';
+import type { BudgetUsage, BudgetWindow } from '@/lib/budget/my-budget-model';
 import { PricedQuantity } from './cost-readout';
 
 interface RollingTrackLabels {

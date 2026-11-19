@@ -26,7 +26,7 @@ import { recordingEmailSender } from '@liedmotif/providers/testing';
 
 const holder = vi.hoisted(() => ({ db: null as unknown, mail: null as unknown }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/providers', () => ({
+vi.mock('@/lib/providers/providers', () => ({
   getEmailSender: () => holder.mail,
   getTypicalTracksPerMusicRequest: () => 2,
 }));

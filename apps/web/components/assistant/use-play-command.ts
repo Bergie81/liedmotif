@@ -12,7 +12,7 @@ import { usePlayerContext } from '@/components/player/player-provider';
 import { usePlaySessionTrack } from '@/components/player/use-play-session-track';
 import { usePlayPlaylist } from '@/components/playlists/use-play-playlist';
 import { useOpenSessionPlayer } from '@/components/sessions/use-open-session-player';
-import { getAllPlaylistMembers, getLoungePlaylist } from '@/lib/api-client';
+import { getAllPlaylistMembers, getLoungePlaylist } from '@/lib/http/api-client';
 import type { PlayStart } from './player-command';
 
 type Source<Kind extends string> = Extract<AssistantPlayCommand['source'], { kind: Kind }>;

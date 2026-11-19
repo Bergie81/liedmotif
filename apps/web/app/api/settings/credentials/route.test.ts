@@ -36,10 +36,12 @@ vi.mock('@liedmotif/providers', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@liedmotif/providers')>()),
   isBlockedValidationTargetResolved: vi.fn(async () => false),
 }));
-vi.mock('@/lib/credentials', () => ({ encryptionKeyIfConfigured: mocks.encryptionKey }));
+vi.mock('@/lib/providers/credentials', () => ({ encryptionKeyIfConfigured: mocks.encryptionKey }));
 vi.mock('@/lib/db', () => ({ getDb: () => ({}) }));
-vi.mock('@/lib/provider-settings-data', () => ({ loadCoverKeyState: mocks.coverKeyState }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/settings/provider-settings-data', () => ({
+  loadCoverKeyState: mocks.coverKeyState,
+}));
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: mocks.adminSession,
 }));
 

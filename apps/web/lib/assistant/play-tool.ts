@@ -12,7 +12,7 @@ import {
   type AssistantPlayCommand,
   type PlayInput,
 } from '@liedmotif/shared';
-import { toPlaylistMemberItem } from '@/lib/playlists';
+import { toPlaylistMemberItem } from '@/lib/library/playlists';
 import { NO_SUCH_SESSION, NO_SUCH_TRACK } from './library-action';
 import { quoted } from './music-names';
 import { handedOver, refused } from './player-tools';

@@ -14,13 +14,13 @@ import {
   type MemberLimits,
   type UnitCosts,
 } from '@liedmotif/shared';
-import { apiFetch, apiFetchJson } from '@/lib/api-fetch';
+import { apiFetch, apiFetchJson } from '@/lib/http/api-fetch';
 import {
   compactPrimaryButtonClass,
   inputClass,
   secondaryButtonClass,
 } from '@/components/ui/form-styles';
-import type { MembersAdminData } from '@/lib/members-admin-data';
+import type { MembersAdminData } from '@/lib/settings/members-admin-data';
 import { toast } from '@/lib/toast';
 import { SettingsCard } from '../settings-ui';
 import { CopyLinkBox } from './copy-link-box';

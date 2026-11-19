@@ -3,7 +3,7 @@ import { PersonalizationSection } from '@/components/settings/personalization-se
 import { PlaybackForm } from '@/components/settings/playback-form';
 import { SettingsColumns, SettingsPageHeader } from '@/components/settings/settings-ui';
 import { getDb } from '@/lib/db';
-import { requireAppAccess } from '@/lib/session';
+import { requireAppAccess } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 

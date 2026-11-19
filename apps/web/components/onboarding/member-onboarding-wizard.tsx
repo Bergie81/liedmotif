@@ -5,7 +5,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import type { MemberOnboardingData } from '@/lib/member-onboarding-data';
+import type { MemberOnboardingData } from '@/lib/onboarding/member-onboarding-data';
 import {
   OnboardingBackLink,
   OnboardingRail,

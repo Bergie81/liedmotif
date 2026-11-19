@@ -38,11 +38,11 @@ const holder = vi.hoisted(() => ({
   llmProviderRequests: 0,
 }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
   getAppSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
 }));
-vi.mock('@/lib/providers', async () => {
+vi.mock('@/lib/providers/providers', async () => {
   const { mockLlmProvider, mockMusicProvider } = await import('@liedmotif/providers');
   const music = mockMusicProvider();
   const llm = mockLlmProvider();
@@ -62,7 +62,7 @@ const { POST: changeVibeRoute } = await import('@/app/api/sessions/change-vibe/r
 const { POST: resumeRoute } = await import('@/app/api/sessions/resume/route');
 const { POST: proposeRoute } = await import('@/app/api/surprise-me/route');
 const { POST: startSurpriseRoute } = await import('@/app/api/surprise-me/start/route');
-const { sessionCreateLimiter } = await import('@/lib/request-limits');
+const { sessionCreateLimiter } = await import('@/lib/http/request-limits');
 
 const skip = !TEST_DATABASE_URL;
 let testDb: TestDb;

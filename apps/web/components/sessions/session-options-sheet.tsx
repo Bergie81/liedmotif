@@ -15,7 +15,7 @@ import { OfflineMenuRow } from '@/components/offline/offline-menu-row';
 import { SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { MenuRow } from '@/components/ui/menu-row';
 import { MENU_COPY } from '@/components/ui/menu-copy';
-import { sessionDownloadUrl, startFileDownload } from '@/lib/downloads';
+import { sessionDownloadUrl, startFileDownload } from '@/lib/downloads/downloads';
 import { formatGenreLine, formatTrackCount } from './session-list-model';
 
 export function SessionOptionsSheet({

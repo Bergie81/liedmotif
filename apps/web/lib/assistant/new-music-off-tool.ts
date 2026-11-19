@@ -5,7 +5,7 @@
 import { getActiveSession } from '@liedmotif/db';
 import type { LlmTool } from '@liedmotif/providers';
 import { noToolInputSchema, type NoToolInput } from '@liedmotif/shared';
-import { switchSessionMode } from '@/lib/session-mode';
+import { switchSessionMode } from '@/lib/sessions/session-mode';
 import { done, refused } from './library-action';
 import { named } from './music-names';
 import { NEW_MUSIC_OFF_TOOL_NAME } from './tool-names';

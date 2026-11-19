@@ -27,7 +27,7 @@ import {
   pinLoungePlaylist,
   renamePlaylist,
   type PlaylistPageFetcher,
-} from '@/lib/api-client';
+} from '@/lib/http/api-client';
 import { cn } from '@/lib/cn';
 import { toast } from '@/lib/toast';
 import { AvatarBadge } from '@/components/avatar-badge';
@@ -36,7 +36,7 @@ import {
   LOUNGE_MLT_SEED_TRACKS,
   loungeOwnerDisplayName,
 } from '@/components/lounge/lounge-view-model';
-import { playlistDownloadUrl, startFileDownload } from '@/lib/downloads';
+import { playlistDownloadUrl, startFileDownload } from '@/lib/downloads/downloads';
 import { RenameDialog } from '@/components/rename-dialog';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { AlertBanner, cardClass, EmptyState } from '@/components/ui/design-system';

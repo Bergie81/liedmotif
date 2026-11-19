@@ -9,7 +9,7 @@ import type {
   BackupsOverview,
 } from '@liedmotif/shared';
 import { formatBinaryBytes } from '@/lib/format-bytes';
-import type { SettingsStatus } from '@/lib/settings-hub-model';
+import type { SettingsStatus } from '@/lib/settings/settings-hub-model';
 
 /** Slots fall on the hour, in the instance timezone. */
 export const BACKUP_HOUR_OPTIONS = Array.from({ length: 24 }, (_, hour) => ({

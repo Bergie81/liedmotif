@@ -19,13 +19,13 @@ import {
   refuseOversizedBody,
   requireAdminOwnerId,
   validateInput,
-} from '@/lib/api-response';
+} from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
 import { ownVoiceEnabled } from '@/lib/env';
-import { getStorageProvider } from '@/lib/providers';
-import { withUploadAdmission } from '@/lib/request-admission';
-import { withStorageAdmission, type RecordStoredBytes } from '@/lib/storage-quota';
-import { buildVoiceProfileView } from '@/lib/voice';
+import { getStorageProvider } from '@/lib/providers/providers';
+import { withUploadAdmission } from '@/lib/http/request-admission';
+import { withStorageAdmission, type RecordStoredBytes } from '@/lib/media/storage-quota';
+import { buildVoiceProfileView } from '@/lib/voice/voice';
 
 export const dynamic = 'force-dynamic';
 

@@ -4,7 +4,7 @@
 
 import { cache } from 'react';
 import { resolveAssistantStanding, type Database, type UserRole } from '@liedmotif/db';
-import { getLlmProvider } from '@/lib/providers';
+import { getLlmProvider } from '@/lib/providers/providers';
 import { requestNow } from '@/lib/request-cache';
 
 /**

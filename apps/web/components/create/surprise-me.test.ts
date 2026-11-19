@@ -12,7 +12,7 @@ const api = vi.hoisted(() => ({
   dismissSurprise: vi.fn(),
   getPendingSurprise: vi.fn(),
 }));
-vi.mock('@/lib/api-client', () => api);
+vi.mock('@/lib/http/api-client', () => api);
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 const { SurpriseMe } = await import('./surprise-me');

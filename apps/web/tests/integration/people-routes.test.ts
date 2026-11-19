@@ -29,7 +29,7 @@ const holder = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/db', () => ({ getDb: () => ({}) }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.authed ? { user: { id: 'owner-1' } } : null),
   getAppSession: async () => (holder.authed ? { user: { id: 'owner-1' } } : null),
 }));

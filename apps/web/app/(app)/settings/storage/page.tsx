@@ -14,9 +14,9 @@ import { OnlineOnly } from '@/components/ui/online-only';
 import { getDb } from '@/lib/db';
 import { getPublicUrl } from '@/lib/env';
 import { formatBinaryBytes } from '@/lib/format-bytes';
-import { getStorageProvider } from '@/lib/providers';
-import { requireAppAccess } from '@/lib/session';
-import { storageUsagePercent } from '@/lib/storage-diagnostics-model';
+import { getStorageProvider } from '@/lib/providers/providers';
+import { requireAppAccess } from '@/lib/auth/session';
+import { storageUsagePercent } from '@/lib/admin/storage-diagnostics-model';
 
 export const dynamic = 'force-dynamic';
 

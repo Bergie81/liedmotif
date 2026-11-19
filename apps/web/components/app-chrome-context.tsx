@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext } from 'react';
-import type { ApiResult, ChromeData } from '@/lib/api-client';
+import type { ApiResult, ChromeData } from '@/lib/http/api-client';
 import type { Listener } from './account-menu';
 
 export interface AppChromeContextValue {

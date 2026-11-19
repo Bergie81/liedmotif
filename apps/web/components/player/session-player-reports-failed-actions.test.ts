@@ -20,8 +20,8 @@ import type { LivePlayback } from './player-provider';
 
 const api = vi.hoisted(() => ({ deleteTrack: vi.fn() }));
 
-vi.mock('@/lib/api-client', async (original) => ({
-  ...(await original<typeof import('@/lib/api-client')>()),
+vi.mock('@/lib/http/api-client', async (original) => ({
+  ...(await original<typeof import('@/lib/http/api-client')>()),
   deleteTrack: api.deleteTrack,
 }));
 const context = vi.hoisted(() => ({

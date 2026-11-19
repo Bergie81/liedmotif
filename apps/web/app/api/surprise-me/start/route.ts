@@ -7,9 +7,15 @@
 import { NextResponse } from 'next/server';
 import { startSurpriseRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
-import { apiError, apiOk, apiRateLimited, parseJsonBody, requireOwnerId } from '@/lib/api-response';
-import { toSessionSummary } from '@/lib/sessions';
-import { startSurprise } from '@/lib/surprise-me';
+import {
+  apiError,
+  apiOk,
+  apiRateLimited,
+  parseJsonBody,
+  requireOwnerId,
+} from '@/lib/http/api-response';
+import { toSessionSummary } from '@/lib/sessions/sessions';
+import { startSurprise } from '@/lib/sessions/surprise-me';
 
 export const dynamic = 'force-dynamic';
 

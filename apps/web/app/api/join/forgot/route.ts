@@ -7,7 +7,7 @@
 
 import { after, NextResponse } from 'next/server';
 import { createLogger, forgotPasswordRequestSchema } from '@liedmotif/shared';
-import { mailForgotPasswordLink } from '@/lib/account-mail';
+import { mailForgotPasswordLink } from '@/lib/auth/account-mail';
 import {
   apiError,
   apiOk,
@@ -15,11 +15,11 @@ import {
   fieldErrorMessage,
   parseJsonBody,
   refuseCrossOrigin,
-} from '@/lib/api-response';
+} from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
 import { isAccountEmailEnabled } from '@/lib/env';
-import { clientIp } from '@/lib/http';
-import { forgotPasswordLimiter, forgotPasswordMailLimiter } from '@/lib/request-limits';
+import { clientIp } from '@/lib/http/http';
+import { forgotPasswordLimiter, forgotPasswordMailLimiter } from '@/lib/http/request-limits';
 
 export const dynamic = 'force-dynamic';
 

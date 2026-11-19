@@ -17,7 +17,7 @@ import {
 
 const holder = vi.hoisted(() => ({ db: null as unknown, admin: true }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.admin ? { user: { id: 'admin-1' } } : null),
   getAppSession: async () => ({ user: { id: holder.admin ? 'admin-1' : 'member-1' } }),
 }));

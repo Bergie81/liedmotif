@@ -3,8 +3,8 @@ import { DEFAULT_LOUNGE_PAGE_LIMIT } from '@liedmotif/shared';
 import { LoungeView } from '@/components/lounge/lounge-view';
 import { displayHeadingClass } from '@/components/ui/design-system';
 import { getDb } from '@/lib/db';
-import { loadLoungePlaylists } from '@/lib/lounge';
-import { requireAppAccess } from '@/lib/session';
+import { loadLoungePlaylists } from '@/lib/library/lounge';
+import { requireAppAccess } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 

@@ -11,7 +11,7 @@ import { AlertBanner } from '@/components/ui/design-system';
 import { inputClass, labelClass, primaryButtonClass } from '@/components/ui/form-styles';
 import { LiedmotifLoader } from '@/components/ui/loading';
 import { PasswordField } from '@/components/ui/password-field';
-import { signInErrorMessage } from '@/lib/sign-in-error';
+import { signInErrorMessage } from '@/lib/auth/sign-in-error';
 
 /** `canResetByEmail`: account email is on, so "Forgot password?" leads somewhere. */
 export function LoginForm({ canResetByEmail }: { canResetByEmail: boolean }) {

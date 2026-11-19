@@ -29,7 +29,7 @@ const ensurePlaceholderCover = vi.fn(async () => {
 });
 
 vi.mock('@/lib/db', () => ({ getDb: () => ({}) }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => ({ user: { id: state.sessionUserId } }),
   getAppSession: async () => ({ user: { id: state.sessionUserId } }),
 }));
@@ -61,7 +61,7 @@ vi.mock('@liedmotif/db', async (importOriginal) => {
   };
 });
 vi.mock('@liedmotif/db/seed', () => ({ ensurePlaceholderCover }));
-vi.mock('@/lib/providers', () => ({
+vi.mock('@/lib/providers/providers', () => ({
   getStorageProvider: () => ({
     stat: async () =>
       state.bytesPresent

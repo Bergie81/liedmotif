@@ -1,8 +1,8 @@
 import { SettingsPageHeader } from '@/components/settings/settings-ui';
 import { BackupsPanel } from '@/components/settings/backups-panel';
-import { readBackupsOverview } from '@/lib/backups';
+import { readBackupsOverview } from '@/lib/admin/backups';
 import { getDb } from '@/lib/db';
-import { requireAdmin } from '@/lib/session';
+import { requireAdmin } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 

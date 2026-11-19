@@ -11,7 +11,13 @@ import { NextResponse } from 'next/server';
 import { getPlaylistShare, setPlaylistShared } from '@liedmotif/db';
 import { getPlaylistShareRequestSchema, sharePlaylistRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
-import { apiError, apiOk, parseJsonBody, requireOwnerId, validateInput } from '@/lib/api-response';
+import {
+  apiError,
+  apiOk,
+  parseJsonBody,
+  requireOwnerId,
+  validateInput,
+} from '@/lib/http/api-response';
 
 export const dynamic = 'force-dynamic';
 

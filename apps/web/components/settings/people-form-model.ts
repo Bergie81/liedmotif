@@ -1,5 +1,5 @@
 import type { CoverReferenceFrequency } from '@liedmotif/db';
-import type { PersonSummary } from '@/lib/people';
+import type { PersonSummary } from '@/lib/settings/people';
 
 /** The choices of "Include the owner in Covers", in the order the page shows them. */
 export const COVER_FREQUENCY_OPTIONS: ReadonlyArray<{

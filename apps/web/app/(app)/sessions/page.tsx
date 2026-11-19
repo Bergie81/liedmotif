@@ -1,8 +1,8 @@
 import { MySessionsList } from '@/components/sessions/my-sessions-list';
 import { displayHeadingClass } from '@/components/ui/design-system';
 import { getDb } from '@/lib/db';
-import { requireAppAccess } from '@/lib/session';
-import { loadSessionList } from '@/lib/sessions';
+import { requireAppAccess } from '@/lib/auth/session';
+import { loadSessionList } from '@/lib/sessions/sessions';
 
 // My Sessions: resumable Stopped sessions, session-centric and distinct from
 // the track-centric Library. The auth guard lives in the (app) layout; the

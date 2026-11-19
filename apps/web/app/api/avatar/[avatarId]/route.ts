@@ -10,11 +10,11 @@ import { NextResponse } from 'next/server';
 import { getAvatarOwnerUserId } from '@liedmotif/db';
 import { uuidSchema } from '@liedmotif/shared';
 import { storageKeys } from '@liedmotif/storage';
-import { requireOwnerId } from '@/lib/api-response';
-import { avatarUrlForId } from '@/lib/avatar';
+import { requireOwnerId } from '@/lib/http/api-response';
+import { avatarUrlForId } from '@/lib/media/avatar';
 import { getDb } from '@/lib/db';
-import { privateBytesResponse } from '@/lib/private-bytes';
-import { getStorageProvider } from '@/lib/providers';
+import { privateBytesResponse } from '@/lib/http/private-bytes';
+import { getStorageProvider } from '@/lib/providers/providers';
 
 export const dynamic = 'force-dynamic';
 

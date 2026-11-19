@@ -15,7 +15,7 @@ import { decodeEncryptionKey, upsertProviderCredential } from '@liedmotif/db';
 const holder = vi.hoisted(() => ({ db: null as unknown }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
 
-const { getLlmProvider } = await import('@/lib/providers');
+const { getLlmProvider } = await import('@/lib/providers/providers');
 
 const describeIfDb = TEST_DATABASE_URL ? describe : describe.skip;
 

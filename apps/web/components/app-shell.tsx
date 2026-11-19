@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import type { AssistantStanding } from '@liedmotif/shared';
-import { getChrome, type ChromeData } from '@/lib/api-client';
+import { getChrome, type ChromeData } from '@/lib/http/api-client';
 import type { AnswerLinkTargets } from '@/lib/assistant/answer-links';
 import { readBrowserPreference, writeBrowserPreference } from '@/lib/browser-preferences';
 import { cn } from '@/lib/cn';

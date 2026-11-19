@@ -16,7 +16,7 @@ const dislikeTrack = vi.fn(
     }),
 );
 
-vi.mock('@/lib/api-client', () => ({
+vi.mock('@/lib/http/api-client', () => ({
   dislikeTrack: (trackId: string) => dislikeTrack(trackId),
   deleteTrack: vi.fn(),
   favoriteTrack: vi.fn(),

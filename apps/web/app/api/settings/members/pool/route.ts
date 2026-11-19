@@ -11,7 +11,7 @@ import {
   type PoolOverSubscription,
 } from '@liedmotif/shared';
 import { NextResponse } from 'next/server';
-import { apiError, apiOk, parseJsonBody, requireAdminOwnerId } from '@/lib/api-response';
+import { apiError, apiOk, parseJsonBody, requireAdminOwnerId } from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';

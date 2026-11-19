@@ -18,12 +18,12 @@ import type {
 } from '@liedmotif/shared';
 import { MAX_COVER_GUIDANCE_LENGTH } from '@liedmotif/shared';
 import { Check, ImageUp, LayoutGrid, Sparkles, Trash2 } from 'lucide-react';
-import type { ApiResult } from '@/lib/api-client';
+import type { ApiResult } from '@/lib/http/api-client';
 import { cn } from '@/lib/cn';
 import { toast } from '@/lib/toast';
-import { COVER_STYLE_LABELS } from '@/lib/cover-styles';
-import { COVER_UPLOAD } from '@/lib/image-upload-targets';
-import { coverSetupMessage } from '@/lib/cover-setup-copy';
+import { COVER_STYLE_LABELS } from '@/lib/covers/cover-styles';
+import { COVER_UPLOAD } from '@/lib/media/image-upload-targets';
+import { coverSetupMessage } from '@/lib/covers/cover-setup-copy';
 import { pollWithBackoff } from '@/lib/poll-backoff';
 import { useImageCropPicker } from '@/components/media/use-image-crop-picker';
 import { useAppChrome } from '@/components/app-chrome-context';

@@ -10,7 +10,7 @@
 
 import { createContext, useContext, type ReactNode } from 'react';
 import type { TrackDetails, TrackLyrics } from '@liedmotif/shared';
-import { getTrackDetails, getTrackLyrics, type ApiResult } from '@/lib/api-client';
+import { getTrackDetails, getTrackLyrics, type ApiResult } from '@/lib/http/api-client';
 import { coverArtSrc } from './player-presentation';
 
 export interface TrackMedia {

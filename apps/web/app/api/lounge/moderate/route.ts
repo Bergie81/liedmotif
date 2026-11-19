@@ -10,7 +10,7 @@ import { NextResponse } from 'next/server';
 import { moderateLoungePlaylistToPrivate } from '@liedmotif/db';
 import { moderateLoungePlaylistRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
-import { apiError, apiOk, parseJsonBody, requireAdminOwnerId } from '@/lib/api-response';
+import { apiError, apiOk, parseJsonBody, requireAdminOwnerId } from '@/lib/http/api-response';
 
 export const dynamic = 'force-dynamic';
 

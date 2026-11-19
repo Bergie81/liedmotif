@@ -11,7 +11,7 @@ import {
   setSessionCoverImage,
 } from '@liedmotif/db';
 import { selectSessionCoverRequestSchema } from '@liedmotif/shared';
-import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/api-response';
+import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
 import { enqueueEmbedTrackMetadataBatch } from '@/lib/worker-jobs';
 

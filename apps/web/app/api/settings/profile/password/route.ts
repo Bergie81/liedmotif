@@ -15,12 +15,12 @@ import {
   fieldErrorMessage,
   parseJsonBody,
   requireOwnerId,
-} from '@/lib/api-response';
+} from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
 import { isAccountEmailEnabled } from '@/lib/env';
-import { clientIp } from '@/lib/http';
-import { loginFailureLimiter } from '@/lib/request-limits';
-import { currentLoginToken } from '@/lib/session';
+import { clientIp } from '@/lib/http/http';
+import { loginFailureLimiter } from '@/lib/http/request-limits';
+import { currentLoginToken } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 

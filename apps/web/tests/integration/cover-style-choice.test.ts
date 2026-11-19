@@ -8,7 +8,7 @@ import {
 } from '@liedmotif/db/testing';
 import { updateCoverArtSettings } from '@liedmotif/db';
 import { COVER_STYLE_PRESETS } from '@liedmotif/shared';
-import { resolveCoverArtChoice } from '@/lib/covers';
+import { resolveCoverArtChoice } from '@/lib/covers/covers';
 
 // Start Session's cover-art resolution. The create card offers the `custom`
 // choice (last in the dropdown) as an authoritative Custom state with the

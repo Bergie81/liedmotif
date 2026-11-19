@@ -11,8 +11,8 @@ import { useRouter } from 'next/navigation';
 import type { GenerationSettings } from '@liedmotif/shared';
 import { labelClass, primaryButtonClass } from '@/components/ui/form-styles';
 import { SessionLanguageSelect } from '@/components/session-language-select';
-import { updateGenerationSettings } from '@/lib/api-client';
-import type { SessionLanguageChoice } from '@/lib/session-languages';
+import { updateGenerationSettings } from '@/lib/http/api-client';
+import type { SessionLanguageChoice } from '@/lib/sessions/session-languages';
 import { toast } from '@/lib/toast';
 import { useStoredValue } from './use-stored-value';
 

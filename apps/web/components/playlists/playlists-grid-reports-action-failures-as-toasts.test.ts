@@ -18,7 +18,7 @@ const api = vi.hoisted(() => ({
   sharePlaylist: vi.fn(),
 }));
 
-vi.mock('@/lib/api-client', () => ({
+vi.mock('@/lib/http/api-client', () => ({
   ...api,
   createPlaylist: vi.fn(),
   getLibrary: vi.fn(() => new Promise(() => undefined)),

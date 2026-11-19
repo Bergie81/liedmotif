@@ -27,7 +27,7 @@ import {
   playbackSettingsSchema,
   type PlaybackSettings,
 } from '@liedmotif/shared';
-import { getPlaybackSettings, updatePlaybackSettings, type ApiResult } from '@/lib/api-client';
+import { getPlaybackSettings, updatePlaybackSettings, type ApiResult } from '@/lib/http/api-client';
 import { readBrowserPreference, writeBrowserPreference } from '@/lib/browser-preferences';
 
 // The owner's settings as this device last had them from the server: what a

@@ -19,11 +19,11 @@ const ADMIN = 'admin-1';
 const MEMBER = 'member-1';
 const holder = vi.hoisted(() => ({ db: null as unknown, viewer: null as string | null }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.viewer === 'admin-1' ? { user: { id: 'admin-1' } } : null),
   getAppSession: async () => (holder.viewer ? { user: { id: holder.viewer } } : null),
 }));
-vi.mock('@/lib/providers', () => ({ getLlmProvider: async () => null }));
+vi.mock('@/lib/providers/providers', () => ({ getLlmProvider: async () => null }));
 
 const { POST: coverArtPost } = await import('@/app/api/settings/cover-art/route');
 

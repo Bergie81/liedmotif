@@ -7,9 +7,9 @@ import { useAppChrome } from '@/components/app-chrome-context';
 import { TimezoneSelect } from '@/components/timezone-select';
 import { Stepper, Switch } from '@/components/ui/controls';
 import { primaryButtonClass } from '@/components/ui/form-styles';
-import { saveUsageLimits } from '@/lib/settings-client';
+import { saveUsageLimits } from '@/lib/settings/settings-client';
 import { toast } from '@/lib/toast';
-import { normalizeTracksPerRequest } from '@/lib/track-units';
+import { normalizeTracksPerRequest } from '@/lib/budget/track-units';
 import { PricedQuantity, pricedStepperClass } from './cost-readout';
 import {
   buildLimitsPatch,

@@ -9,11 +9,11 @@ import type { SessionListItem } from '@liedmotif/shared';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Sheet } from '@/components/ui/sheet';
-import { startFileDownload } from '@/lib/downloads';
+import { startFileDownload } from '@/lib/downloads/downloads';
 import { SessionOptionsSheet } from './session-options-sheet';
 
-vi.mock('@/lib/downloads', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/lib/downloads')>()),
+vi.mock('@/lib/downloads/downloads', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/downloads/downloads')>()),
   startFileDownload: vi.fn(),
 }));
 

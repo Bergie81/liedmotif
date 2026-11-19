@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { EMPTY_LISTENER_PROFILE as EMPTY_PROFILE } from '@liedmotif/db';
-import type { OnboardingData } from '@/lib/onboarding-data';
+import type { OnboardingData } from '@/lib/onboarding/onboarding-data';
 import type { OnboardingDraft } from './onboarding-model';
 import {
   MEMBER_ONBOARDING_STEPS,

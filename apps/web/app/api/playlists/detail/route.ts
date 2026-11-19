@@ -6,8 +6,8 @@ import { NextResponse } from 'next/server';
 import { getPlaylistDetail } from '@liedmotif/db';
 import { getPlaylistRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
-import { apiError, apiOk, requireOwnerId, validateInput } from '@/lib/api-response';
-import { toPlaylistMemberItem, toPlaylistSummaryItem } from '@/lib/playlists';
+import { apiError, apiOk, requireOwnerId, validateInput } from '@/lib/http/api-response';
+import { toPlaylistMemberItem, toPlaylistSummaryItem } from '@/lib/library/playlists';
 
 export const dynamic = 'force-dynamic';
 

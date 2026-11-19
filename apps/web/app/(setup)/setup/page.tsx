@@ -2,7 +2,7 @@ import { headers } from 'next/headers';
 import { SetupForm } from '@/components/setup/setup-form';
 import { setupAddressNotice } from '@/components/setup/setup-model';
 import { getPublicUrl } from '@/lib/env';
-import { redirectAwayFromSetup } from '@/lib/session';
+import { redirectAwayFromSetup } from '@/lib/auth/session';
 
 // The first-run screen. The guard sends the request away (to /login or /) the
 // moment an admin exists — setup is locked after the first admin.

@@ -8,7 +8,7 @@ import {
 } from '@liedmotif/shared';
 import { Switch } from '@/components/ui/controls';
 import { primaryButtonClass } from '@/components/ui/form-styles';
-import { updateGenerationSettings } from '@/lib/api-client';
+import { updateGenerationSettings } from '@/lib/http/api-client';
 import { toast } from '@/lib/toast';
 import { GatedSlider, SettingsControlRow, SettingsFootnote } from './settings-ui';
 

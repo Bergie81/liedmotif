@@ -6,10 +6,10 @@
 
 import { NextResponse } from 'next/server';
 import { createLogger } from '@liedmotif/shared';
-import { apiError, apiRateLimited, readJsonBody, refuseCrossOrigin } from '@/lib/api-response';
-import { readCspViolation } from '@/lib/csp-report';
-import { clientIp } from '@/lib/http';
-import { cspReportLimiter } from '@/lib/request-limits';
+import { apiError, apiRateLimited, readJsonBody, refuseCrossOrigin } from '@/lib/http/api-response';
+import { readCspViolation } from '@/lib/http/csp-report';
+import { clientIp } from '@/lib/http/http';
+import { cspReportLimiter } from '@/lib/http/request-limits';
 
 export const dynamic = 'force-dynamic';
 

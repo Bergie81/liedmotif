@@ -6,7 +6,7 @@
 import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { CircleCheck } from 'lucide-react';
-import { apiFetchJson } from '@/lib/api-fetch';
+import { apiFetchJson } from '@/lib/http/api-fetch';
 import { cn } from '@/lib/cn';
 import { AlertBanner } from '@/components/ui/design-system';
 import { primaryButtonClass } from '@/components/ui/form-styles';

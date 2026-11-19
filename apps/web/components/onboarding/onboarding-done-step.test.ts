@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import type { OnboardingUntouched } from '@/lib/onboarding-data';
+import type { OnboardingUntouched } from '@/lib/onboarding/onboarding-data';
 import { OnboardingDoneStep } from './onboarding-done-step';
 
 function renderDone(overrides: Partial<OnboardingUntouched> = {}) {

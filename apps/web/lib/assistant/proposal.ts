@@ -16,7 +16,7 @@ import {
   newMusicPausedRefusal,
   sessionCreationRefusal,
   startingSessionMode,
-} from '@/lib/sessions';
+} from '@/lib/sessions/sessions';
 import { cardCost, cardNote } from './card-note';
 import type { AssistantAsker } from './tools';
 import type { ActionOutcome } from './turn-actions';

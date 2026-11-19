@@ -8,7 +8,7 @@ import { describe, expect, it, vi } from 'vitest';
 // OUR wrapper, for both methods, since the library routes GET callbacks too.
 
 const handlers = vi.hoisted(() => ({ GET: vi.fn(), POST: vi.fn() }));
-vi.mock('@/lib/auth', () => ({ authRouteHandlers: () => handlers }));
+vi.mock('@/lib/auth/auth', () => ({ authRouteHandlers: () => handlers }));
 
 const { GET, POST } = await import('@/app/api/auth/[...all]/route');
 

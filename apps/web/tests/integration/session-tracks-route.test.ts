@@ -13,7 +13,7 @@ import {
 
 const holder = vi.hoisted(() => ({ db: null as unknown, owner: null as string | null }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAppSession: async () => (holder.owner ? { user: { id: holder.owner } } : null),
 }));
 

@@ -12,14 +12,14 @@ import type {
   PoolOverSubscription,
   UnitCosts,
 } from '@liedmotif/shared';
-import { apiFetch, apiFetchJson, type ApiFetchResult } from '@/lib/api-fetch';
+import { apiFetch, apiFetchJson, type ApiFetchResult } from '@/lib/http/api-fetch';
 import { formatBinaryBytes } from '@/lib/format-bytes';
 import {
   compactPrimaryButtonClass,
   inputClass,
   secondaryButtonClass,
 } from '@/components/ui/form-styles';
-import type { MembersAdminData, MembersAdminMember } from '@/lib/members-admin-data';
+import type { MembersAdminData, MembersAdminMember } from '@/lib/settings/members-admin-data';
 import { toast } from '@/lib/toast';
 import { BudgetUsageMeters, MEMBER_TRACK_LABELS } from '../budget-meters';
 import { SettingsCard, SettingsFeedback, SettingsStatusBadge } from '../settings-ui';

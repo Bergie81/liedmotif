@@ -7,7 +7,7 @@
 // instance configuration.
 //
 // There is exactly ONE guard name per level, and all of them live in
-// `lib/api-response`: a route that reaches past them into `lib/session` for the
+// `lib/http/api-response`: a route that reaches past them into `lib/auth/session` for the
 // raw session getters fails here too, because a second spelling of the boundary
 // is a second boundary to keep right. The same holds for body intake — the
 // byte ceiling is only a ceiling if every route reads its JSON through the
@@ -111,7 +111,7 @@ describe('API route guard boundaries', () => {
     const usesAdminGuard = ADMIN_GUARDS.some((guard) => source.includes(guard));
     const usesAppGuard = APP_GUARDS.some((guard) => source.includes(guard));
 
-    it(`${route} reaches the boundary only through lib/api-response`, () => {
+    it(`${route} reaches the boundary only through lib/http/api-response`, () => {
       expect(RAW_SESSION_GETTERS.filter((getter) => source.includes(getter))).toEqual([]);
     });
 

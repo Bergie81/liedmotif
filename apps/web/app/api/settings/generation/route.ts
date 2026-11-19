@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 import { getGenerationSettings, updateGenerationSettings } from '@liedmotif/db';
 import { updateGenerationSettingsRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
-import { apiOk, parseJsonBody, requireOwnerId } from '@/lib/api-response';
+import { apiOk, parseJsonBody, requireOwnerId } from '@/lib/http/api-response';
 
 export const dynamic = 'force-dynamic';
 

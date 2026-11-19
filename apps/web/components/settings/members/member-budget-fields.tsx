@@ -20,7 +20,7 @@ import {
   segmentedTriggerClass,
   stepperValueClass,
 } from '@/components/ui/design-system';
-import { normalizeTracksPerRequest, stepNonNegativeWholeValue } from '@/lib/track-units';
+import { normalizeTracksPerRequest, stepNonNegativeWholeValue } from '@/lib/budget/track-units';
 import { PricedQuantity, pricedStepperClass } from '../cost-readout';
 import { SettingsControlRow } from '../settings-ui';
 import {

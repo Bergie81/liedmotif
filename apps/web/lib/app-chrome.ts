@@ -5,8 +5,8 @@
 
 import { getActiveSession, type Database } from '@liedmotif/db';
 import type { GetChromeData } from '@liedmotif/shared';
-import { getTypicalTracksPerMusicRequest } from '@/lib/providers';
-import { cachedOwnerUsageTracks, toSessionSummary } from '@/lib/sessions';
+import { getTypicalTracksPerMusicRequest } from '@/lib/providers/providers';
+import { cachedOwnerUsageTracks, toSessionSummary } from '@/lib/sessions/sessions';
 
 export async function loadAppChrome(db: Database, ownerUserId: string): Promise<GetChromeData> {
   const [activeSession, usage] = await Promise.all([

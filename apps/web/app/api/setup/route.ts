@@ -17,16 +17,20 @@ import {
   withSetupAdvisoryLock,
 } from '@liedmotif/db';
 import { createLogger } from '@liedmotif/shared';
-import { getAuth } from '@/lib/auth';
+import { getAuth } from '@/lib/auth/auth';
 import { DEFAULT_INSTANCE_NAME } from '@/lib/constants';
 import { getDb, getPool } from '@/lib/db';
 import { getPublicUrl } from '@/lib/env';
-import { getStorageProvider } from '@/lib/providers';
-import { readJsonObjectBody, refuseSetupCrossOrigin } from '@/lib/api-response';
-import { badRequest, clientIp, tooManyRequests } from '@/lib/http';
-import { submitLimiter } from '@/lib/request-limits';
-import { setupTokenRefusal } from '@/lib/setup-token';
-import { SetupValidationError, parseSetupPayload, type SetupPayload } from '@/lib/setup-validation';
+import { getStorageProvider } from '@/lib/providers/providers';
+import { readJsonObjectBody, refuseSetupCrossOrigin } from '@/lib/http/api-response';
+import { badRequest, clientIp, tooManyRequests } from '@/lib/http/http';
+import { submitLimiter } from '@/lib/http/request-limits';
+import { setupTokenRefusal } from '@/lib/auth/setup-token';
+import {
+  SetupValidationError,
+  parseSetupPayload,
+  type SetupPayload,
+} from '@/lib/auth/setup-validation';
 
 const log = createLogger({ name: 'web-setup' });
 

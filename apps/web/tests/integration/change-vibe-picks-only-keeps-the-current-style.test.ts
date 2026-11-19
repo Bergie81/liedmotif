@@ -26,13 +26,13 @@ const holder = vi.hoisted(() => ({
   calls: [] as { method: string; args: unknown[] }[],
 }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
   getAppSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
 }));
 // Hermetic providers: the mock music provider, and the mock text LLM behind a
 // recorder that counts every call; it can be switched off or made to fail.
-vi.mock('@/lib/providers', async () => {
+vi.mock('@/lib/providers/providers', async () => {
   const { mockLlmProvider, mockMusicProvider, ProviderError } =
     await import('@liedmotif/providers');
   const music = mockMusicProvider();

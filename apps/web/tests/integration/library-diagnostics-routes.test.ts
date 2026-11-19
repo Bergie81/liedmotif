@@ -21,11 +21,11 @@ import { runMigrations } from 'graphile-worker';
 
 const holder = vi.hoisted(() => ({ db: null as unknown, ownerUserId: null as string | null }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
   getAppSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
 }));
-vi.mock('@/lib/providers', () => ({
+vi.mock('@/lib/providers/providers', () => ({
   getTypicalTracksPerMusicRequest: () => 2,
   getLlmProvider: async () => null,
   getStorageProvider: () => ({ providerKey: 'local-fs' }),

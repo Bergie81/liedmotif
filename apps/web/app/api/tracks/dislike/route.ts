@@ -31,8 +31,8 @@ import {
   type RerollReplacement,
 } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
-import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/api-response';
-import { ownerHasGenerationBudget } from '@/lib/sessions';
+import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/http/api-response';
+import { ownerHasGenerationBudget } from '@/lib/sessions/sessions';
 
 export const dynamic = 'force-dynamic';
 

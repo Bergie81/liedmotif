@@ -23,7 +23,7 @@ vi.mock('@/lib/worker-jobs', () => ({
     kicks.sessionIds.push(sessionId);
   },
 }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
   getAppSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
 }));

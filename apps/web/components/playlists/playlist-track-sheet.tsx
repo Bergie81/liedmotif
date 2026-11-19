@@ -11,7 +11,7 @@ import { MenuMoreLikeThisGlyph } from '@/components/ui/glyphs';
 import type { PlaylistMemberItem } from '@liedmotif/shared';
 import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { MenuRow } from '@/components/ui/menu-row';
-import { startFileDownload, trackDownloadUrl } from '@/lib/downloads';
+import { startFileDownload, trackDownloadUrl } from '@/lib/downloads/downloads';
 import { CoverThumb } from '@/components/player/cover-art';
 import { DeleteTrackMenuRow } from '@/components/library/delete-track-menu-row';
 import { trackDownloadNote } from '@/components/library/library-view-model';

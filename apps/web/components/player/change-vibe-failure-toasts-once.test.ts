@@ -10,7 +10,7 @@ import { useVibeChangeRequest } from './use-vibe-change-request';
 
 const api = vi.hoisted(() => ({ changeVibe: vi.fn() }));
 
-vi.mock('@/lib/api-client', () => ({
+vi.mock('@/lib/http/api-client', () => ({
   changeVibe: api.changeVibe,
   setSessionDuration: vi.fn(),
 }));

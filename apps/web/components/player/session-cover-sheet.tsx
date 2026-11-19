@@ -18,7 +18,7 @@ import {
   selectSessionCover,
   uploadSessionCover,
   type SessionCoverStatusData,
-} from '@/lib/api-client';
+} from '@/lib/http/api-client';
 import {
   ArtDirectionField,
   CoverSheetContent,

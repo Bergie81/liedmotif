@@ -17,7 +17,7 @@ import { addPlaylistTracks, createPlaylist, setPlaylistShared } from '@liedmotif
 
 const holder = vi.hoisted(() => ({ db: null as unknown, userId: null as string | null }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.userId ? { user: { id: holder.userId } } : null),
   getAppSession: async () => (holder.userId ? { user: { id: holder.userId } } : null),
 }));

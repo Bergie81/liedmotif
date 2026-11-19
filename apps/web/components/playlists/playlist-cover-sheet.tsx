@@ -18,7 +18,7 @@ import {
   selectPlaylistCover,
   uploadPlaylistCover,
   type PlaylistCoverStatusData,
-} from '@/lib/api-client';
+} from '@/lib/http/api-client';
 import {
   ArtDirectionField,
   CoverSheetContent,

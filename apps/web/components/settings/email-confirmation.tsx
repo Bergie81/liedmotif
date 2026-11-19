@@ -3,7 +3,7 @@
 // The sign-in address's Confirmed email state, with the way to confirm it.
 // Rendered only while account email is on.
 
-import { apiFetchJson } from '@/lib/api-fetch';
+import { apiFetchJson } from '@/lib/http/api-fetch';
 import { SettingsStatusBadge } from './settings-ui';
 
 /** Mails a confirm link to the saved sign-in address; resolves to what to tell the user. */

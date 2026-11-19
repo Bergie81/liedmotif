@@ -19,7 +19,7 @@ import {
   removePlaylistTrack,
   renamePlaylist,
   renameTrack,
-} from '@/lib/api-client';
+} from '@/lib/http/api-client';
 import { useClientId } from '@/lib/use-client-id';
 import {
   MORE_LIKE_THIS_FAILED,

@@ -20,7 +20,7 @@ import {
 import { MAX_TRACK_TITLE_LENGTH } from '@liedmotif/shared';
 import { MenuRow, MenuRowContent, menuRowClassName } from '@/components/ui/menu-row';
 import { SheetClose } from '@/components/ui/sheet';
-import { startFileDownload, trackDownloadUrl } from '@/lib/downloads';
+import { startFileDownload, trackDownloadUrl } from '@/lib/downloads/downloads';
 import {
   LISTEN_ONLY_ROW_IDS,
   type OptionsRowIcon,

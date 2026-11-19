@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server';
 import { getPlaybackSettings, updatePlaybackSettings } from '@liedmotif/db';
 import { updatePlaybackSettingsRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
-import { apiOk, parseJsonBody, requireOwnerId } from '@/lib/api-response';
+import { apiOk, parseJsonBody, requireOwnerId } from '@/lib/http/api-response';
 
 export const dynamic = 'force-dynamic';
 

@@ -5,11 +5,11 @@
 import { NextResponse } from 'next/server';
 import { getVoiceProfile, getVoiceRecording } from '@liedmotif/db';
 import { VOICE_RECORDING_KINDS, type VoiceRecordingKindValue } from '@liedmotif/shared';
-import { apiError, requireAdminOwnerId } from '@/lib/api-response';
+import { apiError, requireAdminOwnerId } from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
 import { ownVoiceEnabled } from '@/lib/env';
-import { privateBytesResponse } from '@/lib/private-bytes';
-import { getStorageProvider } from '@/lib/providers';
+import { privateBytesResponse } from '@/lib/http/private-bytes';
+import { getStorageProvider } from '@/lib/providers/providers';
 
 export const dynamic = 'force-dynamic';
 

@@ -29,7 +29,7 @@ const TRACKS = Array.from(
 );
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
-vi.mock('@/lib/api-client', () => ({
+vi.mock('@/lib/http/api-client', () => ({
   getLibrary: async () => ({ ok: true as const, data: { items: TRACKS, nextCursor: null } }),
   addPlaylistTracks: async (playlistId: string, trackIds: string[]) => {
     server.requests.push(trackIds);

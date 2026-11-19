@@ -19,11 +19,11 @@ const holder = vi.hoisted(() => ({
   userId: null as string | null,
   llm: null as unknown,
 }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.userId ? { user: { id: holder.userId } } : null),
   getAppSession: async () => (holder.userId ? { user: { id: holder.userId } } : null),
 }));
-vi.mock('@/lib/providers', () => ({ getLlmProvider: async () => holder.llm }));
+vi.mock('@/lib/providers/providers', () => ({ getLlmProvider: async () => holder.llm }));
 // No database here: every asker is the Admin, whose messages are held to no
 // daily allowance and so read and count nothing, and who has set no tone.
 vi.mock('@/lib/db', () => ({ getDb: () => null }));

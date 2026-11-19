@@ -1,7 +1,7 @@
 import { Readable } from 'node:stream';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
-import { MAX_IMAGE_UPLOAD_BYTES } from '@/lib/image-upload-targets';
+import { MAX_IMAGE_UPLOAD_BYTES } from '@/lib/media/image-upload-targets';
 import { multipartRequest } from '../helpers/multipart-request';
 
 /** A same-origin API call: the guards look only at the absent `Origin`. */
@@ -21,7 +21,7 @@ const holder = vi.hoisted(() => ({
 
 vi.mock('@/lib/db', () => ({ getDb: () => ({}) }));
 vi.mock('next/headers', () => ({ headers: async () => new Headers() }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.authed ? { user: { id: 'owner-1' } } : null),
   getAppSession: async () => (holder.authed ? { user: { id: 'owner-1' } } : null),
 }));
@@ -29,7 +29,7 @@ type UpdateUserInput = { body: { image: string | null }; headers: Headers };
 // The user-record seam: image changes must go through Better Auth's updateUser
 // (see `updateSessionUserImage` in the route for the cookie-cache invariant),
 // and must carry the request headers — without them the endpoint has no session.
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/lib/auth/auth', () => ({
   getAuth: () => ({
     api: {
       updateUser: async ({ body, headers }: UpdateUserInput) => {
@@ -42,7 +42,7 @@ vi.mock('@/lib/auth', () => ({
     },
   }),
 }));
-vi.mock('@/lib/providers', () => ({
+vi.mock('@/lib/providers/providers', () => ({
   getStorageProvider: () => ({
     providerKey: 'local-fs',
     write: async (input: { key: string; body: Uint8Array }) => {

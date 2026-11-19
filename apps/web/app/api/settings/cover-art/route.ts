@@ -20,12 +20,12 @@ import {
   sanitizeCoverStyleHint,
   type CoverStyleChoice,
 } from '@liedmotif/shared';
-import { refuseWhenCoverBudgetExhausted } from '@/lib/cover-budget';
-import { enhanceCoverText } from '@/lib/cover-enhancement';
+import { refuseWhenCoverBudgetExhausted } from '@/lib/covers/cover-budget';
+import { enhanceCoverText } from '@/lib/covers/cover-enhancement';
 import { getDb } from '@/lib/db';
-import { badRequest } from '@/lib/http';
-import { coverDefinitionEnhanceLimiter } from '@/lib/request-limits';
-import { readJsonObjectBody, requireOwnerId } from '@/lib/api-response';
+import { badRequest } from '@/lib/http/http';
+import { coverDefinitionEnhanceLimiter } from '@/lib/http/request-limits';
+import { readJsonObjectBody, requireOwnerId } from '@/lib/http/api-response';
 
 export const dynamic = 'force-dynamic';
 

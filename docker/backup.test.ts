@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
-import { encryptedBackupStream } from '../apps/web/lib/backup-download';
+import { encryptedBackupStream } from '../apps/web/lib/admin/backup-download';
 
 /**
  * `docker/backup.sh --once`: one check of the backup sidecar, against a stubbed

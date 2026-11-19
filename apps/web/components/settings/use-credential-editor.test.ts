@@ -2,7 +2,7 @@
 import * as React from 'react';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { IMAGE_PROVIDERS } from '@/lib/configurable-providers';
+import { IMAGE_PROVIDERS } from '@/lib/providers/configurable-providers';
 import { CredentialMutationGroup } from './credential-mutation-group';
 import { useCredentialEditor, type CredentialEditorProps } from './use-credential-editor';
 

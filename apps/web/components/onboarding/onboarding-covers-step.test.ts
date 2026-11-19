@@ -6,7 +6,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { toast } from '@/lib/toast';
 import { OnboardingCoversStep } from './onboarding-covers-step';
-import type { OnboardingImageCredential } from '@/lib/onboarding-data';
+import type { OnboardingImageCredential } from '@/lib/onboarding/onboarding-data';
 import type { CoverBudget } from './onboarding-limits-model';
 
 const noop = () => {};

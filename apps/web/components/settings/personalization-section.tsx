@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Switch } from '@/components/ui/controls';
 import { secondaryButtonClass } from '@/components/ui/form-styles';
-import { resetLearnedTaste, savePersonalization } from '@/lib/api-client';
+import { resetLearnedTaste, savePersonalization } from '@/lib/http/api-client';
 import { toast } from '@/lib/toast';
 import { SettingsCard, SettingsControlRow, SettingsSection } from './settings-ui';
 

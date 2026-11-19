@@ -10,12 +10,12 @@ import {
   sessionStartWarning,
   type LimitRowBound,
   type ParsedLimitRow,
-} from '@/lib/limit-row-bounds';
+} from '@/lib/budget/limit-row-bounds';
 import {
   providerTasksToTracks,
   stepNonNegativeWholeValue,
   wholeLimitNumber,
-} from '@/lib/track-units';
+} from '@/lib/budget/track-units';
 
 const GIB = 1024 ** 3;
 

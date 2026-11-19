@@ -19,13 +19,13 @@ import {
   regeneratePlaylistCover,
   selectPlaylistCover,
   type PlaylistCoverStatusData,
-} from '@/lib/api-client';
-import { coverFailureMessage } from '@/lib/cover-regeneration';
-import { COVER_STYLE_LABELS } from '@/lib/cover-styles';
+} from '@/lib/http/api-client';
+import { coverFailureMessage } from '@/lib/covers/cover-regeneration';
+import { COVER_STYLE_LABELS } from '@/lib/covers/cover-styles';
 import { AppChromeContext, type AppChromeContextValue } from '@/components/app-chrome-context';
 import { PlaylistCoverSheet } from './playlist-cover-sheet';
 
-vi.mock('@/lib/api-client', () => ({
+vi.mock('@/lib/http/api-client', () => ({
   playlistCoverStatus: vi.fn(),
   regeneratePlaylistCover: vi.fn(),
   selectPlaylistCover: vi.fn(),

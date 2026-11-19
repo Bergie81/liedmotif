@@ -24,12 +24,12 @@ import {
 
 const holder = vi.hoisted(() => ({ db: null as unknown, adminId: null as string | null }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.adminId ? { user: { id: holder.adminId } } : null),
   getAppSession: async () => (holder.adminId ? { user: { id: holder.adminId } } : null),
   getServerSession: async () => null,
 }));
-vi.mock('@/lib/providers', () => ({ getTypicalTracksPerMusicRequest: () => 2 }));
+vi.mock('@/lib/providers/providers', () => ({ getTypicalTracksPerMusicRequest: () => 2 }));
 
 process.env.APP_PUBLIC_URL = 'https://192.168.1.10';
 
@@ -42,7 +42,7 @@ const { POST: resetPasswordPost } =
 const { POST: disabledPost } = await import('@/app/api/settings/members/[userId]/disabled/route');
 const { POST: joinResetPost } = await import('@/app/api/join/reset/route');
 const { POST: limitsPost } = await import('@/app/api/settings/members/[userId]/limits/route');
-const { loadMembersAdminData } = await import('@/lib/members-admin-data');
+const { loadMembersAdminData } = await import('@/lib/settings/members-admin-data');
 
 /** A same-origin API call: the guards look only at the absent `Origin`. */
 const apiRequest = () => new Request('http://localhost/api');

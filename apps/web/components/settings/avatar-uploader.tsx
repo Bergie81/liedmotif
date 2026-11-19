@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation';
 import { ImageUp, Trash2 } from 'lucide-react';
 import { AvatarBadge } from '@/components/avatar-badge';
 import { useImageCropPicker } from '@/components/media/use-image-crop-picker';
-import { AVATAR_UPLOAD, MAX_IMAGE_UPLOAD_BYTES, megabytes } from '@/lib/image-upload-targets';
+import { AVATAR_UPLOAD, MAX_IMAGE_UPLOAD_BYTES, megabytes } from '@/lib/media/image-upload-targets';
 import { secondaryButtonClass } from '@/components/ui/form-styles';
 import { toast } from '@/lib/toast';
 

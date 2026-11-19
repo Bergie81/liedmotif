@@ -12,7 +12,7 @@ import type { PlaybackControllerApi, PlaybackControllerInit } from './playback-c
 import { usePlaybackController } from './use-playback-controller';
 import type { SessionQueueSnapshot } from './use-session-queue';
 
-vi.mock('@/lib/api-client', async (importOriginal) => {
+vi.mock('@/lib/http/api-client', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,

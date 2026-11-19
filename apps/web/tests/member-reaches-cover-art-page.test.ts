@@ -13,13 +13,13 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('next/headers', () => ({ headers: async () => new Headers() }));
 vi.mock('next/navigation', () => ({ redirect: mocks.redirect }));
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/lib/auth/auth', () => ({
   getAuth: () => ({
     api: { getSession: async () => ({ session: { id: 's1' }, user: { id: 'member-1' } }) },
   }),
 }));
 vi.mock('@/lib/db', () => ({ getDb: () => ({}) }));
-vi.mock('@/lib/providers', () => ({ getLlmProvider: async () => null }));
+vi.mock('@/lib/providers/providers', () => ({ getLlmProvider: async () => null }));
 vi.mock('@liedmotif/db', () => ({
   resolveUserProfile: async () => ({ role: 'member', disabledAt: null }),
   getSetupState: async () => 'login',

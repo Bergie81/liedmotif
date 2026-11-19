@@ -11,7 +11,7 @@ import {
 import { adoptStoredPlaybackSettings, usePlayerContext } from '@/components/player/player-provider';
 import { Switch } from '@/components/ui/controls';
 import { primaryButtonClass } from '@/components/ui/form-styles';
-import { updatePlaybackSettings } from '@/lib/api-client';
+import { updatePlaybackSettings } from '@/lib/http/api-client';
 import { toast } from '@/lib/toast';
 import { useStoredValue } from './use-stored-value';
 import {

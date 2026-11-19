@@ -6,11 +6,11 @@ import { PlayerProvider } from '@/components/player/player-provider';
 import { cachedAssistantAvailability } from '@/lib/assistant/availability';
 import { answerLinkTargets } from '@/lib/assistant/link-targets';
 import { getDb } from '@/lib/db';
-import { getTypicalTracksPerMusicRequest } from '@/lib/providers';
+import { getTypicalTracksPerMusicRequest } from '@/lib/providers/providers';
 import { cachedListenerProfile } from '@/lib/request-cache';
-import { requireAppAccess } from '@/lib/session';
-import { cachedOwnerUsageTracks, toSessionSummary } from '@/lib/sessions';
-import { ownVoiceOfferedTo } from '@/lib/voice';
+import { requireAppAccess } from '@/lib/auth/session';
+import { cachedOwnerUsageTracks, toSessionSummary } from '@/lib/sessions/sessions';
+import { ownVoiceOfferedTo } from '@/lib/voice/voice';
 
 // Protected route group: the app shell + settings. The guard reads the session and
 // setup state on every request and redirects to /setup or /login as needed, so a

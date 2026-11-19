@@ -8,7 +8,7 @@ import type {
 } from '@liedmotif/shared';
 import { CheckSquare } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { listPlaylists } from '@/lib/api-client';
+import { listPlaylists } from '@/lib/http/api-client';
 import { cn } from '@/lib/cn';
 import { AlertBanner } from '@/components/ui/design-system';
 import { secondaryButtonClass } from '@/components/ui/form-styles';

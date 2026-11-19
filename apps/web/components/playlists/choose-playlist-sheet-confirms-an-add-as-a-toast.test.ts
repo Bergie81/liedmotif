@@ -11,7 +11,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { shownToasts, toast } from '@/lib/toast';
 import { ChoosePlaylistSheet } from './choose-playlist-sheet';
 
-vi.mock('@/lib/api-client', () => ({
+vi.mock('@/lib/http/api-client', () => ({
   getAllPlaylists: async () => ({
     ok: true as const,
     data: { playlists: [BEACH], nextCursor: null },

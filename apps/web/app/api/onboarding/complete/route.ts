@@ -6,9 +6,9 @@
 
 import { NextResponse } from 'next/server';
 import { completeOnboarding } from '@liedmotif/db';
-import { apiOk, requireOwnerId } from '@/lib/api-response';
+import { apiOk, requireOwnerId } from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
-import { markOnboardingComplete } from '@/lib/onboarding-memo';
+import { markOnboardingComplete } from '@/lib/onboarding/onboarding-memo';
 
 export const dynamic = 'force-dynamic';
 

@@ -16,9 +16,9 @@ import {
   SettingsSection,
   SettingsStatusBadge,
 } from '@/components/settings/settings-ui';
-import { getDiagnostics } from '@/lib/api-client';
-import { diagnosticStatus } from '@/lib/storage-diagnostics-model';
-import { workerEventRows, workerHealth, workerRows } from '@/lib/worker-diagnostics-model';
+import { getDiagnostics } from '@/lib/http/api-client';
+import { diagnosticStatus } from '@/lib/admin/storage-diagnostics-model';
+import { workerEventRows, workerHealth, workerRows } from '@/lib/admin/worker-diagnostics-model';
 
 const POLL_INTERVAL_MS = 15_000;
 

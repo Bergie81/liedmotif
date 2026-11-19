@@ -8,8 +8,8 @@ import { CredentialMutationGroup } from '@/components/settings/credential-mutati
 import { useCredentialEditor } from '@/components/settings/use-credential-editor';
 import { largeSecondaryButtonClass } from '@/components/ui/form-styles';
 import { cn } from '@/lib/cn';
-import { LLM_PROVIDERS } from '@/lib/llm-providers';
-import type { OnboardingCredential } from '@/lib/onboarding-data';
+import { LLM_PROVIDERS } from '@/lib/providers/llm-providers';
+import type { OnboardingCredential } from '@/lib/onboarding/onboarding-data';
 import { OnboardingCredentialFields, ProviderKeyHowTo } from './onboarding-credential-fields';
 import {
   EnvVar,

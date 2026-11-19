@@ -7,7 +7,7 @@
 
 import { useState } from 'react';
 import { Check, Image, Music, Play, Users, Wallet, type LucideIcon } from 'lucide-react';
-import type { MyBudgetPageData } from '@/lib/my-budget-data';
+import type { MyBudgetPageData } from '@/lib/budget/my-budget-data';
 import { OnboardingConfetti } from './onboarding-confetti';
 import {
   OnboardingActions,

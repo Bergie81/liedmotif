@@ -20,7 +20,7 @@ import {
   getLoungePlaylist,
   listLoungePlaylists,
   pinLoungePlaylist,
-} from '@/lib/api-client';
+} from '@/lib/http/api-client';
 import { appendUniqueById } from '@/lib/append-unique';
 import { cn } from '@/lib/cn';
 import { toast } from '@/lib/toast';

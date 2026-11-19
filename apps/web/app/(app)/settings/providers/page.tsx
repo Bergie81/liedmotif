@@ -11,11 +11,14 @@ import {
   SettingsStatusBadge,
 } from '@/components/settings/settings-ui';
 import { StoredLlmCredentialAction } from '@/components/settings/stored-llm-credential-action';
-import { IMAGE_PROVIDERS } from '@/lib/configurable-providers';
+import { IMAGE_PROVIDERS } from '@/lib/providers/configurable-providers';
 import { getDb } from '@/lib/db';
-import { LLM_PROVIDERS, llmProviderMeta } from '@/lib/llm-providers';
-import { loadCoverAccountAlert, loadProviderSettingsData } from '@/lib/provider-settings-data';
-import { requireAdmin } from '@/lib/session';
+import { LLM_PROVIDERS, llmProviderMeta } from '@/lib/providers/llm-providers';
+import {
+  loadCoverAccountAlert,
+  loadProviderSettingsData,
+} from '@/lib/settings/provider-settings-data';
+import { requireAdmin } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 

@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import { AvatarBadge } from '@/components/avatar-badge';
 import { cn } from '@/lib/cn';
-import type { PersonSummary } from '@/lib/people';
+import type { PersonSummary } from '@/lib/settings/people';
 import { toast } from '@/lib/toast';
-import type { PersonReferencePhotoSummary } from '@/lib/person-reference-photos';
+import type { PersonReferencePhotoSummary } from '@/lib/settings/person-reference-photos';
 import { compactPrimaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
 import { dangerButtonClass } from '@/components/ui/design-system';
 import { PersonFields } from './person-fields';

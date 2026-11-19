@@ -35,8 +35,8 @@ vi.mock('undici', async (importOriginal) => ({
   fetch: fetchStub,
 }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/providers', () => ({ getStorageProvider: () => ({}) }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/providers/providers', () => ({ getStorageProvider: () => ({}) }));
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
   getAppSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
 }));

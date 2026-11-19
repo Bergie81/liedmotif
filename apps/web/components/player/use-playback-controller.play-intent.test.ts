@@ -16,7 +16,7 @@ import type { SessionQueueSnapshot } from './use-session-queue';
 const reportPlayback = vi.fn();
 const leaseActions = vi.hoisted(() => [] as string[]);
 
-vi.mock('@/lib/api-client', async (importOriginal) => {
+vi.mock('@/lib/http/api-client', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,

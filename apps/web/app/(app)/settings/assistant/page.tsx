@@ -11,7 +11,7 @@ import {
 import { cachedAssistantAvailability } from '@/lib/assistant/availability';
 import { ASSISTANT_NAME } from '@/lib/assistant/persona';
 import { getDb } from '@/lib/db';
-import { requireAppAccess } from '@/lib/session';
+import { requireAppAccess } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 

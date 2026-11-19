@@ -21,7 +21,7 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: vi.fn() }),
   usePathname: () => '/library',
 }));
-vi.mock('@/lib/api-client', () => ({
+vi.mock('@/lib/http/api-client', () => ({
   getAllPlaylists: async () =>
     holder.loadFails
       ? { ok: false as const, error: { code: 'internal_error', message: 'Offline.' } }

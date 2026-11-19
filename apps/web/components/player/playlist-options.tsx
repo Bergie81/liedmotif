@@ -11,7 +11,7 @@ import { MAX_PLAYLIST_NAME_LENGTH, type PlaylistSummaryItem } from '@liedmotif/s
 import { OfflineMenuRow } from '@/components/offline/offline-menu-row';
 import { PlaylistCoverSheet } from '@/components/playlists/playlist-cover-sheet';
 import { deletePlaylistConfirmBody } from '@/components/playlists/playlist-view-model';
-import { playlistDownloadUrl, startFileDownload } from '@/lib/downloads';
+import { playlistDownloadUrl, startFileDownload } from '@/lib/downloads/downloads';
 import {
   playlistOptionsScopes,
   visitorPlaylistOptionsScopes,

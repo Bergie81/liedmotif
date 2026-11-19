@@ -15,9 +15,9 @@ import { RotateCw } from 'lucide-react';
 import { Dialog, DialogCloseButton, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { primaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
 import { Slider } from '@/components/ui/slider';
-import { maxCropZoom, rotatedSize, type PixelRect, type Rotation } from '@/lib/crop-geometry';
-import type { CropSource } from '@/lib/crop-image';
-import type { ImageUploadTarget } from '@/lib/image-upload-targets';
+import { maxCropZoom, rotatedSize, type PixelRect, type Rotation } from '@/lib/media/crop-geometry';
+import type { CropSource } from '@/lib/media/crop-image';
+import type { ImageUploadTarget } from '@/lib/media/image-upload-targets';
 import { cn } from '@/lib/cn';
 
 const ZOOM_STEPS = 100;

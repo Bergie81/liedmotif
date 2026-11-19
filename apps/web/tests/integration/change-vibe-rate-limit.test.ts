@@ -28,13 +28,13 @@ const holder = vi.hoisted(() => ({
   llmProviderRequests: 0,
 }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
   getAppSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
 }));
 // Hermetic providers: mock LLM and music — a real `.env` must never let this
 // suite spend money or touch the network.
-vi.mock('@/lib/providers', async () => {
+vi.mock('@/lib/providers/providers', async () => {
   const { mockLlmProvider, mockMusicProvider } = await import('@liedmotif/providers');
   const music = mockMusicProvider();
   const llm = mockLlmProvider();

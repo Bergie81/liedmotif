@@ -15,7 +15,7 @@ import {
   truncateTables,
   type TestDb,
 } from '@liedmotif/db/testing';
-import { evaluateSessionHeadroom, headroomRefusalMessage } from '@/lib/sessions';
+import { evaluateSessionHeadroom, headroomRefusalMessage } from '@/lib/sessions/sessions';
 
 // The creation-time headroom gate, end-to-end against the DB. The
 // pure `evaluateCreationHeadroom` decision is unit-tested in @liedmotif/shared and the

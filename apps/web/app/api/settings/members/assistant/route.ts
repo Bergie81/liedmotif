@@ -5,7 +5,7 @@
 import { updateAssistantAccess } from '@liedmotif/db';
 import { updateAssistantAccessRequestSchema } from '@liedmotif/shared';
 import { NextResponse } from 'next/server';
-import { apiOk, parseJsonBody, requireAdminOwnerId } from '@/lib/api-response';
+import { apiOk, parseJsonBody, requireAdminOwnerId } from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';

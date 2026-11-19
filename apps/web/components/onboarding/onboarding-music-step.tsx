@@ -10,7 +10,7 @@
 import { CredentialMutationGroup } from '@/components/settings/credential-mutation-group';
 import { useCredentialEditor } from '@/components/settings/use-credential-editor';
 import { DocsLink } from '@/components/ui/docs-link';
-import type { OnboardingCredential } from '@/lib/onboarding-data';
+import type { OnboardingCredential } from '@/lib/onboarding/onboarding-data';
 import { OnboardingCredentialFields, OnboardingHowTo } from './onboarding-credential-fields';
 import {
   OnboardingActions,

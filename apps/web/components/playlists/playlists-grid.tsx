@@ -34,10 +34,10 @@ import {
   listPlaylists,
   pinLibraryPlaylist,
   renamePlaylist,
-} from '@/lib/api-client';
+} from '@/lib/http/api-client';
 import { appendUniqueById } from '@/lib/append-unique';
 import { cn } from '@/lib/cn';
-import { playlistDownloadUrl, startFileDownload } from '@/lib/downloads';
+import { playlistDownloadUrl, startFileDownload } from '@/lib/downloads/downloads';
 import { usePageEpoch } from '@/components/use-page-epoch';
 import { useServerSeed } from '@/components/use-server-seed';
 import {

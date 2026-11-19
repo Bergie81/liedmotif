@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { LibraryTrackItem, LibraryView, TrackFlags } from '@liedmotif/shared';
-import { getLibrary } from '@/lib/api-client';
+import { getLibrary } from '@/lib/http/api-client';
 import { appendUniqueById } from '@/lib/append-unique';
 import { toast } from '@/lib/toast';
 import { usePageEpoch } from '@/components/use-page-epoch';

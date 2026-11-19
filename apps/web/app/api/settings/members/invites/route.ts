@@ -11,11 +11,11 @@ import {
   memberLimitsSchema,
 } from '@liedmotif/shared';
 import { NextResponse } from 'next/server';
-import { mailMemberInvite } from '@/lib/account-mail';
-import { apiError, apiOk, parseJsonBody, requireAdminOwnerId } from '@/lib/api-response';
+import { mailMemberInvite } from '@/lib/auth/account-mail';
+import { apiError, apiOk, parseJsonBody, requireAdminOwnerId } from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
 import { isAccountEmailEnabled } from '@/lib/env';
-import { joinLinkUrl } from '@/lib/link-urls';
+import { joinLinkUrl } from '@/lib/auth/link-urls';
 
 export const dynamic = 'force-dynamic';
 

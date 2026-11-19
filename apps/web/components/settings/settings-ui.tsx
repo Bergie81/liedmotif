@@ -13,7 +13,7 @@ import {
   sectionHeadingClass,
 } from '@/components/ui/design-system';
 import { Slider } from '@/components/ui/slider';
-import type { SettingsStatus } from '@/lib/settings-hub-model';
+import type { SettingsStatus } from '@/lib/settings/settings-hub-model';
 
 export function SettingsPageHeader({
   title,

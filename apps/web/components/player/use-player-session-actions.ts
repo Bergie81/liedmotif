@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from 'react';
 import type { SessionSummary } from '@liedmotif/shared';
-import { convertSessionToPlaylist, moreLikeThis, stopSession } from '@/lib/api-client';
+import { convertSessionToPlaylist, moreLikeThis, stopSession } from '@/lib/http/api-client';
 import { useClientId } from '@/lib/use-client-id';
 import { MORE_LIKE_THIS_FAILED } from '@/components/create/creation-refusal';
 import { clearPlayerError, showPlayerError } from './player-error-toast';

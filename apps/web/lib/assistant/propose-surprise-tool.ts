@@ -13,8 +13,8 @@ import {
   type AssistantCard,
   type ProposeSurpriseInput,
 } from '@liedmotif/shared';
-import { startingSessionMode } from '@/lib/sessions';
-import { loadPendingSurprise, proposeSurprise } from '@/lib/surprise-me';
+import { startingSessionMode } from '@/lib/sessions/sessions';
+import { loadPendingSurprise, proposeSurprise } from '@/lib/sessions/surprise-me';
 import { BAD_DURATION, homeCoverChoices, notOffered, proposed } from './proposal';
 import { PROPOSE_SURPRISE_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';

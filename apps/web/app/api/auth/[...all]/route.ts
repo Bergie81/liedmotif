@@ -18,9 +18,9 @@
 // throttle on legitimate use.
 
 import { NextResponse } from 'next/server';
-import { authRouteHandlers } from '@/lib/auth';
-import { clientIp, tooManyRequests } from '@/lib/http';
-import { loginFailureLimiter } from '@/lib/request-limits';
+import { authRouteHandlers } from '@/lib/auth/auth';
+import { clientIp, tooManyRequests } from '@/lib/http/http';
+import { loginFailureLimiter } from '@/lib/http/request-limits';
 
 export const dynamic = 'force-dynamic';
 

@@ -23,13 +23,13 @@ const holder = vi.hoisted(() => ({
   expansions: [] as { listener: unknown; includesListener: boolean | undefined }[],
 }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
   getAppSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
 }));
 // Hermetic providers: the MOCK text LLM reads "me" as the listener being in the
 // scene (its stand-in for a real model's judgment) — no network, no spend.
-vi.mock('@/lib/providers', async () => {
+vi.mock('@/lib/providers/providers', async () => {
   const { mockLlmProvider, mockMusicProvider } = await import('@liedmotif/providers');
   const music = mockMusicProvider();
   const llm = mockLlmProvider();

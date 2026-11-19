@@ -17,9 +17,9 @@ import { renderCoverThumbnail } from '@liedmotif/media';
 import { canReadCover, COVER_THUMBNAIL_EDGE, Semaphore, uuidSchema } from '@liedmotif/shared';
 import { contentTypeForKey, readAllBytes, type StorageProvider } from '@liedmotif/storage';
 import { getDb } from '@/lib/db';
-import { privateBytesResponse } from '@/lib/private-bytes';
-import { getStorageProvider } from '@/lib/providers';
-import { requireBytesOwnerId } from '@/lib/api-response';
+import { privateBytesResponse } from '@/lib/http/private-bytes';
+import { getStorageProvider } from '@/lib/providers/providers';
+import { requireBytesOwnerId } from '@/lib/http/api-response';
 
 export const dynamic = 'force-dynamic';
 

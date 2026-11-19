@@ -10,9 +10,9 @@
 import { NextResponse } from 'next/server';
 import { renameSessionRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
-import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/api-response';
+import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/http/api-response';
 import { giveSessionName } from '@/lib/given-names';
-import { toSessionSummary } from '@/lib/sessions';
+import { toSessionSummary } from '@/lib/sessions/sessions';
 
 export const dynamic = 'force-dynamic';
 

@@ -17,7 +17,7 @@ import {
   generatedCoverProviderConfigured,
   initialSessionCoverId,
   sunoCoverFallbackConfigured,
-} from '@/lib/covers';
+} from '@/lib/covers/covers';
 
 // Start Session's initial Session Cover: always the built-in branded
 // placeholder. The async generated cover (image model, else the music

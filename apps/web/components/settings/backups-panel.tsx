@@ -31,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { apiFetch, apiFetchJson } from '@/lib/api-fetch';
+import { apiFetch, apiFetchJson } from '@/lib/http/api-fetch';
 import { cn } from '@/lib/cn';
 import { formatBinaryBytes } from '@/lib/format-bytes';
 import { toast } from '@/lib/toast';

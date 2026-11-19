@@ -3,8 +3,8 @@
 
 import { NextResponse } from 'next/server';
 import { listeningStatsQuerySchema } from '@liedmotif/shared';
-import { apiOk, requireOwnerId, validateInput } from '@/lib/api-response';
-import { loadListeningStats } from '@/lib/listening-stats-data';
+import { apiOk, requireOwnerId, validateInput } from '@/lib/http/api-response';
+import { loadListeningStats } from '@/lib/stats/listening-stats-data';
 
 export const dynamic = 'force-dynamic';
 

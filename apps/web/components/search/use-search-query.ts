@@ -8,7 +8,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { SearchResponseData } from '@liedmotif/shared';
 import { useOutsideLibraryWrite } from '@/components/library/use-outside-library-write';
-import { search } from '@/lib/api-client';
+import { search } from '@/lib/http/api-client';
 import { effectiveSearchQuery, type SearchGroupKind, type SearchState } from './search-model';
 
 export type SearchGroupCounts = Record<SearchGroupKind, number | null>;

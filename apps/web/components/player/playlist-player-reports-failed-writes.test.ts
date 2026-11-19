@@ -22,8 +22,8 @@ import { PlaylistNowPlaying } from './playlist-now-playing';
 const api = vi.hoisted(() => ({ removePlaylistTrack: vi.fn() }));
 const provider = vi.hoisted(() => ({ engagePlaylist: vi.fn(), release: vi.fn() }));
 
-vi.mock('@/lib/api-client', async (original) => ({
-  ...(await original<typeof import('@/lib/api-client')>()),
+vi.mock('@/lib/http/api-client', async (original) => ({
+  ...(await original<typeof import('@/lib/http/api-client')>()),
   removePlaylistTrack: api.removePlaylistTrack,
 }));
 vi.mock('./player-provider', () => ({

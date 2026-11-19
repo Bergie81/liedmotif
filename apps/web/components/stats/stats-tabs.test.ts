@@ -8,10 +8,10 @@ import { createElement as h } from 'react';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CostComparisonData, ListeningStatsData } from '@liedmotif/shared';
-import { fetchCostComparison, fetchListeningStats } from '@/lib/api-client';
+import { fetchCostComparison, fetchListeningStats } from '@/lib/http/api-client';
 import { StatsTabs } from './stats-tabs';
 
-vi.mock('@/lib/api-client', () => ({
+vi.mock('@/lib/http/api-client', () => ({
   fetchListeningStats: vi.fn(async (range: string) => ({
     ok: true,
     data: { range, from: null, timezone: 'UTC' },

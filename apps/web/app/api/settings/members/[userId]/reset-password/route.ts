@@ -15,11 +15,11 @@ import {
 } from '@liedmotif/db';
 import type { MemberResetFallbackReason, MemberResetPasswordResponse } from '@liedmotif/shared';
 import { NextResponse } from 'next/server';
-import { mailPasswordResetLink } from '@/lib/account-mail';
-import { apiOk } from '@/lib/api-response';
+import { mailPasswordResetLink } from '@/lib/auth/account-mail';
+import { apiOk } from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
 import { isAccountEmailEnabled } from '@/lib/env';
-import { resetLinkUrl } from '@/lib/link-urls';
+import { resetLinkUrl } from '@/lib/auth/link-urls';
 import { requireAdminAndMember, type MemberRouteTarget } from '../../member-route';
 
 export const dynamic = 'force-dynamic';

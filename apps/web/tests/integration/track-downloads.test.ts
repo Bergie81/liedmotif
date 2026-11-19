@@ -43,7 +43,7 @@ const enqueueEmbedTrackMetadataBatch = vi.hoisted(() =>
 );
 vi.mock('@/lib/worker-jobs', () => ({ enqueueEmbedTrackMetadataBatch }));
 
-const { openTrackDownload, planTrackDownloads } = await import('@/lib/track-downloads');
+const { openTrackDownload, planTrackDownloads } = await import('@/lib/downloads/track-downloads');
 type TrackDownloadDeps = Parameters<typeof planTrackDownloads>[0];
 
 const skip = !TEST_DATABASE_URL;

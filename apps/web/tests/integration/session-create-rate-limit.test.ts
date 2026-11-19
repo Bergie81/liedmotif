@@ -16,13 +16,13 @@ import {
 
 const holder = vi.hoisted(() => ({ db: null as unknown, ownerUserId: null as string | null }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
   getAppSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
 }));
 // Hermetic providers: no text LLM, mock music — a real `.env` must never let
 // this suite spend money or touch the network.
-vi.mock('@/lib/providers', async () => {
+vi.mock('@/lib/providers/providers', async () => {
   const { mockMusicProvider } = await import('@liedmotif/providers');
   const music = mockMusicProvider();
   return { getLlmProvider: async () => null, getMusicProvider: () => music };

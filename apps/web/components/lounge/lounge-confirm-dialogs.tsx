@@ -5,7 +5,7 @@
 // never the Members' Pins or Shared references — so the dialog says so before
 // it runs. Each dialog owns its write; the caller only reacts to the outcome.
 
-import { moderateLoungePlaylist, sharePlaylist } from '@/lib/api-client';
+import { moderateLoungePlaylist, sharePlaylist } from '@/lib/http/api-client';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import type { ShareResult } from '@/components/playlists/share-playlist-sheet';
 

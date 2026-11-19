@@ -13,7 +13,7 @@ import { ChoosePlaylistSheet } from './choose-playlist-sheet';
 
 const holder = vi.hoisted(() => ({ loadFails: false, createWorks: false }));
 
-vi.mock('@/lib/api-client', () => ({
+vi.mock('@/lib/http/api-client', () => ({
   getAllPlaylists: async () =>
     holder.loadFails
       ? { ok: false as const, error: { code: 'internal_error', message: 'Offline.' } }

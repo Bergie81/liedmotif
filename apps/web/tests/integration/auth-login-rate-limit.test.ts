@@ -8,13 +8,13 @@ import { describe, expect, it, vi } from 'vitest';
 // x-forwarded-for hop).
 
 const authPost = vi.hoisted(() => vi.fn());
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/lib/auth/auth', () => ({
   authRouteHandlers: () => ({ GET: vi.fn(), POST: authPost }),
 }));
 
 const { POST } = await import('@/app/api/auth/[...all]/route');
 
-const FAILURE_LIMIT = 10; // mirrors `loginFailureLimiter` in lib/request-limits.ts
+const FAILURE_LIMIT = 10; // mirrors `loginFailureLimiter` in lib/http/request-limits.ts
 
 function signInRequest(ip: string) {
   return new Request('http://localhost/api/auth/sign-in/email', {

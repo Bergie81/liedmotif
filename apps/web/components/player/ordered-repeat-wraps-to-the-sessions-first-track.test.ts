@@ -15,7 +15,7 @@ import type { SessionQueueSnapshot } from './use-session-queue';
 const reportPlayback = vi.fn();
 const settings = vi.hoisted(() => ({ blendEnabled: false }));
 
-vi.mock('@/lib/api-client', async (importOriginal) => {
+vi.mock('@/lib/http/api-client', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,

@@ -15,9 +15,9 @@ import {
   SettingsSection,
 } from '@/components/settings/settings-ui';
 import { isAccountEmailEnabled } from '@/lib/env';
-import { loadMembersAdminData } from '@/lib/members-admin-data';
-import { getLlmProvider } from '@/lib/providers';
-import { requireAdmin } from '@/lib/session';
+import { loadMembersAdminData } from '@/lib/settings/members-admin-data';
+import { getLlmProvider } from '@/lib/providers/providers';
+import { requireAdmin } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 

@@ -25,7 +25,7 @@ import {
   makeApiError,
   type AssistantStreamEvent,
 } from '@liedmotif/shared';
-import { apiError, apiRateLimited, parseJsonBody, requireOwnerId } from '@/lib/api-response';
+import { apiError, apiRateLimited, parseJsonBody, requireOwnerId } from '@/lib/http/api-response';
 import { ASSISTANT_NAME } from '@/lib/assistant/persona';
 import { streamAssistantAnswer } from '@/lib/assistant/reply';
 import { createAssistantTools } from '@/lib/assistant/tools';
@@ -37,9 +37,9 @@ import {
   mayAskAssistant,
 } from '@/lib/assistant/standing';
 import { getDb } from '@/lib/db';
-import { getLlmProvider } from '@/lib/providers';
+import { getLlmProvider } from '@/lib/providers/providers';
 import { cachedUserProfile } from '@/lib/request-cache';
-import { assistantLimiter } from '@/lib/request-limits';
+import { assistantLimiter } from '@/lib/http/request-limits';
 
 export const dynamic = 'force-dynamic';
 

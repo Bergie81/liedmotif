@@ -36,7 +36,7 @@ const holder = vi.hoisted(() => ({
 
 vi.mock('next/headers', () => ({ headers: async () => new Headers() }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/lib/auth/auth', () => ({
   getAuth: () => ({
     api: {
       getSession: async () =>
@@ -46,7 +46,7 @@ vi.mock('@/lib/auth', () => ({
     },
   }),
 }));
-vi.mock('@/lib/providers', () => ({
+vi.mock('@/lib/providers/providers', () => ({
   getLlmProvider: async () => holder.llm,
   getTypicalTracksPerMusicRequest: () => 2,
 }));

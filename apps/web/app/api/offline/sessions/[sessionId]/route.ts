@@ -8,7 +8,7 @@
 import { NextResponse } from 'next/server';
 import { getOwnedSessionOfflineManifest } from '@liedmotif/db';
 import { uuidSchema, type OfflineManifest } from '@liedmotif/shared';
-import { apiError, apiOk, requireOwnerId } from '@/lib/api-response';
+import { apiError, apiOk, requireOwnerId } from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';

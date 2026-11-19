@@ -1,7 +1,7 @@
 import { SearchView } from '@/components/search/search-view';
 import { searchStateFromParams } from '@/components/search/search-model';
 import { displayHeadingClass } from '@/components/ui/design-system';
-import { requireAppAccess } from '@/lib/session';
+import { requireAppAccess } from '@/lib/auth/session';
 
 export default async function SearchPage({
   searchParams,

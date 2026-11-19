@@ -8,7 +8,10 @@ import {
   type StartSessionRequest,
   type SurpriseProposal,
 } from '@liedmotif/shared';
-import { SESSION_LANGUAGE_CHOICES, type SessionLanguageChoice } from '@/lib/session-languages';
+import {
+  SESSION_LANGUAGE_CHOICES,
+  type SessionLanguageChoice,
+} from '@/lib/sessions/session-languages';
 import { MAX_GENRES } from './genre-vocabulary';
 
 export type EnergyLevel = (typeof ENERGY_LEVELS)[number];

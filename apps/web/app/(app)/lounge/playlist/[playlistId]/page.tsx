@@ -2,8 +2,8 @@ import { uuidSchema } from '@liedmotif/shared';
 import { PlaylistDetail } from '@/components/playlists/playlist-detail';
 import { PLAYLIST_DETAIL_PAGE_LIMIT } from '@/components/playlists/playlist-view-model';
 import { getDb } from '@/lib/db';
-import { loadLoungePlaylistDetailPage } from '@/lib/lounge';
-import { requireAppAccess } from '@/lib/session';
+import { loadLoungePlaylistDetailPage } from '@/lib/library/lounge';
+import { requireAppAccess } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 

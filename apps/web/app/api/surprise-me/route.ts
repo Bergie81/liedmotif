@@ -10,8 +10,14 @@ import { NextResponse } from 'next/server';
 import { dismissPendingProposal } from '@liedmotif/db';
 import { dismissSurpriseRequestSchema, proposeSurpriseRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
-import { apiError, apiOk, apiRateLimited, parseJsonBody, requireOwnerId } from '@/lib/api-response';
-import { loadPendingSurprise, proposeSurprise } from '@/lib/surprise-me';
+import {
+  apiError,
+  apiOk,
+  apiRateLimited,
+  parseJsonBody,
+  requireOwnerId,
+} from '@/lib/http/api-response';
+import { loadPendingSurprise, proposeSurprise } from '@/lib/sessions/surprise-me';
 
 export const dynamic = 'force-dynamic';
 

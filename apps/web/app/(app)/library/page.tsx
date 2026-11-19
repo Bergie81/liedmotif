@@ -2,8 +2,8 @@ import { DEFAULT_PLAYLISTS_LIST_PAGE_LIMIT } from '@liedmotif/shared';
 import { LibraryView } from '@/components/library/library-view';
 import { displayHeadingClass } from '@/components/ui/design-system';
 import { getDb } from '@/lib/db';
-import { loadPlaylistSummaries } from '@/lib/playlists';
-import { requireAppAccess } from '@/lib/session';
+import { loadPlaylistSummaries } from '@/lib/library/playlists';
+import { requireAppAccess } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 

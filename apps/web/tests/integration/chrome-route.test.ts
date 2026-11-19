@@ -17,11 +17,11 @@ import {
 
 const holder = vi.hoisted(() => ({ db: null as unknown, userId: null as string | null }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAppSession: async () => (holder.userId ? { user: { id: holder.userId } } : null),
   getAdminSession: async () => null,
 }));
-vi.mock('@/lib/providers', () => ({ getTypicalTracksPerMusicRequest: () => 2 }));
+vi.mock('@/lib/providers/providers', () => ({ getTypicalTracksPerMusicRequest: () => 2 }));
 
 const { GET: chromeGet } = await import('@/app/api/chrome/route');
 

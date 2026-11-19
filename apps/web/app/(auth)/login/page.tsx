@@ -7,7 +7,7 @@ import {
   LiedmotifWordmark,
 } from '@/components/ui/design-system';
 import { isAccountEmailEnabled } from '@/lib/env';
-import { redirectAwayFromLogin } from '@/lib/session';
+import { redirectAwayFromLogin } from '@/lib/auth/session';
 
 // Login is shown only when an admin exists and nobody is signed in. The guard
 // forwards to /setup (no admin yet) or / (already signed in).

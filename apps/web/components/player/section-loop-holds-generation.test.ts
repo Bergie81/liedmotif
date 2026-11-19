@@ -12,8 +12,8 @@ import { useSectionLoop, type SectionLoopDeps } from './use-section-loop';
 
 const lease = vi.hoisted(() => ({ actions: [] as string[] }));
 
-vi.mock('@/lib/api-client', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/lib/api-client')>()),
+vi.mock('@/lib/http/api-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/http/api-client')>()),
   applyLoopLease: vi.fn(async ({ action }: { action: string }) => {
     lease.actions.push(action);
     return {

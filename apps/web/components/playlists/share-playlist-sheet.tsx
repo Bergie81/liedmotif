@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from 'react';
 import type { PlaylistSummaryItem } from '@liedmotif/shared';
-import { getPlaylistShare, sharePlaylist, type PlaylistShareData } from '@/lib/api-client';
+import { getPlaylistShare, sharePlaylist, type PlaylistShareData } from '@/lib/http/api-client';
 import { cn } from '@/lib/cn';
 import { toast } from '@/lib/toast';
 import { AvatarBadge } from '@/components/avatar-badge';

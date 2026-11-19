@@ -8,7 +8,7 @@
 // in `loop-lease-protocol.ts`; this hook only wires React state and teardown.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { applyLoopLease } from '@/lib/api-client';
+import { applyLoopLease } from '@/lib/http/api-client';
 import { LoopLeaseProtocol } from './loop-lease-protocol';
 
 /** What can want automatic generation held: the lease stands while any of them does. */

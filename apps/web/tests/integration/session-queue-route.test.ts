@@ -24,7 +24,7 @@ import {
 
 const holder = vi.hoisted(() => ({ db: null as unknown, ownerUserId: null as string | null }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
   getAppSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
 }));
@@ -32,8 +32,8 @@ vi.mock('@/lib/session', () => ({
 // Deliberately NOT the mock provider's own figure (2): the in-flight counts
 // must come from the configured provider's capability, not a constant.
 const TRACKS_PER_REQUEST = 3;
-vi.mock('@/lib/providers', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/lib/providers')>()),
+vi.mock('@/lib/providers/providers', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/providers/providers')>()),
   getTypicalTracksPerMusicRequest: () => TRACKS_PER_REQUEST,
 }));
 

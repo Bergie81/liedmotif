@@ -9,7 +9,7 @@ import { NextResponse } from 'next/server';
 import { tryAgainSession } from '@liedmotif/db';
 import { tryAgainSessionRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
-import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/api-response';
+import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/http/api-response';
 import { enqueueEnsureSessionBuffer } from '@/lib/worker-jobs';
 
 export const dynamic = 'force-dynamic';

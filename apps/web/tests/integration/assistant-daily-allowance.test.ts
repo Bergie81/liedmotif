@@ -31,11 +31,11 @@ const holder = vi.hoisted(() => ({
   llm: null as unknown,
 }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => null,
   getAppSession: async () => (holder.userId ? { user: { id: holder.userId } } : null),
 }));
-vi.mock('@/lib/providers', () => ({ getLlmProvider: async () => holder.llm }));
+vi.mock('@/lib/providers/providers', () => ({ getLlmProvider: async () => holder.llm }));
 
 const { POST } = await import('@/app/api/assistant/route');
 

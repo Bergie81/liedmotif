@@ -7,8 +7,8 @@ import { eq } from 'drizzle-orm';
 import { deleteMember, user } from '@liedmotif/db';
 import { storageKeys } from '@liedmotif/storage';
 import { NextResponse } from 'next/server';
-import { apiError, apiOk } from '@/lib/api-response';
-import { avatarIdFromUrl } from '@/lib/avatar';
+import { apiError, apiOk } from '@/lib/http/api-response';
+import { avatarIdFromUrl } from '@/lib/media/avatar';
 import { getDb } from '@/lib/db';
 import { NO_SUCH_MEMBER, requireAdminAndMember } from '../member-route';
 

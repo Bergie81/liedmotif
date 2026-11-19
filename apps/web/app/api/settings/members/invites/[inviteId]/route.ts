@@ -4,7 +4,7 @@
 import { revokeInvite } from '@liedmotif/db';
 import { uuidSchema } from '@liedmotif/shared';
 import { NextResponse } from 'next/server';
-import { apiError, apiOk, requireAdminOwnerId, validateInput } from '@/lib/api-response';
+import { apiError, apiOk, requireAdminOwnerId, validateInput } from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';

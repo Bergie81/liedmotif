@@ -9,8 +9,14 @@ import { NextResponse } from 'next/server';
 import { createSession, getCoverArtSettings, getSeedSnapshot } from '@liedmotif/db';
 import { moreLikeThisRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
-import { apiError, apiOk, apiRateLimited, parseJsonBody, requireOwnerId } from '@/lib/api-response';
-import { sessionCreateLimiter } from '@/lib/request-limits';
+import {
+  apiError,
+  apiOk,
+  apiRateLimited,
+  parseJsonBody,
+  requireOwnerId,
+} from '@/lib/http/api-response';
+import { sessionCreateLimiter } from '@/lib/http/request-limits';
 import {
   deriveSnapshotForIntent,
   nameSeededSnapshot,
@@ -19,13 +25,13 @@ import {
   stripPersonalIngredients,
   toSessionSummary,
   toStoredSnapshot,
-} from '@/lib/sessions';
+} from '@/lib/sessions/sessions';
 import {
   initialSessionCoverId,
   launchSessionCreationKickoffs,
   resolveCoverArtChoiceFrom,
-} from '@/lib/covers';
-import { honoredOwnVoice, ownVoiceBlockedMessage } from '@/lib/voice';
+} from '@/lib/covers/covers';
+import { honoredOwnVoice, ownVoiceBlockedMessage } from '@/lib/voice/voice';
 
 export const dynamic = 'force-dynamic';
 

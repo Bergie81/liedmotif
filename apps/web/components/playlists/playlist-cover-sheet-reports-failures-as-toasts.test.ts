@@ -14,21 +14,21 @@ import {
   regeneratePlaylistCover,
   uploadPlaylistCover,
   type PlaylistCoverStatusData,
-} from '@/lib/api-client';
+} from '@/lib/http/api-client';
 import { shownToasts, toast } from '@/lib/toast';
 import { Toaster } from '@/components/ui/toast';
 import { AppChromeContext, type AppChromeContextValue } from '@/components/app-chrome-context';
 import { PlaylistCoverSheet } from './playlist-cover-sheet';
 
 vi.mock('next/navigation', () => ({ usePathname: () => '/library' }));
-vi.mock('@/lib/api-client', () => ({
+vi.mock('@/lib/http/api-client', () => ({
   playlistCoverStatus: vi.fn(),
   regeneratePlaylistCover: vi.fn(),
   selectPlaylistCover: vi.fn(),
   deletePlaylistCover: vi.fn(),
   uploadPlaylistCover: vi.fn(),
 }));
-vi.mock('@/lib/crop-image', () => ({
+vi.mock('@/lib/media/crop-image', () => ({
   preparePickedImage: async () => ({
     kind: 'crop',
     source: {

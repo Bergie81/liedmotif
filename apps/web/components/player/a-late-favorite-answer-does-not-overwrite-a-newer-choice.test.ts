@@ -20,7 +20,7 @@ const favoriteTrack = vi.fn(
     }),
 );
 
-vi.mock('@/lib/api-client', () => ({
+vi.mock('@/lib/http/api-client', () => ({
   dislikeTrack: vi.fn(),
   deleteTrack: vi.fn(),
   favoriteTrack: (trackId: string, favorited: boolean) => favoriteTrack(trackId, favorited),

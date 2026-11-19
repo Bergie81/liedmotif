@@ -7,7 +7,7 @@ import { useOutsideLibraryWrite } from '@/components/library/use-outside-library
 import { usePageEpoch } from '@/components/use-page-epoch';
 import { useServerSeed } from '@/components/use-server-seed';
 import { appendUniqueById } from '@/lib/append-unique';
-import { listSessions, setSessionPinned } from '@/lib/api-client';
+import { listSessions, setSessionPinned } from '@/lib/http/api-client';
 import { toast } from '@/lib/toast';
 
 const LOAD_MORE_KEY = 'sessions-load-more';

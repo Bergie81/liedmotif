@@ -26,14 +26,14 @@ const holder = vi.hoisted(() => ({
   llm: null as LlmProvider | null,
 }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
   getAppSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
 }));
 // Hermetic providers: no text LLM unless a test stubs one (controls naming falls
 // back to the deterministic composition) and the mock music provider — a real `.env` must
 // never let this suite spend money or touch the network.
-vi.mock('@/lib/providers', async () => {
+vi.mock('@/lib/providers/providers', async () => {
   const { mockMusicProvider } = await import('@liedmotif/providers');
   const music = mockMusicProvider();
   return {

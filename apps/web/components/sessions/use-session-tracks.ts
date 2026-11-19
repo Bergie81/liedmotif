@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SessionTracksData } from '@liedmotif/shared';
-import { listSessionTracks } from '@/lib/api-client';
+import { listSessionTracks } from '@/lib/http/api-client';
 
 /** Mounted only while the sheet is open; browsing never wakes generation. */
 export function useSessionTracks(sessionId: string) {

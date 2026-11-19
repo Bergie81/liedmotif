@@ -7,7 +7,7 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import type { PlaylistMemberItem } from '@liedmotif/shared';
-import { setPlaylistOrder } from '@/lib/api-client';
+import { setPlaylistOrder } from '@/lib/http/api-client';
 import { sameTrackOrder } from './playlist-view-model';
 
 export interface ReorderMode {

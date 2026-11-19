@@ -31,7 +31,7 @@ import {
   startSession,
   startSurprise,
   type SessionCoverStatusData,
-} from '@/lib/api-client';
+} from '@/lib/http/api-client';
 import { announceOutsideLibraryWrite } from '@/lib/offline/library-writes';
 import { useClientId } from '@/lib/use-client-id';
 

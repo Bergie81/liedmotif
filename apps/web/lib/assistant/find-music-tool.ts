@@ -27,8 +27,8 @@ import {
 } from '@liedmotif/shared';
 import { loungeOwnerDisplayName } from '@/components/lounge/lounge-view-model';
 import { MIN_SEARCH_QUERY_LENGTH } from '@/components/search/search-model';
-import { loadPlaylistSummaries } from '@/lib/playlists';
-import { loadSessionList } from '@/lib/sessions';
+import { loadPlaylistSummaries } from '@/lib/library/playlists';
+import { loadSessionList } from '@/lib/sessions/sessions';
 import { named, quoted, trackCount } from './music-names';
 import { FIND_MUSIC_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';

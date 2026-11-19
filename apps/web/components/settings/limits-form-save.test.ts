@@ -14,7 +14,7 @@ import { AppChromeContext, type AppChromeContextValue } from '@/components/app-c
 import { shownToasts, toast } from '@/lib/toast';
 
 const saveUsageLimits = vi.hoisted(() => vi.fn());
-vi.mock('@/lib/settings-client', () => ({ saveUsageLimits }));
+vi.mock('@/lib/settings/settings-client', () => ({ saveUsageLimits }));
 
 const { LimitsForm } = await import('./limits-form');
 

@@ -4,8 +4,8 @@ import { NextResponse } from 'next/server';
 import { updateUsageLimits, type UsageLimits } from '@liedmotif/db';
 import { NUMERIC_LIMIT_KEYS, USAGE_LIMIT_CEILINGS, usageLimitFloor } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
-import { badRequest } from '@/lib/http';
-import { readJsonObjectBody, requireAdminOwnerId } from '@/lib/api-response';
+import { badRequest } from '@/lib/http/http';
+import { readJsonObjectBody, requireAdminOwnerId } from '@/lib/http/api-response';
 import { isSupportedTimezone } from '@/lib/timezones';
 
 export const dynamic = 'force-dynamic';

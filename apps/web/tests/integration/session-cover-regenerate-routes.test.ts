@@ -50,13 +50,13 @@ const holder = vi.hoisted(() => ({
   enhanceCalls: [] as Array<{ text: string; context: Record<string, unknown> }>,
 }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
   getAppSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
 }));
 // The real music resolution stays: the Suno cover source reads it.
-vi.mock('@/lib/providers', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/lib/providers')>()),
+vi.mock('@/lib/providers/providers', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/providers/providers')>()),
   getLlmProvider: async () => holder.llm,
   getStorageProvider: () => ({ providerKey: 'local-fs' }),
 }));

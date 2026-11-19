@@ -10,7 +10,7 @@ import type { LibraryTrackItem } from '@liedmotif/shared';
 import { Disc3 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { getLibrary } from '@/lib/api-client';
+import { getLibrary } from '@/lib/http/api-client';
 import { cn } from '@/lib/cn';
 import { coverArtSrc } from '@/components/player/player-presentation';
 import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';

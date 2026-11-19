@@ -23,8 +23,8 @@ import { shownToasts, toast } from '@/lib/toast';
 
 const api = vi.hoisted(() => ({ moreLikeThis: vi.fn() }));
 
-vi.mock('@/lib/api-client', async (original) => ({
-  ...(await original<typeof import('@/lib/api-client')>()),
+vi.mock('@/lib/http/api-client', async (original) => ({
+  ...(await original<typeof import('@/lib/http/api-client')>()),
   moreLikeThis: api.moreLikeThis,
 }));
 vi.mock('./player-provider', () => ({

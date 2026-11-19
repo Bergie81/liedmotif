@@ -3,7 +3,7 @@
 // several times — defense-in-depth guards, the layout chrome, the settings hub —
 // and each answer must come from ONE query per request. Nothing here is shared
 // across requests or users. (The usage computation itself lives in
-// `lib/sessions.ts` as `cachedOwnerUsageTracks` — it needs that module's
+// `lib/sessions/sessions.ts` as `cachedOwnerUsageTracks` — it needs that module's
 // internals, and importing it here would cycle.) Every read is keyed by its db
 // handle too, so a caller holding a non-default handle (tests) never shares an
 // answer with the request's own reads.
@@ -21,7 +21,7 @@ export const requestNow = cache(() => new Date());
 /**
  * Role + disabled state, once per request. The per-REQUEST freshness is a
  * deliberate security tradeoff — a disable must take effect on the next
- * request, so this is never memoized beyond the request (see `lib/session.ts`).
+ * request, so this is never memoized beyond the request (see `lib/auth/session.ts`).
  */
 export const cachedUserProfile = cache(async (db: Database, userId: string) =>
   resolveUserProfile(db, userId),

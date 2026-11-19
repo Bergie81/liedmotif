@@ -12,12 +12,12 @@ import {
   listUploadedSessionCovers,
 } from '@liedmotif/db';
 import { sessionCoverStatusRequestSchema } from '@liedmotif/shared';
-import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/api-response';
-import { toCoverHistory } from '@/lib/cover-history';
-import { loadCoverStatusReads } from '@/lib/cover-status';
-import { coverViewerRole, toSessionCoverAttempt } from '@/lib/cover-regeneration';
-import { coverSource } from '@/lib/cover-source';
-import { generatedCoverProviderConfigured, sunoCoverFallbackConfigured } from '@/lib/covers';
+import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/http/api-response';
+import { toCoverHistory } from '@/lib/covers/cover-history';
+import { loadCoverStatusReads } from '@/lib/covers/cover-status';
+import { coverViewerRole, toSessionCoverAttempt } from '@/lib/covers/cover-regeneration';
+import { coverSource } from '@/lib/covers/cover-source';
+import { generatedCoverProviderConfigured, sunoCoverFallbackConfigured } from '@/lib/covers/covers';
 import { getDb } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';

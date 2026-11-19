@@ -21,7 +21,7 @@ import {
 import { primaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
 import { PasswordField, usePasswordConfirmation } from '@/components/ui/password-field';
 import { PasswordRequirements } from '@/components/ui/password-requirements';
-import { apiFetchJson } from '@/lib/api-fetch';
+import { apiFetchJson } from '@/lib/http/api-fetch';
 import { cn } from '@/lib/cn';
 import { toast } from '@/lib/toast';
 import { requestConfirmLink } from './email-confirmation';

@@ -28,7 +28,7 @@ import {
   type ProfileFieldErrors,
 } from '@/components/settings/profile-form-model';
 import { TimezoneSelect } from '@/components/timezone-select';
-import { saveListenerProfile, saveUsageLimits } from '@/lib/settings-client';
+import { saveListenerProfile, saveUsageLimits } from '@/lib/settings/settings-client';
 import {
   OnboardingActions,
   OnboardingCard,

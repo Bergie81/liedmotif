@@ -16,7 +16,7 @@ import {
   SESSION_LANGUAGE_CHOICES,
   sessionLanguageLabel,
   type SessionLanguageChoice,
-} from '@/lib/session-languages';
+} from '@/lib/sessions/session-languages';
 
 export function SessionLanguageSelect({
   value,

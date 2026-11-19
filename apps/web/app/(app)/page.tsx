@@ -11,11 +11,11 @@ import { hourInTimezone, pickGreeting } from '@/components/home/home-greeting';
 import { HomeView } from '@/components/home/home-view';
 import { RECENT_SESSIONS_LIMIT } from '@/lib/constants';
 import { getDb } from '@/lib/db';
-import { getLlmProvider } from '@/lib/providers';
-import { requireAppAccess } from '@/lib/session';
-import { loadSessionList } from '@/lib/sessions';
-import { loadPendingSurprise } from '@/lib/surprise-me';
-import { resolveOwnVoiceOffer, type OwnVoiceOffer } from '@/lib/voice';
+import { getLlmProvider } from '@/lib/providers/providers';
+import { requireAppAccess } from '@/lib/auth/session';
+import { loadSessionList } from '@/lib/sessions/sessions';
+import { loadPendingSurprise } from '@/lib/sessions/surprise-me';
+import { resolveOwnVoiceOffer, type OwnVoiceOffer } from '@/lib/voice/voice';
 
 export default async function HomePage({
   searchParams,

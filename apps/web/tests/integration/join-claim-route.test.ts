@@ -19,10 +19,10 @@ const holder = vi.hoisted(() => ({
   signInCalls: [] as Array<{ email: string; password: string }>,
 }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getServerSession: async () => (holder.signedIn ? { user: { id: 'someone' } } : null),
 }));
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/lib/auth/auth', () => ({
   getAuth: () => ({
     api: {
       signInEmail: async ({ body }: { body: { email: string; password: string } }) => {

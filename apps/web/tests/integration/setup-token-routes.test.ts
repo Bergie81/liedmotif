@@ -26,17 +26,17 @@ const holder = vi.hoisted(() => ({
 
 vi.mock('@/lib/db', () => ({ getDb: () => ({}), getPool: () => ({}) }));
 vi.mock('next/headers', () => ({ headers: async () => new Headers() }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () =>
     holder.adminSessionUserId ? { user: { id: holder.adminSessionUserId } } : null,
   getAppSession: async () =>
     holder.adminSessionUserId ? { user: { id: holder.adminSessionUserId } } : null,
 }));
-vi.mock('@/lib/request-limits', () => ({
+vi.mock('@/lib/http/request-limits', () => ({
   submitLimiter: { check: () => ({ allowed: true, retryAfterMs: 0 }) },
   validateLimiter: { check: () => ({ allowed: true, retryAfterMs: 0 }) },
 }));
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/lib/auth/auth', () => ({
   getAuth: () => ({
     api: {
       signUpEmail: async ({ body }: { body: { email: string } }) => {
@@ -47,7 +47,7 @@ vi.mock('@/lib/auth', () => ({
     },
   }),
 }));
-vi.mock('@/lib/providers', () => ({
+vi.mock('@/lib/providers/providers', () => ({
   getStorageProvider: () => ({}),
 }));
 vi.mock('@liedmotif/db', async (importActual) => {

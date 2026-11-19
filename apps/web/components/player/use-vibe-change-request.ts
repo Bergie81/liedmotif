@@ -18,7 +18,7 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { ChangeVibeIntentInput, SessionSummary } from '@liedmotif/shared';
-import { changeVibe, setSessionDuration, type ChangeVibeOptions } from '@/lib/api-client';
+import { changeVibe, setSessionDuration, type ChangeVibeOptions } from '@/lib/http/api-client';
 import {
   runPlayerSessionAction,
   type PlayerSessionActionGate,

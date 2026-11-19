@@ -12,8 +12,8 @@ import {
 import { PeopleForm } from '@/components/settings/people-form';
 import { SettingsColumns, SettingsPageHeader } from '@/components/settings/settings-ui';
 import { getDb } from '@/lib/db';
-import { toPersonRoster } from '@/lib/people';
-import { requireAppAccess } from '@/lib/session';
+import { toPersonRoster } from '@/lib/settings/people';
+import { requireAppAccess } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 

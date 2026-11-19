@@ -8,11 +8,15 @@
 import { NextResponse } from 'next/server';
 import { addUploadedPlaylistCover } from '@liedmotif/db';
 import { MAX_PLAYLIST_COVER_HISTORY, uuidSchema } from '@liedmotif/shared';
-import { apiError, apiOk, requireOwnerId } from '@/lib/api-response';
-import { processCoverUpload, storeUploadedCover } from '@/lib/cover-upload-image';
+import { apiError, apiOk, requireOwnerId } from '@/lib/http/api-response';
+import { processCoverUpload, storeUploadedCover } from '@/lib/covers/cover-upload-image';
 import { getDb } from '@/lib/db';
-import { readImageUpload, readUploadForm, withImageUploadAdmission } from '@/lib/image-upload';
-import type { RecordStoredBytes } from '@/lib/storage-quota';
+import {
+  readImageUpload,
+  readUploadForm,
+  withImageUploadAdmission,
+} from '@/lib/media/image-upload';
+import type { RecordStoredBytes } from '@/lib/media/storage-quota';
 
 export const dynamic = 'force-dynamic';
 

@@ -1,6 +1,6 @@
 import type { CoverReferenceFrequency } from '@liedmotif/db';
-import type { PersonSummary } from '@/lib/people';
-import type { PersonReferencePhotoSummary } from '@/lib/person-reference-photos';
+import type { PersonSummary } from '@/lib/settings/people';
+import type { PersonReferencePhotoSummary } from '@/lib/settings/person-reference-photos';
 
 export interface PersonEditorValue extends PersonSummary {
   photos: PersonReferencePhotoSummary[];

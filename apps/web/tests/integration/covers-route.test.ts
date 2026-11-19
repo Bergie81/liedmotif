@@ -10,8 +10,8 @@ vi.mock('@/lib/db', () => ({
     throw new Error('DB must not be touched for a malformed id');
   },
 }));
-vi.mock('@/lib/providers', () => ({ getStorageProvider: () => ({}) }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/providers/providers', () => ({ getStorageProvider: () => ({}) }));
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.authed ? { user: { id: 'admin' } } : null),
   getAppSession: async () => (holder.authed ? { user: { id: 'admin' } } : null),
 }));

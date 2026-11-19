@@ -3,7 +3,7 @@
 // A Track plays through its origin Session; a deleted origin uses the caller's preview.
 
 import { useEffect, useRef, useState } from 'react';
-import { playSessionTrack } from '@/lib/api-client';
+import { playSessionTrack } from '@/lib/http/api-client';
 import { useClientId } from '@/lib/use-client-id';
 import type { PreviewState } from '@/components/library/track-row';
 import { primePlayerAutoplay } from './autoplay-arm';

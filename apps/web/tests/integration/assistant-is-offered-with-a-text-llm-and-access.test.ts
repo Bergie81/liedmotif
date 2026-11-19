@@ -13,7 +13,7 @@ import {
 import { cachedAssistantAvailability } from '@/lib/assistant/availability';
 
 const holder = vi.hoisted(() => ({ llm: null as unknown, llmFails: false }));
-vi.mock('@/lib/providers', () => ({
+vi.mock('@/lib/providers/providers', () => ({
   getLlmProvider: async () => {
     if (holder.llmFails) throw new Error('credential could not be read');
     return holder.llm;

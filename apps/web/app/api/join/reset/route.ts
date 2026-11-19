@@ -12,11 +12,11 @@ import {
   fieldErrorMessage,
   parseJsonBody,
   refuseCrossOrigin,
-} from '@/lib/api-response';
+} from '@/lib/http/api-response';
 import { INVALID_LINK_MESSAGE } from '@/lib/constants';
 import { getDb } from '@/lib/db';
-import { clientIp } from '@/lib/http';
-import { linkTokenLimiter } from '@/lib/request-limits';
+import { clientIp } from '@/lib/http/http';
+import { linkTokenLimiter } from '@/lib/http/request-limits';
 
 export const dynamic = 'force-dynamic';
 

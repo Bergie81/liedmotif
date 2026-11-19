@@ -18,7 +18,7 @@ const moreLikeThis = vi.hoisted(() => vi.fn());
 const engagePlaylist = vi.hoisted(() => vi.fn());
 const push = vi.hoisted(() => vi.fn());
 
-vi.mock('@/lib/api-client', () => ({
+vi.mock('@/lib/http/api-client', () => ({
   deletePlaylist: vi.fn(),
   deleteTrack: vi.fn(),
   getLoungePlaylist: vi.fn(),

@@ -19,8 +19,10 @@ import { DEFAULT_MEMBER_LIMITS } from '@liedmotif/shared';
 
 const holder = vi.hoisted(() => ({ db: null as unknown }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({ getServerSession: async () => null }));
-vi.mock('@/lib/auth', () => ({ getAuth: () => ({ api: { signInEmail: async () => undefined } }) }));
+vi.mock('@/lib/auth/session', () => ({ getServerSession: async () => null }));
+vi.mock('@/lib/auth/auth', () => ({
+  getAuth: () => ({ api: { signInEmail: async () => undefined } }),
+}));
 vi.mock('next/headers', () => ({ headers: async () => new Headers() }));
 
 const { POST: claimPost } = await import('@/app/api/join/claim/route');

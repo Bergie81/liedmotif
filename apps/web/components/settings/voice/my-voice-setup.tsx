@@ -17,11 +17,11 @@ import {
   type VoiceProfileView,
   type VoiceRecordingKindValue,
 } from '@liedmotif/shared';
-import { requestVoiceProfile } from '@/lib/api-client';
+import { requestVoiceProfile } from '@/lib/http/api-client';
 import { cn } from '@/lib/cn';
 import { toast } from '@/lib/toast';
 import { FAILURE_BACKOFF_JITTER, FAILURE_BACKOFF_MAX_MS, pollBackoffMs } from '@/lib/poll-backoff';
-import type { EncodedVoiceRecording } from '@/lib/voice-recording';
+import type { EncodedVoiceRecording } from '@/lib/voice/voice-recording';
 import { Switch } from '@/components/ui/controls';
 import { primaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
 import {

@@ -16,13 +16,13 @@ import {
   fieldErrorMessage,
   parseJsonBody,
   refuseCrossOrigin,
-} from '@/lib/api-response';
-import { getAuth } from '@/lib/auth';
+} from '@/lib/http/api-response';
+import { getAuth } from '@/lib/auth/auth';
 import { INVALID_LINK_MESSAGE } from '@/lib/constants';
 import { getDb } from '@/lib/db';
-import { clientIp } from '@/lib/http';
-import { linkTokenLimiter } from '@/lib/request-limits';
-import { getServerSession } from '@/lib/session';
+import { clientIp } from '@/lib/http/http';
+import { linkTokenLimiter } from '@/lib/http/request-limits';
+import { getServerSession } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 

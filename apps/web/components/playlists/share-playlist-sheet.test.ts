@@ -17,7 +17,7 @@ const holder = vi.hoisted(() => ({
   refusals: 0,
 }));
 
-vi.mock('@/lib/api-client', () => ({
+vi.mock('@/lib/http/api-client', () => ({
   getPlaylistShare: async (playlistId: string) => ({
     ok: true as const,
     data: {

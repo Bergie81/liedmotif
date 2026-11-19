@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import type { OnboardingCredential } from '@/lib/onboarding-data';
+import type { OnboardingCredential } from '@/lib/onboarding/onboarding-data';
 import { OnboardingLlmStep } from './onboarding-llm-step';
 import { OnboardingMusicStep } from './onboarding-music-step';
 

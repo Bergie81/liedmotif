@@ -14,11 +14,11 @@ import {
   SettingsSection,
   SettingsStatusBadge,
 } from '@/components/settings/settings-ui';
-import { APP_VERSION } from '@/lib/app-version';
+import { APP_VERSION } from '@/lib/admin/app-version';
 import { getDb } from '@/lib/db';
-import { loadProviderSettingsData } from '@/lib/provider-settings-data';
-import { getMusicProvider, getStorageProvider } from '@/lib/providers';
-import { requireAdmin } from '@/lib/session';
+import { loadProviderSettingsData } from '@/lib/settings/provider-settings-data';
+import { getMusicProvider, getStorageProvider } from '@/lib/providers/providers';
+import { requireAdmin } from '@/lib/auth/session';
 import {
   diagnosticStatus,
   type DiagnosticHealth,
@@ -26,8 +26,8 @@ import {
   optionalProviderDiagnostic,
   presentationSource,
   unavailableValue,
-} from '@/lib/storage-diagnostics-model';
-import { getWorkerDiagnostics } from '@/lib/worker-diagnostics';
+} from '@/lib/admin/storage-diagnostics-model';
+import { getWorkerDiagnostics } from '@/lib/admin/worker-diagnostics';
 
 export const dynamic = 'force-dynamic';
 

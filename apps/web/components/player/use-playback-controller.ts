@@ -28,7 +28,7 @@ import {
   resolveSeekTarget,
   soloLoudnessGainDb,
 } from '@liedmotif/shared';
-import { reportPlayback } from '@/lib/api-client';
+import { reportPlayback } from '@/lib/http/api-client';
 import { isOnline } from '@/lib/online-state';
 import { useClientId } from '@/lib/use-client-id';
 import { makeUuid } from '@/lib/uuid';

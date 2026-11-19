@@ -15,13 +15,13 @@ import {
 // `hidden` short-circuit is pinned db-free in `lib/resolve-own-voice-offer`.)
 
 // Hermetic music provider (customVoice-capable) — no network, no spend.
-vi.mock('@/lib/providers', async () => {
+vi.mock('@/lib/providers/providers', async () => {
   const { mockMusicProvider } = await import('@liedmotif/providers');
   const music = mockMusicProvider();
   return { getLlmProvider: async () => null, getMusicProvider: () => music };
 });
 
-const { resolveOwnVoiceOffer } = await import('@/lib/voice');
+const { resolveOwnVoiceOffer } = await import('@/lib/voice/voice');
 
 const skip = !TEST_DATABASE_URL;
 let testDb: TestDb;

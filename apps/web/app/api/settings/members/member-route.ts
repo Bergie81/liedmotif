@@ -12,7 +12,7 @@
 
 import { resolveUserProfile } from '@liedmotif/db';
 import { NextResponse } from 'next/server';
-import { apiError, requireAdminOwnerId } from '@/lib/api-response';
+import { apiError, requireAdminOwnerId } from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
 
 export const NO_SUCH_MEMBER = 'No such member.';

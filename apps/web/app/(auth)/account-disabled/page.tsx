@@ -7,7 +7,7 @@ import {
   LiedmotifMark,
   LiedmotifWordmark,
 } from '@/components/ui/design-system';
-import { resolveAccountState } from '@/lib/session';
+import { resolveAccountState } from '@/lib/auth/session';
 
 // The stated destination for a signed-in but disabled account — never /login,
 // which would bounce straight back into the app guards. Anyone else is routed

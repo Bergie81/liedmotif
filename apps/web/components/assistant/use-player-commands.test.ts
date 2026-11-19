@@ -23,7 +23,7 @@ const api = vi.hoisted(() => ({
   getAllPlaylistMembers: vi.fn<(playlistId: string) => Promise<unknown>>(),
   markPlaylistPlayed: vi.fn<(playlistId: string) => Promise<unknown>>(),
 }));
-vi.mock('@/lib/api-client', () => api);
+vi.mock('@/lib/http/api-client', () => api);
 const autoplay = vi.hoisted(() => ({ primePlayerAutoplay: vi.fn<() => void>() }));
 vi.mock('@/components/player/autoplay-arm', () => autoplay);
 

@@ -11,7 +11,7 @@ const api = vi.hoisted(() => ({
   getAllPlaylistMembers: vi.fn(),
   removePlaylistTrack: vi.fn(),
 }));
-vi.mock('@/lib/api-client', () => api);
+vi.mock('@/lib/http/api-client', () => api);
 const router = vi.hoisted(() => ({ refresh: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => router }));
 

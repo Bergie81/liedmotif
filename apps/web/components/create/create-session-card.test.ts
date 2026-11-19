@@ -11,7 +11,7 @@ const api = vi.hoisted(() => ({
   dismissSurprise: vi.fn(),
   getPendingSurprise: vi.fn(),
 }));
-vi.mock('@/lib/api-client', () => api);
+vi.mock('@/lib/http/api-client', () => api);
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => router }));
 

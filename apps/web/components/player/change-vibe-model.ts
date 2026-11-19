@@ -24,7 +24,7 @@ import {
   type VocalMode,
   type VoicePreference,
 } from '@/components/create/create-session-model';
-import type { SessionLanguageChoice } from '@/lib/session-languages';
+import type { SessionLanguageChoice } from '@/lib/sessions/session-languages';
 
 /** The overlay's fine-tune state. `energy: null` = the vibe has no energy
  *  facet (nothing selected); Voice `'any'` and Language `'auto'` are the

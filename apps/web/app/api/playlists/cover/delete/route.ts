@@ -7,7 +7,7 @@
 import { NextResponse } from 'next/server';
 import { deletePlaylistCoverFromHistory, getPlaylistCoverSubject } from '@liedmotif/db';
 import { deletePlaylistCoverRequestSchema } from '@liedmotif/shared';
-import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/api-response';
+import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';

@@ -34,7 +34,7 @@ import type { Pool } from 'pg';
 const holder = vi.hoisted(() => ({ db: null as unknown }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
 
-const { coverAttemptGate } = await import('@/lib/cover-attempt-gate');
+const { coverAttemptGate } = await import('@/lib/covers/cover-attempt-gate');
 
 const skip = !TEST_DATABASE_URL;
 let testDb: TestDb;

@@ -9,10 +9,10 @@ import type {
   StartSurpriseRequest,
   SurpriseProposal,
 } from '@liedmotif/shared';
-import type { ApiResult } from '@/lib/api-client';
+import type { ApiResult } from '@/lib/http/api-client';
 import { cn } from '@/lib/cn';
-import type { SessionLanguageChoice } from '@/lib/session-languages';
-import type { OwnVoiceOffer } from '@/lib/voice';
+import type { SessionLanguageChoice } from '@/lib/sessions/session-languages';
+import type { OwnVoiceOffer } from '@/lib/voice/voice';
 import { useClientId } from '@/lib/use-client-id';
 import { primaryButtonClass } from '@/components/ui/form-styles';
 import { LiedmotifLoader } from '@/components/ui/loading';

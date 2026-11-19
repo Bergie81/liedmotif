@@ -7,10 +7,10 @@ import type { ListenerProfile } from '@liedmotif/db';
 import { DEFAULT_UNIT_COSTS } from '@liedmotif/shared';
 import { namedPeopleCount } from '@/components/settings/people-form-model';
 import type { PersonEditorValue } from '@/components/settings/people-types';
-import { IMAGE_PROVIDERS, coverPriceCents } from '@/lib/configurable-providers';
-import { coverSource, type CoverSource } from '@/lib/cover-source';
-import type { BudgetUsage } from '@/lib/my-budget-model';
-import type { OnboardingData } from '@/lib/onboarding-data';
+import { IMAGE_PROVIDERS, coverPriceCents } from '@/lib/providers/configurable-providers';
+import { coverSource, type CoverSource } from '@/lib/covers/cover-source';
+import type { BudgetUsage } from '@/lib/budget/my-budget-model';
+import type { OnboardingData } from '@/lib/onboarding/onboarding-data';
 import { detectTimezone } from '@/lib/timezones';
 import {
   coverBudgetFromLimits,

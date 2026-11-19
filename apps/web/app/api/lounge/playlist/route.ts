@@ -8,8 +8,8 @@
 import { NextResponse } from 'next/server';
 import { getPlaylistRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
-import { apiError, apiOk, requireOwnerId, validateInput } from '@/lib/api-response';
-import { loadLoungePlaylistDetailPage } from '@/lib/lounge';
+import { apiError, apiOk, requireOwnerId, validateInput } from '@/lib/http/api-response';
+import { loadLoungePlaylistDetailPage } from '@/lib/library/lounge';
 
 export const dynamic = 'force-dynamic';
 

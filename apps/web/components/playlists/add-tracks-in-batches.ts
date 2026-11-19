@@ -1,4 +1,8 @@
-import { addPlaylistTracks, type AddPlaylistTracksData, type ApiResult } from '@/lib/api-client';
+import {
+  addPlaylistTracks,
+  type AddPlaylistTracksData,
+  type ApiResult,
+} from '@/lib/http/api-client';
 
 /** The most Track ids one `addPlaylistTracks` request takes. */
 const ADD_BATCH = 100;

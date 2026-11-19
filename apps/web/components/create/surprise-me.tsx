@@ -13,10 +13,10 @@ import {
   type SurpriseTheme,
   type SurpriseVocal,
 } from '@liedmotif/shared';
-import { dismissSurprise, getPendingSurprise, proposeSurprise } from '@/lib/api-client';
+import { dismissSurprise, getPendingSurprise, proposeSurprise } from '@/lib/http/api-client';
 import { cn } from '@/lib/cn';
 import { toast } from '@/lib/toast';
-import type { SessionLanguageChoice } from '@/lib/session-languages';
+import type { SessionLanguageChoice } from '@/lib/sessions/session-languages';
 import { SessionLanguageSelect } from '@/components/session-language-select';
 import {
   chipClass,

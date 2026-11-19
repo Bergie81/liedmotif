@@ -8,7 +8,7 @@
 // controller sends no playback reports, so its top-ups stop on their own).
 
 import type { PlaylistMemberItem, PlaylistSummaryItem } from '@liedmotif/shared';
-import { markPlaylistPlayed } from '@/lib/api-client';
+import { markPlaylistPlayed } from '@/lib/http/api-client';
 import { usePlayerActions } from '@/components/player/player-provider';
 
 export function usePlayPlaylist(

@@ -21,10 +21,10 @@ import { MAX_GENRES } from '@/components/create/genre-vocabulary';
 import { Switch } from '@/components/ui/controls';
 import { inputClass, primaryButtonClass } from '@/components/ui/form-styles';
 import { Sheet, SheetContent, SheetHeader, SheetTrigger } from '@/components/ui/sheet';
-import { requestVoiceProfile, type ChangeVibeOptions } from '@/lib/api-client';
+import { requestVoiceProfile, type ChangeVibeOptions } from '@/lib/http/api-client';
 import { useAppChrome } from '@/components/app-chrome-context';
 import { cn } from '@/lib/cn';
-import type { OwnVoiceOffer } from '@/lib/voice';
+import type { OwnVoiceOffer } from '@/lib/voice/voice';
 import { ChangeVibeGlyph } from '@/components/ui/glyphs';
 import {
   buildChangeVibeRequest,

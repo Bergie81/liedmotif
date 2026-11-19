@@ -10,16 +10,16 @@ import { NextResponse } from 'next/server';
 import { getOwnedDownloadableTrack } from '@liedmotif/db';
 import { uuidSchema } from '@liedmotif/shared';
 import { contentTypeForKey } from '@liedmotif/storage';
-import { requireOwnerId } from '@/lib/api-response';
+import { requireOwnerId } from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
-import { getStorageProvider } from '@/lib/providers';
+import { getStorageProvider } from '@/lib/providers/providers';
 import {
   createTrackDownloadDeps,
   openTrackDownload,
   planTrackDownloads,
   trackDownloadFileName,
-} from '@/lib/track-downloads';
-import { webStreamFromReadable } from '@/lib/web-stream';
+} from '@/lib/downloads/track-downloads';
+import { webStreamFromReadable } from '@/lib/http/web-stream';
 
 export const dynamic = 'force-dynamic';
 

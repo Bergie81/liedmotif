@@ -6,9 +6,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { PoolOverSubscription, UnitCosts } from '@liedmotif/shared';
-import { apiFetchJson } from '@/lib/api-fetch';
+import { apiFetchJson } from '@/lib/http/api-fetch';
 import { compactPrimaryButtonClass } from '@/components/ui/form-styles';
-import type { MembersAdminData } from '@/lib/members-admin-data';
+import type { MembersAdminData } from '@/lib/settings/members-admin-data';
 import { toast } from '@/lib/toast';
 import { BudgetUsageMeters, MEMBER_TRACK_LABELS } from '../budget-meters';
 import { SettingsCard, SettingsFeedback, SettingsFootnote } from '../settings-ui';

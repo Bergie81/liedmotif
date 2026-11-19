@@ -21,13 +21,13 @@ const holder = vi.hoisted(() => ({
   llmConfigured: false,
 }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
   getAppSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
 }));
 // Hermetic providers: mock music and, only where a test asks, the mock text
 // LLM — no network, no spend.
-vi.mock('@/lib/providers', async () => {
+vi.mock('@/lib/providers/providers', async () => {
   const { mockLlmProvider, mockMusicProvider } = await import('@liedmotif/providers');
   const music = mockMusicProvider();
   const llm = mockLlmProvider();
@@ -39,7 +39,7 @@ vi.mock('@/lib/providers', async () => {
 
 const { POST } = await import('@/app/api/sessions/route');
 const { POST: changeVibe } = await import('@/app/api/sessions/change-vibe/route');
-const { OWN_VOICE_NOT_OFFERED_MESSAGE } = await import('@/lib/voice');
+const { OWN_VOICE_NOT_OFFERED_MESSAGE } = await import('@/lib/voice/voice');
 
 const skip = !TEST_DATABASE_URL;
 let testDb: TestDb;

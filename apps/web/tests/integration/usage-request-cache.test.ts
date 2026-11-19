@@ -41,10 +41,10 @@ vi.mock('react', async (importOriginal) => {
 
 const holder = vi.hoisted(() => ({ db: null as unknown }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/providers', () => ({ getTypicalTracksPerMusicRequest: () => 2 }));
+vi.mock('@/lib/providers/providers', () => ({ getTypicalTracksPerMusicRequest: () => 2 }));
 
 const { loadAppChrome } = await import('@/lib/app-chrome');
-const { cachedOwnerUsageTracks } = await import('@/lib/sessions');
+const { cachedOwnerUsageTracks } = await import('@/lib/sessions/sessions');
 
 const skip = !TEST_DATABASE_URL;
 let testDb: TestDb;

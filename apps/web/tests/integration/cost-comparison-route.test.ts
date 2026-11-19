@@ -31,11 +31,11 @@ const holder = vi.hoisted(() => ({
   now: new Date('2026-06-29T12:00:00Z'),
 }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.viewerIsAdmin ? { user: { id: holder.adminId } } : null),
   getAppSession: async () => ({ user: { id: 'member-viewer' } }),
 }));
-vi.mock('@/lib/providers', () => ({ getTypicalTracksPerMusicRequest: () => 2 }));
+vi.mock('@/lib/providers/providers', () => ({ getTypicalTracksPerMusicRequest: () => 2 }));
 
 const { GET } = await import('@/app/api/settings/cost-comparison/route');
 

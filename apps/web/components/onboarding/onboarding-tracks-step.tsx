@@ -10,7 +10,7 @@ import { Gauge, Zap } from 'lucide-react';
 import { SettingsControlRow } from '@/components/settings/settings-ui';
 import { Switch } from '@/components/ui/controls';
 import { cn } from '@/lib/cn';
-import { normalizeTracksPerRequest } from '@/lib/track-units';
+import { normalizeTracksPerRequest } from '@/lib/budget/track-units';
 import {
   OnboardingCard,
   OnboardingLimitRow,

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { SettingsFrame } from '@/components/settings/settings-frame';
-import { requireAppAccess } from '@/lib/session';
+import { requireAppAccess } from '@/lib/auth/session';
 
 // Settings chrome. The settings GROUP admits both roles — a Member owns their
 // profile, playback, generation, and People pages. Every admin-only page keeps

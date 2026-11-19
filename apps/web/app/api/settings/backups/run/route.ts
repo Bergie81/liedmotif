@@ -3,9 +3,9 @@
 
 import { NextResponse } from 'next/server';
 import { requestBackup } from '@liedmotif/db';
-import { apiError, apiOk, requireAdminOwnerId } from '@/lib/api-response';
-import { isBackupRunning } from '@/lib/backup-status-model';
-import { getBackupDir, readBackupStatus } from '@/lib/backups';
+import { apiError, apiOk, requireAdminOwnerId } from '@/lib/http/api-response';
+import { isBackupRunning } from '@/lib/admin/backup-status-model';
+import { getBackupDir, readBackupStatus } from '@/lib/admin/backups';
 import { getDb } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';

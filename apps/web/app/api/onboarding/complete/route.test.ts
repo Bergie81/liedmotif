@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@liedmotif/db', () => ({ completeOnboarding: mocks.complete }));
 vi.mock('@/lib/db', () => ({ getDb: () => ({}) }));
-vi.mock('@/lib/session', () => ({ getAppSession: mocks.adminSession }));
+vi.mock('@/lib/auth/session', () => ({ getAppSession: mocks.adminSession }));
 
 const { POST } = await import('./route');
 

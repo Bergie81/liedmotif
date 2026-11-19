@@ -19,9 +19,9 @@ import { SettingsControlRow } from '@/components/settings/settings-ui';
 import { useCredentialEditor } from '@/components/settings/use-credential-editor';
 import { Switch } from '@/components/ui/controls';
 import { cn } from '@/lib/cn';
-import { IMAGE_PROVIDERS, coverPriceCents } from '@/lib/configurable-providers';
-import { coverSource, type CoverSource } from '@/lib/cover-source';
-import type { OnboardingImageCredential } from '@/lib/onboarding-data';
+import { IMAGE_PROVIDERS, coverPriceCents } from '@/lib/providers/configurable-providers';
+import { coverSource, type CoverSource } from '@/lib/covers/cover-source';
+import type { OnboardingImageCredential } from '@/lib/onboarding/onboarding-data';
 import { OnboardingCredentialFields, ProviderKeyHowTo } from './onboarding-credential-fields';
 import {
   OnboardingCard,

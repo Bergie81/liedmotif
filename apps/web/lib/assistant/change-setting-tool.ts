@@ -26,8 +26,8 @@ import {
   COVER_FREQUENCY_OPTIONS,
   ownerCoverFallbackReady,
 } from '@/components/settings/people-form-model';
-import { toPersonRoster } from '@/lib/people';
-import { SESSION_LANGUAGE_CHOICES, sessionLanguageLabel } from '@/lib/session-languages';
+import { toPersonRoster } from '@/lib/settings/people';
+import { SESSION_LANGUAGE_CHOICES, sessionLanguageLabel } from '@/lib/sessions/session-languages';
 import { done, refused } from './library-action';
 import { orList, SETTING_NAMES } from './setting-names';
 import { CHANGE_SETTING_TOOL_NAME } from './tool-names';

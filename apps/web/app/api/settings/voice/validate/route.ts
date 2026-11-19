@@ -8,11 +8,11 @@ import { NextResponse } from 'next/server';
 import { getVoiceRecording, markValidationSubmitted, withLockedVoiceProfile } from '@liedmotif/db';
 import { ProviderError } from '@liedmotif/providers';
 import { readAllBytes } from '@liedmotif/storage';
-import { apiError, apiOk, requireAdminOwnerId } from '@/lib/api-response';
+import { apiError, apiOk, requireAdminOwnerId } from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
 import { ownVoiceEnabled } from '@/lib/env';
-import { getStorageProvider } from '@/lib/providers';
-import { buildVoiceProfileView, musicVoiceApi } from '@/lib/voice';
+import { getStorageProvider } from '@/lib/providers/providers';
+import { buildVoiceProfileView, musicVoiceApi } from '@/lib/voice/voice';
 
 export const dynamic = 'force-dynamic';
 

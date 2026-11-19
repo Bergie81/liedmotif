@@ -8,8 +8,13 @@ import { NextResponse } from 'next/server';
 import { getLibraryTracks } from '@liedmotif/db';
 import { getLibraryRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
-import { apiOk, requireOwnerId, validateInput, validateKeysetCursor } from '@/lib/api-response';
-import { toLibraryTrackItem } from '@/lib/tracks';
+import {
+  apiOk,
+  requireOwnerId,
+  validateInput,
+  validateKeysetCursor,
+} from '@/lib/http/api-response';
+import { toLibraryTrackItem } from '@/lib/library/tracks';
 
 export const dynamic = 'force-dynamic';
 

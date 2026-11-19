@@ -10,7 +10,7 @@ import { applyLoopLease } from '@liedmotif/db';
 import { loopLeaseRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
 import { enqueueEnsureSessionBuffer } from '@/lib/worker-jobs';
-import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/api-response';
+import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/http/api-response';
 
 export const dynamic = 'force-dynamic';
 

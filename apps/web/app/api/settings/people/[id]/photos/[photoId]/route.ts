@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { deletePersonReferencePhoto } from '@liedmotif/db';
 import { uuidSchema } from '@liedmotif/shared';
-import { apiError, apiOk, requireOwnerId } from '@/lib/api-response';
+import { apiError, apiOk, requireOwnerId } from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
-import { getStorageProvider } from '@/lib/providers';
+import { getStorageProvider } from '@/lib/providers/providers';
 
 export const dynamic = 'force-dynamic';
 

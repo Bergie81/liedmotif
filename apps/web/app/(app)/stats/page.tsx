@@ -2,9 +2,9 @@ import { DEFAULT_LISTENING_RANGE } from '@liedmotif/shared';
 import { SettingsFrame } from '@/components/settings/settings-frame';
 import { SettingsPageHeader } from '@/components/settings/settings-ui';
 import { StatsTabs } from '@/components/stats/stats-tabs';
-import { loadCostComparison } from '@/lib/cost-comparison-data';
-import { loadListeningStats } from '@/lib/listening-stats-data';
-import { requireAppAccess } from '@/lib/session';
+import { loadCostComparison } from '@/lib/stats/cost-comparison-data';
+import { loadListeningStats } from '@/lib/stats/listening-stats-data';
+import { requireAppAccess } from '@/lib/auth/session';
 
 // Your Stats: the signed-in User's own listening to their own Tracks.
 // Reached from the account menu, for Admin and Members alike; the Admin sees

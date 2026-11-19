@@ -20,10 +20,10 @@ import {
   type SearchMatchContext,
   type SearchScope,
 } from '@liedmotif/shared';
-import { apiOk, requireOwnerId, validateInput } from '@/lib/api-response';
+import { apiOk, requireOwnerId, validateInput } from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
-import { toPlaylistSummaryItem } from '@/lib/playlists';
-import { toLibraryTrackItem } from '@/lib/tracks';
+import { toPlaylistSummaryItem } from '@/lib/library/playlists';
+import { toLibraryTrackItem } from '@/lib/library/tracks';
 
 export const dynamic = 'force-dynamic';
 

@@ -8,7 +8,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { unitCostsSet, type UnitCosts } from '@liedmotif/shared';
-import { apiFetchJson } from '@/lib/api-fetch';
+import { apiFetchJson } from '@/lib/http/api-fetch';
 import { toast } from '@/lib/toast';
 import { compactPrimaryButtonClass } from '@/components/ui/form-styles';
 import {

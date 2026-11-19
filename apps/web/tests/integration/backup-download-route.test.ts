@@ -12,7 +12,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const holder = vi.hoisted(() => ({ admin: true }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.admin ? { user: { id: 'admin-1' } } : null),
   getAppSession: async () => ({ user: { id: holder.admin ? 'admin-1' : 'member-1' } }),
 }));

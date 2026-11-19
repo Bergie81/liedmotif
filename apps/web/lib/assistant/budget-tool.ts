@@ -6,10 +6,10 @@
 import { getAdminCoverUsage, getUsageLimits } from '@liedmotif/db';
 import type { LlmTool } from '@liedmotif/providers';
 import { noToolInputSchema, type NoToolInput } from '@liedmotif/shared';
-import { loadMyBudgetData } from '@/lib/my-budget-data';
-import type { BudgetFigures, BudgetUsage, BudgetWindow } from '@/lib/my-budget-model';
-import { getTypicalTracksPerMusicRequest } from '@/lib/providers';
-import { getOwnerUsageTracks } from '@/lib/sessions';
+import { loadMyBudgetData } from '@/lib/budget/my-budget-data';
+import type { BudgetFigures, BudgetUsage, BudgetWindow } from '@/lib/budget/my-budget-model';
+import { getTypicalTracksPerMusicRequest } from '@/lib/providers/providers';
+import { getOwnerUsageTracks } from '@/lib/sessions/sessions';
 import { BUDGET_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 

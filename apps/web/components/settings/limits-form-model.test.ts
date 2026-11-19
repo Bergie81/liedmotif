@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { defaultUsageLimits } from '@liedmotif/db';
 import { USAGE_LIMIT_CEILINGS } from '@liedmotif/shared';
-import { providerTasksToTracks } from '@/lib/track-units';
+import { providerTasksToTracks } from '@/lib/budget/track-units';
 import {
   buildLimitsPatch,
   createLimitFormValues,

@@ -16,12 +16,12 @@ import { upsertProviderCredential } from '@liedmotif/db';
 
 const holder = vi.hoisted(() => ({ db: null as unknown }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => ({ user: { id: 'admin-1' } }),
   getAppSession: async () => ({ user: { id: 'admin-1' } }),
 }));
 // The route is rate-limited per IP; the limiter is irrelevant to these behaviors.
-vi.mock('@/lib/request-limits', () => ({
+vi.mock('@/lib/http/request-limits', () => ({
   validateLimiter: { check: () => ({ allowed: true, retryAfterMs: 0 }) },
 }));
 

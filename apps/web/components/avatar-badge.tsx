@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { listenerInitial } from '@/lib/avatar';
+import { listenerInitial } from '@/lib/media/avatar';
 import { cn } from '@/lib/cn';
 import { roundChipClass } from './ui/design-system';
 

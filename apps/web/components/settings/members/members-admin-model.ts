@@ -23,9 +23,17 @@ import {
   parseWholeRow,
   sessionStartWarning,
   type LimitRowBound,
-} from '@/lib/limit-row-bounds';
-import type { BudgetUsage, BudgetWindowCaps, OneTimeBudgetTotals } from '@/lib/my-budget-model';
-import { providerTasksToTracks, roundUpToWholeCalls, wholeLimitNumber } from '@/lib/track-units';
+} from '@/lib/budget/limit-row-bounds';
+import type {
+  BudgetUsage,
+  BudgetWindowCaps,
+  OneTimeBudgetTotals,
+} from '@/lib/budget/my-budget-model';
+import {
+  providerTasksToTracks,
+  roundUpToWholeCalls,
+  wholeLimitNumber,
+} from '@/lib/budget/track-units';
 
 /**
  * Every budget field as typed, in Tracks and Covers: the four Rolling windows

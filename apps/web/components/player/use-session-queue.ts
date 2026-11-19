@@ -14,7 +14,7 @@ import {
   type QueueItem,
   type SessionVibe,
 } from '@liedmotif/shared';
-import { getSessionQueue } from '@/lib/api-client';
+import { getSessionQueue } from '@/lib/http/api-client';
 import { watchSessionFinals } from '@/lib/offline/library-writes';
 import { createQueuePoller, type QueuePollSignals } from './queue-poller';
 import type { PlayableTrack } from './playable-track';

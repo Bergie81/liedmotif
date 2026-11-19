@@ -12,7 +12,7 @@ import {
   MIN_PASSWORD_LENGTH,
   validatePassword,
 } from '@liedmotif/shared';
-import { apiFetchJson } from '@/lib/api-fetch';
+import { apiFetchJson } from '@/lib/http/api-fetch';
 import { cn } from '@/lib/cn';
 import { AlertBanner } from '@/components/ui/design-system';
 import { inputClass, labelClass, primaryButtonClass } from '@/components/ui/form-styles';

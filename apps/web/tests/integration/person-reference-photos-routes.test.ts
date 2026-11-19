@@ -1,7 +1,7 @@
 import { Readable } from 'node:stream';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
-import { MAX_IMAGE_UPLOAD_BYTES } from '@/lib/image-upload-targets';
+import { MAX_IMAGE_UPLOAD_BYTES } from '@/lib/media/image-upload-targets';
 import { multipartRequest } from '../helpers/multipart-request';
 
 const PERSON_ID = '00000000-0000-4000-8000-000000000111';
@@ -18,11 +18,11 @@ const holder = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/db', () => ({ getDb: () => ({}) }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.authed ? { user: { id: 'owner-1' } } : null),
   getAppSession: async () => (holder.authed ? { user: { id: 'owner-1' } } : null),
 }));
-vi.mock('@/lib/providers', () => ({
+vi.mock('@/lib/providers/providers', () => ({
   getStorageProvider: () => ({
     providerKey: 'local-fs',
     write: async (input: { key: string; body: Uint8Array }) => {

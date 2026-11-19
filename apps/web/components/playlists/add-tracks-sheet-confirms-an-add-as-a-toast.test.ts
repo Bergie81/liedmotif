@@ -19,7 +19,7 @@ const holder = vi.hoisted(() => ({
 }));
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
-vi.mock('@/lib/api-client', () => ({
+vi.mock('@/lib/http/api-client', () => ({
   getLibrary: async () => ({ ok: true as const, data: { items: holder.tracks, nextCursor: null } }),
   addPlaylistTracks: async (_playlistId: string, trackIds: string[]) =>
     holder.adds.shift() === 'refuse'

@@ -9,7 +9,7 @@ import {
   type AssistantAccess,
   type MemberAssistantAccess,
 } from '@liedmotif/shared';
-import { wholeLimitNumber } from '@/lib/track-units';
+import { wholeLimitNumber } from '@/lib/budget/track-units';
 
 /** Where a shown value comes from: the instance default, or the Member's own. */
 export type AccessSource = 'default' | 'own';

@@ -7,8 +7,8 @@ import {
   SettingsSection,
 } from '@/components/settings/settings-ui';
 import { getDb } from '@/lib/db';
-import { requireAppAccess } from '@/lib/session';
-import { getLlmProvider } from '@/lib/providers';
+import { requireAppAccess } from '@/lib/auth/session';
+import { getLlmProvider } from '@/lib/providers/providers';
 
 export const dynamic = 'force-dynamic';
 

@@ -31,7 +31,7 @@ import type {
   ChangeVibeIntentInput,
   SessionSummary,
 } from '@liedmotif/shared';
-import type { ChangeVibeOptions } from '@/lib/api-client';
+import type { ChangeVibeOptions } from '@/lib/http/api-client';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import {
   abandonPendingPlayback,

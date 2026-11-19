@@ -8,8 +8,8 @@ import { NextResponse } from 'next/server';
 import { getOwnedTrackSummary } from '@liedmotif/db';
 import { uuidSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
-import { apiError, apiOk, requireOwnerId } from '@/lib/api-response';
-import { toTrackSummary } from '@/lib/tracks';
+import { apiError, apiOk, requireOwnerId } from '@/lib/http/api-response';
+import { toTrackSummary } from '@/lib/library/tracks';
 
 export const dynamic = 'force-dynamic';
 

@@ -7,9 +7,9 @@ import {
   SettingsSection,
 } from '@/components/settings/settings-ui';
 import { getDb } from '@/lib/db';
-import { requireAdmin } from '@/lib/session';
+import { requireAdmin } from '@/lib/auth/session';
 import { ownVoiceEnabled } from '@/lib/env';
-import { buildVoiceProfileView } from '@/lib/voice';
+import { buildVoiceProfileView } from '@/lib/voice/voice';
 
 export const dynamic = 'force-dynamic';
 

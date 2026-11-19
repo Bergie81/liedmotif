@@ -15,7 +15,7 @@ import type {
   UpdateMemberAssistantAccessRequest,
 } from '@liedmotif/shared';
 import { Switch } from '@/components/ui/controls';
-import { apiFetchJson } from '@/lib/api-fetch';
+import { apiFetchJson } from '@/lib/http/api-fetch';
 import { toast } from '@/lib/toast';
 import { SettingsCard, SettingsControlRow, SettingsFootnote } from '../settings-ui';
 import {

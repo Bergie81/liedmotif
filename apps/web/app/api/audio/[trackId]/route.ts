@@ -21,13 +21,13 @@ import {
   type StorageObjectStat,
   type StorageProvider,
 } from '@liedmotif/storage';
-import { requireOwnerId } from '@/lib/api-response';
-import { encryptionKeyIfConfigured } from '@/lib/credentials';
+import { requireOwnerId } from '@/lib/http/api-response';
+import { encryptionKeyIfConfigured } from '@/lib/providers/credentials';
 import { getDb } from '@/lib/db';
-import { parseAudioRange } from '@/lib/http-range';
-import { getStorageProvider } from '@/lib/providers';
-import { withIdleTimeout } from '@/lib/upstream-idle';
-import { webStreamFromReadable } from '@/lib/web-stream';
+import { parseAudioRange } from '@/lib/http/http-range';
+import { getStorageProvider } from '@/lib/providers/providers';
+import { withIdleTimeout } from '@/lib/http/upstream-idle';
+import { webStreamFromReadable } from '@/lib/http/web-stream';
 
 export const dynamic = 'force-dynamic';
 

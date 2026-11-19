@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { LibraryTrackItem, LibraryView, TrackFlags } from '@liedmotif/shared';
-import { deleteTrack as deleteTrackApi, favoriteTrack, unsaveTrack } from '@/lib/api-client';
+import { deleteTrack as deleteTrackApi, favoriteTrack, unsaveTrack } from '@/lib/http/api-client';
 import { toast } from '@/lib/toast';
 import {
   MORE_LIKE_THIS_FAILED,

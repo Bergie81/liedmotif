@@ -24,7 +24,7 @@ const holder = vi.hoisted(() => ({
   llmInvocations: 0,
 }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
   getAppSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
 }));
@@ -33,7 +33,7 @@ vi.mock('@/lib/session', () => ({
 // instance this module graph can produce counts an invocation, so "zero LLM
 // calls" is asserted at the provider seam — a stale cached reference would be
 // counted too, not just a fresh `getLlmProvider` resolution.
-vi.mock('@/lib/providers', async () => {
+vi.mock('@/lib/providers/providers', async () => {
   const { mockLlmProvider, mockMusicProvider } = await import('@liedmotif/providers');
   const music = mockMusicProvider();
   const real = mockLlmProvider();

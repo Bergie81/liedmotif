@@ -10,13 +10,17 @@ import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { getUserImage, queueOwnerStorageObjectDeletion } from '@liedmotif/db';
 import { storageKeys } from '@liedmotif/storage';
-import { apiError, apiOk, requireOwnerId } from '@/lib/api-response';
-import { getAuth } from '@/lib/auth';
-import { avatarIdFromUrl, avatarUrlForId } from '@/lib/avatar';
-import { processAvatarUpload } from '@/lib/avatar-image';
+import { apiError, apiOk, requireOwnerId } from '@/lib/http/api-response';
+import { getAuth } from '@/lib/auth/auth';
+import { avatarIdFromUrl, avatarUrlForId } from '@/lib/media/avatar';
+import { processAvatarUpload } from '@/lib/media/avatar-image';
 import { getDb } from '@/lib/db';
-import { readImageUpload, readUploadForm, withImageUploadAdmission } from '@/lib/image-upload';
-import { getStorageProvider } from '@/lib/providers';
+import {
+  readImageUpload,
+  readUploadForm,
+  withImageUploadAdmission,
+} from '@/lib/media/image-upload';
+import { getStorageProvider } from '@/lib/providers/providers';
 
 export const dynamic = 'force-dynamic';
 

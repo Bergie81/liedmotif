@@ -21,7 +21,7 @@ import {
   applyTrackMemberships,
   getAllPlaylists,
   type ApplyTrackMembershipsData,
-} from '@/lib/api-client';
+} from '@/lib/http/api-client';
 import { cn } from '@/lib/cn';
 import { toast } from '@/lib/toast';
 import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';

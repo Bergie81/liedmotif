@@ -8,8 +8,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import type { OnboardingData } from '@/lib/onboarding-data';
-import { readCoverKeyState } from '@/lib/settings-client';
+import type { OnboardingData } from '@/lib/onboarding/onboarding-data';
+import { readCoverKeyState } from '@/lib/settings/settings-client';
 import { OnboardingCoversStep } from './onboarding-covers-step';
 import { OnboardingDoneStep } from './onboarding-done-step';
 import {

@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import type { ApiErrorCode } from '@liedmotif/shared';
-import { moreLikeThis } from '@/lib/api-client';
+import { moreLikeThis } from '@/lib/http/api-client';
 import { useClientId } from '@/lib/use-client-id';
 import { usePlayerActions } from '@/components/player/player-provider';
 

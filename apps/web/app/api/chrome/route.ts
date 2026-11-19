@@ -6,7 +6,7 @@
 // Member's usage chrome refreshes like the Admin's.
 
 import { NextResponse } from 'next/server';
-import { apiOk, requireOwnerId } from '@/lib/api-response';
+import { apiOk, requireOwnerId } from '@/lib/http/api-response';
 import { loadAppChrome } from '@/lib/app-chrome';
 import { getDb } from '@/lib/db';
 

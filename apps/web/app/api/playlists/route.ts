@@ -13,8 +13,8 @@ import {
   requireOwnerId,
   validateInput,
   validateKeysetCursor,
-} from '@/lib/api-response';
-import { loadPlaylistSummaries, toPlaylistSummaryItem } from '@/lib/playlists';
+} from '@/lib/http/api-response';
+import { loadPlaylistSummaries, toPlaylistSummaryItem } from '@/lib/library/playlists';
 
 export const dynamic = 'force-dynamic';
 

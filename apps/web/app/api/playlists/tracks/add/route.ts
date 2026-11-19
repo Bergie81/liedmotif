@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server';
 import { addPlaylistTracks } from '@liedmotif/db';
 import { addPlaylistTracksRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
-import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/api-response';
+import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/http/api-response';
 
 export const dynamic = 'force-dynamic';
 

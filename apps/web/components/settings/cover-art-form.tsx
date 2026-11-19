@@ -11,7 +11,7 @@ import { useState } from 'react';
 import type { CoverArtSettings } from '@liedmotif/db';
 import { COVER_STYLE_CHOICES, MAX_COVER_STYLE_HINT_LENGTH } from '@liedmotif/shared';
 import type { CoverStyleChoice } from '@liedmotif/shared';
-import { COVER_STYLE_LABELS } from '@/lib/cover-styles';
+import { COVER_STYLE_LABELS } from '@/lib/covers/cover-styles';
 import { Switch } from '@/components/ui/controls';
 import { inputClass, labelClass, primaryButtonClass } from '@/components/ui/form-styles';
 import {

@@ -10,8 +10,8 @@ import { NextResponse } from 'next/server';
 import { applyTrackMemberships } from '@liedmotif/db';
 import { applyTrackMembershipsRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
-import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/api-response';
-import { toTrackFlags } from '@/lib/tracks';
+import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/http/api-response';
+import { toTrackFlags } from '@/lib/library/tracks';
 
 export const dynamic = 'force-dynamic';
 

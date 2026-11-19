@@ -26,7 +26,7 @@ vi.mock('@/lib/db', () => ({
     return holder.db;
   },
 }));
-vi.mock('@/lib/providers', () => ({ getEmailSender: () => holder.mail }));
+vi.mock('@/lib/providers/providers', () => ({ getEmailSender: () => holder.mail }));
 vi.mock('next/server', async (importOriginal) => ({
   ...(await importOriginal<typeof import('next/server')>()),
   after: (task: () => unknown) => {
@@ -34,7 +34,7 @@ vi.mock('next/server', async (importOriginal) => ({
   },
 }));
 
-const { mailForgotPasswordLink } = await import('@/lib/account-mail');
+const { mailForgotPasswordLink } = await import('@/lib/auth/account-mail');
 const { POST: forgotPassword } = await import('@/app/api/join/forgot/route');
 
 const PUBLIC_URL = 'https://music.example';

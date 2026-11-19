@@ -10,7 +10,7 @@
 import { NextResponse } from 'next/server';
 import { renameTrackRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
-import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/api-response';
+import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/http/api-response';
 import { giveTrackName } from '@/lib/given-names';
 
 export const dynamic = 'force-dynamic';

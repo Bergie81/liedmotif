@@ -26,12 +26,12 @@ import {
   configurableProviderMeta,
   followedCoverUnitCost,
   isConfigurableProviderType,
-} from '@/lib/configurable-providers';
-import { encryptionKeyIfConfigured } from '@/lib/credentials';
+} from '@/lib/providers/configurable-providers';
+import { encryptionKeyIfConfigured } from '@/lib/providers/credentials';
 import { getDb } from '@/lib/db';
-import { badRequest } from '@/lib/http';
-import { readJsonObjectBody, requireAdminOwnerId } from '@/lib/api-response';
-import { loadCoverKeyState } from '@/lib/provider-settings-data';
+import { badRequest } from '@/lib/http/http';
+import { readJsonObjectBody, requireAdminOwnerId } from '@/lib/http/api-response';
+import { loadCoverKeyState } from '@/lib/settings/provider-settings-data';
 
 export const dynamic = 'force-dynamic';
 

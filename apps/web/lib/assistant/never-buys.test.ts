@@ -164,7 +164,7 @@ const SWITCHES_THE_MODE = /\b(switchSessionMode|setSessionMode)\b/;
 
 /** A panel file's import of one of `names` from the api client. */
 const importsFromApiClient = (names: string) =>
-  new RegExp(`import\\s*\\{[^}]*\\b(${names})\\b[^}]*\\}\\s*from\\s*'@/lib/api-client'`);
+  new RegExp(`import\\s*\\{[^}]*\\b(${names})\\b[^}]*\\}\\s*from\\s*'@/lib/http/api-client'`);
 
 const CARD_HOST = join('components/assistant', 'use-card-host.ts');
 
@@ -176,11 +176,11 @@ describe('the Assistant’s own code', () => {
     // What the pins look for is what the routes really call.
     expect(read('app/api/sessions/route.ts')).toMatch(CREATES_A_SESSION);
     expect(read('app/api/surprise-me/start/route.ts')).toMatch(STARTS_A_SURPRISE);
-    expect(read('lib/api-client.ts')).toMatch(STARTS_A_SURPRISE);
+    expect(read('lib/http/api-client.ts')).toMatch(STARTS_A_SURPRISE);
     expect(read('app/api/sessions/more-like-this/route.ts')).toMatch(CREATES_A_SESSION);
     expect(read('app/api/sessions/change-vibe/route.ts')).toMatch(CHANGES_THE_VIBE);
     expect(read('app/api/sessions/duration/route.ts')).toMatch(SETS_THE_DURATION);
-    expect(read('lib/api-client.ts')).toMatch(SETS_THE_DURATION);
+    expect(read('lib/http/api-client.ts')).toMatch(SETS_THE_DURATION);
     for (const kind of ['Session', 'Playlist']) {
       const regenerate = read(`app/api/${kind.toLowerCase()}s/cover/regenerate/route.ts`);
       for (const name of [
@@ -191,7 +191,7 @@ describe('the Assistant’s own code', () => {
         expect(name).toMatch(RESERVES_A_COVER);
         expect(regenerate).toContain(name);
       }
-      expect(read('lib/api-client.ts')).toContain(`export function regenerate${kind}Cover(`);
+      expect(read('lib/http/api-client.ts')).toContain(`export function regenerate${kind}Cover(`);
     }
   });
 
@@ -230,11 +230,13 @@ describe('the Assistant’s own code', () => {
   });
 
   it('has no server code that calls the app’s own routes', () => {
-    expect(mentioning(SERVER, /\/api\/(?!assistant\b)|@\/lib\/api-client/)).toEqual([]);
+    expect(mentioning(SERVER, /\/api\/(?!assistant\b)|@\/lib\/http\/api-client/)).toEqual([]);
   });
 
   it('calls the app’s routes from the browser through a fixed list of client functions', () => {
-    const calls = PANEL.map((file) => [file, valuesFrom(file, /^@\/lib\/api-client$/)] as const);
+    const calls = PANEL.map(
+      (file) => [file, valuesFrom(file, /^@\/lib\/http\/api-client$/)] as const,
+    );
 
     expect(Object.fromEntries(calls.filter(([, names]) => names.length > 0))).toEqual({
       // The start and cover requests, sent from one place: the flows a confirmed

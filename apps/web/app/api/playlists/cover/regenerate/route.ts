@@ -22,15 +22,15 @@ import {
 } from '@liedmotif/shared';
 import { storageKeys } from '@liedmotif/storage';
 import { ACCOUNT_DISABLED_MESSAGE } from '@/lib/constants';
-import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/api-response';
+import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/http/api-response';
 import {
   coverAttemptGate,
   coverGateRefusalResponse,
   PLAYLIST_COVERS_FULL_MESSAGE,
-} from '@/lib/cover-attempt-gate';
-import { COVER_LIMIT_REACHED_MESSAGE } from '@/lib/cover-budget';
-import { enhanceCoverText } from '@/lib/cover-enhancement';
-import { generatedCoverModel, resolvePlaylistCoverStyle } from '@/lib/covers';
+} from '@/lib/covers/cover-attempt-gate';
+import { COVER_LIMIT_REACHED_MESSAGE } from '@/lib/covers/cover-budget';
+import { enhanceCoverText } from '@/lib/covers/cover-enhancement';
+import { generatedCoverModel, resolvePlaylistCoverStyle } from '@/lib/covers/covers';
 import { getDb } from '@/lib/db';
 import { enqueueRegeneratePlaylistCover } from '@/lib/worker-jobs';
 

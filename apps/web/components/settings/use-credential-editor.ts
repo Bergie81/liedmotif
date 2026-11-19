@@ -1,9 +1,9 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import type { ConfigurableProviderType, EnvLocks } from '@/lib/configurable-providers';
-import { llmEffectiveModel, llmModelMissing } from '@/lib/llm-providers';
-import { requiresProviderReplacementConfirmation } from '@/lib/provider-settings-model';
+import type { ConfigurableProviderType, EnvLocks } from '@/lib/providers/configurable-providers';
+import { llmEffectiveModel, llmModelMissing } from '@/lib/providers/llm-providers';
+import { requiresProviderReplacementConfirmation } from '@/lib/settings/provider-settings-model';
 import { toast } from '@/lib/toast';
 import {
   beginCredentialTest,

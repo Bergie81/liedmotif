@@ -12,7 +12,7 @@ import {
   deleteSession,
   renameSession,
   resumeSession,
-} from '@/lib/api-client';
+} from '@/lib/http/api-client';
 import { toast } from '@/lib/toast';
 import { useClientId } from '@/lib/use-client-id';
 import { SessionOptionsSheet } from './session-options-sheet';

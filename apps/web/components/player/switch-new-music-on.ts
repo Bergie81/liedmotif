@@ -3,7 +3,7 @@
 // The New music sheet's Save and a card confirmed in the Assistant's chat both
 // save through here.
 
-import { setSessionDuration } from '@/lib/api-client';
+import { setSessionDuration } from '@/lib/http/api-client';
 
 /** `targetMinutes` null is No limit. */
 export const switchNewMusicOn = (sessionId: string, targetMinutes: number | null) =>

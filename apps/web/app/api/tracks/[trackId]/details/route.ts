@@ -9,7 +9,7 @@ import { NextResponse } from 'next/server';
 import { getReadableTrackDetails, getUsageLimits } from '@liedmotif/db';
 import { uuidSchema, type TrackDetails } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
-import { apiError, apiOk, requireOwnerId } from '@/lib/api-response';
+import { apiError, apiOk, requireOwnerId } from '@/lib/http/api-response';
 
 export const dynamic = 'force-dynamic';
 

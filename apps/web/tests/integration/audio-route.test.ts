@@ -31,8 +31,8 @@ const holder = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/providers', () => ({ getStorageProvider: () => holder.storage }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/providers/providers', () => ({ getStorageProvider: () => holder.storage }));
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
   getAppSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
 }));

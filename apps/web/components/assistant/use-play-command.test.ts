@@ -58,7 +58,7 @@ const api = vi.hoisted(() => ({
     vi.fn<(playlistId: string, cursor: string | null, limit: number) => Promise<Result>>(),
   markPlaylistPlayed: vi.fn<(playlistId: string) => Promise<Result>>(),
 }));
-vi.mock('@/lib/api-client', () => api);
+vi.mock('@/lib/http/api-client', () => api);
 
 const session = (id: string, status: 'active' | 'stopped' = 'active') => ({ id, status });
 const member = (id: string, playable = true) => ({

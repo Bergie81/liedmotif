@@ -10,7 +10,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import type { CoverArtSettings } from '@liedmotif/db';
 import { DEFAULT_GENERATION_SETTINGS, DEFAULT_PLAYBACK_SETTINGS } from '@liedmotif/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ApiResult } from '@/lib/api-client';
+import type { ApiResult } from '@/lib/http/api-client';
 import { shownToasts, toast } from '@/lib/toast';
 
 const COVER_ART: CoverArtSettings = {
@@ -26,7 +26,7 @@ const api = vi.hoisted(() => ({
   savePersonalization: vi.fn(),
   resetLearnedTaste: vi.fn(),
 }));
-vi.mock('@/lib/api-client', () => api);
+vi.mock('@/lib/http/api-client', () => api);
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: () => {} }) }));
 vi.mock('@/components/player/player-provider', () => ({
   usePlayerContext: () => ({}),

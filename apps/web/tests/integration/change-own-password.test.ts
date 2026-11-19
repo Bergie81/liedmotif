@@ -31,8 +31,8 @@ const holder = vi.hoisted(() => ({
 
 vi.mock('next/headers', () => ({ headers: async () => new Headers() }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/providers', () => ({ getEmailSender: () => holder.mail }));
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/lib/providers/providers', () => ({ getEmailSender: () => holder.mail }));
+vi.mock('@/lib/auth/auth', () => ({
   getAuth: () => ({
     api: {
       getSession: async () =>

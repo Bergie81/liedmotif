@@ -24,14 +24,14 @@ import {
   MAX_PROFILE_FIELD_LENGTH,
   MAX_USER_NAME_LENGTH,
 } from '@liedmotif/shared';
-import { mailConfirmLink, mailEmailChangedNotice } from '@/lib/account-mail';
+import { mailConfirmLink, mailEmailChangedNotice } from '@/lib/auth/account-mail';
 import { getDb } from '@/lib/db';
 import { isAccountEmailEnabled } from '@/lib/env';
-import { badRequest, clientIp, forbidden, tooManyRequests } from '@/lib/http';
-import { readJsonObjectBody, requireOwnerId } from '@/lib/api-response';
+import { badRequest, clientIp, forbidden, tooManyRequests } from '@/lib/http/http';
+import { readJsonObjectBody, requireOwnerId } from '@/lib/http/api-response';
 import { cachedUserProfile } from '@/lib/request-cache';
-import { loginFailureLimiter } from '@/lib/request-limits';
-import { currentLoginToken, refreshSessionCookieCache } from '@/lib/session';
+import { loginFailureLimiter } from '@/lib/http/request-limits';
+import { currentLoginToken, refreshSessionCookieCache } from '@/lib/auth/session';
 import { enqueueEmbedTrackMetadataBatch } from '@/lib/worker-jobs';
 
 export const dynamic = 'force-dynamic';

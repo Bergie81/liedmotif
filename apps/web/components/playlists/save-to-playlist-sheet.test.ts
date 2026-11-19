@@ -23,7 +23,7 @@ const holder = vi.hoisted(() => ({
 }));
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
-vi.mock('@/lib/api-client', () => ({
+vi.mock('@/lib/http/api-client', () => ({
   getAllPlaylists: async () => ({
     ok: true as const,
     data: { playlists: holder.playlists, nextCursor: null },

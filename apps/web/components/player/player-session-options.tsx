@@ -15,7 +15,7 @@ import { MenuRow } from '@/components/ui/menu-row';
 import { OnlineOnly } from '@/components/ui/online-only';
 import { SheetClose } from '@/components/ui/sheet';
 import { cn } from '@/lib/cn';
-import { sessionDownloadUrl, startFileDownload } from '@/lib/downloads';
+import { sessionDownloadUrl, startFileDownload } from '@/lib/downloads/downloads';
 import { NEW_MUSIC_ICONS } from './new-music-icons';
 import { newMusicStatusLine, type NewMusicStatus } from './new-music-status';
 import { SESSION_OPTIONS_SCOPES, type AvailableSessionOptionsId } from './player-options-model';

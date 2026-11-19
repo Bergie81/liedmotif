@@ -30,17 +30,23 @@ import {
 } from '@liedmotif/shared';
 import { sessionStyleSnapshotSchema, type SessionIntentInput } from '@liedmotif/providers';
 import { getDb } from '@/lib/db';
-import { apiError, apiOk, apiRateLimited, parseJsonBody, requireOwnerId } from '@/lib/api-response';
+import {
+  apiError,
+  apiOk,
+  apiRateLimited,
+  parseJsonBody,
+  requireOwnerId,
+} from '@/lib/http/api-response';
 import {
   deriveNamedSnapshotForIntent,
   evaluateGenerationBudget,
   headroomRefusalMessage,
   newMusicPausedRefusal,
   toSessionSummary,
-} from '@/lib/sessions';
-import { changeVibeLimiter } from '@/lib/request-limits';
+} from '@/lib/sessions/sessions';
+import { changeVibeLimiter } from '@/lib/http/request-limits';
 import { enqueueEnsureSessionBuffer } from '@/lib/worker-jobs';
-import { honoredOwnVoice, intentRequestsOwnVoice, ownVoiceBlockedMessage } from '@/lib/voice';
+import { honoredOwnVoice, intentRequestsOwnVoice, ownVoiceBlockedMessage } from '@/lib/voice/voice';
 
 export const dynamic = 'force-dynamic';
 

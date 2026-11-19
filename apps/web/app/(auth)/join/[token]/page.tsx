@@ -11,9 +11,9 @@ import { OneShotLinkPage } from '@/components/auth/one-shot-link-page';
 import { cardClass, displayHeadingClass, eyebrowClass } from '@/components/ui/design-system';
 import { INVALID_LINK_MESSAGE } from '@/lib/constants';
 import { getDb } from '@/lib/db';
-import { JOIN_BASE_PATH } from '@/lib/link-urls';
-import { linkTokenLookupAllowed } from '@/lib/request-limits';
-import { getServerSession } from '@/lib/session';
+import { JOIN_BASE_PATH } from '@/lib/auth/link-urls';
+import { linkTokenLookupAllowed } from '@/lib/http/request-limits';
+import { getServerSession } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 

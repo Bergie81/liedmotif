@@ -17,16 +17,16 @@ import {
   createVoiceProfileRequestSchema,
   updateVoiceProfileRequestSchema,
 } from '@liedmotif/shared';
-import { apiError, apiOk, parseJsonBody, requireAdminOwnerId } from '@/lib/api-response';
+import { apiError, apiOk, parseJsonBody, requireAdminOwnerId } from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
 import { ownVoiceEnabled } from '@/lib/env';
-import { getMusicProvider, getStorageProvider } from '@/lib/providers';
+import { getMusicProvider, getStorageProvider } from '@/lib/providers/providers';
 import {
   buildVoiceProfileView,
   musicVoiceApi,
   refreshVoiceProfile,
   VOICE_CONSENT_VERSION,
-} from '@/lib/voice';
+} from '@/lib/voice/voice';
 
 export const dynamic = 'force-dynamic';
 

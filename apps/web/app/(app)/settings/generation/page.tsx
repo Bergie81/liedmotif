@@ -9,8 +9,8 @@ import {
   SettingsSection,
 } from '@/components/settings/settings-ui';
 import { getDb } from '@/lib/db';
-import { getTypicalTracksPerMusicRequest } from '@/lib/providers';
-import { requireAppAccess } from '@/lib/session';
+import { getTypicalTracksPerMusicRequest } from '@/lib/providers/providers';
+import { requireAppAccess } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 

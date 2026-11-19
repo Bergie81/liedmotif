@@ -5,7 +5,7 @@
 import { setMemberDisabled } from '@liedmotif/db';
 import { setMemberDisabledRequestSchema } from '@liedmotif/shared';
 import { NextResponse } from 'next/server';
-import { apiError, apiOk, parseJsonBody } from '@/lib/api-response';
+import { apiError, apiOk, parseJsonBody } from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
 import { NO_SUCH_MEMBER, requireAdminAndMember } from '../../member-route';
 

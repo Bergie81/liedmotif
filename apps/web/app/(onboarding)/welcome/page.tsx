@@ -1,8 +1,8 @@
 import { MemberOnboardingWizard } from '@/components/onboarding/member-onboarding-wizard';
 import { OnboardingWizard } from '@/components/onboarding/onboarding-wizard';
-import { loadMemberOnboardingData } from '@/lib/member-onboarding-data';
-import { loadOnboardingData } from '@/lib/onboarding-data';
-import { requireOnboardingAccess } from '@/lib/session';
+import { loadMemberOnboardingData } from '@/lib/onboarding/member-onboarding-data';
+import { loadOnboardingData } from '@/lib/onboarding/onboarding-data';
+import { requireOnboardingAccess } from '@/lib/auth/session';
 
 // First-login onboarding, for both roles behind the same guard and the same
 // completion stamp. The Admin walks the full setup; a Member gets the short

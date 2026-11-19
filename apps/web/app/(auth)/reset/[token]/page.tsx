@@ -8,8 +8,8 @@ import { ResetPasswordForm } from '@/components/auth/reset-password-form';
 import { cardClass, displayHeadingClass, eyebrowClass } from '@/components/ui/design-system';
 import { INVALID_LINK_MESSAGE } from '@/lib/constants';
 import { getDb } from '@/lib/db';
-import { RESET_BASE_PATH } from '@/lib/link-urls';
-import { linkTokenLookupAllowed } from '@/lib/request-limits';
+import { RESET_BASE_PATH } from '@/lib/auth/link-urls';
+import { linkTokenLookupAllowed } from '@/lib/http/request-limits';
 
 export const dynamic = 'force-dynamic';
 

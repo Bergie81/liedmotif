@@ -8,8 +8,8 @@
 
 import { useEffect } from 'react';
 import type { CoverStyleChoice, SurpriseProposal } from '@liedmotif/shared';
-import type { SessionLanguageChoice } from '@/lib/session-languages';
-import type { OwnVoiceOffer } from '@/lib/voice';
+import type { SessionLanguageChoice } from '@/lib/sessions/session-languages';
+import type { OwnVoiceOffer } from '@/lib/voice/voice';
 import { useAppChrome } from '@/components/app-chrome-context';
 import { CreateSessionCard } from '@/components/create/create-session-card';
 import { INTENT_PARAM } from '@/components/create/intent-prefill';
@@ -20,7 +20,7 @@ import {
   type ResumableSessionsInitialData,
 } from '@/components/sessions/use-resumable-sessions';
 import { useHandOffStart } from '@/components/player/use-hand-off-start';
-import { startSession, startSurprise } from '@/lib/api-client';
+import { startSession, startSurprise } from '@/lib/http/api-client';
 import { displayHeadingClass } from '@/components/ui/design-system';
 import { cn } from '@/lib/cn';
 import { RECENT_SESSIONS_LIMIT } from '@/lib/constants';

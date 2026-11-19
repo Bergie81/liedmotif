@@ -8,7 +8,7 @@ import { createElement as h } from 'react';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { DEFAULT_MEMBER_LIMITS, type MemberAssistantAccess } from '@liedmotif/shared';
-import type { MembersAdminMember } from '@/lib/members-admin-data';
+import type { MembersAdminMember } from '@/lib/settings/members-admin-data';
 import { shownToasts, toast } from '@/lib/toast';
 import { AssistantDefaultPanel } from './assistant-access-controls';
 import { MemberCards } from './member-cards';

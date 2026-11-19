@@ -18,7 +18,7 @@
 // Active server-side.
 
 import type { SessionSummary } from '@liedmotif/shared';
-import type { startSession } from '@/lib/api-client';
+import type { startSession } from '@/lib/http/api-client';
 
 /** An in-flight session start crossing the Home→/player navigation. */
 export interface PendingStart {

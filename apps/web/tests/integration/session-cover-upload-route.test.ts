@@ -35,12 +35,12 @@ const holder = vi.hoisted(() => ({
   deletedKeys: [] as string[],
 }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
   getAppSession: async () => (holder.ownerUserId ? { user: { id: holder.ownerUserId } } : null),
 }));
-vi.mock('@/lib/providers', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/lib/providers')>()),
+vi.mock('@/lib/providers/providers', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/providers/providers')>()),
   getLlmProvider: async () => null,
   getStorageProvider: () => ({
     providerKey: 'local-fs',

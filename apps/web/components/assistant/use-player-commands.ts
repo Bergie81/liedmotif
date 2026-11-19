@@ -8,7 +8,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { primePlayerAutoplay } from '@/components/player/autoplay-arm';
 import { usePlayerContext } from '@/components/player/player-provider';
-import { stopSession } from '@/lib/api-client';
+import { stopSession } from '@/lib/http/api-client';
 import {
   runPlayerCommand,
   tapToPlay,

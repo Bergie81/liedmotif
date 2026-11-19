@@ -15,7 +15,7 @@ import {
   renameTrack,
   stopSession,
   tryAgainSession,
-} from '@/lib/api-client';
+} from '@/lib/http/api-client';
 import { nowPlayingDetailsClass, nowPlayingLayoutClass } from '@/components/ui/design-system';
 import { OnlineOnly } from '@/components/ui/online-only';
 import { cn } from '@/lib/cn';

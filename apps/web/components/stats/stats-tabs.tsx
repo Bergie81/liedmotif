@@ -2,7 +2,7 @@
 
 import type { CostComparisonData, ListeningStatsData } from '@liedmotif/shared';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { fetchCostComparison, fetchListeningStats } from '@/lib/api-client';
+import { fetchCostComparison, fetchListeningStats } from '@/lib/http/api-client';
 import { Costs } from './costs';
 import { costPeriodLabel } from './costs-model';
 import { PeriodLabel, PeriodPicker } from './stats-parts';

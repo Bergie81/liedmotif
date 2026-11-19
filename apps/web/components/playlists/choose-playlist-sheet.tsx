@@ -14,7 +14,7 @@ import {
   type ApiResult,
   createPlaylist,
   getAllPlaylists,
-} from '@/lib/api-client';
+} from '@/lib/http/api-client';
 import { cn } from '@/lib/cn';
 import { toast } from '@/lib/toast';
 import { RenameDialog } from '@/components/rename-dialog';

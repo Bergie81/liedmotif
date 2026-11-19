@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server';
 import { setSessionPinned } from '@liedmotif/db';
 import { SESSION_PIN_LIMIT_MESSAGE, setSessionPinnedRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
-import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/api-response';
+import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/http/api-response';
 
 export const dynamic = 'force-dynamic';
 

@@ -11,7 +11,7 @@ const server = vi.hoisted(() => ({
   failOnRequest: null as number | null,
 }));
 
-vi.mock('@/lib/api-client', () => ({
+vi.mock('@/lib/http/api-client', () => ({
   addPlaylistTracks: async (playlistId: string, trackIds: string[]) => {
     server.requests.push(trackIds);
     if (server.requests.length === server.failOnRequest) {

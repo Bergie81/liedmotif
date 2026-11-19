@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = join(__dirname, '..', '..', '..');
 const TASTE_READS = /\b(getLearnedTaste|getCachedLearnedTaste|rankForYouGenres)\b/;
-const ALLOWED = new Set(['apps/web/app/(app)/page.tsx', 'apps/web/lib/surprise-me.ts']);
+const ALLOWED = new Set(['apps/web/app/(app)/page.tsx', 'apps/web/lib/sessions/surprise-me.ts']);
 
 function sources(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

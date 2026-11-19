@@ -30,7 +30,7 @@ const holder = vi.hoisted(() => ({
   role: 'member' as 'admin' | 'member',
 }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () =>
     holder.userId && holder.role === 'admin' ? { user: { id: holder.userId } } : null,
   getAppSession: async () => (holder.userId ? { user: { id: holder.userId } } : null),

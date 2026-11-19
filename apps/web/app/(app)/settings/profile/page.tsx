@@ -1,5 +1,5 @@
 import { EMPTY_LISTENER_PROFILE, isEmailConfirmed } from '@liedmotif/db';
-import { requireAppAccess } from '@/lib/session';
+import { requireAppAccess } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
 import { isAccountEmailEnabled } from '@/lib/env';
 import { cachedListenerProfile } from '@/lib/request-cache';

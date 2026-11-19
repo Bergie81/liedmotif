@@ -3,7 +3,7 @@
 import { createElement as h } from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
-import type { SessionCoverStatusData } from '@/lib/api-client';
+import type { SessionCoverStatusData } from '@/lib/http/api-client';
 import { shownToasts, toast } from '@/lib/toast';
 import { SessionCoverSheet } from './session-cover-sheet';
 
@@ -19,7 +19,7 @@ const api = vi.hoisted(() => ({
   deleteSessionCover: vi.fn(),
   uploadSessionCover: vi.fn(),
 }));
-vi.mock('@/lib/api-client', () => api);
+vi.mock('@/lib/http/api-client', () => api);
 vi.mock('@/components/app-chrome-context', () => ({
   useAppChrome: () => ({ viewerRole: 'admin' }),
 }));

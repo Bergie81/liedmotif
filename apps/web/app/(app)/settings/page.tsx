@@ -1,7 +1,7 @@
 import { MemberSettingsHub } from '@/components/settings/member-settings-hub';
 import { SettingsHub } from '@/components/settings/settings-hub';
-import { loadMemberSettingsHubData, loadSettingsHubData } from '@/lib/settings-hub-data';
-import { requireAppAccess } from '@/lib/session';
+import { loadMemberSettingsHubData, loadSettingsHubData } from '@/lib/settings/settings-hub-data';
+import { requireAppAccess } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 

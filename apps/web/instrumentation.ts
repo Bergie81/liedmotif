@@ -28,7 +28,7 @@ export async function register(): Promise<void> {
     const { configureSharpConcurrency } = await import('@liedmotif/media');
     const { adminExists, assertDatabaseUrlPosture, resolvePoolTuning } =
       await import('@liedmotif/db');
-    const { encryptionKeyIfConfigured } = await import('@/lib/credentials');
+    const { encryptionKeyIfConfigured } = await import('@/lib/providers/credentials');
     const log = createLogger({ name: 'web' });
     // Installed before the checks below so anything they set in motion is
     // covered: a rejection that escapes a request handler must not be able to
@@ -74,7 +74,7 @@ export async function register(): Promise<void> {
     // holds, so unlike the checks above it can fail — a database that is not up
     // yet must not fail the boot, it just leaves the posture unstated.
     try {
-      const { unclaimedSetupWarning } = await import('./lib/setup-token');
+      const { unclaimedSetupWarning } = await import('./lib/auth/setup-token');
       const { getDb } = await import('@/lib/db');
       const warning = unclaimedSetupWarning(await adminExists(getDb()));
       if (warning) console.warn(warning);

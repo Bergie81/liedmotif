@@ -21,22 +21,22 @@ import {
   requireOwnerId,
   validateInput,
   validateKeysetCursor,
-} from '@/lib/api-response';
-import { sessionCreateLimiter } from '@/lib/request-limits';
+} from '@/lib/http/api-response';
+import { sessionCreateLimiter } from '@/lib/http/request-limits';
 import {
   deriveNamedSnapshotForIntent,
   loadSessionList,
   sessionCreationRefusal,
   startingSessionMode,
   toSessionSummary,
-} from '@/lib/sessions';
-import { getLlmProvider } from '@/lib/providers';
+} from '@/lib/sessions/sessions';
+import { getLlmProvider } from '@/lib/providers/providers';
 import {
   initialSessionCoverId,
   launchSessionCreationKickoffs,
   resolveCoverArtChoiceFrom,
-} from '@/lib/covers';
-import { intentRequestsOwnVoice, ownVoiceBlockedMessage } from '@/lib/voice';
+} from '@/lib/covers/covers';
+import { intentRequestsOwnVoice, ownVoiceBlockedMessage } from '@/lib/voice/voice';
 
 export const dynamic = 'force-dynamic';
 

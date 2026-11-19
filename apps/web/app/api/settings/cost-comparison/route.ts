@@ -4,8 +4,8 @@
 
 import { NextResponse } from 'next/server';
 import { costComparisonQuerySchema } from '@liedmotif/shared';
-import { apiOk, requireAdminOwnerId, validateInput } from '@/lib/api-response';
-import { loadCostComparison } from '@/lib/cost-comparison-data';
+import { apiOk, requireAdminOwnerId, validateInput } from '@/lib/http/api-response';
+import { loadCostComparison } from '@/lib/stats/cost-comparison-data';
 
 export const dynamic = 'force-dynamic';
 

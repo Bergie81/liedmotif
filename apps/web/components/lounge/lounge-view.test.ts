@@ -24,7 +24,7 @@ const engagePlaylist = vi.hoisted(() => vi.fn());
 const sharePlaylist = vi.hoisted(() => vi.fn());
 const seedMoreLikeThis = vi.hoisted(() => vi.fn());
 
-vi.mock('@/lib/api-client', () => ({
+vi.mock('@/lib/http/api-client', () => ({
   getAllPlaylistMembers: getAllMembers,
   getLoungePlaylist: getLounge,
   listLoungePlaylists: listLounge,

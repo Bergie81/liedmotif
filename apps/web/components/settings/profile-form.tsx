@@ -12,7 +12,7 @@ import {
 } from '@liedmotif/shared';
 import { primaryButtonClass } from '@/components/ui/form-styles';
 import { PasswordField } from '@/components/ui/password-field';
-import { saveListenerProfile } from '@/lib/settings-client';
+import { saveListenerProfile } from '@/lib/settings/settings-client';
 import { toast } from '@/lib/toast';
 import { ChangePasswordButton } from './change-password-dialog';
 import { EmailConfirmationStatus, requestConfirmLink } from './email-confirmation';

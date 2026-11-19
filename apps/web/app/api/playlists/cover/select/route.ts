@@ -10,7 +10,7 @@ import {
   setPlaylistCoverImage,
 } from '@liedmotif/db';
 import { selectPlaylistCoverRequestSchema } from '@liedmotif/shared';
-import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/api-response';
+import { apiError, apiOk, parseJsonBody, requireOwnerId } from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';

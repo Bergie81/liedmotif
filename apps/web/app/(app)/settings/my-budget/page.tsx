@@ -8,8 +8,8 @@ import {
   SettingsSection,
 } from '@/components/settings/settings-ui';
 import { oneTimeBudgetUsedUpMessage } from '@liedmotif/shared';
-import { loadMyBudgetData, type MyBudgetPageData } from '@/lib/my-budget-data';
-import { requireAppAccess } from '@/lib/session';
+import { loadMyBudgetData, type MyBudgetPageData } from '@/lib/budget/my-budget-data';
+import { requireAppAccess } from '@/lib/auth/session';
 
 // Read-only: the Member's own usage and the shared Pool's, in Tracks and
 // covers, plus who pays. No knob a Member can turn — nothing here may hint

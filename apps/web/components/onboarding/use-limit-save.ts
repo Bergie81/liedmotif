@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { saveUsageLimits } from '@/lib/settings-client';
+import { saveUsageLimits } from '@/lib/settings/settings-client';
 import type { LimitPatch } from './onboarding-limits-model';
 
 /**

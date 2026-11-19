@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { SessionSummary } from '@liedmotif/shared';
 import { usePlayerContext } from '@/components/player/player-provider';
 import { engagedSourceId } from '@/components/player/player-provider-model';
-import { listSessions, resumeSession } from '@/lib/api-client';
+import { listSessions, resumeSession } from '@/lib/http/api-client';
 import { useClientId } from '@/lib/use-client-id';
 
 /** Open a Session at its saved position; an already-engaged Session keeps its transport state. */

@@ -4,11 +4,11 @@
 
 import { NextResponse } from 'next/server';
 import { getListenerProfile } from '@liedmotif/db';
-import { mailConfirmLink } from '@/lib/account-mail';
-import { apiError, apiOk, apiRateLimited, requireOwnerId } from '@/lib/api-response';
+import { mailConfirmLink } from '@/lib/auth/account-mail';
+import { apiError, apiOk, apiRateLimited, requireOwnerId } from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
 import { isAccountEmailEnabled } from '@/lib/env';
-import { confirmLinkMailLimiter } from '@/lib/request-limits';
+import { confirmLinkMailLimiter } from '@/lib/http/request-limits';
 
 export const dynamic = 'force-dynamic';
 

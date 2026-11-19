@@ -6,7 +6,7 @@
 
 import { useId, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
-import { providerPicker, type EnvLock } from '@/lib/configurable-providers';
+import { providerPicker, type EnvLock } from '@/lib/providers/configurable-providers';
 import { segmentedListClass, segmentedTriggerClass } from '@/components/ui/design-system';
 import { inputClass, labelClass } from '@/components/ui/form-styles';
 import type { CredentialEditorState, ProviderOption } from './use-credential-editor';

@@ -11,7 +11,7 @@ import {
   type AssistantCoverCard,
   type ProposeCoverInput,
 } from '@liedmotif/shared';
-import { coverAttemptGate } from '@/lib/cover-attempt-gate';
+import { coverAttemptGate } from '@/lib/covers/cover-attempt-gate';
 import {
   askedSource,
   NO_PLAYLIST_PLAYING,

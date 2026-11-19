@@ -13,7 +13,7 @@ import {
   DEFAULT_MEMBERS_POOL,
   type PoolOverSubscription,
 } from '@liedmotif/shared';
-import type { MembersAdminMember } from '@/lib/members-admin-data';
+import type { MembersAdminMember } from '@/lib/settings/members-admin-data';
 import { shownToasts, toast } from '@/lib/toast';
 import { InviteMembersSection } from './invite-members-section';
 import { MemberCards } from './member-cards';

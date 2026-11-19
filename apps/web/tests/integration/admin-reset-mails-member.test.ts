@@ -21,10 +21,10 @@ const holder = vi.hoisted(() => ({
   mail: null as unknown,
 }));
 vi.mock('@/lib/db', () => ({ getDb: () => holder.db }));
-vi.mock('@/lib/session', () => ({
+vi.mock('@/lib/auth/session', () => ({
   getAdminSession: async () => ({ user: { id: holder.adminId } }),
 }));
-vi.mock('@/lib/providers', () => ({ getEmailSender: () => holder.mail }));
+vi.mock('@/lib/providers/providers', () => ({ getEmailSender: () => holder.mail }));
 
 const { POST: resetPasswordPost } =
   await import('@/app/api/settings/members/[userId]/reset-password/route');

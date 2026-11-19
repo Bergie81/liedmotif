@@ -8,13 +8,17 @@ import {
 } from '@liedmotif/db';
 import { uuidSchema } from '@liedmotif/shared';
 import { storageKeys } from '@liedmotif/storage';
-import { apiError, apiOk, requireOwnerId } from '@/lib/api-response';
+import { apiError, apiOk, requireOwnerId } from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
-import { readImageUpload, readUploadForm, withImageUploadAdmission } from '@/lib/image-upload';
-import { toPersonReferencePhotoSummary } from '@/lib/person-reference-photos';
-import { getStorageProvider } from '@/lib/providers';
-import { processCoverReferenceUpload } from '@/lib/reference-images';
-import type { RecordStoredBytes } from '@/lib/storage-quota';
+import {
+  readImageUpload,
+  readUploadForm,
+  withImageUploadAdmission,
+} from '@/lib/media/image-upload';
+import { toPersonReferencePhotoSummary } from '@/lib/settings/person-reference-photos';
+import { getStorageProvider } from '@/lib/providers/providers';
+import { processCoverReferenceUpload } from '@/lib/media/reference-images';
+import type { RecordStoredBytes } from '@/lib/media/storage-quota';
 
 export const dynamic = 'force-dynamic';
 

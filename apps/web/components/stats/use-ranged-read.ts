@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from 'react';
 import type { ListeningRange } from '@liedmotif/shared';
-import type { ApiResult } from '@/lib/api-client';
+import type { ApiResult } from '@/lib/http/api-client';
 
 /**
  * One period-switched read: the answer on screen, the range being asked for,

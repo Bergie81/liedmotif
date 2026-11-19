@@ -6,8 +6,13 @@
 import { NextResponse } from 'next/server';
 import { listLoungeRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
-import { apiOk, requireOwnerId, validateInput, validateKeysetCursor } from '@/lib/api-response';
-import { loadLoungePlaylists } from '@/lib/lounge';
+import {
+  apiOk,
+  requireOwnerId,
+  validateInput,
+  validateKeysetCursor,
+} from '@/lib/http/api-response';
+import { loadLoungePlaylists } from '@/lib/library/lounge';
 
 export const dynamic = 'force-dynamic';
 

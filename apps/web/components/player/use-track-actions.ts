@@ -11,7 +11,7 @@ import {
   dislikeTrack,
   favoriteTrack,
   sendFeedback,
-} from '@/lib/api-client';
+} from '@/lib/http/api-client';
 import type { PlayableTrack } from './playable-track';
 import { clearPlayerError, showPlayerError, type PlayerAct } from './player-error-toast';
 import {

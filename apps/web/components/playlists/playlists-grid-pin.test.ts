@@ -15,7 +15,7 @@ const listPlaylists = vi.hoisted(() => vi.fn());
 const pinLibrary = vi.hoisted(() => vi.fn());
 const refresh = vi.hoisted(() => vi.fn());
 
-vi.mock('@/lib/api-client', () => ({
+vi.mock('@/lib/http/api-client', () => ({
   createPlaylist: vi.fn(),
   deletePlaylist: vi.fn(),
   getAllPlaylistMembers: vi.fn(),

@@ -15,8 +15,8 @@ import {
   type CoverReferenceFrequency,
 } from '@liedmotif/db';
 import { getDb } from '@/lib/db';
-import { readJsonObjectBody, requireOwnerId } from '@/lib/api-response';
-import { toPersonSummary } from '@/lib/people';
+import { readJsonObjectBody, requireOwnerId } from '@/lib/http/api-response';
+import { toPersonSummary } from '@/lib/settings/people';
 
 export const dynamic = 'force-dynamic';
 

@@ -10,11 +10,11 @@ import { NextResponse } from 'next/server';
 import { getOwnedPlaylistDownloadTracks } from '@liedmotif/db';
 import { uuidSchema } from '@liedmotif/shared';
 import { titledSegment } from '@liedmotif/storage';
-import { requireOwnerId } from '@/lib/api-response';
+import { requireOwnerId } from '@/lib/http/api-response';
 import { getDb } from '@/lib/db';
-import { getStorageProvider } from '@/lib/providers';
-import { createTrackDownloadDeps } from '@/lib/track-downloads';
-import { tracksZipResponse } from '@/lib/zip-download';
+import { getStorageProvider } from '@/lib/providers/providers';
+import { createTrackDownloadDeps } from '@/lib/downloads/track-downloads';
+import { tracksZipResponse } from '@/lib/downloads/zip-download';
 
 export const dynamic = 'force-dynamic';
 

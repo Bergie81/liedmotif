@@ -7,8 +7,8 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
-import { preparePickedImage, renderCroppedFile, type CropSource } from '@/lib/crop-image';
-import type { PixelRect, Rotation } from '@/lib/crop-geometry';
+import { preparePickedImage, renderCroppedFile, type CropSource } from '@/lib/media/crop-image';
+import type { PixelRect, Rotation } from '@/lib/media/crop-geometry';
 import {
   IMAGE_UPLOAD_MIME_TYPES,
   MAX_IMAGE_UPLOAD_BYTES,
@@ -16,7 +16,7 @@ import {
   isSupportedImageMimeType,
   megabytes,
   type ImageUploadTarget,
-} from '@/lib/image-upload-targets';
+} from '@/lib/media/image-upload-targets';
 
 // The crop dialog carries `react-easy-crop`; loading it lazily keeps the
 // library out of every page bundle that merely OFFERS an upload (player,
