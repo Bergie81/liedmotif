@@ -42,7 +42,7 @@ All of this buys nothing:
 - Saving, searching, organizing and renaming
 - Resuming a session with **New music** off
 - Pressing **Try another** in Surprise Me, as far as music goes. With a text AI connected, each try uses it a little
-- Basic covers from your music provider, the built-in Liedmotif cover, and uploading your own
+- Basic covers from your music provider, the built-in Liedmotif cover, and uploading your own. Basic covers cost nothing extra, but they still count toward your cover limits
 - Guided setup and the **Test** button
 
 **Skipping** buys nothing by itself, but in a session with **New music** on, it uses up the tracks ready ahead of you sooner, so the next new ones come sooner too.
@@ -73,15 +73,19 @@ A duration caps how much new music a session buys. It counts the music made, not
 
 ### Change Vibe
 
-A change of vibe buys the first new tracks in the new direction, even with **New music** off. It also uses your text AI once, if you wrote a new direction. It needs room for one more pair within your limits. Tracks you already have stay paid for and remain in your history.
+A change of vibe buys the first new tracks in the new direction, even with **New music** off. It also uses your text AI once, whether you wrote a new direction or only changed a setting. The one exception is an older session that was started from settings alone, with no words: changing only a setting there applies it without asking the text AI for a new direction. It needs room for one more pair within your limits. Tracks you already have stay paid for and remain in your history.
+
+### Try again
+
+When a session's first tracks fail and it has nothing to play, its banner offers **Try again**. One tap buys one batch, the number of tracks shown on the button, within your limits like any other generation, and it counts toward them. More tracks follow only once music plays. Nothing tries again on its own: a session with nothing to play never spends without your tap.
 
 ### Dislike
 
-Pressing **Reroll Track** is often free. Since tracks come in pairs, Liedmotif first looks for the unplayed second track from the same pair, which you've already paid for. It buys a new pair only when there isn't one, and only if **New music** is on and your limits have room. With **New music** off, or on a track from a vibe you've since changed, it serves the second track if there is one and otherwise buys nothing. A reroll doesn't use the text AI for direction or lyrics. If it buys a new pair in a session that's out of titles, the text AI may write a few more.
+Pressing **Reroll Track** is often free. Since tracks come in pairs, Liedmotif first looks for the second track from the same pair, which you've already paid for, if it's still waiting in the queue. A track you skipped doesn't count. It buys a new pair only when there isn't one, and only if **New music** is on and your limits have room. With **New music** off, or on a track from a vibe you've since changed, it serves the second track if there is one and otherwise buys nothing. A dislike in a stopped session, for example from the Library, buys nothing either, also not after you resume it. A reroll doesn't use the text AI for direction or lyrics. If it buys a new pair in a session that's out of titles, the text AI may write a few more.
 
 ### Covers
 
-With tailored art, a new session buys one cover. Each regeneration buys another, and a generated playlist cover buys one too. A session holds up to 10 covers in its history. A change of vibe never makes a new cover by itself.
+With tailored art, a new session buys one cover. Each regeneration buys another, and a generated playlist cover buys one too. A session or a playlist holds up to 10 covers in its history, uploads included; delete one to make room. A change of vibe never makes a new cover by itself.
 
 ### Asking Roadie
 
@@ -95,7 +99,7 @@ New tracks need a listener. Pause or close the player, and spending stops within
 
 A session with no listener then stops itself after **Idle auto-stop**, 15 minutes by default. It keeps its direction and tracks, and you can resume it whenever you like.
 
-**Manual generation only**, in **Settings › Generation**, is the emergency brake. It stops all new music on the instance, even a new session's first tracks.
+**Pause all new music**, in **Settings › Generation**, is the emergency brake. It stops all new music on the instance, even a new session's first tracks. While it is on, a new session, More Like This, Surprise Me and Change Vibe are refused before anything is spent, your text AI included, with the message "New music is paused in Settings › Generation." A member is told, by name, that you paused it. Resume, the Library, playlists and the Lounge keep working.
 
 ## Your own limits
 
@@ -119,10 +123,10 @@ These apply whether or not your own limits are switched on:
 | **Headroom to start** | 5 tracks | 0–100 | The room you need left to start a session |
 | **Idle auto-stop** | 15 minutes | 1–10,080 | How long a session without a listener stays active |
 | **Storage quota** | 10 GiB | | [Room for your whole library](/docs/email-and-storage), about 2,000 tracks |
-| **Manual generation only** | Off | | Stops all new music |
+| **Pause all new music** | Off | | Stops all new music. New sessions, More Like This, Surprise Me and Change Vibe are refused; Resume and the Library keep working |
 | **Generate Tailored Cover Art** | On | | Needs an image provider with a key, its own or your text AI's. Off, covers come from your music provider |
 
-Zero is a valid limit where the range allows it, and it deliberately blocks that kind of generation. Daily limits reset at midnight and monthly limits on the 1st, in the **Instance timezone** at the top of **Cost controls**. It starts from guided setup, or from `INSTANCE_TIMEZONE` in `.env`, and it applies to members as well.
+Zero is a valid limit where the range allows it, and it deliberately blocks that kind of generation. A daily or monthly limit above zero but below **Headroom to start** means no new session can ever start, so the form warns you, for example "Below 5 Tracks, no new Session can start." It still saves, and nothing else changes to make it fit. A monthly limit lower than the daily one is allowed; then the monthly one runs out first. Guided setup doesn't let your track limits go below **Headroom to start**, rounded up to a whole pair. Daily limits reset at midnight and monthly limits on the 1st, in the **Instance timezone** at the top of **Cost controls**. It starts from guided setup, or from `INSTANCE_TIMEZONE` in `.env`, and it applies to members as well.
 
 ## Budgets for members
 
@@ -138,7 +142,7 @@ Every member has a budget, and every member's music also draws from one shared b
 | Generating at once | 2 tracks | 2 tracks | 4 tracks |
 | Queued ahead | 6 tracks | 6 tracks | |
 
-A monthly figure can't be lower than its daily one. The budgets you hand out can add up to more than the shared budget. The app warns you but allows it, and inside the shared budget it's first come, first served. The numbers for at-once and queued tracks are fixed, and the app has no field for them.
+A monthly figure can't be lower than its daily one. A track figure above zero but below your **Headroom to start**, in a member's daily or monthly budget, a one-time total or the shared budget, means that member can never start a new session. The form warns you, for example "Below 5 Tracks, no new Session can start.", but still saves it. The budgets you hand out can add up to more than the shared budget. The app warns you but allows it, and inside the shared budget it's first come, first served. The numbers for at-once and queued tracks are fixed, and the app has no field for them.
 
 Your own limits sit outside the shared budget, and your listening never draws from it. So the most you can spend in a month is your own limits plus the shared budget. At the default prices, the default shared budget comes to at most about $19 a month for all members together: $10 for 250 tracks and $8.75 for 125 covers.
 
@@ -162,7 +166,7 @@ On the player, a banner above the cover says what is holding new music. If it ha
 
 ### Starting something new
 
-New sessions and **More Like This** need more room than a running session, so that a new one has enough tracks to loop. With less room than **Headroom to start**, you see **No generation headroom right now** and no session is created. You're offered **Resume a Session** or your library instead. A member with 4 tracks left in a one-time budget can't start something new, but can resume a session and use them there.
+New sessions and **More Like This** need more room than a running session, so that a new one has enough tracks to loop. With less room than **Headroom to start**, you see **Not enough Tracks left to start** and no session is created, wherever you started it: Home, Surprise Me, the player, the library, a playlist or the Lounge. The message says what a new session needs and what is left, for example "A new Session needs 5 Tracks; you have 4 left today.", and when more come back: at midnight for a daily limit, on the 1st for a monthly one, both in the instance timezone. If the limit itself is lower than **Headroom to start**, waiting won't help, and it says so: the admin raises the limit or lowers **Headroom to start**, and a member is told to ask the admin. You're offered **Resume a Session** or your library instead. A member with 4 tracks left in a one-time budget can't start something new, but can resume a session and use them there.
 
 Resuming is never blocked, and **Change Vibe** needs room for just one more pair. Only one session can start at a time. Cancelling a start before it's created buys no music, though your text AI may already have been paid for its part.
 

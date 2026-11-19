@@ -1,7 +1,7 @@
 ---
 title: Email and storage
 description: Let Liedmotif send invites and password resets, decide whether your library belongs on disk or in a bucket, and see how much room your music takes.
-checkedOn: 2026-11-07
+checkedOn: 2026-11-19
 ---
 
 Both of these are optional, and Liedmotif works fine without them. Add account email when other people use your instance, or when you want a way back in if you forget your password. Most people should leave storage on the server's own disk, the default.
@@ -71,7 +71,7 @@ Until then, **Forgot password?** sends that address nothing, and its reply reads
 
 ### If you set up with a placeholder address
 
-A reset mail can only reach you at a real inbox. To replace the address you used during setup, open **Settings › Profile** and change the email. It asks for your current password and signs out your other devices. With email on, a confirm link goes to the new address straight away, and **Send confirm link** sends another if it doesn't arrive. Moving away from a confirmed address also mails that old address a notice of the change.
+A reset mail can only reach you at a real inbox. To replace the address you used during setup, open **Settings › Profile** and change the email. It asks for your current password and signs out your other devices. With email on, a confirm link goes to the new address straight away, and **Send confirm link** sends another if it doesn't arrive. Moving away from a confirmed address also mails that old address a notice of the change. An address that an open invite was mailed to is refused with `That address has an open invite. Revoke the invite first.` Revoke it under **Open invites** in **Settings › Members**, then save again.
 
 ### How long links last
 
@@ -111,6 +111,8 @@ sudo chown -R 1000:1000 ./data
 That's all a new install needs. An instance that already has music needs its files moved as well. With Liedmotif stopped, copy everything in the `liedmotif_liedmotif-data` volume into `./data` before you start again, or your existing tracks won't play.
 
 Liedmotif checks its storage folder at every start and refuses to start if it can't write there. The error names the setting without showing the path.
+
+**Using a separate disk?** Give Liedmotif a folder of its own on it, such as `/mnt/music/liedmotif`, and mount that folder at `/data`, never the disk's top level. The top level of a freshly formatted disk holds a `lost+found` folder that the app can't read, so it refuses to start. Running from source, point `DATA_DIR` at that folder.
 
 > **The one-line installer replaces `docker-compose.yml` on every update.** Your edit would be lost and the app would be back on the empty volume, so stay with the volume on an installer setup.
 
@@ -175,6 +177,8 @@ S3_ENDPOINT=https://your-service.example
 Start Liedmotif with `docker compose up -d`. If a required line is missing, it refuses to start and names that line, so a half-finished setup never writes files into nowhere. With `STORAGE_PROVIDER` blank or missing, Liedmotif uses the disk.
 
 **On AWS,** a key with the fewest rights needs `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject` and `s3:AbortMultipartUpload` on the objects, and `s3:ListBucket` on the bucket. Without `s3:ListBucket`, AWS answers a missing file with "forbidden" instead of "not found", and the app reports an error where it expects a simple miss.
+
+**Add a rule that clears unfinished uploads.** If Liedmotif stops in the middle of an upload, the parts already sent stay in the bucket. They never show up as files, and the service bills them until they are aborted. Add a lifecycle rule to the bucket that aborts incomplete multipart uploads, for example after one day; Liedmotif doesn't clean these up itself. If the bucket also holds other data, limit the rule to Liedmotif's folder (`S3_KEY_PREFIX`). Services other than AWS differ, so check that yours supports this rule. On AWS, see [aborting incomplete multipart uploads with a lifecycle rule](https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpu-abort-incomplete-mpu-lifecycle-config.html).
 
 **How your media is served.** Your bucket can stay fully private, and it should. Your server reads the files and passes them to the browser, after checking that the listener is allowed to have them. No bucket address ever reaches a browser.
 

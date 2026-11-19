@@ -1,7 +1,7 @@
 ---
 title: Members, invites and the lounge
 description: Bring people onto your Liedmotif, set what they can spend, share playlists with them, and take access back when you need to.
-checkedOn: 2026-11-18
+checkedOn: 2026-11-19
 ---
 
 Your instance can hold your whole household or a group of friends. Each person you invite becomes a member with their own account. Their music is paid from your provider keys, inside a budget you choose, so you always know the most they can cost. As the admin, you run all of this from **Settings › Members**, which only you can see.
@@ -36,15 +36,15 @@ Every invite follows the same rules:
 - **It works once and lasts 7 days.** Opening it uses nothing, so a refresh is safe. Creating the account uses it.
 - **Treat it like a password.** Whoever finishes the form first gets the account and the budget that comes with it.
 - **A copied link is shown only once.** If you lose it, press **Revoke** under **Open invites** and create a new invite.
-- **Open invites** lists everything nobody has used yet, with its expiry date. A used, expired or revoked link says `This link is no longer valid.`
+- **Open invites** lists everything nobody has used yet, with the date and time it expires in your instance's timezone, such as `Expires Nov 24, 2026, 11:00 Europe/Berlin`. A used, expired or revoked link says `This link is no longer valid.`
 
-With account email on, Liedmotif refuses an address that already signs in or already has an open invite. If the mail can't be sent, the invite is cancelled and you can try again.
+With account email on, Liedmotif refuses an address that already signs in or already has an open invite. If the mail can't be sent, the invite is cancelled and you can try again. While the invite is open, you can't move your own sign-in email to that address either: **Settings › Profile** says `That address has an open invite. Revoke the invite first.`
 
 Someone already signed in to your instance in that browser sees `You are already signed in`. They need to open the link on their own device, or sign out first.
 
 ## What happens when they join
 
-Your guest fills in **Your name**, **Email** and a password of 12 to 128 characters, with a number, an uppercase letter and a special character. Then they press **Create my account**. If they pick an address someone else already uses, the form says `That email is already in use. Pick another.`
+Your guest fills in **Your name**, **Email** and a password of 12 to 128 characters, with a number, an uppercase letter and a special character. Then they press **Create my account**. If they pick an address someone else already uses, the form says `That email is already in use. Pick another.` A mailed invite fixes the address, so if someone took it in the meantime the form says `Someone already signs in with this invite's address. Ask your admin for a new invite.` Revoke that invite and send a new one to an address that's free.
 
 A shorter welcome follows. It skips everything to do with keys and limits, because those are yours:
 
@@ -70,7 +70,7 @@ Things a member can't use are left out of their screens, not greyed out, so they
 
 ## What you can see as the admin
 
-You pay for the music, so you see the numbers. You don't see the music. Each member's card shows their name, budget, when they joined and were last active (or `Never signed in`), their track count, their storage and an estimated cost, and **Your Stats › Costs** compares members. Their tracks, requests, listening, People and unshared playlists stay out of your view. [Privacy and security](/docs/privacy-and-security#what-an-admin-can-and-cant-see) has the full list.
+You pay for the music, so you see the numbers. You don't see the music. Each member's card shows their name, budget, when they joined and when their sign-in was last active (or `No active sign-in` while they are signed out), dated in your instance's timezone, their track count, their storage and an estimated cost, and **Your Stats › Costs** compares members. Their tracks, requests, listening, People and unshared playlists stay out of your view. [Privacy and security](/docs/privacy-and-security#what-an-admin-can-and-cant-see) has the full list.
 
 There's no admin override behind these screens. Ownership decides who controls a track, so you can't open, rename or remove a single track of a member's in the app. Your only way to remove their music is to delete their account.
 
@@ -110,7 +110,7 @@ A session that's playing doesn't stop. It repeats the tracks it already has, at 
 
 New tracks come back when the day or month rolls over. On a one-time budget, that only happens when you raise the total.
 
-Starting a new session needs at least 5 tracks left in both budgets, or whatever you've set for your instance in **Cost limits**. Below that, members can still resume a session or play their library. A change of vibe is only refused when not one more batch fits.
+Starting a new session needs at least 5 tracks left in both budgets, or whatever you've set for your instance in **Cost limits**. Below that, members can still resume a session or play their library. A change of vibe is only refused when not one more batch fits. So a track budget set below that number, say 4 tracks a day, means the member can never start a new session. The budget forms and the shared budget warn you when a track figure is that low ("Below 5 Tracks, no new Session can start."), but still save it.
 
 ### What it costs you
 
@@ -154,11 +154,14 @@ You never see or set a member's password. You hand them a one-shot link and they
 | --- | --- | --- |
 | What they see | `This account is disabled`, as soon as you press it | They have no account any more |
 | New music | Stops | Stops |
-| Their music | Kept | Removed for good: tracks, sessions, playlists, People and files |
+| Their music | Kept | Removed for good from your instance: tracks, sessions, playlists, People and files |
+| Their devices | Tracks they kept offline stay and keep playing | Tracks they kept offline stay and keep playing |
 | Their lounge playlists | Stay shared | Leave the lounge, and the tracks other people saved from them go too |
 | Way back | **Enable account** | None |
 
 To delete, type their name and press **Delete forever**, or press **Keep the account** to back out. If a deleted member was the last person a playlist was shared with, that playlist returns to Private.
+
+Neither one reaches into their phone or computer. Tracks they made and kept **Available offline** stay on that device and keep playing in its Offline Library, which needs no sign-in, and Liedmotif can't remove them from there. Copies of other people's lounge tracks are different: they stop playing 7 days after that device's last successful sync. To free the space, they clear the site's data for your Liedmotif in their browser.
 
 Deleted music can live on in your [backups](/docs/backups) until they rotate out. In **Your Stats › Costs**, its cost moves to **Former members**.
 

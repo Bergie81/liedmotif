@@ -1,7 +1,7 @@
 ---
 title: Share a home server with a friend
 description: Let a friend anywhere in the world listen on your Liedmotif at home, with two private links and nothing opened to the internet.
-checkedOn: 2026-11-07
+checkedOn: 2026-11-19
 howTo: true
 ---
 
@@ -103,7 +103,7 @@ The invite link works for 7 days.
 Do both of these. The share is the door to your box, and the Liedmotif account is the key to the app.
 
 1. **In Tailscale:** **Machines**, then the **⋯** menu on your Liedmotif box, then **Share**. Next to your friend, select the **⋯** menu, then **Revoke invite**. From now on they can't reach your box at all. To let them back in later, send a new share link.
-2. **In Liedmotif:** **Settings › Members**, then **Disable account** on your friend's card. The card now shows **Disabled**: they can't sign in or make music, and everything they made is kept. **Enable account** undoes it. **Delete** removes the account and their music for good: type their name and press **Delete forever**.
+2. **In Liedmotif:** **Settings › Members**, then **Disable account** on your friend's card. The card now shows **Disabled**: they can't sign in or make music, and everything they made is kept. **Enable account** undoes it. **Delete** removes the account and their music for good: type their name and press **Delete forever**. Either way, music they kept offline on their phone stays there and keeps playing. Only clearing the site's data in their browser frees that space.
 
 To take back links nobody has used yet, press **Revoke** next to the invite under **Open invites** in Liedmotif, and **Revoke invite** in the Tailscale **Share** dialog.
 

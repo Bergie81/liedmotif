@@ -1,7 +1,7 @@
 ---
 title: Providers and keys
 description: Which AI services Liedmotif uses, how to get a key for each, where to enter it, and what changes with and without the optional ones.
-checkedOn: 2026-11-18
+checkedOn: 2026-11-19
 ---
 
 Liedmotif doesn't make music itself. It sends your requests to AI services you choose, on your own accounts, and you pay them directly. There's one you need and two you can add later, and you can change any of them at any time. Only the admin can see or change provider keys. Members create music on the admin's keys, within [the budgets the admin sets](/docs/costs-and-limits).
@@ -186,7 +186,7 @@ Regenerating a cover says "Your image provider's account isn't ready for images.
 
 To try a model other than the default, enter its ID in the **Model** field: OpenAI's or Google's own model ID, or the model's ID on OpenRouter. **Test** checks the key and that the model exists. On OpenRouter, the model has to support OpenRouter's Images API, and **Test** checks that too. Save it, and the next new cover uses it, while existing covers stay as they are. Prices differ between models, so check your [estimated price per cover](/docs/costs-and-limits) as well.
 
-OpenAI and Gemini always paint one square image. On OpenRouter, models don't all accept the same settings, so Liedmotif asks OpenRouter what the chosen one takes and sends only that. If OpenRouter can't answer, covers go out with just the model and the prompt, and Liedmotif asks again after five minutes. Until then, covers can lose their resolution, aspect ratio and the photos of your people.
+OpenAI and Gemini always paint one square image. On OpenRouter, models don't all accept the same settings, so Liedmotif asks OpenRouter what the chosen one takes and sends only that. If OpenRouter can't answer, covers go out with just the model and the prompt, and Liedmotif asks again after five minutes. Until then, covers can lose their resolution and aspect ratio. A cover that needs photos of your people is not made and not paid for until OpenRouter answers again; regenerate it then.
 
 If your network blocks that question for good, set `IMAGE_SUPPORTED_PARAMS` in `.env` to the fields the model's OpenRouter page confirms, separated by commas, chosen from `resolution`, `aspect_ratio`, `quality`, `negative_prompt`, `n`, `seed` and `input_references`. Otherwise leave it blank. It can only narrow what OpenRouter reports, never widen it. A wrong value silently drops your resolution and aspect ratio, and leaving out `input_references` turns off the photos of your people.
 
@@ -200,7 +200,7 @@ You have three places to enter a key:
 | **Settings › AI Providers** | Any time after that | The key works right away, with no restart |
 | `.env` | When you prefer keeping everything in one file | **`.env` wins** over anything saved in the app, and needs a restart |
 
-When `.env` provides a key, its field in the app locks, and the card says the value comes from the server environment. A key saved in the app then stays as an unused fallback. Each card shows its **Source**, so you can see which one is running.
+The lock is per field. Each key, base URL or model that `.env` sets locks its own field in the app, which names the variable, for example `SET BY LLM_MODEL`. A locked key field shows no key. Fields `.env` leaves out stay open, so `SUNO_API_KEY` in `.env` still lets you set the base URL in the app. A value saved in the app for a locked field stays as an unused fallback. Each card shows its **Source**, so you can see which one is running.
 
 These are the lines for `.env`:
 
@@ -240,8 +240,8 @@ These details catch people out:
 - **A key needs its provider line.** `LLM_API_KEY` without `LLM_PROVIDER`, or `IMAGE_API_KEY` without `IMAGE_PROVIDER`, does nothing.
 - **A blank `IMAGE_API_KEY` shares only with the same service.** It uses `LLM_API_KEY` when `LLM_PROVIDER` names the same service as `IMAGE_PROVIDER`, or uses the Text AI key saved in the app when that one does. It never shares when `LLM_BASE_URL` is set. An `IMAGE_API_KEY` you fill in always wins.
 - **`IMAGE_RESOLUTION`, `IMAGE_ASPECT_RATIO` and `IMAGE_SUPPORTED_PARAMS` are for OpenRouter only.** OpenAI and Gemini always paint one square image, and ignore them.
-- **`IMAGE_PROVIDER` locks the Cover images provider picker** in the app, which shows `SET IN .env (IMAGE_PROVIDER)`. The key field stays open.
-- **`IMAGE_MODEL` locks the model field** in the app, the same way a key locks its own. Blank uses the provider's default model.
+- **`IMAGE_PROVIDER` locks the Cover images provider picker** in the app, which shows `SET IN .env (IMAGE_PROVIDER)`. The key field stays open unless `IMAGE_API_KEY` is set.
+- **`IMAGE_MODEL` locks the model field** in the app and shows `SET BY IMAGE_MODEL`. Blank uses the provider's default model.
 - **`SUNO_MODEL` exists only in `.env`.** The app has no field for it.
 
 After editing `.env`, run this from the folder that holds it: `/opt/liedmotif` after a one-line install, `liedmotif` on a laptop. `docker compose restart` won't do, because it doesn't read the file again. If your user isn't in the `docker` group, put `sudo` in front:

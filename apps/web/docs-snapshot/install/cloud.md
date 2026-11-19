@@ -1,7 +1,7 @@
 ---
 title: Install Liedmotif on a cloud provider
 description: Rent a small server, point your own domain at it and invite your friends, even if you have never touched a server, DNS or SSH.
-checkedOn: 2026-11-18
+checkedOn: 2026-11-19
 howTo: true
 ---
 
@@ -263,9 +263,9 @@ Keep the key in your password manager or in the private note with your setup lin
 - **Welcome. What should we call you?** Fill in your **First name**. The rest is optional. Press **Continue**.
 - **Put people on your Covers.** Optional. Press **Continue**.
 - **Connect your music model.** Paste your key from step 7 into the field that says **Paste it here**, then press **Test the key**. It answers `Music provider reachable; … credits available.` Press **Save and continue**.
-- **Set a Track limit.** This is your own spending limit, and it's off by default. Turn on **Limit my Tracks**, set **Tracks per day** and **Tracks per month** to what you're happy to pay, and press **Save and continue**.
+- **Set a Track limit.** This is your own spending limit, and it's off by default. Turn on **Limit my Tracks**, set **Tracks per day** and **Tracks per month** to what you're happy to pay, and press **Save and continue**. Neither goes below 6 tracks by default, the room a new session needs to start. The note under them names the one that runs out first.
 - **Add a Text AI.** Optional. It writes better session names and prompts. Pick **OpenAI**, **Gemini** or **Ollama**, or open **More options** for OpenRouter or another OpenAI-compatible service. The line under the picker says what it costs and whether its key can also paint covers. `.env` calls it a text LLM. **Skip for now** is fine.
-- **Choose your Cover art.** Optional. Turn on **Generate Tailored Cover Art** to paint covers around your session and your people, on OpenAI at about 6 cents each, Gemini at about 4, or OpenRouter at about 7. If that's your text AI's service, it uses the same key and asks for none. Without it, covers come from your music provider at no extra cost. Press **Save and continue**.
+- **Choose your Cover art.** Optional. Turn on **Generate Tailored Cover Art** to paint covers around your session and your people, on OpenAI at about 6 cents each, Gemini at about 4, or OpenRouter at about 7. If that's your text AI's service, it uses the same key and asks for none. Without it, covers come from your music provider at no extra cost. **Limit my Covers** caps every generated cover, your music provider's included. Press **Save and continue**.
 - On the last screen, press **Start your first Session**.
 
 **You should now see** Liedmotif's home screen. Describe the moment you're in and start a session.
@@ -358,7 +358,13 @@ Nothing protects you from failed certificate tries now, so make sure the domain 
 | `2` | Visitor, then a load balancer or proxy, then Caddy |
 | `0` | Nothing in front of the app at all. The limits still work, but everyone shares them |
 
-**Tell Caddy too.** In `/opt/liedmotif/Caddyfile`, uncomment the `trusted_proxies` line and name your proxy's address range. Then apply both changes:
+**Tell Caddy too.** In `/opt/liedmotif/.env`, name your proxy's address range, or several separated by spaces. Use the range your proxy really sends from, for example:
+
+```bash
+CADDY_TRUSTED_PROXIES=10.0.0.0/8
+```
+
+Then apply both changes:
 
 ```bash
 cd /opt/liedmotif
@@ -371,7 +377,7 @@ The two settings have to agree:
 - **Set too high,** a visitor can write their own address, and the limits stop working.
 - **Set to something that isn't a number,** Liedmotif refuses to start, which is on purpose.
 
-> **Updates replace the `Caddyfile`.** The installer unpacks each release over the install folder, including this file. Your edit is gone after every update, so make it again and run the command above. `.env` is kept.
+`CADDY_TRUSTED_PROXIES` doesn't change `TRUSTED_PROXY_HOPS`, so set both. Updates keep them, because they live in `.env`.
 
 **Keep tokens out of your proxy's logs.** Invite, reset and confirm links carry a one-time token in their path, and the setup link carries one too. Exclude `/join/*`, `/reset/*`, `/confirm/*` and `/setup` from request logging on anything in front of Liedmotif. An invite that sits in a log for 7 days is an account someone can claim.
 
@@ -395,6 +401,7 @@ A Cloudflare Tunnel is a different setup, with its own steps in [On your phone](
 - **The installer stops with `has no DNS record yet`.** The record isn't live yet, or has a typo. Check [step 3](#3-point-the-domain-at-your-server), wait a few minutes and run the same line again. The server may remember the old answer for a while.
 - **The installer stops with `points at …, but this server's address is …`.** A record still points elsewhere. Set the `A` record to the address it names, and delete every other `A` and `AAAA` line for that name.
 - **`Warning: could not look up this server's public IP address`.** The installer couldn't check the record and carries on. If it later stops at `Waiting for Liedmotif to answer`, check the record by hand.
+- **The installer stops with `Liedmotif is already installed on this machine, in …`.** Liedmotif already runs from that folder, so nothing was changed. To update it, run the same line with `--dir` and the folder the message names.
 - **`curl: command not found`.** Run `sudo apt-get update && sudo apt-get install -y curl`, then the install line again.
 - **`Liedmotif did not answer within 300 seconds`.** Usually ports 80 and 443 are blocked, or the DNS record changed during the install. Check [step 4](#4-check-that-ports-80-and-443-are-open), then run the same line again. A slow server can [get more time](/docs/install/home-server#give-a-slow-machine-more-time).
 - **You lost the setup link.** Run `grep '^SETUP_TOKEN=' /opt/liedmotif/.env` on the server. Your link is `https://music.example.com/setup?token=` followed by the value after the `=`.

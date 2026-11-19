@@ -1,7 +1,7 @@
 ---
 title: Troubleshooting
 description: Real Liedmotif problems with the exact message, the reason and the fix, plus how to read logs and check health.
-checkedOn: 2026-11-18
+checkedOn: 2026-11-19
 ---
 
 Find your message or symptom below. A message about something you just did, such as a failed save or a **Test** result, shows as a notification at the top of the screen; an error stays there until you close it. A problem that lasts shows where it is, such as the banner in the player or a page that couldn't load. Most fixes are one line. Run every command in your install folder: `/opt/liedmotif` from the installer, or your `liedmotif` folder on a laptop. If your user isn't in the `docker` group, write `sudo docker` for `docker`.
@@ -117,7 +117,11 @@ Account email needs both lines, or neither. Set the missing one, or clear the ot
 
 ### `The storage root (DATA_DIR) is not writable by the user this process runs as`
 
-The app runs as an unprivileged user and can't write to its music folder. This shows up as a refused start, or as storage writes failing with `EACCES` in the logs, and also as `The storage tree (DATA_DIR) contains a directory this process cannot read, write, or traverse`. It usually means the volume was created by an older version that ran as root. Hand it over once:
+The app runs as an unprivileged user and can't write to its music folder. This shows up as a refused start, or as storage writes failing with `EACCES` in the logs, and also as `The storage tree (DATA_DIR) contains a directory this process cannot read, write, or traverse. Check the permissions of its existing sub-folders. If DATA_DIR is the top level of a mounted disk, use a dedicated sub-folder instead.` There are two usual causes.
+
+**The folder is the top level of a disk.** A freshly formatted disk has a `lost+found` folder at its top that only root can read. Make a folder of its own on the disk, such as `/mnt/music/liedmotif`, and mount that at `/data` (or point `DATA_DIR` at it when running from source). See [Using your own folder](/docs/email-and-storage/#using-your-own-folder).
+
+**The volume belongs to root.** It was created by an older version that ran as root. Hand it over once:
 
 ```bash
 docker compose down
@@ -129,9 +133,9 @@ New installs don't need this. If you mounted a folder from the machine instead o
 
 `The storage root (DATA_DIR) does not exist` and `DATA_DIR must be an absolute path` are for running from source: create the folder and use its full path.
 
-### `DATABASE_URL points at a public host with no verifying TLS mode`
+### `DATABASE_URL (DOCKER_DATABASE_URL in Docker) points at a public host without a verifying sslmode`
 
-You pointed Liedmotif at an outside database without encryption. Add `?sslmode=verify-full` to the address, or `verify-ca` where the host name can't be verified.
+Your database is on a public host, and its address doesn't say `sslmode=verify-full` or `sslmode=verify-ca`. Liedmotif accepts only that spelling. Add `?sslmode=verify-full` to the address, or `verify-ca` where the host name can't be verified. If the address says `ssl=true`, replace it with `sslmode=verify-full`: the connection would be encrypted, but Liedmotif doesn't accept that form. A Docker install sets the address in `DOCKER_DATABASE_URL`, running from source in `DATABASE_URL`.
 
 ### A container exits with code 137, or `docker compose ps -a` shows it restarting
 
@@ -191,13 +195,17 @@ Caddy can't get or serve its certificate, or the app is slow to start.
 
 The setup page needs the token in its address. Open the link the installer printed, or `https://<your address>/setup?token=<SETUP_TOKEN from .env>`. A missing token and a wrong one give the same answer.
 
+### "This install is set up for <address>. Open it there, or set `APP_PUBLIC_URL` to this address and restart."
+
+The setup page was opened at another address than the one in `APP_PUBLIC_URL`, for example `127.0.0.1` when `.env` says `localhost`, or a home network name such as `nas.local`. Setup only works at that one address, so the form would be refused. Open the address the message names, with the setup token if you have one. Or, if the address in your browser is the one you want to keep, set `APP_PUBLIC_URL` (and `APP_DOMAIN` on a server) to it and run `docker compose up -d`.
+
 ### `Setup is already complete.`
 
 An admin already exists, so the setup page has closed. Sign in instead. If you didn't create that admin and the instance was open to the network, someone else did. Treat that as a lost instance: start again with a [clean install](/docs/install/home-server) and a setup token.
 
 ### "Sign-in only works at the address Liedmotif was set up with."
 
-Liedmotif accepts sign-ins from exactly one address, the one in `APP_PUBLIC_URL`: scheme, host and port. Any other way to reach the same instance, such as a local IP address next to your domain, is refused, even with the right email and password. Other changes on the page answer `Cross-origin request refused.`
+Liedmotif accepts setup and sign-ins from exactly one address, the one in `APP_PUBLIC_URL`: scheme, host and port (setup checks host and port). Any other way to reach the same instance, such as a local IP address next to your domain, is refused, even with the right email and password. Other changes on the page answer `Cross-origin request refused.`
 
 Check the address bar against `APP_PUBLIC_URL` in `.env`, and use that address everywhere. A second address for one instance isn't supported. To change the address, set `APP_PUBLIC_URL` (and `APP_DOMAIN` on a server) and run `docker compose up -d`. Invite links use it too.
 
@@ -205,7 +213,7 @@ Check the address bar against `APP_PUBLIC_URL` in `.env`, and use that address e
 
 Ten failed attempts from one address lock that address out for 15 minutes. It clears by itself, or when the app restarts. If it hits everyone at once, your instance is behind a proxy and can't tell callers apart: see [rate limits](/docs/privacy-and-security#rate-limits).
 
-"Too many requests. Please slow down." is the same kind of limit, on invites, resets and starting sessions.
+"Too many requests. Please slow down." is the same kind of limit, on invites, resets, starting sessions and changing the vibe.
 
 ### You forgot the admin password
 
@@ -246,6 +254,10 @@ The key is wrong, was revoked, or your provider account has a problem. Create a 
 
 "Could not reach the music provider to verify credentials." is different. The key may be fine, but the machine can't reach the provider. Check its internet connection.
 
+### "The music key is missing or can't be read." or "Music isn't set up on this server yet."
+
+Starting a session, More Like This or Surprise Me is refused because Liedmotif has no music key it can use. Nothing is created or spent. The admin sees "The music key is missing or can't be read. Enter it under Settings › AI Providers." Enter or re-enter the music key there, then press **Test**. If that doesn't help, check `.env`: `MUSIC_PROVIDER` must say `suno`, and `CREDENTIAL_ENCRYPTION_KEY` must be the key the saved one was stored with. A changed or missing `CREDENTIAL_ENCRYPTION_KEY` makes a saved key unreadable, so enter the key again. A member sees "Music isn't set up on this server yet. Ask the Admin to set it up." and should ask the admin.
+
 ### "... rejected this API key." on the text AI or image key
 
 This comes from the **Test** button, as a notification at the top of the screen, with your provider's name at the start. The key is wrong for that provider. A message that starts "Key works, but" and goes on to say the provider has no such model means the key is fine and the model ID has a typo.
@@ -278,9 +290,13 @@ A text AI is set up and it's failing. Liedmotif treats that as a retryable error
 
 Check `MUSIC_PROVIDER` in `.env`. It must say `suno`. Blank or `mock` uses the built-in test provider, which makes no real music.
 
-### "Generation limit reached" or "You have reached your generation headroom for now"
+### "Generation limit reached", "Not enough Tracks left to start" or "You have reached your generation headroom for now"
 
-That's a budget, not a fault. A running session replays its own tracks for free and picks up again when the budget renews. The admin can change limits in **Settings › Cost limits**, and a member sees their budget in **Settings › My budget**. A session that needs tracks but has none yet says "No Tracks yet — the generation limit was reached before the first one." [Costs and limits](/docs/costs-and-limits) explains how they work.
+That's a budget, not a fault. A running session replays its own tracks for free and picks up again when the budget renews. A new session needs a few tracks left (**Headroom to start**), and the message says how many it needs, how many are left and when more come back. The admin can change limits in **Settings › Cost limits**, and a member sees their budget in **Settings › My budget**. A session that needs tracks but has none yet says "No Tracks yet — the generation limit was reached before the first one." [Costs and limits](/docs/costs-and-limits) explains how they work.
+
+### "New music is paused" or "… has paused new music"
+
+**Pause all new music** is on in **Settings › Generation**, so a new session, More Like This, Surprise Me and Change Vibe are refused, and nothing is spent. The admin turns it off there; a member asks the admin. Resume, the Library, playlists and the Lounge keep working meanwhile.
 
 ## Sessions and music
 
@@ -294,9 +310,13 @@ Read the banner in the player first, because it names most problems. If the prob
 
 A provider job that never finishes is given up on after about ten minutes of checking, so a session doesn't hang forever. Interrupted work resumes after a restart, without paying twice.
 
-If the session has no tracks and nothing can move it on, the banner offers to delete the session. You can also stop it and start a new one.
+If the session has no tracks and nothing can move it on, the banner offers **Try again** and **Delete Session**. **Try again** buys one new pair, the number shown on the button, and starts at once if your limits have room. If a limit is reached, the banner says so instead. Nothing tries again without your tap, so a failing provider never spends in the background. When the provider blocked the request for its content, there is no **Try again**: use **Change Vibe** to adjust it. The banner stays until a track arrives or you delete the session. You can also stop it and start a new one.
 
 "Generation hit a problem" means the last try failed. Ready tracks keep playing while it recovers. Read `docker compose logs worker` for the reason.
+
+### A track is marked "Could not be kept"
+
+The music provider failed after the track had started streaming, so its finished file never arrived. A track that's playing at that moment plays to its end. After that it doesn't play anywhere, and the session leaves it out. If you had saved it, it stays in its playlists with this mark, so you can see what was lost. Remove or delete it whenever you like. The session makes up for the lost tracks only the usual way: while you listen, with **New music** on and within your limits.
 
 ### Only one session starts at a time
 

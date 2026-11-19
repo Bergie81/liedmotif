@@ -65,7 +65,7 @@ You should see `backup`, `postgres`, `web` and `worker` as `Up (healthy)`, `cadd
 
 Open [http://localhost:2206](http://localhost:2206) in your browser. A fresh instance goes straight to setup, where you create the admin account. If you see a sign-in page or a different app instead, another program on your computer already uses that port: see [the port fix](#port-is-already-allocated-or-address-already-in-use).
 
-Use exactly that address. Liedmotif accepts sign-ins from only one address, so `127.0.0.1` won't work even though it's the same computer.
+Use exactly that address. Liedmotif accepts setup and sign-ins from only one address, so `127.0.0.1` won't work even though it's the same computer. Setup opened at another address says so above the form.
 
 Your password needs at least 12 characters, with a number, an uppercase letter and a special character.
 
@@ -78,9 +78,9 @@ Guided setup starts right after your account is created and asks one thing per s
 | You | Your profile | Yes |
 | People | People who can appear on tailored covers | No |
 | Music model | Your provider key. Paste it and test it to continue | Yes |
-| Track limit | How many tracks Liedmotif may make | No |
+| Track limit | How many tracks Liedmotif may make. It won't go below what a new session needs to start, 6 tracks by default | No |
 | Text AI | A service that expands your requests and names your sessions | No |
-| Cover art | An image provider for tailored covers, and a limit on them. Your text AI's key works when it's the same service. Every session gets a free cover without one | No |
+| Cover art | An image provider for tailored covers, and a limit on all generated covers, your music provider's included. Your text AI's key works when it's the same service. Every session gets a free cover without one | No |
 
 A key you save here works right away, with no restart. Setup doesn't make any music: your spending starts when you start a session.
 
@@ -131,7 +131,7 @@ Updates only go forward. An older version can break on a database that a newer o
 
 ### "Sign-in only works at the address Liedmotif was set up with."
 
-Check your browser's address bar. It needs to say exactly `http://localhost:2206`. Any other address for the same computer, such as `127.0.0.1` or `https://localhost`, is refused, even with the right email and password.
+Check your browser's address bar. It needs to say exactly `http://localhost:2206`. Any other address for the same computer, such as `127.0.0.1` or `https://localhost`, is refused, even with the right email and password. Setup follows the same rule: opened at another address, it shows "This install is set up for http://localhost:2206" above the form.
 
 ### "Port is already allocated" or "address already in use"
 

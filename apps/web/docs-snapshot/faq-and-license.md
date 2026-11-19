@@ -1,7 +1,7 @@
 ---
 title: FAQ and license
 description: Straight answers on costs, providers, rights, downloads, offline use, moving your install and the license.
-checkedOn: 2026-11-18
+checkedOn: 2026-11-19
 faq: true
 ---
 

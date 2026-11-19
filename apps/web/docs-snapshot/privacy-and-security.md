@@ -1,7 +1,7 @@
 ---
 title: Privacy and security
 description: What stays on your own Liedmotif instance, what each provider sees, what an admin can see, and how the instance protects itself.
-checkedOn: 2026-11-18
+checkedOn: 2026-11-19
 ---
 
 Everything on this page is about your own instance: the copy of Liedmotif you run on your laptop, your server or your cloud provider. There's no Liedmotif-run service behind it. This website, liedmotif.com, has no accounts and no connection to your instance, so we can't see your music, your prompts or even that you exist.
@@ -63,7 +63,7 @@ This is optional too, and it's what makes tailored covers: OpenAI, Gemini or Ope
 - The mood, activity and genres
 - Reference photos of people, when a cover uses them
 
-A photo is sent only in these cases: you name that person exactly in your request, the text AI reads your request as putting you in the scene ("me", "we"), you ask for people on a playlist cover, or your own photo fits the frequency you set in **Settings › People**. One named person sends up to three photos, and several named people send one each. **Never** switches off all your reference photos, named people included, and refuses a cover that asks for them. When a cover uses photos of several people, their names in your request are swapped for neutral labels such as "subject one". With one person, their name stays in the request. The session name and the cover idea aren't changed, so a name in either one reaches the provider. Without an image key, the music provider makes a standard cover from a finished track, or your session keeps the free cover, and no photo is sent.
+A photo is sent only in these cases: you name that person exactly in your request or in the art direction of a session cover reroll, the text AI reads your request as putting you in the scene ("me", "we"), you ask for people on a playlist cover, or your own photo fits the frequency you set in **Settings › People**. One named person sends up to three photos, and several named people send one each. **Never** switches off all your reference photos, named people included, and refuses a cover that asks for them. When a cover uses photos of several people, their names in your request are swapped for neutral labels such as "subject one". With one person, their name stays in the request. The session name and the cover idea aren't changed, so a name in either one reaches the provider. Without an image key, the music provider makes a standard cover from a finished track, or your session keeps the free cover, and no photo is sent.
 
 ### What OpenAI and Google do with it
 
@@ -152,10 +152,11 @@ There's no public sign-up. The first account comes from the setup page, and ever
 | Forgot-password submits | 10 in 15 minutes | IP address |
 | Forgot-password mails | 3 an hour | Email address |
 | Starting sessions | 10 a minute | Person |
+| Changing the vibe | 10 a minute | Person |
 
 For sign-ins, only failed attempts count, so nobody is slowed down for signing in correctly. The counters live in the app's memory, so a restart resets them.
 
-The limits need to know who's calling. `TRUSTED_PROXY_HOPS` is `1` by default, for Caddy alone, and takes `0` to `8`. If a load balancer, proxy or tunnel sits in front of Caddy, [Running behind a proxy](/docs/install/cloud#running-behind-a-proxy-such-as-cloudflare) shows what to set in `.env` and the `Caddyfile`, why a wrong value hurts, and which paths to keep out of the proxy's logs.
+The limits need to know who's calling. `TRUSTED_PROXY_HOPS` is `1` by default, for Caddy alone, and takes `0` to `8`. If a load balancer, proxy or tunnel sits in front of Caddy, [Running behind a proxy](/docs/install/cloud#running-behind-a-proxy-such-as-cloudflare) shows what to set in `.env`, why a wrong value hurts, and which paths to keep out of the proxy's logs.
 
 ## HTTPS
 
@@ -248,7 +249,7 @@ A request for any other host name never reaches the site, so it isn't in this fi
 | **Dislike** a track | It's hidden at once. Its audio is removed after 24 hours. A hidden record stays in the database. |
 | Delete a track | Its audio is queued for deletion straight away, and removed within minutes. A hidden record stays in the database. |
 | Delete a session | Its unsaved tracks and unused covers are removed. Tracks you saved in a playlist stay, and so do hidden records of the rest. If music was still being made, the delete finishes once that work has settled, and the session is hidden until then. |
-| Delete a member (admin) | Their account and content are removed, and their files are queued for deletion. Their spending records stay with no name on them, and can still hold the text of their requests. They count toward limits until the period ends, and they aren't deleted then. |
+| Delete a member (admin) | Their account and content are removed, and their files are queued for deletion. Their spending records stay with no name on them, and can still hold the text of their requests. They count toward limits until the period ends, and they aren't deleted then. Music they kept offline on their own devices stays there, see **Devices** below. |
 | Delete a cover | The file is queued for deletion. |
 
 Tracks and sessions have no expiry otherwise. Nothing is deleted just because it's old, or to make room.
@@ -258,7 +259,7 @@ Four things can outlive a delete:
 - **Backups.** A deleted item stays in every backup made before the deletion until that backup rotates out, four weeks at the default settings. [Backups and restore](/docs/backups) has the details, and copies you downloaded are yours to delete.
 - **Hidden records.** The database keeps a record of each deleted track, with its title and prompt, and of every request made to a provider, which spending limits count. The app no longer shows them and has no button to remove them, but anyone with access to the database can read them.
 - **Your own stats.** Your private totals and a musical summary stay after a delete, with an ID that doesn't link back to anything. Nobody else sees them. Your listening records have no age limit either. **Clear listening history** on your stats page removes them for good, and **Reset learned taste** in **Settings › Playback** starts your taste afresh.
-- **Devices.** A playlist or session you've made available offline stays on that device until the next sync, and signing out wipes it.
+- **Devices.** A playlist or session you've made available offline stays on that device until the next sync, and signing out wipes it. A disabled or deleted member can't sign in any more, so their device never syncs again and has nothing to sign out of. Their own tracks kept offline stay on it and keep playing until the site's data is cleared in that browser. Copies of other people's lounge tracks stop playing 7 days after its last successful sync.
 
 Separately, playback records no feature needs any more are pruned after 180 days, and the spending log after 730 days.
 

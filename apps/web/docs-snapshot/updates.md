@@ -1,7 +1,7 @@
 ---
 title: Update Liedmotif
 description: Move to a new version without losing your library, what an update does, and how to get back if one fails.
-checkedOn: 2026-11-07
+checkedOn: 2026-11-19
 ---
 
 An update keeps your music, your playlists, your members and your provider keys. Liedmotif never updates itself, so you choose the moment. Pick one when nobody is listening, because the music stops for about a minute.
@@ -42,7 +42,7 @@ curl -fsSL https://github.com/bergie81/liedmotif/releases/latest/download/instal
 
 ### What the update changes in `.env`
 
-Almost nothing. `.env` holds your secrets, so it's never regenerated. The update changes only the `LIEDMOTIF_VERSION` line.
+Almost nothing. `.env` holds your secrets, so it's never regenerated. The update changes only the `LIEDMOTIF_VERSION` line. The other files in the install folder, the `Caddyfile` among them, come fresh from the new release, so put your own settings in `.env`. The Caddy settings for a tunnel or a proxy, `CADDY_TLS` and `CADDY_TRUSTED_PROXIES`, live there.
 
 The update also keeps the mode you installed with, Tailscale or `--domain`. Passing a different `--domain` doesn't move your instance. To change the domain, edit `APP_DOMAIN` and `APP_PUBLIC_URL` in `.env`. Coming from `--domain localhost`, also add `CADDY_HTTP_PORT=80` and `CADDY_HTTPS_PORT=443`, or the new domain answers only on the machine itself.
 
@@ -127,6 +127,7 @@ Each of these names what to try, and each is safe to run again once it's fixed.
 
 | The installer says | What it means | What to do |
 | --- | --- | --- |
+| `Liedmotif is already installed on this machine, in <folder>. Nothing was changed.` | The command was run without the `--dir` the install uses. | Run the same command with `--dir <folder>`. If the message says the folder cannot be found, `sudo docker compose ls -a` shows it. |
 | `could not pull the Liedmotif images for <version>. Nothing was stopped or started.` | The machine can't download the release. The old version keeps playing. | Check that the machine can reach `ghcr.io`, then run the command again. |
 | `this machine is <name> (<address>) on the tailnet now, but <file> serves ...` | The machine's Tailscale name or address changed. Nothing was stopped. | Set `APP_DOMAIN`, `APP_PUBLIC_URL` and `TAILSCALE_IP` as the message says, then run the command again. |
 | `could not stop the running app.` | Docker didn't stop the containers. | Look at `docker compose ps` in the install folder, then run the command again. |

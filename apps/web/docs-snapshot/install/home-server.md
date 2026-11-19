@@ -1,7 +1,7 @@
 ---
 title: Install Liedmotif on a home server
 description: Run your own always-on Liedmotif on an old PC, a Raspberry Pi or a dedicated home server, reachable from your phone and closed to everyone else.
-checkedOn: 2026-11-07
+checkedOn: 2026-11-19
 howTo: true
 ---
 
@@ -198,6 +198,12 @@ Follow [step 2](#2-turn-on-https-in-tailscale), then run the same line again.
 ### "Liedmotif on a tailnet needs Docker Compose 2.24.4 or newer"
 
 Your existing Docker is too old for Tailscale mode, because Caddy couldn't be limited to the Tailscale address. [Update Docker](https://docs.docker.com/engine/install/), then run the same line again.
+
+### "Liedmotif is already installed on this machine, in …"
+
+Liedmotif already runs from the folder the message names, so the installer stops before it changes anything. Two installs in different folders would share the same containers and database, and the running one would stop working. To update, run the same line with `--dir` and that folder, as the message says.
+
+If the message says the folder cannot be found, list the installs on this machine with `sudo docker compose ls -a`, and use the folder it shows. If that folder is gone for good, the old install can only be removed with its data: `sudo docker compose -p liedmotif down -v` deletes its database, music and backups, and can't be undone. A plain `down` is not enough, because a new install would meet the old database with a new password.
 
 ### "Liedmotif did not answer within 300 seconds"
 

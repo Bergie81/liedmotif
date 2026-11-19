@@ -1,7 +1,7 @@
 ---
 title: Use Liedmotif on your phone
 description: How to reach your Liedmotif from a phone or tablet for each kind of install, why it needs HTTPS, and every way to get it.
-checkedOn: 2026-11-07
+checkedOn: 2026-11-19
 ---
 
 Liedmotif is a web app, so your phone needs a browser and an address, and there's no native app to find in a store. If you used the one-line installer, your phone is nearly there already. The rest of this page is for anyone who set things up by hand.
@@ -29,7 +29,7 @@ Without it, you can't:
 
 Your sign-in also depends on it. Liedmotif marks its cookies as secure only when `APP_PUBLIC_URL` starts with `https://`.
 
-**Liedmotif has one address.** Sign-in and every save check the browser's address against `APP_PUBLIC_URL`: scheme, host and port. Anything else is refused, even when it's the same machine, so you can't use both `https://music.example.com` and a home network address for one install. Pick one and use it everywhere.
+**Liedmotif has one address.** Sign-in and every save check the browser's address against `APP_PUBLIC_URL`: scheme, host and port. Setup checks host and port, so the first account is made at that address too. Anything else is refused, even when it's the same machine, so you can't use both `https://music.example.com` and a home network address for one install. Pick one and use it everywhere.
 
 ## Add it to your home screen
 
@@ -91,7 +91,7 @@ grep '^SETUP_TOKEN=' .env
 
 Your setup address is `https://<APP_DOMAIN>/setup?token=<the value>`. It lands in your browser history, so treat it as a secret until you've used it.
 
-> **Editing the `Caddyfile`?** Some paths below need it. If you installed with the installer, each update replaces that file, so make your edit again afterwards.
+> **Editing the `Caddyfile`?** Only the [DNS challenge](#a-domain-with-a-dns-challenge) path needs it. If you installed with the installer, each update replaces that file, so make your edit again afterwards. Settings in `.env` stay.
 
 Your provider keys can go in `.env` too, but it's easier to save them in guided setup, as the other install guides do. If you change `.env` later, run `docker compose up -d` to apply it.
 
@@ -145,14 +145,17 @@ Follow [what every by-hand setup needs](#what-every-by-hand-setup-needs), with a
 
 ```bash
 echo "TRUSTED_PROXY_HOPS=2" >> .env
+echo "CADDY_TRUSTED_PROXIES=private_ranges" >> .env
+echo "CADDY_TLS=internal" >> .env
 ```
 
-Those two values keep Caddy on this machine, because the tunnel is the only way in, and they tell Liedmotif that's your choice. `TRUSTED_PROXY_HOPS=2` is there because `cloudflared` stands in front of Caddy, and [Running behind a proxy](/docs/install/cloud#running-behind-a-proxy-such-as-cloudflare) explains what it does.
+The two port values keep Caddy on this machine, because the tunnel is the only way in, and they tell Liedmotif that's your choice. The other three lines are there because `cloudflared` stands in front of Caddy:
 
-Then change two things in the `Caddyfile`:
+- `TRUSTED_PROXY_HOPS=2` counts it, and [Running behind a proxy](/docs/install/cloud#running-behind-a-proxy-such-as-cloudflare) explains what it does.
+- `CADDY_TRUSTED_PROXIES=private_ranges` tells Caddy to believe the visitor address `cloudflared` passes on from this machine's private network. If `cloudflared` reaches Caddy from somewhere else, name that address range instead.
+- `CADDY_TLS=internal` makes Caddy sign its own certificate. With its ports closed, Caddy can't get a public one for your hostname. Cloudflare's connection to it never leaves the server.
 
-- In the global options, under `servers`, replace the commented-out `trusted_proxies` line with `trusted_proxies static private_ranges`.
-- Inside the `{$APP_DOMAIN:localhost}` site block, add `tls internal`. With its ports closed, Caddy can't get a public certificate for your hostname, so it signs its own. Cloudflare's connection to it never leaves the server.
+Updates keep all three, because they live in `.env`.
 
 Point `cloudflared` at Caddy, never at `web:3000`. Caddy carries the security headers, the upload limit and the log redaction that hides invite tokens. In the dashboard, these settings are under **Public Hostname › Additional settings › TLS**. In a config file:
 
@@ -184,7 +187,7 @@ If the record holds a home network address, the instance works only where that a
 
 This is fully local, with nothing outside your home involved. The price is installing a certificate once on every device, and Liedmotif works only on your home network. The steps below are for Android, the one phone these docs cover for this path.
 
-**Give the machine a fixed address,** and use it in `.env`. A name the phone can resolve to the machine works too, such as a home network hostname.
+**Give the machine a fixed address,** and use it in `.env`. A name works instead only if Caddy treats it as internal: `localhost`, or a name ending in `.localhost`, `.local`, `.internal` or `.home.arpa`, and the phone must resolve it to the machine. For any other name, such as `nas.fritz.box`, Caddy asks a public certificate authority for a certificate, which fails on a home network.
 
 ```bash
 cat >> .env <<'EOF'

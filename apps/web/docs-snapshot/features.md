@@ -1,7 +1,7 @@
 ---
 title: Every feature, and how to use it
 description: The reference for using Liedmotif day to day, with what each feature does, where it is in the app and what to watch out for.
-checkedOn: 2026-11-18
+checkedOn: 2026-11-19
 ---
 
 Look up any feature here to see what it does, where to find it and what its limits are. Buttons and menus appear in bold, exactly as the app shows them.
@@ -28,15 +28,15 @@ Roadie is the AI assistant inside the app. Ask it how something in Liedmotif wor
 - **Ask:** type a question and press Enter, or pick one of the suggested questions. The answer appears as it's written, and the stop button ends it early.
 - **Ask about your own music:** "What is playing?" gets the session or playlist, the track and, for a session, whether New music is on, off or finished. "How many tracks do I have left?" or "How many covers can I still make?" gets the tracks and covers left today and this month: for a member their own budget and the shared one, for the admin the instance limits.
 - **Find your music:** Roadie finds your sessions, playlists and tracks the way [Search](#search) does: by title, genre or mood, and tracks also by their lyrics. "Which song has the line about the lighthouse?" gets the track and the matching line, and "What was that rainy session last week?" gets the session and when you last played it. When nothing matches, Roadie also sees the names spelled most like what you asked for, so a typo or "und" for "&" still finds it, or Roadie asks which one you meant. Without anything to search for, Roadie lists the most recent ones, and it can list the tracks of one session or playlist. Roadie finds what you can find in the app yourself, and it names up to 10 results, or the first 30 tracks of a list.
-- **Let Roadie do it:** Roadie can add a track to your Favorites, add up to 20 tracks to one of your playlists, make a new playlist, rename or pin one of your playlists, rename or pin one of your sessions, rename one of your tracks, and switch New music off for your running session. "Favorite this", "put this in my running playlist" and "rename this to Harbor Lights" mean the track that is playing, and "call this session Sunday Coffee" or "pin this session" the session that is playing; with nothing playing, Roadie asks which one. A name follows the same rules as **Rename** in the app, and downloaded files get the new name too. Tracks shared with you in the Lounge aren't yours to rename. Pinning past 10 sessions gets the app's own answer: unpin one yourself first. Each thing Roadie did shows as a line in the chat, such as "Added to Favorites: Night Drive", with **Open** to go to where it now is. The app writes that line itself, so it shows what really happened. The pages and the player update right away. Roadie does up to 3 things per message; ask again for more.
+- **Let Roadie do it:** Roadie can add a track to your Favorites, add up to 20 tracks to one of your playlists, make a new playlist, rename or pin one of your playlists, rename or pin one of your sessions, rename one of your tracks, and switch New music off for your running session. "Favorite this", "put this in my running playlist" and "rename this to Harbor Lights" mean the track that is playing, and "call this session Sunday Coffee" or "pin this session" the session that is playing; with nothing playing, Roadie asks which one. A name follows the same rules as **Rename** in the app, and downloaded files get the new name too. A track someone shares with you in the Lounge can go into one of your playlists too, as **Add to Playlist** in the player does: as a pointer to their track, not a copy, so it leaves your playlist when they stop sharing it (see [what others can do](/docs/members#what-others-can-do)). Those tracks aren't yours to rename. Pinning past 10 sessions gets the app's own answer: unpin one yourself first. Each thing Roadie did shows as a line in the chat, such as "Added to Favorites: Night Drive", with **Open** to go to where it now is. The app writes that line itself, so it shows what really happened. The pages and the player update right away. Roadie does up to 3 things per message; ask again for more.
 - **Change a setting:** Roadie changes four of your own settings when you ask: **Include the owner in Covers** (Always, Regularly, Seldom or Never), **Blend consecutive Tracks** (on or off), **Crossfade length** (2 to 12 seconds) and **Default language**. Say "show me on covers only seldom" or "set the crossfade to 8 seconds", and it is saved right away, with no tap. The line in the chat shows the old and the new choice, such as "Crossfade length: 6 s → 8 s", with **Open** to go to its settings page. A change to blending also reaches the music that is playing, from the next transition; a new crossfade length may wait one more transition, when the next one is already planned. **Include the owner in Covers** needs a reference photo on your own card in **Settings › People** first, as on that page. A change counts as one of the 3 things per message.
 - **Play your music:** say "play my running playlist", "resume the focus session from yesterday" or "play Night Drive", and Roadie starts it in the player right away, with no tap. A session resumes where you stopped it, as **Resume** does. It keeps its New music setting, so a session with New music on can generate new tracks from your budget again. A playlist plays from the top, or from the track you name, and playlists shared with you in the Lounge play too. A single track plays through the session it came from, as it does when you tap it in the library. If that session is deleted, Roadie can only play the track inside a playlist that holds it. The line in the chat says what plays, such as "Playing: Running · 24 Tracks". If a new session is still starting, the app asks first, as it does for any other music: **Play this instead** or **Keep starting**. Roadie plays only music you already have: it creates no session and changes no setting this way. Playing counts as one of the 2 player commands per message.
 - **Control the player:** say "pause", "stop", "continue", "next", "go back", "play that again" or "loop this", and Roadie does it in the player right away, with no tap. It works while a session or a playlist is in the player, from any page, and the player and the mini player follow as if you had pressed the button yourself. With nothing in the player yet, "continue" plays your running session. "Next" is the app's **Skip**, and "loop this" switches **Loop Track** on. "Stop" pauses the music, the same as "pause", for a session and for a playlist. To end a session, as **Stop Session** does, say "end the session" or "close the session". Each command shows as a short line in the chat, such as "Paused". Roadie takes up to 2 player commands per message.
 - **Set the sleep timer:** "stop the music in 30 minutes" sets the [sleep timer](#sleep-timer) to any whole number of minutes from 5 to 90, and replaces a running one. "How long is left on the timer?" and "cancel the timer" work too. It's the same timer as in the options menu, which shows it as well.
 - **If the music doesn't start:** sending your message lets the browser start the audio, so "continue" or "play my running playlist" just plays. If your browser still blocks it, the line in the chat shows **Tap to play**: one tap starts the music.
-- **Start a session from the chat:** ask Roadie for new music, such as "Start something calm for reading". Roadie prepares the session and shows a card in the chat: your request in your words, **Instrumental** or **With vocals**, the length or **No limit**, and how many tracks you have left. Say how long it should run, such as "for 45 minutes" or "with no limit"; if you say neither, Roadie asks before it shows a card, so a session never keeps generating without a limit unless you said so. Roadie skips the question when **Generate new Tracks by default** is off in **Settings › Generation**: such a session gets its first batch and then repeats. It can't start with no limit then: name a length, or switch **New music** on once it plays. Nothing starts and nothing is bought until you press **Start Session** on the card. Pressing it starts the session as **Start Session** on **Home** does: the player opens, and on a phone Roadie closes to show it. Roadie asks for instrumental music unless you ask for vocals. Its cover follows your defaults in **Settings › Cover art**, as on **Home**. A card works once, and Roadie shows one card per message. If your budget has too little left, Roadie says so and shows no card. If the start is refused after you press the button, the player shows why and the card says **This Session did not start**.
+- **Start a session from the chat:** ask Roadie for new music, such as "Start something calm for reading". Roadie prepares the session and shows a card in the chat: your request in your words, **Instrumental** or **With vocals**, the length or **No limit**, and how many tracks you have left. Say how long it should run, such as "for 45 minutes" or "with no limit"; if you say neither, Roadie asks before it shows a card, so a session never keeps generating without a limit unless you said so. Roadie skips the question when **Generate new Tracks by default** is off in **Settings › Generation**: such a session gets its first batch and then repeats. It can't start with no limit then: name a length, or switch **New music** on once it plays. A length you name switches **New music** on for that session until it reaches the length. Nothing starts and nothing is bought until you press **Start Session** on the card. Pressing it starts the session as **Start Session** on **Home** does: the player opens, and on a phone Roadie closes to show it. Roadie asks for instrumental music unless you ask for vocals. Its cover follows your defaults in **Settings › Cover art**, as on **Home**. A card works once, and Roadie shows one card per message. If your budget has too little left, Roadie says so and shows no card. If the start is refused after you press the button, the player shows why and the card says **This Session did not start**.
 - **Surprise Me from the chat:** say "surprise me", and Roadie prepares a suggestion from your listening the way [Surprise Me](#surprise-me) does. Add what you want: "something more adventurous", a situation such as "for the morning" or "for focus", "with vocals" or "instrumental", and a length such as "for an hour" or "with no limit". The card shows the suggestion's name, genres, mood, energy and vocals, its length (the one Surprise Me picked, unless you named one) and how many tracks you have left. Preparing it uses your text AI a little and buys no music. Ask again for another one: it replaces the last, and **Home** shows the same suggestion, so there is only ever one. Nothing starts until you press **Start Session** on the card, which starts it as Surprise Me's own button does, with your cover defaults, and opens the player. The language stays **Auto** and your profile is used; for anything else, use Surprise Me on **Home**. If your budget has too little left, Roadie says so and shows no card. If the suggestion was replaced or dismissed elsewhere, or the start is refused after you press the button, the card says why. A suggestion you don't start stays on **Home** until you dismiss it there.
-- **Change the vibe, more like this, New music on:** the three other things that generate music get the same card. "Make it slower, with a cello" prepares a **Change Vibe** for your running session, with your words on the card. "More like this" prepares **More Like This**: a new session in the style of the track that is playing, or of up to 10 tracks you name, including tracks shared with you in the Lounge. "Turn New music back on for 90 minutes" or "with no limit" prepares what the player's **New music** control offers, **Up to a duration** or **No limit**; if you say neither, Roadie asks. Nothing changes and nothing is bought until you press the button on the card: **Change Vibe**, **Start new Session** or **Save**. The button does what the app's own control does: More Like This opens the player with the new session, and the other two change the running session where you are. Roadie shows no card, and says why, when your budget has nothing left, when there is no running session, when the session has reached its duration target, or when it already holds the length you asked for. If the app refuses after you press the button, the card says so; for a change of vibe the player shows why.
+- **Change the vibe, more like this, New music on:** the three other things that generate music get the same card. "Make it slower, with a cello" prepares a **Change Vibe** for your running session, with your words on the card. "More like this" prepares **More Like This**: a new session in the style of the track that is playing, or of up to 10 tracks you name, including tracks shared with you in the Lounge. It follows the same length rule as a new session: say how long or "with no limit", or Roadie asks first, and the card shows the length or **No limit**. "Turn New music back on for 90 minutes" or "with no limit" prepares what the player's **New music** control offers, **Up to a duration** or **No limit**; if you say neither, Roadie asks. Nothing changes and nothing is bought until you press the button on the card: **Change Vibe**, **Start new Session** or **Save**. The button does what the app's own control does: More Like This opens the player with the new session, and the other two change the running session where you are. While another change of vibe is still being saved, the **Change Vibe** button on a card waits and the card says "Changing vibe…"; once that change is done, press it again if you still want it. Roadie shows no card, and says why, when your budget has nothing left, when there is no running session, when the session has reached its duration target, or when it already holds the length you asked for. If the app refuses after you press the button, the card says so; for a change of vibe the player shows why.
 - **A new cover from the chat:** say "make a new cover for this, darker, neon city", and Roadie prepares one new cover for the session or playlist that is playing, or for one of yours you name. Your words become the art direction, up to 500 characters; say none and Roadie just makes another. The card shows what the cover is for, your art direction and the cover budget line the cover dialog shows, such as "Covers today: 3 of 10". The style stays the session's own (**Random** for a playlist), **Enhance prompts** follows your setting, and People reference photos follow the session's own setting, as in the cover dialog. For a playlist the card leaves **Use People reference photos** off; for that, use the playlist's cover sheet. Nothing is generated until you press **Generate cover**, which uses one cover from your budget, like **Reroll Cover Art**. The card then follows the cover, while the chat is open. When it is ready, the card shows it with **Use this cover**, a second tap that costs nothing: only that tap makes it your cover, and the player and your library follow. Leave the card alone and your cover stays; the new one waits in **Previous covers**. If the cover fails, the card says why. Roadie shows no card, and says why, when covers aren't set up or are switched off, when your cover budget is used up, when the session or playlist already keeps 10 covers, or when a cover for it is already being generated. Playlists shared with you in the Lounge aren't yours to give a cover. If the app refuses after you press the button, the card says why.
 - **What Roadie doesn't do:** Roadie only adds, renames and pins. It can't unfavorite or unpin, take a track out of a playlist, unsave or delete anything, and it can't dislike a track, change the volume or jump to a position in a track. Ask for one of those and Roadie points you to the page where you do it yourself. It changes only the four settings named above: every other setting is yours to change on its page, and so is anything that can spend more, such as a limit or **Tracks generated in advance**. Roadie plays and controls music you already have; anything that generates new music or a cover it only prepares, for you to confirm on the card. Picking an earlier cover, uploading one or deleting one stays in the cover dialog.
 - **Change how Roadie talks:** Roadie is laid-back and a little snippy by default. Under **Settings › Roadie** you can give it a tone of your own. Write up to 600 characters in **Tone**, or tap **Happy**, **Polite** or **Depressed** to fill the field and edit from there. **Roadie's own** empties the field, which brings the default tone back. Press **Save tone**, and it applies from your next message. The tone is yours alone, and it changes the wording only: what Roadie can do stays the same, and it still shows a card before anything that costs. The page is there for everyone who has Roadie.
@@ -174,7 +174,7 @@ Even with **New music** off, a new session gets its first batch, and a Change Vi
 
 Swipe the cover left to skip or right to go back. In a session's track list, a "New vibe from here" line marks where a Change Vibe begins.
 
-**Shuffle** changes the play order on your device only, and the session's order stays as it was. **Loop Track** blends the end of a track into its start when the audio allows, and otherwise restarts it. New generation waits while it's on.
+**Shuffle** covers every track of the session and plays each once before any repeats; **Back** returns to the tracks it played before. It changes the play order on your device only, and the session's order stays as it was. **Loop Track** blends the end of a track into its start when the audio allows, and otherwise restarts it. New generation waits while it's on.
 
 ### The options menu
 
@@ -227,7 +227,7 @@ The words can appear before the track is ready, under "Writing the words". When 
 
 ### What the session is doing
 
-The progress bar names what's happening next to the track number, for example "Track 3/7 · Generating 2". It can also say "Changing vibe…", "Queuing new vibe…", "New vibe queued", "Next Session" or "Repeat". It shows nothing when the session is idle.
+The progress bar names what's happening next to the track number, for example "Track 3/7 · Generating 2". It can also say "Changing vibe…", "Queuing new vibe…", "New vibe queued", "Next Session", "Next Playlist" or "Repeat". It shows nothing when the session is idle.
 
 Real problems get a banner above the cover:
 
@@ -239,7 +239,7 @@ Real problems get a banner above the cover:
 | **Catching up** | Generation is behind. Ready tracks keep playing |
 | **Generation error** | Generation hit a problem. Ready tracks keep playing while it recovers |
 
-If a session is blocked before its first track and nothing will fix that by itself, the banner offers **Delete Session**.
+If a session is blocked before its first track and nothing will fix that by itself, the banner offers **Try again** and **Delete Session**. **Try again** shows what it buys, for example "Try again · 2 Tracks", and starts one new try at once, within your limits. Nothing tries again without your tap. If the music provider blocked the request for its content, there is no **Try again**: the same request would be blocked again, so use **Change Vibe** instead. The banner stays until a track arrives or you delete the session.
 
 If one of these starts while you're on another page, the same message shows once as a notification at the top of the screen.
 
@@ -251,7 +251,7 @@ Music keeps playing while you browse, with a small player in the bottom bar on a
 
 Tapping a track in **Library** or **Search** plays it inside the session it came from. If that session is stopped, it resumes at that track and replaces whatever session is running. If it's set to generate new tracks, it carries on generating. **Most played** in your stats works the same way.
 
-A track whose session was deleted plays as a preview instead. It shows in the mini player and stops when you leave the page. A preview starts no session and can't generate anything.
+A track whose session was deleted plays as a preview instead. It shows in the mini player and stops when you leave the page. A preview starts no session and can't generate anything. Starting or resuming a preview pauses the session or playlist that was playing, so you never hear both at once. That music stays paused when the preview ends: resume it from the player.
 
 ### Lock-screen and headphone controls
 
@@ -266,7 +266,7 @@ The row shows progress such as "Downloading 12 / 30", then "Ready offline". Whil
 - The mark is per device, so marking something on your phone does nothing on your laptop.
 - Only tracks with finished audio can be kept, so a track that's still generating waits.
 - A session's copy holds the tracks made so far. Sessions only generate while playing, so a long session won't fill up ahead of a trip by itself.
-- A shared playlist's copy stops playing 7 days after this device last synced. Going online refreshes it.
+- Tracks from a shared playlist stop playing 7 days after this device last synced, even in the middle of a playlist. A track that's already playing finishes, and the player passes over the expired ones. Your own tracks never expire. Going online refreshes them.
 - It needs HTTPS or `localhost`. Over plain HTTP the switch isn't there, and **Settings › Storage** says why.
 - On an iPhone or iPad, add Liedmotif to the home screen, or iOS may clear offline music after a few days.
 
@@ -276,13 +276,15 @@ Offline music stays inside the app. To get a file, use [downloads](#downloads).
 
 With no connection, Liedmotif opens the **Offline Library**, a list of what this device holds. It plays in the normal player, with cover, lyrics, track data, skip, seek, crossfades, the sleep timer and lock-screen controls.
 
+A shared track that has [expired](#available-offline) shows **Expired** in the player's track list and can't be started. When only expired tracks are left, playback ends and the player says the rest of the playlist expired on this device. Connect to refresh it.
+
 Offline, the app is for listening only. Nothing new gets made, saved or edited, and listening here doesn't count in your stats. If the app is already open when the connection drops, controls that need the server go grey and the app shows **Offline**.
 
 ### Offline storage on this device
 
 Open **Settings › Storage › On this device** to see what the device holds and how much space it takes. **Remove** drops one collection, and **Clear all** drops everything.
 
-A device holds up to 5 GB by default, and you can set the **Cap** to 1, 2, 5, 10, 20 or 50 GB. If something won't fit, it's refused before anything downloads, and nothing is removed to make room. You also can't set the cap below what the device already holds. A track in two collections is stored once. Signing out removes this account's offline music.
+A device holds up to 5 GB by default, and you can set the **Cap** to 1, 2, 5, 10, 20 or 50 GB. The cap counts the music and its covers. If something won't fit, it's refused before anything downloads, and nothing is removed to make room. You also can't set the cap below what the device already holds. A track in two collections is stored once. Signing out removes this account's offline music.
 
 ## Steer
 
@@ -296,6 +298,8 @@ Change direction inside the running session, without starting over. Press **Chan
 
 Only what you ask for moves. The session keeps its name, cover and tracks.
 
+You don't have to write anything. Change only a setting, say **Energy** to **High**, and the current style is adjusted to it: the rest of the music stays as it is, and your earlier requests aren't applied again. With a text AI, it rewords the style to fit. Without one, the setting is added to the current style, so the old words stay next to it.
+
 By default, the tracks already queued play out first. Turn on **Switch to the new vibe as soon as it's ready** to move on sooner: the current track finishes and upcoming old-vibe tracks are set aside, though they stay in the session. This switch isn't available during a track or part loop.
 
 A Change Vibe buys the new vibe's first tracks, even with **New music** off, and it ends any loop. It's refused if your budget has no room for more tracks. It's also refused once the session has reached its duration target, unless the same change raises or clears the target. Changing only the duration isn't a new vibe, and it saves with **Save duration**.
@@ -304,7 +308,7 @@ A Change Vibe buys the new vibe's first tracks, even with **New music** off, and
 
 Press **Reroll Track** under the player controls, or in the options menu. The track goes at once, and its audio is deleted after about 24 hours. It also leaves any playlist it was in.
 
-You get another track in the same vibe, using the unplayed other half of its batch when there is one, which costs nothing. Otherwise a session that's generating new tracks buys a new one. With **New music** off, or for a track from an earlier vibe, nothing new is bought. A dislike never changes the direction.
+You get another track in the same vibe, using the other half of its pair when that track is still waiting in the queue, which costs nothing. Otherwise a session that's generating new tracks buys a new one. With **New music** off, for a track from an earlier vibe, or in a stopped session (say, from the Library), nothing new is bought, also not after you resume it. A dislike never changes the direction.
 
 ### More like this
 
@@ -343,7 +347,7 @@ Pick **Pin Session** in a session's options to keep it in **Pinned** at the top 
 | **Playlists** | The playlists you made |
 | **Favorites** | Your starred tracks, in the order you set |
 | **Saved** | Every track in any of your playlists, Favorites included. These stay when you delete their session |
-| **History** | Every track ever generated, marked **Never played** or **Audio unavailable** where that's true |
+| **History** | Every track ever generated, marked **Never played**, **Audio unavailable** or **Could not be kept** where that's true |
 
 **Saved** and **History** fill themselves, so you can't edit them by hand. Each tab has its own search box. Tracks don't expire: an unsaved track stays until you delete it or its session.
 
@@ -361,10 +365,13 @@ A playlist's own menu has **Add Tracks**, **Rename Playlist**, **Reorder Tracks*
 - **Reorder:** drag the tracks, then press **Done**. **Cancel** changes nothing. It works for up to 500 tracks.
 - **Pin:** pick **Pin Playlist** in a card's menu to list it first in the **Playlists** tab.
 - **Names:** up to 60 characters. A track appears once per playlist.
+- **Could not be kept:** a track whose finished file never arrived from the music provider stays in its playlists with this mark. It doesn't play, and a playlist skips it. You can't add it to another playlist or star it, but you can remove or delete it.
 
 ### Add many tracks at once
 
-There are two ways, and each takes up to 100 tracks at a time. In a playlist, **Add Tracks** lists your full history: tick the tracks and press **Add**. Tracks already in it are locked. Or in **Saved** or **History**, press **Select**, tap the tracks, press the **Add to playlist** button that shows your count and choose a playlist. A notification then says how many went in, such as "Added 12 tracks to Running". For more than 100, repeat in batches.
+There are two ways, and both take any number of tracks. In a playlist, **Add Tracks** lists your full history: tick the tracks and press **Add**. Tracks already in it are locked. Or in **Saved** or **History**, press **Select**, tap the tracks, press the **Add to playlist** button that shows your count and choose a playlist. A notification then says how many went in, such as "Added 12 tracks to Running".
+
+If adding stops part-way, for example when the connection drops, the tracks added so far stay in the playlist and "Adding failed" says why. Your picks stay ticked: try again and only the missing tracks are added, with nothing doubled.
 
 ### Turn a session into a playlist
 
@@ -380,7 +387,7 @@ The **Search** page looks across sessions, tracks and playlists, in titles, genr
 - **Matches:** each result names the field that matched and highlights your words.
 - **Recent:** searches you acted on stay in your browser for next time.
 
-Results are capped rather than paged: 5 per group under **All** and 50 on a single tab. If you hit the cap, narrow your search. If nothing matches, **Start a Session from** puts your words in the form on **Home** for you to review, and nothing is spent until you start it.
+Results are capped rather than paged: 5 per group under **All** and 50 on a single tab. A group cut short under **All** says how many it lists, for example "5 of 12", with a link such as **Show Tracks** that opens its tab with the same search and sort. If a single tab hits its cap, narrow your search. If nothing matches, **Start a Session from** puts your words in the form on **Home** for you to review, and nothing is spent until you start it.
 
 The **Sessions** page has its own search box for session names, track titles, genres and prompts, showing the best 50.
 
@@ -388,7 +395,7 @@ The **Sessions** page has its own search box for session names, track titles, ge
 
 **Download Track** saves one MP3. **Download Session** and **Download Playlist** save a ZIP of MP3s, numbered in play order.
 
-Files carry the title, session name, artist name, genres, year, tempo when known, cover, lyrics and how the track was made. They use the current names, so a renamed track downloads under its new name.
+Files carry the title, session name, artist name, genres, year, tempo (when it was measured from the audio), cover, lyrics and how the track was made. They use the current names, so a renamed track downloads under its new name.
 
 Only finished tracks can be downloaded, so a track reads "Still generating" until then. A ZIP leaves out tracks that aren't finished and tracks shared with you by someone else. What you may do with the files depends on your provider and plan. See [FAQ and license](/docs/faq-and-license).
 
@@ -399,7 +406,7 @@ Every session has one cover, shared by all its tracks. It starts on built-in pla
 - **Use Tailored Cover Art Generation** asks your image provider for a cover in your chosen style. Turn it off to use the cover that comes with the music, at no additional cost.
 - **Cover style** asks your image provider for **Auto**, **Random**, **Record Sleeve**, **Artistic**, **Photographic**, **Manga**, **Drawing**, **Minimal** or **Custom**. Styled covers need an image provider and cover budget. **Auto** lets your text AI pick the style that fits the session; without a text AI, it picks from the session's name and genres. **Record Sleeve** paints an album cover from one decade between the 1960s and the 2000s: name a decade or an era's sound in your prompt ("80s synthwave", in any language), or it picks one for you.
 
-To change it later, use the **Session Cover** tile in the player, or **Change Cover Art** in a session's options. You can set a **Cover style**, write up to 500 characters of **Art direction** or press **Use session prompt**. With a text AI, a switch lets it polish your direction first. Press **Reroll Cover Art**, or **Upload your own**, which costs nothing.
+To change it later, use the **Session Cover** tile in the player, or **Change Cover Art** in a session's options. You can set a **Cover style**, write up to 500 characters of **Art direction** or press **Use session prompt**. With a text AI, a switch lets it polish your direction first. Name someone from [People](#people) in your art direction and the new cover uses their photos. Then only the people you name there appear, not the ones the session is about, so write every name you want: "Anna at the beach" in a roadtrip with Jonas shows Anna alone. Names are found in what you typed, not in the polished version. Press **Reroll Cover Art**, or **Upload your own**, which costs nothing.
 
 A new cover is only a preview until you press **Save Cover Art**, so a cover you like is never replaced by accident. **Previous covers** keeps up to 10, uploads included. Delete one to make room for more. Changing the vibe or the name never changes the cover.
 
@@ -417,6 +424,7 @@ A playlist shows a mosaic of its tracks' covers until you set one. Open **Add Co
 - **Generate** makes one from a **Cover style** and up to 500 characters of art direction. Press **Use this cover** to apply it. The styles are the session ones without **Auto**, which needs a session's prompt to pick from; the sheet starts on **Random**, and **Custom** without a saved **Custom style definition** rolls like **Random**.
 - **Use People reference photos** draws the people named in the playlist's name or art direction, or you if nobody is named. It's off each time you open the sheet.
 - **Previous covers** lets you go back, and **Use the mosaic** returns to the default.
+- A playlist keeps up to 10 covers, uploads included, and a cover still generating takes a slot too. At 10, **Upload image** and **Generate** are off until you delete a previous cover to make room.
 
 ### Rename anything
 
@@ -435,7 +443,7 @@ Sessions rename from their options or the player, playlists from their menus or 
 | **Vibe** | Genres, activity, mood, energy, vocals, measured BPM |
 | **Provenance** | Provider, model, license |
 
-Fields without a value are hidden. The prompts show what they were when that track was made, even if the session has moved on.
+The date generated is the day in the instance's timezone, set under **Cost controls** in **Settings › Generation**. Fields without a value are hidden. The prompts show what they were when that track was made, even if the session has moved on.
 
 ### Removing and deleting
 
@@ -443,11 +451,11 @@ Each of these does something different. **Delete Track**, **Delete Playlist** an
 
 | Action | What happens |
 | --- | --- |
-| **Remove from Playlist** | The track leaves this playlist. If it was its last one, it leaves your library but stays in **History** |
+| **Remove from Playlist** | The track leaves this playlist. If it was its last one, it leaves your library but stays in **History**. If its Session was already deleted, there is no History to keep it, so it is deleted for good |
 | **Remove from Library** | The track leaves Favorites and every playlist, and stays in **History** |
 | **Reroll Track** | A dislike: the track goes and a new one comes in the same vibe |
 | **Delete Track** | The audio is deleted for good, from every playlist and your library. Nothing is steered |
-| **Delete Playlist** | The playlist goes. Tracks only in it leave your library and stay in **History** |
+| **Delete Playlist** | The playlist goes. Tracks only in it leave your library and stay in **History**. Tracks whose Session was already deleted are deleted for good; the confirmation says how many |
 | **Delete Session** | The session stops and goes for good, with its unsaved tracks. Tracks in a playlist stay |
 
 A deleted track still counts in your generated totals, and it lives on in [backups](/docs/backups) until they rotate out.
@@ -467,7 +475,7 @@ Add the people in your life, so a song or cover can really be about them. In **S
 To include someone else, use their saved name in your request. Capitals don't matter, but the word must match: "Mum" doesn't find someone saved as "Mother", and relationships or translations aren't worked out for you. Choose a distinctive name. You yourself don't need your name: see [You in your own songs](#you-in-your-own-songs).
 
 - **Lyrics:** a named person can show up in the words of vocal tracks, and **About them** / **About you** reaches the lyrics only with a text AI.
-- **Session covers:** a named person with photos can appear on a styled cover. Basic covers can't include anyone.
+- **Session covers:** a person named in your request, or in the **Art direction** of a reroll, can appear on a styled cover from their photos. Basic covers can't include anyone.
 - **Photos:** use JPEG, PNG or WebP. Two or three clear solo portraits work best, without group shots, sunglasses or heavy filters. They go only to your image provider, for covers.
 
 Names and notes stay private on your instance unless a request needs them. Your own card can't be deleted.
