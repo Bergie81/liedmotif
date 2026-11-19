@@ -155,7 +155,10 @@ beforeEach(async () => {
     'playlists',
     ...GENERATION_FIXTURE_TABLES,
     'user_settings',
+    // Wiping `app_settings` drops the legacy-covers-exhausted flag, so the cover
+    // budget also counts unclaimed generated covers: another file's must not survive.
     'app_settings',
+    'cover_images',
   ]);
   holder.sessionUserId = null;
   logged = '';
