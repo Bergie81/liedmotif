@@ -111,7 +111,10 @@ it('opens from the launcher with a greeting and questions to start from', () => 
   fireEvent.click(screen.getByRole('button', { name: 'Ask Roadie' }));
 
   const panel = screen.getByRole('dialog', { name: 'Roadie' });
-  expect(panel.textContent).toContain("Hi, I'm Roadie. I can start music, control the player, manage your Tracks and Playlists, change settings, or answer questions about Liedmotif.");
+  expect(panel.textContent).toContain("Hi, I'm Roadie 👋");
+  expect(panel.textContent).toContain(
+    'I can start music, control the player, manage your Tracks and Playlists, change settings, or answer questions about Liedmotif.',
+  );
   expect(screen.getByRole('button', { name: 'Play something calm for reading' })).toBeTruthy();
 });
 

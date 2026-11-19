@@ -25,7 +25,9 @@ import { AllowanceNotice, useAllowance } from './allowance-notice';
 import { AssistantMarkdown } from './assistant-markdown';
 import type { AssistantConversation, ConversationMessage } from './conversation';
 
-const GREETING = `Hi, I'm ${ASSISTANT_NAME}. I can start music, control the player, manage your Tracks and Playlists, change settings, or answer questions about Liedmotif.`;
+const GREETING_HELLO = `Hi, I'm ${ASSISTANT_NAME}`;
+const GREETING_ABOUT =
+  'I can start music, control the player, manage your Tracks and Playlists, change settings, or answer questions about Liedmotif.';
 
 // Each works with nothing playing and spends nothing when tapped (a Session
 // starts only from its confirmed card); together they show doing, knowing
@@ -113,7 +115,10 @@ export function AssistantPanel({
               still scrolls from its top instead of being clipped above it. */}
           <div className="my-auto flex flex-col items-center gap-8 text-center">
             <p className="font-display text-[19px] font-bold leading-[1.3] tracking-[-0.01em]">
-              {GREETING}
+              <span className="block">
+                {GREETING_HELLO} <span aria-hidden>👋</span>
+              </span>
+              {GREETING_ABOUT}
             </p>
             <ul className="flex flex-col items-center gap-2 max-desk:gap-3">
               {SUGGESTED_QUESTIONS.map((question) => (
