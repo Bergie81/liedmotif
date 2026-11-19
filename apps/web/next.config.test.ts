@@ -55,6 +55,13 @@ describe('next config security headers', () => {
     expect(csp).toContain("default-src 'self';");
   });
 
+  it('leaves compression to Caddy, so audio is never encoded or buffered', () => {
+    // Next's compression middleware drops `Content-Length` from what it encodes,
+    // which breaks a Range answer, and buffers the stream proxy's early bytes.
+    // Caddy's `encode` covers only text types, so audio passes through it as is.
+    expect(nextConfig.compress).toBe(false);
+  });
+
   it('enforces the rest, with the microphone left to the app', () => {
     expect(headers['X-Content-Type-Options']).toBe('nosniff');
     expect(headers['Referrer-Policy']).toBe('strict-origin-when-cross-origin');
