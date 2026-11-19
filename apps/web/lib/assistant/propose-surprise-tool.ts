@@ -21,7 +21,7 @@ import type { AssistantAsker } from './tools';
 import type { TurnActions } from './turn-actions';
 
 const NO_LIMIT_ON_REPEAT =
-  "This user's new Sessions start with New music off: a new Session generates its first Tracks and then repeats them, so it cannot run with no limit. Offer a length in minutes instead.";
+  "This user's new Sessions start with New music off: a new Session generates its first Tracks and then repeats them, so it cannot run with no limit. Offer a length in minutes instead. A length switches New music on for that Session until it reaches the length.";
 const BUSY =
   'A Surprise Me suggestion is already being prepared for this user. Tell them to ask again in a moment.';
 const RATE_LIMITED = 'Too many requests. Please slow down.';

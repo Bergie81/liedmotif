@@ -12,6 +12,8 @@ import {
   createAssistantStreamDecoder,
   encodeAssistantStreamEvent,
   makeApiError,
+  moreLikeThisCardRequest,
+  moreLikeThisRequestSchema,
   playerControlInputSchema,
   regeneratePlaylistCoverRequestSchema,
   regenerateSessionCoverRequestSchema,
@@ -295,6 +297,30 @@ describe('assistantStreamEventSchema', () => {
     ).toEqual({ input: { mode: 'prompt', prompt: 'calm piano', vocal: 'instrumental' } });
   });
 
+  it('turns a More Like This card into a request the route takes once the browser adds its id', () => {
+    const tracks = [
+      { id: '00000000-0000-4000-8000-000000000001', name: 'Night Drive' },
+      { id: '00000000-0000-4000-8000-000000000002', name: null },
+    ];
+    const seedTrackIds = tracks.map(({ id }) => id);
+
+    const request = moreLikeThisCardRequest({
+      kind: 'moreLikeThis',
+      tracks,
+      targetDurationMinutes: 45,
+    });
+
+    expect(request).toEqual({ seedTrackIds, targetDurationMinutes: 45 });
+    expect(moreLikeThisRequestSchema.safeParse({ ...request, clientId: 'client-1' }).success).toBe(
+      true,
+    );
+    // No limit and no length both send none: the route takes no null.
+    expect(
+      moreLikeThisCardRequest({ kind: 'moreLikeThis', tracks, targetDurationMinutes: null }),
+    ).toEqual({ seedTrackIds });
+    expect(moreLikeThisCardRequest({ kind: 'moreLikeThis', tracks })).toEqual({ seedTrackIds });
+  });
+
   it('starts a Session or Surprise Me card with the cover choices the card carries, as Home sends them', () => {
     const cover = { coverStyle: 'manga', useStandardCover: true } as const;
     const session = { kind: 'session', prompt: 'calm piano', vocal: 'instrumental' } as const;
@@ -348,6 +374,10 @@ describe('assistantStreamEventSchema', () => {
     expect(parses(seeded(10))).toBe(true);
     expect(parses(seeded(11))).toBe(false);
     expect(parses(seeded(0))).toBe(false);
+    // A length means what it means on a Session card; a card stored without one still reads.
+    expect(parses({ ...seeded(1), targetDurationMinutes: 45 })).toBe(true);
+    expect(parses({ ...seeded(1), targetDurationMinutes: null })).toBe(true);
+    expect(parses({ ...seeded(1), targetDurationMinutes: 601 })).toBe(false);
 
     const newMusicOn = { kind: 'newMusicOn', session, targetDurationMinutes: 45 };
     expect(parses(newMusicOn)).toBe(true);

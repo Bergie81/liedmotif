@@ -11,6 +11,7 @@ import {
   MAX_SEED_TRACKS,
   MAX_USER_PROMPT_LENGTH,
   targetDurationMinutesSchema,
+  type MoreLikeThisRequest,
   type StartSessionRequest,
 } from './endpoints';
 import type { RegeneratePlaylistCoverRequest } from './playlist-covers';
@@ -243,6 +244,8 @@ export const assistantCardSchema = z.discriminatedUnion('kind', [
     kind: z.literal('moreLikeThis'),
     /** The Tracks the new Session is seeded from, in the order they are sent. */
     tracks: z.array(assistantActionItemSchema).min(1).max(MAX_SEED_TRACKS),
+    /** How long the Session generates; null is No limit. Left out when it starts on Repeat and the user named no length. */
+    targetDurationMinutes: targetDurationMinutesSchema.nullable().optional(),
   }),
   z.strictObject({
     kind: z.literal('newMusicOn'),
@@ -301,6 +304,22 @@ export function sessionCardStartRequest(
       targetDurationMinutes: card.targetDurationMinutes,
     }),
     ...cardCoverChoices(card),
+  };
+}
+
+/**
+ * The More Like This request a More Like This card stands for, less the client
+ * id only the browser has. No limit sends no length: that card is offered only
+ * when new Sessions start on Keep Going, which the route then picks.
+ */
+export function moreLikeThisCardRequest(
+  card: Extract<AssistantCard, { kind: 'moreLikeThis' }>,
+): Omit<MoreLikeThisRequest, 'clientId'> {
+  return {
+    seedTrackIds: card.tracks.map(({ id }) => id),
+    ...(card.targetDurationMinutes != null && {
+      targetDurationMinutes: card.targetDurationMinutes,
+    }),
   };
 }
 
@@ -645,7 +664,11 @@ export const proposeChangeVibeInputSchema = z.object({
 });
 export type ProposeChangeVibeInput = z.infer<typeof proposeChangeVibeInputSchema>;
 
-/** What the model passes to `proposeMoreLikeThis`. More Tracks than the cap is answered, not cut. */
+/**
+ * What the model passes to `proposeMoreLikeThis`. More Tracks than the cap is
+ * answered, not cut. A length and `noLimit` carry what the user said, as on
+ * `proposeSession`.
+ */
 export const proposeMoreLikeThisInputSchema = z.object({
   trackIds: z
     .array(z.string())
@@ -653,6 +676,14 @@ export const proposeMoreLikeThisInputSchema = z.object({
     .describe(
       `The ids of the Tracks the new Session should sound like, at most ${MAX_SEED_TRACKS}, as another tool returned them. Leave out for the Track that is playing now ("more like this").`,
     ),
+  targetDurationMinutes: z
+    .number()
+    .nullish()
+    .describe('How long the Session should run, in minutes. Only when the user named a length.'),
+  noLimit: z
+    .boolean()
+    .nullish()
+    .describe('true only when the user asked for a Session without a limit.'),
 });
 export type ProposeMoreLikeThisInput = z.infer<typeof proposeMoreLikeThisInputSchema>;
 

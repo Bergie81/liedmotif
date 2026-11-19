@@ -202,6 +202,29 @@ describe('a More Like This card', () => {
     expect(card.isConnected).toBe(false);
   });
 
+  it.each<[string, number | null, Record<string, unknown>]>([
+    ['sends the card’s length with the seeds', 45, { targetDurationMinutes: 45 }],
+    ['sends no length for No limit', null, {}],
+  ])('%s', async (_, targetDurationMinutes, length) => {
+    player.beginOtherMusic.mockResolvedValue(true);
+    const { card, server } = await askForCard(
+      'More Like This',
+      [cardEvent({ ...LIKE_THESE, targetDurationMinutes })],
+      { desk: false },
+    );
+    expect(card.textContent).toContain(targetDurationMinutes === null ? 'No limit' : '45 min');
+
+    fireEvent.click(button('Start new Session'));
+
+    await waitFor(() => expect(server.sent).toHaveLength(1));
+    expect(server.sent[0]!.path).toBe('/api/sessions/more-like-this');
+    expect(server.sent[0]!.body).toEqual({
+      seedTrackIds: [NIGHT_DRIVE.id, LOW_TIDE.id],
+      clientId: expect.stringMatching(/^[0-9a-f-]{36}$/),
+      ...length,
+    });
+  });
+
   it('shows the app’s own refusal on the card, and stays where it is', async () => {
     player.beginOtherMusic.mockResolvedValue(true);
     const { card, server } = await ask({ desk: false });

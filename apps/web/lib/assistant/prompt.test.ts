@@ -146,6 +146,15 @@ describe.each([
     expect(line).toMatch(/its answer says when the user has to be asked/i);
   });
 
+  it('has the model leave the length of a More Like This to the user and the tool, as for a new Session', () => {
+    const line = prompt.match(/^- proposeMoreLikeThis .*$/m)![0];
+    expect(line).toMatch(/a length in minutes when they named one, or no limit when they said so/i);
+    expect(line).toMatch(/said neither, call it without one and never pick a length yourself/i);
+    expect(line).toMatch(/its answer says when the user has to be asked/i);
+    expect(line).toMatch(/already chose .* earlier in this conversation, pass it on/i);
+    expect(line).toMatch(/never take the length of the Session that is playing or of the seed/i);
+  });
+
   it('names the five other things that are only prepared, each on a card the user confirms', () => {
     const tools = prompt.slice(prompt.indexOf('Tools:'), prompt.indexOf('Links:'));
     expect(tools).toMatch(/^- proposeChangeVibe prepares a Change Vibe for the active Session/m);

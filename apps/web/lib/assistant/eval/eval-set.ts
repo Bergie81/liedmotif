@@ -568,14 +568,27 @@ export const EVAL_SET: readonly EvalEntry[] = [
     language: 'en',
     question: 'I want more music like this.',
     docs: 'none',
+    calls: [],
+    goodAnswer:
+      'Asks how long the new Session should run, or whether it should have no limit. Never picks a length itself, never takes the length of the Session that is playing, and never says a card is prepared or a Session has started.',
+  },
+  {
+    id: 'more-like-this-for-an-hour',
+    role: 'member',
+    language: 'en',
+    question: 'More music like this, for about an hour.',
+    docs: 'none',
     calls: [
       {
         tool: 'proposeMoreLikeThis',
-        input: [{ trackIds: undefined }, { trackIds: [TRACKS.neonRain.id] }],
+        input: [
+          { trackIds: undefined, targetDurationMinutes: 60 },
+          { trackIds: [TRACKS.neonRain.id], targetDurationMinutes: 60 },
+        ],
       },
     ],
     goodAnswer:
-      'Says a card for a new Session that sounds like Neon Rain is prepared, and that confirming it generates new Tracks from the budget. Never says a Session has started.',
+      'Says a card for a new 60-minute Session that sounds like Neon Rain is prepared, and that confirming it generates new Tracks from the budget. Does not ask how long. Never says a Session has started.',
   },
   {
     id: 'new-music-without-a-limit',

@@ -171,6 +171,8 @@ export const PLAYLISTS = {
 } satisfies Record<string, FixturePlaylist>;
 
 const ACTIVE = SESSIONS.nightDrive;
+const HOW_LONG =
+  'A new Session needs a length in minutes, or no limit. Ask the user how long it should run.';
 const ACTIVE_TARGET_MINUTES = 60;
 const ACTIVE_GENERATED_MINUTES = 40;
 
@@ -529,11 +531,7 @@ function fixtureAnswers(
       noLimit,
     }: ProposeSessionInput) =>
       actions.take('proposed', async () => {
-        if (minutes == null && !noLimit) {
-          return notOffered(
-            'A new Session needs a length in minutes, or no limit. Ask the user how long it should run.',
-          );
-        }
+        if (minutes == null && !noLimit) return notOffered(HOW_LONG);
         const card = assistantCardSchema.safeParse({
           kind: 'session',
           prompt: prompt.trim(),
@@ -555,13 +553,23 @@ function fixtureAnswers(
           ? proposed(card.data)
           : notOffered('A Change Vibe needs what should change.');
       }),
-    [PROPOSE_MORE_LIKE_THIS_TOOL_NAME]: ({ trackIds }: ProposeMoreLikeThisInput) =>
+    // The length rule of the fixture's proposeSession: its user's new Sessions keep going.
+    [PROPOSE_MORE_LIKE_THIS_TOOL_NAME]: ({
+      trackIds,
+      targetDurationMinutes: minutes,
+      noLimit,
+    }: ProposeMoreLikeThisInput) =>
       actions.take('proposed', async () => {
         const asked = askedTracks(trackIds, player);
         const seeds = asked.flatMap((trackId) => trackById(trackId) ?? []);
+        if (minutes == null && !noLimit) return notOffered(HOW_LONG);
+        if (minutes != null && !targetDurationMinutesSchema.safeParse(minutes).success) {
+          return notOffered(BAD_DURATION);
+        }
         const card = assistantCardSchema.safeParse({
           kind: 'moreLikeThis',
           tracks: seeds.map(item),
+          targetDurationMinutes: minutes ?? null,
         });
         return seeds.length === asked.length && card.success
           ? proposed(card.data)

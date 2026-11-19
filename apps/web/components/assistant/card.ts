@@ -66,13 +66,20 @@ export interface CardWording {
   failed: string;
 }
 
+/** A new Session's length as its card shows it; null minutes is No limit, none is left out. */
+const lengthLabel = (minutes: number | null | undefined) =>
+  minutes === null
+    ? NEW_MUSIC_CHOICES['no-limit'].label
+    : minutes === undefined
+      ? undefined
+      : `${minutes} min`;
+
 export function cardWording(card: AssistantCard): CardWording {
   switch (card.kind) {
     case 'session': {
-      const minutes = card.targetDurationMinutes;
       const details = [card.vocal === 'vocal' ? 'With vocals' : 'Instrumental'];
-      if (minutes === null) details.push(NEW_MUSIC_CHOICES['no-limit'].label);
-      else if (minutes !== undefined) details.push(`${minutes} min`);
+      const length = lengthLabel(card.targetDurationMinutes);
+      if (length) details.push(length);
       return {
         title: 'Start a new Session',
         words: card.prompt,
@@ -97,11 +104,16 @@ export function cardWording(card: AssistantCard): CardWording {
       };
     case 'moreLikeThis': {
       const titles = card.tracks.map(trackTitle).join(', ');
-      return {
-        title: 'More Like This',
-        details: `A new Session seeded from ${
+      const details = [
+        `A new Session seeded from ${
           card.tracks.length === 1 ? titles : `${card.tracks.length} Tracks: ${titles}`
         }`,
+      ];
+      const length = lengthLabel(card.targetDurationMinutes);
+      if (length) details.push(length);
+      return {
+        title: 'More Like This',
+        details: details.join(' · '),
         cost: 'Starting generates new Tracks from your budget.',
         // The button of the player's own More Like This.
         confirm: 'Start new Session',

@@ -46,7 +46,7 @@ const VALID_CALLS: Record<string, unknown> = {
   sleepTimer: { minutes: 30 },
   proposeSession: { prompt: 'calm piano for reading', targetDurationMinutes: 45 },
   proposeChangeVibe: { prompt: 'slower' },
-  proposeMoreLikeThis: {},
+  proposeMoreLikeThis: { targetDurationMinutes: 60 },
   proposeNewMusicOn: { noLimit: true },
   proposeSurprise: { adventurous: true, theme: 'morning' },
   proposeCover: { in: 'session', guidance: 'darker' },
@@ -170,11 +170,32 @@ describe('the tools of a fixture turn that act', () => {
     const { call, reported } = openTurn();
 
     await call('addToPlaylist', { playlistId: PLAYLISTS.roadTrip.id });
-    await call('proposeMoreLikeThis');
+    await call('proposeMoreLikeThis', { targetDurationMinutes: 60 });
 
     expect(reported).toMatchObject([
       { receipt: { action: 'addToPlaylist', tracks: [{ id: TRACKS.neonRain.id }] } },
-      { card: { kind: 'moreLikeThis', tracks: [{ id: TRACKS.neonRain.id, name: 'Neon Rain' }] } },
+      {
+        card: {
+          kind: 'moreLikeThis',
+          tracks: [{ id: TRACKS.neonRain.id, name: 'Neon Rain' }],
+          targetDurationMinutes: 60,
+        },
+      },
+    ]);
+  });
+
+  it('ask how long before More Like This, as before a new Session, when no length is given', async () => {
+    const { call, reported } = openTurn();
+
+    expect(await call('proposeMoreLikeThis')).toMatch(/ask the user how long/i);
+    expect(await call('proposeSession', { prompt: 'calm piano' })).toMatch(
+      /ask the user how long/i,
+    );
+    expect(await call('proposeMoreLikeThis', { noLimit: true })).toMatch(
+      /^Prepared: .*with no limit/,
+    );
+    expect(reported).toMatchObject([
+      { card: { kind: 'moreLikeThis', targetDurationMinutes: null } },
     ]);
   });
 

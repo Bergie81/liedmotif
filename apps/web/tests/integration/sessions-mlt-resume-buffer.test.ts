@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runMigrations } from 'graphile-worker';
+import { getSessionById, updateGenerationSettings } from '@liedmotif/db';
 import { moreLikeThisResponseSchema, resumeSessionResponseSchema } from '@liedmotif/shared';
 import {
   connectTestDb,
@@ -107,6 +108,45 @@ describe.skipIf(skip)('More Like This / Resume — immediate buffer fill', () =>
     if (!parsed.ok) throw new Error(`expected an ok response, got ${parsed.error.code}`);
 
     expect(await bufferJobKeys()).toEqual([`buffer:${parsed.data.session.id}`]);
+  });
+
+  it('More Like This with a length keeps going up to it on Repeat by default, and never inherits the seed Session’s length', async () => {
+    const ownerUserId = holder.ownerUserId!;
+    await updateGenerationSettings(testDb.db, { ownerUserId, patch: { bufferEnabled: false } });
+    const seedSessionId = await createSession(testDb.db, {
+      ownerUserId,
+      status: 'stopped',
+      targetDurationMinutes: 90,
+      styleSnapshot: { genreTags: ['lofi'], energy: 'low', vocalMode: 'instrumental' },
+    });
+    const generationRequestId = await createGenerationRequest(testDb.db, {
+      ownerUserId,
+      activitySessionId: seedSessionId,
+    });
+    const providerJobId = await createProviderJob(testDb.db, { generationRequestId });
+    const seedTrackId = await createTrack(testDb.db, {
+      ownerUserId,
+      generationRequestId,
+      providerJobId,
+    });
+    async function seed(length: { targetDurationMinutes?: number }) {
+      const res = await moreLikeThis(
+        jsonPost('http://localhost/api/sessions/more-like-this', {
+          seedTrackIds: [seedTrackId],
+          clientId: 'mlt-length-test-client',
+          ...length,
+        }),
+      );
+      const parsed = moreLikeThisResponseSchema.parse(await res.json());
+      if (!parsed.ok) throw new Error(`expected an ok response, got ${parsed.error.code}`);
+      return getSessionById(testDb.db, { ownerUserId, sessionId: parsed.data.session.id });
+    }
+
+    expect(await seed({ targetDurationMinutes: 60 })).toMatchObject({
+      sessionMode: 'keep_going',
+      targetDurationMinutes: 60,
+    });
+    expect(await seed({})).toMatchObject({ sessionMode: 'repeat', targetDurationMinutes: null });
   });
 
   it('Resume enqueues the resumed session buffer-fill job in the same request', async () => {

@@ -255,6 +255,9 @@ describe.skipIf(skip)('the Assistant asked to start a Session', () => {
 
     expect(cards(turn)).toEqual([]);
     expect(turn.results[0]).toMatch(/repeats them/i);
+    expect(turn.results[0]).toContain(
+      'A length switches New music on for that Session until it reaches the length.',
+    );
     expect(turn.results[0]).toMatch(/no card was shown/i);
   });
 

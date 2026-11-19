@@ -10,21 +10,29 @@ import { quoted } from './music-names';
 export const newMusicLimitNote = (targetMinutes: number | null) =>
   targetMinutes === null ? 'with no limit' : `up to ${targetMinutes} minutes of music`;
 
+/** A new Session's length as the model reads it; null minutes is No limit, none is left out. */
+const lengthNote = (minutes: number | null | undefined) =>
+  minutes === null
+    ? newMusicLimitNote(null)
+    : minutes === undefined
+      ? undefined
+      : `${minutes} minutes`;
+
 /** What the card offers to do, with the values the confirmation sends. */
 export function cardNote(card: AssistantCard): string {
   switch (card.kind) {
     case 'session': {
-      const minutes = card.targetDurationMinutes;
       const details = [card.vocal === 'vocal' ? 'with vocals' : 'instrumental'];
-      if (minutes === null) details.push(newMusicLimitNote(null));
-      else if (minutes !== undefined) details.push(`${minutes} minutes`);
+      const length = lengthNote(card.targetDurationMinutes);
+      if (length) details.push(length);
       return `start a new Session from ${quoted(card.prompt)}, ${details.join(', ')}`;
     }
     case 'changeVibe':
       return `change the vibe of the Session ${quoted(card.session.name)} with the words ${quoted(card.prompt)}`;
     case 'moreLikeThis': {
       const titles = card.tracks.map(({ name }) => quoted(name)).join(', ');
-      return `start a new Session that sounds like the ${card.tracks.length === 1 ? 'Track' : 'Tracks'} ${titles}`;
+      const length = lengthNote(card.targetDurationMinutes);
+      return `start a new Session that sounds like the ${card.tracks.length === 1 ? 'Track' : 'Tracks'} ${titles}${length ? `, ${length}` : ''}`;
     }
     case 'newMusicOn':
       return `switch New music on for the Session ${quoted(card.session.name)}, ${newMusicLimitNote(card.targetDurationMinutes)}`;

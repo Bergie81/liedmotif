@@ -82,6 +82,15 @@ describe('a More Like This card', () => {
       }).details,
     ).toBe('A new Session seeded from 3 Tracks: Night Drive, Untitled Track, Low Tide');
   });
+
+  it('adds the length the way the Session card does', () => {
+    const seeded = (targetDurationMinutes: number | null) =>
+      cardWording({ kind: 'moreLikeThis', tracks: [track('Night Drive')], targetDurationMinutes })
+        .details;
+
+    expect(seeded(60)).toBe('A new Session seeded from Night Drive · 60 min');
+    expect(seeded(null)).toBe('A new Session seeded from Night Drive · No limit');
+  });
 });
 
 describe('a New music card', () => {

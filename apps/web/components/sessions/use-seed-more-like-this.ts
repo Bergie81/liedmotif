@@ -25,14 +25,18 @@ export interface SeedRefusal {
  * calling surface decides how to show it (the blocked dialog for a headroom
  * refusal) and owns its own busy state.
  */
-export function useSeedMoreLikeThis(): (trackIds: string[]) => Promise<SeedRefusal | null> {
+export function useSeedMoreLikeThis(): (
+  trackIds: string[],
+  /** The length the user chose for the new Session; none for the app's own More Like This. */
+  targetDurationMinutes?: number,
+) => Promise<SeedRefusal | null> {
   const clientId = useClientId();
   const router = useRouter();
   const { engage, beginOtherMusic } = usePlayerActions();
 
-  return async function seedMoreLikeThis(trackIds) {
+  return async function seedMoreLikeThis(trackIds, targetDurationMinutes) {
     if (!(await beginOtherMusic())) return null;
-    const result = await moreLikeThis(trackIds, clientId);
+    const result = await moreLikeThis(trackIds, clientId, targetDurationMinutes);
     if (!result.ok) return { code: result.error.code, message: result.error.message };
     engage(result.data.session, { autoplay: false });
     router.push('/player');

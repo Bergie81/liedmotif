@@ -132,7 +132,7 @@ describe('an eval run', () => {
           { name: 'nowPlaying', input: {} },
           { name: 'favoriteTrack', input: {} },
           { name: 'playerControl', input: { command: 'next' } },
-          { name: 'proposeMoreLikeThis', input: {} },
+          { name: 'proposeMoreLikeThis', input: { targetDurationMinutes: 45 } },
         ],
         reply: () => 'Added to your Favorites.',
       },
@@ -151,7 +151,10 @@ describe('an eval run', () => {
         },
       },
       { status: 'player', command: { name: 'next' } },
-      { status: 'proposed', card: { kind: 'moreLikeThis', tracks: [neonRain] } },
+      {
+        status: 'proposed',
+        card: { kind: 'moreLikeThis', tracks: [neonRain], targetDurationMinutes: 45 },
+      },
     ]);
     expect(result?.turn.toolCalls.map(({ name, result: told }) => [name, told])).toEqual([
       ['nowPlaying', expect.stringContaining('Track: "Neon Rain"')],

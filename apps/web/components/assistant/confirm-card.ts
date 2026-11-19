@@ -6,6 +6,7 @@
 
 import {
   coverCardRegenerateRequest,
+  moreLikeThisCardRequest,
   sessionCardStartRequest,
   surpriseCardStartRequest,
   type AssistantCard,
@@ -54,7 +55,7 @@ function run(
     case 'changeVibe':
       return host.changeVibe(card.session.id, { mode: 'prompt', prompt: card.prompt });
     case 'moreLikeThis': {
-      const started = host.moreLikeThis(card.tracks.map(({ id }) => id));
+      const started = host.moreLikeThis(moreLikeThisCardRequest(card));
       // The seed flow goes to the Player once the new Session exists; a click
       // that sent nothing went there at once.
       if (!started) onPlayerShown();

@@ -10,7 +10,7 @@ import {
   type ProposeMoreLikeThisInput,
 } from '@liedmotif/shared';
 import { askedTracks, NO_SUCH_TRACK, NO_TRACK_PLAYING } from './library-action';
-import { newSessionRefusal, notOffered, proposed } from './proposal';
+import { newSessionLength, notOffered, proposed } from './proposal';
 import { readableTrackTitle } from './readable-music';
 import { PROPOSE_MORE_LIKE_THIS_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
@@ -22,9 +22,9 @@ export function createProposeMoreLikeThisTool(
 ): LlmTool<ProposeMoreLikeThisInput> {
   return {
     name: PROPOSE_MORE_LIKE_THIS_TOOL_NAME,
-    description: `Prepares More Like This: a new Session in the style of up to ${MAX_SEED_TRACKS} Tracks the user can play, and shows the user a card for it. Starts nothing and spends nothing: the Session starts only when the user confirms the card. Leave out trackIds for the Track that is playing now ("more like this").`,
+    description: `Prepares More Like This: a new Session in the style of up to ${MAX_SEED_TRACKS} Tracks the user can play, and shows the user a card for it. Starts nothing and spends nothing: the Session starts only when the user confirms the card. Leave out trackIds for the Track that is playing now ("more like this"). Runs for a length in minutes, or with no limit: give the one the user named, and neither when they named none.`,
     inputSchema: proposeMoreLikeThisInputSchema,
-    execute: ({ trackIds: given }) =>
+    execute: ({ trackIds: given, targetDurationMinutes, noLimit }) =>
       actions.take('proposed', async () => {
         const asked = askedTracks(given, asker.player);
         if (asked.length === 0) return notOffered(NO_TRACK_PLAYING);
@@ -41,8 +41,12 @@ export function createProposeMoreLikeThisTool(
         );
         const seeds = tracks.flatMap(({ id, name }) => (name === undefined ? [] : [{ id, name }]));
         if (seeds.length < tracks.length) return notOffered(NO_SUCH_TRACK);
-        const refusal = await newSessionRefusal(asker);
-        return refusal ? notOffered(refusal) : proposed({ kind: 'moreLikeThis', tracks: seeds });
+        // The length is the user's own for this new Session: never the seed
+        // Session's, never the playing one's.
+        const gate = await newSessionLength(asker, { targetDurationMinutes, noLimit });
+        return 'refusal' in gate
+          ? notOffered(gate.refusal)
+          : proposed({ kind: 'moreLikeThis', tracks: seeds, ...gate.length });
       }),
   };
 }

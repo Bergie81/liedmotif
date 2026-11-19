@@ -10,6 +10,7 @@ import {
   createPlaylist,
   getSessionById,
   setPlaylistShared,
+  updateGenerationSettings,
   updateUsageLimits,
   user,
   userProfiles,
@@ -298,13 +299,35 @@ describe.skipIf(skip)('the Assistant asked for more like some Tracks', () => {
     return trackIds;
   }
 
+  it('asks how long when the user named no length and new Sessions keep generating', async () => {
+    const asker = await createUser();
+    // The Session playing the seed has a length of its own, which is never taken.
+    const sessionId = await createSession(testDb.db, {
+      ownerUserId: asker,
+      targetDurationMinutes: 90,
+    });
+    const trackId = await seedTrack(asker, sessionId, 'Night Drive');
+
+    const turn = await ask(asker, [moreLikeThis({})], {
+      source: { kind: 'session', id: sessionId },
+      trackId,
+      playing: true,
+    });
+
+    expect(cards(turn)).toEqual([]);
+    expect(turn.results[0]).toMatch(/ask the user how long/i);
+    expect(turn.results[0]).toMatch(/no card was shown/i);
+  });
+
   it('sends a card naming the asker’s own Tracks in the order given, and creates nothing', async () => {
     const asker = await createUser();
     const [nightDrive, lowTide] = await seedTracks(asker, 'Night Drive', 'Low Tide');
     const sessions = await rowsIn('activity_sessions');
     const requests = await rowsIn('generation_requests');
 
-    const turn = await ask(asker, [moreLikeThis({ trackIds: [lowTide, nightDrive] })]);
+    const turn = await ask(asker, [
+      moreLikeThis({ trackIds: [lowTide, nightDrive], targetDurationMinutes: 60 }),
+    ]);
 
     expect(cards(turn)).toEqual([
       {
@@ -313,10 +336,11 @@ describe.skipIf(skip)('the Assistant asked for more like some Tracks', () => {
           { id: lowTide, name: 'Low Tide' },
           { id: nightDrive, name: 'Night Drive' },
         ],
+        targetDurationMinutes: 60,
       },
     ]);
     expect(turn.results[0]).toMatch(
-      /^Prepared: a card to start a new Session that sounds like the Tracks "Low Tide", "Night Drive"/,
+      /^Prepared: a card to start a new Session that sounds like the Tracks "Low Tide", "Night Drive", 60 minutes\./,
     );
     expect(await rowsIn('activity_sessions')).toBe(sessions);
     expect(await rowsIn('generation_requests')).toBe(requests);
@@ -327,14 +351,18 @@ describe.skipIf(skip)('the Assistant asked for more like some Tracks', () => {
     const sessionId = await createSession(testDb.db, { ownerUserId: asker });
     const trackId = await seedTrack(asker, sessionId, 'On The Deck');
 
-    const turn = await ask(asker, [moreLikeThis({})], {
+    const turn = await ask(asker, [moreLikeThis({ targetDurationMinutes: 45 })], {
       source: { kind: 'session', id: sessionId },
       trackId,
       playing: true,
     });
 
     expect(cards(turn)).toEqual([
-      { kind: 'moreLikeThis', tracks: [{ id: trackId, name: 'On The Deck' }] },
+      {
+        kind: 'moreLikeThis',
+        tracks: [{ id: trackId, name: 'On The Deck' }],
+        targetDurationMinutes: 45,
+      },
     ]);
   });
 
@@ -385,11 +413,118 @@ describe.skipIf(skip)('the Assistant asked for more like some Tracks', () => {
       audience: { kind: 'everyone' },
     });
 
-    const turn = await ask(asker, [moreLikeThis({ trackIds: [shared] })]);
+    const turn = await ask(asker, [
+      moreLikeThis({ trackIds: [shared], targetDurationMinutes: 30 }),
+    ]);
 
     expect(cards(turn)).toEqual([
-      { kind: 'moreLikeThis', tracks: [{ id: shared, name: 'Moonlit' }] },
+      {
+        kind: 'moreLikeThis',
+        tracks: [{ id: shared, name: 'Moonlit' }],
+        targetDurationMinutes: 30,
+      },
     ]);
+  });
+
+  it('prepares No limit only when the model says the user asked for that', async () => {
+    const asker = await createUser();
+    const [trackId] = await seedTracks(asker, 'Night Drive');
+
+    const turn = await ask(asker, [moreLikeThis({ trackIds: [trackId], noLimit: true })]);
+
+    expect(cards(turn)).toEqual([
+      {
+        kind: 'moreLikeThis',
+        tracks: [{ id: trackId, name: 'Night Drive' }],
+        targetDurationMinutes: null,
+      },
+    ]);
+    expect(turn.results[0]).toMatch(/^Prepared: .*with no limit/);
+  });
+
+  it('takes the length over No limit when the model passes both, as for a new Session', async () => {
+    const asker = await createUser();
+    const [trackId] = await seedTracks(asker, 'Night Drive');
+
+    const turn = await ask(asker, [
+      moreLikeThis({ trackIds: [trackId], targetDurationMinutes: 20, noLimit: true }),
+    ]);
+
+    expect(cards(turn)).toEqual([
+      {
+        kind: 'moreLikeThis',
+        tracks: [{ id: trackId, name: 'Night Drive' }],
+        targetDurationMinutes: 20,
+      },
+    ]);
+  });
+
+  it('answers a length the app does not allow with its range, and sends no card', async () => {
+    const asker = await createUser();
+    const [trackId] = await seedTracks(asker, 'Night Drive');
+
+    for (const minutes of [0, 700, 12.5]) {
+      const turn = await ask(asker, [
+        moreLikeThis({ trackIds: [trackId], targetDurationMinutes: minutes }),
+      ]);
+
+      expect(cards(turn)).toEqual([]);
+      expect(turn.results[0]).toContain(
+        'Session duration must be a whole number from 1 to 600 minutes.',
+      );
+      expect(turn.results[0]).toMatch(/no card was shown/i);
+    }
+  });
+
+  describe('when the user’s new Sessions start on Repeat', () => {
+    async function onRepeat(): Promise<{ asker: string; trackId: string }> {
+      const asker = await createUser();
+      await updateGenerationSettings(testDb.db, {
+        ownerUserId: asker,
+        patch: { bufferEnabled: false },
+      });
+      const [trackId] = await seedTracks(asker, 'Night Drive');
+      return { asker, trackId: trackId! };
+    }
+
+    it('prepares the card without a length, and asks nothing', async () => {
+      const { asker, trackId } = await onRepeat();
+
+      const turn = await ask(asker, [moreLikeThis({ trackIds: [trackId] })]);
+
+      expect(cards(turn)).toEqual([
+        { kind: 'moreLikeThis', tracks: [{ id: trackId, name: 'Night Drive' }] },
+      ]);
+    });
+
+    it('prepares the card with the length the user named', async () => {
+      const { asker, trackId } = await onRepeat();
+
+      const turn = await ask(asker, [
+        moreLikeThis({ trackIds: [trackId], targetDurationMinutes: 60 }),
+      ]);
+
+      expect(cards(turn)).toEqual([
+        {
+          kind: 'moreLikeThis',
+          tracks: [{ id: trackId, name: 'Night Drive' }],
+          targetDurationMinutes: 60,
+        },
+      ]);
+    });
+
+    it('gives the refusal of a new Session with no limit, and sends no card', async () => {
+      const { asker, trackId } = await onRepeat();
+
+      const turn = await ask(asker, [moreLikeThis({ trackIds: [trackId], noLimit: true })]);
+
+      expect(cards(turn)).toEqual([]);
+      expect(turn.results[0]).toMatch(/repeats them/i);
+      expect(turn.results[0]).toContain(
+        'A length switches New music on for that Session until it reaches the length.',
+      );
+      expect(turn.results[0]).toMatch(/no card was shown/i);
+    });
   });
 
   it('gives the model the app’s refusal and sends no card below the headroom a new Session needs', async () => {

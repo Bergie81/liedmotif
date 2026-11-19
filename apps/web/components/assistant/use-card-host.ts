@@ -10,6 +10,7 @@ import type {
   AssistantCoverCard,
   ChangeVibeIntentInput,
   CoverCardRegenerateRequest,
+  MoreLikeThisRequest,
   StartSessionRequest,
   StartSurpriseRequest,
 } from '@liedmotif/shared';
@@ -81,10 +82,10 @@ export interface CardHost {
   changeVibe: (sessionId: string, input: ChangeVibeIntentInput) => CardFlow;
   /**
    * Starts More Like This the way the Library's Track menu does, hand-off to
-   * the Player included. Null when a Start is still in flight: the app goes to
-   * the Player that narrates it.
+   * the Player included, with the length the card carries. Null when a Start
+   * is still in flight: the app goes to the Player that narrates it.
    */
-  moreLikeThis: (seedTrackIds: string[]) => CardFlow;
+  moreLikeThis: (request: Omit<MoreLikeThisRequest, 'clientId'>) => CardFlow;
   /**
    * Saves New music on the way the player's New music sheet does; null minutes
    * is No limit. The player and the mini player follow.
@@ -144,7 +145,7 @@ export function useCardHost(
         ) ?? null,
       changeVibe: (sessionId, input) =>
         submitChangeVibe(sessionId, input, {})?.then((carriedOut) => ({ carriedOut })) ?? null,
-      moreLikeThis(seedTrackIds) {
+      moreLikeThis({ seedTrackIds, targetDurationMinutes }) {
         // The seed flow would ask whether to replace a Start that is still
         // setting up. A card leaves that Start alone, as a Session card does.
         if (currentPendingStart()) {
@@ -152,7 +153,7 @@ export function useCardHost(
           return null;
         }
         return live.current
-          .seedMoreLikeThis(seedTrackIds)
+          .seedMoreLikeThis(seedTrackIds, targetDurationMinutes)
           .then((failure) =>
             failure === null
               ? { carriedOut: true }
