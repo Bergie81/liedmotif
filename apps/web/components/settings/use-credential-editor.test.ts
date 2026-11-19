@@ -64,6 +64,43 @@ describe('credential editor save', () => {
     ]);
   });
 
+  it('a field set in .env cannot be typed over, and locks only that field', async () => {
+    const editor = renderEditor({
+      initialBaseUrl: 'https://env.example',
+      envLocks: {
+        suno: { baseUrl: { variable: 'SUNO_BASE_URL', value: 'https://env.example' } },
+      },
+    });
+    expect(editor.result.current.locks).toEqual({
+      baseUrl: { variable: 'SUNO_BASE_URL', value: 'https://env.example' },
+    });
+    act(() => editor.result.current.setBaseUrl('https://typed.example'));
+    await saveKey(editor);
+    expect(saved[0]).toMatchObject({ secret: 'new-key' });
+    expect(saved[0]).not.toHaveProperty('baseUrl');
+  });
+
+  it('sends no key while .env sets it, and still sends a base URL .env leaves unset', async () => {
+    const editor = renderEditor({ envLocks: { suno: { apiKey: { variable: 'SUNO_API_KEY' } } } });
+    act(() => editor.result.current.setBaseUrl('https://typed.example'));
+    await saveKey(editor);
+    expect(saved[0]).toMatchObject({ baseUrl: 'https://typed.example' });
+    expect(saved[0]).not.toHaveProperty('secret');
+  });
+
+  it('locks a field only for the provider .env sets it for', async () => {
+    const editor = renderEditor({
+      providerType: 'image',
+      options: IMAGE_PROVIDERS,
+      initialProviderKey: IMAGE_PROVIDERS[0]!.value,
+      showModel: true,
+      envLocks: { [IMAGE_PROVIDERS[1]!.value]: { model: { variable: 'IMAGE_MODEL', value: 'm' } } },
+    });
+    expect(editor.result.current.locks).toEqual({});
+    act(() => editor.result.current.selectProvider(IMAGE_PROVIDERS[1]!.value));
+    expect(editor.result.current.locks.model?.variable).toBe('IMAGE_MODEL');
+  });
+
   it('sends a base URL the owner changed or cleared', async () => {
     const changed = renderEditor({ initialBaseUrl: 'https://proxy.example' });
     act(() => changed.result.current.setBaseUrl('https://other.example'));

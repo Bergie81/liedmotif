@@ -6,6 +6,7 @@
 import { NextResponse } from 'next/server';
 import {
   deleteProviderCredential,
+  envFieldVariables,
   getCredentialStatus,
   getStoredProviderConfig,
   getUnitCosts,
@@ -45,6 +46,26 @@ const BASE_URL_REFUSALS: Record<ProviderBaseUrlRejection, string> = {
     'That base URL cannot carry a username, password, query, or fragment — put the API key in the API key field.',
 };
 
+const FIELD_NAMES = { apiKey: 'API key', baseUrl: 'base URL', model: 'model' } as const;
+
+/**
+ * The field a save tries to change although `.env` sets it, or `undefined`. The
+ * env value is the one that runs, so a stored one would never be used. A base URL
+ * or model equal to the env value only rides along. A key never does: the client
+ * is never sent the env key, so any key or share request would replace it.
+ */
+function envOwnedFieldChanged(
+  fromEnv: { apiKey?: string; baseUrl?: string; model?: string },
+  sent: { secret?: string; sharesTextLlmKey: boolean; baseUrl?: string; model?: string },
+): keyof typeof FIELD_NAMES | undefined {
+  if (fromEnv.apiKey && (sent.secret || sent.sharesTextLlmKey)) return 'apiKey';
+  if (fromEnv.baseUrl && sent.baseUrl !== undefined && sent.baseUrl !== fromEnv.baseUrl) {
+    return 'baseUrl';
+  }
+  if (fromEnv.model && sent.model && sent.model !== fromEnv.model) return 'model';
+  return undefined;
+}
+
 /**
  * The Cover key state as stored now (`loadCoverKeyState`), so a flow that just
  * saved its Text AI decides the Cover key from the server, not a picker.
@@ -77,13 +98,32 @@ export async function POST(request: Request) {
   if (sharesTextLlmKey && secret) {
     return badRequest('Send either an API key or shareTextLlmKey, not both.');
   }
-  const model = trimmed(body.model);
+  const fromEnv = readEnvLayer(providerType, providerKey);
+  const lockedField = envOwnedFieldChanged(fromEnv, {
+    secret,
+    sharesTextLlmKey,
+    baseUrl: typeof body.baseUrl === 'string' ? body.baseUrl.trim() : undefined,
+    model: trimmed(body.model),
+  });
+  if (lockedField) {
+    const variable = envFieldVariables(providerType)[lockedField];
+    return NextResponse.json(
+      {
+        ok: false,
+        error: `The ${FIELD_NAMES[lockedField]} is set by ${variable} in .env, so it cannot be changed here.`,
+      },
+      { status: 409 },
+    );
+  }
+  // A field `.env` sets is left out of the stored config, as the client leaves it out.
+  const model = fromEnv.model ? undefined : trimmed(body.model);
   const displayName = trimmed(body.displayName) ?? providerKey;
 
   // Config is stored in plaintext and read back by the admin frontend, so a base
   // URL that carries its own authentication is refused here rather than
   // smuggling a secret out of the encrypted credential path.
-  const submittedBaseUrl = trimmed(body.baseUrl);
+  const sentBaseUrl = fromEnv.baseUrl ? undefined : body.baseUrl;
+  const submittedBaseUrl = trimmed(sentBaseUrl);
   let baseUrl: string | undefined;
   if (submittedBaseUrl) {
     const normalized = normalizeProviderBaseUrl(submittedBaseUrl);
@@ -115,7 +155,7 @@ export async function POST(request: Request) {
   // wipe a stored model); with no config fields supplied the stored config is
   // kept untouched. An explicitly blank base URL is the one way to remove a
   // stored endpoint, so the provider default applies again.
-  const clearsBaseUrl = typeof body.baseUrl === 'string' && !submittedBaseUrl;
+  const clearsBaseUrl = typeof sentBaseUrl === 'string' && !submittedBaseUrl;
   const stored = await getStoredProviderConfig(getDb(), { providerType, providerKey });
   const { baseUrl: _storedBaseUrl, ...storedWithoutBaseUrl } = stored ?? {};
   const kept = clearsBaseUrl ? storedWithoutBaseUrl : (stored ?? {});
@@ -134,9 +174,7 @@ export async function POST(request: Request) {
   // `.env` model wins at build time.
   const llmMeta = providerType === 'llm' ? providerMeta : undefined;
   const storedModel = typeof stored?.model === 'string' ? stored.model.trim() : '';
-  const effectiveModel =
-    model ??
-    (storedModel || readEnvLayer(providerType, providerKey).model || llmMeta?.defaultModel);
+  const effectiveModel = model ?? (storedModel || fromEnv.model || llmMeta?.defaultModel);
   if (providerType === 'llm' && !effectiveModel) {
     return badRequest('A model is required for this Text AI provider.');
   }
@@ -145,8 +183,7 @@ export async function POST(request: Request) {
   // so without a base URL anywhere it would be the selected LLM while its builder
   // returns null and Sessions silently compile without it.
   const storedBaseUrl = clearsBaseUrl ? undefined : trimmed(stored?.baseUrl);
-  const effectiveBaseUrl =
-    baseUrl ?? storedBaseUrl ?? readEnvLayer(providerType, providerKey).baseUrl;
+  const effectiveBaseUrl = baseUrl ?? storedBaseUrl ?? fromEnv.baseUrl;
   if (providerType === 'llm' && providerKey === 'openai-compatible' && !effectiveBaseUrl) {
     return badRequest('A base URL is required for this Text AI provider.');
   }

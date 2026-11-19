@@ -19,7 +19,7 @@ import { SettingsControlRow } from '@/components/settings/settings-ui';
 import { useCredentialEditor } from '@/components/settings/use-credential-editor';
 import { Switch } from '@/components/ui/controls';
 import { cn } from '@/lib/cn';
-import { IMAGE_PROVIDERS, coverPriceCents, lockedImageModel } from '@/lib/configurable-providers';
+import { IMAGE_PROVIDERS, coverPriceCents } from '@/lib/configurable-providers';
 import { coverSource, type CoverSource } from '@/lib/cover-source';
 import type { OnboardingImageCredential } from '@/lib/onboarding-data';
 import { OnboardingCredentialFields, ProviderKeyHowTo } from './onboarding-credential-fields';
@@ -87,13 +87,12 @@ function CoversStepBody({
   onDone,
 }: CoversStepProps) {
   const { saving, error, save } = useLimitSave(onDone);
-  const lockedModel = lockedImageModel(credential);
   const preselected = preselectedCoverProvider({
     chosenProviderKey: imageProviderKey,
     sharedKeyVendor,
   });
   // The loaded model belongs to a chosen provider; a preselected one starts on its default.
-  const initialModel = lockedModel || preselected !== imageProviderKey ? undefined : imageModel;
+  const initialModel = preselected !== imageProviderKey ? undefined : imageModel;
   // Only the provider that keeps a key of its own has one to keep; a shared key
   // is the Text AI's. The field reads only whether there is one, so a key saved
   // on this step, newer than `credential`, needs no preview of its own.
@@ -109,6 +108,7 @@ function CoversStepBody({
     showModel: true,
     initialModel,
     sharedKeyVendor,
+    envLocks: credential.envLocks,
     // The key is stored first, and the Cover budget follows it in the same commit.
     onSaved: (saved) => {
       const ownKey =
@@ -184,7 +184,6 @@ function CoversStepBody({
               environmentManaged={credential.environmentManaged}
               environmentVariable="IMAGE_API_KEY"
               showModel
-              lockedModel={lockedModel}
               lockedProvider={credential.providerEnvironmentManaged ? 'IMAGE_PROVIDER' : undefined}
               providerLabel={`The ${keyProvider} image key`}
               keyLabel={`${keyProvider} API key`}

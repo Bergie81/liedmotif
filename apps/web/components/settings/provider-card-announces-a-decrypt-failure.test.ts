@@ -26,3 +26,21 @@ it('announces a credential it cannot decrypt as an alert carrying its message', 
     'The stored value cannot be decrypted. Re-enter it after restoring the instance credential-encryption key.',
   );
 });
+
+// Fields `.env` leaves unset stay editable, so the banner speaks only for the locked ones.
+it('says the fields .env sets are locked, without calling the whole card read-only', () => {
+  render(
+    h(ProviderCard, {
+      icon: null,
+      name: 'Suno',
+      requirement: 'required',
+      source: 'Environment',
+      description: 'Generates the music.',
+      environmentManaged: true,
+    }),
+  );
+
+  const banner = screen.getByText(/server environment/);
+  expect(banner.textContent).toContain('locked');
+  expect(banner.textContent).not.toContain('cannot be edited here');
+});

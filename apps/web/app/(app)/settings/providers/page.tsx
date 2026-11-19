@@ -11,7 +11,7 @@ import {
   SettingsStatusBadge,
 } from '@/components/settings/settings-ui';
 import { StoredLlmCredentialAction } from '@/components/settings/stored-llm-credential-action';
-import { IMAGE_PROVIDERS, lockedImageModel } from '@/lib/configurable-providers';
+import { IMAGE_PROVIDERS } from '@/lib/configurable-providers';
 import { getDb } from '@/lib/db';
 import { LLM_PROVIDERS, llmProviderMeta } from '@/lib/llm-providers';
 import { loadCoverAccountAlert, loadProviderSettingsData } from '@/lib/provider-settings-data';
@@ -45,7 +45,6 @@ export default async function ProvidersPage() {
   const music = data.music.credential;
   const llm = data.llm.credential;
   const cover = data.cover.credential;
-  const lockedCoverModel = lockedImageModel(data.cover);
   // A shared key comes from the Text AI credential, so saving that one clears it too.
   const coverAccountAlert = await loadCoverAccountAlert(data.cover.providerKey, [
     { providerType: 'image', providerKey: data.cover.providerKey },
@@ -95,6 +94,7 @@ export default async function ProvidersPage() {
                 configured={music.configured}
                 databaseWritesEnabled={data.encryptionKeyConfigured}
                 initialBaseUrl={data.music.baseUrl}
+                envLocks={data.music.envLocks}
               />
             </CredentialMutationGroup>
           </ProviderCard>
@@ -128,6 +128,7 @@ export default async function ProvidersPage() {
                 showModel
                 initialBaseUrl={data.llm.settings?.baseUrl}
                 initialModel={data.llm.settings?.model || undefined}
+                envLocks={data.llm.envLocks}
               />
               {data.storedLlmProviderKey ? (
                 <StoredLlmCredentialAction
@@ -167,11 +168,11 @@ export default async function ProvidersPage() {
                 configured={data.cover.configured}
                 databaseWritesEnabled={data.encryptionKeyConfigured}
                 showModel
-                lockedModel={lockedCoverModel}
+                envLocks={data.cover.envLocks}
                 lockedProvider={
                   data.cover.providerEnvironmentManaged ? 'IMAGE_PROVIDER' : undefined
                 }
-                initialModel={lockedCoverModel ? undefined : (data.cover.model ?? undefined)}
+                initialModel={data.cover.model ?? undefined}
                 sharedKeyVendor={data.cover.sharedKeyVendor}
               />
             </CredentialMutationGroup>

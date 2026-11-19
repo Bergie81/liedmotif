@@ -1,7 +1,6 @@
 'use client';
 
 import { cn } from '@/lib/cn';
-import type { LockedModel } from '@/lib/configurable-providers';
 import { compactPrimaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
 import { LiedmotifLoader } from '@/components/ui/loading';
 import { BaseUrlField, ModelField, ProviderChoice, SecretField } from './credential-fields';
@@ -14,11 +13,9 @@ import {
 export type { CredentialEditorProps, ProviderOption };
 
 export function CredentialEditor({
-  lockedModel,
   lockedProvider,
   ...props
 }: Omit<CredentialEditorProps, 'onSaved'> & {
-  lockedModel?: LockedModel;
   /** The env variable that picks the provider; the picker shows it and is locked. */
   lockedProvider?: string;
 }) {
@@ -31,7 +28,7 @@ export function CredentialEditor({
       <ProviderChoice editor={editor} options={props.options} locked={lockedProvider} />
       <SecretField editor={editor} currentMasked={props.currentMasked} />
       <BaseUrlField editor={editor} />
-      {props.showModel ? <ModelField editor={editor} locked={lockedModel} /> : null}
+      {props.showModel ? <ModelField editor={editor} /> : null}
 
       <div className="flex gap-2">
         <button

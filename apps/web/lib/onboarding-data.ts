@@ -30,7 +30,7 @@ import {
 } from '@liedmotif/db';
 import type { GenerationSettings, PlaybackSettings } from '@liedmotif/shared';
 import type { StorageProviderKey } from '@liedmotif/storage';
-import { providerDisplayName } from '@/lib/configurable-providers';
+import { providerDisplayName, type EnvLocks } from '@/lib/configurable-providers';
 import { musicProviderDrawsCovers, sunoCoverFallbackConfigured } from '@/lib/covers';
 import { getDb } from '@/lib/db';
 import { isAccountEmailEnabled } from '@/lib/env';
@@ -51,8 +51,8 @@ export interface OnboardingCredential {
   masked: string | null;
   baseUrl?: string;
   model?: string;
-  /** `model` comes from `.env`, which no field here could outrank. */
-  modelEnvironmentManaged?: boolean;
+  /** Per provider, the fields `.env` sets, which no field here could outrank. */
+  envLocks?: Readonly<Record<string, EnvLocks>>;
 }
 
 /** The Cover image provider's resolved state. */
@@ -139,7 +139,7 @@ function imageCredential(
     configured: cover.configured,
     masked: cover.credential?.masked ?? null,
     ...(cover.model ? { model: cover.model } : {}),
-    modelEnvironmentManaged: cover.modelEnvironmentManaged,
+    envLocks: cover.envLocks,
     providerEnvironmentManaged: cover.providerEnvironmentManaged,
     sharesKey: cover.sharesKey,
     chosen: cover.credential !== null,
@@ -191,6 +191,7 @@ export async function loadOnboardingData(ownerUserId: string): Promise<Onboardin
       configured: providers.music.credential.configured,
       masked: providers.music.credential.masked,
       baseUrl: providers.music.baseUrl,
+      envLocks: providers.music.envLocks,
     },
     llm: {
       providerKey: providers.llm.providerKey,
@@ -202,6 +203,7 @@ export async function loadOnboardingData(ownerUserId: string): Promise<Onboardin
       masked: providers.llm.credential?.masked ?? null,
       baseUrl: providers.llm.settings?.baseUrl,
       model: providers.llm.effectiveModel ?? undefined,
+      envLocks: providers.llm.envLocks,
     },
     image: imageCredential(providers.cover),
     musicProviderCoverConfigured: await sunoCoverFallbackConfigured(),

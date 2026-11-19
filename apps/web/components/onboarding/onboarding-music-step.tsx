@@ -64,6 +64,7 @@ function MusicStepBody({
     configured: credential.configured,
     databaseWritesEnabled: encryptionKeyConfigured,
     initialBaseUrl: credential.baseUrl,
+    envLocks: credential.envLocks,
     onSaved: () => {
       onConnected();
       onDone();

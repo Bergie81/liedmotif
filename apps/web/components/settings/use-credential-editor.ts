@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import type { ConfigurableProviderType } from '@/lib/configurable-providers';
+import type { ConfigurableProviderType, EnvLocks } from '@/lib/configurable-providers';
 import { llmEffectiveModel, llmModelMissing } from '@/lib/llm-providers';
 import { requiresProviderReplacementConfirmation } from '@/lib/provider-settings-model';
 import { toast } from '@/lib/toast';
@@ -43,6 +43,8 @@ export interface CredentialEditorProps {
    * vendor, when that key can be shared), else `null`.
    */
   sharedKeyVendor?: string | null;
+  /** Per provider, the fields `.env` sets (`readEnvLocks`); a provider absent here has none. */
+  envLocks?: Readonly<Record<string, EnvLocks>>;
   /**
    * What a successful save means for the surrounding surface, given what was stored.
    * Required, because "saved" has no useful default: Settings reloads to re-resolve
@@ -66,6 +68,7 @@ export function useCredentialEditor(props: CredentialEditorProps) {
   // suggestion must not take the suggestions away.
   const [discoveredModels, setDiscoveredModels] = useState<string[]>([]);
   const [usesSharedKey, setUsesSharedKey] = useState(() => sharesKeyByDefault(initialSelection));
+  const locks: EnvLocks = props.envLocks?.[providerKey] ?? {};
   // Only the verdict stays: the Test's message is the toast's to say.
   const [testState, setTestState] = useState<{ status: CredentialTestState['status'] }>({
     status: 'idle',
@@ -84,7 +87,7 @@ export function useCredentialEditor(props: CredentialEditorProps) {
    */
   function sharesKeyByDefault(value: string): boolean {
     const ownKey = value === props.initialProviderKey && Boolean(props.currentMasked);
-    return value === props.sharedKeyVendor && !ownKey;
+    return value === props.sharedKeyVendor && !ownKey && !props.envLocks?.[value]?.apiKey;
   }
 
   /** A finished Test is both the state that gates a wizard step and a toast. */
@@ -128,8 +131,8 @@ export function useCredentialEditor(props: CredentialEditorProps) {
     const baseUrlUnchanged = onLoadedProvider && baseUrl === (props.initialBaseUrl ?? '');
     const modelUnchanged = onLoadedProvider && model === (props.initialModel ?? '');
     return {
-      baseUrl: baseUrlUnchanged ? undefined : submittedBaseUrl(),
-      model: modelUnchanged ? undefined : model || undefined,
+      baseUrl: baseUrlUnchanged || locks.baseUrl ? undefined : submittedBaseUrl(),
+      model: modelUnchanged || locks.model ? undefined : model || undefined,
     };
   }
 
@@ -144,8 +147,12 @@ export function useCredentialEditor(props: CredentialEditorProps) {
     invalidateTest();
   }
 
-  /** The key half of a Test or Save body: the Text AI's key by reference, or the typed one. */
+  /**
+   * The key half of a Test or Save body: the Text AI's key by reference, or the
+   * typed one. A key `.env` sets is the one that runs, so none is sent.
+   */
   function keyFields() {
+    if (locks.apiKey) return {};
     return usesSharedKey ? { shareTextLlmKey: true } : { secret: secret || undefined };
   }
 
@@ -271,7 +278,8 @@ export function useCredentialEditor(props: CredentialEditorProps) {
     setModel: editModel,
     discoveredModels,
     usesSharedKey,
-    canShareKey: providerKey === props.sharedKeyVendor,
+    canShareKey: providerKey === props.sharedKeyVendor && !locks.apiKey,
+    locks,
     shareKey,
     testState,
     operationPending,

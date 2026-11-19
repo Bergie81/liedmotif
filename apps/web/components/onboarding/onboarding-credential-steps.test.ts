@@ -100,6 +100,19 @@ describe('onboarding text-LLM step', () => {
     masked: null,
   };
 
+  it('locks a model .env sets and names its variable, leaving the key field open', () => {
+    const markup = renderLlm({
+      ...openRouter,
+      model: 'env/model',
+      envLocks: { openrouter: { model: { variable: 'LLM_MODEL', value: 'env/model' } } },
+    });
+
+    expect(markup).toContain('SET BY LLM_MODEL');
+    expect(markup).toMatch(/<input[^>]*readOnly=""[^>]*value="env\/model"/);
+    expect(markup).toContain('type="password"');
+    expect(markup).not.toContain('LLM_API_KEY');
+  });
+
   it('always offers a way past, because the LLM is optional', () => {
     const markup = renderLlm(openRouter);
 

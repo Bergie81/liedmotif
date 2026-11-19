@@ -16,6 +16,7 @@ export {
 export { maskSecret } from './masking';
 
 export {
+  envFieldVariables,
   readEnvLayer,
   resolveCredentialSource,
   resolveLlmRuntimeSettings,

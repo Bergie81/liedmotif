@@ -1,7 +1,6 @@
 import {
   getCredentialUpdatedAt,
   getLatestCoverAccountOutcome,
-  readEnvLayer,
   resolveLlmRuntimeSettings,
   resolveProviderSettings,
   resolveShareableTextLlmKey,
@@ -15,7 +14,8 @@ import {
 } from '@/lib/configurable-providers';
 import { encryptionKeyIfConfigured, getProviderStatuses } from '@/lib/credentials';
 import { getDb } from '@/lib/db';
-import { llmEffectiveModel, llmProviderMeta } from '@/lib/llm-providers';
+import { readEnvLocksByProvider } from '@/lib/env-locks';
+import { LLM_PROVIDERS, llmEffectiveModel, llmProviderMeta } from '@/lib/llm-providers';
 import {
   coverAccountAlert,
   coverKeyNotice,
@@ -112,6 +112,7 @@ export async function loadProviderSettingsData() {
         statuses.music.displayName,
       ),
       baseUrl: musicBaseUrl,
+      envLocks: readEnvLocksByProvider('music', [{ value: statuses.music.providerKey }]),
       status: credentialState(statuses.music),
       source:
         statuses.music.source === 'env'
@@ -125,6 +126,7 @@ export async function loadProviderSettingsData() {
       providerKey: llmKey,
       displayName: providerDisplayName('llm', llmKey, statuses.llm?.displayName),
       settings: llmSettings,
+      envLocks: readEnvLocksByProvider('llm', LLM_PROVIDERS),
       effectiveModel: llmEffectiveModel(llmMeta, llmSettings?.model),
       presentation: llmPresentation,
       coverKeyNotice: coverKeyNotice(statuses.image),
@@ -133,7 +135,7 @@ export async function loadProviderSettingsData() {
       credential: statuses.image,
       providerKey: imageKey,
       providerEnvironmentManaged: selectProviderKey('image', process.env, null) !== null,
-      modelEnvironmentManaged: readEnvLayer('image', imageKey).model !== undefined,
+      envLocks: readEnvLocksByProvider('image', IMAGE_PROVIDERS),
       sharedKeyVendor: coverSharedKeyVendor(statuses.image, sharedKeyVendor),
       sharesKey: statuses.image?.source === 'shared',
       ...generatedImageProviderPresentation({

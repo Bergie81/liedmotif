@@ -129,20 +129,20 @@ export function providerPicker<T extends { value: string; behindMoreOptions?: bo
   };
 }
 
-/** A model set by an env variable, which outranks anything typed in the model field. */
-export interface LockedModel {
+/** A non-secret field `.env` sets: its variable, and the value that runs. */
+export interface EnvLock {
   variable: string;
-  model: string;
+  value: string;
 }
 
-/** The cover-image model as a read-only field, when `IMAGE_MODEL` sets it. */
-export function lockedImageModel(input: {
-  modelEnvironmentManaged?: boolean;
-  model?: string | null;
-}): LockedModel | undefined {
-  return input.modelEnvironmentManaged && input.model
-    ? { variable: 'IMAGE_MODEL', model: input.model }
-    : undefined;
+/**
+ * The fields `.env` sets for one provider, which outrank anything saved in the
+ * app, so each is locked on its own. A key is named, never shown.
+ */
+export interface EnvLocks {
+  apiKey?: { variable: string };
+  baseUrl?: EnvLock;
+  model?: EnvLock;
 }
 
 /** The provider kinds onboarding and Settings → Providers can store a credential for. */

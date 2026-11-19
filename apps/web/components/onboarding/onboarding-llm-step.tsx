@@ -50,6 +50,7 @@ function LlmStepBody({ credential, encryptionKeyConfigured, onConnected, onDone 
     showModel: true,
     initialBaseUrl: credential.baseUrl,
     initialModel: credential.model,
+    envLocks: credential.envLocks,
     onSaved: (saved) => {
       onConnected(saved.model ?? '');
       onDone();

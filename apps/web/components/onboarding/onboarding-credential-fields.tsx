@@ -23,14 +23,12 @@ import type {
 import { secondaryButtonClass } from '@/components/ui/form-styles';
 import { LiedmotifLoader } from '@/components/ui/loading';
 import { cn } from '@/lib/cn';
-import type { LockedModel } from '@/lib/configurable-providers';
 import { EnvVar } from './onboarding-layout';
 
 export function OnboardingCredentialFields({
   editor,
   options,
   showModel,
-  lockedModel,
   lockedProvider,
   baseUrlOptional,
   environmentManaged,
@@ -47,7 +45,6 @@ export function OnboardingCredentialFields({
   editor: CredentialEditorState;
   options: readonly ProviderOption[];
   showModel?: boolean;
-  lockedModel?: LockedModel;
   /** The env variable that picks the provider; the picker shows it and is locked. */
   lockedProvider?: string;
   /**
@@ -107,7 +104,7 @@ export function OnboardingCredentialFields({
           ) : (
             <BaseUrlField editor={editor} />
           )}
-          {showModel ? <ModelField editor={editor} locked={lockedModel} /> : null}
+          {showModel ? <ModelField editor={editor} /> : null}
 
           {!encryptionKeyConfigured ? (
             <SettingsFeedback kind="error">

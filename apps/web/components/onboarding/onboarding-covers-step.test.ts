@@ -100,7 +100,11 @@ describe('onboarding covers step image key', () => {
 
     const locked = renderCovers({
       imageConnected: false,
-      credential: { ...openRouter, model: 'env/model', modelEnvironmentManaged: true },
+      credential: {
+        ...openRouter,
+        model: 'env/model',
+        envLocks: { openrouter: { model: { variable: 'IMAGE_MODEL', value: 'env/model' } } },
+      },
     });
     expect(locked).toContain('value="env/model"');
     expect(locked).toContain('IMAGE_MODEL');

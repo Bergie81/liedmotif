@@ -70,8 +70,8 @@ export function ProviderCard({
         <div className="mb-4 flex items-start gap-2 rounded-card-sm border border-lamp/35 bg-lamp/[0.07] px-4 py-3 text-[13.5px]">
           <LockKeyhole className="mt-[1px] h-[17px] w-[17px] shrink-0 text-lamp" aria-hidden />
           <p className="text-muted">
-            The active value comes from the server environment and cannot be edited here. A saved
-            database value is only a fallback.
+            Values set in the server environment win. Their fields are locked below and name the
+            variable; the others stay editable. A saved database value is only a fallback.
           </p>
         </div>
       ) : null}

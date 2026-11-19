@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@liedmotif/db', async (importOriginal) => ({
   selectProviderKey: (await importOriginal<typeof import('@liedmotif/db')>()).selectProviderKey,
+  envFieldVariables: (await importOriginal<typeof import('@liedmotif/db')>()).envFieldVariables,
   getCredentialStatus: mocks.credentialStatus,
   getStoredProviderConfig: mocks.storedConfig,
   readEnvLayer: mocks.envLayer,
@@ -186,6 +187,70 @@ describe('provider credential writes', () => {
       expect.not.objectContaining({
         config: expect.objectContaining({ model: expect.anything() }),
       }),
+    );
+  });
+
+  it('refuses a field .env sets, naming the variable, rather than storing an ignored value', async () => {
+    mocks.encryptionKey.mockReturnValue(Buffer.alloc(32));
+    mocks.envLayer.mockReturnValue({ model: 'env-model', baseUrl: 'https://env.example/v1' });
+    const save = (body: Record<string, unknown>) =>
+      POST(
+        new Request('http://localhost/api/settings/credentials', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ providerType: 'llm', providerKey: 'openrouter', ...body }),
+        }),
+      );
+
+    const model = await save({ secret: 'sk-x', model: 'typed-model' });
+    expect(model.status).toBe(409);
+    expect(await model.json()).toEqual({
+      ok: false,
+      error: expect.stringContaining('LLM_MODEL'),
+    });
+    expect((await save({ secret: 'sk-x', baseUrl: 'https://typed.example/v1' })).status).toBe(409);
+    expect((await save({ secret: 'sk-x', baseUrl: '' })).status).toBe(409);
+    mocks.envLayer.mockReturnValue({ apiKey: 'sk-env' });
+    expect((await save({ secret: 'sk-typed' })).status).toBe(409);
+    expect(
+      (
+        await POST(
+          new Request('http://localhost/api/settings/credentials', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              providerType: 'image',
+              providerKey: 'openai',
+              shareTextLlmKey: true,
+            }),
+          }),
+        )
+      ).status,
+    ).toBe(409);
+    expect(mocks.upsert).not.toHaveBeenCalled();
+  });
+
+  it('accepts a field .env sets when it only rides along unchanged, storing no copy', async () => {
+    mocks.encryptionKey.mockReturnValue(Buffer.alloc(32));
+    mocks.envLayer.mockReturnValue({ model: 'env-model', baseUrl: 'https://env.example/v1' });
+    const response = await POST(
+      new Request('http://localhost/api/settings/credentials', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          providerType: 'llm',
+          providerKey: 'openrouter',
+          secret: 'sk-x',
+          model: 'env-model',
+          baseUrl: 'https://env.example/v1',
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.upsert).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ secret: 'sk-x', config: undefined }),
     );
   });
 

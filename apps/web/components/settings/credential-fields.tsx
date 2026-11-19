@@ -6,7 +6,7 @@
 
 import { useId, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
-import { providerPicker, type LockedModel } from '@/lib/configurable-providers';
+import { providerPicker, type EnvLock } from '@/lib/configurable-providers';
 import { segmentedListClass, segmentedTriggerClass } from '@/components/ui/design-system';
 import { inputClass, labelClass } from '@/components/ui/form-styles';
 import type { CredentialEditorState, ProviderOption } from './use-credential-editor';
@@ -70,6 +70,17 @@ export function SecretField({
 }) {
   if (!editor.selected?.needsKey) return null;
   const vendor = editor.selected.label;
+  if (editor.locks.apiKey) {
+    return (
+      <div className={labelClass}>
+        <span className="flex items-baseline justify-between gap-2">
+          {label}
+          <FieldNote>SET BY {editor.locks.apiKey.variable}</FieldNote>
+        </span>
+        <span className="text-[13.5px] font-normal text-muted">Set in .env</span>
+      </div>
+    );
+  }
   if (editor.usesSharedKey) {
     return (
       <div className={labelClass}>
@@ -132,6 +143,7 @@ function TextAction({
 
 export function BaseUrlField({ editor }: { editor: CredentialEditorState }) {
   if (!editor.selected?.needsBaseUrl) return null;
+  if (editor.locks.baseUrl) return <LockedField label="Base URL" lock={editor.locks.baseUrl} />;
   return (
     <label className={labelClass}>
       Base URL
@@ -147,26 +159,10 @@ export function BaseUrlField({ editor }: { editor: CredentialEditorState }) {
   );
 }
 
-export function ModelField({
-  editor,
-  locked,
-}: {
-  editor: CredentialEditorState;
-  locked?: LockedModel;
-}) {
+export function ModelField({ editor }: { editor: CredentialEditorState }) {
   const fallback = editor.selected?.defaultModel;
   const listId = useId();
-  if (locked) {
-    return (
-      <label className={labelClass}>
-        <span className="flex items-baseline justify-between gap-2">
-          Model
-          <FieldNote>SET BY {locked.variable}</FieldNote>
-        </span>
-        <input value={locked.model} className={inputClass} readOnly spellCheck={false} />
-      </label>
-    );
-  }
+  if (editor.locks.model) return <LockedField label="Model" lock={editor.locks.model} />;
   const suggestions = editor.discoveredModels;
   const placeholder =
     fallback ??
@@ -190,6 +186,19 @@ export function ModelField({
           <option key={name} value={name} />
         ))}
       </datalist>
+    </label>
+  );
+}
+
+/** A field `.env` sets, which outranks anything typed here: its value, read-only, and its source. */
+function LockedField({ label, lock }: { label: string; lock: EnvLock }) {
+  return (
+    <label className={labelClass}>
+      <span className="flex items-baseline justify-between gap-2">
+        {label}
+        <FieldNote>SET BY {lock.variable}</FieldNote>
+      </span>
+      <input value={lock.value} className={inputClass} readOnly spellCheck={false} />
     </label>
   );
 }

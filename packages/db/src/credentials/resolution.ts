@@ -90,6 +90,19 @@ export function readEnvLayer(
   };
 }
 
+/** The env variable behind each field `readEnvLayer` can return for a kind. */
+export function envFieldVariables(providerType: CredentialProviderType): {
+  [Field in keyof ProviderFields]?: string;
+} {
+  const vars = ENV_VARS[providerType];
+  if (!vars) return {};
+  return {
+    apiKey: vars.keyVar,
+    ...(vars.baseUrlVar ? { baseUrl: vars.baseUrlVar } : {}),
+    ...(vars.modelVar ? { model: vars.modelVar } : {}),
+  };
+}
+
 /**
  * A provider's non-secret saved settings: per field, the env layer wins and the
  * stored config fills the gap. A kind resolves only the fields it saves (no image
