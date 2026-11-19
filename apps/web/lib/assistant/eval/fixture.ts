@@ -562,6 +562,7 @@ function fixtureAnswers(
       actions.take('proposed', async () => {
         const asked = askedTracks(trackIds, player);
         const seeds = asked.flatMap((trackId) => trackById(trackId) ?? []);
+        if (seeds.length === 0 || seeds.length < asked.length) return notOffered(NO_SUCH_TRACK);
         if (minutes == null && !noLimit) return notOffered(HOW_LONG);
         if (minutes != null && !targetDurationMinutesSchema.safeParse(minutes).success) {
           return notOffered(BAD_DURATION);
@@ -571,9 +572,7 @@ function fixtureAnswers(
           tracks: seeds.map(item),
           targetDurationMinutes: minutes ?? null,
         });
-        return seeds.length === asked.length && card.success
-          ? proposed(card.data)
-          : notOffered(NO_SUCH_TRACK);
+        return card.success ? proposed(card.data) : notOffered(NO_SUCH_TRACK);
       }),
     [PROPOSE_NEW_MUSIC_ON_TOOL_NAME]: ({
       targetDurationMinutes: minutes,

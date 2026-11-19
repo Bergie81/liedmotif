@@ -261,6 +261,28 @@ describe('planOfflineSync', () => {
     expect(over.refreshes).toEqual([{ track: changed, withCover: false }]);
   });
 
+  it('keeps a held cover on a metadata refresh with the device past the cap', () => {
+    const renamed = covered('t', 4 * MB, 2 * MB, 'v2');
+    const plan = planOfflineSync({
+      marks: [mark('playlist:a', 1, [renamed])],
+      stored: [storedWithCover('t', 4 * MB, 'cover-t', 2 * MB)],
+      capBytes: 5 * MB,
+    });
+
+    expect(plan.refreshes).toEqual([{ track: renamed, withCover: true }]);
+  });
+
+  it('takes a changed cover that is no larger than the held one, also past the cap', () => {
+    const changed = { ...covered('t', 4 * MB, 1 * MB, 'v2'), coverImageId: 'cover-new' };
+    const plan = planOfflineSync({
+      marks: [mark('playlist:a', 1, [changed])],
+      stored: [storedWithCover('t', 4 * MB, 'cover-old', 2 * MB)],
+      capBytes: 4.5 * MB,
+    });
+
+    expect(plan.refreshes).toEqual([{ track: changed, withCover: true }]);
+  });
+
   it('gives a mark’s downloads room before a stored copy’s cover', () => {
     const plan = planOfflineSync({
       marks: [

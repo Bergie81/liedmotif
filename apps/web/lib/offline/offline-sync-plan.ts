@@ -137,7 +137,9 @@ export function planOfflineSync(input: {
     // The refresh replaces the stored cover, so it needs only the difference.
     const extraBytes = coverHeld ? 0 : coverBytes(track) - copy.coverBytes;
     const coverMissing = track.coverImageId !== null && !coverHeld;
-    const withCover = usedBytes + extraBytes <= input.capBytes;
+    // A cover that takes no more room than the stored one always comes along,
+    // so a device past its cap keeps the covers it already holds.
+    const withCover = extraBytes <= 0 || usedBytes + extraBytes <= input.capBytes;
     if (copy.version === track.version && !(coverMissing && withCover)) continue;
     usedBytes += withCover ? extraBytes : -copy.coverBytes;
     refreshes.push({ track, withCover });

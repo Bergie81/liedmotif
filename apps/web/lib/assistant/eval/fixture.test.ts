@@ -210,6 +210,10 @@ describe('the tools of a fixture turn that act', () => {
     expect(await call('play', { kind: 'session', id: unknown })).toMatch(
       /The player was left as it is\.$/,
     );
+    // The seed check comes before the length question, as in the real tool.
+    expect(await call('proposeMoreLikeThis', { trackIds: [unknown] })).toMatch(
+      /^No Track with that id\./,
+    );
     expect(reported).toEqual([]);
   });
 
