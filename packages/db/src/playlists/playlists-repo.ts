@@ -28,7 +28,7 @@ import {
   sessionCoverGenerations,
   tracks,
 } from '../schema';
-import { type TrackFlagWriteResult } from '../generation/feedback-repo';
+import type { TrackFlagWriteResult } from '../generation/feedback-repo';
 import { evictOrphanedTracksInTx } from '../generation/eviction-repo';
 import { sessionNotPendingDelete } from '../generation/session-list-repo';
 import { listPlayableSessionTrackIds } from '../generation/session-tracks-repo';

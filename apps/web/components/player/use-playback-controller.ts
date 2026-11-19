@@ -1070,7 +1070,7 @@ export function usePlaybackController(
       else restart();
       return;
     }
-    const target = cursor.previousStartableIndex(cursor.idx);
+    const target = cursor.previousStartableIndex();
     if (target == null) {
       restart();
       return;

@@ -1,4 +1,4 @@
-// Map playlists-repo rows to the contract payloads (`playlistSummarySchema`,
+// Map playlist-reads rows to the contract payloads (`playlistSummarySchema`,
 // `playlistMemberItemSchema`), plus the shared server-side loaders the API
 // routes AND the server components use — a page's first paint carries the same
 // contract-shaped data its client controller later revalidates over HTTP.

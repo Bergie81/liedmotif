@@ -14,6 +14,7 @@ import {
   reanchorPlaylistIndex,
   resolveInitialPlaylistIndex,
   resolveOrderedNextIndex,
+  type PlaylistCursor,
 } from '@liedmotif/shared';
 import type { PlayableTrack, QueueTarget } from './playable-track';
 import { PlaybackTraversal } from './playback-traversal';
@@ -27,13 +28,6 @@ export interface ProjectionSnapshot {
   tracks: PlayableTrack[];
   /** Every Queue item the snapshot still lists, playable or not. */
   queueItemIds: ReadonlySet<string>;
-}
-
-/** Where the stored resume position puts the cursor on the first non-empty load. */
-export interface ResumePosition {
-  currentQueueItemId: string | null;
-  currentTrackId: string | null;
-  anchorPosition?: number | null;
 }
 
 export class QueueCursor {
@@ -89,10 +83,10 @@ export class QueueCursor {
     return target;
   }
 
-  /** The nearest earlier index that may still start, passing over expired
-   * offline copies; null when none precedes `from`. */
-  previousStartableIndex(from: number): number | null {
-    let idx = previousPlaylistIndex(this.tracks, from);
+  /** The nearest index before the cursor that may still start, passing over
+   * expired offline copies; null when none precedes it. */
+  previousStartableIndex(): number | null {
+    let idx = previousPlaylistIndex(this.tracks, this.idx);
     while (idx != null && this.expired(this.tracks[idx]!)) {
       idx = previousPlaylistIndex(this.tracks, idx);
     }
@@ -107,7 +101,7 @@ export class QueueCursor {
     if (this.traversal.mode === 'shuffle') {
       return this.traversal.peekPrevious(this.tracks, audibleId, this.expired)?.track ?? null;
     }
-    const idx = this.previousStartableIndex(this.idx);
+    const idx = this.previousStartableIndex();
     return idx != null ? (this.tracks[idx] ?? null) : null;
   }
 
@@ -155,13 +149,9 @@ export class QueueCursor {
    * over the whole projection, so the fallback index 0 is the Session's start:
    * the loop head when it leads. Every later poll re-anchors it onto the
    * audible Track instead, since removals shift later indices left. */
-  placeCursor(resume: ResumePosition, audibleId: string | null): void {
+  placeCursor(resume: PlaylistCursor, audibleId: string | null): void {
     if (!this.startIndexApplied && this.tracks.length > 0) {
-      this.idx = resolveInitialPlaylistIndex(this.tracks, {
-        currentQueueItemId: resume.currentQueueItemId,
-        currentTrackId: resume.currentTrackId,
-        anchorPosition: resume.anchorPosition,
-      });
+      this.idx = resolveInitialPlaylistIndex(this.tracks, resume);
       this.startIndexApplied = true;
     } else {
       this.idx = reanchorPlaylistIndex(this.tracks, audibleId, this.idx);
