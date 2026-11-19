@@ -7,7 +7,11 @@
 // stays with the playback controller. Constructed once per controller; the
 // host getters are read at call time.
 
-import { bufferTransportEligible, sectionLoopEligible } from '@liedmotif/shared';
+import {
+  bufferTransportEligible,
+  sectionLoopEligible,
+  type BufferTransportGateInputs,
+} from '@liedmotif/shared';
 import { storedTrackAudio } from '@/lib/offline/device-offline';
 import { PlayerEngine, type DeckId } from './audio-engine';
 import { AudioResourceLifetime } from './audio-resource-lifetime';
@@ -181,22 +185,19 @@ export class DeckRig {
    * the internal flag, a decodable context, and `navigator.deviceMemory ≥ 4` —
    * a missing API is safe-off (element decks, no UA sniffing). */
   bufferEligible(): boolean {
-    return (
-      this.blendActive() &&
-      bufferTransportEligible({
-        flagEnabled: bufferTransportFlagEnabled(),
-        decodeSupported: this.buffers().supported(),
-        deviceMemoryGb: reportedDeviceMemoryGb(),
-      })
-    );
+    return this.blendActive() && bufferTransportEligible(this.transportGateInputs());
   }
 
   deviceAllowsSectionLoop(): boolean {
-    return sectionLoopEligible({
+    return sectionLoopEligible(this.transportGateInputs());
+  }
+
+  private transportGateInputs(): BufferTransportGateInputs {
+    return {
       flagEnabled: bufferTransportFlagEnabled(),
       decodeSupported: this.buffers().supported(),
       deviceMemoryGb: reportedDeviceMemoryGb(),
-    });
+    };
   }
 
   /** The deck's truthful playback sample — the buffer transport's exact
