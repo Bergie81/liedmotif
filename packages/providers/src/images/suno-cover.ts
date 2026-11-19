@@ -50,8 +50,8 @@ export interface SunoCoverImageConfig {
   /** API base URL; override only for a compatible mirror. */
   baseUrl?: string;
   /**
-   * The API REQUIRES a `callBackUrl` even though we poll `record-info`; we never
-   * rely on the callback firing, so it defaults to a harmless placeholder.
+   * The API REQUIRES a `callBackUrl` even though we poll `record-info`; unset,
+   * it is `SUNO_DEFAULT_CALLBACK_URL`.
    */
   callbackUrl?: string;
   /**

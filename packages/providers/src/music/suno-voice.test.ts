@@ -22,7 +22,7 @@ import {
 import type { VoiceAudioSource } from './index';
 
 const API_KEY = 'suno-secret-key-do-not-leak';
-const CALLBACK_URL = 'https://example.com/no-callback';
+const CALLBACK_URL = 'https://callback.invalid/';
 
 const UPLOAD_PATH = '/api/file-stream-upload';
 const VALIDATE_PATH = '/api/v1/voice/validate';

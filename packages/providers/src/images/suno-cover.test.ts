@@ -159,6 +159,31 @@ describe('suno cover-image adapter', () => {
     expect(result.bytes).toEqual(PNG_BYTES);
   });
 
+  it('sends the unresolvable default callback address when none is configured', async () => {
+    const calls: Array<{ url: string; init: RequestInit | undefined }> = [];
+    const fetchImpl = vi.fn(async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+      const url = String(input);
+      calls.push({ url, init });
+      if (url.endsWith('/cover/generate')) {
+        return json({ code: 200, msg: 'ok', data: { taskId: COVER_TASK_ID } });
+      }
+      if (url.includes('record-info')) {
+        return json({
+          code: 200,
+          msg: 'ok',
+          data: { taskId: COVER_TASK_ID, successFlag: 1, response: { images: [IMAGE_URL] } },
+        });
+      }
+      return pngResponse();
+    }) as unknown as typeof fetch;
+
+    await adapter(fetchImpl).generate(request());
+
+    const submit = calls.find((c) => c.url.endsWith('/cover/generate'))!;
+    const submitBody = JSON.parse(String(submit.init?.body)) as Record<string, unknown>;
+    expect(submitBody.callBackUrl).toBe('https://callback.invalid/');
+  });
+
   it('rejects a request without a music task before any network call', async () => {
     const fetchImpl = vi.fn() as unknown as typeof fetch;
     await expectProviderError(

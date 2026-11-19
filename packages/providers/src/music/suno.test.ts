@@ -38,7 +38,7 @@ import type { MusicGenerationInput } from './index';
 
 const API_KEY = 'suno-secret-key-do-not-leak';
 const BASE_URL = 'https://api.test.invalid';
-const CALLBACK_URL = 'https://example.com/no-callback';
+const CALLBACK_URL = 'https://callback.test.invalid/configured';
 
 interface RecordedCall {
   url: string;
@@ -192,6 +192,15 @@ describe('sunoMusicProvider', () => {
         model: 'V4',
       });
       expect(task.diagnostics?.rawResponse).toMatchObject({ code: 200 });
+    });
+
+    it('sends the unresolvable default callback address when none is configured', async () => {
+      const { fetchImpl, calls } = stubFetch({ [GENERATE_PATH]: { body: submitSuccess } });
+      const provider = sunoMusicProvider({ apiKey: API_KEY, baseUrl: BASE_URL, fetch: fetchImpl });
+      await provider.createGenerationTask(NON_CUSTOM_INPUT);
+
+      const body = calls[0]?.body as Record<string, unknown>;
+      expect(body.callBackUrl).toBe('https://callback.invalid/');
     });
 
     it('submits a CUSTOM instrumental body that includes style + title (+ model/negativeTags)', async () => {

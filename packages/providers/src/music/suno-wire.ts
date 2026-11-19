@@ -7,11 +7,14 @@
 export const SUNO_DEFAULT_BASE_URL = 'https://api.sunoapi.org';
 
 /**
- * The API REQUIRES a `callBackUrl` even though both adapters poll their
- * record-info endpoints; neither relies on the callback firing, so it defaults
- * to a harmless placeholder.
+ * The API REQUIRES a `callBackUrl`, but both adapters poll their record-info
+ * endpoints and never rely on the callback. The `.invalid` address can never
+ * resolve, on purpose: a callback carries audio addresses, prompt or lyrics and
+ * title, and no third party's host may be named to receive them. One accepted
+ * request does not prove Suno keeps accepting it, so if submits start failing,
+ * this default is the first suspect.
  */
-export const SUNO_DEFAULT_CALLBACK_URL = 'https://example.com/no-callback';
+export const SUNO_DEFAULT_CALLBACK_URL = 'https://callback.invalid/';
 
 export interface SunoEnvelope {
   code?: unknown;

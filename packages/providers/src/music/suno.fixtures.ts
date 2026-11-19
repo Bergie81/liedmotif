@@ -17,7 +17,7 @@ const TAGS = 'mellow lo-fi hip-hop study beat, swung drum pocket, Rhodes chords,
 
 /** Echoed-back request params Suno stores on the job (no secrets — the key lives in the header). */
 const ECHOED_PARAM = JSON.stringify({
-  callBackUrl: 'https://example.com/no-callback',
+  callBackUrl: 'https://callback.invalid/',
   customMode: false,
   instrumental: true,
   model: 'V4',
