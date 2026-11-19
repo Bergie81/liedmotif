@@ -115,14 +115,18 @@ export function AssistantPanel({
             <p className="font-display text-[19px] font-bold leading-[1.3] tracking-[-0.01em]">
               {GREETING}
             </p>
-            <ul className="flex flex-col items-center gap-2">
+            <ul className="flex flex-col items-center gap-2 max-desk:gap-3">
               {SUGGESTED_QUESTIONS.map((question) => (
                 <li key={question}>
                   <button
                     type="button"
                     disabled={usedUp}
                     onClick={() => ask(question)}
-                    className={cn(chipClass, 'text-center disabled:opacity-35')}
+                    className={cn(
+                      chipClass,
+                      // A phone finger needs a 44px target, more than the chip's desk size.
+                      'text-center disabled:opacity-35 max-desk:min-h-11 max-desk:px-5 max-desk:py-3 max-desk:text-[15px]',
+                    )}
                   >
                     {question}
                   </button>
