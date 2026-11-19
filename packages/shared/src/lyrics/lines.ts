@@ -36,6 +36,8 @@ const SHORT_LINE_MAX_CHARS = 8;
 const SHORT_LINE_MAX_SKIPPED_WORDS = 1;
 
 const SECTION_TAG = /^\[(.+)\]$/;
+/** One stream word inside a provider chunk: a bracketed marker counts whole. */
+const STREAM_WORD = /\[[^\]]*\]|[^\s[]+/g;
 
 /** Split raw lyric text into section labels and text lines (blanks dropped). */
 export function parseLyricsText(text: string): LyricLine[] {
@@ -66,9 +68,9 @@ function normalizeForMatch(text: string): string {
  * stays untimed, and a time that would scroll backwards is dropped. A section
  * tag is structure, not sung text: it never searches the stream and never moves
  * the match forward. A normal-length line binds wherever its words next occur;
- * a short line binds only when its words follow the previous match within a
- * word, so a skipped ad-lib stays untimed instead of claiming a later line's
- * words. If too few lines match — or the provider itself reports poor
+ * a short line binds only when at most one stream word lies between it and
+ * the previous match, so a skipped ad-lib stays untimed instead of claiming a
+ * later line's words. If too few lines match — or the provider itself reports poor
  * alignment — the whole result degrades to the unsynced parse rather than
  * half-following the playhead.
  */
@@ -83,9 +85,19 @@ export function buildLyricLines(text: string, timed: TimedLyrics | null): LyricL
   // position maps back to the word (and its start time) that produced it.
   let stream = '';
   const spans: Array<{ start: number; end: number; startSeconds: number; success: boolean }> = [];
+  // Where each stream word starts. A provider chunk can hold a whole line, so
+  // the distance a short line may bind across is counted in these, not chunks.
+  const wordStarts: number[] = [];
   for (const word of timed.words) {
     const norm = normalizeForMatch(word.word);
     if (!norm) continue;
+    let wordAt = stream.length;
+    for (const [token] of word.word.matchAll(STREAM_WORD)) {
+      const length = normalizeForMatch(token).length;
+      if (length === 0) continue;
+      wordStarts.push(wordAt);
+      wordAt += length;
+    }
     spans.push({
       start: stream.length,
       end: stream.length + norm.length,
@@ -103,7 +115,7 @@ export function buildLyricLines(text: string, timed: TimedLyrics | null): LyricL
     const at = stream.indexOf(needle, cursor);
     if (at === -1) return line;
     if (needle.length <= SHORT_LINE_MAX_CHARS) {
-      const skipped = spans.filter((span) => span.start >= cursor && span.end <= at).length;
+      const skipped = wordStarts.filter((start) => start >= cursor && start < at).length;
       if (skipped > SHORT_LINE_MAX_SKIPPED_WORDS) return line;
     }
     cursor = at + needle.length;

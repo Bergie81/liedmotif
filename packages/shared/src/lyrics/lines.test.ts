@@ -183,6 +183,29 @@ describe('buildLyricLines', () => {
     ]);
   });
 
+  it('a skipped short line stays untimed when the provider times whole lines as one chunk', () => {
+    const result = buildLyricLines(
+      [
+        'Walking through the rain tonight',
+        'Oh yeah',
+        'Cold streets under my feet',
+        'Oh yeah, we are free',
+      ].join('\n'),
+      timed([
+        ['Walking through the rain tonight\n', 10, 14],
+        ['Cold streets under my feet\n', 20, 24],
+        ['Oh yeah we are free\n', 30, 34],
+      ]),
+    );
+    expect(result.synced).toBe(true);
+    expect(result.lines).toEqual([
+      { kind: 'line', text: 'Walking through the rain tonight', timeSeconds: 10 },
+      { kind: 'line', text: 'Oh yeah', timeSeconds: null },
+      { kind: 'line', text: 'Cold streets under my feet', timeSeconds: 20 },
+      { kind: 'line', text: 'Oh yeah, we are free', timeSeconds: 30 },
+    ]);
+  });
+
   it('a line missed before a repeated chorus does not take the chorus', () => {
     const result = buildLyricLines(
       [

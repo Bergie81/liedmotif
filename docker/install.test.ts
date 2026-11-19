@@ -415,7 +415,7 @@ describe('installer: health check', () => {
     expect(output).toMatch(/somewhere safe/);
   });
 
-  it("accepts Caddy's internal certificate for --domain localhost only", async () => {
+  it("accepts Caddy's internal certificate for --domain localhost and verifies a public domain", async () => {
     const local = await machine();
     const domain = await machine();
 
@@ -449,12 +449,18 @@ describe('installer: health check', () => {
   };
 
   it("an update of a LAN-address install accepts Caddy's internal certificate", async () => {
-    const { code, output, health } = await updateServing(await machine(), '192.168.1.20');
+    const box = await machine();
+    const { code, output, health } = await updateServing(box, '192.168.1.20');
 
     expect(code, output).toBe(0);
     expect(health).toEqual([
       expect.stringMatching(/--insecure .*https:\/\/192\.168\.1\.20\/api\/health/),
     ]);
+    const downloads = (await box.calls()).filter(
+      (call) => call.startsWith('curl ') && !call.includes('/api/health'),
+    );
+    expect(downloads.length).toBeGreaterThan(0);
+    for (const call of downloads) expect(call).not.toContain('--insecure');
   });
 
   // Caddy's own list of names it serves with its internal certificate.
@@ -465,6 +471,8 @@ describe('installer: health check', () => {
     'nas.local',
     'music.internal',
     'nas.home.arpa',
+    'NAS.Local.',
+    'fd00::20',
   ])("an update serving %s accepts Caddy's internal certificate", async (name) => {
     const { code, output, health } = await updateServing(await machine(), name);
 
@@ -472,15 +480,19 @@ describe('installer: health check', () => {
     expect(health).toEqual([expect.stringContaining('--insecure')]);
   });
 
-  it.each(['music.example.com', 'nas.fritz.box'])(
-    'an update serving %s still verifies the certificate',
-    async (name) => {
-      const { code, output, health } = await updateServing(await machine(), name);
+  it.each([
+    'music.example.com',
+    'nas.fritz.box',
+    'music.example.com:8443',
+    'nas.local.example.com',
+    '192.168.1.20.nip.io',
+    'localhost.example.com',
+  ])('an update serving %s verifies the certificate', async (name) => {
+    const { code, output, health } = await updateServing(await machine(), name);
 
-      expect(code, output).toBe(0);
-      expect(health).toEqual([expect.not.stringContaining('--insecure')]);
-    },
-  );
+    expect(code, output).toBe(0);
+    expect(health).toEqual([expect.not.stringContaining('--insecure')]);
+  });
 
   it('sends a home network address to the logs when the app never answers, never to the internet', async () => {
     const internet = /open to the internet/;

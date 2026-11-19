@@ -733,9 +733,12 @@ caddy_internal_cert() {
   local name
   name=$(printf '%s' "${APP_DOMAIN%.}" | tr '[:upper:]' '[:lower:]')
   case $name in
-    localhost | *.localhost | *.local | *.internal | *.home.arpa | *:*) return 0 ;;
+    localhost | *.localhost | *.local | *.internal | *.home.arpa) return 0 ;;
   esac
-  [[ $name =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]
+  # An IPv4 address, or an IPv6 one: hex digits, dots and at least two colons,
+  # so a public name with a port (`music.example.com:8443`) never matches.
+  [[ $name =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] ||
+    [[ $name =~ ^[0-9a-f.]*:[0-9a-f.]*:[0-9a-f:.]*$ ]]
 }
 
 # A name Caddy serves with its internal certificate is one this machine does
