@@ -23,6 +23,8 @@ vi.mock('@/lib/http/api-client', () => ({
   pinLoungePlaylist: vi.fn(),
   renamePlaylist: vi.fn(),
 }));
+// The cover sheet has its own tests; these never open it.
+vi.mock('./playlist-cover-sheet', () => ({ PlaylistCoverSheet: () => null }));
 vi.mock('@/components/player/player-provider', () => ({
   usePlayerActions: () => ({
     engage: vi.fn(),
