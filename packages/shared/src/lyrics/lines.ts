@@ -26,6 +26,15 @@ const MIN_SYNCED_COVERAGE = 0.6;
  *  the gate is deliberately lenient — line coverage does the fine filtering. */
 const MAX_ALIGNMENT_ERROR = 0.5;
 
+/** A text line this short (normalized characters) is an ad-lib-sized fragment
+ *  ("Yeah yeah") that recurs by chance inside later lines; it binds only near
+ *  the previous match, so a skipped one cannot pull every line after it ahead. */
+const SHORT_LINE_MAX_CHARS = 8;
+/** Whole stream words a short line may skip past the previous match and still
+ *  bind. Kept at one: the provider's own unaligned section marker (`[Chorus]`)
+ *  sits between lines as one stream word. */
+const SHORT_LINE_MAX_SKIPPED_WORDS = 1;
+
 const SECTION_TAG = /^\[(.+)\]$/;
 
 /** Split raw lyric text into section labels and text lines (blanks dropped). */
@@ -54,10 +63,14 @@ function normalizeForMatch(text: string): string {
  * Build the display lines for a track: the parsed text, with each line timed
  * from the word stream when one is given. Matching is sequential (a repeated
  * chorus line binds to its NEXT occurrence), a line the stream cannot produce
- * stays untimed, and a time that would scroll backwards is dropped. If too few
- * lines match — or the provider itself reports poor alignment — the whole
- * result degrades to the unsynced parse rather than half-following the
- * playhead.
+ * stays untimed, and a time that would scroll backwards is dropped. A section
+ * tag is structure, not sung text: it never searches the stream and never moves
+ * the match forward. A normal-length line binds wherever its words next occur;
+ * a short line binds only when its words follow the previous match within a
+ * word, so a skipped ad-lib stays untimed instead of claiming a later line's
+ * words. If too few lines match — or the provider itself reports poor
+ * alignment — the whole result degrades to the unsynced parse rather than
+ * half-following the playhead.
  */
 export function buildLyricLines(text: string, timed: TimedLyrics | null): LyricLinesResult {
   const lines = parseLyricsText(text);
@@ -84,12 +97,16 @@ export function buildLyricLines(text: string, timed: TimedLyrics | null): LyricL
 
   let cursor = 0;
   const timedLines = lines.map((line) => {
-    const needle = normalizeForMatch(line.kind === 'section' ? line.label : line.text);
+    if (line.kind === 'section') return line;
+    const needle = normalizeForMatch(line.text);
     if (!needle) return line;
     const at = stream.indexOf(needle, cursor);
     if (at === -1) return line;
+    if (needle.length <= SHORT_LINE_MAX_CHARS) {
+      const skipped = spans.filter((span) => span.start >= cursor && span.end <= at).length;
+      if (skipped > SHORT_LINE_MAX_SKIPPED_WORDS) return line;
+    }
     cursor = at + needle.length;
-    if (line.kind === 'section') return line;
     // The line's time is its first ALIGNED word; unaligned filler only counts
     // when the provider aligned nothing in the match at all.
     const overlapping = spans.filter((span) => span.end > at && span.start < cursor);
