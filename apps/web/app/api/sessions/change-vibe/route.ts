@@ -54,11 +54,12 @@ const UNREADABLE_STYLE_MESSAGE =
  * (a server-side fallback for API callers without the overlay's preselection).
  * A concrete pick is authoritative on both branches. The `'auto'` marker carries
  * nothing and is stripped (`autoLanguage`), so the derivation re-detects the
- * language — which may resolve the same one again. */
-function resolveSessionLanguage(
+ * language — which may resolve the same one again. The `'any'` voice marker is
+ * stripped the same way (`anyVoice`): the anchor's voice is released instead. */
+function resolveIntentMarkers(
   input: ChangeVibeIntentInput,
   language: string | undefined,
-): { input: SessionIntentInput; autoLanguage: boolean } {
+): { input: SessionIntentInput; autoLanguage: boolean; anyVoice: boolean } {
   const pick = input.mode === 'controls' ? input.controls.language : input.language;
   const autoLanguage = pick === 'auto';
   const carried = autoLanguage ? undefined : (pick ?? language);
@@ -66,11 +67,17 @@ function resolveSessionLanguage(
     return carried ? { ...fields, language: carried } : fields;
   }
   if (input.mode !== 'controls') {
-    const { language: _pick, ...rest } = input;
-    return { input: withCarried(rest), autoLanguage };
+    const { language: _pick, voice, ...rest } = input;
+    const anyVoice = voice === 'any';
+    const picked = voice === undefined || anyVoice ? rest : { ...rest, voice };
+    return { input: withCarried(picked), autoLanguage, anyVoice };
   }
   const { language: _pick, ...controls } = input.controls;
-  return { input: { mode: 'controls', controls: withCarried(controls) }, autoLanguage };
+  return {
+    input: { mode: 'controls', controls: withCarried(controls) },
+    autoLanguage,
+    anyVoice: false,
+  };
 }
 
 /** A vibe change changes direction, not the singer: when the running session
@@ -129,11 +136,12 @@ export async function POST(request: Request) {
   // below see the same singer.
   const runningStyle =
     current.sessionStyleSnapshot && honoredOwnVoice(current.sessionStyleSnapshot);
-  const { input: languageResolved, autoLanguage } = resolveSessionLanguage(
-    rawInput,
-    runningStyle?.language,
-  );
-  const input = carrySessionOwnVoice(languageResolved, runningStyle?.useOwnVoice === true);
+  const {
+    input: markersResolved,
+    autoLanguage,
+    anyVoice,
+  } = resolveIntentMarkers(rawInput, runningStyle?.language);
+  const input = carrySessionOwnVoice(markersResolved, runningStyle?.useOwnVoice === true);
 
   // "Use my voice" is honored or rejected — never silently downgraded (the
   // profile may have been deleted/disabled since the session started).
@@ -179,9 +187,14 @@ export async function POST(request: Request) {
     // would merely re-apply requests the snapshot has already superseded.
     ...(anchor.success
       ? {
-          // Auto Detect releases the anchored language too, or the adjustment
-          // (which holds every facet the request leaves alone) would keep it.
-          adjustFrom: autoLanguage ? { ...anchor.data, language: '' } : anchor.data,
+          // Auto Detect and the Any voice release the anchored facet too, or
+          // the adjustment (which holds every facet the request leaves alone)
+          // would keep it.
+          adjustFrom: {
+            ...anchor.data,
+            ...(autoLanguage ? { language: '' } : {}),
+            ...(anyVoice ? { voiceGender: '' } : {}),
+          },
           promptHistory: current.userPrompt ?? undefined,
         }
       : {}),

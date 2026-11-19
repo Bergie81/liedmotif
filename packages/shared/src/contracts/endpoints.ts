@@ -167,12 +167,25 @@ const changeVibeLanguageShape = {
   language: z.enum(['auto', ...SESSION_LANGUAGES]).optional(),
 };
 
+/** A Change Vibe voice pick on a message or picks-only change: a concrete
+ * voice, or `'any'` = drop the running voice so the new revision has none
+ * unless the writing AI picks one. Omission cannot mean that here, because an
+ * adjustment keeps every facet the intent leaves alone. */
+const changeVibeVoiceShape = {
+  voice: z.enum(['any', ...VOICE_GENDERS]).optional(),
+};
+
 /** A Change Vibe with no message: only the changed picks, which adjust the
  * current Style Snapshot. Change Vibe only — a new Session has nothing to
  * adjust. A picks intent without any pick would change nothing, so it is
  * refused. */
 const picksIntentSchema = z
-  .strictObject({ mode: z.literal('picks'), ...promptPicksShape, ...changeVibeLanguageShape })
+  .strictObject({
+    mode: z.literal('picks'),
+    ...promptPicksShape,
+    ...changeVibeLanguageShape,
+    ...changeVibeVoiceShape,
+  })
   .refine(
     ({ mode: _mode, ...picks }) =>
       Object.values(picks).some(
@@ -188,7 +201,7 @@ const picksIntentSchema = z
  * leaves the derivation free. The server carries the running session's language
  * forward for intents without a language pick (an API-level fallback only). */
 export const changeVibeIntentInputSchema = z.discriminatedUnion('mode', [
-  promptIntentSchema.extend(changeVibeLanguageShape),
+  promptIntentSchema.extend({ ...changeVibeLanguageShape, ...changeVibeVoiceShape }),
   controlsIntentSchema.extend({
     controls: structuredControlsSchema.extend(changeVibeLanguageShape),
   }),

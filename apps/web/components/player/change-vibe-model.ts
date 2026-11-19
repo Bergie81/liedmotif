@@ -158,12 +158,18 @@ function changedPromptPicks(initial: ChangeVibePicks, picks: ChangeVibePicks): P
     ...(genresChanged(initial, picks) && picks.genres.length > 0 ? { genres: picks.genres } : {}),
     ...(initial.energy !== picks.energy && picks.energy != null ? { energy: picks.energy } : {}),
     ...(vocalTouched ? { vocal: picks.vocal, ...ownVoicePick } : {}),
-    ...(vocalTouched && picks.vocal === 'vocal' && !ownVoice && picks.voice !== 'any'
-      ? { voice: picks.voice }
-      : {}),
+    ...(vocalTouched && picks.vocal === 'vocal' && !ownVoice ? voicePick(initial, picks) : {}),
     ...(initial.language !== picks.language ? { language: picks.language } : {}),
     ...changedGuardrails(initial, picks),
   };
+}
+
+/** A concrete voice always rides a touched vocal group. Any rides as the
+ *  explicit `'any'` marker only when the user moved to it — an omission would
+ *  let the server keep the running voice. */
+function voicePick(initial: ChangeVibePicks, picks: ChangeVibePicks): Pick<PromptPicks, 'voice'> {
+  if (picks.voice !== 'any') return { voice: picks.voice };
+  return initial.voice !== 'any' ? { voice: 'any' } : {};
 }
 
 /** The controls branch's language: a concrete pick always rides (WYSIWYG), and

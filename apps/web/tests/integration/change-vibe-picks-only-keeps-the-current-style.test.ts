@@ -366,4 +366,28 @@ describe.skipIf(skip)('POST /api/sessions/change-vibe — picks only, no writing
 
     expect((await loadSession(sessionId)).sessionStyleSnapshot?.language).toBe('German');
   });
+
+  it('lets the Any voice pick clear the running voice and keep the rest', async () => {
+    holder.llmConfigured = false;
+    const sessionId = await seededSession();
+
+    await changeVibeOk(sessionId, { mode: 'picks', vocal: 'vocal', voice: 'any' });
+
+    expect((await loadSession(sessionId)).sessionStyleSnapshot).toMatchObject({
+      vocalMode: 'vocal',
+      voiceGender: '',
+      language: 'German',
+      lyricContext: 'scene: rooftop at dusk',
+    });
+  });
+});
+
+describe.skipIf(skip)('POST /api/sessions/change-vibe — the Any voice, with a writing AI', () => {
+  it('does not carry the running voice into the new revision', async () => {
+    const sessionId = await seededSession();
+
+    await changeVibeOk(sessionId, { mode: 'picks', vocal: 'vocal', voice: 'any' });
+
+    expect((await loadSession(sessionId)).sessionStyleSnapshot?.voiceGender).toBe('');
+  });
 });

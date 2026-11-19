@@ -162,6 +162,18 @@ describe('buildChangeVibeIntent', () => {
     });
   });
 
+  it('choosing Any for the voice sends the explicit Any so the server drops the running voice', () => {
+    const picks = { ...initial, voice: 'any' as const };
+    expect(buildChangeVibeIntent({ message: '', vibe: vibe(), initial, picks })).toEqual({
+      ok: true,
+      intent: { mode: 'picks', vocal: 'vocal', voice: 'any' },
+    });
+    expect(buildChangeVibeIntent({ message: 'brighter', vibe: vibe(), initial, picks })).toEqual({
+      ok: true,
+      intent: { mode: 'prompt', prompt: 'brighter', vocal: 'vocal', voice: 'any' },
+    });
+  });
+
   it('turning Own Voice on pins the vocal group and drops the gender pick', () => {
     const result = buildChangeVibeIntent({
       message: '',
