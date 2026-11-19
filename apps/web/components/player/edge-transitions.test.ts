@@ -304,6 +304,45 @@ describe('EdgeTransitions failure paths', () => {
     expect(f.events[0]?.actualStartContextTime).toBeCloseTo(107.5, 3);
   });
 
+  it('keeps each deck at its solo level on a plain edge that fires with no plan', async () => {
+    const f = setup();
+    // -11 LUFS with a -3 dB true peak: its solo level toward -14 LUFS is -3 dB.
+    const measured = track('out');
+    measured.blendAnalysis = { ...measured.blendAnalysis!, integratedLufs: -11, truePeakDb: -3 };
+    f.host.deckTrack = (deck) => (deck === 'a' ? measured : null);
+    const unmeasured = track('in');
+    unmeasured.blendAnalysis = {
+      ...unmeasured.blendAnalysis!,
+      integratedLufs: null,
+      truePeakDb: null,
+    };
+    f.host.nextTarget = () => ({ idx: 1, track: unmeasured });
+    const engine = f.host.engine() as unknown as {
+      isActive: boolean;
+      crossfade: (args: {
+        fromGainDb: number;
+        toGainDb: number;
+        toSettleGainDb: number;
+      }) => boolean;
+    };
+    const fades: Array<{ fromGainDb: number; toGainDb: number; toSettleGainDb: number }> = [];
+    engine.crossfade = ({ fromGainDb, toGainDb, toSettleGainDb }) => {
+      fades.push({ fromGainDb, toGainDb, toSettleGainDb });
+      return true;
+    };
+    // An inactive graph at readiness leaves the preparation without a plan.
+    engine.isActive = false;
+    prepareToReady(f, 20);
+    engine.isActive = true;
+
+    f.els.a.currentTime = 28.2;
+    f.driver.onTimeUpdate(f.els.a, 28);
+    await vi.runAllTimersAsync();
+
+    expect(f.commits).toEqual(['in']);
+    expect(fades).toEqual([{ fromGainDb: -3, toGainDb: 0, toSettleGainDb: 0 }]);
+  });
+
   it('never starts a prepared Track whose offline copy expired before its fade', async () => {
     const f = setup();
     prepareToReady(f, 27.8);

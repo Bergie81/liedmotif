@@ -224,4 +224,52 @@ describe('planEdge', () => {
     // Both sides measured LUFS → mutual gains still apply on the plain fade.
     expect(planned.gains.mutualTargetLufs).not.toBeNull();
   });
+
+  describe('keeps each deck at its solo level when only one side has measured loudness', () => {
+    // -11 LUFS with a -3 dB true peak: its solo level toward -14 LUFS is -3 dB.
+    const measured = endpoint({ analysis: analysis({ integratedLufs: -11, truePeakDb: -3 }) });
+    const measuredLoudness = { lufs: -11, truePeakDb: -3 };
+    const unmeasured = endpoint({
+      analysis: analysis({ integratedLufs: null, truePeakDb: null }),
+    });
+    const unmeasuredLoudness = { lufs: null, truePeakDb: null };
+
+    it('measured → unmeasured: the outgoing deck fades out at its solo level', () => {
+      const planned = planEdge(
+        inputs({
+          from: measured,
+          to: unmeasured,
+          fromLoudness: measuredLoudness,
+          toLoudness: unmeasuredLoudness,
+        }),
+      );
+      expect(planned.gains).toEqual({ fromDb: -3, toDb: 0, mutualTargetLufs: null });
+      expect(planned.decision.loudnessNormalized).toBe(false);
+    });
+
+    it('unmeasured → measured: the incoming deck fades in at its solo level', () => {
+      const planned = planEdge(
+        inputs({
+          from: unmeasured,
+          to: measured,
+          fromLoudness: unmeasuredLoudness,
+          toLoudness: measuredLoudness,
+        }),
+      );
+      expect(planned.gains).toEqual({ fromDb: 0, toDb: -3, mutualTargetLufs: null });
+      expect(planned.decision.loudnessNormalized).toBe(false);
+    });
+
+    it('two unmeasured sides still fade at 0 dB', () => {
+      const planned = planEdge(
+        inputs({
+          from: unmeasured,
+          to: unmeasured,
+          fromLoudness: unmeasuredLoudness,
+          toLoudness: unmeasuredLoudness,
+        }),
+      );
+      expect(planned.gains).toEqual({ fromDb: 0, toDb: 0, mutualTargetLufs: null });
+    });
+  });
 });

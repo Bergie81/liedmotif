@@ -14,6 +14,7 @@ import {
   mutualLoudnessGainsDb,
   type MutualLoudnessGains,
   planAlignedEdge,
+  soloLoudnessGainDb,
 } from '@liedmotif/shared';
 
 export interface EdgePlanInputs {
@@ -78,6 +79,20 @@ export interface PlannedEdge {
   } | null;
 }
 
+/**
+ * The fade gains for an edge without a common level: each deck keeps its solo
+ * level through the fade (0 dB for an unmeasured Track — no blind boost), so
+ * the outgoing deck does not jump at the fade start and the incoming deck
+ * settles at the gain it faded in at.
+ */
+export function soloEdgeGains(from: EdgeLoudness, to: EdgeLoudness): MutualLoudnessGains {
+  return {
+    fromDb: soloLoudnessGainDb(from),
+    toDb: soloLoudnessGainDb(to),
+    mutualTargetLufs: null,
+  };
+}
+
 /** Force a decision down to plain with an explicit runtime reason —
  * IDEMPOTENT (a reason is appended once, however many degrade steps hit it). */
 export function degradeEdgeDecision(
@@ -109,7 +124,7 @@ export function planEdge(inputs: EdgePlanInputs): PlannedEdge {
   const decision = decideEdge(inputs.from, inputs.to, { transport: inputs.transport ?? 'media' });
   const gains = decision.loudnessNormalized
     ? mutualLoudnessGainsDb(inputs.fromLoudness, inputs.toLoudness)
-    : { fromDb: 0, toDb: 0, mutualTargetLufs: null };
+    : soloEdgeGains(inputs.fromLoudness, inputs.toLoudness);
 
   if (decision.tier === 'plain') {
     return { decision, gains, aligned: null };

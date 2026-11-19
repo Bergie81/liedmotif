@@ -29,7 +29,13 @@ import {
 } from '@liedmotif/shared';
 import type { DeckId, PlayerEngine } from './audio-engine';
 import type { BufferDecks } from './buffer-decks';
-import { degradeEdgeDecision, degradePlannedEdge, planEdge, type PlannedEdge } from './edge-plan';
+import {
+  degradeEdgeDecision,
+  degradePlannedEdge,
+  planEdge,
+  type PlannedEdge,
+  soloEdgeGains,
+} from './edge-plan';
 import { emitBlendEdge, loudnessOf, type PlayableTrack, type QueueTarget } from './playable-track';
 
 // Begin preloading the inactive deck this many seconds before the fade start.
@@ -667,7 +673,9 @@ export class EdgeTransitions {
             prep.actualStartContextTime = nowPlain - el.currentTime / ratePlain;
           }
           const outDeck = this.host.activeDeck();
-          const gains = prep.planned?.gains ?? { fromDb: 0, toDb: 0, mutualTargetLufs: null };
+          const gains =
+            prep.planned?.gains ??
+            soloEdgeGains(loudnessOf(this.host.deckTrack(outDeck)), loudnessOf(prep.track));
           const faded = engine.crossfade({
             from: outDeck,
             to: prep.deck,
