@@ -83,13 +83,17 @@ export async function liveLoginOwnerIds(db: Database): Promise<string[]> {
  * A cover image row (instance-global — cover images carry no owner), for suites
  * that assert on which cover a Session/track/playlist row resolves to.
  */
-export async function createCoverImage(db: Database): Promise<string> {
+export async function createCoverImage(
+  db: Database,
+  fx: { byteSize?: number } = {},
+): Promise<string> {
   const [row] = await db
     .insert(coverImages)
     .values({
       sourceType: 'generated',
       storageProvider: 'local-fs',
       storageKey: `covers/test/${uniq('cover')}.webp`,
+      byteSize: fx.byteSize ?? null,
     })
     .returning({ id: coverImages.id });
   return row!.id;

@@ -87,7 +87,8 @@ function storedTrack(copy: OfflineTrackCopy): StoredTrack {
     trackId: copy.trackId,
     version: copy.version,
     bytes: copy.audioBytes + copy.coverBytes,
-    coverMissing: copy.track.coverImageId !== null && copy.coverBytes === 0,
+    coverImageId: copy.track.coverImageId,
+    coverBytes: copy.coverBytes,
   };
 }
 
@@ -154,6 +155,7 @@ export function createOfflineSync(deps: {
   async function fetchCopy(
     entry: OfflineManifestTrack,
     withAudio: boolean,
+    withCover: boolean,
     signal: AbortSignal,
     covers: Map<string, Promise<Blob | null>>,
   ): Promise<OfflineTrackInput> {
@@ -166,7 +168,7 @@ export function createOfflineSync(deps: {
     // Art is cosmetic: a cover that will not load leaves the Track playable
     // without it, and the next sync asks for it again.
     let cover: Promise<Blob | null> | null = null;
-    if (entry.coverImageId) {
+    if (entry.coverImageId && withCover) {
       const coverImageId = entry.coverImageId;
       cover = covers.get(coverImageId) ?? server.cover(coverImageId, signal).catch(() => null);
       covers.set(coverImageId, cover);
@@ -211,13 +213,17 @@ export function createOfflineSync(deps: {
 
     const covers = new Map<string, Promise<Blob | null>>();
     const work = [
-      ...plan.downloads.map((entry) => ({ entry, withAudio: true })),
-      ...plan.refreshes.map((entry) => ({ entry, withAudio: false })),
+      ...plan.downloads.map((entry) => ({ entry, withAudio: true, withCover: true })),
+      ...plan.refreshes.map(({ track: entry, withCover }) => ({
+        entry,
+        withAudio: false,
+        withCover,
+      })),
     ];
-    for (const { entry, withAudio } of work) {
+    for (const { entry, withAudio, withCover } of work) {
       if (signal.aborted) return;
       try {
-        const copy = await fetchCopy(entry, withAudio, signal, covers);
+        const copy = await fetchCopy(entry, withAudio, withCover, signal, covers);
         if (signal.aborted) return;
         await store.put(copy);
         held.add(entry.trackId);

@@ -126,7 +126,7 @@ describe.skipIf(skip)('GET /api/offline/sessions/[sessionId]', () => {
   it('lists the storable Tracks in play order, never-enqueued siblings last, with the Session as name', async () => {
     const ownerUserId = await createUser(testDb.db);
     holder.ownerUserId = ownerUserId;
-    const cover = await createCoverImage(testDb.db);
+    const cover = await createCoverImage(testDb.db, { byteSize: 80_000 });
     const sessionId = await createSession(testDb.db, {
       ownerUserId,
       title: 'Deep Focus',
@@ -144,12 +144,15 @@ describe.skipIf(skip)('GET /api/offline/sessions/[sessionId]', () => {
 
     expect(result.name).toBe('Deep Focus');
     expect(result.tracks.map((track) => track.trackId)).toEqual([first, second, sibling]);
+    // The device stores the shared Session cover once per Track.
+    expect(result.tracks.map((track) => track.coverByteSize)).toEqual([80_000, 80_000, 80_000]);
     expect(result.tracks[0]).toMatchObject({
       trackId: first,
       byteSize: 5_000_000,
       title: 'First',
       originSessionTitle: 'Deep Focus',
       coverImageId: cover,
+      coverByteSize: 80_000,
       genreTags: ['ambient'],
       fromLounge: false,
     });

@@ -360,6 +360,45 @@ describe('offline sync', () => {
     expect((await offline.contents()).capBytes).toBe(100 * MB);
   });
 
+  // The cap is one promise across the plan, the store's usage and the set-cap
+  // check: each fake Track stores 5 bytes of audio and a 5-byte cover.
+  it('admits a mark only when its audio and covers fit, so the device never ends up over the cap', async () => {
+    const coverImageId = '00000000-0000-4000-8000-0000000000c2';
+    const exact = { byteSize: 5, coverImageId, coverByteSize: 5 };
+    const tight = await setup(19);
+    tight.remote.setPlaylist('p1', [track('a', exact), track('b', exact)]);
+    expect(await markAndSettle(tight.offline, 'p1')).toEqual({
+      marked: false,
+      refusal: { key: 'playlist:p1', neededBytes: 20, freeBytes: 19 },
+    });
+    expect(await tight.store.usage()).toBe(0);
+
+    const { remote, store, offline } = await setup(20);
+    remote.setPlaylist('p1', [track('a', exact), track('b', exact)]);
+    expect(await markAndSettle(offline, 'p1')).toEqual({ marked: true });
+    expect(await store.usage()).toBe(20);
+    expect(await offline.setCap(19)).toEqual({ set: false, usedBytes: 20 });
+    expect(await offline.setCap(20)).toEqual({ set: true });
+  });
+
+  it('leaves a missing cover that no longer fits for a later sync, keeping the audio', async () => {
+    const coverImageId = '00000000-0000-4000-8000-0000000000c3';
+    const { remote, store, offline } = await setup(10);
+    remote.setPlaylist('p1', [track('a', { byteSize: 5, coverImageId, coverByteSize: 5 })]);
+    remote.failCoverOnce(coverImageId);
+    await markAndSettle(offline, 'p1');
+    expect(await offline.setCap(5)).toEqual({ set: true });
+    await offline.settled();
+
+    await offline.sync();
+    expect(await store.usage()).toBe(5);
+
+    expect(await offline.setCap(10)).toEqual({ set: true });
+    await offline.settled();
+    expect(await store.usage()).toBe(10);
+    expect(remote.audioCalls).toEqual(['a']);
+  });
+
   // A second runner over the same store is another tab, or the next app open.
   it('keeps a new cap on the device, where it decides the next mark in any tab', async () => {
     const { remote, store, offline } = await setup();

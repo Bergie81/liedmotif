@@ -137,7 +137,7 @@ describe.skipIf(skip)('GET /api/offline/playlists/[playlistId]', () => {
   it('lists the storable members in position order with size, presentation and a version', async () => {
     const ownerUserId = await createUser(testDb.db);
     holder.ownerUserId = ownerUserId;
-    const cover = await createCoverImage(testDb.db);
+    const cover = await createCoverImage(testDb.db, { byteSize: 70_000 });
     const sessionId = await createSession(testDb.db, {
       ownerUserId,
       title: 'Night Drive',
@@ -168,6 +168,7 @@ describe.skipIf(skip)('GET /api/offline/playlists/[playlistId]', () => {
       originSessionTitle: 'Night Drive',
       durationSeconds: 120,
       coverImageId: cover,
+      coverByteSize: 70_000,
       genreTags: ['lofi'],
       vocalMode: 'vocal',
       hasLyrics: true,
@@ -177,8 +178,24 @@ describe.skipIf(skip)('GET /api/offline/playlists/[playlistId]', () => {
       trackId: second,
       originSessionTitle: null,
       coverImageId: null,
+      coverByteSize: 0,
       vocalMode: 'instrumental',
       hasLyrics: false,
+    });
+  });
+
+  it('counts a cover of unknown size as 0 bytes, as an unknown audio size counts', async () => {
+    const ownerUserId = await createUser(testDb.db);
+    holder.ownerUserId = ownerUserId;
+    const cover = await createCoverImage(testDb.db);
+    const sessionId = await createSession(testDb.db, { ownerUserId, coverImageId: cover });
+    const track = await seedTrack(ownerUserId, { activitySessionId: sessionId });
+    const playlist = await createPlaylist(testDb.db, { ownerUserId, name: 'Old covers' });
+    await addPlaylistTracks(testDb.db, { ownerUserId, playlistId: playlist.id, trackIds: [track] });
+
+    expect((await manifest(playlist.id)).tracks[0]).toMatchObject({
+      coverImageId: cover,
+      coverByteSize: 0,
     });
   });
 

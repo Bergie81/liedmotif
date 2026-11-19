@@ -22,6 +22,10 @@ export const offlineManifestTrackSchema = z.strictObject({
   durationSeconds: z.number().nonnegative().nullable(),
   /** The cover the Track shows (its Session's cover, else its own). */
   coverImageId: uuidSchema.nullable(),
+  /** What the device stores for that cover: its recorded size, 0 with no cover
+   *  or none recorded (as an unknown audio size counts). Absent on a manifest
+   *  an older app stored, until the next sync replaces it. */
+  coverByteSize: z.number().int().nonnegative().optional(),
   genreTags: z.array(z.string().min(1)),
   vocalMode: z.enum(VOCAL_MODES),
   hasLyrics: z.boolean(),

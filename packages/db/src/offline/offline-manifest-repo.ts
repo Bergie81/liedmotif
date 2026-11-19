@@ -38,6 +38,7 @@ import { playlistLoungeVisibleTo, viewerCanReadTrack } from '../playlists/lounge
 import {
   activitySessionQueueItems,
   activitySessions,
+  coverImages,
   generationRequests,
   listenerProfiles,
   playlists,
@@ -77,6 +78,10 @@ async function toOfflineManifestTracks(
   selection: DownloadableTrack[],
 ): Promise<OfflineManifestTrack[]> {
   if (selection.length === 0) return [];
+  const coverImageId = effectiveTrackCoverColumn(
+    activitySessions.coverImageId,
+    tracks.coverImageId,
+  );
   const rows = await db
     .select({
       trackId: tracks.id,
@@ -85,7 +90,9 @@ async function toOfflineManifestTracks(
       artist: tracks.generatedArtistName,
       originSessionTitle: activitySessions.title,
       durationSeconds: tracks.durationSeconds,
-      coverImageId: effectiveTrackCoverColumn(activitySessions.coverImageId, tracks.coverImageId),
+      coverImageId,
+      // The full cover the device fetches, not the tile rendition.
+      coverByteSize: sql<number>`coalesce(${coverImages.byteSize}, 0)`.mapWith(Number),
       genreTags: tracks.genreTags,
       vocalMode: tracks.vocalMode,
       hasLyrics: trackHasLyricsColumn(),
@@ -96,6 +103,7 @@ async function toOfflineManifestTracks(
     .leftJoin(listenerProfiles, eq(listenerProfiles.ownerUserId, tracks.ownerUserId))
     .leftJoin(generationRequests, eq(generationRequests.id, tracks.generationRequestId))
     .leftJoin(activitySessions, eq(activitySessions.id, generationRequests.activitySessionId))
+    .leftJoin(coverImages, eq(coverImages.id, coverImageId))
     .where(
       inArray(
         tracks.id,
