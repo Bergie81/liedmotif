@@ -213,7 +213,7 @@ export function AssistantDock({
           <DialogPrimitive.Trigger
             aria-label={launcherLabel}
             className={cn(
-              'fixed right-4 z-30 grid h-15 w-15 place-items-center rounded-full border border-line-2 [background:var(--gradient-mini)] shadow-[var(--shadow-mini)] [transition:transform_.06s_ease,right_.15s_ease] active:scale-[0.97]',
+              'fixed right-4 z-30 grid h-16 w-16 place-items-center rounded-full border border-line-2 [background:var(--gradient-mini)] shadow-[var(--shadow-mini)] [transition:transform_.06s_ease,right_.15s_ease] active:scale-[0.97]',
               // Above the tab bar, and above the mini player when it is up.
               'bottom-[calc(var(--tab-h)+env(safe-area-inset-bottom,0px)+12px)] max-desk:rail-player:bottom-[calc(var(--tab-h)+var(--mini-h)+env(safe-area-inset-bottom,0px)+20px)]',
               // Beside the sidebar while it is open, in the page's own corner.
@@ -222,9 +222,9 @@ export function AssistantDock({
             )}
           >
             {open ? (
-              <X className="h-[25px] w-[25px]" aria-hidden />
+              <X className="h-[27px] w-[27px]" aria-hidden />
             ) : (
-              <AssistantGlyph className="h-7 w-7" />
+              <AssistantGlyph className="h-[29px] w-[29px]" />
             )}
           </DialogPrimitive.Trigger>
         </WithTooltip>
