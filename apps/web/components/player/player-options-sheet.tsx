@@ -169,6 +169,7 @@ function OptionsPlate({
         )
       }
       closeLabel={`Close ${sourceKind} and Track options`}
+      offlineMark
     />
   );
 }

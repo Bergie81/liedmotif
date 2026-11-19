@@ -278,7 +278,7 @@ With no connection, Liedmotif opens the **Offline Library**, a list of what this
 
 A shared track that has [expired](#available-offline) shows **Expired** in the player's track list and can't be started. When only expired tracks are left, playback ends and the player says the rest of the playlist expired on this device. Connect to refresh it.
 
-Offline, the app is for listening only. Nothing new gets made, saved or edited, and listening here doesn't count in your stats. If the app is already open when the connection drops, controls that need the server go grey and the app shows **Offline**.
+Offline, the app is for listening only. Nothing new gets made, saved or edited, and listening here doesn't count in your stats. If the app is already open when the connection drops, controls that need the server go grey and the app shows **Offline**. An options menu opened offline shows a crossed-out Wi-Fi sign next to its close button; tap it to see why options are missing.
 
 ### Offline storage on this device
 

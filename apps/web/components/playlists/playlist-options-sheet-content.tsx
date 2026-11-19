@@ -27,6 +27,7 @@ export function PlaylistOptionsSheetContent({
       <SheetHeader
         title={playlist.name}
         closeLabel={`Close options for ${playlist.name}`}
+        offlineMark
         description={
           <span className="font-mono text-[10.5px] uppercase tracking-[0.04em] text-dim">
             {owner ? `${owner} · ` : null}

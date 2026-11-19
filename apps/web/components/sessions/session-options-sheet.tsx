@@ -57,6 +57,7 @@ export function SessionOptionsSheet({
           formatGenreLine(session.genreTags) ??
           `${formatTrackCount(session.trackCount)} · ready to continue`
         }
+        offlineMark
       />
       <div className="mt-4">
         <OfflineMenuRow kind="session" id={session.id} />

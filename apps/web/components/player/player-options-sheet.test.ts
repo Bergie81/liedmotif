@@ -197,7 +197,7 @@ describe('player options sheet', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('keeps the Lyrics tile usable offline, where the tiles that write are not', () => {
+  it('keeps the Lyrics tile usable offline, where the tiles that write are not, and says why', () => {
     Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false });
     try {
       renderSessionSheet(sessionActions());
@@ -207,6 +207,8 @@ describe('player options sheet', () => {
 
       expect(screen.getByTestId('player-open-lyrics').matches(':disabled')).toBe(false);
       expect(screen.getByTestId('player-regenerate-cover').matches(':disabled')).toBe(true);
+      // The header says why the sheet is short.
+      expect(screen.getByRole('button', { name: /Offline: why options are missing/ })).toBeTruthy();
     } finally {
       delete (navigator as { onLine?: boolean }).onLine;
       act(() => {

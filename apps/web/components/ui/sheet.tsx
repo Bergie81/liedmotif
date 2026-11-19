@@ -11,6 +11,7 @@ import { X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { DragAxis } from './drag-axis';
 import { floatingSurfaceClass, iconButtonClass, overlayClass } from './design-system';
+import { OfflineSheetMark } from './offline-sheet-mark';
 
 export const Sheet = DialogPrimitive.Root;
 export const SheetTrigger = DialogPrimitive.Trigger;
@@ -58,6 +59,7 @@ export function SheetHeader({
   closeLabel,
   closeDisabled = false,
   action,
+  offlineMark = false,
 }: {
   title: string;
   description?: ReactNode;
@@ -67,6 +69,9 @@ export function SheetHeader({
   closeLabel?: string;
   closeDisabled?: boolean;
   action?: { label: string; onClick: () => void; disabled?: boolean };
+  /** An options sheet whose rows go dark or drop out offline: while offline the
+   *  header carries a sign that says why. */
+  offlineMark?: boolean;
 }) {
   const Body = action ? 'button' : 'div';
   const Text = action ? 'span' : 'div';
@@ -101,6 +106,7 @@ export function SheetHeader({
             </SheetDescription>
           </Text>
         </Body>
+        {offlineMark ? <OfflineSheetMark /> : null}
         <SheetClose
           ref={closeRef}
           className={iconButtonClass}
