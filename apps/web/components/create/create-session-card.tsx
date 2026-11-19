@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import type {
   CoverStyleChoice,
   SessionIntentInput,
@@ -8,6 +9,7 @@ import type {
   StartSurpriseRequest,
   SurpriseProposal,
 } from '@liedmotif/shared';
+import type { ApiResult } from '@/lib/api-client';
 import { cn } from '@/lib/cn';
 import type { SessionLanguageChoice } from '@/lib/session-languages';
 import type { OwnVoiceOffer } from '@/lib/voice';
@@ -70,10 +72,12 @@ export function CreateSessionCard({
    * any). Omitted = the surface has no Surprise Me. */
   surprise?: {
     pending: SurpriseProposal | null;
-    onStart: (request: StartSurpriseRequest) => void;
+    /** The handed-off Start's result, or null when another Start was in flight. */
+    onStart: (request: StartSurpriseRequest) => Promise<ApiResult<unknown>> | null;
   };
 }) {
   const clientId = useClientId();
+  const router = useRouter();
   // The proposal Surprise Me is showing. A search hand-off outranks a pending
   // one for the form's opening words: it is what the User just asked for.
   const [proposal, setProposal] = useState(surprise?.pending ?? null);
@@ -151,11 +155,17 @@ export function CreateSessionCard({
   function startProposal(next: SurpriseProposal, minutes: number | null) {
     if (!surprise || starting) return;
     setStarting(true);
-    surprise.onStart({
+    const started = surprise.onStart({
       proposalId: next.id,
       ...(coverStyle !== 'auto' ? { coverStyle } : {}),
       useStandardCover,
       ...durationOf(minutes),
+    });
+    // Replaced elsewhere: the router's cached Home still holds this dead
+    // proposal, so the next visit must read the pending one afresh. Nothing
+    // starts in its place; the User sees the current one and decides.
+    void started?.then((result) => {
+      if (!result.ok && result.error.code === 'conflict') router.refresh();
     });
   }
 
@@ -178,6 +188,14 @@ export function CreateSessionCard({
     });
     if (result.ok) startOwnRequest(result.intent, minutes);
     else toast.error(result.error, { key: START_KEY });
+  }
+
+  // The pending proposal as the server holds it now: the card starts that one,
+  // but the form keeps the User's words, so it no longer counts as untouched.
+  function holdProposal(next: SurpriseProposal | null) {
+    if (next?.id === proposal?.id) return;
+    setProposal(next);
+    setFormHoldsProposal(false);
   }
 
   // A proposal's words, picks and length land in the form as a plain prefill;
@@ -212,6 +230,7 @@ export function CreateSessionCard({
                 initialProposal={surprise.pending}
                 starting={starting}
                 onProposalChange={showProposal}
+                onProposalReread={holdProposal}
                 onStart={startFromModal}
               />
             </OnlineOnly>

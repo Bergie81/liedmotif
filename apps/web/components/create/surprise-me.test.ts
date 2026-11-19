@@ -7,7 +7,11 @@ import type { SurpriseProposal } from '@liedmotif/shared';
 import { AppChromeContext, type AppChromeContextValue } from '@/components/app-chrome-context';
 import { shownToasts, toast } from '@/lib/toast';
 
-const api = vi.hoisted(() => ({ proposeSurprise: vi.fn(), dismissSurprise: vi.fn() }));
+const api = vi.hoisted(() => ({
+  proposeSurprise: vi.fn(),
+  dismissSurprise: vi.fn(),
+  getPendingSurprise: vi.fn(),
+}));
 vi.mock('@/lib/api-client', () => api);
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
@@ -47,7 +51,9 @@ const EMBER: SurpriseProposal = {
 beforeEach(() => {
   api.proposeSurprise.mockReset();
   api.dismissSurprise.mockReset();
+  api.getPendingSurprise.mockReset();
   onProposalChange.mockReset();
+  onProposalReread.mockReset();
   onStart.mockReset();
 });
 afterEach(() => {
@@ -57,6 +63,7 @@ afterEach(() => {
 });
 
 const onProposalChange = vi.fn();
+const onProposalReread = vi.fn();
 const onStart = vi.fn();
 const CHROME: AppChromeContextValue = {
   listener: { name: 'Test', email: 'test@example.test', artistName: null, imageUrl: null },
@@ -75,6 +82,7 @@ const mount = (props: { skipProfile?: boolean; initialProposal?: SurpriseProposa
         skipProfile: false,
         starting: false,
         onProposalChange,
+        onProposalReread,
         onStart,
         ...props,
       }),
@@ -182,26 +190,98 @@ describe('Surprise Me', () => {
     });
   });
 
-  it('Cancel closes the modal and drops the request', async () => {
+  /** Try another from TIDE, then Cancel while it is still out. */
+  async function cancelTryAnother(reread: unknown) {
     let answer!: (value: unknown) => void;
-    api.proposeSurprise.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+    api.proposeSurprise.mockReturnValueOnce(new Promise((resolve) => (answer = resolve)));
+    api.getPendingSurprise.mockResolvedValueOnce(reread);
     mount({ initialProposal: TIDE });
     const dialog = await openModal();
-
     fireEvent.click(within(dialog).getByRole('button', { name: 'Try another' }));
     expect(within(dialog).getByRole('progressbar')).toBeTruthy();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
-
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    return answer;
+  }
+
+  it('Cancel closes the modal, drops the request and keeps what the server kept', async () => {
+    const answer = await cancelTryAnother({ ok: true, data: { proposal: TIDE } });
+
     const signal = api.proposeSurprise.mock.calls[0]![1] as AbortSignal;
     expect(signal.aborted).toBe(true);
-    // A late answer to a cancelled request changes nothing.
+    // A late answer to a cancelled request changes nothing; only the re-read does.
     answer({ ok: true, data: { proposal: EMBER } });
-    await Promise.resolve();
+    await waitFor(() => expect(api.getPendingSurprise).toHaveBeenCalledOnce());
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(screen.queryByRole('dialog')).toBeNull();
     const reopened = await openModal();
     expect(within(reopened).getByText('Low Tide Radio')).toBeTruthy();
     expect(shownToasts()).toEqual([]);
     expect(onProposalChange).not.toHaveBeenCalled();
+  });
+
+  it('a late cancel leaves the modal holding the proposal the server kept', async () => {
+    await cancelTryAnother({ ok: true, data: { proposal: EMBER } });
+    await waitFor(() => expect(onProposalReread).toHaveBeenCalledExactlyOnceWith(EMBER));
+    // The re-read updates the next opening; it never reopens the modal itself.
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    const reopened = await openModal();
+    expect(within(reopened).getByText('Ember Choir')).toBeTruthy();
+    api.proposeSurprise.mockReturnValueOnce(new Promise(() => {}));
+    fireEvent.click(within(reopened).getByRole('button', { name: 'Try another' }));
+    expect(api.proposeSurprise.mock.calls.at(-1)![0]).toMatchObject({ replaces: EMBER.id });
+    expect(onProposalChange).not.toHaveBeenCalled();
+  });
+
+  it('a cancel whose re-read finds nothing pending opens on the settings next time', async () => {
+    await cancelTryAnother({ ok: true, data: { proposal: null } });
+    await waitFor(() => expect(onProposalReread).toHaveBeenCalledExactlyOnceWith(null));
+
+    const reopened = await openModal();
+    expect(within(reopened).getByRole('button', { name: 'Find a surprise' })).toBeTruthy();
+    expect(within(reopened).queryByTestId('surprise-preview')).toBeNull();
+  });
+
+  it('a cancel whose re-read fails keeps the proposal it had', async () => {
+    await cancelTryAnother({
+      ok: false,
+      error: {
+        code: 'internal_error',
+        message: 'Network error. Check your connection.',
+        retryable: true,
+      },
+    });
+    await waitFor(() => expect(api.getPendingSurprise).toHaveBeenCalledOnce());
+    await new Promise((resolve) => setTimeout(resolve));
+
+    const reopened = await openModal();
+    expect(within(reopened).getByText('Low Tide Radio')).toBeTruthy();
+    expect(onProposalReread).not.toHaveBeenCalled();
+  });
+
+  it('a Try another replaced elsewhere shows the current proposal instead of a dead end', async () => {
+    api.proposeSurprise.mockResolvedValueOnce({
+      ok: false,
+      error: {
+        code: 'conflict',
+        message: 'This suggestion was replaced somewhere else. Reload to see the current one.',
+        retryable: false,
+      },
+    });
+    api.getPendingSurprise.mockResolvedValueOnce({ ok: true, data: { proposal: EMBER } });
+    mount({ initialProposal: TIDE });
+    const dialog = await openModal();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Try another' }));
+
+    expect(await within(dialog).findByText('Ember Choir')).toBeTruthy();
+    expect(onProposalReread).toHaveBeenCalledExactlyOnceWith(EMBER);
+    expect(onProposalChange).not.toHaveBeenCalled();
+    expect(api.proposeSurprise).toHaveBeenCalledOnce();
+    expect(shownToasts()).not.toContainEqual(
+      expect.objectContaining({ message: expect.stringContaining('Reload') }),
+    );
   });
 
   it('only Cancel ends the wait: Escape and clicking outside leave it running', async () => {

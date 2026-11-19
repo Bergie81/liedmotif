@@ -154,6 +154,7 @@ import {
   clearListeningHistoryResponseSchema,
   resetLearnedTasteResponseSchema,
   dismissSurpriseResponseSchema,
+  pendingSurpriseResponseSchema,
   proposeSurpriseResponseSchema,
   type ProposeSurpriseRequest,
   type StartSurpriseRequest,
@@ -693,6 +694,14 @@ export function resetLearnedTaste(): Promise<ApiResult<{ reset: true }>> {
     method: 'POST',
     body: {},
   });
+}
+
+/** The caller's pending Surprise Me proposal, or null. Spends nothing. */
+export function getPendingSurprise(): Promise<ApiResult<{ proposal: SurpriseProposal | null }>> {
+  return callApi<{ proposal: SurpriseProposal | null }>(
+    '/api/surprise-me',
+    pendingSurpriseResponseSchema,
+  );
 }
 
 /** Surprise Me: propose a vibe, or replace the one this tab shows. Spends at

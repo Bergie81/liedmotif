@@ -1,14 +1,19 @@
 // @vitest-environment jsdom
 
 import { createElement } from 'react';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SurpriseProposal } from '@liedmotif/shared';
 import { shownToasts, toast } from '@/lib/toast';
 
-const api = vi.hoisted(() => ({ proposeSurprise: vi.fn(), dismissSurprise: vi.fn() }));
+const api = vi.hoisted(() => ({
+  proposeSurprise: vi.fn(),
+  dismissSurprise: vi.fn(),
+  getPendingSurprise: vi.fn(),
+}));
 vi.mock('@/lib/api-client', () => api);
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => router }));
 
 const { CreateSessionCard } = await import('./create-session-card');
 
@@ -43,6 +48,9 @@ beforeEach(() => {
     },
   );
   vi.stubGlobal('matchMedia', () => ({ matches: true }));
+  api.proposeSurprise.mockReset();
+  api.getPendingSurprise.mockReset();
+  router.refresh.mockReset();
 });
 afterEach(() => {
   cleanup();
@@ -385,5 +393,101 @@ describe('Surprise Me in the creation card', () => {
       targetDurationMinutes: 45,
       input: { mode: 'prompt', prompt: EMBER.edit.prompt, genres: ['indie'], language: 'German' },
     });
+  });
+  describe('after a late Surprise Me cancel', () => {
+    const HARBOR: SurpriseProposal = {
+      ...EMBER,
+      id: '33333333-3333-4333-8333-333333333333',
+      title: 'Harbor Morning',
+      energy: 'low',
+      edit: {
+        ...EMBER.edit,
+        prompt: 'Surprise me with a slow harbor morning.',
+        energy: 'low',
+        durationMinutes: 30,
+      },
+    };
+
+    /** Try another from EMBER, Cancel it, and the server has kept HARBOR meanwhile. */
+    async function cancelLate() {
+      const mounted = mount();
+      fireEvent.change(screen.getByLabelText(/Session duration/, { selector: 'input' }), {
+        target: { value: '20' },
+      });
+      api.proposeSurprise.mockReturnValueOnce(new Promise(() => {}));
+      api.getPendingSurprise.mockResolvedValueOnce({ ok: true, data: { proposal: HARBOR } });
+      fireEvent.click(screen.getByRole('button', { name: 'Surprise Me' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Try another' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
+      await waitFor(() => expect(api.getPendingSurprise).toHaveBeenCalledOnce());
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      await new Promise((resolve) => setTimeout(resolve));
+      return mounted;
+    }
+
+    it('leaves the form exactly as the User left it', async () => {
+      await cancelLate();
+
+      expect((screen.getByTestId('vibe-prompt') as HTMLTextAreaElement).value).toBe(
+        EMBER.edit.prompt,
+      );
+      expect(
+        screen
+          .getByLabelText(/Session duration/, { selector: 'input' })
+          .getAttribute('aria-valuetext'),
+      ).toBe('20 min');
+    });
+
+    it('Start Session sends the form as the User’s own request, never the old id', async () => {
+      const { onStart, onStartSurprise } = await cancelLate();
+
+      fireEvent.click(screen.getByTestId('start-vibe'));
+
+      expect(onStartSurprise).not.toHaveBeenCalled();
+      expect(onStart).toHaveBeenCalledOnce();
+      expect(onStart.mock.calls[0]![0]).toMatchObject({
+        targetDurationMinutes: 20,
+        input: { mode: 'prompt', prompt: EMBER.edit.prompt, energy: 'medium' },
+      });
+    });
+
+    it('the modal’s Start starts the proposal the server kept, with its own length', async () => {
+      const { onStart, onStartSurprise } = await cancelLate();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Surprise Me' }));
+      expect(await screen.findByText('Harbor Morning')).toBeTruthy();
+      fireEvent.click(screen.getByRole('button', { name: 'Start Session' }));
+
+      expect(onStartSurprise).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ proposalId: HARBOR.id, targetDurationMinutes: 30 }),
+      );
+      expect(onStart).not.toHaveBeenCalled();
+    });
+  });
+
+  it('a Start refused as no longer pending re-reads the page and starts nothing else', async () => {
+    const onStartSurprise = vi.fn(() =>
+      Promise.resolve({
+        ok: false as const,
+        error: {
+          code: 'conflict' as const,
+          message: 'This suggestion is no longer available. Ask for a new one.',
+          retryable: false,
+        },
+      }),
+    );
+    render(
+      createElement(CreateSessionCard, {
+        onStart: vi.fn(),
+        llmConfigured: true,
+        surprise: { pending: EMBER, onStart: onStartSurprise },
+      }),
+    );
+
+    fireEvent.click(screen.getByTestId('start-vibe'));
+
+    await waitFor(() => expect(router.refresh).toHaveBeenCalledOnce());
+    expect(onStartSurprise).toHaveBeenCalledOnce();
+    expect(api.proposeSurprise).not.toHaveBeenCalled();
   });
 });

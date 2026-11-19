@@ -13,7 +13,7 @@ import {
   type SurpriseTheme,
   type SurpriseVocal,
 } from '@liedmotif/shared';
-import { dismissSurprise, proposeSurprise } from '@/lib/api-client';
+import { dismissSurprise, getPendingSurprise, proposeSurprise } from '@/lib/api-client';
 import { cn } from '@/lib/cn';
 import { toast } from '@/lib/toast';
 import type { SessionLanguageChoice } from '@/lib/session-languages';
@@ -79,6 +79,7 @@ const EXPECTED_PROPOSAL_MS = 25_000;
 const PROGRESS_TICK_MS = 250;
 /** One key for the modal's requests, so the next one clears the last one's failure. */
 const REQUEST_KEY = 'surprise-me-request';
+const REPLACED_MESSAGE = 'This suggestion was replaced somewhere else.';
 
 /** The wait for a proposal, with a time-based bar (the call reports no progress). */
 function ProposingProgress({ onCancel }: { onCancel: () => void }) {
@@ -250,6 +251,7 @@ export function SurpriseMe({
   initialProposal = null,
   starting,
   onProposalChange,
+  onProposalReread,
   onStart,
 }: {
   /** The card's Start-without-profile switch: a proposal made under it reads no profile or People. */
@@ -260,6 +262,9 @@ export function SurpriseMe({
   starting: boolean;
   /** The shown proposal changed: a new one arrived, or it was dismissed. */
   onProposalChange?: (proposal: SurpriseProposal | null) => void;
+  /** The pending proposal was read back from the server after this tab lost
+   * track of it: hold it, but it is no prefill for the form. */
+  onProposalReread?: (proposal: SurpriseProposal | null) => void;
   /** Start the previewed proposal as a Session. */
   onStart: (proposal: SurpriseProposal) => void;
 }) {
@@ -287,8 +292,9 @@ export function SurpriseMe({
   // The proposal request in flight; Cancel aborts it and nothing it answers lands.
   const [proposing, setProposing] = useState<AbortController | null>(null);
   const [dismissing, setDismissing] = useState(false);
+  const [rereading, setRereading] = useState(false);
 
-  const busy = proposing !== null || dismissing;
+  const busy = proposing !== null || dismissing || rereading;
   const step = proposing ? 'proposing' : proposal && !editingSettings ? 'preview' : 'settings';
 
   /** Opening and closing both start over from the first step. */
@@ -323,6 +329,17 @@ export function SurpriseMe({
       onProposalChange?.(result.data.proposal);
       return;
     }
+    // Replaced elsewhere: show what is pending now in place of a dead end.
+    if (result.error.code === 'conflict' && !result.error.retryable) {
+      const current = await rereadPending();
+      if (current !== undefined) {
+        setEditingSettings(false);
+        toast.info(current ? `${REPLACED_MESSAGE} Here is the current one.` : REPLACED_MESSAGE, {
+          key: REQUEST_KEY,
+        });
+        return;
+      }
+    }
     const refusal = creationRefusalFor(result.error);
     if (refusal) {
       setOpen(false);
@@ -334,6 +351,23 @@ export function SurpriseMe({
     proposing?.abort();
     setProposing(null);
     setDialogOpen(false);
+    // The server may have kept the new proposal before the abort reached it;
+    // its answer is dropped, so the page asks what is pending instead.
+    void rereadPending();
+  }
+
+  /** The pending proposal as the server holds it now, or undefined when the
+   * read failed and the page keeps what it had. Spends nothing. */
+  async function rereadPending(): Promise<SurpriseProposal | null | undefined> {
+    setRereading(true);
+    const result = await getPendingSurprise();
+    setRereading(false);
+    if (!result.ok) return undefined;
+    const current = result.data.proposal;
+    setProposal(current);
+    if (current) setSettings((settings) => ({ ...settings, adventurous: current.adventurous }));
+    onProposalReread?.(current);
+    return current;
   }
 
   async function dismiss() {
