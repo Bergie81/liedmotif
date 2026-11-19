@@ -114,7 +114,7 @@ export function AssistantPanel({
           {/* my-auto, not justify-center: a greeting taller than the panel
               still scrolls from its top instead of being clipped above it. */}
           <div className="my-auto flex flex-col items-center gap-8 text-center">
-            <p className="font-display text-[19px] font-bold leading-[1.3] tracking-[-0.01em]">
+            <p className="max-w-[90%] font-display text-[19px] font-bold leading-[1.3] tracking-[-0.01em]">
               <span className="block">
                 {GREETING_HELLO} <span aria-hidden>👋</span>
               </span>
