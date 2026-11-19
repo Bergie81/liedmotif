@@ -10,6 +10,7 @@ import {
   tracks,
   trackAudioAssets,
 } from '../schema';
+import { READY_MISSING_TRACKS_RECENCY_MS } from './provider-poll-repo';
 import { playableSessionTrackCondition, sessionTrackQueueEdge } from './session-track-playability';
 
 const unknownTrackDuration = sql`(${tracks.durationSeconds} is null or ${tracks.durationSeconds} <= 0)`;
@@ -61,20 +62,21 @@ export function sessionDurationColumns(sessionId: SQL, ownerUserId: SQL) {
 
 export async function getSessionDurationProgress(
   db: DbOrTx,
-  args: { ownerUserId: string; sessionId: string; phantomSubmitCutoff?: Date },
+  args: { ownerUserId: string; sessionId: string; now?: Date; phantomSubmitCutoff?: Date },
 ): Promise<{
   generatedDurationSeconds: number;
   unknownDurationTrackCount: number;
   batchOutstanding: boolean;
 }> {
   const sessionId = sql`${args.sessionId}::uuid`;
+  const now = args.now ?? new Date();
   const [row] = await db
     .select({
       ...sessionDurationColumns(sessionId, sql`${args.ownerUserId}`),
-      batchOutstanding: outstandingSessionDurationBatch(
-        sessionId,
-        args.phantomSubmitCutoff ?? phantomSubmitCutoffAt(),
-      ),
+      batchOutstanding: outstandingSessionDurationBatch(sessionId, {
+        phantomSubmitCutoff: args.phantomSubmitCutoff ?? phantomSubmitCutoffAt(now),
+        readyRecoveryCutoff: new Date(now.getTime() - READY_MISSING_TRACKS_RECENCY_MS),
+      }),
     })
     .from(activitySessions)
     .where(
@@ -92,22 +94,30 @@ export async function getSessionDurationProgress(
  * its blocker before its usable duration is visible to the same admission. A submit
  * that never captured a task id can never produce Tracks, so it stops holding the
  * batch open at the same phantom-submit cutoff that frees its concurrency slot.
+ * A ready batch still settling holds it only while the ready-missing-tracks
+ * recovery retries it (`readyRecoveryCutoff`): a settle that never lands would
+ * otherwise stall purchases for the Session's whole life.
  * A pending final download holds the batch only while it is what the accounting
  * waits on: a Track already counted from its stream changes nothing when its final
  * lands, and a given-up download will never land, so neither may stall purchases. */
-function outstandingSessionDurationBatch(sessionId: SQL, phantomSubmitCutoff: Date): SQL<boolean> {
+function outstandingSessionDurationBatch(
+  sessionId: SQL,
+  cutoffs: { phantomSubmitCutoff: Date; readyRecoveryCutoff: Date },
+): SQL<boolean> {
   return sql<boolean>`exists (
     select 1 from provider_jobs j
     inner join generation_requests r on r.id = j.generation_request_id
     where r.activity_session_id = ${sessionId} and (
       (j.submit_state in ('submitting', 'submit_unknown')
-        and j.updated_at > ${phantomSubmitCutoff.toISOString()}::timestamptz)
+        and j.updated_at > ${cutoffs.phantomSubmitCutoff.toISOString()}::timestamptz)
       or j.normalized_status in ('submitted', 'processing', 'partially_ready')
-      or (j.normalized_status = 'ready' and (
-        r.status = 'awaiting_results'
-        or (r.status <> 'materialized' and
-          (select count(*) from tracks t where t.provider_job_id = j.id) < r.requested_track_count)
-      ))
+      or (j.normalized_status = 'ready'
+        and j.updated_at >= ${cutoffs.readyRecoveryCutoff.toISOString()}::timestamptz
+        and (
+          r.status = 'awaiting_results'
+          or (r.status <> 'materialized' and
+            (select count(*) from tracks t where t.provider_job_id = j.id) < r.requested_track_count)
+        ))
       or exists (select 1 from tracks t where t.provider_job_id = j.id and t.status = 'pending')
       or exists (
         select 1 from tracks t

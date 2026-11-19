@@ -638,6 +638,7 @@ export async function runEnsureSessionBuffer(
       const progress = await getSessionDurationProgress(tx, {
         ownerUserId,
         sessionId: fresh.sessionId,
+        now,
         phantomSubmitCutoff,
       });
       duration = {

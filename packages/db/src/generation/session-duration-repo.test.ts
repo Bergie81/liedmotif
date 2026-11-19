@@ -20,6 +20,7 @@ import {
   markSessionDurationBatchMaterialized,
   writeMeasuredTrackDuration,
 } from './session-duration-repo';
+import { READY_MISSING_TRACKS_RECENCY_MS } from './provider-poll-repo';
 
 describe.skipIf(!TEST_DATABASE_URL)('Session generated duration', () => {
   let ctx: TestDb;
@@ -202,6 +203,37 @@ describe.skipIf(!TEST_DATABASE_URL)('Session generated duration', () => {
       unknownDurationTrackCount: 0,
       batchOutstanding: false,
     });
+  });
+
+  it('stops holding a ready batch whose settle never lands once recovery stops retrying it', async () => {
+    const ownerUserId = await createUser(ctx.db);
+    const sessionId = await createSession(ctx.db, { ownerUserId });
+    const requestId = await createGenerationRequest(ctx.db, {
+      ownerUserId,
+      activitySessionId: sessionId,
+      status: 'submitting',
+    });
+    const updatedAt = new Date('2026-01-01T12:00:00Z');
+    const jobId = await createProviderJob(ctx.db, {
+      generationRequestId: requestId,
+      normalizedStatus: 'ready',
+      updatedAt,
+    });
+    await createTrack(ctx.db, {
+      ownerUserId,
+      generationRequestId: requestId,
+      providerJobId: jobId,
+      durationSeconds: 120,
+      audioStorageKey: 'duration/never-settled',
+    });
+    const progress = (sinceUpdateMs: number) =>
+      getSessionDurationProgress(ctx.db, {
+        ownerUserId,
+        sessionId,
+        now: new Date(updatedAt.getTime() + sinceUpdateMs),
+      });
+    expect((await progress(READY_MISSING_TRACKS_RECENCY_MS)).batchOutstanding).toBe(true);
+    expect((await progress(READY_MISSING_TRACKS_RECENCY_MS + 60_000)).batchOutstanding).toBe(false);
   });
 
   it.each(['downloaded', 'rejected', 'deleted'] as const)(
