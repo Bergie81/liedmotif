@@ -29,10 +29,10 @@ vi.mock('@/lib/api-client', () => ({
             ? { items: [track('track-2', 'Later')], nextCursor: null }
             : { items: [track('track-1', 'Calm')], nextCursor: 'page-2' },
         },
-  addPlaylistTracks: async () =>
+  addPlaylistTracks: async (_playlistId: string, trackIds: string[]) =>
     holder.adds.shift() === 'refuse'
       ? { ok: false as const, error: { code: 'internal_error', message: 'Offline.' } }
-      : { ok: true as const, data: { playlistId: 'beach-id', added: [], refused: [] } },
+      : { ok: true as const, data: { playlistId: 'beach-id', added: trackIds, refused: [] } },
 }));
 
 afterEach(() => {

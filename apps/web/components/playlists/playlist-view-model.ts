@@ -88,10 +88,32 @@ export function formatPlaylistTrackCount(count: number): string {
   return `${count} ${count === 1 ? 'Track' : 'Tracks'}`;
 }
 
-/** The toast that confirms an add into one Playlist, counting what it appended. */
-export function addedToPlaylistMessage(added: number, playlistName: string): string {
-  if (added === 0) return `Already in ${playlistName}`;
-  return `Added ${added} ${added === 1 ? 'track' : 'tracks'} to ${playlistName}`;
+function trackCountLabel(count: number): string {
+  return `${count} ${count === 1 ? 'track' : 'tracks'}`;
+}
+
+/**
+ * The toast that reports a landed add into one Playlist, counting what it
+ * appended. It confirms only when the server took every Track it was sent;
+ * refused Tracks (gone, or no longer the User's) make it a warning, or a
+ * failure when nothing was added.
+ */
+export function addedToPlaylistToast(
+  data: { added: readonly string[]; refused: readonly string[] },
+  playlistName: string,
+): { tone: 'success' | 'warning' | 'error'; message: string } {
+  const added = data.added.length;
+  const refused = data.refused.length;
+  if (refused > 0 && added === 0) {
+    return {
+      tone: 'error',
+      message: `Could not add ${trackCountLabel(refused)} to ${playlistName}`,
+    };
+  }
+  if (added === 0) return { tone: 'success', message: `Already in ${playlistName}` };
+  const message = `Added ${trackCountLabel(added)} to ${playlistName}`;
+  if (refused === 0) return { tone: 'success', message };
+  return { tone: 'warning', message: `${message} · ${refused} could not be added` };
 }
 
 /** What the User reads when an add into one Playlist failed. */

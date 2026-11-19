@@ -21,7 +21,7 @@ import { RenameDialog } from '@/components/rename-dialog';
 import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { AlertBanner, menuRowClass } from '@/components/ui/design-system';
 import { LoadingRow } from '@/components/ui/loading';
-import { addedToPlaylistMessage, addToPlaylistFailedMessage } from './playlist-view-model';
+import { addedToPlaylistToast, addToPlaylistFailedMessage } from './playlist-view-model';
 
 const ADD_KEY = 'choose-playlist-add';
 
@@ -87,7 +87,8 @@ function ChooseContent({
   }
 
   function confirmAdded(playlistName: string, data: AddPlaylistTracksData) {
-    toast.success(addedToPlaylistMessage(data.added.length, playlistName));
+    const { tone, message } = addedToPlaylistToast(data, playlistName);
+    toast[tone](message);
     onClose();
   }
 

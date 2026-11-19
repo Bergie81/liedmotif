@@ -35,20 +35,20 @@ const BEACH = {
   sharedAt: null,
 } as PlaylistSummaryItem;
 
-function landed(added: number) {
+function landed(added: number, refused = 0) {
   return {
     ok: true as const,
     data: {
       playlistId: 'beach-id',
       added: Array.from({ length: added }, (_, i) => `track-${i}`),
-      refused: [],
+      refused: Array.from({ length: refused }, (_, i) => `gone-${i}`),
     },
   };
 }
 
-function openSheet(trackCount: number, added = trackCount) {
+function openSheet(trackCount: number, added = trackCount, refused = 0) {
   const onClose = vi.fn();
-  const onChoose = vi.fn(async () => landed(added));
+  const onChoose = vi.fn(async () => landed(added, refused));
   render(h(ChoosePlaylistSheet, { open: true, trackCount, onClose, onChoose }));
   return { onClose, onChoose };
 }
@@ -94,6 +94,29 @@ describe('choose playlist sheet — a landed add', () => {
 
     expect(shownToasts()).toEqual([
       expect.objectContaining({ tone: 'success', message: 'Already in Beach' }),
+    ]);
+  });
+
+  it('warns about the Tracks the server refused next to the ones it added', async () => {
+    openSheet(3, 2, 1);
+
+    await click(await screen.findByRole('button', { name: /Beach/ }));
+
+    expect(shownToasts()).toEqual([
+      expect.objectContaining({
+        tone: 'warning',
+        message: 'Added 2 tracks to Beach · 1 could not be added',
+      }),
+    ]);
+  });
+
+  it('reports an add the server refused entirely as a failure, not as already there', async () => {
+    openSheet(2, 0, 2);
+
+    await click(await screen.findByRole('button', { name: /Beach/ }));
+
+    expect(shownToasts()).toEqual([
+      expect.objectContaining({ tone: 'error', message: 'Could not add 2 tracks to Beach' }),
     ]);
   });
 

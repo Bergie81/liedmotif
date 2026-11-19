@@ -14,15 +14,24 @@ import { AddTracksSheet } from './add-tracks-sheet';
 const holder = vi.hoisted(() => ({
   tracks: [] as unknown[],
   adds: [] as Array<'refuse' | 'accept'>,
+  /** Track ids the server refuses inside an add that lands. */
+  refusedIds: new Set<string>(),
 }));
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock('@/lib/api-client', () => ({
   getLibrary: async () => ({ ok: true as const, data: { items: holder.tracks, nextCursor: null } }),
-  addPlaylistTracks: async () =>
+  addPlaylistTracks: async (_playlistId: string, trackIds: string[]) =>
     holder.adds.shift() === 'refuse'
       ? { ok: false as const, error: { code: 'internal_error', message: 'Offline.' } }
-      : { ok: true as const, data: { playlistId: 'beach-id', added: [], refused: [] } },
+      : {
+          ok: true as const,
+          data: {
+            playlistId: 'beach-id',
+            added: trackIds.filter((id) => !holder.refusedIds.has(id)),
+            refused: trackIds.filter((id) => holder.refusedIds.has(id)),
+          },
+        },
 }));
 
 afterEach(() => {
@@ -30,6 +39,7 @@ afterEach(() => {
   cleanup();
   holder.tracks = [];
   holder.adds = [];
+  holder.refusedIds = new Set();
 });
 
 function tracks(count: number): LibraryTrackItem[] {
@@ -111,6 +121,38 @@ describe('add tracks sheet — a landed add', () => {
 
     expect(shownToasts()).toEqual([
       expect.objectContaining({ tone: 'success', message: 'Added 101 tracks to Beach' }),
+    ]);
+  });
+});
+
+describe('add tracks sheet — Tracks the server refused', () => {
+  it('warns about them instead of counting them as added', async () => {
+    holder.tracks = tracks(3);
+    holder.refusedIds = new Set(['track-2']);
+    const { onClose } = openSheet();
+
+    await pick(3);
+    await add();
+
+    expect(onClose).toHaveBeenCalled();
+    expect(shownToasts()).toEqual([
+      expect.objectContaining({
+        tone: 'warning',
+        message: 'Added 2 tracks to Beach · 1 could not be added',
+      }),
+    ]);
+  });
+
+  it('reports an add the server refused entirely as a failure', async () => {
+    holder.tracks = tracks(1);
+    holder.refusedIds = new Set(['track-0']);
+    openSheet();
+
+    await pick(1);
+    await add();
+
+    expect(shownToasts()).toEqual([
+      expect.objectContaining({ tone: 'error', message: 'Could not add 1 track to Beach' }),
     ]);
   });
 });

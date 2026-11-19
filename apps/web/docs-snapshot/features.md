@@ -369,7 +369,7 @@ A playlist's own menu has **Add Tracks**, **Rename Playlist**, **Reorder Tracks*
 
 ### Add many tracks at once
 
-There are two ways, and both take any number of tracks. In a playlist, **Add Tracks** lists your full history: tick the tracks and press **Add**. Tracks already in it are locked. Or in **Saved** or **History**, press **Select**, tap the tracks, press the **Add to playlist** button that shows your count and choose a playlist. A notification then says how many went in, such as "Added 12 tracks to Running".
+There are two ways, and both take any number of tracks. In a playlist, **Add Tracks** lists your full history: tick the tracks and press **Add**. Tracks already in it are locked. Or in **Saved** or **History**, press **Select**, tap the tracks, press the **Add to playlist** button that shows your count and choose a playlist. A notification then says how many went in, such as "Added 12 tracks to Running". A track deleted or Disliked in the meantime is not added, and the notification says how many could not be added.
 
 If adding stops part-way, for example when the connection drops, the tracks added so far stay in the playlist and "Adding failed" says why. Your picks stay ticked: try again and only the missing tracks are added, with nothing doubled.
 
