@@ -5,7 +5,11 @@
 // reaches the app's own route.
 
 import { getCoverArtSettings } from '@liedmotif/db';
-import { targetDurationMinutesSchema, type AssistantCard } from '@liedmotif/shared';
+import {
+  targetDurationMinutesSchema,
+  type AssistantCard,
+  type ProposeSessionInput,
+} from '@liedmotif/shared';
 import {
   evaluateGenerationBudget,
   headroomRefusalMessage,
@@ -57,7 +61,7 @@ export async function newSessionLength(
   {
     targetDurationMinutes,
     noLimit,
-  }: { targetDurationMinutes?: number | null; noLimit?: boolean | null },
+  }: Pick<ProposeSessionInput, 'targetDurationMinutes' | 'noLimit'>,
 ): Promise<{ refusal: string } | { length: { targetDurationMinutes?: number | null } }> {
   if (
     targetDurationMinutes != null &&

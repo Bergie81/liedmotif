@@ -628,6 +628,22 @@ export const playInputSchema = z.object({
 export type PlayInput = z.infer<typeof playInputSchema>;
 
 /**
+ * The length a new Session's propose tool takes, as the user said it: minutes
+ * when they named a length, `noLimit` when they asked for none, neither when
+ * they said nothing (the tool then answers instead of guessing).
+ */
+const newSessionLengthInput = {
+  targetDurationMinutes: z
+    .number()
+    .nullish()
+    .describe('How long the Session should run, in minutes. Only when the user named a length.'),
+  noLimit: z
+    .boolean()
+    .nullish()
+    .describe('true only when the user asked for a Session without a limit.'),
+};
+
+/**
  * What the model passes to `proposeSession`. Lenient like the other tools; the
  * values are checked against the start-Session request before a card is offered.
  * A length and `noLimit` carry what the user said, never a guess: the tool
@@ -643,14 +659,7 @@ export const proposeSessionInputSchema = z.object({
     .boolean()
     .nullish()
     .describe('true only when the user asked for vocals or singing. Leave out for instrumental.'),
-  targetDurationMinutes: z
-    .number()
-    .nullish()
-    .describe('How long the Session should run, in minutes. Only when the user named a length.'),
-  noLimit: z
-    .boolean()
-    .nullish()
-    .describe('true only when the user asked for a Session without a limit.'),
+  ...newSessionLengthInput,
 });
 export type ProposeSessionInput = z.infer<typeof proposeSessionInputSchema>;
 
@@ -676,14 +685,7 @@ export const proposeMoreLikeThisInputSchema = z.object({
     .describe(
       `The ids of the Tracks the new Session should sound like, at most ${MAX_SEED_TRACKS}, as another tool returned them. Leave out for the Track that is playing now ("more like this").`,
     ),
-  targetDurationMinutes: z
-    .number()
-    .nullish()
-    .describe('How long the Session should run, in minutes. Only when the user named a length.'),
-  noLimit: z
-    .boolean()
-    .nullish()
-    .describe('true only when the user asked for a Session without a limit.'),
+  ...newSessionLengthInput,
 });
 export type ProposeMoreLikeThisInput = z.infer<typeof proposeMoreLikeThisInputSchema>;
 
@@ -727,14 +729,7 @@ export const proposeSurpriseInputSchema = z.object({
     .describe(
       'Only when the user asked for vocals or for instrumental. Leave out to follow their taste.',
     ),
-  targetDurationMinutes: z
-    .number()
-    .nullish()
-    .describe('How long the Session should run, in minutes. Only when the user named a length.'),
-  noLimit: z
-    .boolean()
-    .nullish()
-    .describe('true only when the user asked for a Session without a limit.'),
+  ...newSessionLengthInput,
 });
 export type ProposeSurpriseInput = z.infer<typeof proposeSurpriseInputSchema>;
 
