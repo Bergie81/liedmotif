@@ -9,7 +9,6 @@ import Link from 'next/link';
 import type { ComponentType, ReactNode } from 'react';
 import { Disc3, ListMusic, MicVocal, SearchX, SlidersHorizontal, Sparkles } from 'lucide-react';
 import type { SearchResponseData } from '@liedmotif/shared';
-import { SEARCH_SCOPED_GROUP_LIMIT } from '@liedmotif/shared';
 import { cn } from '@/lib/cn';
 import { homeIntentHref } from '@/components/create/intent-prefill';
 import { AlertBanner, EmptyState, sectionHeadingClass } from '@/components/ui/design-system';
@@ -21,6 +20,7 @@ import {
   SEARCH_GROUP_LABELS,
   SEARCH_GROUPS,
   SEARCH_SORT_LABELS,
+  searchTruncationNote,
   type SearchGroupKind,
   type SearchScope,
   type SearchSort,
@@ -71,7 +71,12 @@ export function SearchResults({
     <>
       <SummaryRow data={data} sort={state.sort} onSortChange={onSortChange} />
       {error ? <AlertBanner className="mb-3">{error}</AlertBanner> : null}
-      <GroupSections data={data} onEngage={onEngage} onTrackRemoved={onTrackRemoved} />
+      <GroupSections
+        data={data}
+        onScopeChange={onScopeChange}
+        onEngage={onEngage}
+        onTrackRemoved={onTrackRemoved}
+      />
     </>
   );
 
@@ -184,27 +189,26 @@ function SummaryRow({
 
 function GroupSections({
   data,
+  onScopeChange,
   onEngage,
   onTrackRemoved,
 }: {
   data: SearchResponseData;
+  onScopeChange: (scope: SearchScope) => void;
   onEngage: SearchEngagement;
   onTrackRemoved: () => void;
 }) {
   const { sessions, tracks, playlists } = data;
   if (totalMatchCount(data) === 0) return <SearchEmptyState data={data} />;
-  // A single-group view (a scope tab, or the lyrics lens) has no tab that
-  // could widen a capped list, so its truncation must be stated in words.
-  const showTruncationNote = data.scope !== 'all' || data.lyrics;
   return (
     <>
       {sessions ? (
-        <GroupSection kind="sessions" group={sessions} showTruncationNote={showTruncationNote}>
+        <GroupSection kind="sessions" group={sessions} data={data} onScopeChange={onScopeChange}>
           <SearchSessionResults items={sessions.items} query={data.query} onEngage={onEngage} />
         </GroupSection>
       ) : null}
       {tracks ? (
-        <GroupSection kind="tracks" group={tracks} showTruncationNote={showTruncationNote}>
+        <GroupSection kind="tracks" group={tracks} data={data} onScopeChange={onScopeChange}>
           <SearchTrackResults
             items={tracks.items}
             query={data.query}
@@ -214,7 +218,7 @@ function GroupSections({
         </GroupSection>
       ) : null}
       {playlists ? (
-        <GroupSection kind="playlists" group={playlists} showTruncationNote={showTruncationNote}>
+        <GroupSection kind="playlists" group={playlists} data={data} onScopeChange={onScopeChange}>
           <SearchPlaylistResults items={playlists.items} query={data.query} onEngage={onEngage} />
         </GroupSection>
       ) : null}
@@ -225,15 +229,22 @@ function GroupSections({
 function GroupSection({
   kind,
   group,
-  showTruncationNote,
+  data,
+  onScopeChange,
   children,
 }: {
   kind: SearchGroupKind;
-  group: { matchCount: number; truncated: boolean };
-  showTruncationNote: boolean;
+  group: { items: readonly unknown[]; matchCount: number; truncated: boolean };
+  data: SearchResponseData;
+  onScopeChange: (scope: SearchScope) => void;
   children: ReactNode;
 }) {
   if (group.matchCount === 0) return null;
+  const note = searchTruncationNote(data, kind, {
+    shown: group.items.length,
+    matchCount: group.matchCount,
+    truncated: group.truncated,
+  });
   const Icon = GROUP_ICONS[kind];
   return (
     <section className="mt-6 first:mt-2">
@@ -245,10 +256,19 @@ function GroupSection({
         </span>
       </h2>
       {children}
-      {group.truncated && showTruncationNote ? (
+      {note?.view === 'all' ? (
         <p className="mt-3 text-[13px] text-muted">
-          Showing the {SEARCH_SCOPED_GROUP_LIMIT} best matches — narrow your search.
+          {note.shown} ·{' '}
+          <button
+            type="button"
+            onClick={() => onScopeChange(note.scope)}
+            className="font-semibold text-lamp hover:underline"
+          >
+            {note.action}
+          </button>
         </p>
+      ) : note ? (
+        <p className="mt-3 text-[13px] text-muted">{note.text}</p>
       ) : null}
     </section>
   );

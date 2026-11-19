@@ -7,6 +7,7 @@ import {
   searchQueryString,
   searchReducer,
   searchStateFromParams,
+  searchTruncationNote,
   type SearchState,
 } from './search-model';
 
@@ -99,5 +100,42 @@ describe('vocabulary guards', () => {
     expect(isSearchScope('albums')).toBe(false);
     expect(isSearchSort('relevance')).toBe(true);
     expect(isSearchSort('oldest')).toBe(false);
+  });
+});
+
+describe('searchTruncationNote', () => {
+  const allView = { scope: 'all', lyrics: false } as const;
+
+  it('a cut-short group under All says how many it shows and leads to its tab', () => {
+    expect(
+      searchTruncationNote(allView, 'tracks', { shown: 5, matchCount: 12, truncated: true }),
+    ).toEqual({ view: 'all', shown: '5 of 12', action: 'Show Tracks', scope: 'tracks' });
+  });
+
+  it('a group under All that is not cut short shows no line', () => {
+    expect(
+      searchTruncationNote(allView, 'sessions', { shown: 3, matchCount: 3, truncated: false }),
+    ).toBeNull();
+  });
+
+  it('a single tab and Lyrics search keep the narrow-your-search line', () => {
+    const capped = { shown: 50, matchCount: 80, truncated: true };
+    const expected = {
+      view: 'single',
+      text: 'Showing the 50 best matches — narrow your search.',
+    };
+    expect(
+      searchTruncationNote({ scope: 'playlists', lyrics: false }, 'playlists', capped),
+    ).toEqual(expected);
+    expect(searchTruncationNote({ scope: 'all', lyrics: true }, 'tracks', capped)).toEqual(
+      expected,
+    );
+    expect(
+      searchTruncationNote({ scope: 'tracks', lyrics: false }, 'tracks', {
+        shown: 7,
+        matchCount: 7,
+        truncated: false,
+      }),
+    ).toBeNull();
   });
 });

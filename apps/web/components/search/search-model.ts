@@ -3,7 +3,13 @@
 // search can be linked; the reducer holds the COMMITTED query (debounced or
 // Enter-flushed), never raw keystrokes.
 
-import { SEARCH_SCOPES, SEARCH_SORTS, type SearchScope, type SearchSort } from '@liedmotif/shared';
+import {
+  SEARCH_SCOPED_GROUP_LIMIT,
+  SEARCH_SCOPES,
+  SEARCH_SORTS,
+  type SearchScope,
+  type SearchSort,
+} from '@liedmotif/shared';
 
 export type { SearchScope, SearchSort } from '@liedmotif/shared';
 
@@ -111,4 +117,34 @@ export function searchQueryString(state: SearchState): string {
   if (state.sort !== 'relevance') params.set('sort', state.sort);
   if (state.lyrics) params.set('lyrics', '1');
   return params.toString();
+}
+
+/**
+ * How a capped group states its truncation (ADR 0015: never silent). Under
+ * All a group's own tab widens the list, so the line gives both numbers and
+ * leads there; a single-group view (a scope tab, the lyrics lens) has no
+ * wider list, so it asks for a narrower search instead.
+ */
+export type SearchTruncationNote =
+  | { view: 'all'; shown: string; action: string; scope: SearchGroupKind }
+  | { view: 'single'; text: string };
+
+export function searchTruncationNote(
+  view: { scope: SearchScope; lyrics: boolean },
+  kind: SearchGroupKind,
+  group: { shown: number; matchCount: number; truncated: boolean },
+): SearchTruncationNote | null {
+  if (!group.truncated) return null;
+  if (view.scope === 'all' && !view.lyrics) {
+    return {
+      view: 'all',
+      shown: `${group.shown} of ${group.matchCount}`,
+      action: `Show ${SEARCH_GROUP_LABELS[kind]}`,
+      scope: kind,
+    };
+  }
+  return {
+    view: 'single',
+    text: `Showing the ${SEARCH_SCOPED_GROUP_LIMIT} best matches — narrow your search.`,
+  };
 }
