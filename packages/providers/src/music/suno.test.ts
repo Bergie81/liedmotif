@@ -217,6 +217,14 @@ describe('sunoMusicProvider', () => {
       expect(body.negativeTags).toBe('aggressive, distorted');
     });
 
+    it("sends Suno's instrumental filler as the prompt of a custom instrumental request, so the record can get a cover", async () => {
+      const { fetchImpl, calls } = stubFetch({ [GENERATE_PATH]: { body: submitSuccess } });
+      await makeProvider(fetchImpl).createGenerationTask(CUSTOM_INPUT);
+
+      const body = calls[0]?.body as Record<string, unknown>;
+      expect(body.prompt).toBe('[Instrumental]');
+    });
+
     it('rejects a custom instrumental request missing style/title WITHOUT a network call', async () => {
       const { fetchImpl, calls } = stubFetch({ [GENERATE_PATH]: { body: submitSuccess } });
       const provider = makeProvider(fetchImpl);

@@ -183,7 +183,11 @@ const LYRICS_TASK_FAILURES = [
   'SENSITIVE_WORD_ERROR',
 ];
 
-/** Suno's placeholder `prompt` for instrumental tracks — never lyric text. */
+/**
+ * Suno's placeholder `prompt` for instrumental tracks — never lyric text. A custom
+ * instrumental submit sends it too: the cover endpoint refuses a music record
+ * whose prompt is empty.
+ */
 const INSTRUMENTAL_PROMPT_PLACEHOLDER = '[Instrumental]';
 
 /** Suno's terminal "in progress / done" statuses mapped to the normalized lifecycle. */
@@ -524,6 +528,7 @@ export function sunoMusicProvider(config: SunoMusicConfig): MusicProvider {
         callBackUrl: callbackUrl,
         style,
         title,
+        prompt: INSTRUMENTAL_PROMPT_PLACEHOLDER,
         ...steeringFields(input),
       };
     }
