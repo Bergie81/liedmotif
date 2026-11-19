@@ -1,6 +1,6 @@
 // Cover regeneration needs two instance settings only the Admin can change.
 // A Member is told who can fix them, never pointed at an admin-only settings
-// page. Client-safe: the regenerate dialog shares this copy.
+// page. Client-safe: the cover sheet shares this copy.
 
 export type CoverSetupGap = 'generation_disabled' | 'provider_unconfigured';
 

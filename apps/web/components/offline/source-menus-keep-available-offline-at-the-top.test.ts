@@ -23,8 +23,8 @@ vi.mock('@/lib/offline/device-offline', () => ({
 }));
 // Lazily loaded and needs the app shell: left real, it throws whenever its import
 // settles before the test ends, which makes these tests depend on load timing.
-vi.mock('@/components/player/regenerate-cover-dialog', () => ({
-  RegenerateCoverDialog: () => null,
+vi.mock('@/components/player/session-cover-sheet', () => ({
+  SessionCoverSheet: () => null,
 }));
 
 afterEach(cleanup);

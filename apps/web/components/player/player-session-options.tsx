@@ -30,10 +30,10 @@ import type { SectionLoopControl } from './playback-controller-api';
 import { PlayerOptionsSheet } from './player-options-sheet';
 import { deleteSessionConfirm } from './player-presentation';
 
-// The cover-reroll stack loads as its own chunk so the player page bundle
+// The cover sheet loads as its own chunk so the player page bundle
 // stays free of the crop/upload libraries it pulls in.
-const RegenerateCoverDialog = dynamic(
-  () => import('./regenerate-cover-dialog').then((m) => m.RegenerateCoverDialog),
+const SessionCoverSheet = dynamic(
+  () => import('./session-cover-sheet').then((m) => m.SessionCoverSheet),
   { ssr: false },
 );
 
@@ -111,7 +111,7 @@ export function PlayerSessionOptions({
   /** The Loop a Part tool (parent-owned: the control row drives it too). */
   sectionLoop: SectionLoopControl;
 }) {
-  const [coverDialogOpen, setCoverDialogOpen] = useState(false);
+  const [coverSheetOpen, setCoverSheetOpen] = useState(false);
 
   const actions: Record<AvailableSessionOptionsId, OptionsRowAction> = {
     ...trackScopeActions({ track, lyricsAvailable, onOpenLyrics, onRenameTrack, onOpenTrackData }),
@@ -172,9 +172,9 @@ export function PlayerSessionOptions({
 
   return (
     <>
-      <RegenerateCoverDialog
-        open={coverDialogOpen}
-        onOpenChange={setCoverDialogOpen}
+      <SessionCoverSheet
+        open={coverSheetOpen}
+        onClose={() => setCoverSheetOpen(false)}
         sessionId={sessionId}
         sessionTitle={sessionTitle}
         coverImageId={coverImageId}
@@ -189,9 +189,9 @@ export function PlayerSessionOptions({
           blend: { enabled: blendEnabled, onToggle: onToggleBlend },
           sourceCover: {
             label: 'Session Cover',
-            hint: 'Reroll Cover Art',
+            hint: 'Upload one or generate it',
             testId: 'player-regenerate-cover',
-            onSelect: () => setCoverDialogOpen(true),
+            onSelect: () => setCoverSheetOpen(true),
           },
           addToPlaylist: { disabled: track === null, onSelect: onAddTrackToPlaylist },
         }}

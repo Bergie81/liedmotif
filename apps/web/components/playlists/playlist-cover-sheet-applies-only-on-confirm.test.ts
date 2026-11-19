@@ -104,7 +104,7 @@ const STATUS: PlaylistCoverStatusData = {
 
 /** What the big stage shows: the current cover or a previewed candidate. */
 function showing() {
-  return screen.getByTestId('playlist-cover-stage').getAttribute('data-showing');
+  return screen.getByTestId('cover-stage').getAttribute('data-showing');
 }
 
 async function openSheet() {
@@ -116,7 +116,7 @@ async function openSheet() {
       h(PlaylistCoverSheet, { playlist: PLAYLIST, open: true, onClose: vi.fn(), onCoverChanged }),
     ),
   );
-  await screen.findByTestId('playlist-cover-upload');
+  await screen.findByTestId('cover-upload');
   await waitFor(() => expect(playlistCoverStatus).toHaveBeenCalled());
   return { onCoverChanged };
 }
@@ -149,7 +149,7 @@ describe('PlaylistCoverSheet — applies only on confirm', () => {
     expect(onCoverChanged).not.toHaveBeenCalled();
     expect(selectPlaylistCover).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByTestId('playlist-cover-confirm'));
+    fireEvent.click(screen.getByTestId('cover-confirm'));
     await waitFor(() => expect(selectPlaylistCover).toHaveBeenCalledWith(PLAYLIST.id, UPLOADED));
     expect(onCoverChanged).toHaveBeenCalledWith(UPLOADED);
   });
@@ -159,12 +159,12 @@ describe('PlaylistCoverSheet — applies only on confirm', () => {
     vi.mocked(selectPlaylistCover).mockResolvedValue({ ok: true, data: { coverImageId: null } });
     const { onCoverChanged } = await openSheet();
 
-    fireEvent.click(await screen.findByTestId('playlist-cover-clear'));
+    fireEvent.click(await screen.findByTestId('cover-mosaic'));
     expect(showing()).toBe('mosaic');
     expect(selectPlaylistCover).not.toHaveBeenCalled();
     expect(onCoverChanged).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByTestId('playlist-cover-confirm'));
+    fireEvent.click(screen.getByTestId('cover-confirm'));
     await waitFor(() => expect(selectPlaylistCover).toHaveBeenCalledWith(PLAYLIST.id, null));
     expect(onCoverChanged).toHaveBeenCalledWith(null);
   });

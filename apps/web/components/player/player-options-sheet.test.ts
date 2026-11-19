@@ -81,7 +81,7 @@ function renderSessionSheet(
         blend: { enabled: true, onToggle: () => {} },
         sourceCover: {
           label: 'Session Cover',
-          hint: 'Reroll Cover Art',
+          hint: 'Upload one or generate it',
           testId: 'player-regenerate-cover',
           onSelect: () => {},
         },

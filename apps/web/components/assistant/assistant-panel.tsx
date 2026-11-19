@@ -118,7 +118,7 @@ export function AssistantPanel({
               <span className="block">
                 {GREETING_HELLO} <span aria-hidden>👋</span>
               </span>
-              {GREETING_ABOUT}
+              <span className="font-normal">{GREETING_ABOUT}</span>
             </p>
             <ul className="flex flex-col items-center gap-2 max-desk:gap-3">
               {SUGGESTED_QUESTIONS.map((question) => (

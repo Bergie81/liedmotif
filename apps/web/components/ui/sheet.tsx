@@ -52,6 +52,12 @@ export function SheetContent({
   );
 }
 
+/** A plain-text title names the close button by itself; a title in markup
+ *  needs `closeLabel`. Pass one too where the title names the sheet's subject
+ *  rather than the sheet itself. */
+type SheetHeaderTitle =
+  { title: string; closeLabel?: string } | { title: ReactNode; closeLabel: string };
+
 export function SheetHeader({
   title,
   description,
@@ -60,13 +66,9 @@ export function SheetHeader({
   closeDisabled = false,
   action,
   offlineMark = false,
-}: {
-  title: string;
+}: SheetHeaderTitle & {
   description?: ReactNode;
   leading?: ReactNode;
-  /** The close button's accessible name — pass one where the title names the
-   *  sheet's subject rather than the sheet itself. */
-  closeLabel?: string;
   closeDisabled?: boolean;
   action?: { label: string; onClick: () => void; disabled?: boolean };
   /** An options sheet whose rows go dark or drop out offline: while offline the
@@ -110,7 +112,7 @@ export function SheetHeader({
         <SheetClose
           ref={closeRef}
           className={iconButtonClass}
-          aria-label={closeLabel ?? `Close ${title}`}
+          aria-label={closeLabel ?? `Close ${title as string}`}
           disabled={closeDisabled}
         >
           <X className="h-[19px] w-[19px]" />

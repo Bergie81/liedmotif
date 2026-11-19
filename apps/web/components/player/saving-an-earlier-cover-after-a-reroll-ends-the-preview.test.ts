@@ -5,7 +5,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { afterEach, expect, it, vi } from 'vitest';
 import type { SessionCoverStatusData } from '@/lib/api-client';
 import { shownToasts, toast } from '@/lib/toast';
-import { RegenerateCoverDialog } from './regenerate-cover-dialog';
+import { SessionCoverSheet } from './session-cover-sheet';
 
 const CURRENT = '11111111-1111-4111-8111-111111111111';
 const FRESH = '22222222-2222-4222-8222-222222222222';
@@ -39,7 +39,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-/** The server side of the dialog: which cover is current and whether the reroll landed. */
+/** The server side of the sheet: which cover is current and whether the reroll landed. */
 function serveCovers() {
   const server = { current: CURRENT, rerolled: false };
   api.getSessionCoverStatus.mockImplementation(async () => {
@@ -90,9 +90,9 @@ function serveCovers() {
 }
 
 function bigCoverId(): string | null {
-  const dialog = screen.getByTestId('regenerate-cover-dialog');
+  const sheet = screen.getByTestId('cover-sheet');
   const history = screen.getByTestId('cover-history');
-  const big = [...dialog.querySelectorAll('[data-cover-id]')].find(
+  const big = [...sheet.querySelectorAll('[data-cover-id]')].find(
     (node) => !history.contains(node),
   );
   return big?.getAttribute('data-cover-id') ?? null;
@@ -109,9 +109,9 @@ function historyTile(coverImageId: string): HTMLElement {
 
 async function rerollAndPickOlder() {
   render(
-    h(RegenerateCoverDialog, {
+    h(SessionCoverSheet, {
       open: true,
-      onOpenChange: () => {},
+      onClose: () => {},
       sessionId: 'session-1',
       sessionTitle: 'Night',
       coverImageId: CURRENT,
@@ -119,7 +119,7 @@ async function rerollAndPickOlder() {
   );
   await waitFor(() => expect(screen.queryByTestId('cover-history')).not.toBeNull());
   await act(async () => {
-    fireEvent.click(screen.getByTestId('regenerate-cover-start'));
+    fireEvent.click(screen.getByTestId('cover-generate'));
   });
   await waitFor(() => expect(bigCoverId()).toBe(FRESH));
   fireEvent.click(historyTile(OLDER));
@@ -131,29 +131,29 @@ it('saving an earlier cover after a reroll ends the preview', async () => {
   await rerollAndPickOlder();
 
   await act(async () => {
-    fireEvent.click(screen.getByTestId('regenerate-cover-confirm'));
+    fireEvent.click(screen.getByTestId('cover-confirm'));
   });
 
   await waitFor(() =>
     expect(historyTile(OLDER).getAttribute('aria-label')).toBe('Show the current cover'),
   );
   expect(bigCoverId()).toBe(OLDER);
-  expect(screen.queryByTestId('regenerate-cover-confirm')).toBeNull();
-  expect(screen.queryByTestId('regenerate-cover-dismiss')).toBeNull();
+  expect(screen.queryByTestId('cover-confirm')).toBeNull();
+  expect(screen.queryByTestId('cover-keep')).toBeNull();
 });
 
 it('the fresh cover that was not chosen stays in the history and can still be saved', async () => {
   serveCovers();
   await rerollAndPickOlder();
   await act(async () => {
-    fireEvent.click(screen.getByTestId('regenerate-cover-confirm'));
+    fireEvent.click(screen.getByTestId('cover-confirm'));
   });
-  await waitFor(() => expect(screen.queryByTestId('regenerate-cover-confirm')).toBeNull());
+  await waitFor(() => expect(screen.queryByTestId('cover-confirm')).toBeNull());
 
   fireEvent.click(historyTile(FRESH));
   expect(bigCoverId()).toBe(FRESH);
   await act(async () => {
-    fireEvent.click(screen.getByTestId('regenerate-cover-confirm'));
+    fireEvent.click(screen.getByTestId('cover-confirm'));
   });
 
   expect(api.selectSessionCover).toHaveBeenLastCalledWith('session-1', FRESH);
@@ -161,7 +161,42 @@ it('the fresh cover that was not chosen stays in the history and can still be sa
     expect(historyTile(FRESH).getAttribute('aria-label')).toBe('Show the current cover'),
   );
   expect(bigCoverId()).toBe(FRESH);
-  expect(screen.queryByTestId('regenerate-cover-confirm')).toBeNull();
+  expect(screen.queryByTestId('cover-confirm')).toBeNull();
+});
+
+it('saving the fresh cover and then an earlier one does not bring the fresh one back', async () => {
+  serveCovers();
+  render(
+    h(SessionCoverSheet, {
+      open: true,
+      onClose: () => {},
+      sessionId: 'session-1',
+      sessionTitle: 'Night',
+      coverImageId: CURRENT,
+    }),
+  );
+  await waitFor(() => expect(screen.queryByTestId('cover-history')).not.toBeNull());
+  await act(async () => {
+    fireEvent.click(screen.getByTestId('cover-generate'));
+  });
+  await waitFor(() => expect(bigCoverId()).toBe(FRESH));
+  await act(async () => {
+    fireEvent.click(screen.getByTestId('cover-confirm'));
+  });
+  await waitFor(() =>
+    expect(historyTile(FRESH).getAttribute('aria-label')).toBe('Show the current cover'),
+  );
+
+  fireEvent.click(historyTile(OLDER));
+  await act(async () => {
+    fireEvent.click(screen.getByTestId('cover-confirm'));
+  });
+
+  await waitFor(() =>
+    expect(historyTile(OLDER).getAttribute('aria-label')).toBe('Show the current cover'),
+  );
+  expect(bigCoverId()).toBe(OLDER);
+  expect(screen.queryByTestId('cover-confirm')).toBeNull();
 });
 
 it('a failed save keeps the preview and its buttons, and shows the error', async () => {
@@ -173,35 +208,35 @@ it('a failed save keeps the preview and its buttons, and shows the error', async
   });
 
   await act(async () => {
-    fireEvent.click(screen.getByTestId('regenerate-cover-confirm'));
+    fireEvent.click(screen.getByTestId('cover-confirm'));
   });
 
   expect(shownToasts()).toContainEqual(
     expect.objectContaining({ tone: 'error', message: 'The cover could not be saved.' }),
   );
   expect(bigCoverId()).toBe(OLDER);
-  expect(screen.getByTestId('regenerate-cover-confirm')).toBeTruthy();
-  expect(screen.getByTestId('regenerate-cover-dismiss')).toBeTruthy();
+  expect(screen.getByTestId('cover-confirm')).toBeTruthy();
+  expect(screen.getByTestId('cover-keep')).toBeTruthy();
 });
 
 it('a reroll refused after the save does not bring the unchosen fresh cover back', async () => {
   serveCovers();
   await rerollAndPickOlder();
   await act(async () => {
-    fireEvent.click(screen.getByTestId('regenerate-cover-confirm'));
+    fireEvent.click(screen.getByTestId('cover-confirm'));
   });
-  await waitFor(() => expect(screen.queryByTestId('regenerate-cover-confirm')).toBeNull());
+  await waitFor(() => expect(screen.queryByTestId('cover-confirm')).toBeNull());
   api.regenerateSessionCover.mockResolvedValueOnce({
     ok: false,
     error: { code: 'rate_limited', message: 'Too many cover requests.' },
   });
 
   await act(async () => {
-    fireEvent.click(screen.getByTestId('regenerate-cover-start'));
+    fireEvent.click(screen.getByTestId('cover-generate'));
   });
 
   expect(bigCoverId()).toBe(OLDER);
-  expect(screen.queryByTestId('regenerate-cover-confirm')).toBeNull();
+  expect(screen.queryByTestId('cover-confirm')).toBeNull();
 });
 
 it('a reroll still running when an earlier cover is saved is previewed once it lands', async () => {
@@ -231,9 +266,9 @@ it('a reroll still running when an earlier cover is saved is previewed once it l
     };
   });
   render(
-    h(RegenerateCoverDialog, {
+    h(SessionCoverSheet, {
       open: true,
-      onOpenChange: () => {},
+      onClose: () => {},
       sessionId: 'session-1',
       sessionTitle: 'Night',
       coverImageId: CURRENT,
@@ -241,11 +276,11 @@ it('a reroll still running when an earlier cover is saved is previewed once it l
   );
   await waitFor(() => expect(screen.queryByTestId('cover-history')).not.toBeNull());
   await act(async () => {
-    fireEvent.click(screen.getByTestId('regenerate-cover-start'));
+    fireEvent.click(screen.getByTestId('cover-generate'));
   });
   fireEvent.click(historyTile(OLDER));
   await act(async () => {
-    fireEvent.click(screen.getByTestId('regenerate-cover-confirm'));
+    fireEvent.click(screen.getByTestId('cover-confirm'));
   });
   await waitFor(() =>
     expect(historyTile(OLDER).getAttribute('aria-label')).toBe('Show the current cover'),
@@ -254,5 +289,5 @@ it('a reroll still running when an earlier cover is saved is previewed once it l
   landed = true;
 
   await waitFor(() => expect(bigCoverId()).toBe(FRESH), { timeout: 8000 });
-  expect(screen.getByTestId('regenerate-cover-confirm')).toBeTruthy();
+  expect(screen.getByTestId('cover-confirm')).toBeTruthy();
 }, 15_000);

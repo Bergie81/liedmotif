@@ -40,7 +40,7 @@ vi.mock('./player-provider', () => ({
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
-vi.mock('./regenerate-cover-dialog', () => ({ RegenerateCoverDialog: () => null }));
+vi.mock('./session-cover-sheet', () => ({ SessionCoverSheet: () => null }));
 
 beforeAll(() => {
   vi.stubGlobal(

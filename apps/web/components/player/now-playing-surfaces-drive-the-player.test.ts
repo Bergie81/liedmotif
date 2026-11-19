@@ -36,7 +36,7 @@ vi.mock('next/navigation', () => {
 });
 // Lazily loaded and needs the app shell: left real, it throws whenever its import
 // settles before the test ends, which makes these tests depend on load timing.
-vi.mock('./regenerate-cover-dialog', () => ({ RegenerateCoverDialog: () => null }));
+vi.mock('./session-cover-sheet', () => ({ SessionCoverSheet: () => null }));
 // Supported, so the Available offline row's absence from a surface means something.
 vi.mock('@/lib/offline/offline-support', () => ({ offlineSupported: () => true }));
 vi.mock('@/lib/offline/device-offline', () => ({

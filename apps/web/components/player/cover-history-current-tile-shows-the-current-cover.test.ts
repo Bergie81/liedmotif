@@ -4,7 +4,7 @@ import { createElement as h } from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { SessionCoverStatusData } from '@/lib/api-client';
-import { RegenerateCoverDialog } from './regenerate-cover-dialog';
+import { SessionCoverSheet } from './session-cover-sheet';
 
 const CURRENT = '11111111-1111-4111-8111-111111111111';
 const FRESH = '22222222-2222-4222-8222-222222222222';
@@ -85,9 +85,9 @@ const READY = status({
 });
 
 function bigCoverId(): string | null {
-  const dialog = screen.getByTestId('regenerate-cover-dialog');
+  const sheet = screen.getByTestId('cover-sheet');
   const history = screen.getByTestId('cover-history');
-  const big = [...dialog.querySelectorAll('[data-cover-id]')].find(
+  const big = [...sheet.querySelectorAll('[data-cover-id]')].find(
     (node) => !history.contains(node),
   );
   return big?.getAttribute('data-cover-id') ?? null;
@@ -102,9 +102,9 @@ it('tapping the current cover after a reroll shows it big, and the new cover sta
   });
 
   render(
-    h(RegenerateCoverDialog, {
+    h(SessionCoverSheet, {
       open: true,
-      onOpenChange: () => {},
+      onClose: () => {},
       sessionId: 'session-1',
       sessionTitle: 'Night',
       coverImageId: CURRENT,
@@ -113,7 +113,7 @@ it('tapping the current cover after a reroll shows it big, and the new cover sta
   await waitFor(() => expect(api.getSessionCoverStatus).toHaveBeenCalled());
 
   await act(async () => {
-    fireEvent.click(screen.getByTestId('regenerate-cover-start'));
+    fireEvent.click(screen.getByTestId('cover-generate'));
   });
   await waitFor(() => expect(bigCoverId()).toBe(FRESH));
   expect(screen.getByLabelText(/Preview this earlier/)).toHaveProperty('ariaPressed', 'true');
@@ -121,9 +121,9 @@ it('tapping the current cover after a reroll shows it big, and the new cover sta
   fireEvent.click(screen.getByLabelText('Show the current cover'));
   expect(bigCoverId()).toBe(CURRENT);
   expect(screen.getByLabelText('Show the current cover')).toHaveProperty('ariaPressed', 'true');
-  expect(screen.queryByTestId('regenerate-cover-confirm')).toBeNull();
+  expect(screen.queryByTestId('cover-confirm')).toBeNull();
 
   fireEvent.click(screen.getByLabelText(/Preview this earlier/));
   expect(bigCoverId()).toBe(FRESH);
-  expect(screen.getByTestId('regenerate-cover-confirm')).toBeTruthy();
+  expect(screen.getByTestId('cover-confirm')).toBeTruthy();
 });

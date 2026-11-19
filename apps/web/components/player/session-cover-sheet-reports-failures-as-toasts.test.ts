@@ -1,15 +1,15 @@
 // @vitest-environment jsdom
 
-// The Reroll Cover Art dialog: a refused reroll, save or delete floats above the
-// dialog, which stays open; a retry that lands clears it. How the dialog's own
-// last attempt ended is what the dialog shows, so that stays in it.
+// The Session cover sheet: a refused reroll, save or delete floats above the
+// sheet, which stays open; a retry that lands clears it. How the sheet's own
+// last attempt ended is what the sheet shows, so that stays in it.
 
 import { createElement as h } from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { SessionCoverStatusData } from '@/lib/api-client';
 import { shownToasts, toast } from '@/lib/toast';
-import { RegenerateCoverDialog } from './regenerate-cover-dialog';
+import { SessionCoverSheet } from './session-cover-sheet';
 
 const CURRENT = '11111111-1111-4111-8111-111111111111';
 const GENERATION = '33333333-3333-4333-8333-333333333333';
@@ -67,11 +67,11 @@ function status(overrides: Partial<SessionCoverStatusData> = {}): SessionCoverSt
   } as SessionCoverStatusData;
 }
 
-async function openDialog() {
+async function openSheet() {
   render(
-    h(RegenerateCoverDialog, {
+    h(SessionCoverSheet, {
       open: true,
-      onOpenChange: () => {},
+      onClose: () => {},
       sessionId: 'session-1',
       sessionTitle: 'Night',
       coverImageId: CURRENT,
@@ -80,9 +80,9 @@ async function openDialog() {
   await waitFor(() => expect(api.getSessionCoverStatus).toHaveBeenCalled());
 }
 
-const reroll = () => act(async () => fireEvent.click(screen.getByTestId('regenerate-cover-start')));
+const reroll = () => act(async () => fireEvent.click(screen.getByTestId('cover-generate')));
 
-it('floats a refused reroll above the dialog, and a reroll that starts clears it', async () => {
+it('floats a refused reroll above the sheet, and a reroll that starts clears it', async () => {
   api.getSessionCoverStatus.mockResolvedValue({ ok: true, data: status() });
   api.regenerateSessionCover
     .mockResolvedValueOnce({
@@ -93,22 +93,22 @@ it('floats a refused reroll above the dialog, and a reroll that starts clears it
       ok: true,
       data: { outcome: 'started', coverGenerationId: GENERATION },
     });
-  await openDialog();
+  await openSheet();
 
   await reroll();
 
   expect(shownToasts()).toEqual([
     expect.objectContaining({ tone: 'error', message: 'The image provider is down.' }),
   ]);
-  expect(screen.queryByTestId('regenerate-cover-error')).toBeNull();
-  expect(screen.getByTestId('regenerate-cover-dialog')).toBeTruthy();
+  expect(screen.queryByTestId('cover-error')).toBeNull();
+  expect(screen.getByTestId('cover-sheet')).toBeTruthy();
 
   await reroll();
 
   expect(shownToasts()).toEqual([]);
 });
 
-it('keeps how its own attempt ended in the dialog, not in a toast', async () => {
+it('keeps how its own attempt ended in the sheet, not in a toast', async () => {
   api.getSessionCoverStatus.mockResolvedValueOnce({ ok: true, data: status() });
   api.getSessionCoverStatus.mockResolvedValue({
     ok: true,
@@ -125,11 +125,11 @@ it('keeps how its own attempt ended in the dialog, not in a toast', async () => 
     ok: true,
     data: { outcome: 'started', coverGenerationId: GENERATION },
   });
-  await openDialog();
+  await openSheet();
 
   await reroll();
 
-  expect((await screen.findByTestId('regenerate-cover-error')).textContent).toBe(
+  expect((await screen.findByTestId('cover-error')).textContent).toBe(
     'The cover could not be generated.',
   );
   expect(shownToasts()).toEqual([]);

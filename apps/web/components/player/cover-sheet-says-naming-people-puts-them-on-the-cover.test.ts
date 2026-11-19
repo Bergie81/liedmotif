@@ -4,7 +4,7 @@ import { createElement as h } from 'react';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { SessionCoverStatusData } from '@/lib/api-client';
-import { RegenerateCoverDialog } from './regenerate-cover-dialog';
+import { SessionCoverSheet } from './session-cover-sheet';
 
 const CURRENT = '11111111-1111-4111-8111-111111111111';
 
@@ -61,13 +61,13 @@ const STATUS = {
   promptEnhancement: { llmConfigured: false, active: false },
 } as SessionCoverStatusData;
 
-it('the cover dialog says that naming someone from People puts their photo on the cover', async () => {
+it('the cover sheet says that naming someone from People puts their photo on the cover', async () => {
   api.getSessionCoverStatus.mockResolvedValue({ ok: true, data: STATUS });
 
   render(
-    h(RegenerateCoverDialog, {
+    h(SessionCoverSheet, {
       open: true,
-      onOpenChange: () => {},
+      onClose: () => {},
       sessionId: 'session-1',
       sessionTitle: 'Night',
       coverImageId: CURRENT,
@@ -75,8 +75,27 @@ it('the cover dialog says that naming someone from People puts their photo on th
   );
   await waitFor(() => expect(api.getSessionCoverStatus).toHaveBeenCalled());
 
-  expect(screen.getByTestId('regenerate-cover-guidance')).toBeTruthy();
+  expect(screen.getByTestId('session-cover-guidance')).toBeTruthy();
   expect(
     screen.getByText('Name someone from People to put their photo on the cover.'),
   ).toBeTruthy();
+});
+
+it('heads the sheet with the Session it covers, and offers no Mosaic View', async () => {
+  api.getSessionCoverStatus.mockResolvedValue({ ok: true, data: STATUS });
+
+  render(
+    h(SessionCoverSheet, {
+      open: true,
+      onClose: () => {},
+      sessionId: 'session-1',
+      sessionTitle: 'Night',
+      coverImageId: CURRENT,
+    }),
+  );
+  await waitFor(() => expect(api.getSessionCoverStatus).toHaveBeenCalled());
+
+  const heading = screen.getByRole('heading', { name: 'Session Cover: Night' });
+  expect(heading.querySelector('.text-lamp')?.textContent).toBe('Night');
+  expect(screen.queryByTestId('cover-mosaic')).toBeNull();
 });

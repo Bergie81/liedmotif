@@ -45,7 +45,7 @@ vi.mock('next/navigation', () => ({
 }));
 // Lazily loaded and needs the app shell: left real, it throws whenever its import
 // settles before the test ends.
-vi.mock('./regenerate-cover-dialog', () => ({ RegenerateCoverDialog: () => null }));
+vi.mock('./session-cover-sheet', () => ({ SessionCoverSheet: () => null }));
 
 beforeAll(() => {
   vi.stubGlobal(

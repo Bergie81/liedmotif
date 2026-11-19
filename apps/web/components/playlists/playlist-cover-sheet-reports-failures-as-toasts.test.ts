@@ -130,7 +130,7 @@ describe('PlaylistCoverSheet — failures', () => {
         data: { outcome: 'started', coverGenerationId: 'cover-generation-1' },
       });
     const { onClose } = openSheet();
-    const generate = await screen.findByTestId('playlist-cover-generate');
+    const generate = await screen.findByTestId('cover-generate');
     await waitFor(() => expect((generate as HTMLButtonElement).disabled).toBe(false));
 
     await act(async () => fireEvent.click(generate));
@@ -139,10 +139,10 @@ describe('PlaylistCoverSheet — failures', () => {
       expect.objectContaining({ tone: 'error', message: 'Offline.' }),
     ]);
     expect(screen.getAllByText('Offline.')).toHaveLength(1);
-    expect(screen.getByTestId('playlist-cover-sheet')).toBeTruthy();
+    expect(screen.getByTestId('cover-sheet')).toBeTruthy();
     expect(onClose).not.toHaveBeenCalled();
 
-    await act(async () => fireEvent.click(screen.getByTestId('playlist-cover-generate')));
+    await act(async () => fireEvent.click(screen.getByTestId('cover-generate')));
 
     expect(shownToasts()).toEqual([]);
   });
@@ -151,7 +151,7 @@ describe('PlaylistCoverSheet — failures', () => {
     vi.mocked(playlistCoverStatus).mockResolvedValue({ ok: true, data: STATUS });
     vi.mocked(uploadPlaylistCover).mockResolvedValue(OFFLINE as never);
     openSheet();
-    await screen.findByTestId('playlist-cover-upload');
+    await screen.findByTestId('cover-upload');
 
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     const photo = new File(['png'], 'photo.png', { type: 'image/png' });

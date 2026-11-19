@@ -19,9 +19,9 @@ import { SessionOptionsSheet } from './session-options-sheet';
 import type { ResumableSessionsState } from './use-resumable-sessions';
 import type { SessionSearch } from './use-session-search';
 
-// The cover dialog pulls in the crop/upload libraries; load it on first open.
-const RegenerateCoverDialog = dynamic(
-  () => import('@/components/player/regenerate-cover-dialog').then((m) => m.RegenerateCoverDialog),
+// The cover sheet pulls in the crop/upload libraries; load it on first open.
+const SessionCoverSheet = dynamic(
+  () => import('@/components/player/session-cover-sheet').then((m) => m.SessionCoverSheet),
   { ssr: false },
 );
 
@@ -165,11 +165,9 @@ export function SessionOptionsFlow({
       ) : null}
 
       {changingCover ? (
-        <RegenerateCoverDialog
+        <SessionCoverSheet
           open
-          onOpenChange={(open) => {
-            if (!open) setChangingCover(null);
-          }}
+          onClose={() => setChangingCover(null)}
           sessionId={changingCover.id}
           sessionTitle={changingCover.title ?? 'Untitled Session'}
           coverImageId={changingCover.coverImageId}

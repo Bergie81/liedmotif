@@ -40,7 +40,7 @@ export function SessionOptionsSheet({
   onTogglePin: () => void;
   /** Open the Rename dialog for this session (the parent owns the dialog). */
   onRename: () => void;
-  /** Open the cover dialog for this session (the parent owns the dialog). */
+  /** Open the cover sheet for this session (the parent owns the sheet). */
   onChangeCover: () => void;
   onConvertToPlaylist: () => void;
   /** Perform the delete — only ever called confirmed; the modal stays busy until it settles. */
