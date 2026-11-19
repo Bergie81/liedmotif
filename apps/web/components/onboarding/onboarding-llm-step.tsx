@@ -72,6 +72,7 @@ function LlmStepBody({ credential, encryptionKeyConfigured, onConnected, onDone 
           editor={editor}
           options={LLM_PROVIDERS}
           showModel
+          lockedProvider={credential.providerEnvironmentManaged ? 'LLM_PROVIDER' : undefined}
           environmentManaged={environmentManaged}
           environmentVariable="LLM_API_KEY"
           providerLabel={credential.displayName}

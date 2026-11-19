@@ -126,6 +126,7 @@ export default async function ProvidersPage() {
                 hasExistingSelection={llm !== null}
                 databaseWritesEnabled={data.encryptionKeyConfigured}
                 showModel
+                lockedProvider={data.llm.providerEnvironmentManaged ? 'LLM_PROVIDER' : undefined}
                 initialBaseUrl={data.llm.settings?.baseUrl}
                 initialModel={data.llm.settings?.model || undefined}
                 envLocks={data.llm.envLocks}

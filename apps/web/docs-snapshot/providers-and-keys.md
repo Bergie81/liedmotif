@@ -240,6 +240,7 @@ These details catch people out:
 - **A key needs its provider line.** `LLM_API_KEY` without `LLM_PROVIDER`, or `IMAGE_API_KEY` without `IMAGE_PROVIDER`, does nothing.
 - **A blank `IMAGE_API_KEY` shares only with the same service.** It uses `LLM_API_KEY` when `LLM_PROVIDER` names the same service as `IMAGE_PROVIDER`, or uses the Text AI key saved in the app when that one does. It never shares when `LLM_BASE_URL` is set. An `IMAGE_API_KEY` you fill in always wins.
 - **`IMAGE_RESOLUTION`, `IMAGE_ASPECT_RATIO` and `IMAGE_SUPPORTED_PARAMS` are for OpenRouter only.** OpenAI and Gemini always paint one square image, and ignore them.
+- **`LLM_PROVIDER` locks the Text AI provider picker** in the app, which shows `SET IN .env (LLM_PROVIDER)`. The key field stays open unless `LLM_API_KEY` is set.
 - **`IMAGE_PROVIDER` locks the Cover images provider picker** in the app, which shows `SET IN .env (IMAGE_PROVIDER)`. The key field stays open unless `IMAGE_API_KEY` is set.
 - **`IMAGE_MODEL` locks the model field** in the app and shows `SET BY IMAGE_MODEL`. Blank uses the provider's default model.
 - **`SUNO_MODEL` exists only in `.env`.** The app has no field for it.

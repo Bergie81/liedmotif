@@ -54,14 +54,14 @@ export interface OnboardingCredential {
   model?: string;
   /** Per provider, the fields `.env` sets, which no field here could outrank. */
   envLocks?: Readonly<Record<string, EnvLocks>>;
+  /** `.env` picks `providerKey` (`LLM_PROVIDER`, `IMAGE_PROVIDER`), which no choice here could outrank. */
+  providerEnvironmentManaged?: boolean;
 }
 
 /** The Cover image provider's resolved state. */
 export interface OnboardingImageCredential extends OnboardingCredential {
   /** The loaded provider uses the Text AI's key now (`masked` is then that key). */
   sharesKey: boolean;
-  /** `IMAGE_PROVIDER` picks `providerKey`, which no choice here could outrank. */
-  providerEnvironmentManaged?: boolean;
 }
 
 /**
@@ -205,6 +205,7 @@ export async function loadOnboardingData(ownerUserId: string): Promise<Onboardin
       baseUrl: providers.llm.settings?.baseUrl,
       model: providers.llm.effectiveModel ?? undefined,
       envLocks: providers.llm.envLocks,
+      providerEnvironmentManaged: providers.llm.providerEnvironmentManaged,
     },
     image: imageCredential(providers.cover),
     musicProviderCoverConfigured: await sunoCoverFallbackConfigured(),

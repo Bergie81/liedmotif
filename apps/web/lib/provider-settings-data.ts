@@ -124,6 +124,7 @@ export async function loadProviderSettingsData() {
     llm: {
       credential: statuses.llm,
       providerKey: llmKey,
+      providerEnvironmentManaged: selectProviderKey('llm', process.env, null) !== null,
       displayName: providerDisplayName('llm', llmKey, statuses.llm?.displayName),
       settings: llmSettings,
       envLocks: readEnvLocksByProvider('llm', LLM_PROVIDERS),

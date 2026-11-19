@@ -113,6 +113,22 @@ describe('onboarding text-LLM step', () => {
     expect(markup).not.toContain('LLM_API_KEY');
   });
 
+  it('locks the provider picker while LLM_PROVIDER sets it, and still asks for the key', () => {
+    const markup = renderLlm({
+      ...openRouter,
+      providerKey: 'gemini',
+      displayName: 'Gemini',
+      providerEnvironmentManaged: true,
+    });
+
+    expect(markup).toContain('SET IN .env (LLM_PROVIDER)');
+    expect(markup).toMatch(/<button[^>]*disabled[^>]*>OpenAI<\/button>/);
+    expect(markup).not.toContain('More options');
+    expect(markup).toContain('Gemini API key');
+    expect(markup).toContain('type="password"');
+    expect(renderLlm(openRouter)).not.toContain('SET IN .env');
+  });
+
   it('always offers a way past, because the LLM is optional', () => {
     const markup = renderLlm(openRouter);
 
