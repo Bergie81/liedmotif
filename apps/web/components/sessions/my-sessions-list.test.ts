@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import { createElement, type FunctionComponent } from 'react';
 import type { SessionListItem } from '@liedmotif/shared';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { SEARCH_DEBOUNCE_MS } from '@/components/library/search-debounce';
 import { shownToasts, toast } from '@/lib/toast';
 import { MySessionsList } from './my-sessions-list';
 import type { ResumableSessionsInitialData } from './use-resumable-sessions';
@@ -106,6 +107,22 @@ function type(query: string) {
   fireEvent.change(screen.getByRole('searchbox'), { target: { value: query } });
 }
 
+/**
+ * Lets the search box's debounce elapse on a fake clock and settles the search
+ * inside `act`, so the results are on screen when this returns. Waiting it out
+ * in real time spends the debounce from a findBy's wall-clock budget, which a
+ * loaded machine overruns.
+ */
+async function settleSearch(commit: () => void) {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+  try {
+    commit();
+    await act(() => vi.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS));
+  } finally {
+    vi.useRealTimers();
+  }
+}
+
 const openOptions = (title: string) =>
   fireEvent.click(screen.getByRole('button', { name: `Options for ${title}` }));
 
@@ -115,15 +132,15 @@ describe('My Sessions search', () => {
     renderList([session(1, { title: 'Quiet Morning' }), session(2, { title: 'Rainy Drive' })]);
     expect(screen.getByRole('heading', { name: 'History' })).toBeTruthy();
 
-    type('rain');
-    await screen.findByText(/on glass/, {}, { timeout: 2000 });
+    await settleSearch(() => type('rain'));
+    expect(screen.getByText(/on glass/)).toBeTruthy();
     expect(screen.queryByText('Quiet Morning')).toBeNull();
     expect(screen.queryByRole('heading', { name: 'History' })).toBeNull();
     const [searchUrl] = fetcher.mock.calls.find(([url]) => url.startsWith('/api/search'))!;
     expect(new URL(searchUrl, 'http://localhost').searchParams.get('scope')).toBe('sessions');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Clear search' }));
-    await screen.findByText('Quiet Morning', {}, { timeout: 2000 });
+    await settleSearch(() => fireEvent.click(screen.getByRole('button', { name: 'Clear search' })));
+    expect(screen.getByText('Quiet Morning')).toBeTruthy();
   });
 
   async function deleteFirstResultThenServe(remaining: SessionListItem[]) {
@@ -132,8 +149,8 @@ describe('My Sessions search', () => {
       '/api/sessions/delete': { ok: true, data: { id: uuid(50) } },
     });
     renderList([session(1, { title: 'Quiet Morning' })]);
-    type('rain');
-    await screen.findByText(/on glass/, {}, { timeout: 2000 });
+    await settleSearch(() => type('rain'));
+    expect(screen.getByText(/on glass/)).toBeTruthy();
 
     openOptions('Rainy Drive');
     fireEvent.click(await screen.findByTestId('delete-session'));
