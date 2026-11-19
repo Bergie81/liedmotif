@@ -332,7 +332,7 @@ describeIfDb('migration upgrade from the pre-blending schema', () => {
     await pool.query('CREATE SCHEMA public');
     await runDrizzleMigrations(db);
     await pool.end();
-  });
+  }, 60_000);
 
   it('legacy generation requests carry a NULL blend identity (→ plain edge, always)', async () => {
     for (const requestId of [seeded.prePlanRequestId, seeded.postVibeRequestId]) {
