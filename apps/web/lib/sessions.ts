@@ -679,7 +679,7 @@ export async function newMusicPausedRefusal(
  * The active music provider, or why it cannot be built from its configuration
  * in the words the requester sees: no key anywhere, a stored key that cannot be
  * read (wrong or missing `CREDENTIAL_ENCRYPTION_KEY`), or an unknown
- * `MUSIC_PROVIDER`. Any other failure still throws. The log gets the error's
+ * `MUSIC_PROVIDER`. Any other failure is rethrown. The log gets the error's
  * class only: its text can name the configuration.
  */
 async function musicProviderOrRefusal(

@@ -1,7 +1,7 @@
 // An Instance on the real music provider with no usable key — none anywhere, a
 // stored one that cannot be read, or an unknown provider name — refuses every
-// new Session in plain words instead of a bare server error, and refuses it
-// before anything is created or spent. The provider resolution is the real one
+// new Session with the error envelope and plain words, and refuses it before
+// anything is created or spent. The provider resolution is the real one
 // against the test database; only the text LLM is stood in for, so its reach
 // can be counted, and the refusal comes before any provider request.
 
@@ -9,7 +9,9 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runMigrations } from 'graphile-worker';
 import {
+  DecryptionError,
   decodeEncryptionKey,
+  EncryptionKeyError,
   getPendingProposal,
   getSessionById,
   updateUsageLimits,
@@ -29,6 +31,7 @@ import {
   truncateTables,
   type TestDb,
 } from '@liedmotif/db/testing';
+import { ProviderConfigError } from '@liedmotif/providers';
 import { proposeSurpriseResponseSchema, type AssistantCard } from '@liedmotif/shared';
 import { askWithToolCalls, type ToolCallsTurn } from '../helpers/assistant-tool-turn';
 
@@ -73,6 +76,7 @@ const { POST: proposeRoute } = await import('@/app/api/surprise-me/route');
 const { POST: startSurpriseRoute } = await import('@/app/api/surprise-me/start/route');
 const { POST: assistantRoute } = await import('@/app/api/assistant/route');
 const { sessionCreateLimiter } = await import('@/lib/request-limits');
+const { getMusicProvider } = await import('@/lib/providers');
 
 const skip = !TEST_DATABASE_URL;
 let testDb: TestDb;
@@ -225,6 +229,7 @@ describe.skipIf(skip)('starting without a usable music key', () => {
 
   it('refuses a stored key that cannot be decrypted with the same words', async () => {
     await storeMusicKey();
+    await expect(getMusicProvider()).rejects.toBeInstanceOf(DecryptionError);
 
     const response = await post(startRoute, startBody());
 
@@ -236,6 +241,7 @@ describe.skipIf(skip)('starting without a usable music key', () => {
   it('refuses a stored key while no CREDENTIAL_ENCRYPTION_KEY is set', async () => {
     await storeMusicKey();
     delete process.env.CREDENTIAL_ENCRYPTION_KEY;
+    await expect(getMusicProvider()).rejects.toBeInstanceOf(EncryptionKeyError);
 
     const response = await post(startRoute, startBody());
 
@@ -245,6 +251,7 @@ describe.skipIf(skip)('starting without a usable music key', () => {
 
   it('refuses an unknown MUSIC_PROVIDER value', async () => {
     process.env.MUSIC_PROVIDER = 'sunno';
+    await expect(getMusicProvider()).rejects.toBeInstanceOf(ProviderConfigError);
 
     const response = await post(startRoute, startBody());
 
