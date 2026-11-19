@@ -14,7 +14,9 @@ export const OFFLINE_LIBRARY_CACHE = 'liedmotif-offline-library';
 export const OFFLINE_LIBRARY_PATH = '/offline';
 const SERVICE_WORKER_PATH = '/sw.js';
 
-const STATIC_PREFIX = '/_next/static/';
+/** Where the static files the page loads live: Next's build output, and the
+ *  public textures its stylesheets name. `public/sw.js` serves the same two. */
+const STATIC_PREFIXES = ['/_next/static/', '/textures/'];
 /** Resolves relative references; only the path is kept. */
 const PATH_BASE = 'https://offline-library.invalid';
 
@@ -53,7 +55,8 @@ function referencesIn(text: string, path: string): string[] {
 function staticPathsIn(text: string, path: string): string[] {
   return referencesIn(text, path).flatMap((reference) => {
     const url = new URL(reference, PATH_BASE);
-    if (url.origin !== PATH_BASE || !url.pathname.startsWith(STATIC_PREFIX)) return [];
+    if (url.origin !== PATH_BASE) return [];
+    if (!STATIC_PREFIXES.some((prefix) => url.pathname.startsWith(prefix))) return [];
     return [requestPath(url)];
   });
 }

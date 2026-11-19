@@ -103,6 +103,21 @@ describe('cacheOfflineLibrary', () => {
     ]);
   });
 
+  it('caches a texture a stylesheet names from the public textures folder', async () => {
+    const { caches, paths } = memoryCaches();
+    const { fetch } = server({
+      [OFFLINE_LIBRARY_PATH]: PAGE,
+      ...ASSETS,
+      '/_next/static/chunks/app.css': `${STYLESHEET}
+.pcm-grain{background-image:url('/textures/placeholder-cover-grain.svg')}`,
+      '/textures/placeholder-cover-grain.svg': 'svg',
+    });
+
+    await cacheOfflineLibrary({ fetch, caches });
+
+    expect(paths()).toContain('/textures/placeholder-cover-grain.svg');
+  });
+
   it('replaces an earlier build with the new one, leaving nothing of the old behind', async () => {
     const { caches, paths } = memoryCaches();
     await cacheOfflineLibrary({
