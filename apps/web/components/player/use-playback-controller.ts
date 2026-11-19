@@ -2,10 +2,10 @@
 
 // The now-playing controller.
 //
-// Owns two <audio> decks + the Web Audio PlayerEngine, derives the playable
-// projection of the server-authoritative Session Queue (membership + normal
-// Session order), and delegates blend transitions to the `EdgeTransitions`
-// driver — which resolves every edge at the tier the edge policy decides:
+// Drives the `DeckRig` (two <audio> decks + the Web Audio PlayerEngine),
+// derives the playable projection of the server-authoritative Session Queue
+// (membership + normal Session order), and delegates blend transitions to the
+// `EdgeTransitions` driver — which resolves every edge at the tier the edge policy decides:
 // `beat-aligned` when both tracks carry qualifying measured analysis, `plain`
 // otherwise. When Web Audio is unavailable or blending is switched off,
 // playback is strictly SEQUENTIAL (advance on `ended`, never two audible
@@ -21,7 +21,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  bufferTransportEligible,
   crossfadeStartSeconds,
   mediaSessionPositionState,
   nextPlaylistIndex,
@@ -32,21 +31,17 @@ import {
   resolveOrderedNextIndex,
   resolveInitialPlaylistIndex,
   resolveSeekTarget,
-  sectionLoopEligible,
   soloLoudnessGainDb,
 } from '@liedmotif/shared';
 import { reportPlayback } from '@/lib/api-client';
 import { isOnline } from '@/lib/online-state';
-import { storedTrackAudio } from '@/lib/offline/device-offline';
 import { useClientId } from '@/lib/use-client-id';
 import { makeUuid } from '@/lib/uuid';
 import { useListeningMeter } from './use-listening-meter';
-import { PlayerEngine, type DeckId } from './audio-engine';
-import { AudioResourceLifetime } from './audio-resource-lifetime';
+import type { DeckId } from './audio-engine';
 import { resolveVibeCutoverOnEdge } from './vibe-switch-view';
-import { BufferDecks, bufferTransportFlagEnabled } from './buffer-decks';
-import { bindDeckLifecycle, handleDeckEnded, type DeckLifecyclePorts } from './deck-lifecycle';
-import { DeckSources } from './deck-sources';
+import { bindDeckLifecycle, type DeckLifecyclePorts } from './deck-lifecycle';
+import { DeckRig } from './deck-rig';
 import { EdgeTransitions } from './edge-transitions';
 import {
   bindMediaSessionActions,
@@ -60,7 +55,6 @@ import {
   type PlayableTrack,
   type QueueTarget,
 } from './playable-track';
-import { adoptPrimedPlayerEngine } from './autoplay-arm';
 import { rejectedPlayFallbackStatus, snapshotPlayerStatus, toggleIntent } from './player-status';
 import { PlaybackTraversal, type ShuffleTransition } from './playback-traversal';
 import { loopHeadLeads, sessionTrackNumbering, withLeadingLoopHead } from './session-loop-head';
@@ -93,21 +87,11 @@ export type {
 } from './playback-controller-api';
 
 const POSITION_REPORT_MS = 5000;
-function clampVolume(volume: number): number {
-  return Math.min(1, Math.max(0, volume));
-}
 // Back past this position restarts the current track instead of stepping to the
 // previous one (the universal player idiom — double-tap to actually go back).
 const BACK_RESTART_SECONDS = 3;
 
 const NEVER_EXPIRES = (): boolean => false;
-
-/** `navigator.deviceMemory` where the browser reports it. */
-function reportedDeviceMemoryGb(): number | null {
-  if (typeof navigator === 'undefined') return null;
-  const { deviceMemory } = navigator as Navigator & { deviceMemory?: number };
-  return typeof deviceMemory === 'number' ? deviceMemory : null;
-}
 
 /** The sources a Track's deck load walks — what a failure condemns. */
 function sourceKeyOf(track: PlayableTrack): string {
@@ -133,7 +117,6 @@ export function usePlaybackController(
   const expired = useCallback((track: PlayableTrack) => expiredRef.current(track.trackId), []);
   const deckARef = useRef<HTMLAudioElement | null>(null);
   const deckBRef = useRef<HTMLAudioElement | null>(null);
-  const engineRef = useRef<PlayerEngine | null>(null);
   const clientId = useClientId();
 
   // Playback bookkeeping in refs (handlers/intervals must not read stale React state).
@@ -147,32 +130,9 @@ export function usePlaybackController(
   // Whether the stored resume position has been applied to `idxRef` yet — done once,
   // on the first non-empty queue load, so later polls never yank playback backwards.
   const startIndexAppliedRef = useRef<boolean>(false);
-  const activeDeckRef = useRef<DeckId>('a');
-  // The track each deck currently carries, so a deck that fires `ended` reports for
-  // ITS OWN track — not the (already-swapped) active deck during a crossfade. A
-  // PREPARED deck carries no track until the handoff commits.
-  const deckTrackRef = useRef<Record<DeckId, PlayableTrack | null>>({ a: null, b: null });
-  // Each deck's pinned source-ladder walk (committed kind = source commit) —
-  // owned by DeckSources; constructed once, reads elements live.
-  const deckSourcesRef = useRef<DeckSources | null>(null);
-  // The buffer transport (decoded finals through AudioBufferSourceNodes);
-  // its natural-end callback reaches the lifecycle semantics through this ref.
-  const bufferDecksRef = useRef<BufferDecks | null>(null);
+  // The deck lifecycle's ports while bound; the buffer transport's natural
+  // end reaches the lifecycle semantics through this ref.
   const lifecyclePortsRef = useRef<DeckLifecyclePorts | null>(null);
-  // Unbind for the AudioContext interruption recovery (bound on engine attach).
-  const recoveryUnbindRef = useRef<(() => void) | null>(null);
-  const audioResourceLifetimeRef = useRef<AudioResourceLifetime | null>(null);
-  if (!audioResourceLifetimeRef.current) {
-    audioResourceLifetimeRef.current = new AudioResourceLifetime(() => {
-      deckSourcesRef.current?.dispose();
-      bufferDecksRef.current?.dispose();
-      bufferDecksRef.current = null;
-      recoveryUnbindRef.current?.();
-      recoveryUnbindRef.current = null;
-      engineRef.current?.dispose();
-      engineRef.current = null;
-    });
-  }
   // Owner playback settings (defaults until the fetch SETTLES — see the hook).
   const {
     settingsRef,
@@ -231,6 +191,19 @@ export function usePlaybackController(
   // auto-starts from the queue poll. Pause disarms; a rejected play falls
   // back through `rejectedPlayFallbackStatus`.
   const wantPlayRef = useRef<boolean>(initial?.autoplay ?? false);
+  // The audio rig (deck-rig.ts), built once; its host getters are read at
+  // call time. `deckARef` / `deckBRef` stay here for the JSX `ref`.
+  const rigRef = useRef<DeckRig | null>(null);
+  const rig = (rigRef.current ??= new DeckRig(
+    {
+      deckEl: (deck) => (deck === 'a' ? deckARef.current : deckBRef.current),
+      wantPlay: () => wantPlayRef.current,
+      blendSetting: () => settingsSettledRef.current && settingsRef.current.blendEnabled,
+      onDeckEnteredElement: (deck) => onSectionLoopDeckEnteredElement(deck),
+      lifecyclePorts: () => lifecyclePortsRef.current,
+    },
+    initial?.initialOutputVolume ?? 1,
+  ));
   const statusRef = useRef<PlayerStatus>('loading');
   const playIntentPendingRef = useRef<boolean>(initial?.autoplay ?? false);
   // The previous poll's armed-switch flag: the cutover triggers on its falling
@@ -256,41 +229,11 @@ export function usePlaybackController(
     setState((s) => ({ ...s, ...next }));
   }, []);
 
-  const deckEl = useCallback(
-    (deck: DeckId): HTMLAudioElement | null => (deck === 'a' ? deckARef.current : deckBRef.current),
-    [],
-  );
-
-  // The controller's whole output level (the cross-session handoff's fade
-  // handle). A pending host arming behind an audible session mounts at 0.
-  const outputVolumeRef = useRef<number>(clampVolume(initial?.initialOutputVolume ?? 1));
   // Whether this controller owns the global Media Session — exactly one of
   // the provider's hosts (the visible entry) may. Re-read live every render.
   const mediaSessionEnabled = initial?.mediaSessionEnabled ?? true;
   const mediaSessionEnabledRef = useRef(mediaSessionEnabled);
   mediaSessionEnabledRef.current = mediaSessionEnabled;
-
-  /** Apply the held output level: through the master bus gain when a graph
-   * exists (elements then stay at unity — their samples route through it),
-   * through element volume on the sequential fallback. */
-  const applyOutputVolume = useCallback(() => {
-    const volume = outputVolumeRef.current;
-    const graphApplied = engineRef.current?.setMasterGain(volume) ?? false;
-    for (const deck of ['a', 'b'] as const) {
-      const el = deckEl(deck);
-      if (el) el.volume = graphApplied ? 1 : volume;
-    }
-  }, [deckEl]);
-
-  const setOutputVolume = useCallback(
-    (volume: number) => {
-      const clamped = clampVolume(volume);
-      if (outputVolumeRef.current === clamped) return;
-      outputVolumeRef.current = clamped;
-      applyOutputVolume();
-    },
-    [applyOutputVolume],
-  );
 
   // Personal-analytics metering rides beside the playback reports
   // and shares nothing with them: no Session field, Buffer gate, or transport
@@ -300,10 +243,8 @@ export function usePlaybackController(
   // A Section loop can land its wrapped position on the same value at two
   // observations, so advancing is read off the context clock while one runs.
   const listeningMeter = useListeningMeter(state.status === 'playing', () => ({
-    position: sectionLoopRegion()
-      ? (engineRef.current?.now() ?? null)
-      : positionOf(activeDeckRef.current),
-    audible: outputVolumeRef.current > 0,
+    position: sectionLoopRegion() ? (rig.engine()?.now() ?? null) : rig.position(rig.activeDeck),
+    audible: rig.outputLevel() > 0,
   }));
   // Origin evidence for the next `started`: set by the transport actions that
   // choose a Track (Back, a Queue tap), consumed by the start they cause. Skip
@@ -389,122 +330,11 @@ export function usePlaybackController(
     );
   }, []);
 
-  // Create + attach the Web Audio graph exactly once, lazily, on the first play gesture.
-  // Building it in a mount effect would double-run under React StrictMode and a second
-  // `createMediaElementSource` on the same <audio> throws — leaving the element muted.
-  // Deferring to the first gesture sidesteps that entirely.
-  const ensureEngine = useCallback((): PlayerEngine | null => {
-    if (engineRef.current) return engineRef.current;
-    const a = deckARef.current;
-    const b = deckBRef.current;
-    if (!a || !b) return null;
-    // A start-session gesture may have primed an engine (context created +
-    // unlocked inside that click); adopt it so the poll-driven
-    // auto-start rides its activation.
-    const engine = adoptPrimedPlayerEngine() ?? new PlayerEngine();
-    engine.attach(a, b);
-    engineRef.current = engine;
-    // The graph carries the output level from here on; the elements return
-    // to unity so the two paths never attenuate twice.
-    applyOutputVolume();
-    // Suspension/interruption recovery (phone call, route change, background
-    // eviction): resume whenever the user still wants playback.
-    recoveryUnbindRef.current = engine.bindInterruptionRecovery(() => wantPlayRef.current);
-    return engine;
-  }, [applyOutputVolume]);
-
-  /** The buffer transport (constructed once, lazily). Its natural-end mirrors
-   * the element `ended` semantics through the shared lifecycle handler. */
-  const bufferDecks = useCallback((): BufferDecks => {
-    bufferDecksRef.current ??= new BufferDecks(
-      () => engineRef.current,
-      (deck, positionSeconds) => {
-        const ports = lifecyclePortsRef.current;
-        if (ports) handleDeckEnded(ports, deck, positionSeconds);
-      },
-      storedTrackAudio,
-    );
-    return bufferDecksRef.current;
-  }, []);
-
-  /** Whether the live blend runs at all: a real graph AND the settled owner
-   * setting. When false the player is strictly sequential — advance on `ended`,
-   * one audible deck, never an early-started incoming element. */
-  const blendActive = useCallback(
-    (): boolean =>
-      Boolean(engineRef.current?.isActive) &&
-      settingsSettledRef.current &&
-      settingsRef.current.blendEnabled,
-    [],
-  );
-
-  /** Session-level buffer-transport qualification:
-   * the internal flag, a decodable context, and `navigator.deviceMemory ≥ 4` —
-   * a missing API is safe-off (element decks, no UA sniffing). */
-  const bufferEligible = useCallback((): boolean => {
-    return (
-      blendActive() &&
-      bufferTransportEligible({
-        flagEnabled: bufferTransportFlagEnabled(),
-        decodeSupported: bufferDecks().supported(),
-        deviceMemoryGb: reportedDeviceMemoryGb(),
-      })
-    );
-  }, [blendActive, bufferDecks]);
-
-  const deviceAllowsSectionLoop = useCallback(
-    (): boolean =>
-      sectionLoopEligible({
-        flagEnabled: bufferTransportFlagEnabled(),
-        decodeSupported: bufferDecks().supported(),
-        deviceMemoryGb: reportedDeviceMemoryGb(),
-      }),
-    [bufferDecks],
-  );
-
-  /** The track the active deck is actually carrying — the audible source of truth
-   * every current-track action/report targets (the queue cursor is only
-   * navigation and can lag a poll that dropped the active item). */
-  const activeTrack = useCallback(
-    (): PlayableTrack | null => deckTrackRef.current[activeDeckRef.current],
-    [],
-  );
-
-  /** The deck's truthful playback sample — the buffer transport's exact
-   * context-clock view while it carries the deck, the element's otherwise.
-   * One boundary for every consumer (reports, Media Session, Back threshold),
-   * so no caller can mix the two clocks. */
-  const playbackSampleOf = useCallback(
-    (deck: DeckId): PlaybackSample => {
-      const buffers = bufferDecks();
-      if (buffers.carrying(deck)) {
-        return {
-          positionSeconds: buffers.positionSeconds(deck),
-          durationSeconds: buffers.durationSeconds(deck),
-          playbackRate: buffers.playbackRate(deck),
-        };
-      }
-      const el = deckEl(deck);
-      return {
-        positionSeconds: el?.currentTime ?? null,
-        durationSeconds: el && Number.isFinite(el.duration) ? el.duration : null,
-        playbackRate: el?.playbackRate ?? 1,
-      };
-    },
-    [bufferDecks, deckEl],
-  );
-
-  const positionOf = useCallback(
-    (deck: DeckId): number | null => playbackSampleOf(deck).positionSeconds,
-    [playbackSampleOf],
-  );
+  const setOutputVolume = useCallback((volume: number) => rig.setOutputVolume(volume), []);
 
   /** The UI-facing sample of the ACTIVE deck — the progress slider's polling
    * read (position stays out of render state by design). */
-  const getPlaybackSample = useCallback(
-    (): PlaybackSample => playbackSampleOf(activeDeckRef.current),
-    [playbackSampleOf],
-  );
+  const getPlaybackSample = useCallback((): PlaybackSample => rig.sample(rig.activeDeck), []);
 
   /** Publish the lock-screen position from the truthful clock (the context
    * clock during buffer playback — never the muted carrier element). A
@@ -512,62 +342,17 @@ export function usePlaybackController(
    * explicitly — the seek funnel during the pre-metadata window: the element
    * cannot answer yet, but the queue metadata resolved the clamp, and the OS
    * slider must land at the target instead of clearing. */
-  const publishPositionState = useCallback(
-    (sample?: PlaybackSample) => {
-      if (!mediaSessionEnabledRef.current) return;
-      publishMediaSessionPosition(
-        mediaSessionPositionState(sample ?? playbackSampleOf(activeDeckRef.current)),
-      );
-    },
-    [playbackSampleOf],
-  );
-
-  /** Best-effort re-sync of the deck's muted carrier element to its buffer
-   * clock (focus/lock-screen truth — the audible audio is the buffer either
-   * way). Shared by buffer resume, the carrier watchdog, and the seek funnel. */
-  const syncCarrierToBuffer = useCallback(
-    (deck: DeckId) => {
-      const el = deckEl(deck);
-      const position = bufferDecks().positionSeconds(deck);
-      if (el && position != null && Number.isFinite(el.duration)) {
-        el.currentTime = Math.min(position, el.duration);
-      }
-    },
-    [bufferDecks, deckEl],
-  );
-
-  const deckSources = useCallback((): DeckSources => {
-    deckSourcesRef.current ??= new DeckSources(deckEl, storedTrackAudio);
-    return deckSourcesRef.current;
-  }, [deckEl]);
+  const publishPositionState = useCallback((sample?: PlaybackSample) => {
+    if (!mediaSessionEnabledRef.current) return;
+    publishMediaSessionPosition(mediaSessionPositionState(sample ?? rig.sample(rig.activeDeck)));
+  }, []);
 
   /** The render-state source kind committed by a deck's pinned URL ladder. */
   const committedSourcePatch = useCallback(
     (deck: DeckId): Pick<PlaybackControllerState, 'sourceKind'> => ({
-      sourceKind: deckSources().committedKind(deck),
+      sourceKind: rig.sources().committedKind(deck),
     }),
-    [deckSources],
-  );
-
-  /** Return a deck to the element path before (re)loading it: any buffer
-   * playback stops deliberately and the media gate reopens. */
-  const enterElementMode = useCallback(
-    (deck: DeckId) => {
-      onSectionLoopDeckEnteredElement(deck);
-      bufferDecks().stop(deck);
-      engineRef.current?.setDeckMediaAudible(deck, true);
-    },
-    [bufferDecks, onSectionLoopDeckEnteredElement],
-  );
-
-  /** Stop + unload a deck (buffer source, gate, element, ladder, track ref). */
-  const unloadDeck = useCallback(
-    (deck: DeckId) => {
-      enterElementMode(deck);
-      deckSources().unload(deck);
-      deckTrackRef.current[deck] = null;
-    },
-    [deckSources, enterElementMode],
+    [],
   );
 
   /** The index navigation should try next: past the audible track when it still sits
@@ -575,8 +360,8 @@ export function usePlaybackController(
    * (later items shifted left into it) or when nothing is loaded. */
   const nextIndex = useCallback(
     (): number =>
-      nextPlaylistIndex(queueRef.current, activeTrack()?.queueItemId ?? null, idxRef.current),
-    [activeTrack],
+      nextPlaylistIndex(queueRef.current, rig.activeTrack()?.queueItemId ?? null, idxRef.current),
+    [],
   );
 
   /** The next Track that may start, passing over expired ones and any `skip` rejects. */
@@ -586,7 +371,7 @@ export function usePlaybackController(
       const start = resolveOrderedNextIndex(queueRef.current.length, next - 1) ?? 0;
       const target = playbackTraversalRef.current.next(
         queueRef.current,
-        activeTrack()?.queueItemId ?? null,
+        rig.activeTrack()?.queueItemId ?? null,
         start,
         (track) => expired(track) || (skip?.(track) ?? false),
       );
@@ -602,7 +387,7 @@ export function usePlaybackController(
       }
       return target;
     },
-    [activeTrack, expired, nextIndex],
+    [expired, nextIndex],
   );
 
   /** The nearest earlier queue index that may still start, passing over expired
@@ -652,7 +437,7 @@ export function usePlaybackController(
   const armLoopTrackPin = useCallback(
     (deck: DeckId, track: PlayableTrack | null) => {
       if (playbackTraversalRef.current.mode !== 'loop-track' || !track || loopPinned()) return;
-      if (deckSources().committedKind(deck) !== 'final') {
+      if (rig.sources().committedKind(deck) !== 'final') {
         holdLease('loop-track', true);
         return;
       }
@@ -661,7 +446,7 @@ export function usePlaybackController(
         track: { queueItemId: track.queueItemId, trackId: track.trackId },
       });
     },
-    [applyLoopEvent, deckSources, holdLease, loopPinned],
+    [applyLoopEvent, holdLease, loopPinned],
   );
 
   /** The logical handoff of a blend transition (the driver calls this at the
@@ -669,10 +454,10 @@ export function usePlaybackController(
    * `started` report + cursor + metadata land now. */
   const commitHandoff = useCallback(
     (deck: DeckId, track: PlayableTrack, idx: number, queueWrapped = false) => {
-      const outgoing = activeTrack();
+      const outgoing = rig.activeTrack();
       playbackTraversalRef.current.commit(outgoing?.queueItemId ?? null, track.queueItemId);
-      deckTrackRef.current[deck] = track;
-      activeDeckRef.current = deck;
+      rig.carry(deck, track);
+      rig.activeDeck = deck;
       idxRef.current = idx;
       // The loop pin reacts to what became current BEFORE the next-target
       // reads below: a seam replay keeps the pin and a different track ends it,
@@ -684,12 +469,12 @@ export function usePlaybackController(
       // pre-roll has already advanced past zero — a Stop right after the
       // handoff must resume there, not replay it.
       overlapStartMsRef.current = outgoing ? effectiveCrossfadeSeconds() * 1000 : 0;
-      report('started', track, positionOf(deck) ?? 0, queueWrapped);
+      report('started', track, rig.position(deck) ?? 0, queueWrapped);
       overlapStartMsRef.current = 0;
       setMediaMetadata(track);
       publishPositionState();
       // Hold at most current + next decoded finals; release on advance.
-      bufferDecks().retainOnly([track.trackId, resolveNextTarget()?.track.trackId]);
+      rig.buffers().retainOnly([track.trackId, resolveNextTarget()?.track.trackId]);
       patch({
         currentTrack: track,
         currentFavorited: track.favoritedAt != null,
@@ -701,12 +486,9 @@ export function usePlaybackController(
     },
     [
       applyLoopEvent,
-      activeTrack,
       armLoopTrackPin,
-      bufferDecks,
       committedSourcePatch,
       patch,
-      positionOf,
       publishPositionState,
       report,
       resolveNextTarget,
@@ -719,43 +501,32 @@ export function usePlaybackController(
   const transitionsRef = useRef<EdgeTransitions | null>(null);
   const transitions = useCallback((): EdgeTransitions => {
     transitionsRef.current ??= new EdgeTransitions({
-      deckEl: (deck) => deckEl(deck),
-      engine: () => engineRef.current,
+      deckEl: (deck) => rig.el(deck),
+      engine: () => rig.engine(),
       // The loop seam shortens the effective crossfade to its overlap; every
       // other edge sees the owner setting unchanged.
       settings: () => ({
         ...settingsRef.current,
         crossfadeSeconds: effectiveCrossfadeSeconds(),
       }),
-      activeDeck: () => activeDeckRef.current,
-      deckTrack: (deck) => deckTrackRef.current[deck],
-      committedKind: (deck) => deckSources().committedKind(deck),
+      activeDeck: () => rig.activeDeck,
+      deckTrack: (deck) => rig.deckTrack(deck),
+      committedKind: (deck) => rig.sources().committedKind(deck),
       // Every element (re)load leaves buffer mode first: the ladder walk must
       // be audible unless a buffer edge explicitly gates it again.
       loadDeck: (deck, track) => {
-        enterElementMode(deck);
-        return deckSources().begin(deck, track);
+        rig.enterElementMode(deck);
+        return rig.sources().begin(deck, track);
       },
-      unloadDeck: (deck) => unloadDeck(deck),
+      unloadDeck: (deck) => rig.unload(deck),
       nextTarget: () => resolveNextTarget(),
       startable: (track) => !expired(track),
       commit: (deck, track, idx, queueWrapped) => commitHandoff(deck, track, idx, queueWrapped),
-      buffers: () => bufferDecks(),
-      bufferEligible: () => bufferEligible(),
+      buffers: () => rig.buffers(),
+      bufferEligible: () => rig.bufferEligible(),
     });
     return transitionsRef.current;
-  }, [
-    bufferDecks,
-    bufferEligible,
-    commitHandoff,
-    deckEl,
-    deckSources,
-    effectiveCrossfadeSeconds,
-    enterElementMode,
-    expired,
-    resolveNextTarget,
-    unloadDeck,
-  ]);
+  }, [commitHandoff, effectiveCrossfadeSeconds, expired, resolveNextTarget]);
 
   /** The next target may have changed around the audible `currentTrackId`: an
    * in-flight preparation for another Track is dropped, and the decode cache is
@@ -763,9 +534,9 @@ export function usePlaybackController(
   const retargetNext = useCallback(
     (currentTrackId: string | undefined) => {
       transitions().syncTarget(resolveNextTarget());
-      bufferDecks().retainOnly([currentTrackId, resolveNextTarget()?.track.trackId]);
+      rig.buffers().retainOnly([currentTrackId, resolveNextTarget()?.track.trackId]);
     },
-    [bufferDecks, resolveNextTarget, transitions],
+    [resolveNextTarget, transitions],
   );
 
   /** Only expired Tracks are left: playback ends, with nothing parked to
@@ -773,8 +544,8 @@ export function usePlaybackController(
   const endPlayback = useCallback(() => {
     transitions().cancel();
     applyLoopEvent({ type: 'exit' });
-    unloadDeck('a');
-    unloadDeck('b');
+    rig.unload('a');
+    rig.unload('b');
     wantPlayRef.current = false;
     patch({
       status: 'ended',
@@ -785,7 +556,7 @@ export function usePlaybackController(
       sourceKind: null,
       activeEdgeTier: null,
     });
-  }, [applyLoopEvent, patch, transitions, unloadDeck]);
+  }, [applyLoopEvent, patch, transitions]);
 
   /** Play `el` and patch `playing` only once the play promise RESOLVES — a rejected
    * play (iOS autoplay/interruption policy, aborted load) leaves the UI paused
@@ -801,8 +572,7 @@ export function usePlaybackController(
       reportStart: boolean,
       queueWrapped = false,
     ) => {
-      const stillCurrent = () =>
-        activeDeckRef.current === deck && deckTrackRef.current[deck] === track;
+      const stillCurrent = () => rig.activeDeck === deck && rig.deckTrack(deck) === track;
       const owed = owedStartRef.current;
       const owesStart = !reportStart && owed?.deck === deck && owed.track === track;
       const freshStart = reportStart || owesStart;
@@ -851,15 +621,15 @@ export function usePlaybackController(
    * atomic engine call — a separate gain step would be cancelled by the cut). */
   const cutOverTo = useCallback(
     (deck: DeckId, track: PlayableTrack, queueWrapped = false) => {
-      const el = deckEl(deck);
-      const engine = ensureEngine();
+      const el = rig.el(deck);
+      const engine = rig.ensureEngine();
       if (!el) return false;
       // Explicit navigation is always an ELEMENT load boundary: a
       // buffer playing on this deck stops deliberately, the gate reopens, and
       // the pinned ladder re-runs. The buffer tier re-enters at the next
       // qualifying edge via the mixed bootstrap.
-      enterElementMode(deck);
-      if (!deckSources().begin(deck, track)) return false;
+      rig.enterElementMode(deck);
+      if (!rig.sources().begin(deck, track)) return false;
       owedStartRef.current = null;
       el.playbackRate = 1;
       playAndConfirm(deck, el, track, true, queueWrapped);
@@ -871,15 +641,7 @@ export function usePlaybackController(
       patch({ activeEdgeTier: null, ...committedSourcePatch(deck) });
       return true;
     },
-    [
-      committedSourcePatch,
-      deckEl,
-      deckSources,
-      ensureEngine,
-      enterElementMode,
-      patch,
-      playAndConfirm,
-    ],
+    [committedSourcePatch, patch, playAndConfirm],
   );
 
   /** Load track `idx` onto `deck` and hard-cut into it (explicit navigation and the
@@ -907,21 +669,21 @@ export function usePlaybackController(
       }
 
       transitions().cancel();
-      const previousDeck = activeDeckRef.current;
+      const previousDeck = rig.activeDeck;
       if (!cutOverTo(deck, track, queueWrapped)) return;
 
       playbackTraversalRef.current.commit(
-        activeTrack()?.queueItemId ?? null,
+        rig.activeTrack()?.queueItemId ?? null,
         track.queueItemId,
         shuffleTransition,
       );
 
       // A hard cut abandons the deck we're leaving; stop it and forget its track
       // so its later `ended` can't report a spurious play.
-      if (previousDeck !== deck) unloadDeck(previousDeck);
+      if (previousDeck !== deck) rig.unload(previousDeck);
 
-      deckTrackRef.current[deck] = track;
-      activeDeckRef.current = deck;
+      rig.carry(deck, track);
+      rig.activeDeck = deck;
       idxRef.current = idx;
       // A cut-over to a DIFFERENT track ends a loop pin (Back to previous, the
       // failure path); replaying the pinned track (loop restart, Back-restart)
@@ -932,7 +694,7 @@ export function usePlaybackController(
       // Hard-cut navigation advances the current track too: trim the decode
       // cache to current + next NOW, not at the next queue poll (Skip/Back/
       // sequential advance must never let three decoded finals accumulate).
-      bufferDecks().retainOnly([track.trackId, resolveNextTarget()?.track.trackId]);
+      rig.buffers().retainOnly([track.trackId, resolveNextTarget()?.track.trackId]);
       // `status: 'playing'` + the `started` report land in `playAndConfirm` once
       // playback actually starts; the track identity is current the moment the
       // deck carries it.
@@ -945,8 +707,6 @@ export function usePlaybackController(
       });
     },
     [
-      activeTrack,
-      bufferDecks,
       cutOverTo,
       endPlayback,
       expired,
@@ -955,7 +715,6 @@ export function usePlaybackController(
       resolveNextTarget,
       setMediaMetadata,
       transitions,
-      unloadDeck,
     ],
   );
 
@@ -969,8 +728,8 @@ export function usePlaybackController(
       // skips its late `ended` report; that's fine — the incoming track's `started`
       // already closed its queue slot, and truthful silence wins.
       transitions().cancel();
-      unloadDeck('a');
-      unloadDeck('b');
+      rig.unload('a');
+      rig.unload('b');
       idxRef.current = Math.min(idx, queueRef.current.length);
       patch({
         status: 'waiting',
@@ -982,13 +741,13 @@ export function usePlaybackController(
         activeEdgeTier: null,
       });
     },
-    [patch, transitions, unloadDeck],
+    [patch, transitions],
   );
 
   /** Play `idx` on the other deck, or stop and wait when no playable target exists. */
   const playIndexOrWait = useCallback(
     (idx: number, shuffleTransition: ShuffleTransition = 'record', queueWrapped = false) => {
-      const other: DeckId = activeDeckRef.current === 'a' ? 'b' : 'a';
+      const other: DeckId = rig.activeDeck === 'a' ? 'b' : 'a';
       if (queueRef.current[idx]) {
         playOnDeck(other, idx, shuffleTransition, queueWrapped);
       } else if (queueRef.current.some(expired)) {
@@ -1010,7 +769,7 @@ export function usePlaybackController(
   const advance = useCallback(() => {
     const loop = loopRestartTarget();
     if (loop || playbackTraversalRef.current.mode === 'loop-track') {
-      const current = activeTrack();
+      const current = rig.activeTrack();
       const currentIdx = current
         ? queueRef.current.findIndex((track) => track.queueItemId === current.queueItemId)
         : -1;
@@ -1019,7 +778,7 @@ export function usePlaybackController(
     }
     const target = explicitNextTarget();
     playIndexOrWait(target?.idx ?? queueRef.current.length, 'record', target?.wrapped ?? false);
-  }, [activeTrack, explicitNextTarget, loopRestartTarget, playIndexOrWait]);
+  }, [explicitNextTarget, loopRestartTarget, playIndexOrWait]);
 
   const setPlaybackMode = useCallback(
     (next: PlaybackMode) => {
@@ -1030,16 +789,16 @@ export function usePlaybackController(
       playbackTraversalRef.current.select(
         next,
         queueRef.current,
-        activeTrack()?.queueItemId ?? null,
+        rig.activeTrack()?.queueItemId ?? null,
       );
 
-      const current = activeTrack();
-      armLoopTrackPin(activeDeckRef.current, current);
+      const current = rig.activeTrack();
+      armLoopTrackPin(rig.activeDeck, current);
 
       retargetNext(current?.trackId);
       patch({ playbackMode: next });
     },
-    [activeTrack, applyLoopEvent, armLoopTrackPin, patch, retargetNext],
+    [applyLoopEvent, armLoopTrackPin, patch, retargetNext],
   );
 
   const cyclePlaybackMode = useCallback(() => {
@@ -1049,15 +808,15 @@ export function usePlaybackController(
   const play = useCallback(() => {
     wantPlayRef.current = true;
     patch({ playIntentPending: true });
-    void ensureEngine()?.resume();
-    const deck = activeDeckRef.current;
-    const el = deckEl(deck);
-    const track = deckTrackRef.current[deck];
+    void rig.ensureEngine()?.resume();
+    const deck = rig.activeDeck;
+    const el = rig.el(deck);
+    const track = rig.deckTrack(deck);
     // Resume only while the active deck carries a live track; after the queue plays
     // out (or a dislike empties it) the deck is stopped and its leftover src must not
     // be resumable — start whatever the cursor points at instead.
     if (el && track) {
-      const buffers = bufferDecks();
+      const buffers = rig.buffers();
       if (buffers.state(deck) === 'paused') {
         // Buffer resume: recreate the source at the recorded offset, re-sync
         // the muted carrier, keep it rolling for focus (best-effort — the
@@ -1067,7 +826,7 @@ export function usePlaybackController(
         // re-syncs on success, and the ELEMENT-PATH FALLBACK must resume at
         // the same position — never restart from the carrier's stale time
         // (a failed resume rolls back to `paused`, so the offset survives).
-        syncCarrierToBuffer(deck);
+        rig.syncCarrier(deck);
         if (resumed) {
           void el.play().catch(() => undefined);
           publishPositionState();
@@ -1075,7 +834,7 @@ export function usePlaybackController(
           return;
         }
         // The context is gone: fall back to the element path truthfully.
-        enterElementMode(deck);
+        rig.enterElementMode(deck);
       }
       playAndConfirm(deck, el, track, false);
       return;
@@ -1089,18 +848,7 @@ export function usePlaybackController(
     // a trackless position ping records the intent so the next sweep tops the
     // buffer up; the queue poll then auto-starts the first arriving track.
     report('position', null, null);
-  }, [
-    bufferDecks,
-    deckEl,
-    ensureEngine,
-    enterElementMode,
-    patch,
-    playAndConfirm,
-    playOnDeck,
-    publishPositionState,
-    report,
-    syncCarrierToBuffer,
-  ]);
+  }, [patch, playAndConfirm, playOnDeck, publishPositionState, report]);
 
   /** Close out any NON-active deck still fading its tail and settle the graph
    * onto the active deck at ITS solo gain (the armed post-fade settle
@@ -1117,20 +865,17 @@ export function usePlaybackController(
    * makes the deck reusable for the next preparation. */
   const settleToActiveDeck = useCallback(() => {
     for (const deck of ['a', 'b'] as const) {
-      if (deck === activeDeckRef.current) continue;
-      const track = deckTrackRef.current[deck];
+      if (deck === rig.activeDeck) continue;
+      const track = rig.deckTrack(deck);
       if (!track) continue;
-      report('ended', track, positionOf(deck));
-      deckEl(deck)?.pause();
-      bufferDecks().stop(deck);
-      deckTrackRef.current[deck] = null;
-      deckSources().clear(deck);
-      engineRef.current?.hardCut(
-        activeDeckRef.current,
-        soloLoudnessGainDb(loudnessOf(activeTrack())),
-      );
+      report('ended', track, rig.position(deck));
+      rig.el(deck)?.pause();
+      rig.buffers().stop(deck);
+      rig.carry(deck, null);
+      rig.sources().clear(deck);
+      rig.engine()?.hardCut(rig.activeDeck, soloLoudnessGainDb(loudnessOf(rig.activeTrack())));
     }
-  }, [activeTrack, bufferDecks, deckEl, deckSources, positionOf, report]);
+  }, [report]);
 
   const pause = useCallback(() => {
     wantPlayRef.current = false;
@@ -1140,16 +885,16 @@ export function usePlaybackController(
     transitions().cancel();
     applyLoopEvent({ type: 'seam-cancelled' });
     for (const deck of ['a', 'b'] as const) {
-      deckEl(deck)?.pause();
+      rig.el(deck)?.pause();
     }
     // A buffer-carrying active deck records its exact offset (the source node
     // is one-shot: stop now, recreate at the offset on resume).
-    bufferDecks().pause(activeDeckRef.current);
+    rig.buffers().pause(rig.activeDeck);
     // A NON-active deck still fading out its tail is abandoned by a pause —
     // close it out truthfully and settle onto the active deck.
     settleToActiveDeck();
     patch({ status: 'paused', playIntentPending: false });
-  }, [applyLoopEvent, bufferDecks, deckEl, patch, settleToActiveDeck, transitions]);
+  }, [applyLoopEvent, patch, settleToActiveDeck, transitions]);
 
   /** Cancel the armed transition, let the loop coordinator see the cancelled
    * seam, and settle a running fade: the fade time is wrong once the position
@@ -1172,14 +917,14 @@ export function usePlaybackController(
    * so server-side resume state and the OS slider land with it. */
   const seekTo = useCallback(
     (seconds: number) => {
-      const deck = activeDeckRef.current;
-      const track = deckTrackRef.current[deck];
-      const el = deckEl(deck);
+      const deck = rig.activeDeck;
+      const track = rig.deckTrack(deck);
+      const el = rig.el(deck);
       if (!track || !el) return;
       // Duration resolution: the live sample (buffer duration or finite
       // element duration) outranks the queue metadata; metadata covers the
       // pre-metadata element window. No trustworthy duration → seeking off.
-      const sample = playbackSampleOf(deck);
+      const sample = rig.sample(deck);
       const durationSeconds = sample.durationSeconds ?? track.durationSeconds ?? null;
       const target = resolveSeekTarget(seconds, durationSeconds);
       if (target == null) return;
@@ -1192,17 +937,17 @@ export function usePlaybackController(
         clearSectionLoop();
       }
 
-      const buffers = bufferDecks();
+      const buffers = rig.buffers();
       if (buffers.carrying(deck)) {
         if (buffers.seekTo(deck, target)) {
-          syncCarrierToBuffer(deck);
+          rig.syncCarrier(deck);
         } else {
           // A playing-path source recreation failed: the transport rolled
           // back to `paused` at the target. Fall back to the element path
           // truthfully — never an unmuted-but-silent carrier while the
           // status says `playing` (the same sequence `play()`'s
           // buffer-resume fallback performs).
-          enterElementMode(deck);
+          rig.enterElementMode(deck);
           el.currentTime = target;
           playAndConfirm(deck, el, track, false);
         }
@@ -1223,16 +968,11 @@ export function usePlaybackController(
     },
     [
       abandonEdge,
-      bufferDecks,
       clearSectionLoop,
-      deckEl,
-      enterElementMode,
       playAndConfirm,
-      playbackSampleOf,
       publishPositionState,
       report,
       sectionLoopRegion,
-      syncCarrierToBuffer,
     ],
   );
 
@@ -1295,7 +1035,7 @@ export function usePlaybackController(
   } = useTrackActions({
     sourceId,
     sessionId,
-    activeTrack,
+    activeTrack: () => rig.activeTrack(),
     patch,
     queueChanged: () => pollQueueNowRef.current(),
     markRemoved: (queueItemId) => locallyRemovedRef.current.add(queueItemId),
@@ -1311,7 +1051,7 @@ export function usePlaybackController(
    * already prepared with the removed one is struck. */
   const advancePastDeletedTrack = useCallback(
     (trackId: string) => {
-      const audible = activeTrack();
+      const audible = rig.activeTrack();
       if (audible?.trackId === trackId) {
         locallyRemovedRef.current.add(audible.queueItemId);
         removeFromQueue(audible.queueItemId);
@@ -1326,27 +1066,19 @@ export function usePlaybackController(
       if (removedIdx < idxRef.current) idxRef.current -= 1;
       retargetNext(audible?.trackId);
     },
-    [activeTrack, advancePastCurrent, removeFromQueue, retargetNext],
+    [advancePastCurrent, removeFromQueue, retargetNext],
   );
 
   const skip = useCallback(() => {
-    const track = activeTrack();
+    const track = rig.activeTrack();
     if (!track) return;
     // The loop-track mode stays selected, but its pin follows the next track.
     applyLoopEvent({ type: 'exit' });
-    report('skipped', track, positionOf(activeDeckRef.current));
+    report('skipped', track, rig.position(rig.activeDeck));
     reportSkip(track);
     const target = explicitNextTarget();
     playIndexOrWait(target?.idx ?? queueRef.current.length, 'record', target?.wrapped ?? false);
-  }, [
-    activeTrack,
-    explicitNextTarget,
-    playIndexOrWait,
-    applyLoopEvent,
-    positionOf,
-    report,
-    reportSkip,
-  ]);
+  }, [explicitNextTarget, playIndexOrWait, applyLoopEvent, report, reportSkip]);
 
   /** Restart the current track. It RE-RUNS the pinned source ladder:
    * a final that landed while the stream was playing is
@@ -1356,8 +1088,8 @@ export function usePlaybackController(
    * track id; a pinned URL whose asset does not exist 404s and the ladder steps
    * down, so trying it is safe by construction). */
   const restart = useCallback(() => {
-    const el = deckEl(activeDeckRef.current);
-    const track = activeTrack();
+    const el = rig.el(rig.activeDeck);
+    const track = rig.activeTrack();
     if (!el || !track) {
       userStartRef.current = false;
       return;
@@ -1365,7 +1097,7 @@ export function usePlaybackController(
     userStartRef.current = true;
     const idx = queueRef.current.findIndex((t) => t.queueItemId === track.queueItemId);
     if (idx >= 0) {
-      playOnDeck(activeDeckRef.current, idx);
+      playOnDeck(rig.activeDeck, idx);
       return;
     }
     transitions().cancel();
@@ -1377,13 +1109,13 @@ export function usePlaybackController(
       final: track.assets.final ?? `/api/audio/${track.trackId}?asset=final`,
       stream: track.assets.stream,
     };
-    if (!cutOverTo(activeDeckRef.current, track)) {
+    if (!cutOverTo(rig.activeDeck, track)) {
       // A rewind starts no occurrence, so it must not lend its origin to the
       // blend handoff that follows.
       el.currentTime = 0;
       userStartRef.current = false;
     }
-  }, [activeTrack, cutOverTo, deckEl, playOnDeck, transitions]);
+  }, [cutOverTo, playOnDeck, transitions]);
 
   /** Step to the previous Track even mid-track — the cover swipe, whose preview
    * shows that Track, so a restart would contradict it. Falls back to a restart
@@ -1391,11 +1123,11 @@ export function usePlaybackController(
   const previous = useCallback(() => {
     userStartRef.current = true;
     const traversal = playbackTraversalRef.current;
-    const current = activeTrack()?.queueItemId ?? null;
+    const current = rig.activeTrack()?.queueItemId ?? null;
     if (traversal.mode === 'shuffle') {
       // Going back passes over expired offline copies in the same direction.
       const target = traversal.previous(queueRef.current, current, expired);
-      if (target) playOnDeck(activeDeckRef.current, target.idx, 'preserve');
+      if (target) playOnDeck(rig.activeDeck, target.idx, 'preserve');
       else restart();
       return;
     }
@@ -1406,15 +1138,7 @@ export function usePlaybackController(
     }
     if (traversal.mode === 'loop-track') applyLoopEvent({ type: 'exit' });
     playIndexOrWait(target);
-  }, [
-    activeTrack,
-    applyLoopEvent,
-    expired,
-    playIndexOrWait,
-    playOnDeck,
-    previousStartableIndex,
-    restart,
-  ]);
+  }, [applyLoopEvent, expired, playIndexOrWait, playOnDeck, previousStartableIndex, restart]);
 
   /** Back: the universal player idiom. Mid-track it restarts the current track;
    * near the start it steps to the previous Track. Shuffle always steps, since
@@ -1430,12 +1154,12 @@ export function usePlaybackController(
     }
     const underway =
       playbackTraversalRef.current.mode !== 'shuffle' &&
-      activeTrack() !== null &&
-      deckEl(activeDeckRef.current) !== null &&
-      (positionOf(activeDeckRef.current) ?? 0) > BACK_RESTART_SECONDS;
+      rig.activeTrack() !== null &&
+      rig.el(rig.activeDeck) !== null &&
+      (rig.position(rig.activeDeck) ?? 0) > BACK_RESTART_SECONDS;
     if (underway) restart();
     else previous();
-  }, [activeTrack, deckEl, positionOf, previous, restart, sectionLoopRegion, seekTo]);
+  }, [previous, restart, sectionLoopRegion, seekTo]);
 
   /** The Tracks a cover swipe would land on: what Skip plays next and what
    * `previous` returns to. Read on demand — the shuffle peek syncs traversal. */
@@ -1448,7 +1172,7 @@ export function usePlaybackController(
     if (traversal.mode === 'shuffle') {
       const target = traversal.peekPrevious(
         queueRef.current,
-        activeTrack()?.queueItemId ?? null,
+        rig.activeTrack()?.queueItemId ?? null,
         expired,
       );
       previousTrack = target?.track ?? null;
@@ -1457,17 +1181,13 @@ export function usePlaybackController(
       if (idx != null) previousTrack = queueRef.current[idx] ?? null;
     }
     return { next: explicitNextTarget()?.track ?? null, previous: previousTrack };
-  }, [activeTrack, expired, explicitNextTarget, previousStartableIndex]);
+  }, [expired, explicitNextTarget, previousStartableIndex]);
 
   const toggle = useCallback(() => {
     // Pause also DISARMS a pending auto-start (armed intent, nothing loaded
     // yet) and cancels a start whose play() has not settled, the two states
     // the button reads Pause in; otherwise, with a track loaded, it plays.
-    const intent = toggleIntent(
-      statusRef.current,
-      wantPlayRef.current,
-      deckTrackRef.current[activeDeckRef.current] != null,
-    );
+    const intent = toggleIntent(statusRef.current, wantPlayRef.current, rig.activeTrack() != null);
     if (intent === 'pause' || playIntentPendingRef.current) pause();
     else play();
   }, [pause, play]);
@@ -1478,18 +1198,18 @@ export function usePlaybackController(
     const a = deckARef.current;
     const b = deckBRef.current;
     if (!a || !b) return;
-    const releaseAudioResources = audioResourceLifetimeRef.current!.bind();
+    const releaseAudioResources = rig.lifetime.bind();
     const ports: DeckLifecyclePorts = {
-      deckEl,
-      activeDeck: () => activeDeckRef.current,
-      deckTrack: (deck) => deckTrackRef.current[deck],
+      deckEl: (deck) => rig.el(deck),
+      activeDeck: () => rig.activeDeck,
+      deckTrack: (deck) => rig.deckTrack(deck),
       clearDeckTrack: (deck) => {
-        deckTrackRef.current[deck] = null;
+        rig.carry(deck, null);
       },
-      sources: () => deckSources(),
+      sources: () => rig.sources(),
       transitions: () => transitions(),
-      bufferCarrying: (deck) => bufferDecks().carrying(deck),
-      blendActive,
+      bufferCarrying: (deck) => rig.buffers().carrying(deck),
+      blendActive: () => rig.blendActive(),
       crossfadeSeconds: () => effectiveCrossfadeSeconds(),
       wantPlay: () => wantPlayRef.current,
       report,
@@ -1498,7 +1218,7 @@ export function usePlaybackController(
       // replay of the same dead audio would hammer it forever.
       advanceOffFailure: () => {
         applyLoopEvent({ type: 'exit' });
-        const failed = activeTrack();
+        const failed = rig.activeTrack();
         if (failed) deadSourcesRef.current.set(failed.queueItemId, sourceKeyOf(failed));
         const target = explicitNextTarget(isDeadSource);
         if (target) {
@@ -1517,14 +1237,14 @@ export function usePlaybackController(
         );
       },
       resumePlay: (deck, el, track) => playAndConfirm(deck, el, track, false),
-      unloadDeck,
+      unloadDeck: (deck) => rig.unload(deck),
       // A committed final upgrades armed Loop Track mode to its seamless pin;
       // any other source ends a pin (the seam needs the final) and keeps the hold.
       onSourceCommitted: (deck) => {
-        if (deck !== activeDeckRef.current) return;
+        if (deck !== rig.activeDeck) return;
         const sourcePatch = committedSourcePatch(deck);
         patch(sourcePatch);
-        const track = deckTrackRef.current[deck];
+        const track = rig.deckTrack(deck);
         if (
           playbackTraversalRef.current.mode === 'loop-track' &&
           sourcePatch.sourceKind !== 'final' &&
@@ -1540,7 +1260,7 @@ export function usePlaybackController(
     lifecyclePortsRef.current = ports;
     // A muted mount (pending handoff host) must be silent BEFORE its first
     // load, while no graph exists and the level rides element volume.
-    applyOutputVolume();
+    rig.applyOutputVolume();
     const unbind = bindDeckLifecycle({ a, b }, ports);
     return () => {
       unbind();
@@ -1550,25 +1270,18 @@ export function usePlaybackController(
     };
   }, [
     advance,
-    applyOutputVolume,
     armLoopTrackPin,
-    blendActive,
-    bufferDecks,
     committedSourcePatch,
-    deckEl,
-    deckSources,
     explicitNextTarget,
     isDeadSource,
     loopPinned,
     patch,
-    activeTrack,
     applyLoopEvent,
     effectiveCrossfadeSeconds,
     playAndConfirm,
     playIndexOrWait,
     report,
     transitions,
-    unloadDeck,
     waitAt,
   ]);
 
@@ -1599,8 +1312,7 @@ export function usePlaybackController(
       const projection = withLeadingLoopHead(sessionSnapshot?.loopHead ?? null, snapshot.tracks);
       loopHeadRef.current = projection.loopHeadId;
       let queueTracks = projection.tracks;
-      const pinnedTrack =
-        loopPinned() || sectionLoopRegion() ? deckTrackRef.current[activeDeckRef.current] : null;
+      const pinnedTrack = loopPinned() || sectionLoopRegion() ? rig.activeTrack() : null;
       // A Queue item may remain authoritative while temporarily dropping out of
       // the playable projection (for example while its source availability is
       // being refreshed). Repeat-one pins the already-audible Track, so retain
@@ -1614,7 +1326,7 @@ export function usePlaybackController(
         queueTracks.splice(Math.min(idxRef.current, queueTracks.length), 0, pinnedTrack);
       }
       queueRef.current = queueTracks;
-      playbackTraversalRef.current.sync(queueTracks, activeTrack()?.queueItemId ?? null);
+      playbackTraversalRef.current.sync(queueTracks, rig.activeTrack()?.queueItemId ?? null);
 
       // Repeat-one invalidations: a Change Vibe (moved
       // style revision), a stopped session, or a pinned item that vanished
@@ -1643,7 +1355,7 @@ export function usePlaybackController(
       // that landed mid-play updates `assets` for the next load boundary, and
       // Save state stays honest.
       for (const deck of ['a', 'b'] as const) {
-        const held = deckTrackRef.current[deck];
+        const held = rig.deckTrack(deck);
         if (!held) continue;
         const fresh = queueTracks.find((t) => t.queueItemId === held.queueItemId);
         if (fresh) Object.assign(held, fresh);
@@ -1653,7 +1365,7 @@ export function usePlaybackController(
       // landing): refresh lock-screen artwork in place for the audible track.
       if (sessionSnapshot && sessionCoverRef.current !== sessionSnapshot.coverImageId) {
         sessionCoverRef.current = sessionSnapshot.coverImageId;
-        const audible = deckTrackRef.current[activeDeckRef.current];
+        const audible = rig.activeTrack();
         if (audible) setMediaMetadata(audible);
       }
 
@@ -1677,7 +1389,7 @@ export function usePlaybackController(
         // audible track (actions target the deck track directly via activeTrack).
         idxRef.current = reanchorPlaylistIndex(
           queueTracks,
-          deckTrackRef.current[activeDeckRef.current]?.queueItemId ?? null,
+          rig.activeTrack()?.queueItemId ?? null,
           idxRef.current,
         );
       }
@@ -1685,7 +1397,7 @@ export function usePlaybackController(
       // Queue replacement invalidates an in-flight preparation whose track is
       // no longer the transition target (the driver re-checks by queue item),
       // and trims the decode cache to current + next.
-      retargetNext(deckTrackRef.current[activeDeckRef.current]?.trackId);
+      retargetNext(rig.activeTrack()?.trackId);
 
       // Both preparing states recover here: the first startable track flips
       // `loading` AND `waiting` to `ready`. A cursor parked on audio that
@@ -1725,7 +1437,7 @@ export function usePlaybackController(
       // nothing re-renders (the app shell subscribes on every route).
       // The star and Add-to-Playlist state read the held track the toggles
       // read too, so a retention change made elsewhere can never invert a tap.
-      const audible = deckTrackRef.current[activeDeckRef.current];
+      const audible = rig.activeTrack();
       const queuePatch: Partial<PlaybackControllerState> = {
         queueLength: queueTracks.length,
         earlierTracks: sessionSnapshot?.earlierTracks ?? 0,
@@ -1752,7 +1464,7 @@ export function usePlaybackController(
           // A paused deck is not audible: the cutover must never start audio
           // the listener paused (resume plays on and the advance walks past
           // the set-aside slots).
-          active: wantPlayRef.current ? deckTrackRef.current[activeDeckRef.current] : null,
+          active: wantPlayRef.current ? rig.activeTrack() : null,
         });
         switchPendingRef.current = sessionSnapshot.switchPending;
         if (cutoverIdx != null) {
@@ -1766,16 +1478,11 @@ export function usePlaybackController(
       // first track arrived, or the queue played out): start the track at the cursor
       // as soon as it exists. A hard cut on the active deck — never `advance`, which
       // would skip past the cursor's (possibly first, paid) track.
-      if (
-        wantPlayRef.current &&
-        !deckTrackRef.current[activeDeckRef.current] &&
-        queueRef.current[idxRef.current]
-      ) {
-        playOnDeck(activeDeckRef.current, idxRef.current);
+      if (wantPlayRef.current && !rig.activeTrack() && queueRef.current[idxRef.current]) {
+        playOnDeck(rig.activeDeck, idxRef.current);
       }
     },
     [
-      activeTrack,
       applyLoopEvent,
       isDeadSource,
       loopPinned,
@@ -1806,27 +1513,20 @@ export function usePlaybackController(
    * best-effort (re-synced to the buffer clock) and drive the preparation
    * trigger meanwhile — the audible buffer never depended on the carrier. */
   const reviveDeadCarrier = useCallback(() => {
-    const deck = activeDeckRef.current;
-    const el = deckEl(deck);
-    if (!el || !el.paused || !wantPlayRef.current || bufferDecks().state(deck) !== 'playing') {
+    const deck = rig.activeDeck;
+    const el = rig.el(deck);
+    if (!el || !el.paused || !wantPlayRef.current || rig.buffers().state(deck) !== 'playing') {
       return;
     }
-    syncCarrierToBuffer(deck);
+    rig.syncCarrier(deck);
     void el.play().catch(() => undefined);
-    if (blendActive() && Number.isFinite(el.duration) && el.duration > 0) {
+    if (rig.blendActive() && Number.isFinite(el.duration) && el.duration > 0) {
       transitions().onTimeUpdate(
         el,
         crossfadeStartSeconds(el.duration, effectiveCrossfadeSeconds()),
       );
     }
-  }, [
-    blendActive,
-    bufferDecks,
-    deckEl,
-    effectiveCrossfadeSeconds,
-    syncCarrierToBuffer,
-    transitions,
-  ]);
+  }, [effectiveCrossfadeSeconds, transitions]);
 
   // Periodic position pings (live-only; never persisted) while playing —
   // positions come from the truthful clock (buffer transport during buffer
@@ -1839,21 +1539,13 @@ export function usePlaybackController(
     // A pause can outlast the lease: win the hold back before a sweep buys.
     renewLoopLease();
     const id = setInterval(() => {
-      report('position', activeTrack(), positionOf(activeDeckRef.current) ?? 0);
+      report('position', rig.activeTrack(), rig.position(rig.activeDeck) ?? 0);
       publishPositionState();
       reviveDeadCarrier();
       renewLoopLease();
     }, POSITION_REPORT_MS);
     return () => clearInterval(id);
-  }, [
-    state.status,
-    activeTrack,
-    positionOf,
-    publishPositionState,
-    renewLoopLease,
-    report,
-    reviveDeadCarrier,
-  ]);
+  }, [state.status, publishPositionState, renewLoopLease, report, reviveDeadCarrier]);
 
   // Explicit lock-screen playback state: during
   // buffer playback the UA cannot infer it from the muted carrier element.
@@ -1883,7 +1575,7 @@ export function usePlaybackController(
   // the handoff): republish the audible track's metadata and position then.
   useEffect(() => {
     if (!mediaSessionEnabled) return;
-    const track = deckTrackRef.current[activeDeckRef.current];
+    const track = rig.activeTrack();
     if (track) {
       setMediaMetadata(track);
       publishPositionState();
@@ -1898,7 +1590,7 @@ export function usePlaybackController(
   const audibleTitle = state.currentTrack?.title ?? null;
   useEffect(() => {
     if (!mediaSessionEnabledRef.current) return;
-    const track = deckTrackRef.current[activeDeckRef.current];
+    const track = rig.activeTrack();
     if (track) setMediaMetadata(track);
   }, [audibleTitle, sourceTitle, setMediaMetadata]);
 
@@ -1911,7 +1603,7 @@ export function usePlaybackController(
       if (track.trackId === trackId) track.title = title;
     }
     for (const deck of ['a', 'b'] as const) {
-      const held = deckTrackRef.current[deck];
+      const held = rig.deckTrack(deck);
       if (held?.trackId === trackId) held.title = title;
     }
     setState((current) => ({
@@ -1933,20 +1625,20 @@ export function usePlaybackController(
       queueTapStartRef.current = true;
       wantPlayRef.current = true;
       patch({ playIntentPending: true });
-      void ensureEngine()?.resume();
+      void rig.ensureEngine()?.resume();
       if (playbackTraversalRef.current.mode === 'loop-track') {
         applyLoopEvent({ type: 'exit' });
       }
-      playOnDeck(activeDeckRef.current, idx);
+      playOnDeck(rig.activeDeck, idx);
     },
-    [applyLoopEvent, ensureEngine, expired, patch, playOnDeck],
+    [applyLoopEvent, expired, patch, playOnDeck],
   );
 
   // The repeat-one surface: assigned EVERY render, after everything it reads
   // exists; the coordinator reads it only at event time (never during render).
   repeatOneDepsRef.current = {
     queue: () => queueRef.current,
-    activeDurationSeconds: () => playbackSampleOf(activeDeckRef.current).durationSeconds,
+    activeDurationSeconds: () => rig.sample(rig.activeDeck).durationSeconds,
     crossfadeSetting: () => settingsRef.current.crossfadeSeconds,
     syncPreparedTarget: () => transitions().syncTarget(resolveNextTarget()),
     patch,
@@ -1963,23 +1655,23 @@ export function usePlaybackController(
   };
 
   sectionLoopDepsRef.current = {
-    activeDeck: () => activeDeckRef.current,
-    activeTrack,
-    deckEl,
-    buffers: bufferDecks,
-    deviceAllows: deviceAllowsSectionLoop,
-    muteElement: (deck) => engineRef.current?.setDeckMediaAudible(deck, false),
+    activeDeck: () => rig.activeDeck,
+    activeTrack: () => rig.activeTrack(),
+    deckEl: (deck) => rig.el(deck),
+    buffers: () => rig.buffers(),
+    deviceAllows: () => rig.deviceAllowsSectionLoop(),
+    muteElement: (deck) => rig.engine()?.setDeckMediaAudible(deck, false),
     abandonEdge,
     carryOnOnElement: (deck, seconds) => {
-      const el = deckEl(deck);
-      const track = activeTrack();
-      enterElementMode(deck);
+      const el = rig.el(deck);
+      const track = rig.activeTrack();
+      rig.enterElementMode(deck);
       if (!el || !track) return;
       el.currentTime = seconds;
       // A carrier can die under a playing buffer, so its pause says nothing here.
       if (wantPlayRef.current) playAndConfirm(deck, el, track, false);
     },
-    syncCarrier: syncCarrierToBuffer,
+    syncCarrier: (deck) => rig.syncCarrier(deck),
     syncPreparedTarget: () => transitions().syncTarget(resolveNextTarget()),
     holdGeneration: (held) => holdLease('section-loop', held),
     positionMoved: (track, seconds) => {
@@ -1997,7 +1689,7 @@ export function usePlaybackController(
     onSectionLoopTrackChanged(currentQueueItemId, currentFinalPath);
   }, [currentQueueItemId, currentFinalPath, onSectionLoopTrackChanged]);
 
-  const canSectionLoop = state.currentTrack != null && deviceAllowsSectionLoop();
+  const canSectionLoop = state.currentTrack != null && rig.deviceAllowsSectionLoop();
 
   return useMemo<PlaybackControllerApi>(() => {
     // The projection and `state` refresh together (every queue poll writes
