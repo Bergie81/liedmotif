@@ -67,12 +67,11 @@ export interface CardWording {
 }
 
 /** A new Session's length as its card shows it; null minutes is No limit, none is left out. */
-const lengthLabel = (minutes: number | null | undefined) =>
-  minutes === null
-    ? NEW_MUSIC_CHOICES['no-limit'].label
-    : minutes === undefined
-      ? undefined
-      : `${minutes} min`;
+function lengthLabel(minutes: number | null | undefined): string | undefined {
+  if (minutes === null) return NEW_MUSIC_CHOICES['no-limit'].label;
+  if (minutes === undefined) return undefined;
+  return `${minutes} min`;
+}
 
 export function cardWording(card: AssistantCard): CardWording {
   switch (card.kind) {

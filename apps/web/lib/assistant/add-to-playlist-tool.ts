@@ -19,7 +19,9 @@ import type { AssistantAsker } from './tools';
 import type { TurnActions } from './turn-actions';
 
 /** "1 was" / "2 were": the counts the model is told, one sentence per cause. */
-const counted = (n: number) => `${n} ${n === 1 ? 'was' : 'were'}`;
+function counted(n: number): string {
+  return `${n} ${n === 1 ? 'was' : 'were'}`;
+}
 
 export function createAddToPlaylistTool(
   asker: AssistantAsker,

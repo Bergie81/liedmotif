@@ -11,12 +11,11 @@ export const newMusicLimitNote = (targetMinutes: number | null) =>
   targetMinutes === null ? 'with no limit' : `up to ${targetMinutes} minutes of music`;
 
 /** A new Session's length as the model reads it; null minutes is No limit, none is left out. */
-const lengthNote = (minutes: number | null | undefined) =>
-  minutes === null
-    ? newMusicLimitNote(null)
-    : minutes === undefined
-      ? undefined
-      : `${minutes} minutes`;
+function lengthNote(minutes: number | null | undefined): string | undefined {
+  if (minutes === null) return newMusicLimitNote(null);
+  if (minutes === undefined) return undefined;
+  return `${minutes} minutes`;
+}
 
 /** What the card offers to do, with the values the confirmation sends. */
 export function cardNote(card: AssistantCard): string {
@@ -31,8 +30,9 @@ export function cardNote(card: AssistantCard): string {
       return `change the vibe of the Session ${quoted(card.session.name)} with the words ${quoted(card.prompt)}`;
     case 'moreLikeThis': {
       const titles = card.tracks.map(({ name }) => quoted(name)).join(', ');
+      const note = `start a new Session that sounds like the ${card.tracks.length === 1 ? 'Track' : 'Tracks'} ${titles}`;
       const length = lengthNote(card.targetDurationMinutes);
-      return `start a new Session that sounds like the ${card.tracks.length === 1 ? 'Track' : 'Tracks'} ${titles}${length ? `, ${length}` : ''}`;
+      return length ? `${note}, ${length}` : note;
     }
     case 'newMusicOn':
       return `switch New music on for the Session ${quoted(card.session.name)}, ${newMusicLimitNote(card.targetDurationMinutes)}`;

@@ -39,7 +39,7 @@ import type { IncomingSource } from './player-presentation';
 import { PlayerHeader } from './player-header';
 import { PlayerMobileHeader } from './player-mobile-header';
 import { usePlayerContext } from './player-provider';
-import { engagedSourceName } from './player-provider-model';
+import { engagedSourceName, type EngagedSource } from './player-provider-model';
 import type { PlaybackSample } from './playback-controller-api';
 import { progressSlotClass } from './section-loop-bar';
 import { TrackProgress } from './track-progress';
@@ -100,6 +100,26 @@ function startedView(result: Awaited<PendingStart['result']>): View {
   const refusal = creationRefusalFor(result.error);
   if (refusal) return { kind: 'blocked', refusal };
   return { kind: 'failed', message: result.error.message };
+}
+
+/** The source the player narrates as on its way: a pending one arming behind
+ * the audible one, unless its generation is in trouble, else a Session whose
+ * start request is still in flight. */
+function incomingSource(input: {
+  pendingSource: EngagedSource | null;
+  troubled: boolean;
+  connecting: boolean;
+}): IncomingSource | null {
+  if (input.pendingSource) {
+    if (input.troubled) return null;
+    return {
+      stage: 'preparing',
+      noun: input.pendingSource.kind === 'session' ? 'Session' : 'Playlist',
+      title: engagedSourceName(input.pendingSource),
+    };
+  }
+  if (input.connecting) return { stage: 'connecting' };
+  return null;
 }
 
 export function PlayerView() {
@@ -202,18 +222,11 @@ export function PlayerView() {
   // player: a "preparing" pulse would over-promise while generation is blocked.
   const troubledPlayer =
     pending?.player && pending.player.generationStatus !== 'ok' ? pending.player : null;
-  const pendingTitle = pending ? engagedSourceName(pending.source) : null;
-  const incoming: IncomingSource | null = pending
-    ? troubledPlayer
-      ? null
-      : {
-          stage: 'preparing',
-          noun: pending.source.kind === 'session' ? 'Session' : 'Playlist',
-          title: pendingTitle,
-        }
-    : view.kind === 'connecting'
-      ? { stage: 'connecting' }
-      : null;
+  const incoming = incomingSource({
+    pendingSource: pending?.source ?? null,
+    troubled: troubledPlayer !== null,
+    connecting: view.kind === 'connecting',
+  });
   const livePlayer = playback ? (
     <>
       {view.kind === 'connecting' ? (
