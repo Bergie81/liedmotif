@@ -1285,19 +1285,24 @@ export function usePlaybackController(
   }, [applyLoopEvent, explicitNextTarget, playIndexOrWait]);
 
   // Feedback-loop actions — semantics in use-track-actions.
-  const { dislike, deleteTrack, applyRetentionFlags, toggleFavorite, reportSkip } = useTrackActions(
-    {
-      sourceId,
-      sessionId,
-      activeTrack,
-      patch,
-      queueChanged: () => pollQueueNowRef.current(),
-      markRemoved: (queueItemId) => locallyRemovedRef.current.add(queueItemId),
-      unmarkRemoved: (queueItemId) => locallyRemovedRef.current.delete(queueItemId),
-      removeFromQueue,
-      advancePastCurrent,
-    },
-  );
+  const {
+    dislike,
+    deleteTrack,
+    applyRetentionFlags,
+    applyRetentionAdded,
+    toggleFavorite,
+    reportSkip,
+  } = useTrackActions({
+    sourceId,
+    sessionId,
+    activeTrack,
+    patch,
+    queueChanged: () => pollQueueNowRef.current(),
+    markRemoved: (queueItemId) => locallyRemovedRef.current.add(queueItemId),
+    unmarkRemoved: (queueItemId) => locallyRemovedRef.current.delete(queueItemId),
+    removeFromQueue,
+    advancePastCurrent,
+  });
 
   /** Delete Track and a removal from the playing Playlist are not feedback:
    * unlike Skip, moving past the removed Track records neither a `skip` event
@@ -2022,6 +2027,7 @@ export function usePlaybackController(
       deleteTrack,
       advancePastDeletedTrack,
       applyRetentionFlags,
+      applyRetentionAdded,
       toggleFavorite,
       cyclePlaybackMode,
       setPlaybackMode,
@@ -2055,6 +2061,7 @@ export function usePlaybackController(
     deleteTrack,
     advancePastDeletedTrack,
     applyRetentionFlags,
+    applyRetentionAdded,
     toggleFavorite,
     cyclePlaybackMode,
     setPlaybackMode,

@@ -7,7 +7,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import type { AssistantReceipt, SessionSummary } from '@liedmotif/shared';
 import { adoptStoredPlaybackSettings, usePlayerContext } from '@/components/player/player-provider';
-import { optimisticFavoriteFlags } from '@/components/player/track-retention';
 
 /**
  * What to call with each receipt. `refreshChrome` re-reads the shell's own
@@ -43,29 +42,17 @@ export function usePlayerFollowsReceipt(
       };
       switch (receipt.action) {
         case 'favoriteTrack': {
-          const track = live?.player.currentTrack;
-          if (!live || track?.trackId !== receipt.track.id) return;
-          // The star's own tap sets these flags; curated membership is not its to move.
-          live.player.applyRetentionFlags(
-            track.trackId,
-            optimisticFavoriteFlags(track, true, new Date().toISOString()),
-            track.inCuratedPlaylist,
-          );
+          if (live?.player.currentTrack?.trackId !== receipt.track.id) return;
+          live.player.applyRetentionAdded(receipt.track.id, { favorited: true, curated: false });
           return;
         }
         case 'addToPlaylist': {
           const track = live?.player.currentTrack;
           if (!live || !track || !receipt.tracks.some(({ id }) => id === track.trackId)) return;
-          // What the server's flag sync makes of the membership: any Playlist
-          // saves the Track, Favorites also favorites it.
-          const now = new Date().toISOString();
-          live.player.applyRetentionFlags(
-            track.trackId,
-            receipt.retention === 'favorite'
-              ? optimisticFavoriteFlags(track, true, now)
-              : { savedAt: track.savedAt ?? now, favoritedAt: track.favoritedAt },
-            track.inCuratedPlaylist || receipt.retention === 'curated',
-          );
+          live.player.applyRetentionAdded(track.trackId, {
+            favorited: receipt.retention === 'favorite',
+            curated: receipt.retention === 'curated',
+          });
           return;
         }
         case 'newMusicOff':

@@ -170,6 +170,7 @@ function stubPlayer(overrides: Partial<PlaybackControllerApi> = {}): PlaybackCon
     deleteTrack: vi.fn(),
     advancePastDeletedTrack: vi.fn(),
     applyRetentionFlags: vi.fn(),
+    applyRetentionAdded: vi.fn(),
     toggleFavorite: vi.fn(),
     cyclePlaybackMode: vi.fn(),
     setPlaybackMode: vi.fn(),

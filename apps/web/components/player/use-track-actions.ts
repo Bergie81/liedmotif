@@ -16,8 +16,10 @@ import type { PlayableTrack } from './playable-track';
 import { clearPlayerError, showPlayerError, type PlayerAct } from './player-error-toast';
 import {
   optimisticFavoriteFlags,
+  type RetentionAdded,
   settleTrackFlags,
   type TrackRetentionFlags,
+  withRetentionAdded,
 } from './track-retention';
 
 export interface TrackActionDeps {
@@ -52,6 +54,10 @@ export interface TrackActions {
     flags: TrackRetentionFlags,
     inCuratedPlaylist: boolean,
   ) => void;
+  /** Show what an Assistant write added to a Track (a Favorite, a Playlist).
+   *  Not a newer choice of the star's: a star answer still on its way settles
+   *  with this addition on top. */
+  applyRetentionAdded: (trackId: string, added: RetentionAdded) => void;
   /** Toggle Favorite; Favorite implies Save. */
   toggleFavorite: () => void;
   /** Record the Skip soft-negative audit event (best-effort). */
@@ -71,6 +77,10 @@ export function useTrackActions(deps: TrackActionDeps): TrackActions {
   // answer lands only if its Track's version is still the one from its tap;
   // otherwise a newer choice already stands and the answer writes nothing.
   const retentionVersionRef = useRef<Map<string, number>>(new Map());
+  // The Assistant's additions to a Track while its star answer is on its way.
+  // A failed star never reached the server, so the server holds the flags from
+  // before the tap with these on top; that is what the star settles to.
+  const retentionAddedRef = useRef<Map<string, RetentionAdded[]>>(new Map());
   // A removal advances before its request settles, so a second tap in that
   // window would remove the next, unheard Track (for Reroll, possibly buying a
   // fresh generation). Held for the request only, not until a new Track arrives.
@@ -145,12 +155,24 @@ export function useTrackActions(deps: TrackActionDeps): TrackActions {
     [],
   );
 
+  const applyRetentionAdded = useCallback((trackId: string, added: RetentionAdded) => {
+    const { activeTrack, patch } = depsRef.current;
+    retentionAddedRef.current.get(trackId)?.push(added);
+    const track = activeTrack();
+    if (!track || track.trackId !== trackId) return;
+    applyFlags(track, withRetentionAdded(flagsOf(track), added, new Date().toISOString()));
+    if (added.curated) track.inCuratedPlaylist = true;
+    patchFlags(track, patch);
+  }, []);
+
   const toggleFavorite = useCallback(() => {
     const { sourceId, activeTrack, patch } = depsRef.current;
     const track = activeTrack();
     if (!track || retentionPendingRef.current.has(track.trackId)) return;
     retentionPendingRef.current.add(track.trackId);
     const version = bumpVersion(retentionVersionRef.current, track.trackId);
+    const addedSinceTap: RetentionAdded[] = [];
+    retentionAddedRef.current.set(track.trackId, addedSinceTap);
     clearPlayerError(sourceId, 'favorite');
     const previous = flagsOf(track);
     const favorited = previous.favoritedAt == null;
@@ -158,8 +180,16 @@ export function useTrackActions(deps: TrackActionDeps): TrackActions {
     patchFlags(track, patch);
     void favoriteTrack(track.trackId, favorited).then((res) => {
       retentionPendingRef.current.delete(track.trackId);
+      retentionAddedRef.current.delete(track.trackId);
       if (retentionVersionRef.current.get(track.trackId) !== version) return;
-      applyFlags(track, settleTrackFlags(previous, res.ok ? res.data : null));
+      const settledAt = new Date().toISOString();
+      applyFlags(
+        track,
+        addedSinceTap.reduce(
+          (flags, added) => withRetentionAdded(flags, added, settledAt),
+          settleTrackFlags(previous, res.ok ? res.data : null),
+        ),
+      );
       if (activeTrack()?.trackId === track.trackId) {
         patchFlags(track, patch);
       }
@@ -188,7 +218,14 @@ export function useTrackActions(deps: TrackActionDeps): TrackActions {
     });
   }, []);
 
-  return { dislike, deleteTrack, applyRetentionFlags, toggleFavorite, reportSkip };
+  return {
+    dislike,
+    deleteTrack,
+    applyRetentionFlags,
+    applyRetentionAdded,
+    toggleFavorite,
+    reportSkip,
+  };
 }
 
 function bumpVersion(versions: Map<string, number>, trackId: string): number {

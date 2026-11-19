@@ -115,6 +115,40 @@ describe('Favorite answer vs a newer picker commit', () => {
     ]);
   });
 
+  it('a failed Favorite after a Roadie add rolls the star back and keeps what Roadie saved', async () => {
+    const { actions, track, starLit } = setup({ savedAt: null, favoritedAt: null });
+
+    actions().toggleFavorite();
+    actions().applyRetentionAdded('a', { favorited: false, curated: true });
+    await answer({ ok: false });
+
+    expect(track.favoritedAt).toBeNull();
+    expect(track.savedAt).not.toBeNull();
+    expect(track.inCuratedPlaylist).toBe(true);
+    expect(starLit()).toBe(false);
+  });
+
+  it('a failed Unfavorite after Roadie favorited the Track keeps the star lit', async () => {
+    const { actions, track, starLit } = setup({ savedAt: SAVED, favoritedAt: STARRED });
+
+    actions().toggleFavorite();
+    actions().applyRetentionAdded('a', { favorited: true, curated: false });
+    await answer({ ok: false });
+
+    expect(track.favoritedAt).toBe(STARRED);
+    expect(starLit()).toBe(true);
+  });
+
+  it('a Roadie add with no star answer on its way shows the Track as kept', () => {
+    const { actions, track, starLit } = setup({ savedAt: null, favoritedAt: null });
+
+    actions().applyRetentionAdded('a', { favorited: true, curated: false });
+
+    expect(track.savedAt).not.toBeNull();
+    expect(track.favoritedAt).not.toBeNull();
+    expect(starLit()).toBe(true);
+  });
+
   it('ignores a second star tap while the first is pending', () => {
     const { actions } = setup();
 

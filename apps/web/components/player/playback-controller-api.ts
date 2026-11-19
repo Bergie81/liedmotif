@@ -15,7 +15,7 @@ import type {
   SessionVibe,
 } from '@liedmotif/shared';
 import type { PlayableTrack } from './playable-track';
-import type { TrackRetentionFlags } from './track-retention';
+import type { RetentionAdded, TrackRetentionFlags } from './track-retention';
 
 export type PlayerStatus = 'loading' | 'ready' | 'playing' | 'paused' | 'waiting' | 'ended';
 
@@ -267,6 +267,9 @@ export interface PlaybackControllerApi extends PlaybackControllerState {
     flags: TrackRetentionFlags,
     inCuratedPlaylist: boolean,
   ) => void;
+  /** Show what an Assistant write added to the current Track (a Favorite, a
+   * Playlist); a star answer still on its way settles with it on top. */
+  applyRetentionAdded: (trackId: string, added: RetentionAdded) => void;
   /** Toggle Favorite on the current track; Favorite implies Save. */
   toggleFavorite: () => void;
   /** Cycle Loop Session → Loop Track → Shuffle Session. */

@@ -6,7 +6,7 @@
 // playback settings the player blends with.
 
 import { renderHook } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { usePlayerFollowsReceipt } from './use-player-follows-receipt';
 
 const TRACK_ID = '0c9d4b7a-8a41-4b0e-b1a3-5a2d9d6c7e22';
@@ -24,7 +24,7 @@ vi.mock('@/components/player/player-provider', async (importActual) => ({
 
 /** A Session playing `TRACK_ID`, saved long ago and in a hand-picked Playlist, unless `track` says otherwise. */
 function playing(track: Record<string, unknown> = {}) {
-  const applyRetentionFlags = vi.fn();
+  const applyRetentionAdded = vi.fn();
   const applyTrackTitle = vi.fn();
   const engage = vi.fn();
   const session = { id: SESSION_ID, title: 'Rainy Window', sessionMode: 'keep_going' };
@@ -40,22 +40,17 @@ function playing(track: Record<string, unknown> = {}) {
           inCuratedPlaylist: true,
           ...track,
         },
-        applyRetentionFlags,
+        applyRetentionAdded,
         applyTrackTitle,
       },
     },
   };
-  return { applyRetentionFlags, applyTrackTitle, engage, session };
+  return { applyRetentionAdded, applyTrackTitle, engage, session };
 }
-
-afterEach(() => {
-  vi.useRealTimers();
-});
 
 describe('the player, after a receipt', () => {
   it('lights the star of the Track on the deck when that Track was favorited', () => {
-    vi.useFakeTimers({ now: new Date('2026-11-10T12:00:00.000Z') });
-    const { applyRetentionFlags } = playing();
+    const { applyRetentionAdded } = playing();
     const { result } = renderHook(() => usePlayerFollowsReceipt(vi.fn()));
 
     result.current({
@@ -64,15 +59,14 @@ describe('the player, after a receipt', () => {
       playlist: FAVORITES,
     });
 
-    expect(applyRetentionFlags).toHaveBeenCalledWith(
-      TRACK_ID,
-      { savedAt: '2026-01-01T00:00:00.000Z', favoritedAt: '2026-11-10T12:00:00.000Z' },
-      true,
-    );
+    expect(applyRetentionAdded).toHaveBeenCalledWith(TRACK_ID, {
+      favorited: true,
+      curated: false,
+    });
   });
 
   it('leaves the deck alone when another Track was favorited', () => {
-    const { applyRetentionFlags } = playing();
+    const { applyRetentionAdded } = playing();
     const { result } = renderHook(() => usePlayerFollowsReceipt(vi.fn()));
 
     result.current({
@@ -81,30 +75,17 @@ describe('the player, after a receipt', () => {
       playlist: FAVORITES,
     });
 
-    expect(applyRetentionFlags).not.toHaveBeenCalled();
+    expect(applyRetentionAdded).not.toHaveBeenCalled();
   });
 
   it.each([
-    {
-      retention: 'curated' as const,
-      flags: { savedAt: '2026-11-10T12:00:00.000Z', favoritedAt: null },
-      inCuratedPlaylist: true,
-    },
-    {
-      retention: 'favorite' as const,
-      flags: { savedAt: '2026-11-10T12:00:00.000Z', favoritedAt: '2026-11-10T12:00:00.000Z' },
-      inCuratedPlaylist: false,
-    },
-    {
-      retention: 'saved' as const,
-      flags: { savedAt: '2026-11-10T12:00:00.000Z', favoritedAt: null },
-      inCuratedPlaylist: false,
-    },
+    { retention: 'curated' as const, added: { favorited: false, curated: true } },
+    { retention: 'favorite' as const, added: { favorited: true, curated: false } },
+    { retention: 'saved' as const, added: { favorited: false, curated: false } },
   ])(
     'shows the Track on the deck as kept once it was added to a Playlist ($retention)',
-    ({ retention, flags, inCuratedPlaylist }) => {
-      vi.useFakeTimers({ now: new Date('2026-11-10T12:00:00.000Z') });
-      const { applyRetentionFlags } = playing({ savedAt: null, inCuratedPlaylist: false });
+    ({ retention, added }) => {
+      const { applyRetentionAdded } = playing({ savedAt: null, inCuratedPlaylist: false });
       const { result } = renderHook(() => usePlayerFollowsReceipt(vi.fn()));
 
       result.current({
@@ -114,12 +95,12 @@ describe('the player, after a receipt', () => {
         tracks: [{ id: TRACK_ID, name: 'Night Drive' }],
       });
 
-      expect(applyRetentionFlags).toHaveBeenCalledWith(TRACK_ID, flags, inCuratedPlaylist);
+      expect(applyRetentionAdded).toHaveBeenCalledWith(TRACK_ID, added);
     },
   );
 
   it('leaves the deck alone when the Tracks added to a Playlist were others', () => {
-    const { applyRetentionFlags } = playing();
+    const { applyRetentionAdded } = playing();
     const { result } = renderHook(() => usePlayerFollowsReceipt(vi.fn()));
 
     result.current({
@@ -129,7 +110,7 @@ describe('the player, after a receipt', () => {
       tracks: [{ id: OTHER_ID, name: 'Tempo' }],
     });
 
-    expect(applyRetentionFlags).not.toHaveBeenCalled();
+    expect(applyRetentionAdded).not.toHaveBeenCalled();
   });
 
   it('shows New music off on the engaged Session without restarting it, and re-reads the shell', () => {
