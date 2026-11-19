@@ -35,7 +35,7 @@ import { CoverChip } from './cover-chip';
 import { GenerationBanner } from './generation-banner';
 import { NowPlaying } from './now-playing';
 import { PlaylistNowPlaying } from './playlist-now-playing';
-import type { IncomingSession } from './player-presentation';
+import type { IncomingSource } from './player-presentation';
 import { PlayerHeader } from './player-header';
 import { PlayerMobileHeader } from './player-mobile-header';
 import { usePlayerContext } from './player-provider';
@@ -194,19 +194,23 @@ export function PlayerView() {
     router.push('/sessions');
   }, [release, router]);
 
-  // While a NEW session arms behind the audible one (or its start request is
-  // still in flight), the current music keeps playing and the player itself
-  // says so — the cover chip and the slider's Session status — never a card
-  // swap that silences the page. Generation trouble on the incoming
-  // session swaps that reassurance for the banner above the player: a
-  // "preparing" pulse would over-promise while generation is blocked.
+  // While a NEW source arms behind the audible one (or a Session's start
+  // request is still in flight), the current music keeps playing and the
+  // player itself says so — the cover chip, and on a Session the slider's
+  // status — never a card swap that silences the page. Generation trouble on
+  // the incoming session swaps that reassurance for the banner above the
+  // player: a "preparing" pulse would over-promise while generation is blocked.
   const troubledPlayer =
     pending?.player && pending.player.generationStatus !== 'ok' ? pending.player : null;
   const pendingTitle = pending ? engagedSourceName(pending.source) : null;
-  const incoming: IncomingSession | null = pending
+  const incoming: IncomingSource | null = pending
     ? troubledPlayer
       ? null
-      : { stage: 'preparing', title: pendingTitle }
+      : {
+          stage: 'preparing',
+          noun: pending.source.kind === 'session' ? 'Session' : 'Playlist',
+          title: pendingTitle,
+        }
     : view.kind === 'connecting'
       ? { stage: 'connecting' }
       : null;
@@ -240,6 +244,7 @@ export function PlayerView() {
           key={playback.source.playlist.id}
           playback={playback}
           playlist={playback.source.playlist}
+          incoming={incoming}
         />
       ) : null}
     </>

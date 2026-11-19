@@ -44,3 +44,28 @@ export function CoverChip({
     </span>
   );
 }
+
+export interface StatusChip {
+  chip: string;
+  detail: string;
+  testId: string;
+}
+
+export const INCOMING_SOURCE_CHIP_TEST_ID = 'incoming-source-chip';
+
+/** The one persistent status announcement on a cover: the visible caption,
+ * with the detail as its hover title and screen-reader tail. */
+export function StatusCoverChip({ chip }: { chip: StatusChip }) {
+  return (
+    <CoverChip
+      tone="lamp"
+      role="status"
+      aria-live="polite"
+      data-testid={chip.testId}
+      title={`${chip.chip} ${chip.detail}`}
+    >
+      {chip.chip}
+      <span className="sr-only"> {chip.detail}</span>
+    </CoverChip>
+  );
+}

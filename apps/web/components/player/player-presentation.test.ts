@@ -5,7 +5,7 @@ import {
   countGeneratingAhead,
   coverArtSrc,
   playbackProgressPercent,
-  presentIncomingSession,
+  presentIncomingSource,
   presentMiniPlayer,
   presentMiniVibeChange,
   presentPlaybackMode,
@@ -373,24 +373,59 @@ describe('player presentation', () => {
   });
 
   it('narrates the incoming Session on the cover chip while the audible one keeps playing', () => {
-    expect(presentIncomingSession({ stage: 'preparing', title: 'Night Drive' })).toEqual({
+    expect(
+      presentIncomingSource(
+        { stage: 'preparing', noun: 'Session', title: 'Night Drive' },
+        'Session',
+      ),
+    ).toEqual({
       chip: 'Preparing “Night Drive”…',
       detail: 'This Session keeps playing until the new one is ready.',
     });
-    expect(presentIncomingSession({ stage: 'preparing', title: null })).toEqual({
+    expect(
+      presentIncomingSource({ stage: 'preparing', noun: 'Session', title: null }, 'Session'),
+    ).toEqual({
       chip: 'Preparing your next Session…',
       detail: 'This Session keeps playing until the new one is ready.',
     });
-    expect(presentIncomingSession({ stage: 'connecting' })).toEqual({
+    expect(presentIncomingSource({ stage: 'connecting' }, 'Session')).toEqual({
       chip: 'Setting the vibe…',
       detail: 'This Session keeps playing until the new one is ready.',
     });
   });
 
+  it('names an incoming Playlist "Next Playlist"', () => {
+    const playlist = { stage: 'preparing', noun: 'Playlist', title: null } as const;
+    expect(presentIncomingSource(playlist, 'Session').chip).toBe('Preparing your next Playlist…');
+    expect(presentIncomingSource({ ...playlist, title: 'Focus Nights' }, 'Session').chip).toBe(
+      'Preparing “Focus Nights”…',
+    );
+    expect(
+      presentSessionActivity({
+        incoming: playlist,
+        vibeChangeCaption: null,
+        sessionRepeat: false,
+        generatingAhead: 0,
+      }),
+    ).toEqual({ label: 'Next Playlist', tone: 'active' });
+  });
+
+  it('says the Playlist keeps playing while a Session is prepared behind it', () => {
+    expect(
+      presentIncomingSource({ stage: 'preparing', noun: 'Session', title: null }, 'Playlist'),
+    ).toEqual({
+      chip: 'Preparing your next Session…',
+      detail: 'This Playlist keeps playing until the new one is ready.',
+    });
+    expect(presentIncomingSource({ stage: 'connecting' }, 'Playlist').detail).toBe(
+      'This Playlist keeps playing until the new one is ready.',
+    );
+  });
+
   it('names the Tracks on the way as active Session work', () => {
     expect(
       presentSessionActivity({
-        incoming: false,
+        incoming: null,
         vibeChangeCaption: null,
         sessionRepeat: false,
         generatingAhead: 2,
@@ -401,7 +436,7 @@ describe('player presentation', () => {
   it('shows no Session status when nothing is happening', () => {
     expect(
       presentSessionActivity({
-        incoming: false,
+        incoming: null,
         vibeChangeCaption: null,
         sessionRepeat: false,
         generatingAhead: 0,
@@ -410,7 +445,7 @@ describe('player presentation', () => {
   });
 
   it('explains a Repeat Session calmly, but only while nothing generates', () => {
-    const repeat = { incoming: false, vibeChangeCaption: null, sessionRepeat: true };
+    const repeat = { incoming: null, vibeChangeCaption: null, sessionRepeat: true };
     expect(presentSessionActivity({ ...repeat, generatingAhead: 0 })).toEqual({
       label: 'Repeat',
       tone: 'muted',
@@ -430,11 +465,16 @@ describe('player presentation', () => {
       generatingAhead: 2,
       vibeChangeCaption: 'New vibe queued',
     };
-    expect(presentSessionActivity({ ...busy, incoming: true })).toEqual({
+    expect(
+      presentSessionActivity({
+        ...busy,
+        incoming: { stage: 'preparing', noun: 'Session', title: null },
+      }),
+    ).toEqual({
       label: 'Next Session',
       tone: 'active',
     });
-    expect(presentSessionActivity({ ...busy, incoming: false })).toEqual({
+    expect(presentSessionActivity({ ...busy, incoming: null })).toEqual({
       label: 'New vibe queued',
       tone: 'active',
     });

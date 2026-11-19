@@ -22,7 +22,12 @@ import { cn } from '@/lib/cn';
 import { coldStartStagedCopy } from './cold-start-progress';
 import { CoverFallback } from './cover-art';
 import { HeroCoverArt } from './hero-cover-art';
-import { CoverChip } from './cover-chip';
+import {
+  CoverChip,
+  INCOMING_SOURCE_CHIP_TEST_ID,
+  StatusCoverChip,
+  type StatusChip,
+} from './cover-chip';
 import { DeleteSessionAction, GenerationBanner, TryAgainAction } from './generation-banner';
 import { PlayerCoverSleeve } from './player-cover-sleeve';
 import { PlayerDirectionActions } from './player-direction-actions';
@@ -33,12 +38,12 @@ import { PlayerSessionOptions } from './player-session-options';
 import {
   countGeneratingAhead,
   SESSION_PLAYER_STATUS_LABEL,
-  presentIncomingSession,
+  presentIncomingSource,
   presentSessionActivity,
   presentSource,
   presentTrackGenres,
   resolveCoverImageId,
-  type IncomingSession,
+  type IncomingSource,
 } from './player-presentation';
 import { optionsTrackOf } from './playable-track';
 import { sectionLoopControl, sectionLoopLive } from './playback-controller-api';
@@ -85,44 +90,21 @@ function presentVocals(input: {
   return 'Vocals';
 }
 
-interface StatusChip {
-  chip: string;
-  detail: string;
-  testId: string;
-}
-
 /** The one persistent status announcement the cover art carries, and the
- * precedence between the three that can want it: an incoming Session outranks
+ * precedence between the three that can want it: an incoming source outranks
  * the armed vibe switch, which outranks the still-in-flight Change Vibe. */
 function presentStatusChip(input: {
-  incoming: IncomingSession | null;
+  incoming: IncomingSource | null;
   switchPending: boolean;
   vibeChangePending: boolean;
 }): StatusChip | null {
-  const incoming = input.incoming ? presentIncomingSession(input.incoming) : null;
-  if (incoming) return { ...incoming, testId: 'incoming-session-chip' };
+  const incoming = input.incoming ? presentIncomingSource(input.incoming, 'Session') : null;
+  if (incoming) return { ...incoming, testId: INCOMING_SOURCE_CHIP_TEST_ID };
   const vibeSwitch = presentVibeSwitch(input.switchPending);
   if (vibeSwitch) return { ...vibeSwitch, testId: 'vibe-switch-chip' };
   const vibeChange = presentVibeChangePending(input.vibeChangePending);
   if (vibeChange) return { ...vibeChange, testId: 'vibe-pending-chip' };
   return null;
-}
-
-/** The status announcement itself: the visible caption, with the detail as its
- * hover title and screen-reader tail. */
-function StatusCoverChip({ chip }: { chip: StatusChip }) {
-  return (
-    <CoverChip
-      tone="lamp"
-      role="status"
-      aria-live="polite"
-      data-testid={chip.testId}
-      title={`${chip.chip} ${chip.detail}`}
-    >
-      {chip.chip}
-      <span className="sr-only"> {chip.detail}</span>
-    </CoverChip>
-  );
 }
 
 export function NowPlaying({
@@ -136,9 +118,9 @@ export function NowPlaying({
   /** The engaged Session (the caller renders this surface only for a Session
    * source — a Playlist plays through PlaylistNowPlaying, without the shell). */
   session: SessionSummary;
-  /** A Session on its way to replace this one (the dual-host handoff): the
+  /** A source on its way to replace this Session (the dual-host handoff): the
    * cover chip and slider status narrate it while this playback continues. */
-  incoming?: IncomingSession | null;
+  incoming?: IncomingSource | null;
   onSessionChange: (session: SessionSummary) => void;
   onStopped: () => void;
 }) {
@@ -243,7 +225,7 @@ export function NowPlaying({
     loopHeld: player.loopHeld,
   });
   const sessionActivity = presentSessionActivity({
-    incoming: incoming != null,
+    incoming,
     vibeChangeCaption: presentVibeChangeCaption({
       items: player.queueItems,
       currentTrackStyleRevision: track?.styleRevision ?? null,

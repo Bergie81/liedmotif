@@ -19,7 +19,7 @@ import {
   initialPlaybackControllerState,
   type PlaybackControllerApi,
 } from './playback-controller-api';
-import type { SourceNoun } from './player-presentation';
+import type { IncomingSource, SourceNoun } from './player-presentation';
 import type { EngagedSource, LivePlayback, PlayerContextValue } from './player-provider';
 import { PlaylistNowPlaying } from './playlist-now-playing';
 import { SERVER_TRACK_MEDIA, TrackMediaProvider, type TrackMedia } from './track-media';
@@ -325,6 +325,22 @@ const SESSION_SURFACE: Surface = {
     ),
 };
 
+const PLAYLIST_SOURCE: EngagedSource = {
+  kind: 'playlist',
+  playlist: PLAYLIST,
+  items: [
+    {
+      id: 'track-1',
+      title: 'Night Drive',
+      coverImageId: null,
+      durationSeconds: 180,
+      audioUrl: '/api/tracks/track-1/audio',
+    } as PlaylistMemberItem,
+  ],
+  startTrackId: null,
+  foreign: false,
+};
+
 const PLAYLIST_SURFACE: Surface = {
   name: 'Playlist',
   noun: 'Playlist',
@@ -337,24 +353,8 @@ const PLAYLIST_SURFACE: Surface = {
   queueSheet: 'Focus Nights',
   swipeArt: ['/api/covers/previous-cover', '/api/covers/next-cover'],
   show: (player) =>
-    mount(
-      player,
-      {
-        kind: 'playlist',
-        playlist: PLAYLIST,
-        items: [
-          {
-            id: 'track-1',
-            title: 'Night Drive',
-            coverImageId: null,
-            durationSeconds: 180,
-            audioUrl: '/api/tracks/track-1/audio',
-          } as PlaylistMemberItem,
-        ],
-        startTrackId: null,
-        foreign: false,
-      },
-      (playback) => h(PlaylistNowPlaying, { playback, playlist: PLAYLIST }),
+    mount(player, PLAYLIST_SOURCE, (playback) =>
+      h(PlaylistNowPlaying, { playback, playlist: PLAYLIST }),
     ),
 };
 
@@ -663,6 +663,32 @@ describe('the Session shell belongs to a Session alone', () => {
 
       expect(screen.queryByRole('progressbar')).toBeNull();
     });
+  });
+});
+
+describe('a Session prepared behind a Playlist', () => {
+  function showPlaylistWith(incoming: IncomingSource) {
+    mount(playingPlayer(), PLAYLIST_SOURCE, (playback) =>
+      h(PlaylistNowPlaying, { playback, playlist: PLAYLIST, incoming }),
+    );
+  }
+
+  it('says on the cover that the Playlist keeps playing until it is ready', () => {
+    showPlaylistWith({ stage: 'preparing', noun: 'Session', title: 'Night Drive' });
+
+    const chip = screen.getByTestId('incoming-source-chip');
+    expect(chip.getAttribute('role')).toBe('status');
+    expect(chip.textContent).toBe(
+      'Preparing “Night Drive”… This Playlist keeps playing until the new one is ready.',
+    );
+    expect(chip.getAttribute('title')).toBe(chip.textContent);
+  });
+
+  it('carries no Session status on the progress bar', () => {
+    showPlaylistWith({ stage: 'preparing', noun: 'Session', title: null });
+
+    expect(screen.getByText('Preparing your next Session…')).toBeTruthy();
+    expect(screen.queryByText('Next Session')).toBeNull();
   });
 });
 

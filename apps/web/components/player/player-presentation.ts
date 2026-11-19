@@ -131,16 +131,25 @@ export function presentMiniVibeChange(
   return null;
 }
 
-/** A Session on its way to replace the audible one: its start request is
- * still in flight (`connecting` — no Session exists yet) or it is arming
- * behind the current playback (`preparing`, the dual-host handoff). */
-export type IncomingSession =
-  { stage: 'connecting' } | { stage: 'preparing'; title: string | null };
+/** A Playback source on its way to replace the audible one: a Session whose
+ * start request is still in flight (`connecting` — no Session exists yet), or
+ * a Session or Playlist arming behind the current playback (`preparing`, the
+ * dual-host handoff). */
+export type IncomingSource =
+  { stage: 'connecting' } | { stage: 'preparing'; noun: SourceNoun; title: string | null };
 
-/** The cover chip's narration for an incoming Session. `chip` is the visible
- * mono micro-copy; `detail` carries the reassurance (playback continues) for
- * assistive tech and the hover title — too long for the chip itself. */
-export function presentIncomingSession(incoming: IncomingSession): {
+function incomingNoun(incoming: IncomingSource): SourceNoun {
+  return incoming.stage === 'connecting' ? 'Session' : incoming.noun;
+}
+
+/** The cover chip's narration for an incoming source over the `playing` one.
+ * `chip` is the visible mono micro-copy; `detail` carries the reassurance
+ * (playback continues) for assistive tech and the hover title — too long for
+ * the chip itself. */
+export function presentIncomingSource(
+  incoming: IncomingSource,
+  playing: SourceNoun,
+): {
   chip: string;
   detail: string;
 } {
@@ -150,8 +159,8 @@ export function presentIncomingSession(incoming: IncomingSession): {
         ? 'Setting the vibe…'
         : incoming.title
           ? `Preparing “${incoming.title}”…`
-          : 'Preparing your next Session…',
-    detail: 'This Session keeps playing until the new one is ready.',
+          : `Preparing your next ${incoming.noun}…`,
+    detail: `This ${playing} keeps playing until the new one is ready.`,
   };
 }
 
@@ -341,19 +350,19 @@ export interface SessionActivity {
 }
 
 /** What the Session is doing, as the slider's status after the Track number.
- * An incoming Session outranks everything (it IS what plays next), then the
+ * An incoming source outranks everything (it IS what plays next), then the
  * Change Vibe the listener asked for, then the Tracks on the way. Repeat
  * explains why nothing generates, so it shows only while nothing does. Null
  * when the Session is idle: the status never claims work that is not
  * happening. */
 export function presentSessionActivity(input: {
-  incoming: boolean;
+  incoming: IncomingSource | null;
   /** The Change Vibe narration (`presentVibeChangeCaption`). */
   vibeChangeCaption: string | null;
   sessionRepeat: boolean;
   generatingAhead: number;
 }): SessionActivity | null {
-  if (input.incoming) return { label: 'Next Session', tone: 'active' };
+  if (input.incoming) return { label: `Next ${incomingNoun(input.incoming)}`, tone: 'active' };
   if (input.vibeChangeCaption) return { label: input.vibeChangeCaption, tone: 'active' };
   if (input.generatingAhead > 0) {
     return { label: `Generating ${input.generatingAhead}`, tone: 'active' };
