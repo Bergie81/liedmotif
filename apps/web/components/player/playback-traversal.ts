@@ -64,7 +64,10 @@ export class PlaybackTraversal {
       if (!target || !skip(target.track)) return target;
       this.shuffleState = commitShuffleTarget(this.shuffleState, null, target.track.queueItemId);
     }
-    return null;
+    // The bag never holds the current Track, so when `skip` rejects every
+    // other one, Shuffle repeats the current Track the way a lone Track repeats.
+    const current = targetById(tracks, currentQueueItemId);
+    return current && !skip(current.track) ? current : null;
   }
 
   commit(
