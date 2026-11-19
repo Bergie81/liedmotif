@@ -218,7 +218,6 @@ export function RegenerateCoverDialog({
   async function start() {
     setBusy(true);
     reportCoverFailure(null);
-    setDismissed(false);
     setSelectedCoverId(null);
     const result = await regenerateSessionCover(sessionId, {
       ...(styleChoice ? { coverStyle: styleChoice } : {}),
@@ -229,6 +228,9 @@ export function RegenerateCoverDialog({
     setBusy(false);
     reportCoverFailure(result.ok ? null : result.error.message);
     if (!result.ok) return;
+    // Only a started attempt reopens the preview: a refused one leaves an
+    // ended preview ended.
+    setDismissed(false);
     setRequestedId(result.data.coverGenerationId);
     void refresh();
   }
@@ -241,9 +243,10 @@ export function RegenerateCoverDialog({
     setHistoryBusyId(null);
     reportCoverFailure(result.ok ? null : result.error.message);
     if (!result.ok) return;
-    // Any saved cover ends the preview; an unchosen fresh attempt stays in the
-    // history, one tap away.
-    setDismissed(true);
+    // Any saved cover ends the preview of a finished attempt; the unchosen
+    // fresh cover stays in the history, one tap away. One still running is
+    // previewed once it lands.
+    if (pendingCoverId !== null) setDismissed(true);
     setSelectedCoverId(null);
     onCoverChanged?.(historyCoverImageId);
     void refresh();

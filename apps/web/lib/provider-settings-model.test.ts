@@ -6,9 +6,12 @@ import {
   coverKeyNotice,
   coverSharedKeyVendor,
   generatedImageProviderPresentation,
+  llmNothingToEnter,
   llmProviderPresentation,
   requiresProviderReplacementConfirmation,
 } from './provider-settings-model';
+
+const UNHEALTHY = { label: 'Unhealthy', tone: 'warn' } as const;
 
 describe('provider settings model', () => {
   it('presents the cover-image provider by where its key resolves from', () => {
@@ -173,6 +176,26 @@ describe('provider settings model', () => {
       source: 'Environment',
       status: { label: 'Unhealthy', tone: 'warn' },
     });
+  });
+
+  it('leaves the onboarding Text AI step editable while LLM_PROVIDER names a provider with no key', () => {
+    expect(llmNothingToEnter({ source: 'Environment', configured: false, status: UNHEALTHY })).toBe(
+      false,
+    );
+    expect(
+      llmNothingToEnter({
+        source: 'Environment',
+        configured: true,
+        status: { label: 'Environment', tone: 'ok' },
+      }),
+    ).toBe(true);
+    expect(
+      llmNothingToEnter({
+        source: 'Database',
+        configured: true,
+        status: { label: 'Configured', tone: 'ok' },
+      }),
+    ).toBe(false);
   });
 
   it('marks an unsupported selected provider unhealthy', () => {

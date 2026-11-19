@@ -283,6 +283,22 @@ describe('planOfflineSync', () => {
     expect(plan.refreshes).toEqual([{ track: changed, withCover: true }]);
   });
 
+  it('gives no other cover the room a shrinking cover frees before that refresh is stored', () => {
+    // A's smaller cover frees 1 MB only once its refresh is written; if that
+    // write fails, B's bigger cover must not have taken the room.
+    const shrunk = { ...covered('a', 4 * MB, 1 * MB, 'v2'), coverImageId: 'cover-a-new' };
+    const plan = planOfflineSync({
+      marks: [mark('playlist:a', 1, [shrunk, covered('b', 4 * MB, 1 * MB)])],
+      stored: [
+        storedWithCover('a', 4 * MB, 'cover-a', 2 * MB),
+        storedWithCover('b', 4 * MB, 'cover-b', 0),
+      ],
+      capBytes: 10 * MB,
+    });
+
+    expect(plan.refreshes).toEqual([{ track: shrunk, withCover: true }]);
+  });
+
   it('gives a mark’s downloads room before a stored copy’s cover', () => {
     const plan = planOfflineSync({
       marks: [

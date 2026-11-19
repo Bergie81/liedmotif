@@ -36,6 +36,7 @@ import { getDb } from '@/lib/db';
 import { isAccountEmailEnabled } from '@/lib/env';
 import { toPersonRoster } from '@/lib/people';
 import { loadProviderSettingsData } from '@/lib/provider-settings-data';
+import { llmNothingToEnter } from '@/lib/provider-settings-model';
 import { getStorageProvider, getTypicalTracksPerMusicRequest } from '@/lib/providers';
 import { resolveOwnVoiceOffer, type OwnVoiceOffer } from '@/lib/voice';
 import type { PeopleFormProps } from '@/components/settings/people-types';
@@ -196,7 +197,7 @@ export async function loadOnboardingData(ownerUserId: string): Promise<Onboardin
     llm: {
       providerKey: providers.llm.providerKey,
       displayName: providers.llm.credential?.displayName || providers.llm.providerKey,
-      environmentManaged: providers.llm.presentation.source === 'Environment',
+      environmentManaged: llmNothingToEnter(providers.llm.presentation),
       // The presentation's own health check, so "Connected" here can never mean
       // something Settings would call Unhealthy.
       configured: providers.llm.presentation.configured,

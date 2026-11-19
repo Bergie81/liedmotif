@@ -141,7 +141,9 @@ export function planOfflineSync(input: {
     // so a device past its cap keeps the covers it already holds.
     const withCover = extraBytes <= 0 || usedBytes + extraBytes <= input.capBytes;
     if (copy.version === track.version && !(coverMissing && withCover)) continue;
-    usedBytes += withCover ? extraBytes : -copy.coverBytes;
+    // Room a refresh frees counts only from the next sync: a write that fails
+    // keeps the stored cover, so no other cover may take that room now.
+    if (withCover && extraBytes > 0) usedBytes += extraBytes;
     refreshes.push({ track, withCover });
   }
 

@@ -54,6 +54,16 @@ export function llmProviderPresentation(input: {
 }
 
 /**
+ * The Text AI runs from `.env` as it stands, so onboarding has nothing to ask.
+ * `LLM_PROVIDER` alone (no key anywhere) still needs the key entered here.
+ */
+export function llmNothingToEnter(
+  presentation: ReturnType<typeof llmProviderPresentation>,
+): boolean {
+  return presentation.source === 'Environment' && presentation.configured;
+}
+
+/**
  * The cover-image provider as the UI reports it. Generated covers are optional,
  * so a provider with no key anywhere reads as not configured rather than
  * unhealthy when only `IMAGE_PROVIDER` names it; one saved in the app without a

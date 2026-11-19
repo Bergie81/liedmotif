@@ -786,6 +786,32 @@ describe.skipIf(skip)('Shared reference add (the add-many write)', () => {
     expect(await memberRows(refs.favoritesId)).toEqual([[trackId, 0]]);
   });
 
+  it('reads an id in any letter case as the same track: a member is kept, the rest still added', async () => {
+    const { trackId } = await seedAudibleForeignTrack();
+    const visitor = await createUser(testDb.db);
+    const own = await seedReadyTrack(testDb.db, { ownerUserId: visitor });
+    const mine = await createPlaylist(testDb.db, { ownerUserId: visitor, name: 'Mine' });
+    await addPlaylistTracks(testDb.db, {
+      ownerUserId: visitor,
+      playlistId: mine.id,
+      trackIds: [trackId],
+      includeLoungeTracks: true,
+    });
+
+    const result = await addPlaylistTracks(testDb.db, {
+      ownerUserId: visitor,
+      playlistId: mine.id,
+      trackIds: [trackId.toUpperCase(), own.trackId.toUpperCase()],
+      includeLoungeTracks: true,
+    });
+
+    expect(result).toMatchObject({ added: [own.trackId], refused: [] });
+    expect(await memberRows(mine.id)).toEqual([
+      [trackId, 0],
+      [own.trackId, 1],
+    ]);
+  });
+
   it('a reference it filed is purged when the owner unshares', async () => {
     const { ownerUserId, sharedPlaylistId, trackId } = await seedAudibleForeignTrack();
     const visitor = await createUser(testDb.db);

@@ -36,6 +36,7 @@ afterEach(() => {
   toast.dismiss();
   cleanup();
   vi.clearAllMocks();
+  vi.unstubAllGlobals();
 });
 
 /** The server side of the dialog: which cover is current and whether the reroll landed. */
@@ -182,3 +183,76 @@ it('a failed save keeps the preview and its buttons, and shows the error', async
   expect(screen.getByTestId('regenerate-cover-confirm')).toBeTruthy();
   expect(screen.getByTestId('regenerate-cover-dismiss')).toBeTruthy();
 });
+
+it('a reroll refused after the save does not bring the unchosen fresh cover back', async () => {
+  serveCovers();
+  await rerollAndPickOlder();
+  await act(async () => {
+    fireEvent.click(screen.getByTestId('regenerate-cover-confirm'));
+  });
+  await waitFor(() => expect(screen.queryByTestId('regenerate-cover-confirm')).toBeNull());
+  api.regenerateSessionCover.mockResolvedValueOnce({
+    ok: false,
+    error: { code: 'rate_limited', message: 'Too many cover requests.' },
+  });
+
+  await act(async () => {
+    fireEvent.click(screen.getByTestId('regenerate-cover-start'));
+  });
+
+  expect(bigCoverId()).toBe(OLDER);
+  expect(screen.queryByTestId('regenerate-cover-confirm')).toBeNull();
+});
+
+it('a reroll still running when an earlier cover is saved is previewed once it lands', async () => {
+  // The running attempt shows a loader, which asks for reduced motion.
+  vi.stubGlobal('matchMedia', () => ({ matches: true }));
+  const server = serveCovers();
+  const status = api.getSessionCoverStatus.getMockImplementation()!;
+  let landed = false;
+  api.getSessionCoverStatus.mockImplementation(async () => {
+    const result = await status();
+    if (!server.rerolled || landed) return result;
+    // The attempt is running: generating, with no fresh cover in the history yet.
+    return {
+      ok: true,
+      data: {
+        ...result.data,
+        generating: true,
+        latestRegeneration: {
+          ...result.data.latestRegeneration,
+          status: 'generating',
+          coverImageId: null,
+        },
+        history: result.data.history.filter(
+          (entry: { coverImageId: string }) => entry.coverImageId !== FRESH,
+        ),
+      },
+    };
+  });
+  render(
+    h(RegenerateCoverDialog, {
+      open: true,
+      onOpenChange: () => {},
+      sessionId: 'session-1',
+      sessionTitle: 'Night',
+      coverImageId: CURRENT,
+    }),
+  );
+  await waitFor(() => expect(screen.queryByTestId('cover-history')).not.toBeNull());
+  await act(async () => {
+    fireEvent.click(screen.getByTestId('regenerate-cover-start'));
+  });
+  fireEvent.click(historyTile(OLDER));
+  await act(async () => {
+    fireEvent.click(screen.getByTestId('regenerate-cover-confirm'));
+  });
+  await waitFor(() =>
+    expect(historyTile(OLDER).getAttribute('aria-label')).toBe('Show the current cover'),
+  );
+
+  landed = true;
+
+  await waitFor(() => expect(bigCoverId()).toBe(FRESH), { timeout: 8000 });
+  expect(screen.getByTestId('regenerate-cover-confirm')).toBeTruthy();
+}, 15_000);

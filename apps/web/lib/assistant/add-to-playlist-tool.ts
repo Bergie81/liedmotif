@@ -45,7 +45,7 @@ export function createAddToPlaylistTool(
 
         // Everything the receipt names is read before the write, so nothing
         // can fail between the write and its receipt.
-        const trackIds = asked.filter(isId);
+        const trackIds = asked.filter(isId).map((id) => id.toLowerCase());
         const titles = new Map(
           await Promise.all(
             trackIds.map(async (id) => [id, await readableTrackTitle(asker, id)] as const),

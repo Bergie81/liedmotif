@@ -378,7 +378,9 @@ export async function addPlaylistTracks(
   },
 ): Promise<AddPlaylistTracksResult | null> {
   const now = args.now ?? new Date();
-  const requested = [...new Set(args.trackIds)];
+  // Postgres reads a uuid in any letter case; the membership check compares
+  // strings, so ids are matched in the lowercase form the rows come back in.
+  const requested = [...new Set(args.trackIds.map((id) => id.toLowerCase()))];
   return withOwnerPlaylistLock(db, args.ownerUserId, async (tx) => {
     const playlist = await lockOwnedPlaylist(tx, args.ownerUserId, args.playlistId);
     if (!playlist) return null;
