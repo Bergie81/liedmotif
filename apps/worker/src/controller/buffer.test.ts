@@ -583,6 +583,20 @@ describe('a Session with nothing to play stays visibly stuck', () => {
     }
   });
 
+  it('a Change Vibe on a stuck Session buys its revision fill without a listener, in either mode', () => {
+    // Nothing plays, so no listener can ever report: the Change Vibe that armed
+    // the revision is the request for its batch.
+    const changed = { ...stuckUnheard, hasCurrentRevisionGenerated: false };
+    expect(decideBufferAction(changed)).toEqual({ action: 'generate', generationStatus: 'ok' });
+    expect(decideBufferAction({ ...changed, sessionMode: 'repeat' }).action).toBe('generate');
+    // Every other guard still binds it.
+    expect(decideBufferAction({ ...changed, providerSignal: 'provider_error' }).action).toBe(
+      'noop',
+    );
+    expect(decideBufferAction({ ...changed, costLimit: overDay }).action).toBe('session_repeat');
+    expect(decideBufferAction({ ...changed, hasConcurrencySlot: false }).action).toBe('wait');
+  });
+
   it('a provider block keeps its own status over the stuck one', () => {
     expect(decideBufferAction({ ...stuckUnheard, providerSignal: 'provider_credits' })).toEqual({
       action: 'noop',

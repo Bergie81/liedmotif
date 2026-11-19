@@ -1,9 +1,10 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { and, eq, inArray, isNotNull } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm';
 import {
   ownerScope,
   activitySessions,
   refreshStorageUsage,
+  restyleSession,
   resumeSession,
   stopSession,
   applyLoopLease,
@@ -2059,6 +2060,63 @@ describeIfDb('ensure-session-buffer controller', () => {
       expect(calls()).toBe(2);
     });
 
+    it('a tick that waited on the lock through the tap buys the one batch, and nothing after it lands', async () => {
+      const { ownerUserId, sessionId, calls, tick } = await failedFirstBatch('keep_going');
+
+      // Another tick of the owner holds the lock (on its own connection); this
+      // tick's transaction opens and waits on it while the listener taps Try again.
+      const other = await connectTestDb('ensure-session-buffer-lock-holder');
+      let release!: () => void;
+      const held = new Promise<void>((resolve) => (release = resolve));
+      let locked!: () => void;
+      const lockTaken = new Promise<void>((resolve) => (locked = resolve));
+      const holder = withOwnerGenerationLock(other.db, ownerUserId, async () => {
+        locked();
+        await held;
+      });
+      await lockTaken;
+      const waiting = tick();
+      await vi.waitFor(async () => {
+        const { rows } = await ctx.pool.query(
+          `select 1 from pg_stat_activity where wait_event_type = 'Lock' and wait_event = 'advisory'`,
+        );
+        expect(rows).toHaveLength(1);
+      });
+      await ctx.db
+        .update(activitySessions)
+        .set({ lastResumedAt: sql`now()` })
+        .where(eq(activitySessions.id, sessionId));
+      release();
+      await holder;
+      await other.pool.end();
+      const bought = await waiting;
+      expect(bought.action).toBe('generate');
+
+      // The tapped batch lands while nothing plays yet.
+      const [job] = await ctx.db
+        .select()
+        .from(providerJobs)
+        .where(eq(providerJobs.id, bought.submittedProviderJobId!));
+      await ctx.db
+        .update(providerJobs)
+        .set({ normalizedStatus: 'ready' })
+        .where(eq(providerJobs.id, job!.id));
+      await ctx.db
+        .update(generationRequests)
+        .set({ status: 'materialized' })
+        .where(eq(generationRequests.id, job!.generationRequestId));
+      await createTrack(ctx.db, {
+        ownerUserId,
+        generationRequestId: job!.generationRequestId,
+        providerJobId: job!.id,
+        status: 'ready',
+        audioStorageKey: 'audio/test/tapped.mp3',
+      });
+
+      expect(await tick()).toMatchObject({ action: 'noop', generationStatus: 'ok' });
+      expect(calls()).toBe(1);
+    });
+
     it('a plain Start still prefills toward a higher target before anything plays', async () => {
       const { ownerUserId, sessionId } = await freshGeneratingSession();
       await ctx.db
@@ -2220,6 +2278,27 @@ describeIfDb('ensure-session-buffer controller', () => {
           ),
         );
     }
+
+    it.each(['keep_going', 'repeat'] as const)(
+      'a Change Vibe on a stuck Session buys the new vibe with nobody listening (%s)',
+      async (sessionMode) => {
+        const { ownerUserId, sessionId, calls, tick } = await failedFirstBatch(sessionMode);
+        await failedBatchAt(sessionId, HOUR_BEFORE);
+        expect(await tick()).toMatchObject({ action: 'noop', generationStatus: 'provider_error' });
+
+        const restyled = await restyleSession(ctx.db, {
+          ownerUserId,
+          sessionId,
+          snapshot: { ...SNAPSHOT, stylePrompt: 'warm jazz trio' } as StyleSnapshot,
+          includesListener: false,
+        });
+        expect(restyled.ok).toBe(true);
+
+        expect(await tick()).toMatchObject({ action: 'generate', generationStatus: 'ok' });
+        expect((await tick()).action).toBe('noop');
+        expect(calls()).toBe(1);
+      },
+    );
 
     it.each(['keep_going', 'repeat'] as const)(
       'a refused retry leaves the Session stuck, and the next tap retries (%s)',

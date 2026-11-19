@@ -5,7 +5,7 @@
 // captured `providerTaskId` once the provider confirms. The unique index
 // `provider_jobs_generation_request_id_unique` guarantees one paid job per request.
 
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import {
   assertNoProviderResubmitAfterTask,
   type BlendIdentity,
@@ -95,6 +95,11 @@ export async function insertSubmittingGenerationJob(
       providerKey: input.providerKey,
       submitState: 'submitting',
       normalizedStatus: 'queued',
+      // The moment of the insert, not the transaction's start: a buffer tick
+      // opens its transaction before it waits on the owner lock, and a Try
+      // again recorded during that wait must read as older than the batch it
+      // bought, or the next tick would buy that batch again.
+      createdAt: sql`clock_timestamp()`,
     })
     .returning({ id: providerJobs.id });
   return { requestId, jobId: job!.id };

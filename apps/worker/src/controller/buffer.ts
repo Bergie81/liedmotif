@@ -288,9 +288,12 @@ function decideSupplyAction(input: BufferDecisionInput): BufferDecision {
   //    already asked for that batch, and it can be held up past the listener
   //    window (a concurrency slot still taken, a provider block's cooldown)
   //    with nothing playing to report a listener. It is bounded to that one
-  //    batch, and idle auto-stop still ends an abandoned Session.
-  const isFirstFill = needsRevisionInitialFill && !input.hasEverGenerated;
-  if (!input.listenerActive && !isFirstFill) {
+  //    batch, and idle auto-stop still ends an abandoned Session. A stuck
+  //    Session's revision fill is the same: with nothing to play no listener
+  //    can ever report, so the Change Vibe that armed the revision is the
+  //    request for its one batch.
+  const unheardFill = needsRevisionInitialFill && (!input.hasEverGenerated || input.stuck);
+  if (!input.listenerActive && !unheardFill) {
     return { action: 'noop', generationStatus: 'ok' };
   }
 
