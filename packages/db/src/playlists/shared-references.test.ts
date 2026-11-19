@@ -14,12 +14,11 @@ import {
   createPlaylist,
   deletePlaylist,
   ensureFavoritesPlaylist,
-  getPlaylistDetail,
-  listPlaylists,
   removePlaylistTrack,
   setPlaylistOrder,
   setTrackFavorited,
 } from './playlists-repo';
+import { getPlaylistDetail, listPlaylists } from './playlist-reads';
 import { setPlaylistShared } from './playlist-share-repo';
 import { getLoungePlaylistDetail } from './lounge-repo';
 import { deleteTrack } from '../generation/delete-track-repo';

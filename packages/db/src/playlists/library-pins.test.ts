@@ -9,13 +9,8 @@ import {
   truncateTables,
   type TestDb,
 } from '../testing';
-import {
-  addPlaylistTracks,
-  createPlaylist,
-  ensureFavoritesPlaylist,
-  listPlaylists,
-  listPlaylistsPage,
-} from './playlists-repo';
+import { addPlaylistTracks, createPlaylist, ensureFavoritesPlaylist } from './playlists-repo';
+import { listPlaylists, listPlaylistsPage } from './playlist-reads';
 import { getLoungePlaylistDetail, listLoungePlaylistsPage } from './lounge-repo';
 import { setPlaylistShared } from './playlist-share-repo';
 import { setPlaylistLibraryPinned, setPlaylistLoungePinned } from './pins-repo';

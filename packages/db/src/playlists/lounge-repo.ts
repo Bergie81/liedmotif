@@ -58,7 +58,7 @@ import {
   afterPlaylistPosition,
   type PlaylistMemberTrack,
   type PlaylistSummary,
-} from './playlists-repo';
+} from './playlist-reads';
 
 /** Why a row survived the query: the winning field and a bounded snippet of it. */
 export interface LoungeMatch {

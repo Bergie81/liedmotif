@@ -18,9 +18,6 @@ import {
   createPlaylist,
   ensureFavoritesPlaylist,
   deletePlaylist,
-  getPlaylistDetail,
-  listPlaylists,
-  listPlaylistsPage,
   removePlaylistTrack,
   renamePlaylist,
   setPlaylistOrder,
@@ -28,6 +25,7 @@ import {
   touchPlaylistPlayed,
   unsaveTrackEverywhere,
 } from './playlists-repo';
+import { getPlaylistDetail, listPlaylists, listPlaylistsPage } from './playlist-reads';
 import { getPlaylistShare, setPlaylistShared } from './playlist-share-repo';
 import { getOwnedTrackSummary, rejectDislikedTrack } from '../generation/feedback-repo';
 import { deleteTrack } from '../generation/delete-track-repo';

@@ -16,8 +16,8 @@ import {
   applyTrackMemberships,
   createPlaylist,
   ensureFavoritesPlaylist,
-  listPlaylists,
 } from './playlists-repo';
+import { listPlaylists } from './playlist-reads';
 import { setPlaylistShared } from './playlist-share-repo';
 import { getOwnedPlaylistDownloadTracks } from './playlist-download-repo';
 

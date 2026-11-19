@@ -8,9 +8,6 @@ export {
   deletePlaylist,
   ensureFavoritesPlaylist,
   FAVORITES_PLAYLIST_NAME,
-  getPlaylistDetail,
-  listPlaylists,
-  listPlaylistsPage,
   removePlaylistTrack,
   renamePlaylist,
   setPlaylistOrder,
@@ -20,13 +17,18 @@ export {
   type AddPlaylistTracksResult,
   type ApplyTrackMembershipsResult,
   type ConvertSessionToPlaylistResult,
+  type PlaylistManageResult,
+  type PlaylistRow,
+} from './playlists-repo';
+export {
+  getPlaylistDetail,
+  listPlaylists,
+  listPlaylistsPage,
   type ListPlaylistsPageResult,
   type PlaylistDetailResult,
-  type PlaylistManageResult,
   type PlaylistMemberTrack,
-  type PlaylistRow,
   type PlaylistSummary,
-} from './playlists-repo';
+} from './playlist-reads';
 export {
   getPlaylistShare,
   moderateLoungePlaylistToPrivate,

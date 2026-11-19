@@ -17,7 +17,7 @@ import {
   playlistTotalDurationColumn,
   playlistTrackCountColumn,
 } from '../playlists/playlist-summary-columns';
-import type { PlaylistSummary } from '../playlists/playlists-repo';
+import type { PlaylistSummary } from '../playlists/playlist-reads';
 import { viewerCanSearchPlaylist } from '../playlists/lounge-audible';
 import { ownerAttributionColumns, type OwnerAttribution } from '../playlists/owner-attribution';
 import {

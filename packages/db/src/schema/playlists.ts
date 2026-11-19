@@ -68,7 +68,7 @@ export const playlists = pgTable(
   (table) => [
     index('playlists_owner_user_id_idx').on(table.ownerUserId),
     // Playlists-tab keyset pagination: the expression must stay byte-identical
-    // to `playlistActivityExpr` in playlists-repo or the planner will not match.
+    // to `playlistActivityExpr` in playlist-reads or the planner will not match.
     index('playlists_owner_activity_idx')
       .on(
         table.ownerUserId,
