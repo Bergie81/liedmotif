@@ -80,7 +80,7 @@ function ChooseContent({
     const result = await onChoose(playlist.id);
     setBusy(false);
     if (!result.ok) {
-      toast.error(result.error.message, { key: ADD_KEY });
+      toast.error(`Adding failed: ${result.error.message}`, { key: ADD_KEY });
       return;
     }
     confirmAdded(playlist.name, result.data);

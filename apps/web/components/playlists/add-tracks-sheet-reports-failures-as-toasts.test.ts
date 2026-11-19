@@ -32,7 +32,7 @@ vi.mock('@/lib/api-client', () => ({
   addPlaylistTracks: async () =>
     holder.adds.shift() === 'refuse'
       ? { ok: false as const, error: { code: 'internal_error', message: 'Offline.' } }
-      : { ok: true as const, data: {} },
+      : { ok: true as const, data: { playlistId: 'beach-id', added: [], refused: [] } },
 }));
 
 afterEach(() => {

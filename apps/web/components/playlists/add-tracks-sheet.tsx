@@ -2,16 +2,15 @@
 
 // Multi-select "Add Tracks" for a playlist (add-to-playlist is a
 // track-level action with multi-select): browse the full History, check any
-// number of tracks, committed through `addPlaylistTracks` in batches of its
-// per-request limit. Existing members are shown
-// checked and locked (no duplicates). Adding implies Save.
+// number of tracks, committed through `addTracksInBatches`. Existing members
+// are shown checked and locked (no duplicates). Adding implies Save.
 
 import { useEffect, useMemo, useState } from 'react';
 import type { LibraryTrackItem } from '@liedmotif/shared';
 import { Disc3 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { addPlaylistTracks, getLibrary } from '@/lib/api-client';
+import { getLibrary } from '@/lib/api-client';
 import { cn } from '@/lib/cn';
 import { coverArtSrc } from '@/components/player/player-presentation';
 import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';
@@ -21,10 +20,8 @@ import { LoadingRow, LiedmotifLoader } from '@/components/ui/loading';
 import { FAILED_TRACK_NOTICE, formatTrackDuration } from '@/components/library/library-view-model';
 import { appendUniqueById } from '@/lib/append-unique';
 import { toast } from '@/lib/toast';
+import { addTracksInBatches } from './add-tracks-in-batches';
 import { addedToPlaylistMessage } from './playlist-view-model';
-
-/** The most Track ids one `addPlaylistTracks` request takes. */
-const ADD_BATCH = 100;
 
 const ADD_KEY = 'add-tracks';
 const LOAD_MORE_KEY = 'add-tracks-load-more';
@@ -118,21 +115,16 @@ function AddTracksContent({
     if (checked.size === 0 || busy) return;
     setBusy(true);
     toast.dismiss(ADD_KEY);
-    // One add takes at most ADD_BATCH Tracks; adds are idempotent and append in
-    // request order, so consecutive batches keep the picked order and a retry
-    // after a failed batch adds only what is still missing.
     const trackIds = [...checked];
-    for (let start = 0; start < trackIds.length; start += ADD_BATCH) {
-      const result = await addPlaylistTracks(playlistId, trackIds.slice(start, start + ADD_BATCH));
-      if (!result.ok) {
-        setBusy(false);
-        toast.error(`Adding failed: ${result.error.message}`, { key: ADD_KEY });
-        if (start > 0) {
-          router.refresh();
-          onAdded();
-        }
-        return;
+    const result = await addTracksInBatches(playlistId, trackIds);
+    if (!result.ok) {
+      setBusy(false);
+      toast.error(`Adding failed: ${result.error.message}`, { key: ADD_KEY });
+      if (result.partial) {
+        router.refresh();
+        onAdded();
       }
+      return;
     }
     setBusy(false);
     toast.success(addedToPlaylistMessage(trackIds.length, playlistName));

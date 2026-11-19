@@ -64,7 +64,7 @@ describe('choose playlist sheet', () => {
     await choose();
 
     expect(shownToasts()).toEqual([
-      expect.objectContaining({ tone: 'error', message: 'Playlist is full.' }),
+      expect.objectContaining({ tone: 'error', message: 'Adding failed: Playlist is full.' }),
     ]);
     expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.getByTestId('choose-playlist-sheet')).toBeTruthy();

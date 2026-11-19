@@ -8,13 +8,14 @@ import type {
 } from '@liedmotif/shared';
 import { CheckSquare } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { addPlaylistTracks, listPlaylists } from '@/lib/api-client';
+import { listPlaylists } from '@/lib/api-client';
 import { cn } from '@/lib/cn';
 import { AlertBanner } from '@/components/ui/design-system';
 import { secondaryButtonClass } from '@/components/ui/form-styles';
 import { LoadingRow } from '@/components/ui/loading';
 import { OnlineOnly } from '@/components/ui/online-only';
 import { Sheet } from '@/components/ui/sheet';
+import { addTracksInBatches } from '@/components/playlists/add-tracks-in-batches';
 import { ChoosePlaylistSheet } from '@/components/playlists/choose-playlist-sheet';
 import { PlaylistDetail } from '@/components/playlists/playlist-detail';
 import { PlaylistsGrid, type PlaylistsFirstPage } from '@/components/playlists/playlists-grid';
@@ -161,13 +162,15 @@ function LibrarySmartListView({
     setChoosingPlaylist(false);
   }
 
+  // A failed batch keeps the selection for a retry; what earlier batches
+  // added is already in the Playlist, so the lists reload to show it.
   async function addSelectionTo(playlistId: string) {
-    const result = await addPlaylistTracks(playlistId, [...selectedIds]);
-    if (result.ok) {
+    const result = await addTracksInBatches(playlistId, [...selectedIds]);
+    if (result.ok || result.partial) {
       router.refresh();
       query.reload();
-      exitSelectMode();
     }
+    if (result.ok) exitSelectMode();
     return result;
   }
   const optionsOpenerRef = useRef<HTMLButtonElement | null>(null);
