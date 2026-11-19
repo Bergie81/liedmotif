@@ -171,8 +171,9 @@ export interface CreationHeadroomDecision {
   window: CostLimitWindow;
   /**
    * The window whose reset lets a refused Session start: the binding window,
-   * or the month when a month window would still refuse once every day window
-   * resets — midnight alone then brings back too little.
+   * or the window that would still refuse once every day window resets —
+   * midnight alone then brings back too little. `total` there means no reset
+   * helps: a One-time budget never renews.
    */
   resetWindow: CostLimitWindow;
   /**
@@ -209,11 +210,10 @@ export function evaluateCreationHeadroom(
     scope: bound.scope,
     window: binding.window,
     resetWindow:
-      !allowed &&
-      binding.window === 'day' &&
-      monthRefusesAfterMidnight(bounds, tracksPerCall, minHeadroomTracks)
-        ? 'month'
-        : binding.window,
+      (!allowed &&
+        binding.window === 'day' &&
+        windowRefusingAfterMidnight(bounds, tracksPerCall, minHeadroomTracks)) ||
+      binding.window,
     windowCapTracks: binding.cap * tracksPerCall,
   };
 }
@@ -238,12 +238,13 @@ function tightestBound(
   return { bound, remainingTracks };
 }
 
-/** Whether a month window still holds a Session back once every day window resets. */
-function monthRefusesAfterMidnight(
+/** The month or total window that still holds a Session back once every day
+ *  window resets, or null when midnight is enough. */
+function windowRefusingAfterMidnight(
   bounds: CostBounds,
   tracksPerCall: number,
   minHeadroomTracks: number,
-): boolean {
+): CostLimitWindow | null {
   const afterMidnight = bounds.map((bound) => ({
     ...bound,
     windows: bound.windows.map((window) =>
@@ -251,5 +252,7 @@ function monthRefusesAfterMidnight(
     ) as unknown as BoundWindows,
   })) as unknown as CostBounds;
   const { bound, remainingTracks } = tightestBound(afterMidnight, tracksPerCall);
-  return remainingTracks < minHeadroomTracks && tightestWindow(bound.windows).window === 'month';
+  if (remainingTracks >= minHeadroomTracks) return null;
+  const { window } = tightestWindow(bound.windows);
+  return window === 'day' ? null : window;
 }

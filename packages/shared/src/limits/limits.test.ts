@@ -374,6 +374,22 @@ describe('One-time bounds', () => {
     expect(evaluateCreationHeadroom([oneTime(13, 10), openPool], 2, 5).allowed).toBe(true);
   });
 
+  it('reports the total as the reset that matters when it still refuses after midnight', () => {
+    // Pool day: 1 task left (2 tracks) binds; once it resets, the total's 4
+    // tracks still fall short, so no reset lets the Session start.
+    const tightPool: CostBound = {
+      scope: 'pool',
+      windows: rolling({ ...pool, dailyTasksUsed: 39 }),
+    };
+    expect(evaluateCreationHeadroom([oneTime(13, 11), tightPool], 2, 5)).toMatchObject({
+      allowed: false,
+      remainingTracks: 2,
+      scope: 'pool',
+      window: 'day',
+      resetWindow: 'total',
+    });
+  });
+
   it('names the Admin — never a rollover — in the used-up copy', () => {
     expect(oneTimeBudgetUsedUpMessage('John')).toBe('Your budget is used up. Ask John for more.');
     expect(oneTimeBudgetUsedUpMessage(null)).toBe(

@@ -98,6 +98,17 @@ describe('creationHeadroomMessage', () => {
     );
   });
 
+  it('promises no reset when a One-time budget still refuses after midnight', () => {
+    expect(
+      creationHeadroomMessage(
+        refused({ scope: 'pool', window: 'day', remainingTracks: 2, resetWindow: 'total' }),
+        context,
+      ),
+    ).toBe(
+      `A new Session needs 5 Tracks; the shared budget has 2 left today. Your budget doesn’t reset — ask John for more. ${WAY_OUT}`,
+    );
+  });
+
   it('calls the Pool the shared budget, and never hints the Member could change it', () => {
     expect(creationHeadroomMessage(refused({ scope: 'pool', window: 'day' }), context)).toBe(
       `A new Session needs 5 Tracks; the shared budget has 4 left today. More Tracks at midnight (Europe/Berlin). ${WAY_OUT}`,
