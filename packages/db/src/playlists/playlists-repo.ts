@@ -275,46 +275,107 @@ async function syncTrackFlagsInTx(
   return evictOrphanedTracksInTx(tx, { trackIds: turnedEphemeral, now: args.now });
 }
 
-/** Statuses a Track can never be newly filed under. */
-const UNFILEABLE_TRACK_STATUSES = new Set<TrackStatus>(['rejected', 'deleted', 'failed']);
+/**
+ * Lock (id-ordered, deadlock-safe) the owner's candidate tracks, with their status.
+ */
+async function lockOwnTracks(
+  tx: Transaction,
+  ownerUserId: string,
+  trackIds: string[],
+): Promise<Array<{ id: string; status: TrackStatus }>> {
+  if (trackIds.length === 0) return [];
+  return tx
+    .select({ id: tracks.id, status: tracks.status })
+    .from(tracks)
+    .where(and(inArray(tracks.id, trackIds), eq(tracks.ownerUserId, ownerUserId)))
+    .orderBy(asc(tracks.id))
+    .for('update');
+}
 
 /**
- * Lock (id-ordered, deadlock-safe) and classify the owner's candidate tracks:
- * only surviving owned tracks are eligible for membership; everything else is
- * refused. A failed Track holds no audio worth keeping: it stays where it was
- * filed, but is never filed anew.
+ * Why a Track cannot be newly filed: `removed` (rejected or deleted), `failed`
+ * (a failed Track holds no audio worth keeping: it stays where it was filed,
+ * but is never filed anew), or null when it can.
+ */
+function refusalOf(status: TrackStatus): 'removed' | 'failed' | null {
+  if (status === 'rejected' || status === 'deleted') return 'removed';
+  if (status === 'failed') return 'failed';
+  return null;
+}
+
+/**
+ * Lock and classify the owner's candidate tracks: only surviving owned tracks
+ * are eligible for membership; everything else is refused.
  */
 async function lockEligibleTracks(
   tx: Transaction,
   ownerUserId: string,
   trackIds: string[],
 ): Promise<Set<string>> {
-  if (trackIds.length === 0) return new Set();
-  const rows = await tx
-    .select({ id: tracks.id, status: tracks.status })
-    .from(tracks)
-    .where(and(inArray(tracks.id, trackIds), eq(tracks.ownerUserId, ownerUserId)))
-    .orderBy(asc(tracks.id))
-    .for('update');
-  return new Set(rows.filter((r) => !UNFILEABLE_TRACK_STATUSES.has(r.status)).map((r) => r.id));
+  const rows = await lockOwnTracks(tx, ownerUserId, trackIds);
+  return new Set(rows.filter((r) => refusalOf(r.status) === null).map((r) => r.id));
+}
+
+type AddRefusal = 'removed' | 'failed' | 'notFound';
+
+/**
+ * The add-many write's classification, under the same locks: null = addable,
+ * else why not. Own tracks only, unless `includeLoungeTracks`: then each track
+ * goes through the picker commit's own check, in id order, so a foreign track
+ * the viewer cannot hear is as not found as an unknown id.
+ */
+async function lockAddableTracks(
+  tx: Transaction,
+  ownerUserId: string,
+  trackIds: string[],
+  includeLoungeTracks: boolean,
+): Promise<Map<string, AddRefusal | null>> {
+  const verdicts = new Map<string, AddRefusal | null>(trackIds.map((id) => [id, 'notFound']));
+  if (!includeLoungeTracks) {
+    for (const row of await lockOwnTracks(tx, ownerUserId, trackIds)) {
+      verdicts.set(row.id, refusalOf(row.status));
+    }
+    return verdicts;
+  }
+  for (const id of [...trackIds].sort()) {
+    const track = await lockSaveableTrack(tx, ownerUserId, id);
+    if (track === null) continue;
+    verdicts.set(id, track === 'removed' ? 'removed' : refusalOf(track.status));
+  }
+  return verdicts;
 }
 
 export interface AddPlaylistTracksResult {
   /** Track ids newly appended (in request order). */
   added: string[];
-  /** Track ids not added: absent, not owned, or rejected/deleted. */
+  /** Track ids not added, for any of the causes below (request order). */
   refused: string[];
+  /** Refused because the track was rejected (Disliked) or deleted. */
+  removed: string[];
+  /** Refused because the track failed to generate. */
+  failed: string[];
+  /** Refused because the track is unknown, or not one the caller may file. */
+  notFound: string[];
 }
 
 /**
  * Append tracks to an owned playlist (in request order). Idempotent per track —
  * an existing member is silently kept (no duplicate, no audit). Membership
  * implies Save (and Favorite for the Favorites playlist): flags + audits are
- * derived in the same transaction. Null when the playlist is absent/not owned.
+ * derived in the same transaction. Add-only: no other membership is touched.
+ * `includeLoungeTracks` also files foreign Lounge-audible tracks, as Shared
+ * references that flip none of the owner's flags (`syncTrackFlagsInTx` counts
+ * owner memberships only). Null when the playlist is absent/not owned.
  */
 export async function addPlaylistTracks(
   db: Database,
-  args: { ownerUserId: string; playlistId: string; trackIds: string[]; now?: Date },
+  args: {
+    ownerUserId: string;
+    playlistId: string;
+    trackIds: string[];
+    includeLoungeTracks?: boolean;
+    now?: Date;
+  },
 ): Promise<AddPlaylistTracksResult | null> {
   const now = args.now ?? new Date();
   const requested = [...new Set(args.trackIds)];
@@ -322,15 +383,20 @@ export async function addPlaylistTracks(
     const playlist = await lockOwnedPlaylist(tx, args.ownerUserId, args.playlistId);
     if (!playlist) return null;
 
-    const eligible = await lockEligibleTracks(tx, args.ownerUserId, requested);
-    const refused = requested.filter((id) => !eligible.has(id));
+    const verdicts = await lockAddableTracks(
+      tx,
+      args.ownerUserId,
+      requested,
+      args.includeLoungeTracks ?? false,
+    );
+    const refusedFor = (cause: AddRefusal) => requested.filter((id) => verdicts.get(id) === cause);
 
     const existing = await tx
       .select({ trackId: playlistTracks.trackId })
       .from(playlistTracks)
       .where(eq(playlistTracks.playlistId, playlist.id));
     const members = new Set(existing.map((r) => r.trackId));
-    const toAdd = requested.filter((id) => eligible.has(id) && !members.has(id));
+    const toAdd = requested.filter((id) => verdicts.get(id) === null && !members.has(id));
 
     if (toAdd.length > 0) {
       const nextPosition = await nextPlaylistPosition(tx, playlist.id);
@@ -344,7 +410,13 @@ export async function addPlaylistTracks(
       await tx.update(playlists).set({ updatedAt: now }).where(eq(playlists.id, playlist.id));
       await syncTrackFlagsInTx(tx, { ownerUserId: args.ownerUserId, trackIds: toAdd, now });
     }
-    return { added: toAdd, refused };
+    return {
+      added: toAdd,
+      refused: requested.filter((id) => verdicts.get(id) !== null),
+      removed: refusedFor('removed'),
+      failed: refusedFor('failed'),
+      notFound: refusedFor('notFound'),
+    };
   });
 }
 

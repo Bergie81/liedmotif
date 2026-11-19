@@ -1,6 +1,7 @@
 // `addToPlaylist`: appends Tracks to one of the asking user's own Playlists,
 // through the function the app's own Add Tracks calls. It only ever adds, and
-// only that user's Tracks to that user's Playlists.
+// only to that user's Playlists: their own Tracks, and Tracks shared with them
+// in the Lounge, filed as Shared references under the picker's own check.
 
 import { addPlaylistTracks } from '@liedmotif/db';
 import type { LlmTool } from '@liedmotif/providers';
@@ -17,7 +18,8 @@ import { ADD_TO_PLAYLIST_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 import type { TurnActions } from './turn-actions';
 
-const NOT_ADDABLE = "not found, not this user's own, or removed";
+/** "1 was" / "2 were": the counts the model is told, one sentence per cause. */
+const counted = (n: number) => `${n} ${n === 1 ? 'was' : 'were'}`;
 
 export function createAddToPlaylistTool(
   asker: AssistantAsker,
@@ -26,7 +28,7 @@ export function createAddToPlaylistTool(
   const { db, userId, player } = asker;
   return {
     name: ADD_TO_PLAYLIST_TOOL_NAME,
-    description: `Adds up to ${ASSISTANT_MAX_TRACKS_PER_ADD} of the user's Tracks to one of their Playlists. Leave out trackIds for the Track that is playing now ("add this").`,
+    description: `Adds up to ${ASSISTANT_MAX_TRACKS_PER_ADD} Tracks to one of the user's own Playlists: their own Tracks, and Tracks shared with them in the Lounge. Leave out trackIds for the Track that is playing now ("add this").`,
     inputSchema: addToPlaylistInputSchema,
     execute: ({ playlistId, trackIds: given }) =>
       actions.take('done', async () => {
@@ -49,17 +51,31 @@ export function createAddToPlaylistTool(
             trackIds.map(async (id) => [id, await readableTrackTitle(asker, id)] as const),
           ),
         );
-        const result = await addPlaylistTracks(db, { ownerUserId: userId, playlistId, trackIds });
+        const result = await addPlaylistTracks(db, {
+          ownerUserId: userId,
+          playlistId,
+          trackIds,
+          includeLoungeTracks: true,
+        });
         if (!result) return refused(NO_SUCH_PLAYLIST);
 
-        const { added } = result;
-        const notAdded = asked.length - trackIds.length + result.refused.length;
+        const { added, removed, failed } = result;
+        const notFound = asked.length - trackIds.length + result.notFound.length;
+        const notAdded = removed.length + failed.length + notFound;
         const alreadyIn = asked.length - added.length - notAdded;
         const rest = [
-          ...(alreadyIn > 0
-            ? [`${alreadyIn} ${alreadyIn === 1 ? 'was' : 'were'} already in it.`]
+          ...(alreadyIn > 0 ? [`${counted(alreadyIn)} already in it.`] : []),
+          ...(removed.length > 0
+            ? [`${counted(removed.length)} removed (Disliked or deleted), so not added.`]
             : []),
-          ...(notAdded > 0 ? [`${notAdded} could not be added: ${NOT_ADDABLE}.`] : []),
+          ...(failed.length > 0
+            ? [`${counted(failed.length)} a failed generation with no audio, so not added.`]
+            : []),
+          ...(notFound > 0
+            ? [
+                `${counted(notFound)} not found among this user's Tracks or the Tracks shared with them, so not added.`,
+              ]
+            : []),
         ];
         if (added.length === 0) {
           return refused(

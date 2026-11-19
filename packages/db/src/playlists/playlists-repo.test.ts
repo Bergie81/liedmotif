@@ -1729,7 +1729,13 @@ describe.skipIf(skip)('a failed Track (its final never arrived)', () => {
       playlistId: other.id,
       trackIds: [trackId],
     });
-    expect(added).toEqual({ added: [], refused: [trackId] });
+    expect(added).toEqual({
+      added: [],
+      refused: [trackId],
+      removed: [],
+      failed: [trackId],
+      notFound: [],
+    });
     expect(
       await applyTrackMemberships(testDb.db, {
         ownerUserId,

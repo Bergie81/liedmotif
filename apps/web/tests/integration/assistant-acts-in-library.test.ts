@@ -13,6 +13,7 @@ import {
   getSessionById,
   listPlaylists,
   setPlaylistLibraryPinned,
+  setPlaylistShared,
   setTrackFavorited,
   user,
   userProfiles,
@@ -271,11 +272,12 @@ describe.skipIf(skip)('the Assistant asked to add Tracks to a Playlist', () => {
     expect(receipts(turn)).toMatchObject([{ tracks: [{ id: trackId, name: 'On The Deck' }] }]);
   });
 
-  it('adds what it can and tells the model what was already there and what it could not add', async () => {
+  it('adds what it can and tells the model what was already there, what was removed and what was not found', async () => {
     const asker = await createMember('member');
     const other = await createMember('other');
-    const [mine, already] = await seedTracks(asker, 'Mine', 'Already There');
+    const [mine, already, disliked] = await seedTracks(asker, 'Mine', 'Already There', 'Gone');
     const [theirs] = await seedTracks(other, 'Private Take');
+    await testDb.pool.query("update tracks set status = 'rejected' where id = $1", [disliked]);
     const playlist = await createPlaylist(testDb.db, { ownerUserId: asker, name: 'Running' });
     await addPlaylistTracks(testDb.db, {
       ownerUserId: asker,
@@ -286,7 +288,10 @@ describe.skipIf(skip)('the Assistant asked to add Tracks to a Playlist', () => {
     const turn = await act(asker, [
       {
         name: 'addToPlaylist',
-        input: { playlistId: playlist.id, trackIds: [mine, already, theirs, 'not-an-id'] },
+        input: {
+          playlistId: playlist.id,
+          trackIds: [mine, already, disliked, theirs, 'not-an-id'],
+        },
       },
     ]);
 
@@ -295,8 +300,103 @@ describe.skipIf(skip)('the Assistant asked to add Tracks to a Playlist', () => {
     expect(turn.results[0]).toMatch(
       /^Done: added the Track "Mine" \(id .+\) to the Playlist "Running" \(id .+\)\. /,
     );
-    expect(turn.results[0]).toMatch(/1 was already in it/);
-    expect(turn.results[0]).toMatch(/2 could not be added/);
+    expect(turn.results[0]).toMatch(/1 was already in it\./);
+    expect(turn.results[0]).toMatch(/1 was removed \(Disliked or deleted\)/);
+    expect(turn.results[0]).toMatch(/2 were not found/);
+    expect(turn.results[0]).not.toMatch(/not this user's own/);
+  });
+
+  it('answers a private Track of another member exactly as an id that names nothing', async () => {
+    const asker = await createMember('member');
+    const other = await createMember('other');
+    const [theirs] = await seedTracks(other, 'Private Take');
+    const playlist = await createPlaylist(testDb.db, { ownerUserId: asker, name: 'Running' });
+
+    const turn = await act(asker, [
+      { name: 'addToPlaylist', input: { playlistId: playlist.id, trackIds: [theirs] } },
+      {
+        name: 'addToPlaylist',
+        input: { playlistId: playlist.id, trackIds: ['00000000-0000-4000-8000-000000000000'] },
+      },
+    ]);
+
+    expect(turn.results[0]).toMatch(/not found/);
+    expect(turn.results[1]).toBe(turn.results[0]);
+    expect(receipts(turn)).toEqual([]);
+    expect(await membersOf(asker, playlist.id)).toEqual([]);
+  });
+
+  it('files a Track shared with the asker in the Lounge into the asker’s own Playlist, as the player’s Add to Playlist does', async () => {
+    const asker = await createMember('member');
+    const owner = await createMember('owner');
+    const [shared] = await seedTracks(owner, 'Moonlit');
+    const [mine] = await seedTracks(asker, 'Mine');
+    const lounge = await createPlaylist(testDb.db, { ownerUserId: owner, name: 'Night Owls' });
+    await addPlaylistTracks(testDb.db, {
+      ownerUserId: owner,
+      playlistId: lounge.id,
+      trackIds: [shared!],
+    });
+    await setPlaylistShared(testDb.db, {
+      ownerUserId: owner,
+      playlistId: lounge.id,
+      audience: { kind: 'everyone' },
+    });
+    const earlier = await createPlaylist(testDb.db, { ownerUserId: asker, name: 'Earlier' });
+    await addPlaylistTracks(testDb.db, {
+      ownerUserId: asker,
+      playlistId: earlier.id,
+      trackIds: [shared!],
+      includeLoungeTracks: true,
+    });
+    const roadTrip = await createPlaylist(testDb.db, { ownerUserId: asker, name: 'Road Trip' });
+    const ownerFlags = async () =>
+      (
+        await testDb.pool.query(
+          'select owner_user_id, saved_at, favorited_at from tracks where id = $1',
+          [shared],
+        )
+      ).rows[0];
+    const before = await ownerFlags();
+
+    const turn = await act(
+      asker,
+      [{ name: 'addToPlaylist', input: { playlistId: roadTrip.id, trackIds: [mine, shared] } }],
+      { player: { source: { kind: 'playlist', id: lounge.id }, trackId: shared!, playing: true } },
+    );
+
+    expect(receipts(turn)).toEqual([
+      {
+        action: 'addToPlaylist',
+        playlist: { id: roadTrip.id, name: 'Road Trip' },
+        retention: 'curated',
+        tracks: [
+          { id: mine, name: 'Mine' },
+          { id: shared, name: 'Moonlit' },
+        ],
+      },
+    ]);
+    expect(await membersOf(asker, roadTrip.id)).toEqual(['Mine', 'Moonlit']);
+    expect(await membersOf(asker, earlier.id)).toEqual(['Moonlit']);
+    expect(await ownerFlags()).toEqual(before);
+    expect(before.owner_user_id).toBe(owner);
+
+    const onDeck = await act(
+      asker,
+      [
+        {
+          name: 'addToPlaylist',
+          input: {
+            playlistId: (await ensureFavoritesPlaylist(testDb.db, { ownerUserId: asker })).id,
+          },
+        },
+      ],
+      { player: { source: { kind: 'playlist', id: lounge.id }, trackId: shared!, playing: true } },
+    );
+    expect(receipts(onDeck)).toMatchObject([
+      { retention: 'favorite', tracks: [{ id: shared, name: 'Moonlit' }] },
+    ]);
+    expect(await favoritesOf(asker)).toEqual(['Moonlit']);
   });
 
   it('sends no receipt when nothing was added', async () => {

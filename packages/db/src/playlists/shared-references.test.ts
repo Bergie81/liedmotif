@@ -713,3 +713,162 @@ describe.skipIf(skip)('Revocation purge under a selected audience', () => {
     expect(await memberRows(mine.id)).toEqual([]);
   });
 });
+
+async function tasteEvidenceCount(trackId: string): Promise<number> {
+  const result = await testDb.pool.query(
+    `select count(*)::int as n from taste_evidence
+      where analytics_track_id = (select analytics_id from tracks where id = $1)`,
+    [trackId],
+  );
+  return result.rows[0].n as number;
+}
+
+async function trackOwner(trackId: string): Promise<string> {
+  const result = await testDb.pool.query('select owner_user_id from tracks where id = $1', [
+    trackId,
+  ]);
+  return result.rows[0].owner_user_id as string;
+}
+
+// The Assistant's add files through the add-many write, with Lounge Tracks
+// admitted for the asker: the same per-Track check as the picker's commit.
+describe.skipIf(skip)('Shared reference add (the add-many write)', () => {
+  it('files own and Lounge-audible tracks in the order given, leaving everything of the owner as it was', async () => {
+    const { ownerUserId, trackId } = await seedAudibleForeignTrack();
+    const visitor = await createUser(testDb.db);
+    const mine = await createPlaylist(testDb.db, { ownerUserId: visitor, name: 'Road Trip' });
+    const own = await seedReadyTrack(testDb.db, { ownerUserId: visitor });
+
+    const flagsBefore = await ownerTrackFlags(trackId);
+    const auditBefore = await feedbackEventCount(trackId);
+    const tasteBefore = await tasteEvidenceCount(trackId);
+    const trackRowsBefore = (await testDb.pool.query('select id from tracks')).rowCount;
+
+    const result = await addPlaylistTracks(testDb.db, {
+      ownerUserId: visitor,
+      playlistId: mine.id,
+      trackIds: [trackId, own.trackId],
+      includeLoungeTracks: true,
+    });
+
+    expect(result).toMatchObject({ added: [trackId, own.trackId], removed: [], notFound: [] });
+    expect(await memberRows(mine.id)).toEqual([
+      [trackId, 0],
+      [own.trackId, 1],
+    ]);
+    expect((await testDb.pool.query('select id from tracks')).rowCount).toBe(trackRowsBefore);
+    expect(await trackOwner(trackId)).toBe(ownerUserId);
+    expect(await ownerTrackFlags(trackId)).toEqual(flagsBefore);
+    expect(await feedbackEventCount(trackId)).toBe(auditBefore);
+    expect(await tasteEvidenceCount(trackId)).toBe(tasteBefore);
+  });
+
+  it('only appends: a reference already in another of the visitor’s playlists stays there', async () => {
+    const { trackId } = await seedAudibleForeignTrack();
+    const refs = await seedVisitorReferences(trackId);
+    const other = await createPlaylist(testDb.db, {
+      ownerUserId: refs.visitorUserId,
+      name: 'Other',
+    });
+
+    await addPlaylistTracks(testDb.db, {
+      ownerUserId: refs.visitorUserId,
+      playlistId: other.id,
+      trackIds: [trackId],
+      includeLoungeTracks: true,
+    });
+
+    expect(await memberRows(other.id)).toEqual([[trackId, 0]]);
+    expect(await memberRows(refs.mixtapeId)).toEqual([
+      [refs.ownTrackId, 0],
+      [trackId, 1],
+    ]);
+    expect(await memberRows(refs.favoritesId)).toEqual([[trackId, 0]]);
+  });
+
+  it('a reference it filed is purged when the owner unshares', async () => {
+    const { ownerUserId, sharedPlaylistId, trackId } = await seedAudibleForeignTrack();
+    const visitor = await createUser(testDb.db);
+    const mine = await createPlaylist(testDb.db, { ownerUserId: visitor, name: 'Mine' });
+    await addPlaylistTracks(testDb.db, {
+      ownerUserId: visitor,
+      playlistId: mine.id,
+      trackIds: [trackId],
+      includeLoungeTracks: true,
+    });
+
+    await setPlaylistShared(testDb.db, {
+      ownerUserId,
+      playlistId: sharedPlaylistId,
+      audience: null,
+    });
+
+    expect(await memberRows(mine.id)).toEqual([]);
+  });
+
+  it('refuses a track outside a selected audience, a private one and an unknown id alike as not found', async () => {
+    const { ownerUserId, sharedPlaylistId, trackId } = await seedAudibleForeignTrack();
+    await setPlaylistShared(testDb.db, {
+      ownerUserId,
+      playlistId: sharedPlaylistId,
+      audience: { kind: 'selected', userIds: [await createUser(testDb.db)] },
+    });
+    const privateTrack = await seedReadyTrack(testDb.db);
+    const unknownId = '00000000-0000-4000-8000-000000000000';
+    const outsider = await createUser(testDb.db);
+    const mine = await createPlaylist(testDb.db, { ownerUserId: outsider, name: 'Mine' });
+
+    const result = await addPlaylistTracks(testDb.db, {
+      ownerUserId: outsider,
+      playlistId: mine.id,
+      trackIds: [trackId, privateTrack.trackId, unknownId],
+      includeLoungeTracks: true,
+    });
+
+    expect(result).toMatchObject({
+      added: [],
+      removed: [],
+      notFound: [trackId, privateTrack.trackId, unknownId],
+    });
+    expect(await memberRows(mine.id)).toEqual([]);
+  });
+
+  it('tells a removed track from one that was not found', async () => {
+    const { trackId } = await seedAudibleForeignTrack();
+    const visitor = await createUser(testDb.db);
+    const mine = await createPlaylist(testDb.db, { ownerUserId: visitor, name: 'Mine' });
+    const own = await seedReadyTrack(testDb.db, { ownerUserId: visitor });
+    await testDb.pool.query("update tracks set status = 'rejected' where id = any($1)", [
+      [trackId, own.trackId],
+    ]);
+    const unknownId = '00000000-0000-4000-8000-000000000000';
+
+    const result = await addPlaylistTracks(testDb.db, {
+      ownerUserId: visitor,
+      playlistId: mine.id,
+      trackIds: [own.trackId, trackId, unknownId],
+      includeLoungeTracks: true,
+    });
+
+    expect(result).toMatchObject({
+      added: [],
+      removed: [own.trackId, trackId],
+      notFound: [unknownId],
+    });
+  });
+
+  it('without the Lounge admitted, a Lounge-audible track is refused as before', async () => {
+    const { trackId } = await seedAudibleForeignTrack();
+    const visitor = await createUser(testDb.db);
+    const mine = await createPlaylist(testDb.db, { ownerUserId: visitor, name: 'Mine' });
+
+    const result = await addPlaylistTracks(testDb.db, {
+      ownerUserId: visitor,
+      playlistId: mine.id,
+      trackIds: [trackId],
+    });
+
+    expect(result).toMatchObject({ added: [], refused: [trackId] });
+    expect(await memberRows(mine.id)).toEqual([]);
+  });
+});
