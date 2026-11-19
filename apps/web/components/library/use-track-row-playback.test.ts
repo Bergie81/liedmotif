@@ -17,6 +17,16 @@ vi.mock('@/components/player/use-play-session-track', () => ({
   }),
 }));
 
+// The player's transport, as `usePlayerContext` hands it out: whatever is
+// engaged (a Session or a Playlist), paused through the same controller.
+const transportPlayer = vi.hoisted(() => ({
+  status: 'paused' as 'playing' | 'paused',
+  pause: () => {},
+}));
+vi.mock('@/components/player/player-provider', () => ({
+  usePlayerContext: () => ({ playback: { player: transportPlayer } }),
+}));
+
 const { resolveRowPreview, useTrackRowPlayback } = await import('./use-track-row-playback');
 type RowPreview = import('./use-track-row-playback').RowPreview;
 
@@ -89,5 +99,115 @@ describe('useTrackRowPlayback — handing a row to the transport', () => {
       state: 'playing',
     });
     expect(result.current.announced).toBeNull();
+  });
+});
+
+describe('useTrackRowPlayback — a preview and the music playing', () => {
+  afterEach(() => {
+    cleanup();
+    transportPlayer.status = 'paused';
+    vi.restoreAllMocks();
+  });
+
+  function orphan(id: string) {
+    return {
+      id,
+      originSessionId: null,
+      audioUrl: `/api/audio/${id}`,
+      title: 'Track',
+      generatedArtistName: null,
+      coverImageId: null,
+    };
+  }
+
+  function mount() {
+    const pause = vi.spyOn(transportPlayer, 'pause').mockImplementation(() => {
+      transportPlayer.status = 'paused';
+    });
+    const hook = renderHook(() => ({
+      playback: useTrackRowPlayback('library-play'),
+      announced: useTrackPreviewAnnouncement(),
+    }));
+    const audio = {
+      src: '',
+      paused: true,
+      play: vi.fn(() => {
+        (audio as { paused: boolean }).paused = false;
+        return Promise.resolve();
+      }),
+      pause: vi.fn(() => {
+        (audio as { paused: boolean }).paused = true;
+      }),
+    } as unknown as HTMLAudioElement;
+    hook.result.current.playback.audioRef.current = audio;
+    return { ...hook, audio, pause };
+  }
+
+  it('starting a preview pauses the transport', () => {
+    transportPlayer.status = 'playing';
+    const { result, audio, pause } = mount();
+
+    act(() => result.current.playback.playRow(orphan('orphan-1')));
+    act(() => result.current.playback.audioEvents.onPlay());
+
+    expect(audio.play).toHaveBeenCalled();
+    expect(pause).toHaveBeenCalledTimes(1);
+    expect(transportPlayer.status).toBe('paused');
+    expect(result.current.playback.rowPreview).toEqual({ trackId: 'orphan-1', state: 'playing' });
+  });
+
+  it('pausing a preview pauses only the preview and leaves the transport alone', () => {
+    transportPlayer.status = 'playing';
+    const { result, audio, pause } = mount();
+    act(() => result.current.playback.playRow(orphan('orphan-1')));
+    act(() => result.current.playback.audioEvents.onPlay());
+    pause.mockClear();
+
+    act(() => result.current.playback.playRow(orphan('orphan-1')));
+    act(() => result.current.playback.audioEvents.onPause());
+
+    expect(audio.pause).toHaveBeenCalled();
+    expect(pause).not.toHaveBeenCalled();
+  });
+
+  it('leaves the music paused once the preview ends, fails or is stopped', () => {
+    transportPlayer.status = 'playing';
+    const { result, pause } = mount();
+    act(() => result.current.playback.playRow(orphan('orphan-1')));
+    act(() => result.current.playback.audioEvents.onPlay());
+    act(() => result.current.playback.audioEvents.onEnded());
+    act(() => result.current.playback.playRow(orphan('orphan-2')));
+    act(() => result.current.playback.audioEvents.onPlay());
+    act(() => result.current.playback.audioEvents.onError());
+
+    expect(pause).toHaveBeenCalledTimes(1);
+    expect(transportPlayer.status).toBe('paused');
+  });
+
+  it('pauses the transport again when the preview resumes from the mini player', () => {
+    transportPlayer.status = 'playing';
+    const { result, audio, pause } = mount();
+    act(() => result.current.playback.playRow(orphan('orphan-1')));
+    act(() => result.current.playback.audioEvents.onPlay());
+    act(() => result.current.announced?.toggle());
+    act(() => result.current.playback.audioEvents.onPause());
+    // The listener resumes the music from the player while the preview is paused.
+    transportPlayer.status = 'playing';
+
+    act(() => result.current.announced?.toggle());
+    act(() => result.current.playback.audioEvents.onPlay());
+
+    expect(audio.play).toHaveBeenCalledTimes(2);
+    expect(pause).toHaveBeenCalledTimes(2);
+    expect(transportPlayer.status).toBe('paused');
+  });
+
+  it('changes nothing in the transport when nothing is playing there', () => {
+    const { result, pause } = mount();
+
+    act(() => result.current.playback.playRow(orphan('orphan-1')));
+    act(() => result.current.playback.audioEvents.onPlay());
+
+    expect(pause).not.toHaveBeenCalled();
   });
 });

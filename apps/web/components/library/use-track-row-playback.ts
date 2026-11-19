@@ -6,6 +6,7 @@
 // state the row can read without knowing which of the two is making sound.
 
 import type { TrackPlayTarget } from '@/components/player/play-track-intent';
+import { usePlayerContext } from '@/components/player/player-provider';
 import { usePlaySessionTrack } from '@/components/player/use-play-session-track';
 import { toast } from '@/lib/toast';
 import type { PreviewState } from './track-row';
@@ -35,6 +36,17 @@ export function useTrackRowPlayback(failureKey: string) {
   const onError = (message: string) => toast.error(message, { key: failureKey });
   const preview = useTrackPreview(onError);
   const sessionPlay = usePlaySessionTrack(onError);
+  const { playback } = usePlayerContext();
+
+  /**
+   * The preview has its own audio element, so whenever it starts making sound
+   * (a row tap or a resume from the mini player's mirror) the transport's
+   * music, a Session or a Playlist, is paused rather than heard alongside it.
+   * Nothing resumes it when the preview ends: the listener does, from the player.
+   */
+  function pauseTransport() {
+    if (playback?.player.status === 'playing') playback.player.pause();
+  }
 
   /**
    * A Track plays through its origin Session (the real transport); only a
@@ -58,6 +70,12 @@ export function useTrackRowPlayback(failureKey: string) {
     /** Set while a row is waiting on the server to hand it the transport. */
     busyTrackId: sessionPlay.busyTrackId,
     audioRef: preview.audioRef,
-    audioEvents: preview.audioEvents,
+    audioEvents: {
+      ...preview.audioEvents,
+      onPlay: () => {
+        pauseTransport();
+        preview.audioEvents.onPlay();
+      },
+    },
   };
 }
