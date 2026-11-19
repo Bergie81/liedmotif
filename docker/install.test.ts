@@ -474,14 +474,14 @@ describe('installer: health check', () => {
 
   // The phone-access guide moves an installed app to a home network address by
   // editing APP_DOMAIN and APP_PUBLIC_URL in `.env`; the next update keeps it.
-  const updateServing = async (box: Machine, name: string, healthy = true) => {
+  const updateServing = async (box: Machine, name: string, healthy = true, extraEnv = '') => {
     await box.run('--domain', 'music.example.com');
     const env = join(box.installDir, '.env');
     await writeFile(
       env,
       (await readFile(env, 'utf8'))
         .replace(/^APP_DOMAIN=.*$/m, `APP_DOMAIN=${name}`)
-        .replace(/^APP_PUBLIC_URL=.*$/m, `APP_PUBLIC_URL=https://${name}`),
+        .replace(/^APP_PUBLIC_URL=.*$/m, `APP_PUBLIC_URL=https://${name}`) + extraEnv,
     );
     await box.setHealthy(healthy);
     const since = (await box.calls()).length;
@@ -514,12 +514,33 @@ describe('installer: health check', () => {
     'music.internal',
     'nas.home.arpa',
     'NAS.Local.',
-    'fd00::20',
+    '[fd00::20]',
   ])("an update serving %s accepts Caddy's internal certificate", async (name) => {
     const { code, output, health } = await updateServing(await machine(), name);
 
     expect(code, output).toBe(0);
-    expect(health).toEqual([expect.stringContaining('--insecure')]);
+    expect(health).toEqual([expect.stringMatching(/--insecure .*https:\/\/\S+\/api\/health$/)]);
+    expect(health[0]).toContain(`https://${name}/api/health`);
+  });
+
+  it("an update with CADDY_TLS=internal accepts Caddy's internal certificate for any name", async () => {
+    const atHome = await updateServing(
+      await machine(),
+      'nas.fritz.box',
+      true,
+      'CADDY_TLS=internal\n',
+    );
+    const timedOut = await updateServing(
+      await machine(),
+      'music.example.com',
+      false,
+      'CADDY_TLS=internal\n',
+    );
+
+    expect(atHome.code, atHome.output).toBe(0);
+    expect(atHome.health).toEqual([expect.stringContaining('--insecure')]);
+    expect(timedOut.code).not.toBe(0);
+    expect(timedOut.output).not.toMatch(/open to the internet/);
   });
 
   it.each([

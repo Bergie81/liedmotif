@@ -723,18 +723,25 @@ migrate_hint() {
 }
 
 # Whether Caddy serves APP_DOMAIN with a certificate from its own internal CA:
-# `localhost`, a name ending in .localhost, .local, .internal or .home.arpa, or
-# an IP address. The list mirrors Caddy's, as its documentation states it
+# any name once `.env` sets CADDY_TLS=internal; otherwise `localhost`, a name
+# ending in .localhost, .local, .internal or .home.arpa, or an IP address. The
+# list mirrors Caddy's, as its documentation states it
 # (https://caddyserver.com/docs/automatic-https, "Hostname requirements") and
 # its source applies it (certmagic SubjectIsInternal; every IP address goes to
 # the internal CA while the Caddyfile names no issuer). Any other name gets a
 # public certificate or none.
 caddy_internal_cert() {
   local name
+  if [ -f "$DIR/.env" ] && [ "$(env_value "$DIR/.env" CADDY_TLS)" = internal ]; then
+    return 0
+  fi
   name=$(printf '%s' "${APP_DOMAIN%.}" | tr '[:upper:]' '[:lower:]')
   case $name in
     localhost | *.localhost | *.local | *.internal | *.home.arpa) return 0 ;;
   esac
+  # An IPv6 address stands in brackets in a URL and in the Caddyfile.
+  name=${name#\[}
+  name=${name%\]}
   # An IPv4 address, or an IPv6 one: hex digits, dots and at least two colons,
   # so a public name with a port (`music.example.com:8443`) never matches.
   [[ $name =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] ||
@@ -774,8 +781,8 @@ verify() {
           esac
           ;;
         domain)
-          # A home network address needs no DNS record and no port open to
-          # the internet.
+          # A name Caddy serves with its internal certificate needs no DNS
+          # record pointing here and no port open to the internet.
           caddy_internal_cert ||
             hint="make sure the DNS record for $APP_DOMAIN points at this server and ports 80 and 443 are open to the internet (Caddy needs both to get its certificate), and $hint"
           ;;

@@ -27,17 +27,15 @@ const MIN_SYNCED_COVERAGE = 0.6;
 const MAX_ALIGNMENT_ERROR = 0.5;
 
 /** A text line this short (normalized characters) is an ad-lib-sized fragment
- *  ("Yeah yeah") that recurs by chance inside later lines; it binds only near
- *  the previous match, so a skipped one cannot pull every line after it ahead. */
+ *  ("Yeah yeah") that recurs by chance inside later lines; it binds only right
+ *  after the previous match, with no stream word between, so a skipped one
+ *  cannot pull every line after it ahead. */
 const SHORT_LINE_MAX_CHARS = 8;
-/** Whole stream words a short line may skip past the previous match and still
- *  bind. Kept at one: the provider's own unaligned section marker (`[Chorus]`)
- *  sits between lines as one stream word. */
-const SHORT_LINE_MAX_SKIPPED_WORDS = 1;
 
 const SECTION_TAG = /^\[(.+)\]$/;
-/** One stream word inside a provider chunk: a bracketed marker counts whole. */
-const STREAM_WORD = /\[[^\]]*\]|[^\s[]+/g;
+/** A bracketed marker (`[Chorus]`): structure, never sung. The provider times
+ *  its own markers in the word stream, unaligned. */
+const BRACKETED = /\[[^\]]*\]/g;
 
 /** Split raw lyric text into section labels and text lines (blanks dropped). */
 export function parseLyricsText(text: string): LyricLine[] {
@@ -53,9 +51,12 @@ export function parseLyricsText(text: string): LyricLine[] {
     });
 }
 
-/** Case/punctuation/word-boundary-insensitive folding for the stream match. */
+/** Case/punctuation/word-boundary-insensitive folding for the stream match,
+ *  with bracketed markers left out on both sides: a sung line can neither bind
+ *  to a marker nor be kept apart from the previous line by one. */
 function normalizeForMatch(text: string): string {
   return text
+    .replace(BRACKETED, ' ')
     .normalize('NFKC')
     .toLowerCase()
     .replace(/[^\p{L}\p{N}]+/gu, '');
@@ -68,11 +69,12 @@ function normalizeForMatch(text: string): string {
  * stays untimed, and a time that would scroll backwards is dropped. A section
  * tag is structure, not sung text: it never searches the stream and never moves
  * the match forward. A normal-length line binds wherever its words next occur;
- * a short line binds only when at most one stream word lies between it and
- * the previous match, so a skipped ad-lib stays untimed instead of claiming a
- * later line's words. If too few lines match — or the provider itself reports poor
- * alignment — the whole result degrades to the unsynced parse rather than
- * half-following the playhead.
+ * a short line binds only when no stream word lies between it and the previous
+ * match, so a skipped ad-lib stays untimed instead of claiming a later line's
+ * words. The provider's own section markers in the stream count as nothing. If
+ * too few lines match — or the provider itself reports poor alignment — the
+ * whole result degrades to the unsynced parse rather than half-following the
+ * playhead.
  */
 export function buildLyricLines(text: string, timed: TimedLyrics | null): LyricLinesResult {
   const lines = parseLyricsText(text);
@@ -92,7 +94,7 @@ export function buildLyricLines(text: string, timed: TimedLyrics | null): LyricL
     const norm = normalizeForMatch(word.word);
     if (!norm) continue;
     let wordAt = stream.length;
-    for (const [token] of word.word.matchAll(STREAM_WORD)) {
+    for (const [token] of word.word.replace(BRACKETED, ' ').matchAll(/\S+/g)) {
       const length = normalizeForMatch(token).length;
       if (length === 0) continue;
       wordStarts.push(wordAt);
@@ -114,9 +116,11 @@ export function buildLyricLines(text: string, timed: TimedLyrics | null): LyricL
     if (!needle) return line;
     const at = stream.indexOf(needle, cursor);
     if (at === -1) return line;
-    if (needle.length <= SHORT_LINE_MAX_CHARS) {
-      const skipped = wordStarts.filter((start) => start >= cursor && start < at).length;
-      if (skipped > SHORT_LINE_MAX_SKIPPED_WORDS) return line;
+    if (
+      needle.length <= SHORT_LINE_MAX_CHARS &&
+      wordStarts.some((start) => start >= cursor && start < at)
+    ) {
+      return line;
     }
     cursor = at + needle.length;
     // The line's time is its first ALIGNED word; unaligned filler only counts

@@ -985,9 +985,10 @@ A WireGuard tunnel that routes the home LAN subnet reaches the same
 
 An update through the installer (`docker/install.sh`) keeps this `APP_DOMAIN`,
 and its closing health check accepts Caddy's internal certificate for exactly
-the names Caddy serves with it: an IP address, `localhost`, or a name ending in
-`.localhost`, `.local`, `.internal` or `.home.arpa`. Every other name, and every
-download the installer makes, is still verified. A timeout then points at
+the names Caddy serves with it: an IP address (IPv6 in brackets), `localhost`,
+or a name ending in `.localhost`, `.local`, `.internal` or `.home.arpa`, and any
+name once `.env` sets `CADDY_TLS=internal`. Every other name, and every download
+the installer makes, is still verified. A timeout then points at
 `docker compose ps` and `docker compose logs caddy web`, not at DNS or open
 ports.
 

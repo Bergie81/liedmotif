@@ -259,6 +259,36 @@ describe('buildLyricLines', () => {
     ]);
   });
 
+  it('a short line after two provider section markers in a row still binds', () => {
+    const result = buildLyricLines(
+      ['[Intro]', '[Verse 1]', 'Oh yeah', 'Walking through the rain tonight'].join('\n'),
+      timed([
+        ['[Intro]\n', 0, 0.1, false],
+        ['[Verse 1]\nOh ', 5, 5.5],
+        ['yeah\n', 5.5, 6],
+        ...sung('Walking through the rain tonight', 8),
+      ]),
+    );
+    expect(result.lines).toEqual([
+      { kind: 'section', label: 'Intro' },
+      { kind: 'section', label: 'Verse 1' },
+      { kind: 'line', text: 'Oh yeah', timeSeconds: 5 },
+      { kind: 'line', text: 'Walking through the rain tonight', timeSeconds: 8 },
+    ]);
+  });
+
+  it('a sung line never binds to a provider section marker of the same word', () => {
+    const result = buildLyricLines(
+      ['[Break]', 'Break', 'Keep on going'].join('\n'),
+      timed([['[Break]\n', 0, 0.1, false], ['Break\n', 5, 6], ...sung('Keep on going', 7)]),
+    );
+    expect(result.lines).toEqual([
+      { kind: 'section', label: 'Break' },
+      { kind: 'line', text: 'Break', timeSeconds: 5 },
+      { kind: 'line', text: 'Keep on going', timeSeconds: 7 },
+    ]);
+  });
+
   it('the line after a long instrumental break is still timed, short or not', () => {
     for (const second of ['Cold streets under my feet', 'Oh yeah']) {
       const result = buildLyricLines(
