@@ -320,18 +320,25 @@ describe('My Sessions on a phone', () => {
   const hiddenOnPhone = (element: Element) => element.className.includes('max-desk:hidden');
   const loadMore = () => screen.getByRole('button', { name: 'Load more' }).parentElement!;
 
-  it('shows ten History Sessions and no way to page further', () => {
-    renderList(
-      Array.from({ length: 12 }, (_, index) => session(index + 1)),
-      'next-page',
-    );
+  it('shows ten History Sessions, and ten more per Load more', () => {
+    renderList(Array.from({ length: 23 }, (_, index) => session(index + 1)));
     expect(hiddenOnPhone(cardFor('Session 10'))).toBe(false);
     expect(hiddenOnPhone(cardFor('Session 11'))).toBe(true);
-    expect(hiddenOnPhone(loadMore())).toBe(true);
+    // Every loaded Session already shows on a desk, so the button is the phone's alone.
+    expect(loadMore().className).toContain('desk:hidden');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Load more' }));
+    expect(hiddenOnPhone(cardFor('Session 20'))).toBe(false);
+    expect(hiddenOnPhone(cardFor('Session 21'))).toBe(true);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Load more' }));
+    expect(hiddenOnPhone(cardFor('Session 23'))).toBe(false);
+    expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull();
   });
 
   it('keeps paging while fewer than ten are loaded', () => {
     renderList([session(1)], 'next-page');
     expect(hiddenOnPhone(loadMore())).toBe(false);
+    expect(loadMore().className).not.toContain('desk:hidden');
   });
 });

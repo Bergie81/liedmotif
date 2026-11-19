@@ -21,6 +21,7 @@ import type {
   AssistantStanding,
 } from '@liedmotif/shared';
 import { AssistantGlyph } from '@/components/ui/glyphs';
+import { DESK_MEDIA_QUERY } from '@/lib/constants';
 import { WithTooltip } from '@/components/ui/tooltip';
 import type { AnswerLinkTargets } from '@/lib/assistant/answer-links';
 import { ASSISTANT_NAME } from '@/lib/assistant/persona';
@@ -38,8 +39,7 @@ import { CardsContext, type Cards } from './proposal-card';
 import { RECEIPT_REREADS } from './receipt';
 import type { CardHost } from './use-card-host';
 
-/** Tailwind's `desk` breakpoint (globals.css). */
-const SIDEBAR_QUERY = '(min-width: 920px)';
+const SIDEBAR_QUERY = DESK_MEDIA_QUERY;
 
 function subscribeSidebarQuery(listener: () => void): () => void {
   const query = window.matchMedia(SIDEBAR_QUERY);

@@ -24,7 +24,7 @@ import { primaryButtonClass } from '@/components/ui/form-styles';
 import { LoadMoreButton } from '@/components/ui/load-more-button';
 import { LoadingRow } from '@/components/ui/loading';
 import { cn } from '@/lib/cn';
-import { MOBILE_EARLIER_SESSIONS_LIMIT } from '@/lib/constants';
+import { DESK_MEDIA_QUERY, MOBILE_EARLIER_SESSIONS_LIMIT } from '@/lib/constants';
 import {
   usePlayerActions,
   usePlayerContext,
@@ -106,6 +106,18 @@ const MySessionsListContent = memo(function MySessionsListContent({
     // Runs once per unknown Session: a reload that still doesn't name it changes neither dep.
   }, [liveSessionId, liveSessionKnown]);
   const earlierSessions = earlier ?? [];
+  // A phone shows History ten at a time; a desk shows every loaded Session.
+  const [phoneShown, setPhoneShown] = useState(MOBILE_EARLIER_SESSIONS_LIMIT);
+  const phoneHasHidden = earlierSessions.length > phoneShown;
+  function showMoreEarlier() {
+    if (window.matchMedia?.(DESK_MEDIA_QUERY).matches) {
+      void loadMore();
+      return;
+    }
+    const shown = phoneShown + MOBILE_EARLIER_SESSIONS_LIMIT;
+    setPhoneShown(shown);
+    if (shown > earlierSessions.length && nextCursor) void loadMore();
+  }
   const hasPinnedSessions = pinnedSessions.length > 0;
   const hasEarlierSessions = earlierSessions.length > 0;
   const hasAnySessions = Boolean(active) || hasPinnedSessions || hasEarlierSessions;
@@ -270,19 +282,15 @@ const MySessionsListContent = memo(function MySessionsListContent({
                   {/* Continue the cover-variant sequence so placeholders alternate across sections. */}
                   {earlierSessions.map((session, index) =>
                     renderStoppedCard(session, pinnedSessions.length + index, {
-                      className:
-                        index >= MOBILE_EARLIER_SESSIONS_LIMIT ? 'max-desk:hidden' : undefined,
+                      className: index >= phoneShown ? 'max-desk:hidden' : undefined,
                     }),
                   )}
                 </div>
-                {nextCursor ? (
+                {nextCursor || phoneHasHidden ? (
                   <LoadMoreButton
                     loading={loadingMore}
-                    onClick={() => void loadMore()}
-                    className={cn(
-                      'mt-4',
-                      earlierSessions.length >= MOBILE_EARLIER_SESSIONS_LIMIT && 'max-desk:hidden',
-                    )}
+                    onClick={showMoreEarlier}
+                    className={cn('mt-4', !nextCursor && 'desk:hidden')}
                   />
                 ) : null}
               </section>

@@ -32,5 +32,8 @@ export const ALERT_TOKEN_HEADER = 'x-alert-token';
 export const RECENT_SESSIONS_LIMIT = 4;
 export const MOBILE_RECENT_SESSIONS_LIMIT = 3;
 
-/** My Sessions' History section below `desk`; older ones are reached by search. */
+/** My Sessions' History below `desk` shows this many, then this many more per Load more. */
 export const MOBILE_EARLIER_SESSIONS_LIMIT = 10;
+
+/** Tailwind's `desk` breakpoint (globals.css), for code that must ask at run time. */
+export const DESK_MEDIA_QUERY = '(min-width: 920px)';
