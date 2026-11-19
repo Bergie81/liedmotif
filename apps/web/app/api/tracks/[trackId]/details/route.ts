@@ -6,7 +6,7 @@
 // nothing vendor-secret is ever selected — see `getReadableTrackDetails`.
 
 import { NextResponse } from 'next/server';
-import { getReadableTrackDetails } from '@liedmotif/db';
+import { getReadableTrackDetails, getUsageLimits } from '@liedmotif/db';
 import { uuidSchema, type TrackDetails } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
 import { apiError, apiOk, requireOwnerId } from '@/lib/api-response';
@@ -20,14 +20,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ trac
   const { trackId } = await params;
   if (!uuidSchema.safeParse(trackId).success) return apiError('not_found', 'Track not found.');
 
-  const details = await getReadableTrackDetails(getDb(), { viewerUserId, trackId });
+  const db = getDb();
+  const details = await getReadableTrackDetails(db, { viewerUserId, trackId });
   if (!details) return apiError('not_found', 'Track not found.');
+  const { resetTimezone } = await getUsageLimits(db);
 
   return apiOk<TrackDetails>({
     title: details.title,
     sessionTitle: details.sessionTitle,
     artistName: details.artistName,
     createdAt: details.createdAt.toISOString(),
+    timezone: resetTimezone,
     durationSeconds: details.durationSeconds,
     userPrompt: details.userPrompt,
     stylePrompt: details.stylePrompt,

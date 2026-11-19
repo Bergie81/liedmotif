@@ -66,6 +66,7 @@ export default async function MembersSettingsPage() {
             tracksPerCall={data.tracksPerCall}
             minHeadroomTracks={data.minHeadroomTracks}
             unitCosts={data.unitCosts}
+            timezone={data.timezone}
           />
         </SettingsSection>
 
@@ -76,6 +77,7 @@ export default async function MembersSettingsPage() {
             minHeadroomTracks={data.minHeadroomTracks}
             unitCosts={data.unitCosts}
             assistantDefault={assistantDefault}
+            timezone={data.timezone}
           />
         </SettingsSection>
 

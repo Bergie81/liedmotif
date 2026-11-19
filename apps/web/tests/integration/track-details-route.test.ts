@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MAX_TRACK_DATA_PROMPT_LENGTH } from '@liedmotif/shared';
-import { listenerProfiles } from '@liedmotif/db';
+import { listenerProfiles, updateUsageLimits } from '@liedmotif/db';
 import {
   connectTestDb,
   createGenerationRequest,
@@ -26,7 +26,7 @@ const { GET } = await import('@/app/api/tracks/[trackId]/details/route');
 const skip = !TEST_DATABASE_URL;
 let testDb: TestDb;
 
-const FIXTURE_TABLES = [...GENERATION_FIXTURE_TABLES, 'listener_profiles'] as const;
+const FIXTURE_TABLES = [...GENERATION_FIXTURE_TABLES, 'listener_profiles', 'app_settings'] as const;
 
 function getDetails(trackId: string) {
   return GET(new Request(`http://localhost/api/tracks/${trackId}/details`), {
@@ -108,6 +108,26 @@ describe.skipIf(skip)('GET /api/tracks/[trackId]/details', () => {
       licenseNote: 'Personal, non-commercial use.',
     });
     expect(typeof body.data.createdAt).toBe('string');
+  });
+
+  it("hands the Admin's Instance timezone along so the Generated date is shown in it", async () => {
+    const ownerUserId = await createUser(testDb.db);
+    holder.ownerUserId = ownerUserId;
+    await updateUsageLimits(testDb.db, { resetTimezone: 'Europe/Berlin' });
+    const sessionId = await createSession(testDb.db, { ownerUserId });
+    const requestId = await createGenerationRequest(testDb.db, {
+      ownerUserId,
+      activitySessionId: sessionId,
+    });
+    const providerJobId = await createProviderJob(testDb.db, { generationRequestId: requestId });
+    const trackId = await createTrack(testDb.db, {
+      ownerUserId,
+      generationRequestId: requestId,
+      providerJobId,
+    });
+
+    const body = await (await getDetails(trackId)).json();
+    expect(body.data.timezone).toBe('Europe/Berlin');
   });
 
   it('nulls the absent fields of a sparse instrumental track and falls back to the User name', async () => {

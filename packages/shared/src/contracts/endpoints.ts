@@ -1354,6 +1354,9 @@ export const trackDetailsSchema = z.strictObject({
   /** Resolved like the MP3 embed: profile Artist Name, else the User name. */
   artistName: z.string(),
   createdAt: isoDatetimeSchema,
+  /** The Instance timezone the Generated date is shown in. Optional because
+   *  Track Data kept for Available offline may have been stored without it. */
+  timezone: z.string().min(1).optional(),
   durationSeconds: z.number().nonnegative().nullable(),
   /** The Session's user prompt — what the listener asked for. */
   userPrompt: z.string().nullable(),

@@ -27,7 +27,7 @@ import { CopyLinkBox } from './copy-link-box';
 import { MemberBudgetKindFields } from './member-budget-fields';
 import {
   buildMemberBudgetKindPatch,
-  formatShortDate,
+  formatInviteExpiry,
   memberBudgetFormValues,
   newInviteTotals,
 } from './members-admin-model';
@@ -43,6 +43,7 @@ export function InviteMembersSection({
   tracksPerCall,
   minHeadroomTracks,
   unitCosts,
+  timezone,
 }: {
   invites: MembersAdminData['invites'];
   /** Account email is on: the Invite is mailed, never shown as a link. */
@@ -51,6 +52,8 @@ export function InviteMembersSection({
   tracksPerCall: number;
   minHeadroomTracks: number;
   unitCosts: UnitCosts;
+  /** The Instance timezone an Invite's expiry is stated in. */
+  timezone: string;
 }) {
   const router = useRouter();
   const [label, setLabel] = useState('');
@@ -188,7 +191,7 @@ export function InviteMembersSection({
                   <span className="block truncate text-[12px] text-muted">{invite.email}</span>
                 ) : null}
                 <span className="block font-mono text-[10.5px] uppercase tracking-[0.05em] text-dim">
-                  Expires {formatShortDate(invite.expiresAt)}
+                  Expires {formatInviteExpiry(invite.expiresAt, timezone)}
                 </span>
               </div>
               <button

@@ -7,6 +7,7 @@ const FULL: TrackDetails = {
   sessionTitle: 'Deep Focus Coding',
   artistName: 'DJ John',
   createdAt: '2026-07-22T12:00:00.000Z',
+  timezone: 'Europe/Berlin',
   durationSeconds: 184,
   userPrompt: 'calm music for late-night coding',
   stylePrompt: 'lofi hip hop, mellow, 80 bpm',
@@ -28,6 +29,7 @@ const SPARSE: TrackDetails = {
   sessionTitle: null,
   artistName: 'Test Admin',
   createdAt: '2026-07-22T12:00:00.000Z',
+  timezone: 'Europe/Berlin',
   durationSeconds: null,
   userPrompt: null,
   stylePrompt: null,
@@ -93,5 +95,20 @@ describe('buildTrackDataSections', () => {
     // An instrumental Track still states its vocal mode — without a language.
     expect(sections[1]!.fields).toEqual([{ label: 'Vocals', value: 'Instrumental' }]);
     expect(sections[2]!.fields).toEqual([{ label: 'Provider', value: 'mock' }]);
+  });
+
+  it('shows the Generated day in the Instance timezone, not the UTC day', () => {
+    // 00:30 on 4 November in Berlin is still 3 November in UTC.
+    const identity = buildTrackDataSections({
+      ...SPARSE,
+      createdAt: '2026-11-03T23:30:00.000Z',
+    })[0]!;
+    expect(identity.fields).toContainEqual({ label: 'Generated', value: 'Nov 4, 2026' });
+  });
+
+  it('still shows a labelled date for Track Data kept offline without a timezone', () => {
+    const { timezone: _absent, ...stored } = { ...SPARSE, createdAt: '2026-11-03T23:30:00.000Z' };
+    const identity = buildTrackDataSections(stored)[0]!;
+    expect(identity.fields).toContainEqual({ label: 'Generated', value: 'Nov 3, 2026 UTC' });
   });
 });

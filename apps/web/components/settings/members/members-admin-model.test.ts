@@ -3,6 +3,7 @@ import { DEFAULT_MEMBER_LIMITS } from '@liedmotif/shared';
 import {
   buildMemberBudgetKindPatch,
   buildMemberBudgetPatch,
+  formatInviteExpiry,
   formatShortDate,
   formEstimateCounts,
   membersCostSummary,
@@ -160,28 +161,59 @@ describe('member budget form', () => {
 describe('member meta line', () => {
   it('reads joined, activity, tracks, and bytes in one line', () => {
     expect(
-      memberMetaLine({
-        joinedAt: '2026-07-12T08:00:00.000Z',
-        lastActiveAt: '2026-07-29T21:30:00.000Z',
-        trackCount: 1,
-        storageBytes: 3 * 1024 ** 2,
-      }),
+      memberMetaLine(
+        {
+          joinedAt: '2026-07-12T08:00:00.000Z',
+          lastActiveAt: '2026-07-29T21:30:00.000Z',
+          trackCount: 1,
+          storageBytes: 3 * 1024 ** 2,
+        },
+        'UTC',
+      ),
     ).toBe('Joined Jul 12, 2026 · Active Jul 29, 2026 · 1 Track · 3.0 MiB');
   });
 
   it('says so when a Member never signed in', () => {
     expect(
-      memberMetaLine({
-        joinedAt: '2026-07-12T08:00:00.000Z',
-        lastActiveAt: null,
-        trackCount: 0,
-        storageBytes: 0,
-      }),
+      memberMetaLine(
+        {
+          joinedAt: '2026-07-12T08:00:00.000Z',
+          lastActiveAt: null,
+          trackCount: 0,
+          storageBytes: 0,
+        },
+        'UTC',
+      ),
     ).toContain('Never signed in');
   });
 
   it('formatShortDate answers a dash for garbage', () => {
-    expect(formatShortDate('not-a-date')).toBe('—');
+    expect(formatShortDate('not-a-date', 'UTC')).toBe('—');
+  });
+
+  it('formatShortDate shows the day in the Instance timezone, not the UTC day', () => {
+    // 00:30 on 4 November in Berlin is still 3 November in UTC.
+    expect(formatShortDate('2026-11-03T23:30:00.000Z', 'Europe/Berlin')).toBe('Nov 4, 2026');
+  });
+
+  it('dates Joined and Active in the Instance timezone', () => {
+    expect(
+      memberMetaLine(
+        {
+          joinedAt: '2026-11-03T23:30:00.000Z',
+          lastActiveAt: '2026-11-04T23:15:00.000Z',
+          trackCount: 2,
+          storageBytes: 0,
+        },
+        'Europe/Berlin',
+      ),
+    ).toMatch(/^Joined Nov 4, 2026 · Active Nov 5, 2026 · /);
+  });
+
+  it("states an Invite's exact expiry with the day, time and timezone it is in", () => {
+    expect(formatInviteExpiry('2026-11-03T23:30:00.000Z', 'Europe/Berlin')).toBe(
+      'Nov 4, 2026, 00:30 Europe/Berlin',
+    );
   });
 });
 

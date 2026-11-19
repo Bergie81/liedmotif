@@ -73,6 +73,8 @@ export interface MembersAdminData {
   unitCosts: UnitCosts;
   /** Assistant access every Member has until the Admin sets their own. */
   assistantDefault: AssistantAccess;
+  /** The Instance timezone every date on the page is shown in. */
+  timezone: string;
 }
 
 export async function loadMembersAdminData(): Promise<MembersAdminData> {
@@ -153,5 +155,6 @@ export async function loadMembersAdminData(): Promise<MembersAdminData> {
     minHeadroomTracks: instanceLimits.minHeadroomTracksToStartSession,
     unitCosts,
     assistantDefault,
+    timezone: resetTimezone,
   };
 }

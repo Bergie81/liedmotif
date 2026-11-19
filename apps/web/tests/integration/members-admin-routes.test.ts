@@ -235,9 +235,11 @@ describe.skipIf(skip)('Settings → Members administration routes', () => {
       'defaultBudget',
       'invites',
       'members',
+      'minHeadroomTracks',
       'overSubscription',
       'pool',
       'poolFigures',
+      'timezone',
       'tracksPerCall',
       'unitCosts',
     ]);

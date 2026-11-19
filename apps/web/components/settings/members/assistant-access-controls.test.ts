@@ -50,6 +50,7 @@ function memberCards(assistant: MemberAssistantAccess, assistantDefault = INSTAN
     minHeadroomTracks: 5,
     unitCosts: UNIT_COSTS,
     assistantDefault,
+    timezone: 'UTC',
   });
 }
 

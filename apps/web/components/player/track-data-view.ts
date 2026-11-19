@@ -17,14 +17,19 @@ export interface TrackDataSection {
   fields: TrackDataField[];
 }
 
-/** UTC-pinned so the shown day never depends on the viewing device's zone. */
-function formatGeneratedDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', {
+/**
+ * The day in the Instance timezone the payload carries, so server and client
+ * render the same text. Track Data kept offline without one is shown as the
+ * UTC day, labelled so it never reads as a second unlabelled calendar.
+ */
+function formatGeneratedDate(iso: string, timeZone: string | undefined): string {
+  const day = new Date(iso).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
-    timeZone: 'UTC',
+    timeZone: timeZone ?? 'UTC',
   });
+  return timeZone ? day : `${day} UTC`;
 }
 
 /** The Vocals field: the Track's mode, with the sung language when known. */
@@ -46,7 +51,7 @@ export function buildTrackDataSections(details: TrackDetails): TrackDataSection[
         ...field('Title', details.title),
         ...field('Album', details.sessionTitle),
         ...field('Artist', details.artistName),
-        ...field('Generated', formatGeneratedDate(details.createdAt)),
+        ...field('Generated', formatGeneratedDate(details.createdAt, details.timezone)),
         ...field(
           'Duration',
           details.durationSeconds != null ? formatPlayerTime(details.durationSeconds) : null,

@@ -82,6 +82,7 @@ function renderInvites(inviteByEmail: boolean) {
       tracksPerCall: 2,
       minHeadroomTracks: 5,
       unitCosts: UNIT_COSTS,
+      timezone: 'UTC',
     }),
   );
 }
@@ -107,6 +108,7 @@ function renderMember() {
       minHeadroomTracks: 5,
       unitCosts: UNIT_COSTS,
       assistantDefault: null,
+      timezone: 'UTC',
     }),
   );
 }

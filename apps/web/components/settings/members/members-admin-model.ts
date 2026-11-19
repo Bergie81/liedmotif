@@ -216,28 +216,49 @@ export function buildMemberBudgetKindPatch(
   };
 }
 
-/** UTC-pinned short date, deterministic across server and client renders. */
-export function formatShortDate(iso: string): string {
+/**
+ * A short day in the Instance timezone. The zone is an input, never the
+ * viewer's or the host's, so server and client render the same text.
+ */
+export function formatShortDate(iso: string, timeZone: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '—';
   return new Intl.DateTimeFormat('en-US', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
-    timeZone: 'UTC',
+    timeZone,
   }).format(date);
 }
 
-/** The one aggregate line under a Member's name. */
-export function memberMetaLine(member: {
-  joinedAt: string;
-  lastActiveAt: string | null;
-  trackCount: number;
-  storageBytes: number;
-}): string {
+/** An Invite's exact expiry: day, 24-hour time, and the timezone both are in. */
+export function formatInviteExpiry(iso: string, timeZone: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '—';
+  const time = new Intl.DateTimeFormat('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+    timeZone,
+  }).format(date);
+  return `${formatShortDate(iso, timeZone)}, ${time} ${timeZone}`;
+}
+
+/** The one aggregate line under a Member's name, its dates in the Instance timezone. */
+export function memberMetaLine(
+  member: {
+    joinedAt: string;
+    lastActiveAt: string | null;
+    trackCount: number;
+    storageBytes: number;
+  },
+  timeZone: string,
+): string {
   return [
-    `Joined ${formatShortDate(member.joinedAt)}`,
-    member.lastActiveAt ? `Active ${formatShortDate(member.lastActiveAt)}` : 'Never signed in',
+    `Joined ${formatShortDate(member.joinedAt, timeZone)}`,
+    member.lastActiveAt
+      ? `Active ${formatShortDate(member.lastActiveAt, timeZone)}`
+      : 'Never signed in',
     `${member.trackCount} ${member.trackCount === 1 ? 'Track' : 'Tracks'}`,
     formatBinaryBytes(member.storageBytes),
   ].join(' · ');

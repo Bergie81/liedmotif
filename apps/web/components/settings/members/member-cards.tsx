@@ -60,12 +60,14 @@ function MemberCard({
   minHeadroomTracks,
   unitCosts,
   assistantDefault,
+  timezone,
 }: {
   member: MembersAdminMember;
   tracksPerCall: number;
   minHeadroomTracks: number;
   unitCosts: UnitCosts;
   assistantDefault: AssistantAccess | null;
+  timezone: string;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -175,7 +177,7 @@ function MemberCard({
         ) : null}
       </div>
       <p className="mt-1 font-mono text-[10.5px] uppercase tracking-[0.05em] text-dim">
-        {memberMetaLine(member)}
+        {memberMetaLine(member, timezone)}
       </p>
 
       <div className="mt-3">
@@ -321,6 +323,7 @@ export function MemberCards({
   minHeadroomTracks,
   unitCosts,
   assistantDefault,
+  timezone,
 }: {
   members: MembersAdminData['members'];
   tracksPerCall: number;
@@ -328,6 +331,8 @@ export function MemberCards({
   unitCosts: UnitCosts;
   /** The instance default for Assistant access; null while no Text AI is connected. */
   assistantDefault: AssistantAccess | null;
+  /** The Instance timezone the Joined and Active dates are shown in. */
+  timezone: string;
 }) {
   if (members.length === 0) {
     return (
@@ -346,6 +351,7 @@ export function MemberCards({
           minHeadroomTracks={minHeadroomTracks}
           unitCosts={unitCosts}
           assistantDefault={assistantDefault}
+          timezone={timezone}
         />
       ))}
     </>
