@@ -55,13 +55,6 @@ describe('next config security headers', () => {
     expect(csp).toContain("default-src 'self';");
   });
 
-  it('leaves compression to Caddy, so audio is never encoded or buffered', () => {
-    // Next's compression middleware drops `Content-Length` from what it encodes,
-    // which breaks a Range answer, and buffers the stream proxy's early bytes.
-    // Caddy's `encode` covers only text types, so audio passes through it as is.
-    expect(nextConfig.compress).toBe(false);
-  });
-
   it('enforces the rest, with the microphone left to the app', () => {
     expect(headers['X-Content-Type-Options']).toBe('nosniff');
     expect(headers['Referrer-Policy']).toBe('strict-origin-when-cross-origin');
@@ -69,5 +62,13 @@ describe('next config security headers', () => {
     // Voice recording (Settings → My voice) stops working the moment this is `()`.
     expect(headers['Permissions-Policy']).toBe('microphone=(self), camera=(), geolocation=()');
     expect(headers['Strict-Transport-Security']).toBe('max-age=31536000');
+  });
+});
+
+describe('next config compression', () => {
+  it('leaves compression to Caddy, so Next never encodes a route response', () => {
+    // With `compress` on, Next gzips JSON and text route responses in the Node
+    // process, next to the audio streams. Caddy's `encode` owns that instead.
+    expect(nextConfig.compress).toBe(false);
   });
 });

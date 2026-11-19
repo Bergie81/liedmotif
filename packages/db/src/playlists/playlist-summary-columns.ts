@@ -13,8 +13,8 @@ import {
 import { playlistMemberVisibleTo } from './lounge-audible';
 
 // Correlated summary columns for any query whose FROM is `playlists` — shared
-// by the Playlists list and the search repo so a playlist's card facts cannot
-// diverge between surfaces.
+// by the Playlists list, the Lounge and Search so a playlist's card facts
+// cannot diverge between surfaces.
 // NOTE: the correlated references must be spelled `${playlists}."id"` — a
 // bare `${playlists.id}` renders UNQUALIFIED ("id") inside these subqueries
 // and binds to the subquery's own tables.

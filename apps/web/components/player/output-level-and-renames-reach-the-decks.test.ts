@@ -212,7 +212,7 @@ describe('the output level on the element path', () => {
     expect(decks.elB.volume).toBe(0.4);
   });
 
-  it('clamps a level outside 0 to 1', async () => {
+  it('clamps a level outside 0–1', async () => {
     const decks = await mount();
 
     await act(async () => {
