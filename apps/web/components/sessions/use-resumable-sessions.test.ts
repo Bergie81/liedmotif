@@ -304,7 +304,7 @@ describe('useResumableSessions — a failed next page', () => {
     expect(shownToasts()).toEqual([
       expect.objectContaining({
         tone: 'error',
-        message: 'Couldn’t load more Sessions: Network down.',
+        message: 'Couldn’t load more sessions: Network down.',
       }),
     ]);
     expect(result.current.error).toBeNull();

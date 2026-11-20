@@ -1,13 +1,13 @@
 ---
-title: Instance alerts
+title: Instance Alerts
 description: Get a message when the Liedmotif worker stops, background jobs fail for good or storage fills up, by webhook, email or both.
-checkedOn: 2026-11-11
+checkedOn: 2026-11-20
 howTo: true
 ---
 
 `docker compose ps` can say everything is healthy while no new music gets made. Alerts tell you before you find out by pressing play. They're off until you turn them on, and you set them up in `.env` and a scheduled check on the machine. There's no settings page and no extra container, and only the admin receives them.
 
-## What you get alerted about
+## What You Get Alerted About
 
 | Alert | Severity | What it means |
 | --- | --- | --- |
@@ -23,7 +23,7 @@ Messages carry only the problem's name, severity, counts, percentages and durati
 
 > **This can't report the machine itself being down.** If the machine, Docker, the web container or Postgres is dead, nothing sends. For that you need an uptime check from another machine, and `https://<your address>/api/health` is there for it. A failing scheduled check is the local sign that the alert path itself is broken.
 
-## 1. Choose where alerts go
+## 1. Choose Where Alerts Go
 
 You can use a webhook, email or both. With both set up, both are used.
 
@@ -31,7 +31,7 @@ You can use a webhook, email or both. With both set up, both are used.
 
 **Email.** Alerts go to the admin's confirmed address and nowhere else. This needs [account email](/docs/email-and-storage) turned on, and your address confirmed in **Settings › Profile**.
 
-## 2. Turn it on
+## 2. Turn It On
 
 Create a token. This is what switches alerts on, so turning on account email for invites starts no alerts by itself.
 
@@ -61,7 +61,7 @@ If the settings don't fit together, the app refuses to start and `docker compose
 | `ALERT_WEBHOOK_URL must be an absolute http:// or https:// URL.` | Fix the address. |
 | `ALERT_WEBHOOK_URL must not carry a user name or password` | Move the receiver's token into the address's path or query, the way the receiver accepts it. |
 
-## 3. Schedule the check
+## 3. Schedule the Check
 
 The machine calls Liedmotif every five minutes and Liedmotif does the rest. Your token goes into a file only root can read, because any user on the machine can read a crontab entry or a command line while it runs. Run this from the folder that holds `.env`:
 
@@ -81,7 +81,7 @@ It needs curl 7.55 or newer. If you changed `WEB_PORT`, use your port instead of
 
 If a check fails, cron reports it the way your machine is set up to, usually as local mail.
 
-## 4. Test it
+## 4. Test It
 
 Run the check by hand and read the report. It holds no secret and not your address.
 
@@ -118,13 +118,13 @@ Wait more than five minutes, then run the check by hand. You should get the work
 docker compose start worker
 ```
 
-## If a message gets lost or repeated
+## If a Message Gets Lost or Repeated
 
 - **It reached none of your destinations:** the next run sends everything again, so a short outage can repeat a message.
 - **It reached one destination and the other failed:** the run answers 502, but the failed destination gets no second try.
 - **Sending worked, but saving that fact failed:** the run answers 503 and the next run sends again.
 
-## The webhook message
+## The Webhook Message
 
 Each problem that changes sends one JSON POST, with a 5-second timeout. A redirect is refused and counts as a failed send, so use the receiver's final address.
 
@@ -171,10 +171,10 @@ curl -i -X POST "http://192.168.1.20:2586/liedmotif" \
   -d '{"title":"Liedmotif test","message":"Test alert","text":"Test alert","content":"Test alert"}'
 ```
 
-## What to do about an alert
+## What to Do About an Alert
 
 **Worker heartbeat.** Run `docker compose ps -a` and `docker compose logs worker --tail 50`. [Troubleshooting](/docs/troubleshooting) covers the usual causes.
 
-**Failed jobs.** Open **Settings › Diagnostics & worker**. **Queued jobs** shows how many have failed. Look for the reason with `docker compose logs worker --tail 50`. The alert clears at the next check after those jobs are retried or deleted, but Liedmotif has no button or documented command for that yet. Until then it stays announced without sending more messages.
+**Failed jobs.** Open **Settings › Diagnostics & Worker**. **Queued jobs** shows how many have failed. Look for the reason with `docker compose logs worker --tail 50`. The alert clears at the next check after those jobs are retried or deleted, but Liedmotif has no button or documented command for that yet. Until then it stays announced without sending more messages.
 
-**Storage quota.** Delete music you no longer keep, or raise **Storage quota** in **Settings › Cost limits**. The freed space shows at the next hourly measurement. **Settings › Storage** shows what's stored.
+**Storage quota.** Delete music you no longer keep, or raise **Storage quota** in **Settings › Cost Limits**. The freed space shows at the next hourly measurement. **Settings › Storage** shows what's stored.

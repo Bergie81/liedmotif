@@ -31,7 +31,7 @@ export function PlayerCommandLine({ action }: { action: PlayerChatAction }) {
           className={`${appPageButtonClass} flex-none`}
         >
           <Play className="h-3 w-3 flex-none fill-current" aria-hidden />
-          Tap to play
+          Tap to Play
         </button>
       ) : null}
     </div>

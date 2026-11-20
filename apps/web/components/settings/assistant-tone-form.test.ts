@@ -47,7 +47,7 @@ describe('the tone form', () => {
 
     fireEvent.click(screen.getByRole('button', { name: preset.label }));
     expect(field().value).toBe(preset.tone);
-    fireEvent.click(screen.getByRole('button', { name: 'Save tone' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save Tone' }));
 
     await waitFor(() =>
       expect(shownToasts()).toEqual([
@@ -61,9 +61,9 @@ describe('the tone form', () => {
     const server = serve();
     render(h(AssistantToneForm, { initial: { tone: 'Talk like a ship captain.' } }));
 
-    fireEvent.click(screen.getByRole('button', { name: "Roadie's own" }));
+    fireEvent.click(screen.getByRole('button', { name: "Roadie's Own" }));
     expect(field().value).toBe('');
-    fireEvent.click(screen.getByRole('button', { name: 'Save tone' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save Tone' }));
 
     await waitFor(() => expect(server.saved).toEqual(['']));
   });
@@ -74,7 +74,7 @@ describe('the tone form', () => {
 
     fireEvent.click(screen.getByRole('button', { name: TONE_PRESETS[0]!.label }));
     fireEvent.change(field(), { target: { value: 'Polite, but in rhymes.' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save tone' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save Tone' }));
 
     await waitFor(() => expect(server.saved).toEqual(['Polite, but in rhymes.']));
   });
@@ -89,7 +89,7 @@ describe('the tone form', () => {
     const presetButton = () =>
       screen.getByRole('button', { name: TONE_PRESETS[0]!.label }) as HTMLButtonElement;
 
-    fireEvent.click(screen.getByRole('button', { name: 'Save tone' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save Tone' }));
     await waitFor(() => expect(field().disabled).toBe(true));
     expect(presetButton().disabled).toBe(true);
 
@@ -108,7 +108,7 @@ describe('the tone form', () => {
     );
     render(h(AssistantToneForm, { initial: { tone: 'Talk like a ship captain.' } }));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Save tone' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save Tone' }));
 
     await waitFor(() =>
       expect(shownToasts()).toEqual([
@@ -131,7 +131,7 @@ describe('the tone form', () => {
       ),
     );
     render(h(AssistantToneForm, { initial: { tone: 'Calm.' } }));
-    const save = screen.getByRole('button', { name: 'Save tone' });
+    const save = screen.getByRole('button', { name: 'Save Tone' });
 
     fireEvent.click(save);
     await waitFor(() => expect(shownToasts()).toHaveLength(1));
@@ -157,7 +157,7 @@ describe('the tone form', () => {
       vi.fn(() => answers.shift()!),
     );
     render(h(AssistantToneForm, { initial: { tone: 'Calm.' } }));
-    const save = screen.getByRole('button', { name: 'Save tone' });
+    const save = screen.getByRole('button', { name: 'Save Tone' });
 
     fireEvent.click(save);
     await waitFor(() => expect(shownToasts()).toHaveLength(1));

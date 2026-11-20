@@ -75,9 +75,9 @@ describe('splitRows', () => {
 
 describe('costPeriodLabel', () => {
   it('names the budget timezone the period is cut in', () => {
-    expect(costPeriodLabel(data)).toBe('Since 31 May 2026 · Budget timezone Europe/Berlin');
+    expect(costPeriodLabel(data)).toBe('Since 31 May 2026 · Budget Timezone Europe/Berlin');
     expect(costPeriodLabel({ ...data, from: null })).toBe(
-      'All time · Budget timezone Europe/Berlin',
+      'All Time · Budget Timezone Europe/Berlin',
     );
   });
 });

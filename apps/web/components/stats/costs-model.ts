@@ -101,5 +101,5 @@ export function splitRows(groups: CostGroup[], costs: UnitCosts): SplitRow[] {
 
 /** Cost periods are cut on the budget calendar, which the label says apart from the reporting one. */
 export function costPeriodLabel(data: CostComparisonData): string {
-  return `${rangeOpening(data)} · Budget timezone ${data.timezone}`;
+  return `${rangeOpening(data)} · Budget Timezone ${data.timezone}`;
 }

@@ -41,7 +41,7 @@ describe('PlaylistQueueSheet — a failed member', () => {
     );
 
     const rows = screen.getAllByRole('listitem');
-    expect(rows[0]!.textContent).not.toContain('Could not be kept');
-    expect(rows[1]!.textContent).toContain('Could not be kept');
+    expect(rows[0]!.textContent).not.toContain('Could Not Be Kept');
+    expect(rows[1]!.textContent).toContain('Could Not Be Kept');
   });
 });

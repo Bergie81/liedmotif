@@ -74,7 +74,7 @@ describe('generation banner', () => {
 
   it('names the absence for a session that has no tracks yet', () => {
     const status = banner({ queueLength: 0 });
-    expect(status?.textContent).toContain('No Tracks yet');
+    expect(status?.textContent).toContain('No tracks yet');
     expect(status?.textContent).not.toContain('ready tracks');
     // Severity still reads at a glance.
     expect(status?.className).toContain('border-warn/40');
@@ -104,7 +104,7 @@ describe('generation banner', () => {
 
   it('points the admin at cost limits and a member at their own budget', () => {
     banner({ generationStatus: 'repeat_cost_limit', queueLength: 0 });
-    expect(screen.getByRole('link', { name: 'Adjust cost limits' }).getAttribute('href')).toBe(
+    expect(screen.getByRole('link', { name: 'Adjust Cost Limits' }).getAttribute('href')).toBe(
       '/settings/limits',
     );
     cleanup();
@@ -114,7 +114,7 @@ describe('generation banner', () => {
       generationStatusScope: 'member',
       queueLength: 0,
     });
-    expect(screen.getByRole('link', { name: 'See your budget' }).getAttribute('href')).toBe(
+    expect(screen.getByRole('link', { name: 'See Your Budget' }).getAttribute('href')).toBe(
       '/settings/my-budget',
     );
   });
@@ -133,7 +133,7 @@ describe('delete session action', () => {
 
     const dialog = screen.getByTestId('confirm-dialog');
     expect(dialog.textContent).toContain(SESSION_TITLE);
-    expect(dialog.textContent).toContain('The Session stops first');
+    expect(dialog.textContent).toContain('The session stops first');
     expect(onDelete).not.toHaveBeenCalled();
   });
 
@@ -151,7 +151,7 @@ describe('delete session action', () => {
 
 describe('try again action', () => {
   function tryAgainControl(): HTMLElement | null {
-    return screen.queryByRole('button', { name: /Try again/ });
+    return screen.queryByRole('button', { name: /Try Again/ });
   }
 
   /** The banner as the Session's own player fills it: Try again beside Delete. */
@@ -180,12 +180,12 @@ describe('try again action', () => {
 
   it('offers Try again with its cost in Tracks beside Delete Session on a stuck Session', () => {
     stuckBanner({ tryAgainTracks: 2 });
-    expect(tryAgainControl()?.textContent).toBe('Try again · 2 Tracks');
+    expect(tryAgainControl()?.textContent).toBe('Try Again · 2 Tracks');
     expect(deleteControl()).not.toBeNull();
     cleanup();
 
     stuckBanner({ tryAgainTracks: 1 });
-    expect(tryAgainControl()?.textContent).toBe('Try again · 1 Track');
+    expect(tryAgainControl()?.textContent).toBe('Try Again · 1 Track');
   });
 
   it('sends the command once, however often it is tapped while it runs', async () => {

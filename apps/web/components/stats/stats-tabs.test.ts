@@ -37,7 +37,7 @@ describe('StatsTabs for the Admin', () => {
   it('applies a chosen period to both tabs and keeps it across a tab switch', async () => {
     render(h(StatsTabs, { listening, costs }));
 
-    fireEvent.click(screen.getByRole('button', { name: '7 days' }));
+    fireEvent.click(screen.getByRole('button', { name: '7 Days' }));
 
     await waitFor(() => expect(fetchListeningStats).toHaveBeenCalledWith('7d'));
     expect(fetchCostComparison).toHaveBeenCalledWith('7d');
@@ -46,7 +46,7 @@ describe('StatsTabs for the Admin', () => {
     fireEvent.mouseDown(screen.getByRole('tab', { name: 'Costs' }), { button: 0 });
 
     expect(screen.getByRole('tab', { name: 'Costs' }).getAttribute('data-state')).toBe('active');
-    expect(screen.getByRole('button', { name: '7 days' }).getAttribute('aria-pressed')).toBe(
+    expect(screen.getByRole('button', { name: '7 Days' }).getAttribute('aria-pressed')).toBe(
       'true',
     );
   });

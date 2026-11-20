@@ -71,7 +71,7 @@ describe('Start Session duration controls', () => {
 
     expect(
       screen
-        .getByLabelText(/Session Duration/, { selector: 'input' })
+        .getByLabelText(/Session duration/, { selector: 'input' })
         .getAttribute('aria-valuetext'),
     ).toBe('Auto');
     expect(screen.getByText(/Without one, generation stays continuous/)).toBeTruthy();
@@ -90,7 +90,7 @@ describe('Start Session duration controls', () => {
         initialPrompt: 'Thirty minutes of quiet music',
       }),
     );
-    const duration = screen.getByLabelText(/Session Duration/, { selector: 'input' });
+    const duration = screen.getByLabelText(/Session duration/, { selector: 'input' });
     fireEvent.change(duration, { target: { value: '20' } });
     return { onStart, duration };
   }
@@ -179,7 +179,7 @@ describe('Surprise Me in the creation card', () => {
 
   it('Start Session starts the untouched proposal by identity with the card’s duration and cover choices', () => {
     const { onStart, onStartSurprise } = mount();
-    fireEvent.change(screen.getByLabelText(/Session Duration/, { selector: 'input' }), {
+    fireEvent.change(screen.getByLabelText(/Session duration/, { selector: 'input' }), {
       target: { value: '20' },
     });
     fireEvent.click(screen.getByTestId('start-vibe'));
@@ -221,7 +221,7 @@ describe('Surprise Me in the creation card', () => {
     const { onStartSurprise } = mount();
     expect(
       screen
-        .getByLabelText(/Session Duration/, { selector: 'input' })
+        .getByLabelText(/Session duration/, { selector: 'input' })
         .getAttribute('aria-valuetext'),
     ).toBe('45 min');
     fireEvent.click(screen.getByTestId('start-vibe'));
@@ -287,7 +287,7 @@ describe('Surprise Me in the creation card', () => {
       }),
     );
     fireEvent.click(screen.getByRole('button', { name: 'Surprise Me' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Find a surprise' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Find a Surprise' }));
     await screen.findByTestId('surprise-preview');
 
     expect((screen.getByTestId('vibe-prompt') as HTMLTextAreaElement).value).toBe(
@@ -355,7 +355,7 @@ describe('Surprise Me in the creation card', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Surprise Me' }));
     expect(await screen.findByText('Harbor Morning')).toBeTruthy();
     api.proposeSurprise.mockResolvedValue({ ok: true, data: { proposal: EMBER } });
-    fireEvent.click(screen.getByRole('button', { name: 'Try another' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Try Another' }));
     expect(api.proposeSurprise.mock.calls.at(-1)![0]).toMatchObject({ replaces: harbor.id });
   });
 
@@ -411,13 +411,13 @@ describe('Surprise Me in the creation card', () => {
     /** Try another from EMBER, Cancel it, and the server has kept HARBOR meanwhile. */
     async function cancelLate() {
       const mounted = mount();
-      fireEvent.change(screen.getByLabelText(/Session Duration/, { selector: 'input' }), {
+      fireEvent.change(screen.getByLabelText(/Session duration/, { selector: 'input' }), {
         target: { value: '20' },
       });
       api.proposeSurprise.mockReturnValueOnce(new Promise(() => {}));
       api.getPendingSurprise.mockResolvedValueOnce({ ok: true, data: { proposal: HARBOR } });
       fireEvent.click(screen.getByRole('button', { name: 'Surprise Me' }));
-      fireEvent.click(await screen.findByRole('button', { name: 'Try another' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Try Another' }));
       fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
       await waitFor(() => expect(api.getPendingSurprise).toHaveBeenCalledOnce());
       await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
@@ -433,7 +433,7 @@ describe('Surprise Me in the creation card', () => {
       );
       expect(
         screen
-          .getByLabelText(/Session Duration/, { selector: 'input' })
+          .getByLabelText(/Session duration/, { selector: 'input' })
           .getAttribute('aria-valuetext'),
       ).toBe('20 min');
     });

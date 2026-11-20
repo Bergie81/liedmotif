@@ -22,7 +22,7 @@ describe('Library view model', () => {
     expect(formatTrackDuration(185)).toBe('3:05');
     expect(formatTrackDuration(null)).toBe('—:——');
     expect(getTrackAvailability({ status: 'ready', audioUrl: null, hasPlayed: false })).toEqual({
-      audioNotice: 'Audio unavailable',
+      audioNotice: 'Audio Unavailable',
       hasPlayed: false,
     });
     expect(
@@ -34,10 +34,10 @@ describe('Library view model', () => {
   });
 
   it('marks a Track whose final never arrived as one that could not be kept', () => {
-    expect(trackAudioNotice({ status: 'failed', audioUrl: null })).toBe('Could not be kept');
+    expect(trackAudioNotice({ status: 'failed', audioUrl: null })).toBe('Could Not Be Kept');
     // The status wins even over a stale audio path.
     expect(trackAudioNotice({ status: 'failed', audioUrl: '/api/audio/x' })).toBe(
-      'Could not be kept',
+      'Could Not Be Kept',
     );
   });
 

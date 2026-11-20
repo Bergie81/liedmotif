@@ -124,7 +124,7 @@ describe('Add Tracks search', () => {
 
     search('late');
     await waitFor(() => expect(server.held?.release).toBeDefined(), { timeout: 2000 });
-    fireEvent.click(screen.getByRole('button', { name: 'Load more' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Load More' }));
     await act(async () => server.held!.release!());
 
     await waitFor(() => expect(screen.queryByText('Morning Sun')).toBeNull());

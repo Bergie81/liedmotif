@@ -31,8 +31,8 @@ export function MemberSettingsHub({ data }: { data: MemberSettingsHubData }) {
     <>
       <SettingsPageHeader
         root
-        title="Make it yours"
-        description="Your profile, how new Sessions sound, and how many Tracks you have left."
+        title="Make It Yours"
+        description="Your profile, how new sessions sound, and how many tracks you have left."
       />
 
       <SettingsColumns>
@@ -84,7 +84,7 @@ export function MemberSettingsHub({ data }: { data: MemberSettingsHubData }) {
             <SettingsRow
               href="/settings/cover-art"
               icon={<Image />}
-              label="Cover art"
+              label="Cover Art"
               summary={data.coverArt}
             />
           </SettingsCard>
@@ -95,10 +95,10 @@ export function MemberSettingsHub({ data }: { data: MemberSettingsHubData }) {
             <SettingsRow
               href="/settings/my-budget"
               icon={<Gauge />}
-              label="My budget"
+              label="My Budget"
               summary={{
-                status: { label: 'Read-only', tone: 'muted' },
-                text: 'Your Tracks and covers, and the shared budget',
+                status: { label: 'Read-Only', tone: 'muted' },
+                text: 'Your tracks and covers, and the shared budget',
               }}
             />
           </SettingsCard>

@@ -29,21 +29,21 @@ const text = (kind: 'oneTime' | 'rolling', values: Partial<typeof props.values> 
     }),
   ).replace(/<[^>]*>/g, '');
 
-const START_WARNING = 'Below 5 Tracks, no new Session can start.';
+const START_WARNING = 'Below 5 tracks, no new session can start.';
 
 describe('member budget setup', () => {
   it('prices all four rolling windows with their own Track or Cover unit cost', () => {
     const rolling = text('rolling');
-    expect(rolling).toContain('$1.40 (20 Tracks)');
-    expect(rolling).toContain('$7.00 (100 Tracks)');
-    expect(rolling).toContain('$0.40 (10 Covers)');
-    expect(rolling).toContain('$2.40 (60 Covers)');
+    expect(rolling).toContain('$1.40 (20 tracks)');
+    expect(rolling).toContain('$7.00 (100 tracks)');
+    expect(rolling).toContain('$0.40 (10 covers)');
+    expect(rolling).toContain('$2.40 (60 covers)');
   });
 
   it('shows dollar-first estimates for each total using the count saved after batch rounding', () => {
     const oneTime = text('oneTime');
-    expect(oneTime).toContain('$1.82 (26 Tracks)');
-    expect(oneTime).toContain('$1.60 (40 Covers)');
+    expect(oneTime).toContain('$1.82 (26 tracks)');
+    expect(oneTime).toContain('$1.60 (40 covers)');
   });
 });
 

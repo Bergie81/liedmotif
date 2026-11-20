@@ -187,9 +187,9 @@ export function clampMaxRetries(value: number | undefined): number {
 }
 
 const EXPANSION_FAILED =
-  'Could not turn that description into a music style. Check the Text AI configuration.';
+  'Could not turn that description into a music style. Check the text AI configuration.';
 const EXPANSION_TIMED_OUT =
-  'The Text AI took too long to respond. Try again, or use a faster model.';
+  'The text AI took too long to respond. Try again, or use a faster model.';
 
 function trimTrailingSlash(url: string): string {
   return url.replace(/\/+$/, '');
@@ -314,9 +314,9 @@ const surpriseRequestSchema = z.object({
       Math.min(SURPRISE_MINUTES.max, Math.max(SURPRISE_MINUTES.min, Math.round(minutes / 5) * 5)),
     ),
 });
-const SURPRISE_REQUEST_FAILED = 'The Text AI could not write a surprise. Try again.';
-const ASSISTANT_REPLY_FAILED = 'The Text AI could not answer. Try again.';
-const ASSISTANT_REPLY_CUT_OFF = 'The Text AI stopped before the answer was finished. Try again.';
+const SURPRISE_REQUEST_FAILED = 'The text AI could not write a surprise. Try again.';
+const ASSISTANT_REPLY_FAILED = 'The text AI could not answer. Try again.';
+const ASSISTANT_REPLY_CUT_OFF = 'The text AI stopped before the answer was finished. Try again.';
 
 /** The creative-naming response shape (`createSessionMetadata`); all default so
  *  a partial reply still validates and consumers keep their deterministic fallback. */

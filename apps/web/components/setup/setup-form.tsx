@@ -86,10 +86,10 @@ export function SetupForm({
 
       <form onSubmit={submit}>
         <h1 id="setup-heading" className={displayHeadingClass}>
-          Create your admin login
+          Create Your Admin Login
         </h1>
         <p className="mt-3 text-[14px] leading-relaxed text-muted">
-          Your private listening space starts with one Admin. Everything else — your profile, the
+          Your private listening space starts with one admin. Everything else — your profile, the
           music model and what it may spend — is set up the first time you sign in.
         </p>
 
@@ -132,7 +132,7 @@ export function SetupForm({
           className={cn(primaryButtonClass, 'mt-6 w-full')}
         >
           {submitting ? <LiedmotifLoader /> : null}
-          {submitting ? 'Creating…' : 'Create admin'}
+          {submitting ? 'Creating…' : 'Create Admin'}
         </button>
       </form>
     </main>

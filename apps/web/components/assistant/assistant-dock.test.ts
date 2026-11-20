@@ -113,7 +113,7 @@ it('opens from the launcher with a greeting and questions to start from', () => 
   const panel = screen.getByRole('dialog', { name: 'Roadie' });
   expect(panel.textContent).toContain("Hi, I'm Roadie 👋");
   expect(panel.textContent).toContain(
-    "I'm your personal AI assistant. I can start music, control the player, manage your Tracks and Playlists, change settings, or answer questions about Liedmotif.",
+    "I'm your personal AI assistant. I can start music, control the player, manage your tracks and playlists, change settings, or answer questions about Liedmotif.",
   );
   expect(screen.getByRole('button', { name: 'Play something calm for reading' })).toBeTruthy();
 });
@@ -215,7 +215,7 @@ it('asks a suggested question and can stop the answer from the field', () => {
   expect(screen.getByRole('status').textContent).toContain('Roadie is looking it up');
   expect(screen.queryByRole('button', { name: 'Send' })).toBeNull();
 
-  fireEvent.click(screen.getByRole('button', { name: 'Stop the answer' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Stop the Answer' }));
 
   // Nothing was answered: the question is back in the field, ready to send again.
   const field = screen.getByRole('textbox', { name: 'Ask Roadie' }) as HTMLTextAreaElement;
@@ -267,7 +267,7 @@ it('shows a receipt in the app’s words for what the Assistant did, next to wha
   askAndGetReply([receiptFor(CREATED), { type: 'text', text: 'All set, as “Weekend”.' }]);
 
   const log = await screen.findByRole('log', { name: 'Conversation' });
-  await waitFor(() => expect(log.textContent).toContain('Created Playlist: Sunday'));
+  await waitFor(() => expect(log.textContent).toContain('Created playlist: Sunday'));
   expect(log.textContent).toContain('All set, as “Weekend”.');
 });
 
@@ -277,7 +277,7 @@ it('shows the receipt alone when the Assistant acted and wrote nothing', async (
   askAndGetReply([receiptFor(CREATED)]);
 
   const log = await screen.findByRole('log', { name: 'Conversation' });
-  await waitFor(() => expect(log.textContent).toContain('Created Playlist: Sunday'));
+  await waitFor(() => expect(log.textContent).toContain('Created playlist: Sunday'));
   expect(log.textContent).not.toContain('looking it up');
   expect(screen.queryByRole('alert')).toBeNull();
 });
@@ -393,7 +393,7 @@ it('hands a player command to the player the moment it arrives, and shows one li
   const log = await screen.findByRole('log', { name: 'Conversation' });
   await waitFor(() => expect(log.textContent).toContain('Paused'));
   expect(playerCommands.run).toHaveBeenCalledExactlyOnceWith({ name: 'pause' });
-  expect(screen.queryByRole('button', { name: 'Tap to play' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Tap to Play' })).toBeNull();
 });
 
 it('offers "Tap to play" when the browser refused the audio, and plays inside that tap', async () => {
@@ -402,14 +402,14 @@ it('offers "Tap to play" when the browser refused the audio, and plays inside th
 
   askAndGetReply([commandFor('continue')]);
 
-  const tap = await screen.findByRole('button', { name: 'Tap to play' });
+  const tap = await screen.findByRole('button', { name: 'Tap to Play' });
   const log = screen.getByRole('log', { name: 'Conversation' });
   expect(log.textContent).toContain('Your browser did not start the audio.');
 
   fireEvent.click(tap);
 
   expect(playerCommands.tapToPlay).toHaveBeenCalledOnce();
-  await waitFor(() => expect(screen.queryByRole('button', { name: 'Tap to play' })).toBeNull());
+  await waitFor(() => expect(screen.queryByRole('button', { name: 'Tap to Play' })).toBeNull());
   expect(log.textContent).toContain('Playing');
   expect(playerCommands.run).toHaveBeenCalledOnce();
 });

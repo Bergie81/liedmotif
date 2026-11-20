@@ -155,7 +155,7 @@ function showPlaylist(items: PlaylistMemberItem[] = MEMBERS) {
 }
 
 function openOptions() {
-  fireEvent.click(screen.getAllByRole('button', { name: 'Playlist and Track options' })[0]!);
+  fireEvent.click(screen.getAllByRole('button', { name: 'Playlist and Track Options' })[0]!);
   return within(screen.getByRole('dialog'));
 }
 

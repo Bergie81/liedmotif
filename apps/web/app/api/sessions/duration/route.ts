@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   const parsed = await parseJsonBody(
     request,
     setSessionDurationRequestSchema,
-    'Choose a whole duration from 1 to 600 minutes, or No limit.',
+    'Choose a whole duration from 1 to 600 minutes, or No Limit.',
   );
   if (parsed instanceof NextResponse) return parsed;
   const db = getDb();

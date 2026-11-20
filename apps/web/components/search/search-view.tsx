@@ -94,7 +94,7 @@ export function SearchView({
             flushQuery();
             recordSearch(input);
           }}
-          aria-label="Search Sessions, Tracks and Playlists"
+          aria-label="Search sessions, tracks and playlists"
           placeholder="Search titles, prompts, genres or moods…"
           autoComplete="off"
           enterKeyHint="search"
@@ -114,7 +114,7 @@ export function SearchView({
           }}
           className={searchChipClass}
         >
-          <MicVocal className="h-3.5 w-3.5" aria-hidden /> Search lyrics
+          <MicVocal className="h-3.5 w-3.5" aria-hidden /> Search Lyrics
         </button>
       </div>
 

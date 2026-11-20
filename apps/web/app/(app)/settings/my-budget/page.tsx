@@ -39,7 +39,7 @@ function YourBudget({ data }: { data: MyBudgetPageData }) {
       <SettingsFootnote>
         {yours.tracks.remaining === 0
           ? oneTimeBudgetUsedUpMessage(payerName)
-          : `A one-time budget — it does not reset. When it runs out, ask ${payerName ?? 'the Admin'} for more.`}
+          : `A one-time budget — it does not reset. When it runs out, ask ${payerName ?? 'the admin'} for more.`}
       </SettingsFootnote>
     </>
   );
@@ -55,7 +55,7 @@ export default async function MyBudgetPage() {
   return (
     <section>
       <SettingsPageHeader
-        title="My budget"
+        title="My Budget"
         description="What you can generate right now — your own budget, and the shared one every member draws from."
       />
       <SettingsColumns>

@@ -29,7 +29,7 @@ describe('provider settings model', () => {
       ...over,
     });
     const notConfigured = {
-      name: 'Not configured',
+      name: 'Not Configured',
       configured: false,
       source: null,
       status: { label: 'Unavailable', tone: 'muted' },
@@ -91,7 +91,7 @@ describe('provider settings model', () => {
     expect(generatedImageProviderPresentation({ credential: status({}), model: null })).toEqual({
       name: 'OpenAI',
       configured: true,
-      source: 'Shared OpenAI key',
+      source: 'Shared OpenAI Key',
       model: null,
       status: { label: 'Configured', tone: 'ok' },
     });
@@ -105,13 +105,13 @@ describe('provider settings model', () => {
       configured: false,
       source: null,
       model: null,
-      status: { label: 'Needs a key', tone: 'warn' },
+      status: { label: 'Needs a Key', tone: 'warn' },
     });
   });
 
   it('warns on the Text AI card only while Cover images share its key', () => {
     expect(COVER_KEY_NOTICE).toBe(
-      'Cover images use this key too. Changing the provider or removing this key turns Tailored Cover Art off until Cover images has its own key.',
+      'Cover images use this key too. Changing the provider or removing this key turns Tailored Cover Art off until Cover Images has its own key.',
     );
     expect(coverKeyNotice({ source: 'shared' })).toBe(COVER_KEY_NOTICE);
     // A mixed setup on separate keys, or no Cover provider at all.

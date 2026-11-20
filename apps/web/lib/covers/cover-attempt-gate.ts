@@ -27,8 +27,8 @@ import { coverSetupMessage, type CoverSetupGap } from '@/lib/covers/cover-setup-
 import { ACCOUNT_DISABLED_MESSAGE } from '@/lib/constants';
 import { generatedCoverProviderConfigured } from '@/lib/covers/covers';
 
-export const SESSION_COVERS_FULL_MESSAGE = `This Session already keeps ${MAX_SESSION_COVER_HISTORY} covers. Delete a previous cover to generate a new one.`;
-export const PLAYLIST_COVERS_FULL_MESSAGE = `This Playlist already keeps ${MAX_PLAYLIST_COVER_HISTORY} covers. Delete a previous cover to generate a new one.`;
+export const SESSION_COVERS_FULL_MESSAGE = `This session already keeps ${MAX_SESSION_COVER_HISTORY} covers. Delete a previous cover to generate a new one.`;
+export const PLAYLIST_COVERS_FULL_MESSAGE = `This playlist already keeps ${MAX_PLAYLIST_COVER_HISTORY} covers. Delete a previous cover to generate a new one.`;
 
 /** The owner's Session or Playlist a cover attempt is for. Ownership and
  *  existence are the caller's to check: the gate only reads its cover state. */

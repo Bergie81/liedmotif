@@ -95,7 +95,7 @@ const COPY: Record<SessionGenerationStatus, StatusCopy> = {
     message: "Daily/monthly generation limit reached — repeating this session's own tracks.",
     // No reset is promised: a One-time budget never resets, and the player
     // cannot tell which window bound.
-    zeroTrackMessage: 'No Tracks yet — the generation limit was reached before the first one.',
+    zeroTrackMessage: 'No tracks yet — the generation limit was reached before the first one.',
     isSessionRepeat: true,
     showCostSettingsLink: true,
   },
@@ -106,9 +106,9 @@ const COPY: Record<SessionGenerationStatus, StatusCopy> = {
     tone: 'warn',
     title: 'Generation paused',
     message:
-      'The music provider is out of credits — playing your ready tracks until the Admin tops it up.',
+      'The music provider is out of credits — playing your ready tracks until the admin tops it up.',
     zeroTrackMessage:
-      'No Tracks yet — the music provider is out of credits until the Admin tops it up.',
+      'No tracks yet — the music provider is out of credits until the admin tops it up.',
   },
   provider_rate_limited: {
     tone: 'warn',
@@ -116,21 +116,21 @@ const COPY: Record<SessionGenerationStatus, StatusCopy> = {
     message:
       'The music provider is busy — playing your ready tracks until generation resumes automatically in a few minutes.',
     zeroTrackMessage:
-      'No Tracks yet — the music provider is busy; generation resumes automatically in a few minutes.',
+      'No tracks yet — the music provider is busy; generation resumes automatically in a few minutes.',
     selfClearing: true,
   },
   worker_stalled: {
     tone: 'warn',
     title: 'Catching up',
     message: 'Generation is catching up — playing your ready tracks in the meantime.',
-    zeroTrackMessage: 'No Tracks yet — generation is still catching up.',
+    zeroTrackMessage: 'No tracks yet — generation is still catching up.',
     selfClearing: true,
   },
   provider_error: {
     tone: 'error',
     title: 'Generation error',
     message: 'Generation hit a problem — playing your ready tracks while it recovers.',
-    zeroTrackMessage: 'No Tracks yet — generation hit a problem before the first one landed.',
+    zeroTrackMessage: 'No tracks yet — generation hit a problem before the first one landed.',
   },
 };
 
@@ -175,7 +175,7 @@ export function presentGenerationStatus(
     isSessionRepeat: copy.isSessionRepeat ?? false,
     showCostSettingsLink: copy.showCostSettingsLink ?? false,
     costSettingsPath: scope ? MY_BUDGET_PATH : COST_SETTINGS_PATH,
-    costSettingsLabel: scope ? 'See your budget' : 'Adjust cost limits',
+    costSettingsLabel: scope ? 'See Your Budget' : 'Adjust Cost Limits',
     isStuck,
     keepsPlaying: true,
   };

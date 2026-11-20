@@ -144,7 +144,7 @@ describe('PlaylistDetail — visitor menu', () => {
   });
 
   it('opens the blocked dialog when More Like This has no headroom', async () => {
-    const message = 'A new Session needs 5 Tracks; you have 4 left today.';
+    const message = 'A new session needs 5 tracks; you have 4 left today.';
     moreLikeThis.mockResolvedValue({ code: 'session_headroom_blocked', message });
     renderVisitor();
     fireEvent.click(screen.getByTestId(`lounge-menu-more-like-this-${PLAYLIST.id}`));

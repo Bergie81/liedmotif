@@ -112,7 +112,7 @@ interface FixturePlaylist {
   system?: true;
 }
 
-/** Night Drive is the active Session: New music on, up to 60 minutes, 40 of them generated. */
+/** Night Drive is the active Session: New Music on, up to 60 minutes, 40 of them generated. */
 export const SESSIONS = {
   nightDrive: { id: id(101), title: 'Night Drive', lastActive: 'active now' },
   morningFocus: { id: id(102), title: 'Morning Focus', lastActive: 'last active 2 days ago' },
@@ -208,14 +208,14 @@ const BUDGET: Record<UserRole, string> = {
   member: [
     'Your budget: 12 of 20 Tracks left today, 68 of 100 Tracks left this month. 7 of 10 covers left today, 19 of 25 covers left this month.',
     'Shared budget of all Members: 41 of 60 Tracks left today, 230 of 300 Tracks left this month. 22 of 30 covers left today, 81 of 100 covers left this month.',
-    'New music and covers are generated only while both budgets have some left.',
+    'New Music and covers are generated only while both budgets have some left.',
   ].join('\n'),
   admin:
     'Instance limit: 34 of 50 Tracks left today, 412 of 500 Tracks left this month. 9 of 10 covers left today, 37 of 60 covers left this month.',
 };
 
 function nowPlaying(player: AssistantPlayerState | null): string {
-  const newMusic = `New music: on, duration target ${ACTIVE_TARGET_MINUTES} min (${ACTIVE_GENERATED_MINUTES} min generated)`;
+  const newMusic = `New Music: on, duration target ${ACTIVE_TARGET_MINUTES} min (${ACTIVE_GENERATED_MINUTES} min generated)`;
   if (!player) {
     return [
       'Nothing is playing in this browser. The active Session:',
@@ -587,10 +587,10 @@ function fixtureAnswers(
         return (minutes == null) !== !noLimit && card.success
           ? proposed(card.data)
           : notOffered(
-              'New music is switched on up to a length in minutes, or with no limit: one of the two. Ask the user which they want.',
+              'New Music is switched on up to a length in minutes, or with no limit: one of the two. Ask the user which they want.',
             );
       }),
-    // The fixture user's new Sessions start with New music on, so no limit is always offered.
+    // The fixture user's new Sessions start with New Music on, so no limit is always offered.
     [PROPOSE_SURPRISE_TOOL_NAME]: (input: ProposeSurpriseInput) =>
       actions.take('proposed', async () => {
         const minutes = input.targetDurationMinutes;

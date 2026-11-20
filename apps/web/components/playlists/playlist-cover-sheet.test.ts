@@ -239,7 +239,7 @@ describe('PlaylistCoverSheet — cover cap', () => {
     expect(screen.getByText(/Delete a previous cover to make room/)).toBeTruthy();
 
     // Deleting one makes room again.
-    const deleteButtons = screen.getAllByRole('button', { name: 'Delete this cover' });
+    const deleteButtons = screen.getAllByRole('button', { name: 'Delete This Cover' });
     expect((deleteButtons[0] as HTMLButtonElement).disabled).toBe(false);
     vi.mocked(deletePlaylistCover).mockResolvedValue({
       ok: true,
@@ -346,13 +346,13 @@ describe('PlaylistCoverSheet — preview before applying', () => {
     expect(screen.getByTestId('cover-stage').textContent).not.toMatch(/New|Preview/);
   });
 
-  it('an unconfirmed attempt from an earlier open waits in Previous covers instead of previewing', async () => {
+  it('an unconfirmed attempt from an earlier open waits in Previous Covers instead of previewing', async () => {
     await renderSheet(READY);
 
     expect(showing()).toBe('current');
     expect(screen.queryByTestId('cover-confirm')).toBeNull();
     expect(screen.queryByTestId('cover-peek')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Preview this earlier cover' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Preview This Earlier Cover' })).toBeTruthy();
   });
 
   it('keeping the current cover ends the preview without applying anything', async () => {
@@ -368,7 +368,7 @@ describe('PlaylistCoverSheet — preview before applying', () => {
     vi.mocked(selectPlaylistCover).mockResolvedValue({ ok: true, data: { coverImageId: EARLIER } });
     await renderSheet({ coverImageId: CURRENT, history: [entry(CURRENT, true), entry(EARLIER)] });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Preview this earlier cover' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Preview This Earlier Cover' }));
     expect(selectPlaylistCover).not.toHaveBeenCalled();
     expect(showing()).toBe('earlier');
 

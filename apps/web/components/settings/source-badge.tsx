@@ -10,12 +10,12 @@ const badgeClass =
 const SOURCE_LABELS: Record<CredentialSource, string> = {
   env: 'Environment',
   database: 'Database',
-  shared: 'Shared key',
+  shared: 'Shared Key',
 };
 
 export function SourceBadge({ source }: { source: CredentialSource | null }) {
   if (!source) {
-    return <span className={`${badgeClass} border-line-2 text-dim`}>Not configured</span>;
+    return <span className={`${badgeClass} border-line-2 text-dim`}>Not Configured</span>;
   }
   const styles = source === 'env' ? 'border-lamp/35 text-lamp' : 'border-signal/35 text-signal';
   return <span className={`${badgeClass} ${styles}`}>{SOURCE_LABELS[source]}</span>;

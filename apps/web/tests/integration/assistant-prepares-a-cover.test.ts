@@ -271,12 +271,12 @@ describe.skipIf(skip)('the Assistant asked for a new cover', () => {
     [
       'no image provider is set up',
       async () => vi.stubEnv('IMAGE_PROVIDER', ''),
-      'No image provider is set up on this server. Ask the Admin to add one.',
+      'No image provider is set up on this server. Ask the admin to add one.',
     ],
     [
       'Tailored Cover Art is switched off',
       async () => updateUsageLimits(testDb.db, { tailoredCoverArtEnabled: false }),
-      'Tailored Cover Art is turned off on this server. Ask the Admin to turn it on.',
+      'Tailored Cover Art is turned off on this server. Ask the admin to turn it on.',
     ],
     [
       'the cover budget is used up',

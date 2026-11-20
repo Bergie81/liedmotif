@@ -23,8 +23,8 @@ export default async function CoverArtPage() {
   return (
     <section>
       <SettingsPageHeader
-        title="Cover art"
-        description="Choose the look of generated Session covers."
+        title="Cover Art"
+        description="Choose the look of generated session covers."
       />
 
       <SettingsColumns>

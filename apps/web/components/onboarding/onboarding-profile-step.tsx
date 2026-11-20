@@ -110,7 +110,7 @@ export function OnboardingProfileStep({
 
   return (
     <section>
-      <OnboardingStepHeader title="Welcome. What should we call you?">
+      <OnboardingStepHeader title="Welcome. What Should We Call You?">
         We only need your name. The rest is optional.
       </OnboardingStepHeader>
 
@@ -144,7 +144,7 @@ export function OnboardingProfileStep({
             value={profile.artistName}
             maxLength={MAX_PROFILE_ARTIST_NAME_LENGTH}
             placeholder={profile.name || 'Defaults to your name'}
-            hint="The artist on Tracks you download. Leave it empty to use your name."
+            hint="The artist on tracks you download. Leave it empty to use your name."
             error={errors.artistName}
             disabled={saving}
             onChange={(value) => setField('artistName', value)}
@@ -186,7 +186,7 @@ export function OnboardingProfileStep({
               />
             </div>
             <p className="text-[11.5px] leading-[1.5] text-dim">
-              The Text AI can use this to give Sessions a sense of place.
+              The text AI can use this to give sessions a sense of place.
             </p>
           </div>
           {withDescription ? (
@@ -211,7 +211,7 @@ export function OnboardingProfileStep({
                 disabled={saving}
               />
               <span className="text-[11.5px] font-normal leading-[1.5] text-dim">
-                Sets when Track limits reset and when backups run.
+                Sets when track limits reset and when backups run.
               </span>
             </label>
           ) : null}

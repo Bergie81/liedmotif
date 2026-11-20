@@ -17,7 +17,7 @@ import { VIBE_CHANGE_PENDING_CAPTION } from './vibe-switch-view';
 export const PLAYER_STATUS_LABEL: Record<PlayerStatus, string> = {
   loading: 'Connecting',
   ready: 'Ready',
-  playing: 'Now playing',
+  playing: 'Now Playing',
   paused: 'Paused',
   waiting: 'Preparing',
   ended: 'Ended',
@@ -27,8 +27,8 @@ export const PLAYER_STATUS_LABEL: Record<PlayerStatus, string> = {
  * progress slider's note on what the Session is doing. */
 export const SESSION_PLAYER_STATUS_LABEL: Record<PlayerStatus, string> = {
   ...PLAYER_STATUS_LABEL,
-  waiting: 'Preparing your Session',
-  ended: 'Session ended',
+  waiting: 'Preparing Your Session',
+  ended: 'Session Ended',
 };
 
 /** The engaged Playback source as the player's copy says it — the
@@ -38,8 +38,8 @@ export type SourceNoun = 'Session' | 'Playlist';
 
 /** The transport opens the engaged source's Track collection. */
 export const QUEUE_LABEL: Record<SourceNoun, string> = {
-  Session: 'Tracks in this Session',
-  Playlist: 'Tracks in this Playlist',
+  Session: 'Tracks in This Session',
+  Playlist: 'Tracks in This Playlist',
 };
 
 export interface MiniPlayerPresentation {
@@ -159,8 +159,8 @@ export function presentIncomingSource(
         ? 'Setting the vibe…'
         : incoming.title
           ? `Preparing “${incoming.title}”…`
-          : `Preparing your next ${incoming.noun}…`,
-    detail: `This ${playing} keeps playing until the new one is ready.`,
+          : `Preparing your next ${incoming.noun.toLowerCase()}…`,
+    detail: `This ${playing.toLowerCase()} keeps playing until the new one is ready.`,
   };
 }
 
@@ -174,7 +174,7 @@ export function deleteSessionConfirm(sessionTitle: string): {
 } {
   return {
     heading: 'Delete Session',
-    body: `Permanently delete “${sessionTitle}”? The Session stops first; its Tracks are deleted unless saved to a playlist — Saved Tracks stay in your Library.`,
+    body: `Permanently delete “${sessionTitle}”? The session stops first; its tracks are deleted unless saved to a playlist — saved tracks stay in your Library.`,
     confirmLabel: 'Delete',
   };
 }
@@ -200,10 +200,10 @@ export function presentSource(sourceKind: CommittedSourceKind | null): {
   detail: string;
 } | null {
   if (sourceKind === 'stream') {
-    return { label: 'Live stream', detail: 'Local final on the way' };
+    return { label: 'Live Stream', detail: 'Local final on the way' };
   }
   if (sourceKind === 'final') {
-    return { label: 'Local final', detail: 'Stored locally' };
+    return { label: 'Local Final', detail: 'Stored locally' };
   }
   return null;
 }

@@ -96,7 +96,7 @@ describe.skipIf(skip)('POST /api/sessions/convert-to-playlist', () => {
 
     expect(body.ok).toBe(false);
     expect(body.error.code).toBe('validation_error');
-    expect(body.error.message).toBe('This Session has no Tracks yet.');
+    expect(body.error.message).toBe('This session has no tracks yet.');
   });
 
   it("reads an unknown or another owner's Session as not found", async () => {

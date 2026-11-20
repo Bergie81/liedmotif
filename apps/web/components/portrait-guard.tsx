@@ -12,7 +12,7 @@ export function PortraitGuard() {
   return (
     <div className="portrait-guard">
       <Smartphone aria-hidden className="size-8 text-lamp" />
-      <p className="font-display text-lg text-paper">Turn your phone upright</p>
+      <p className="font-display text-lg text-paper">Turn Your Phone Upright</p>
       <p className="text-[13px] text-muted">Liedmotif plays in portrait.</p>
     </div>
   );

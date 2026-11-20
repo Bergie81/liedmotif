@@ -130,7 +130,7 @@ export default async function StoragePage() {
               <CleanupRow
                 icon={<Clock3 className={cleanupIconClass} aria-hidden />}
                 label="Ephemeral audio"
-                description="Unsaved audio is deleted along with its Session."
+                description="Unsaved audio is deleted along with its session."
                 value="Every minute"
               />
               <CleanupRow
@@ -141,7 +141,7 @@ export default async function StoragePage() {
               />
             </SettingsCard>
             <SettingsFootnote>
-              Saved and Favorited Tracks are never touched by cleanup.
+              Saved and favorited tracks are never touched by cleanup.
             </SettingsFootnote>
           </SettingsSection>
         </OnlineOnly>

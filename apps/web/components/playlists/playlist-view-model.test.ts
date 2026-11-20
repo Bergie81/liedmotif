@@ -92,7 +92,7 @@ describe('playlistMenuRows', () => {
     expect(reorder(MAX_PLAYLIST_ORDER_TRACKS)?.disabled).toBe(false);
     expect(reorder(MAX_PLAYLIST_ORDER_TRACKS + 1)).toMatchObject({
       disabled: true,
-      note: 'Too many Tracks',
+      note: 'Too Many Tracks',
     });
   });
 
@@ -102,7 +102,7 @@ describe('playlistMenuRows', () => {
         (row) => row.id === 'download',
       );
     expect(download(4)).toMatchObject({
-      label: 'Download all Playlist Tracks',
+      label: 'Download All Playlist Tracks',
       disabled: false,
     });
     expect(download(0)?.disabled).toBe(true);
@@ -151,30 +151,30 @@ describe('formatPlaylistMemberMetadata', () => {
 describe('formatPlaylistCardMeta', () => {
   it('reads the member count first, then the total playtime in minutes', () => {
     expect(formatPlaylistCardMeta({ trackCount: 14, totalDurationSeconds: 3120 })).toBe(
-      '14 Tracks · 52 min',
+      '14 tracks · 52 min',
     );
     expect(formatPlaylistCardMeta({ trackCount: 1, totalDurationSeconds: 201 })).toBe(
-      '1 Track · 3 min',
+      '1 track · 3 min',
     );
   });
 
   it('never rounds a playing playlist down to nothing', () => {
     expect(formatPlaylistCardMeta({ trackCount: 1, totalDurationSeconds: 20 })).toBe(
-      '1 Track · 1 min',
+      '1 track · 1 min',
     );
   });
 
   it('speaks hours once minutes stop scanning', () => {
     expect(formatPlaylistCardMeta({ trackCount: 40, totalDurationSeconds: 4520 })).toBe(
-      '40 Tracks · 1 hr 15 min',
+      '40 tracks · 1 hr 15 min',
     );
     expect(formatPlaylistCardMeta({ trackCount: 33, totalDurationSeconds: 7200 })).toBe(
-      '33 Tracks · 2 hr',
+      '33 tracks · 2 hr',
     );
   });
 
   it('drops the playtime half for an empty playlist rather than claiming 0 min', () => {
-    expect(formatPlaylistCardMeta({ trackCount: 0, totalDurationSeconds: 0 })).toBe('0 Tracks');
+    expect(formatPlaylistCardMeta({ trackCount: 0, totalDurationSeconds: 0 })).toBe('0 tracks');
   });
 });
 
@@ -212,7 +212,7 @@ describe('deletePlaylistConfirmBody', () => {
         soleMemberDeletedTrackCount: 1,
       }),
     ).toBe(
-      '3 Tracks are only in this playlist and will leave your Library. 1 of them will be deleted for good, because its Session is gone. Delete “Rain”?',
+      '3 tracks are only in this playlist and will leave your Library. 1 of them will be deleted for good, because its session is gone. Delete “Rain”?',
     );
     expect(
       deletePlaylistConfirmBody({
@@ -221,7 +221,7 @@ describe('deletePlaylistConfirmBody', () => {
         soleMemberDeletedTrackCount: 2,
       }),
     ).toBe(
-      '3 Tracks are only in this playlist and will leave your Library. 2 of them will be deleted for good, because their Session is gone. Delete “Rain”?',
+      '3 tracks are only in this playlist and will leave your Library. 2 of them will be deleted for good, because their session is gone. Delete “Rain”?',
     );
     expect(
       deletePlaylistConfirmBody({
@@ -230,7 +230,7 @@ describe('deletePlaylistConfirmBody', () => {
         soleMemberDeletedTrackCount: 2,
       }),
     ).toBe(
-      '2 Tracks are only in this playlist and will be deleted for good, because their Session is gone. Delete “Rain”?',
+      '2 tracks are only in this playlist and will be deleted for good, because their session is gone. Delete “Rain”?',
     );
     expect(
       deletePlaylistConfirmBody({
@@ -239,7 +239,7 @@ describe('deletePlaylistConfirmBody', () => {
         soleMemberDeletedTrackCount: 1,
       }),
     ).toBe(
-      '1 Track is only in this playlist and will be deleted for good, because its Session is gone. Delete “Rain”?',
+      '1 track is only in this playlist and will be deleted for good, because its session is gone. Delete “Rain”?',
     );
   });
 
@@ -251,7 +251,7 @@ describe('deletePlaylistConfirmBody', () => {
         soleMemberDeletedTrackCount: 0,
       }),
     ).toBe(
-      '1 Track is only in this playlist and will leave your Library (Tracks from your Sessions stay in History). Delete “Rain”?',
+      '1 track is only in this playlist and will leave your Library (tracks from your sessions stay in History). Delete “Rain”?',
     );
   });
 
@@ -262,14 +262,14 @@ describe('deletePlaylistConfirmBody', () => {
         soleMemberTrackCount: 0,
         soleMemberDeletedTrackCount: 0,
       }),
-    ).toBe('Delete “Rain”? Its Tracks stay in your Library through their other playlists.');
+    ).toBe('Delete “Rain”? Its tracks stay in your Library through their other playlists.');
   });
 });
 
 describe('lastRemovalNotice', () => {
   it('says a Track whose Session is gone was deleted for good', () => {
     expect(lastRemovalNotice({ deletedForGood: true, sharedReference: false })).toBe(
-      'Removed — that was its last playlist and its Session is gone, so the track was deleted for good.',
+      'Removed — that was its last playlist and its session is gone, so the track was deleted for good.',
     );
   });
 

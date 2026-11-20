@@ -21,7 +21,7 @@ export function PricedQuantity({
     return limit === undefined ? format(quantity) : `${format(quantity)}/${format(limit)}`;
   }
 
-  const counts = `${range((count) => String(count))} ${unit}`;
+  const counts = `${range((count) => String(count))} ${unit.toLowerCase()}`;
   if (!costs || !unitCostsSet(costs)) {
     return <b className="inline-block font-bold text-paper">{counts}</b>;
   }

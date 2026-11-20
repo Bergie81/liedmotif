@@ -118,7 +118,7 @@ export function TransportControls(props: TransportControlsProps) {
       </TransportButton>
       <TransportButton
         testId="player-back"
-        label="Back — restart or previous Track"
+        label="Back — restart or previous track"
         onPress={player?.back}
         disabled={disabled}
       >

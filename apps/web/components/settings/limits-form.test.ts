@@ -34,10 +34,10 @@ it('shows the admin generation ceilings in Tracks and Covers with bracketed doll
     ),
   );
   const text = html.replace(/<[^>]*>/g, '');
-  expect(text).toContain('40 Tracks ($2.80)');
-  expect(text).toContain('400 Tracks ($28.00)');
-  expect(text).toContain('20 Covers ($0.80)');
-  expect(text).toContain('100 Covers ($4.00)');
+  expect(text).toContain('40 tracks ($2.80)');
+  expect(text).toContain('400 tracks ($28.00)');
+  expect(text).toContain('20 covers ($0.80)');
+  expect(text).toContain('100 covers ($4.00)');
 });
 
 it('warns under a Track limit that no new Session could start under, without blocking it', () => {
@@ -60,7 +60,7 @@ it('warns under a Track limit that no new Session could start under, without blo
   );
   const text = html.replace(/<[^>]*>/g, '');
   // Only the daily cap (4 Tracks) is below the headroom; the monthly default clears it.
-  expect(text.split('Below 5 Tracks, no new Session can start.')).toHaveLength(2);
+  expect(text.split('Below 5 tracks, no new session can start.')).toHaveLength(2);
 });
 
 it('labels the Instance-wide stop "Pause all new music", on screen and for assistive tech', () => {
@@ -79,5 +79,5 @@ it('labels the Instance-wide stop "Pause all new music", on screen and for assis
   const text = html.replace(/<[^>]*>/g, '');
   expect(text).toContain('Pause all new music');
   expect(text).not.toContain('Manual generation only');
-  expect(text).toContain('Stops all music generation, including a new Session&#x27;s first Tracks');
+  expect(text).toContain('Stops all music generation, including a new session&#x27;s first tracks');
 });

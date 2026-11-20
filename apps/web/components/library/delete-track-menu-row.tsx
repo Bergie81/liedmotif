@@ -33,7 +33,7 @@ export function DeleteTrackMenuRow({
         onlineOnly
         icon={<Trash2 />}
         label="Delete Track"
-        description="Delete its audio for good, from every playlist and your library"
+        description="Delete its audio for good, from every playlist and your Library"
         tone="danger"
         busy={busy}
         disabled={disabled}
@@ -43,7 +43,7 @@ export function DeleteTrackMenuRow({
       {confirming ? (
         <ConfirmDialog
           heading="Delete Track"
-          body={`Permanently delete “${title}”? Its audio is removed from storage and it leaves every Playlist and your Library; this is not feedback and steers nothing.`}
+          body={`Permanently delete “${title}”? Its audio is removed from storage and it leaves every playlist and your Library; this is not feedback and steers nothing.`}
           confirmLabel="Delete"
           onConfirm={async () => {
             await onDelete();

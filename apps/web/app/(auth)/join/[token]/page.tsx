@@ -24,7 +24,7 @@ export default async function JoinPage({ params }: { params: Promise<{ token: st
     return (
       <OneShotLinkPage basePath={JOIN_BASE_PATH}>
         <p className={eyebrowClass}>Invite</p>
-        <h1 className={`${displayHeadingClass} mt-3`}>You are already signed in</h1>
+        <h1 className={`${displayHeadingClass} mt-3`}>You Are Already Signed In</h1>
         <p className="mt-3 text-[14px] leading-relaxed text-muted">
           This invite link creates a new account, and you already have one open here. Sign out first
           if the invite is meant for you, or open the link on the invitee&apos;s own device.
@@ -33,7 +33,7 @@ export default async function JoinPage({ params }: { params: Promise<{ token: st
           href="/"
           className="mt-6 text-[13.5px] font-semibold text-lamp underline-offset-4 hover:underline"
         >
-          Back to your music
+          Back to Your Music
         </Link>
       </OneShotLinkPage>
     );
@@ -59,7 +59,7 @@ export default async function JoinPage({ params }: { params: Promise<{ token: st
 
   return (
     <OneShotLinkPage basePath={JOIN_BASE_PATH}>
-      <p className={eyebrowClass}>You&apos;re invited</p>
+      <p className={eyebrowClass}>You&apos;re Invited</p>
       <h1 className={`${displayHeadingClass} mt-3`}>Welcome, {invite.label}</h1>
       <p className="mt-3 text-[14px] leading-relaxed text-muted">
         This is your own space on Liedmotif: describe what the music is for, and it generates and

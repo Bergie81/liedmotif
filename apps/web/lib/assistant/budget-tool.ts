@@ -61,7 +61,7 @@ export function createBudgetTool({ db, userId, role }: AssistantAsker): LlmTool<
         return [
           `Your budget: ${ownBudget(member.yours)}`,
           `Shared budget of all Members: ${rolling(member.shared)}`,
-          'New music and covers are generated only while both budgets have some left.',
+          'New Music and covers are generated only while both budgets have some left.',
         ].join('\n');
       }
       const [tracks, covers] = await Promise.all([

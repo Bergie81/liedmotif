@@ -14,10 +14,10 @@ export default async function SearchPage({
   return (
     <>
       <header>
-        <h1 className={`${displayHeadingClass} mb-2`}>Find anything you made</h1>
+        <h1 className={`${displayHeadingClass} mb-2`}>Find Anything You Made</h1>
         <p className="text-[14.5px] text-muted">
-          Find any Session, Track or Playlist by name, tag or the prompt behind it. Remember a line
-          from a song? Turn on Search lyrics.
+          Find any session, track or playlist by name, tag or the prompt behind it. Remember a line
+          from a song? Turn on Search Lyrics.
         </p>
       </header>
       <SearchView initialState={initialState} userId={session.user.id} />

@@ -71,7 +71,7 @@ export default async function DiagnosticsPage() {
   });
   const coverDiagnostic = optionalProviderDiagnostic({
     sourceResolved,
-    selected: Boolean(providers?.cover.name && providers.cover.name !== 'Not configured'),
+    selected: Boolean(providers?.cover.name && providers.cover.name !== 'Not Configured'),
     tone: providers?.cover.status.tone,
   });
 
@@ -132,7 +132,7 @@ export default async function DiagnosticsPage() {
                   <div className="mb-2 flex items-center gap-3 text-muted">
                     <Database className="h-[19px] w-[19px]" aria-hidden />
                     <span className="text-[13px] font-semibold text-paper">
-                      Active configuration
+                      Active Configuration
                     </span>
                   </div>
                   <ProviderRow
@@ -161,7 +161,7 @@ export default async function DiagnosticsPage() {
                   <ProviderRow
                     label="Cover images"
                     value={
-                      providers?.cover.name && providers.cover.name !== 'Not configured'
+                      providers?.cover.name && providers.cover.name !== 'Not Configured'
                         ? [providers.cover.name, providers.cover.model].filter(Boolean).join(' · ')
                         : null
                     }

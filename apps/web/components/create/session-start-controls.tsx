@@ -199,7 +199,7 @@ export function OwnVoiceUnavailableHint({ offer }: { offer: OwnVoiceOffer | null
         href="/settings/voice"
         className="text-lamp underline-offset-2 hover:underline [-webkit-tap-highlight-color:transparent]"
       >
-        Settings → My voice
+        Settings → My Voice
       </Link>
       .
     </p>
@@ -222,17 +222,17 @@ export function SkipProfileToggle({
     <div className={cn('flex items-center justify-end gap-2.5', className)}>
       <div className="text-right">
         <p className="mb-1 text-[15px] font-semibold leading-tight text-paper">
-          Run Without My Profile Details
+          Run without my profile details
         </p>
         <p className="text-[11.5px] leading-[1.1] text-dim">
-          Your own details are not used for this Session&rsquo;s lyrics and cover art. People you
+          Your own details are not used for this session&rsquo;s lyrics and cover art. People you
           name still are.
         </p>
       </div>
       <Switch
         checked={checked}
         onCheckedChange={onCheckedChange}
-        aria-label="Run Without My Profile Details"
+        aria-label="Run without my profile details"
         data-testid="skip-profile"
       />
     </div>
@@ -268,13 +268,13 @@ export function SessionExtras({
             useStandardCover && 'opacity-40',
           )}
         >
-          Cover Style
+          Cover style
           <Select
             value={coverStyle}
             onValueChange={(value) => onCoverStyleChange(value as CoverStyleChoice)}
             disabled={useStandardCover}
           >
-            <SelectTrigger aria-label="Cover Style" data-testid="cover-style" className="w-full">
+            <SelectTrigger aria-label="Cover style" data-testid="cover-style" className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="w-[var(--radix-select-trigger-width)]">
@@ -290,7 +290,7 @@ export function SessionExtras({
           <p className="mt-2 text-[11.5px] leading-[1.5] text-dim">
             Uses your saved Custom style from{' '}
             <Link href="/settings/cover-art" className="text-muted underline underline-offset-2">
-              Settings → Cover art
+              Settings → Cover Art
             </Link>
             .
           </p>
@@ -298,7 +298,7 @@ export function SessionExtras({
         <div className="mt-4 flex items-center justify-between gap-3">
           <div>
             <p className="text-[15px] font-semibold leading-tight text-paper">
-              Use Tailored Cover Art Generation
+              Use Tailored Cover Art generation
             </p>
             <p className="text-[11.5px] leading-[1.4] text-dim">
               Off uses the basic art that comes with the music, at no extra cost.
@@ -307,7 +307,7 @@ export function SessionExtras({
           <Switch
             checked={!useStandardCover}
             onCheckedChange={(on) => onUseStandardCoverChange(!on)}
-            aria-label="Use Tailored Cover Art Generation"
+            aria-label="Use Tailored Cover Art generation"
             data-testid="use-tailored-cover"
           />
         </div>
@@ -336,7 +336,7 @@ export function GuardrailFields({
   return (
     <>
       <PresentationSlider
-        label="Follow Style"
+        label="Follow style"
         value={value.followStyle}
         left="Loose"
         right="Strict"

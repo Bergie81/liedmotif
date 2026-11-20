@@ -139,7 +139,7 @@ describe('My Sessions search', () => {
     const [searchUrl] = fetcher.mock.calls.find(([url]) => url.startsWith('/api/search'))!;
     expect(new URL(searchUrl, 'http://localhost').searchParams.get('scope')).toBe('sessions');
 
-    await settleSearch(() => fireEvent.click(screen.getByRole('button', { name: 'Clear search' })));
+    await settleSearch(() => fireEvent.click(screen.getByRole('button', { name: 'Clear Search' })));
     expect(screen.getByText('Quiet Morning')).toBeTruthy();
   });
 
@@ -162,7 +162,7 @@ describe('My Sessions search', () => {
 
   it('keeps the options menu working on a result: a delete removes the row', async () => {
     await deleteFirstResultThenServe([]);
-    await screen.findByText(/No Sessions match/);
+    await screen.findByText(/No Sessions Match/);
   });
 
   it('re-reads a capped search after a delete, so a held-back match takes the free slot', async () => {
@@ -193,7 +193,7 @@ describe('My Sessions active card', () => {
     }));
     vi.stubGlobal('fetch', fetcher);
     renderList([session(1)]);
-    await screen.findByText('6 Tracks · 18 min');
+    await screen.findByText('6 tracks · 18 min');
     expect(screen.getByText('Lo-fi')).toBeTruthy();
     expect(fetcher).toHaveBeenCalledOnce();
   });
@@ -241,7 +241,7 @@ describe('My Sessions with a stopped live Session', () => {
     const history = await screen.findByRole('region', { name: /History/ });
     expect(await within(history).findByText('Stopped on the player')).toBeTruthy();
     expect(within(history).getByLabelText('Options for Stopped on the player')).toBeTruthy();
-    const activeNow = screen.getByRole('region', { name: 'Active now' });
+    const activeNow = screen.getByRole('region', { name: 'Active Now' });
     expect(within(activeNow).getByText('Running elsewhere')).toBeTruthy();
     expect(within(activeNow).queryByText('Stopped on the player')).toBeNull();
     expect(fetcher).toHaveBeenCalledOnce();
@@ -318,7 +318,7 @@ describe('My Sessions Convert to Playlist', () => {
         ok: false,
         error: {
           code: 'validation_error',
-          message: 'This Session has no Tracks yet.',
+          message: 'This session has no tracks yet.',
           retryable: false,
         },
       },
@@ -326,7 +326,7 @@ describe('My Sessions Convert to Playlist', () => {
     renderList([session(1, { title: 'Quiet Morning' })]);
     openOptions('Quiet Morning');
     fireEvent.click(await screen.findByTestId('convert-session-to-playlist'));
-    await expectErrorToast('This Session has no Tracks yet.');
+    await expectErrorToast('This session has no tracks yet.');
     expect(navigation.push).not.toHaveBeenCalled();
   });
 });
@@ -335,7 +335,7 @@ describe('My Sessions on a phone', () => {
   const cardFor = (title: string) =>
     screen.getByRole('button', { name: new RegExp(`^${title} `) }).closest('article')!;
   const hiddenOnPhone = (element: Element) => element.className.includes('max-desk:hidden');
-  const loadMore = () => screen.getByRole('button', { name: 'Load more' }).parentElement!;
+  const loadMore = () => screen.getByRole('button', { name: 'Load More' }).parentElement!;
 
   it('shows ten History Sessions, and ten more per Load more', () => {
     renderList(Array.from({ length: 23 }, (_, index) => session(index + 1)));
@@ -344,13 +344,13 @@ describe('My Sessions on a phone', () => {
     // Every loaded Session already shows on a desk, so the button is the phone's alone.
     expect(loadMore().className).toContain('desk:hidden');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Load more' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Load More' }));
     expect(hiddenOnPhone(cardFor('Session 20'))).toBe(false);
     expect(hiddenOnPhone(cardFor('Session 21'))).toBe(true);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Load more' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Load More' }));
     expect(hiddenOnPhone(cardFor('Session 23'))).toBe(false);
-    expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Load More' })).toBeNull();
   });
 
   it('keeps paging while fewer than ten are loaded', () => {

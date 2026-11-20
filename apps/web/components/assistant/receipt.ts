@@ -71,35 +71,35 @@ export function receiptLine(receipt: AssistantReceipt): ReceiptLine {
     }
     case 'createPlaylist':
       return {
-        text: `Created Playlist: ${playlistName(receipt.playlist)}`,
+        text: `Created playlist: ${playlistName(receipt.playlist)}`,
         link: playlistPage(receipt.playlist),
       };
     case 'renamePlaylist':
       return {
-        text: `Renamed Playlist: ${receipt.previousName} → ${playlistName(receipt.playlist)}`,
+        text: `Renamed playlist: ${receipt.previousName} → ${playlistName(receipt.playlist)}`,
         link: playlistPage(receipt.playlist),
       };
     case 'pinPlaylist':
       return {
-        text: `Pinned Playlist: ${playlistName(receipt.playlist)}`,
+        text: `Pinned playlist: ${playlistName(receipt.playlist)}`,
         // A pin shows in the list it reorders, not on the Playlist's own page.
         link: { path: '/library', place: 'Library' },
       };
     case 'newMusicOff':
       return {
-        text: `New music off: ${sessionTitle(receipt.session)}`,
+        text: `New Music off: ${sessionTitle(receipt.session)}`,
         link: { path: '/player', place: 'Now Playing' },
       };
     case 'renameSession':
       return {
-        text: `Renamed Session: ${sessionTitle({ ...receipt.session, name: receipt.previousName })} → ${sessionTitle(receipt.session)}`,
+        text: `Renamed session: ${sessionTitle({ ...receipt.session, name: receipt.previousName })} → ${sessionTitle(receipt.session)}`,
         link: SESSIONS_PAGE,
       };
     case 'pinSession':
-      return { text: `Pinned Session: ${sessionTitle(receipt.session)}`, link: SESSIONS_PAGE };
+      return { text: `Pinned session: ${sessionTitle(receipt.session)}`, link: SESSIONS_PAGE };
     case 'renameTrack':
       return {
-        text: `Renamed Track: ${trackTitle({ ...receipt.track, name: receipt.previousName })} → ${trackTitle(receipt.track)}`,
+        text: `Renamed track: ${trackTitle({ ...receipt.track, name: receipt.previousName })} → ${trackTitle(receipt.track)}`,
         link: { path: '/library', place: 'Library' },
       };
     case 'changeSetting': {

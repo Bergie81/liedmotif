@@ -20,7 +20,7 @@ import type { RecordStoredBytes } from '@/lib/media/storage-quota';
 
 export const dynamic = 'force-dynamic';
 
-const PLAYLIST_FULL_MESSAGE = `This Playlist already keeps ${MAX_PLAYLIST_COVER_HISTORY} covers. Delete a previous cover to upload another one.`;
+const PLAYLIST_FULL_MESSAGE = `This playlist already keeps ${MAX_PLAYLIST_COVER_HISTORY} covers. Delete a previous cover to upload another one.`;
 
 export async function POST(request: Request) {
   const ownerUserId = await requireOwnerId(request);

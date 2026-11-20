@@ -2,7 +2,7 @@
 
 // The player after the Assistant changed something it shows: the star and the
 // Add to Playlist control of the Track on the deck, the title of a Track it
-// holds, the name and New music setting of the engaged Session, and the
+// holds, the name and New Music setting of the engaged Session, and the
 // playback settings the player blends with.
 
 import { renderHook } from '@testing-library/react';
@@ -113,7 +113,7 @@ describe('the player, after a receipt', () => {
     expect(applyRetentionAdded).not.toHaveBeenCalled();
   });
 
-  it('shows New music off on the engaged Session without restarting it, and re-reads the shell', () => {
+  it('shows New Music off on the engaged Session without restarting it, and re-reads the shell', () => {
     const { engage, session } = playing();
     const refreshChrome = vi.fn();
     const { result } = renderHook(() => usePlayerFollowsReceipt(refreshChrome));
@@ -124,7 +124,7 @@ describe('the player, after a receipt', () => {
     expect(refreshChrome).toHaveBeenCalledTimes(1);
   });
 
-  it('leaves the engaged Session alone when New music went off for another one', () => {
+  it('leaves the engaged Session alone when New Music went off for another one', () => {
     const { engage } = playing();
     const refreshChrome = vi.fn();
     const { result } = renderHook(() => usePlayerFollowsReceipt(refreshChrome));
@@ -153,7 +153,7 @@ describe('the player, after a receipt', () => {
     expect(refreshChrome).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps both changes when a rename and New music off arrive together, before the player re-renders', () => {
+  it('keeps both changes when a rename and New Music off arrive together, before the player re-renders', () => {
     const { engage, session } = playing();
     const { result } = renderHook(() => usePlayerFollowsReceipt(vi.fn()));
 

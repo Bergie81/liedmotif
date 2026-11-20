@@ -22,11 +22,11 @@ export default async function VoiceSettingsPage() {
   return (
     <section>
       <SettingsPageHeader
-        title="My voice"
-        description="Record your own voice once, verify it with the music provider, and let vocal Sessions sing with it."
+        title="My Voice"
+        description="Record your own voice once, verify it with the music provider, and let vocal sessions sing with it."
       />
       <SettingsColumns>
-        <SettingsSection title="Voice profile">
+        <SettingsSection title="Voice Profile">
           <MyVoiceSetup initial={view} />
         </SettingsSection>
       </SettingsColumns>

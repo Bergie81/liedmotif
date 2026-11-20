@@ -332,7 +332,7 @@ describe.skipIf(skip)('evaluateSessionHeadroom — One-time Member budget', () =
 
     const decision = await evaluateSessionHeadroom(testDb.db, adminId, NOW);
     expect(await headroomRefusalMessage(testDb.db, decision)).toBe(
-      'A new Session needs 5 Tracks; you have 4 left today. More Tracks at midnight (UTC). Resume one of your sessions from Sessions or play your Library instead.',
+      'A new session needs 5 tracks; you have 4 left today. More tracks at midnight (UTC). Resume one of your sessions from Sessions or play your Library instead.',
     );
   });
 

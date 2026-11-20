@@ -95,7 +95,7 @@ export function OfflineNowPlaying({
 
   return (
     <section
-      aria-label="Now playing"
+      aria-label="Now Playing"
       data-testid="now-playing"
       data-player-status={player.status}
       className={nowPlayingLayoutClass}
@@ -162,7 +162,7 @@ export function OfflineNowPlaying({
 
         {restExpired ? (
           <AlertBanner className="mt-4">
-            The rest of this {noun} expired on this device. Connect to refresh it.
+            The rest of this {noun.toLowerCase()} expired on this device. Connect to refresh it.
           </AlertBanner>
         ) : null}
 

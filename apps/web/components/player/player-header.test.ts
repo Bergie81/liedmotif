@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 // The header's action row is shared by both Playback sources, so the parts only
-// one of them has ride in as slots. The Session player fills the New music slot
+// one of them has ride in as slots. The Session player fills the New Music slot
 // from its session summary; the Playlist player generates nothing and passes
 // nothing, which leaves only the shared controls in the row.
 
@@ -70,7 +70,7 @@ function renderHeader(newMusic?: ReactNode) {
 }
 
 describe('PlayerHeader', () => {
-  it('places the New music status ahead of the blend toggle', () => {
+  it('places the New Music status ahead of the blend toggle', () => {
     const view = renderHeader(
       h(NewMusicStatusButton, {
         status: presentNewMusicStatus({
@@ -91,7 +91,7 @@ describe('PlayerHeader', () => {
     ).toBeTruthy();
   });
 
-  it('shows no New music status for a source that generates nothing (a Playlist)', () => {
+  it('shows no New Music status for a source that generates nothing (a Playlist)', () => {
     const view = renderHeader();
 
     expect(view.queryByTestId('player-new-music')).toBeNull();

@@ -140,7 +140,7 @@ export async function POST(request: Request) {
     return reserved ? { outcome: 'started' as const, coverGenerationId: reserved.id } : null;
   });
   if (!reservation) {
-    return apiError('conflict', 'A cover generation is already in flight for this Playlist.');
+    return apiError('conflict', 'A cover generation is already in flight for this playlist.');
   }
   if (reservation.outcome === 'playlist_full') {
     return apiError('limit_reached', PLAYLIST_COVERS_FULL_MESSAGE);

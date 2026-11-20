@@ -68,7 +68,7 @@ const skip = !TEST_DATABASE_URL;
 let testDb: TestDb;
 const db = () => testDb.db as Database;
 
-const ADMIN_PAUSED = 'New music is paused in Settings › Generation.';
+const ADMIN_PAUSED = 'New Music is paused in Settings › Generation.';
 
 async function post(route: (request: Request) => Promise<Response>, body: unknown) {
   return route(

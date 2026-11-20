@@ -131,7 +131,7 @@ function RailBrand({ expanded, onToggle }: { expanded: boolean; onToggle: () => 
         onClick={onToggle}
         aria-controls="primary-navigation"
         aria-expanded={expanded}
-        aria-label={expanded ? 'Collapse the sidebar' : 'Expand the sidebar'}
+        aria-label={expanded ? 'Collapse the Sidebar' : 'Expand the Sidebar'}
         className="group grid h-10 w-10 flex-none place-items-center rounded-[11px] [-webkit-tap-highlight-color:transparent] hover:bg-[var(--control-bg-hover)]"
       >
         <LiedmotifMark className="h-[22px] w-[22px] group-hover:hidden group-focus-visible:hidden rail-exp:group-hover:block rail-exp:group-focus-visible:block" />
@@ -143,7 +143,7 @@ function RailBrand({ expanded, onToggle }: { expanded: boolean; onToggle: () => 
         onClick={onToggle}
         aria-controls="primary-navigation"
         aria-expanded={expanded}
-        aria-label="Collapse the sidebar"
+        aria-label="Collapse the Sidebar"
         className="ml-auto hidden h-[34px] w-[34px] place-items-center rounded-[10px] text-dim hover:bg-[var(--control-bg-hover)] hover:text-paper rail-exp:grid"
       >
         <PanelLeftClose className="h-[18px] w-[18px]" />
@@ -208,7 +208,7 @@ export function HeadroomLink({
       <Link
         href={href}
         aria-label={label}
-        title="Generation headroom — counted in Tracks"
+        title="Generation headroom — counted in tracks"
         className={cn(
           'inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border bg-[var(--control-bg)] px-3 py-1 font-mono text-[11px] tracking-[0.05em] text-muted',
           headroom.critical ? 'border-warn/50' : 'border-line',
@@ -227,7 +227,7 @@ export function HeadroomLink({
     <Link
       href={href}
       aria-label={label}
-      title="Generation headroom — counted in Tracks"
+      title="Generation headroom — counted in tracks"
       className="block rounded-xl px-2 pb-3 pt-2 hover:bg-[var(--control-bg)] light:hover:bg-[var(--control-bg-hover)]"
     >
       <div
@@ -354,7 +354,7 @@ function PreviewMiniPlayer({ preview }: { preview: TrackPreviewAnnouncement }) {
       </span>
       <span className={cn('flex items-center', miniTrailingClass)}>
         <MiniControl
-          label={`${preview.playing ? 'Pause' : 'Resume'} preview of ${title}`}
+          label={`${preview.playing ? 'Pause' : 'Resume'} Preview of ${title}`}
           onPress={preview.toggle}
         >
           <PlayIcon className="h-5 w-5 desk:h-[18px] desk:w-[18px]" />

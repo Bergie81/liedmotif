@@ -63,7 +63,7 @@ export function validatePersonFields({
   maxAboutLength: number;
 }): PersonFieldErrors {
   const errors: PersonFieldErrors = {};
-  if (!name.trim()) errors.name = 'Enter a Person name.';
+  if (!name.trim()) errors.name = 'Enter a person name.';
   else if (name.trim().length > maxNameLength) {
     errors.name = `Name must be at most ${maxNameLength} characters.`;
   }

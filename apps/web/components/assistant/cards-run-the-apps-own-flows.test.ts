@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-// The cards for a Change Vibe, a More Like This and New music on, and the
+// The cards for a Change Vibe, a More Like This and New Music on, and the
 // click on each: the card is worded from its values, and confirming runs the
 // flow the app's own control runs. The dock is wired to the app as the app
 // shell wires it; the routes are a stubbed `fetch`. Of the player provider,
@@ -88,7 +88,7 @@ describe('a Change Vibe card', () => {
     expect(card.textContent).toContain('“slower, with a cello”');
     expect(card.textContent).toContain('In Rainy Window');
     expect(card.textContent).toContain(
-      'Changing the vibe generates new Tracks from your budget. 38 Tracks left today.',
+      'Changing the vibe generates new tracks from your budget. 38 tracks left today.',
     );
     expect(within(card).getAllByRole('button')).toEqual([button('Change Vibe')]);
     expect(server.sent).toEqual([]);
@@ -207,13 +207,13 @@ describe('a More Like This card', () => {
   it('names its seed Tracks, with the budget line, and starts nothing until it is clicked', async () => {
     const { card, server } = await ask();
 
-    expect(card.textContent).toContain('A new Session seeded from 2 Tracks: Night Drive, Low Tide');
+    expect(card.textContent).toContain('A new session seeded from 2 tracks: Night Drive, Low Tide');
     expect(card.textContent).toContain(
-      'Starting generates new Tracks from your budget. 38 Tracks left today.',
+      'Starting generates new tracks from your budget. 38 tracks left today.',
     );
     // A card without words of the user's shows no quote.
     expect(card.textContent).not.toMatch(/[“”]/);
-    expect(within(card).getAllByRole('button')).toEqual([button('Start new Session')]);
+    expect(within(card).getAllByRole('button')).toEqual([button('Start New Session')]);
     expect(server.sent).toEqual([]);
     expect(player.beginOtherMusic).not.toHaveBeenCalled();
   });
@@ -222,7 +222,7 @@ describe('a More Like This card', () => {
     player.beginOtherMusic.mockResolvedValue(true);
     const { card, server } = await ask({ desk: false });
 
-    fireEvent.click(button('Start new Session'));
+    fireEvent.click(button('Start New Session'));
 
     // Inside the click: the browser lets audio start only from the gesture.
     expect(player.beginOtherMusic).toHaveBeenCalledTimes(1);
@@ -262,9 +262,9 @@ describe('a More Like This card', () => {
       [cardEvent({ ...LIKE_THESE, targetDurationMinutes })],
       { desk: false },
     );
-    expect(card.textContent).toContain(targetDurationMinutes === null ? 'No limit' : '45 min');
+    expect(card.textContent).toContain(targetDurationMinutes === null ? 'No Limit' : '45 min');
 
-    fireEvent.click(button('Start new Session'));
+    fireEvent.click(button('Start New Session'));
 
     await waitFor(() => expect(server.sent).toHaveLength(1));
     expect(server.sent[0]!.path).toBe('/api/sessions/more-like-this');
@@ -278,7 +278,7 @@ describe('a More Like This card', () => {
   it('shows the app’s own refusal on the card, and stays where it is', async () => {
     player.beginOtherMusic.mockResolvedValue(true);
     const { card, server } = await ask({ desk: false });
-    fireEvent.click(button('Start new Session'));
+    fireEvent.click(button('Start New Session'));
     await waitFor(() => expect(server.sent).toHaveLength(1));
 
     server.sent[0]!.answer(refused('You have reached your generation headroom for now.'));
@@ -299,39 +299,39 @@ describe('a More Like This card', () => {
     // A Start from Home that has not settled.
     beginPendingStart(() => new Promise(() => {}), vi.fn());
 
-    fireEvent.click(button('Start new Session'));
+    fireEvent.click(button('Start New Session'));
 
     expect(server.sent).toEqual([]);
     expect(player.beginOtherMusic).not.toHaveBeenCalled();
     expect(navigation.push).toHaveBeenCalledExactlyOnceWith('/player');
-    expect(button('Start new Session')).toHaveProperty('disabled', false);
+    expect(button('Start New Session')).toHaveProperty('disabled', false);
   });
 });
 
-describe('a New music card', () => {
+describe('a New Music card', () => {
   const UP_TO_90: AssistantCard = {
     kind: 'newMusicOn',
     session: RAINY,
     targetDurationMinutes: 90,
   };
   const ask = (card = UP_TO_90, options?: Parameters<typeof askForCard>[2]) =>
-    askForCard('Switch New music on', [cardEvent(card)], options);
+    askForCard('Switch New Music On', [cardEvent(card)], options);
 
-  it('words the choice as the New music control does, with the budget line, and saves nothing until it is clicked', async () => {
+  it('words the choice as the New Music control does, with the budget line, and saves nothing until it is clicked', async () => {
     const { card, server } = await ask();
 
     expect(card.textContent).toContain('Rainy Window · Up to 90 min');
-    expect(card.textContent).toContain('Buys music until the target. 38 Tracks left today.');
-    expect(within(card).getAllByRole('button')).toEqual([button('Save · up to 90 min')]);
+    expect(card.textContent).toContain('Buys music until the target. 38 tracks left today.');
+    expect(within(card).getAllByRole('button')).toEqual([button('Save · Up to 90 min')]);
     expect(server.sent).toEqual([]);
   });
 
-  it('saves through the route the New music control saves through, and the player follows', async () => {
+  it('saves through the route the New Music control saves through, and the player follows', async () => {
     player.playback = { session: { id: SESSION_ID } };
     const { card, server, refresh } = await ask(UP_TO_90, { desk: false });
     refresh.mockClear();
 
-    fireEvent.click(button('Save · up to 90 min'));
+    fireEvent.click(button('Save · Up to 90 min'));
 
     expect(server.sent).toHaveLength(1);
     expect(server.sent[0]!.path).toBe('/api/sessions/duration');
@@ -345,7 +345,7 @@ describe('a New music card', () => {
     const on = summary({ targetDurationMinutes: 90 });
     server.sent[0]!.answer(saved(on));
 
-    await waitFor(() => expect(card.textContent).toContain('New music is on'));
+    await waitFor(() => expect(card.textContent).toContain('New Music is on'));
     expect(within(card).queryByRole('button')).toBeNull();
     // The engaged Session takes the saved summary in place, as after the sheet's Save.
     expect(player.engage).toHaveBeenCalledExactlyOnceWith(on, { autoplay: false });
@@ -357,10 +357,10 @@ describe('a New music card', () => {
 
   it('saves No limit as a cleared target', async () => {
     const { card, server } = await ask({ ...UP_TO_90, targetDurationMinutes: null });
-    expect(card.textContent).toContain('Rainy Window · No limit');
+    expect(card.textContent).toContain('Rainy Window · No Limit');
     expect(card.textContent).toContain('Keeps buying while you listen.');
 
-    fireEvent.click(button('Save · no limit'));
+    fireEvent.click(button('Save · No Limit'));
 
     expect(server.sent[0]!.body).toEqual({
       sessionId: SESSION_ID,
@@ -372,24 +372,24 @@ describe('a New music card', () => {
   it('leaves other music the player has engaged alone', async () => {
     player.playback = { session: { id: '00000000-0000-4000-8000-000000000009' } };
     const { card, server } = await ask();
-    fireEvent.click(button('Save · up to 90 min'));
+    fireEvent.click(button('Save · Up to 90 min'));
 
     server.sent[0]!.answer(saved(summary({ targetDurationMinutes: 90 })));
 
-    await waitFor(() => expect(card.textContent).toContain('New music is on'));
+    await waitFor(() => expect(card.textContent).toContain('New Music is on'));
     expect(player.engage).not.toHaveBeenCalled();
   });
 
   it('shows the app’s refusal on the card, where the control shows it in its sheet', async () => {
     const { card, server } = await ask();
-    fireEvent.click(button('Save · up to 90 min'));
+    fireEvent.click(button('Save · Up to 90 min'));
 
     server.sent[0]!.answer(
       Response.json(makeApiError('not_found', 'Session not found.'), { status: 404 }),
     );
 
     await waitFor(() =>
-      expect(card.textContent).toContain('New music didn’t switch on: Session not found.'),
+      expect(card.textContent).toContain('New Music didn’t switch on: Session not found.'),
     );
     expect(within(card).queryByRole('button')).toBeNull();
     expect(player.engage).not.toHaveBeenCalled();
@@ -397,7 +397,7 @@ describe('a New music card', () => {
 
   it('works once: a second click sends no second request', async () => {
     const { server } = await ask();
-    const save = button('Save · up to 90 min');
+    const save = button('Save · Up to 90 min');
 
     fireEvent.click(save);
     fireEvent.click(save);
@@ -408,10 +408,10 @@ describe('a New music card', () => {
 
 describe('what the next request is told of a card', () => {
   it('says the app refused it and told the user why', async () => {
-    const { card, server } = await askForCard('Switch New music on', [
+    const { card, server } = await askForCard('Switch New Music On', [
       cardEvent({ kind: 'newMusicOn', session: RAINY, targetDurationMinutes: null }),
     ]);
-    fireEvent.click(button('Save · no limit'));
+    fireEvent.click(button('Save · No Limit'));
     server.sent[0]!.answer(
       Response.json(makeApiError('not_found', 'Session not found.'), { status: 404 }),
     );
@@ -421,7 +421,7 @@ describe('what the next request is told of a card', () => {
 
     await waitFor(() => expect(server.asked).toHaveLength(2));
     expect(server.asked[1]![1]).toBe(
-      '[Card shown by the app: switch New music on for the Session "Rainy Window", with no limit. The user confirmed it, but the app did not carry it out and told them why.]',
+      '[Card shown by the app: switch New Music on for the Session "Rainy Window", with no limit. The user confirmed it, but the app did not carry it out and told them why.]',
     );
   });
 });

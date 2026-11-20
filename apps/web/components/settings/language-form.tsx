@@ -45,7 +45,7 @@ export function LanguageForm({ initial }: { initial: GenerationSettings }) {
         <span className="flex items-baseline justify-between gap-2">
           Default language
           <span className="font-mono text-[11px] font-normal tracking-[0.04em] text-dim">
-            Every Session can override it
+            Every session can override it
           </span>
         </span>
         <SessionLanguageSelect
@@ -64,7 +64,7 @@ export function LanguageForm({ initial }: { initial: GenerationSettings }) {
         disabled={saving}
         className={`${primaryButtonClass} w-full`}
       >
-        {saving ? 'Saving…' : 'Save language'}
+        {saving ? 'Saving…' : 'Save Language'}
       </button>
     </div>
   );

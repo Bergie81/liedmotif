@@ -23,7 +23,7 @@ export default async function YourStatsPage() {
     <SettingsFrame>
       <section>
         <SettingsPageHeader
-          title="Your music in numbers"
+          title="Your Music in Numbers"
           crumbLabel="Your Stats"
           description="How much you listen to your own music. Only you can see this."
           parent={{ href: '/', label: 'Home' }}

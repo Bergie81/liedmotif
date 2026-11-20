@@ -136,7 +136,7 @@ function AddTracksContent({
       <SheetBody className="mt-4">
         {loadError ? <AlertBanner>Couldn’t load your tracks: {loadError}</AlertBanner> : null}
         {tracks === null && !loadError ? (
-          <LoadingRow className="mt-2 py-6" label="Loading Tracks…" />
+          <LoadingRow className="mt-2 py-6" label="Loading tracks…" />
         ) : null}
         {tracks ? (
           <div role="group" aria-label="Tracks">
@@ -189,7 +189,7 @@ function AddTracksContent({
                 onClick={() => void loadMore()}
               >
                 {loadingMore ? <LiedmotifLoader /> : null}
-                Load more
+                Load More
               </button>
             ) : null}
           </div>

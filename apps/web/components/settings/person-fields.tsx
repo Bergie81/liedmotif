@@ -42,8 +42,8 @@ export function PersonFields({
         ) : (
           <span className="text-[11.5px] font-normal leading-[1.5] text-dim">
             {isOwner
-              ? 'You don’t need to type it. With a Text AI, a request that puts you in the scene, like “with Jonas on the way to Berlin”, includes you.'
-              : 'Use this name in your music request exactly as written to include this Person. Choose a distinctive name; relationships and translations are not inferred.'}
+              ? 'You don’t need to type it. With a text AI, a request that puts you in the scene, like “with Jonas on the way to Berlin”, includes you.'
+              : 'Use this name in your music request exactly as written to include this person. Choose a distinctive name; relationships and translations are not inferred.'}
           </span>
         )}
       </label>
@@ -68,7 +68,7 @@ export function PersonFields({
         ) : (
           <span className="text-[11.5px] font-normal leading-[1.5] text-dim">
             {isOwner
-              ? 'Optional. With a Text AI, it shapes the lyrics of every vocal Session.'
+              ? 'Optional. With a text AI, it shapes the lyrics of every vocal session.'
               : 'Optional context for vocal lyrics when you name them.'}
           </span>
         )}

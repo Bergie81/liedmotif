@@ -124,7 +124,7 @@ function MemberBudgetTotalFields({
                 onChange={(event) => onChange(field, event.target.value)}
                 className={budgetNumberInputClass}
               />
-              <span className={`${stepperValueClass} min-w-0`}>{unit}</span>
+              <span className={`${stepperValueClass} min-w-0`}>{unit.toLowerCase()}</span>
             </span>
           </SettingsControlRow>
         );

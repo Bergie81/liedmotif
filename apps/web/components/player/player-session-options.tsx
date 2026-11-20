@@ -68,7 +68,7 @@ export function PlayerSessionOptions({
   sessionId: string;
   sessionTitle: string;
   newMusicStatus: NewMusicStatus;
-  /** Opens the New music sheet (parent-owned, so two sheets never stack). */
+  /** Opens the New Music sheet (parent-owned, so two sheets never stack). */
   onOpenNewMusic: () => void;
   coverImageId: string | null;
   busy: boolean;
@@ -141,8 +141,8 @@ export function PlayerSessionOptions({
             kind: 'confirm',
             testId: 'player-options-more-like-this',
             heading: 'More Like This',
-            body: `Start a new Session seeded from “${track.title}”? This Session becomes Stopped and remains resumable.`,
-            confirmLabel: 'Start new Session',
+            body: `Start a new session seeded from “${track.title}”? This session becomes stopped and remains resumable.`,
+            confirmLabel: 'Start New Session',
             onConfirm: onMoreLikeThis,
           }
         : { kind: 'unavailable', testId: 'player-options-more-like-this' },
@@ -151,7 +151,7 @@ export function PlayerSessionOptions({
           kind: 'confirm',
           testId: 'player-delete-track',
           heading: 'Delete Track',
-          body: `Permanently delete “${track.title}”? Its audio is removed from storage and it leaves this Session and your Library; this is not feedback and steers nothing.`,
+          body: `Permanently delete “${track.title}”? Its audio is removed from storage and it leaves this session and your Library; this is not feedback and steers nothing.`,
           confirmLabel: 'Delete',
           onConfirm: () => onDeleteTrack(track.trackId),
         }
@@ -237,7 +237,7 @@ function NewMusicRow({ status, onOpen }: { status: NewMusicStatus; onOpen: () =>
       <MenuRow
         data-testid="player-new-music-row"
         icon={<Icon aria-hidden />}
-        label="New music"
+        label="New Music"
         description={newMusicStatusLine(status)}
         onlineOnly
         onClick={onOpen}

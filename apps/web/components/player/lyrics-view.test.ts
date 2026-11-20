@@ -70,7 +70,7 @@ describe('lyricsTimingStatus', () => {
       tone: 'lamp',
     });
     expect(lyricsTimingStatus({ synced: false, settled: true })).toMatchObject({
-      label: 'No line timing for this Track',
+      label: 'No line timing for this track',
       tone: 'neutral',
     });
   });

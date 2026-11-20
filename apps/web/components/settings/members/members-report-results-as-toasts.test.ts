@@ -32,7 +32,7 @@ const UNUSED = { used: 0, limit: 10, remaining: 10 };
 const FIGURES = { tracksDay: UNUSED, tracksMonth: UNUSED, coversDay: UNUSED, coversMonth: UNUSED };
 const OVER: PoolOverSubscription = { field: 'dailyGenerationTasks', membersTotal: 30, poolCap: 25 };
 const OVER_LINE =
-  "Members' daily Track budgets add up to 60 Tracks; the shared pool allows 50. That is fine — the pool is first come, first served.";
+  "Members' daily track budgets add up to 60 tracks; the shared pool allows 50. That is fine — the pool is first come, first served.";
 
 /** Answers each request in turn with the next of `answers`. */
 function stubAnswers(...answers: Array<{ status: number; body: unknown }>) {
@@ -120,7 +120,7 @@ describe('shared budget — results as toasts', () => {
     stubAnswers(success({ overSubscription: [] }));
     renderPool();
 
-    click('Save shared budget');
+    click('Save Shared Budget');
 
     await waitFor(() =>
       expect(shown()).toEqual([{ tone: 'success', message: 'Shared budget saved.' }]),
@@ -132,10 +132,10 @@ describe('shared budget — results as toasts', () => {
     stubAnswers(failure('Database offline.'), success({ overSubscription: [] }));
     renderPool();
 
-    click('Save shared budget');
+    click('Save Shared Budget');
     await waitFor(() => expect(shown()).toEqual([{ tone: 'error', message: 'Database offline.' }]));
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Save shared budget' })));
-    click('Save shared budget');
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save Shared Budget' })));
+    click('Save Shared Budget');
 
     await waitFor(() =>
       expect(shown()).toEqual([{ tone: 'success', message: 'Shared budget saved.' }]),
@@ -146,7 +146,7 @@ describe('shared budget — results as toasts', () => {
     stubAnswers(success({ overSubscription: [OVER] }));
     renderPool();
 
-    click('Save shared budget');
+    click('Save Shared Budget');
 
     expect(await screen.findByText(OVER_LINE)).toBeTruthy();
   });
@@ -161,7 +161,7 @@ describe('invites — results as toasts', () => {
     fireEvent.change(screen.getByPlaceholderText('lisa@example.com'), {
       target: { value: 'lisa@example.com' },
     });
-    click('Send invite');
+    click('Send Invite');
 
     await waitFor(() =>
       expect(shown()).toEqual([
@@ -176,10 +176,10 @@ describe('invites — results as toasts', () => {
     renderInvites(false);
 
     fireEvent.change(screen.getByPlaceholderText('Lisa'), { target: { value: 'Lisa' } });
-    click('Create invite link');
+    click('Create Invite Link');
 
     expect(
-      ((await screen.findByRole('textbox', { name: 'Invite link' })) as HTMLInputElement).value,
+      ((await screen.findByRole('textbox', { name: 'Invite Link' })) as HTMLInputElement).value,
     ).toBe('https://liedmotif.example/invite/abc');
     expect(shown()).toEqual([]);
   });
@@ -188,7 +188,7 @@ describe('invites — results as toasts', () => {
     stubAnswers(failure('Invite not found.'));
     renderInvites(false);
 
-    click('Create invite link');
+    click('Create Invite Link');
     await waitFor(() =>
       expect(shown()).toEqual([
         { tone: 'error', message: 'Give the invite a name — who is this for?' },
@@ -208,8 +208,8 @@ describe('Member cards — results as toasts', () => {
     stubAnswers(success({ overSubscription: [] }));
     renderMember();
 
-    click('Edit budget');
-    click('Save budget');
+    click('Edit Budget');
+    click('Save Budget');
 
     await waitFor(() =>
       expect(shown()).toEqual([
@@ -223,8 +223,8 @@ describe('Member cards — results as toasts', () => {
     stubAnswers(success({ overSubscription: [OVER] }));
     renderMember();
 
-    click('Edit budget');
-    click('Save budget');
+    click('Edit Budget');
+    click('Save Budget');
 
     await waitFor(() =>
       expect(shown()).toEqual([{ tone: 'warning', message: `Saved. ${OVER_LINE}` }]),
@@ -235,7 +235,7 @@ describe('Member cards — results as toasts', () => {
     stubAnswers(success({ sent: true, to: 'lisa@example.com' }));
     renderMember();
 
-    click('Reset password');
+    click('Reset Password');
 
     await waitFor(() =>
       expect(shown()).toEqual([
@@ -252,10 +252,10 @@ describe('Member cards — results as toasts', () => {
     stubAnswers(success({ url: 'https://liedmotif.example/reset/abc', reason: 'email_off' }));
     renderMember();
 
-    click('Reset password');
+    click('Reset Password');
 
     expect(
-      ((await screen.findByRole('textbox', { name: 'Password reset link' })) as HTMLInputElement)
+      ((await screen.findByRole('textbox', { name: 'Password Reset Link' })) as HTMLInputElement)
         .value,
     ).toBe('https://liedmotif.example/reset/abc');
     expect(shown()).toEqual([]);
@@ -265,7 +265,7 @@ describe('Member cards — results as toasts', () => {
     stubAnswers(failure('Member not found.'));
     renderMember();
 
-    click('Disable account');
+    click('Disable Account');
 
     await waitFor(() => expect(shown()).toEqual([{ tone: 'error', message: 'Member not found.' }]));
     expect(screen.queryByRole('status')).toBeNull();

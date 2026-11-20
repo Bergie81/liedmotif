@@ -7,11 +7,11 @@ export type CoverSetupGap = 'generation_disabled' | 'provider_unconfigured';
 const COVER_SETUP_MESSAGES: Readonly<Record<CoverSetupGap, Record<'admin' | 'member', string>>> = {
   generation_disabled: {
     admin: 'Tailored Cover Art is turned off under Settings → Generation.',
-    member: 'Tailored Cover Art is turned off on this server. Ask the Admin to turn it on.',
+    member: 'Tailored Cover Art is turned off on this server. Ask the admin to turn it on.',
   },
   provider_unconfigured: {
     admin: 'No image provider is configured under Settings → Providers.',
-    member: 'No image provider is set up on this server. Ask the Admin to add one.',
+    member: 'No image provider is set up on this server. Ask the admin to add one.',
   },
 };
 

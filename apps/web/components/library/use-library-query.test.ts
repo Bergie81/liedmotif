@@ -78,7 +78,7 @@ describe('useLibraryQuery', () => {
       expect(shownToasts()).toEqual([
         expect.objectContaining({
           tone: 'error',
-          message: 'Couldn’t load more Tracks: Network error.',
+          message: 'Couldn’t load more tracks: Network error.',
         }),
       ]),
     );

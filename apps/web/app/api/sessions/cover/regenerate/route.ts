@@ -142,7 +142,7 @@ export async function POST(request: Request) {
     return reserved ? { outcome: 'started' as const, coverGenerationId: reserved.id } : null;
   });
   if (!reservation) {
-    return apiError('conflict', 'A cover generation is already in flight for this Session.');
+    return apiError('conflict', 'A cover generation is already in flight for this session.');
   }
   if (reservation.outcome === 'not_found') return apiError('not_found', 'Session not found.');
   if (reservation.outcome === 'session_full') {

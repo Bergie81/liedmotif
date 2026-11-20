@@ -86,7 +86,7 @@ describe('member onboarding step table', () => {
       'People',
       'Tracks / day',
     ]);
-    expect(rows.at(-1)).toEqual({ label: 'Tracks / day', value: '20 Tracks', muted: false });
+    expect(rows.at(-1)).toEqual({ label: 'Tracks / day', value: '20 tracks', muted: false });
   });
 
   it('records a One-time budget as a total, not a daily allowance', () => {
@@ -98,7 +98,7 @@ describe('member onboarding step table', () => {
         covers: { used: 0, limit: 60, remaining: 60 },
       },
     );
-    expect(rows.at(-1)).toEqual({ label: 'Tracks', value: '26 Tracks in total', muted: false });
+    expect(rows.at(-1)).toEqual({ label: 'Tracks', value: '26 tracks in total', muted: false });
   });
 });
 
@@ -151,17 +151,17 @@ describe('coverBudgetNote', () => {
 describe('textAiCostLine', () => {
   it('says what each Text AI option costs and whether its key can paint Covers', () => {
     expect(textAiCostLine('openai')).toBe(
-      'Under 1 cent per Session. This key can also paint your Covers, about 6 cents each.',
+      'Under 1 cent per session. This key can also paint your covers, about 6 cents each.',
     );
     expect(textAiCostLine('gemini')).toBe(
-      'Free to start. This key can also paint your Covers, about 4 cents each. Covers need billing turned on at Google.',
+      'Free to start. This key can also paint your covers, about 4 cents each. Covers need billing turned on at Google.',
     );
-    expect(textAiCostLine('ollama')).toBe('Free, runs on your machine. It cannot paint Covers.');
+    expect(textAiCostLine('ollama')).toBe('Free, runs on your machine. It cannot paint covers.');
     expect(textAiCostLine('openrouter')).toBe(
-      'Cost depends on the model. This key can also paint your Covers, about 7 cents each.',
+      'Cost depends on the model. This key can also paint your covers, about 7 cents each.',
     );
     expect(textAiCostLine('openai-compatible')).toBe(
-      'Cost depends on your service. It cannot paint Covers.',
+      'Cost depends on your service. It cannot paint covers.',
     );
   });
 

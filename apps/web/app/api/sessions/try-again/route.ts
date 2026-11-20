@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   const parsed = await parseJsonBody(
     request,
     tryAgainSessionRequestSchema,
-    'Invalid Try again request.',
+    'Invalid Try Again request.',
   );
   if (parsed instanceof NextResponse) return parsed;
 

@@ -52,14 +52,14 @@ it('reports a failed schedule save, and clears it once saving again succeeds', a
   ]);
   render(h(BackupsPanel, { initial: overview('healthy') }));
 
-  fireEvent.click(button('Save schedule'));
+  fireEvent.click(button('Save Schedule'));
   await waitFor(() =>
     expect(shownToasts()).toEqual([
       expect.objectContaining({ tone: 'error', message: 'Could not save the schedule.' }),
     ]),
   );
-  await waitFor(() => expect(button('Save schedule').disabled).toBe(false));
-  fireEvent.click(button('Save schedule'));
+  await waitFor(() => expect(button('Save Schedule').disabled).toBe(false));
+  fireEvent.click(button('Save Schedule'));
 
   await waitFor(() =>
     expect(shownToasts()).toEqual([
@@ -72,7 +72,7 @@ it('says a requested backup waits for the backup service when it is not running'
   serve(overview('not-running'), [Response.json({ ok: true, data: {} })]);
   render(h(BackupsPanel, { initial: overview('not-running') }));
 
-  fireEvent.click(button('Back up now'));
+  fireEvent.click(button('Back Up Now'));
 
   await waitFor(() =>
     expect(shownToasts()).toEqual([
@@ -93,7 +93,7 @@ it('reports a backup that could not be requested', async () => {
   ]);
   render(h(BackupsPanel, { initial: overview('healthy') }));
 
-  fireEvent.click(button('Back up now'));
+  fireEvent.click(button('Back Up Now'));
 
   await waitFor(() =>
     expect(shownToasts()).toEqual([

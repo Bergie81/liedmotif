@@ -96,7 +96,7 @@ async function readyProfile(ownerUserId: string): Promise<void> {
     expect(response.status).toBe(400);
     const payload = (await response.json()) as { ok: boolean; error?: { message?: string } };
     expect(payload.ok).toBe(false);
-    expect(payload.error?.message).toContain('Settings → My voice');
+    expect(payload.error?.message).toContain('Settings → My Voice');
     const sessions = await testDb.pool.query('select count(*)::int as n from activity_sessions');
     expect(sessions.rows[0].n).toBe(0);
   });

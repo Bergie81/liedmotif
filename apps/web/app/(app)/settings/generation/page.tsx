@@ -29,11 +29,11 @@ export default async function GenerationSettingsPage() {
   return (
     <section>
       <SettingsPageHeader
-        title={isAdmin ? 'Generation & cost' : 'Generation'}
+        title={isAdmin ? 'Generation & Cost' : 'Generation'}
         description={
           isAdmin
-            ? 'Set the limits that keep spending in check, the language Sessions use, and how far ahead they generate.'
-            : 'Set the language Sessions use and how far ahead they generate.'
+            ? 'Set the limits that keep spending in check, the language sessions use, and how far ahead they generate.'
+            : 'Set the language sessions use and how far ahead they generate.'
         }
         docs={
           isAdmin ? { path: 'costs-and-limits', label: 'How costs and limits work' } : undefined

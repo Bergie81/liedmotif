@@ -107,10 +107,10 @@ describe('Settings hub model', () => {
       { label: 'Covers today', used: 3, limit: 20, suffix: 'Covers' },
       { label: 'Covers this month', used: 14, limit: 100, suffix: 'Covers' },
     ]);
-    expect(result.generation.text).toContain('40 Tracks/day');
+    expect(result.generation.text).toContain('40 tracks/day');
     expect(result.generation.text).toContain('3 ahead');
     expect(result.generation.text).toContain('Auto language');
-    expect(result.limits.text).toContain('2 Tracks generating at once');
+    expect(result.limits.text).toContain('2 tracks generating at once');
     expect(result.providers.status).toEqual({ label: 'Configured', tone: 'ok' });
     expect(JSON.stringify(result)).not.toMatch(/secret|masked|api[_ -]?key/i);
   });
@@ -134,8 +134,8 @@ describe('Settings hub model', () => {
       { label: 'Today', used: 8, limit: null, suffix: 'Tracks' },
       { label: 'This month', used: 122, limit: null, suffix: 'Tracks' },
     ]);
-    expect(result.generation.text).toContain('No Track ceiling');
-    expect(result.generation.text).not.toContain('Tracks/day');
+    expect(result.generation.text).toContain('No track ceiling');
+    expect(result.generation.text).not.toContain('tracks/day');
   });
 
   it('shows Cover usage without a limit when the Admin Cover ceiling is off', () => {

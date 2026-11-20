@@ -26,7 +26,7 @@ import { cachedUserProfile } from '@/lib/request-cache';
 const QUOTA_MESSAGES = {
   admin:
     'The storage quota is full. Delete something you no longer keep, or raise the quota in Settings.',
-  member: 'Storage on this server is full. The Admin needs to free space or raise the quota.',
+  member: 'Storage on this server is full. The admin needs to free space or raise the quota.',
 } as const;
 
 const DISK_MESSAGE = 'The storage volume is nearly full, so new uploads are paused.';

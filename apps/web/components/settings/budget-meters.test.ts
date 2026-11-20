@@ -15,10 +15,10 @@ const text = (props: Parameters<typeof BudgetUsageMeters>[0]) =>
 describe('budget meters', () => {
   it('prices remaining one-time budgets first on the admin Members page only', () => {
     const admin = text({ usage, unitCosts: costs });
-    expect(admin).toContain('$2.24/$2.80 (32/40 Tracks) left');
-    expect(admin).toContain('$0.68/$0.80 (17/20 Covers) left');
+    expect(admin).toContain('$2.24/$2.80 (32/40 tracks) left');
+    expect(admin).toContain('$0.68/$0.80 (17/20 covers) left');
     const member = text({ usage });
-    expect(member).toContain('32/40 Tracks left');
+    expect(member).toContain('32/40 tracks left');
     expect(member).not.toContain('$');
   });
 });

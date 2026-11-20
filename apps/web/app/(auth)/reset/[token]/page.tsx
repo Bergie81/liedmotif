@@ -23,10 +23,10 @@ export default async function ResetPage({ params }: { params: Promise<{ token: s
 
   return (
     <OneShotLinkPage basePath={RESET_BASE_PATH}>
-      <p className={eyebrowClass}>Password reset</p>
+      <p className={eyebrowClass}>Password Reset</p>
       {link ? (
         <>
-          <h1 className={`${displayHeadingClass} mt-3`}>Pick a new password</h1>
+          <h1 className={`${displayHeadingClass} mt-3`}>Pick a New Password</h1>
           <p className="mt-3 text-[14px] leading-relaxed text-muted">
             This link works exactly once. Set the new password, then sign in with it.
           </p>

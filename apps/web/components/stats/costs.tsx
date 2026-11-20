@@ -67,7 +67,7 @@ export function Costs({ read }: { read: RangedRead<CostComparisonData> }) {
 
   return (
     <div className="mt-6">
-      <SettingsSection title="Estimated cost">
+      <SettingsSection title="Estimated Cost">
         <SettingsCard>
           <RangedBody
             error={error}
@@ -83,7 +83,7 @@ export function Costs({ read }: { read: RangedRead<CostComparisonData> }) {
               </div>
             ) : (
               <p className={`${emptyClass} mb-4`}>
-                No Unit costs are set, so only counts show. Set your prices under{' '}
+                No unit costs are set, so only counts show. Set your prices under{' '}
                 <Link href="/settings/providers" className="font-semibold text-paper">
                   Settings → Providers
                 </Link>
@@ -91,12 +91,12 @@ export function Costs({ read }: { read: RangedRead<CostComparisonData> }) {
               </p>
             )}
             <div className="mb-6">
-              <CostSplitChart rows={ownVersusMembers} subject="you against Members" />
+              <CostSplitChart rows={ownVersusMembers} subject="you against members" />
             </div>
             <GroupRows groups={[groups.total, groups.own, groups.members]} costs={data.unitCosts} />
             <SettingsFootnote>
-              Estimates, not an invoice. Every music and Cover attempt that may have been billed
-              counts, uncertain ones included, at today's Unit costs — so changing a price reprices
+              Estimates, not an invoice. Every music and cover attempt that may have been billed
+              counts, uncertain ones included, at today's unit costs — so changing a price reprices
               the past. Text AI usage is only roughly covered by those prices. Days start at
               midnight in the budget timezone ({data.timezone}).
             </SettingsFootnote>
@@ -108,18 +108,18 @@ export function Costs({ read }: { read: RangedRead<CostComparisonData> }) {
         <SettingsSection title="By Member">
           <SettingsCard>
             {groups.perMember.length === 0 ? (
-              <p className={emptyClass}>No Members yet.</p>
+              <p className={emptyClass}>No members yet.</p>
             ) : (
               <>
                 <div className="mb-6">
-                  <CostSplitChart rows={perMember} subject="by Member" />
+                  <CostSplitChart rows={perMember} subject="by member" />
                 </div>
                 <GroupRows groups={groups.perMember} costs={data.unitCosts} />
               </>
             )}
             <SettingsFootnote>
-              Counts only — a Member's music and listening stay private. A deleted account's music
-              and Cover costs stay under Former members.
+              Counts only — a member's music and listening stay private. A deleted account's music
+              and cover costs stay under Former members.
             </SettingsFootnote>
           </SettingsCard>
         </SettingsSection>

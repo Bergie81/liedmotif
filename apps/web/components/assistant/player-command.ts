@@ -185,11 +185,11 @@ function happened(command: AssistantPlayerCommand): string {
     case 'continue':
       return 'Playing';
     case 'next':
-      return 'Skipped to the next Track';
+      return 'Skipped to the next track';
     case 'previous':
-      return 'Back to the previous Track';
+      return 'Back to the previous track';
     case 'restart':
-      return 'Playing the Track from its start';
+      return 'Playing the track from its start';
     case 'loopOn':
       return 'Loop Track on';
     case 'loopOff':
@@ -214,7 +214,7 @@ export function playerCommandLine(
     case 'failed':
       return { text: 'The player could not do that.', tapToPlay: false };
     case 'declined':
-      return { text: 'Not played: you kept your new Session starting.', tapToPlay: false };
+      return { text: 'Not played: you kept your new session starting.', tapToPlay: false };
     default:
       return { text: happened(command), tapToPlay: false };
   }

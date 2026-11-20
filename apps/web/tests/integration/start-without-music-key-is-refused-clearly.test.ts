@@ -84,7 +84,7 @@ const db = () => testDb.db as Database;
 
 const ADMIN_MESSAGE =
   "The music key is missing or can't be read. Enter it under Settings › AI Providers.";
-const MEMBER_MESSAGE = "Music isn't set up on this server yet. Ask the Admin to set it up.";
+const MEMBER_MESSAGE = "Music isn't set up on this server yet. Ask the admin to set it up.";
 /** The key a stored music credential is sealed with, and a different one it is read with. */
 const SEAL_KEY_B64 = Buffer.alloc(32, 3).toString('base64');
 const READ_KEY_B64 = Buffer.alloc(32, 9).toString('base64');

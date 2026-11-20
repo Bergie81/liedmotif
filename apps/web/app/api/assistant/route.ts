@@ -85,7 +85,7 @@ export async function POST(request: Request) {
   if (!llm) {
     return apiError(
       'assistant_unavailable',
-      `${ASSISTANT_NAME} is not available: no Text AI is set up.`,
+      `${ASSISTANT_NAME} is not available: no text AI is set up.`,
     );
   }
 
@@ -145,7 +145,7 @@ export async function POST(request: Request) {
     });
   }
   if (first.done) {
-    return apiError('provider_error', 'The Text AI gave no answer. Try again.', {
+    return apiError('provider_error', 'The text AI gave no answer. Try again.', {
       retryable: true,
       headers: standingHeaders,
     });

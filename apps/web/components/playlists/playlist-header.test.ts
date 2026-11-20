@@ -53,8 +53,8 @@ describe('PlaylistHeader options', () => {
     renderHeader(noActions());
     const sheet = screen.getByRole('dialog');
     expect(sheet.textContent).toContain('Late Drive');
-    expect(sheet.textContent).toContain('3 Tracks · 9 min');
-    expect(screen.getByRole('button', { name: 'Close options for Late Drive' })).toBeTruthy();
+    expect(sheet.textContent).toContain('3 tracks · 9 min');
+    expect(screen.getByRole('button', { name: 'Close Options for Late Drive' })).toBeTruthy();
   });
 
   it('closes the sheet before handing off to the picked act', () => {

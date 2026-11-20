@@ -10,14 +10,14 @@ describe('a Session card', () => {
 
   it('says what confirming starts, in the user’s words, and what the button does', () => {
     expect(cardWording(calm)).toMatchObject({
-      title: 'Start a new Session',
+      title: 'Start a New Session',
       words: 'calm piano',
       details: 'Instrumental',
-      cost: 'Starting generates new Tracks from your budget.',
+      cost: 'Starting generates new tracks from your budget.',
       confirm: 'Start Session',
       confirming: 'Starting…',
       confirmed: 'Session started',
-      failed: 'This Session did not start',
+      failed: 'This session did not start',
     });
   });
 
@@ -29,7 +29,7 @@ describe('a Session card', () => {
 
   it('says No limit, in the player’s words, when the Session generates without a target', () => {
     expect(cardWording({ ...calm, targetDurationMinutes: null }).details).toBe(
-      'Instrumental · No limit',
+      'Instrumental · No Limit',
     );
   });
 });
@@ -45,7 +45,7 @@ describe('a Change Vibe card', () => {
       title: 'Change Vibe',
       words: 'slower, with a cello',
       details: 'In Rainy Window',
-      cost: 'Changing the vibe generates new Tracks from your budget.',
+      cost: 'Changing the vibe generates new tracks from your budget.',
       confirm: 'Change Vibe',
       confirming: 'Changing…',
       confirmed: 'Vibe changed',
@@ -65,12 +65,12 @@ describe('a More Like This card', () => {
   it('names the seed Track and the button of the player’s own More Like This', () => {
     expect(cardWording({ kind: 'moreLikeThis', tracks: [track('Night Drive')] })).toEqual({
       title: 'More Like This',
-      details: 'A new Session seeded from Night Drive',
-      cost: 'Starting generates new Tracks from your budget.',
-      confirm: 'Start new Session',
+      details: 'A new session seeded from Night Drive',
+      cost: 'Starting generates new tracks from your budget.',
+      confirm: 'Start New Session',
       confirming: 'Starting Session…',
       confirmed: 'Session started',
-      failed: 'This Session did not start',
+      failed: 'This session did not start',
     });
   });
 
@@ -80,7 +80,7 @@ describe('a More Like This card', () => {
         kind: 'moreLikeThis',
         tracks: [track('Night Drive'), track(null), track('Low Tide')],
       }).details,
-    ).toBe('A new Session seeded from 3 Tracks: Night Drive, Untitled Track, Low Tide');
+    ).toBe('A new session seeded from 3 tracks: Night Drive, Untitled Track, Low Tide');
   });
 
   it('adds the length the way the Session card does', () => {
@@ -88,21 +88,21 @@ describe('a More Like This card', () => {
       cardWording({ kind: 'moreLikeThis', tracks: [track('Night Drive')], targetDurationMinutes })
         .details;
 
-    expect(seeded(60)).toBe('A new Session seeded from Night Drive · 60 min');
-    expect(seeded(null)).toBe('A new Session seeded from Night Drive · No limit');
+    expect(seeded(60)).toBe('A new session seeded from Night Drive · 60 min');
+    expect(seeded(null)).toBe('A new session seeded from Night Drive · No Limit');
   });
 });
 
-describe('a New music card', () => {
-  it('words a duration as the player’s New music control does, Save button included', () => {
+describe('a New Music card', () => {
+  it('words a duration as the player’s New Music control does, Save button included', () => {
     expect(cardWording({ kind: 'newMusicOn', session: RAINY, targetDurationMinutes: 90 })).toEqual({
-      title: 'Switch New music on',
+      title: 'Switch New Music On',
       details: 'Rainy Window · Up to 90 min',
       cost: 'Buys music until the target.',
-      confirm: 'Save · up to 90 min',
+      confirm: 'Save · Up to 90 min',
       confirming: 'Saving…',
-      confirmed: 'New music is on',
-      failed: 'New music was not switched on',
+      confirmed: 'New Music is on',
+      failed: 'New Music was not switched on',
     });
   });
 
@@ -110,9 +110,9 @@ describe('a New music card', () => {
     expect(
       cardWording({ kind: 'newMusicOn', session: RAINY, targetDurationMinutes: null }),
     ).toMatchObject({
-      details: 'Rainy Window · No limit',
+      details: 'Rainy Window · No Limit',
       cost: 'Keeps buying while you listen.',
-      confirm: 'Save · no limit',
+      confirm: 'Save · No Limit',
     });
   });
 });
@@ -139,11 +139,11 @@ describe('a Surprise Me card', () => {
       title: 'Surprise Me',
       name: 'Harbor Morning',
       details: 'Familiar · Lo-fi, Jazz · hazy · Low energy · Instrumental · 45 min',
-      cost: 'Starting generates new Tracks from your budget.',
+      cost: 'Starting generates new tracks from your budget.',
       confirm: 'Start Session',
       confirming: 'Starting…',
       confirmed: 'Session started',
-      failed: 'This Session did not start',
+      failed: 'This session did not start',
     });
   });
 
@@ -161,7 +161,7 @@ describe('a Surprise Me card', () => {
         targetDurationMinutes: null,
       }).details,
     ).toBe(
-      'Adventurous · Lo-fi, Jazz · hazy · Low energy · Vocals · English · Female voice · No limit',
+      'Adventurous · Lo-fi, Jazz · hazy · Low energy · Vocals · English · Female voice · No Limit',
     );
   });
 });
@@ -175,13 +175,13 @@ describe('a cover card', () => {
 
   it('says what the cover is for, quotes the art direction, and what confirming costs', () => {
     expect(cardWording(rainy)).toEqual({
-      title: 'New cover',
+      title: 'New Cover',
       words: 'darker, neon city',
-      details: 'For the Session Rainy Window',
+      details: 'For the session Rainy Window',
       cost: 'Generating uses one cover from your budget. It becomes the cover only when you pick it.',
-      confirm: 'Generate cover',
+      confirm: 'Generate Cover',
       confirming: 'Generating…',
-      confirmed: 'Generating the new cover. It will be under Previous covers.',
+      confirmed: 'Generating the new cover. It will be under Previous Covers.',
       failed: 'No cover was generated',
     });
   });
@@ -192,7 +192,7 @@ describe('a cover card', () => {
       subject: { kind: 'playlist', id: '00000000-0000-4000-8000-000000000002', name: 'Running' },
     });
 
-    expect(wording.details).toBe('For the Playlist Running');
+    expect(wording.details).toBe('For the playlist Running');
     expect(wording.words).toBeUndefined();
   });
 });

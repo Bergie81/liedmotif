@@ -1,12 +1,12 @@
 ---
-title: Liedmotif docs
+title: Liedmotif Docs
 description: Everything about running your own Liedmotif, from the first install to backups, members and costs.
-checkedOn: 2026-11-18
+checkedOn: 2026-11-20
 ---
 
 Liedmotif is software you run yourself. These docs take you from nothing to your first session, and then cover what it takes to keep your own instance healthy.
 
-## Start with an install
+## Start With an Install
 
 Where you run Liedmotif decides how you install it. You can move later, so pick what's easiest today.
 
@@ -16,7 +16,7 @@ Where you run Liedmotif decides how you install it. You can move later, so pick 
 | A home server | Music on all your devices, always on, private to you | [Install on a home server](/docs/install/home-server) |
 | A cloud provider | Always on, and reachable by friends anywhere | [Install on a cloud provider](/docs/install/cloud) |
 
-## Find your way
+## Find Your Way
 
 - **Understand what you're installing:** [What Liedmotif is](/docs/what-is-liedmotif)
 - **Listen on your phone:** [Phone access](/docs/install/phone-access)
@@ -24,7 +24,7 @@ Where you run Liedmotif decides how you install it. You can move later, so pick 
 - **See what you'll spend and set limits:** [Costs and limits](/docs/costs-and-limits)
 - **Send email or keep your music in a bucket:** [Email and storage](/docs/email-and-storage)
 - **Learn what the app can do:** [Features](/docs/features)
-- **Invite family and friends:** [Members, invites and the lounge](/docs/members)
+- **Invite family and friends:** [Members, invites and the Lounge](/docs/members)
 - **Let a friend reach your home server:** [Share with a friend](/docs/share-with-a-friend)
 - **You're a member of someone else's Liedmotif:** [Help for members](/docs/member-help)
 - **Move to a new version:** [Updates](/docs/updates)
@@ -38,6 +38,6 @@ Where you run Liedmotif decides how you install it. You can move later, so pick 
 
 Use the search box, or press <kbd>⌘</kbd> <kbd>K</kbd> (<kbd>Ctrl</kbd> <kbd>K</kbd> on Windows and Linux), to find anything in the docs.
 
-## For AI agents
+## For AI Agents
 
 Every page is also plain Markdown: replace the last `/` in its address with `.md`. [`/llms.txt`](/llms.txt) lists the pages, and [`/llms-full.txt`](/llms-full.txt) holds them all in one file.

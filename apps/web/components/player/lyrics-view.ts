@@ -118,11 +118,11 @@ export function lyricsTimingStatus(timing: {
     return {
       label: 'Line timing is on its way',
       tone: 'lamp',
-      detail: 'The lines light up and follow the playhead once the Track finishes rendering.',
+      detail: 'The lines light up and follow the playhead once the track finishes rendering.',
     };
   }
   return {
-    label: 'No line timing for this Track',
+    label: 'No line timing for this track',
     tone: 'neutral',
     detail: 'The words are all here — they just don’t follow the playhead or jump.',
   };

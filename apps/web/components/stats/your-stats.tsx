@@ -123,19 +123,19 @@ export function YourStats({ read }: { read: RangedRead<ListeningStatsData> }) {
               onRetry={() => void load(range)}
             >
               <div className="flex flex-wrap gap-6">
-                <Figure label="Listening time" value={formatListeningTime(stats.listenedMs)} />
+                <Figure label="Listening Time" value={formatListeningTime(stats.listenedMs)} />
                 <Figure label="Plays" value={stats.qualifyingPlays.toLocaleString('en-US')} />
                 <Figure label="Tracks" value={stats.uniqueTracks.toLocaleString('en-US')} />
               </div>
               {nothingYet ? (
                 <p className="mt-4 text-[13px] leading-relaxed text-muted">
-                  Nothing recorded in this period yet. Play one of your Sessions and your listening
+                  Nothing recorded in this period yet. Play one of your sessions and your listening
                   shows up here.
                 </p>
               ) : (
                 <div className="mt-6">
                   <h3 className="mb-2 font-mono text-[11px] tracking-[0.05em] text-muted">
-                    Listening time per day{days.length < 7 ? '' : `, last ${days.length} days`}
+                    Listening Time per Day{days.length < 7 ? '' : `, Last ${days.length} Days`}
                   </h3>
                   <DailyListeningChart points={days} />
                 </div>
@@ -151,12 +151,12 @@ export function YourStats({ read }: { read: RangedRead<ListeningStatsData> }) {
 
         {error || loading ? null : (
           <>
-            <SettingsSection title="Most played">
+            <SettingsSection title="Most Played">
               <SettingsCard>
                 <MostPlayed rows={tracks} />
               </SettingsCard>
             </SettingsSection>
-            <SettingsSection title="Most listened genres">
+            <SettingsSection title="Most Listened Genres">
               <SettingsCard>
                 <MostListenedGenres rows={genres} />
                 <SettingsFootnote>By listening time, short listens included.</SettingsFootnote>
@@ -191,9 +191,9 @@ export function YourStats({ read }: { read: RangedRead<ListeningStatsData> }) {
 
       {confirmingClear ? (
         <ConfirmDialog
-          heading="Clear listening history"
-          body="Every listening record is removed for good: listening time, plays, most played, genres and learned taste restart from now, and tracks generated so far can no longer be told apart as heard or never heard. Your music, Playlists, generated totals and costs are not touched."
-          confirmLabel="Clear history"
+          heading="Clear Listening History"
+          body="Every listening record is removed for good: listening time, plays, most played, genres and learned taste restart from now, and tracks generated so far can no longer be told apart as heard or never heard. Your music, playlists, generated totals and costs are not touched."
+          confirmLabel="Clear History"
           onConfirm={clearHistory}
           onClose={() => setConfirmingClear(false)}
         />

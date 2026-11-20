@@ -98,7 +98,7 @@ describe.each(surfaces)('a toast over an open %s', (_name, surface) => {
     await armed();
 
     // The open modal hides everything outside itself from assistive tech.
-    tap(screen.getByRole('button', { name: 'Close notification', hidden: true }));
+    tap(screen.getByRole('button', { name: 'Close Notification', hidden: true }));
 
     await waitFor(() => expect(screen.queryByText(MESSAGE)).toBeNull());
     expect(onOpenChange).not.toHaveBeenCalled();

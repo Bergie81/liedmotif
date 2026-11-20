@@ -135,7 +135,7 @@ function MoreLikeThisSheet({
       <SheetContent side="bottom">
         <SheetHeader
           title="More Like This"
-          description="Start a new Session seeded from the current Track. The current Session becomes Stopped and remains resumable."
+          description="Start a new session seeded from the current track. The current session becomes stopped and remains resumable."
         />
         <div className="mt-5 rounded-card-sm border border-line bg-[var(--control-bg)] p-4">
           <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
@@ -151,7 +151,7 @@ function MoreLikeThisSheet({
           onClick={() => void confirm()}
           className={cn(primaryButtonClass, 'mt-4 w-full')}
         >
-          {busy ? 'Starting Session…' : 'Start new Session'}
+          {busy ? 'Starting Session…' : 'Start New Session'}
         </button>
         <SheetClose className={cn(secondaryButtonClass, 'mt-2 w-full')}>Cancel</SheetClose>
       </SheetContent>

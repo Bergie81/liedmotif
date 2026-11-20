@@ -48,12 +48,12 @@ export function PlaylistQueueSheet({
       <SheetContent side="bottom" className="flex flex-col" data-testid="playlist-queue">
         <SheetHeader
           title={playlistName}
-          description="Playback order — tap a Track to jump to it."
-          closeLabel={`Close tracks in ${playlistName}`}
+          description="Playback order — tap a track to jump to it."
+          closeLabel={`Close Tracks in ${playlistName}`}
         />
         <SheetBody>
           {tracks.length === 0 ? (
-            <p className={queueEmptyNoteClass}>This Playlist has no Tracks left to play.</p>
+            <p className={queueEmptyNoteClass}>This playlist has no tracks left to play.</p>
           ) : null}
           <ol className="mt-4">
             {tracks.map((member) => {

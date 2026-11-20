@@ -144,7 +144,7 @@ describe('/api/settings/people', () => {
       request('POST', '/api/settings/people', { name: 'JULIA', about: '' }),
     );
     expect(duplicate.status).toBe(409);
-    expect((await duplicate.json()).error).toBe('Each Person needs a unique name.');
+    expect((await duplicate.json()).error).toBe('Each person needs a unique name.');
   });
 
   it('updates only through an owner-scoped id and refuses owner deletion', async () => {
@@ -172,7 +172,7 @@ describe('/api/settings/people', () => {
       { params: Promise.resolve({ id: OWNER_PERSON_ID }) },
     );
     expect(deleted.status).toBe(400);
-    expect((await deleted.json()).error).toBe('The owner Person cannot be deleted.');
+    expect((await deleted.json()).error).toBe('The owner person cannot be deleted.');
   });
 
   it('returns not found for malformed Person ids without querying the repository', async () => {

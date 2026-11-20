@@ -152,7 +152,7 @@ function PlaylistMenu({
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger
-        aria-label="Playlist options"
+        aria-label="Playlist Options"
         data-testid="playlist-menu"
         className={iconButtonClass}
       >

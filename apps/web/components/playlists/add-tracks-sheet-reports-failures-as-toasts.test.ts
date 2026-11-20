@@ -100,15 +100,15 @@ describe('add tracks sheet', () => {
     holder.pages = ['accept', 'refuse', 'accept'];
     openSheet();
 
-    await click(await screen.findByRole('button', { name: 'Load more' }));
+    await click(await screen.findByRole('button', { name: 'Load More' }));
 
     expect(shownToasts()).toEqual([
-      expect.objectContaining({ tone: 'error', message: 'Couldn’t load more Tracks: Offline.' }),
+      expect.objectContaining({ tone: 'error', message: 'Couldn’t load more tracks: Offline.' }),
     ]);
     expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.getByRole('checkbox', { name: /Calm/ })).toBeTruthy();
 
-    await click(screen.getByRole('button', { name: 'Load more' }));
+    await click(screen.getByRole('button', { name: 'Load More' }));
 
     expect(shownToasts()).toEqual([]);
     expect(screen.getByRole('checkbox', { name: /Later/ })).toBeTruthy();

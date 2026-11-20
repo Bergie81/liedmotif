@@ -48,7 +48,7 @@ const chrome = {
 const phoneHeader = h(
   AppChromeContext.Provider,
   { value: chrome },
-  h(PlayerMobileHeader, { title: 'Now Playing your Session', action: null }),
+  h(PlayerMobileHeader, { title: 'Now Playing Your Session', action: null }),
 );
 
 it('opens the Assistant from the phone header of the Player', () => {

@@ -54,7 +54,7 @@ export function trackLimitToTasks(
   const yieldPerRequest = normalizeTracksPerRequest(tracksPerRequest);
   const tasks = tracksToProviderTasks(tracks, yieldPerRequest);
   // A whole, non-negative count can only fail the conversion by not dividing evenly.
-  if (tasks === null) return { error: `Enter a multiple of ${yieldPerRequest} Tracks.` };
+  if (tasks === null) return { error: `Enter a multiple of ${yieldPerRequest} tracks.` };
   if (tasks < minTasks) return { error: `Enter ${minTasks * yieldPerRequest} or more.` };
   return { tasks };
 }

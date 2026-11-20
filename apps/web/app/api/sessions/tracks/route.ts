@@ -23,10 +23,10 @@ export async function GET(request: Request) {
       cursor: params.get('cursor'),
       limit: params.get('limit') ?? undefined,
     },
-    'Invalid Session tracks request.',
+    'Invalid session tracks request.',
   );
   if (parsed instanceof NextResponse) return parsed;
-  const cursor = validateKeysetCursor(parsed.cursor, 'Invalid Session tracks cursor.');
+  const cursor = validateKeysetCursor(parsed.cursor, 'Invalid session tracks cursor.');
   if (cursor instanceof NextResponse) return cursor;
   const result = await listSessionTracks(getDb(), { ...parsed, cursor, ownerUserId });
   return result ? apiOk(result) : apiError('not_found', 'Session not found.');

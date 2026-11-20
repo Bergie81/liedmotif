@@ -313,7 +313,7 @@ export function CostSplitChart({ rows, subject }: { rows: SplitRow[]; subject: s
     [rows],
   );
 
-  const label = `Music and Covers, ${subject}: ${rows.map((row) => `${row.label} ${row.reading}`).join(', ')}.`;
+  const label = `Music and covers, ${subject}: ${rows.map((row) => `${row.label} ${row.reading}`).join(', ')}.`;
   return (
     <div>
       <ul className="mb-2 flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px] tracking-[0.05em] text-muted">

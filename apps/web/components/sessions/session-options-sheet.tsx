@@ -138,7 +138,7 @@ export function SessionOptionsSheet({
       {confirmingDelete ? (
         <ConfirmDialog
           heading="Delete Session"
-          body={`Permanently delete “${title}”? Its unsaved Tracks go with it; Tracks in a Playlist stay in your Library.`}
+          body={`Permanently delete “${title}”? Its unsaved tracks go with it; tracks in a playlist stay in your Library.`}
           confirmLabel="Delete"
           onConfirm={async () => {
             await onDelete();

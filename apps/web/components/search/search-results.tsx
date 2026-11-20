@@ -87,7 +87,7 @@ export function SearchResults({
     return (
       <div className="max-w-[760px]" aria-live="polite">
         <p className="mt-3 inline-flex items-center gap-2 font-mono text-[10.5px] uppercase tracking-[0.06em] text-lamp">
-          <MicVocal className="h-3.5 w-3.5" aria-hidden /> Searching lyrics · Tracks only
+          <MicVocal className="h-3.5 w-3.5" aria-hidden /> Searching lyrics · tracks only
         </p>
         {body}
       </div>
@@ -178,7 +178,7 @@ function SummaryRow({
       <SearchSortSheet sort={sort} onSortChange={onSortChange}>
         <button
           type="button"
-          aria-label={`Sort search results: ${SEARCH_SORT_LABELS[sort]}`}
+          aria-label={`Sort Search Results: ${SEARCH_SORT_LABELS[sort]}`}
           className="inline-flex shrink-0 items-center gap-2 font-mono text-[10.5px] uppercase tracking-[0.05em] text-dim hover:text-paper"
         >
           <SlidersHorizontal className="h-3.5 w-3.5" /> {SEARCH_SORT_LABELS[sort]}
@@ -288,18 +288,18 @@ function SearchEmptyState({ data }: { data: SearchResponseData }) {
   return (
     <EmptyState
       icon={<SearchX className="h-6 w-6" />}
-      title={`Nothing matches “${data.query}”`}
+      title={`Nothing Matches “${data.query}”`}
       className="py-10"
     >
       {data.lyrics ? (
-        'No captured lyrics contain that line. Instrumental Tracks have no lyrics to search.'
+        'No captured lyrics contain that line. Instrumental tracks have no lyrics to search.'
       ) : (
         // A search that finds nothing is often a description of music that
         // does not exist yet. The hand-off only prefills Home's create card
         // — search itself never creates and never spends.
         <span className="block">
           <span className="block">
-            Music that doesn’t exist yet can be made — turn your words into a new Session.
+            Music that doesn’t exist yet can be made — turn your words into a new session.
           </span>
           <Link
             href={homeIntentHref(data.query)}

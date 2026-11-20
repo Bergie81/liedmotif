@@ -36,12 +36,12 @@ export default async function MembersSettingsPage() {
       <SettingsPageHeader
         title="Members"
         description="Invite family and friends to their own private space, using your provider keys within budgets you set."
-        docs={{ path: 'members', label: 'How Members and budgets work' }}
+        docs={{ path: 'members', label: 'How members and budgets work' }}
       />
       {costSummary ? (
         <SettingsCard className="mt-6">
           <p className="mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-dim">
-            Estimated cost
+            Estimated Cost
           </p>
           {costSummary.rolling ? (
             <p className="text-[13px] leading-relaxed text-muted">

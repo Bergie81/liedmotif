@@ -40,7 +40,7 @@ function useTrackDetails(trackId: string | null, enabled: boolean): TrackDetails
 }
 
 const PHASE_COPY: Record<Exclude<TrackDataPhase, 'ready'>, string> = {
-  loading: 'Loading Track data…',
+  loading: 'Loading track data…',
   error: 'Track data is unavailable right now',
 };
 
@@ -66,7 +66,7 @@ export function TrackDataSheet({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="flex flex-col">
-        <SheetHeader title="Track Data" description="Everything this Track was generated from" />
+        <SheetHeader title="Track Data" description="Everything this track was generated from" />
 
         <div className="-mx-5 mt-1 min-h-0 flex-1 overflow-y-auto overscroll-contain px-5">
           {phase !== 'ready' ? (

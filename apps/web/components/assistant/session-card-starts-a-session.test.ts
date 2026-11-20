@@ -74,7 +74,7 @@ const STARTED: SessionSummary = {
 const askForSessionCard = (
   events: AssistantStreamEvent[],
   options?: Parameters<typeof askForCard>[2],
-) => askForCard('Start a new Session', events, options);
+) => askForCard('Start a New Session', events, options);
 
 const startButton = () => screen.getByRole('button', { name: 'Start Session' });
 
@@ -95,8 +95,8 @@ describe('a Session card in the chat', () => {
 
     expect(card.textContent).toContain('calm piano for reading');
     expect(card.textContent).toContain('Instrumental · 45 min');
-    expect(card.textContent).toContain('Starting generates new Tracks from your budget.');
-    expect(card.textContent).toContain('38 Tracks left today');
+    expect(card.textContent).toContain('Starting generates new tracks from your budget.');
+    expect(card.textContent).toContain('38 tracks left today');
     expect(card.textContent).not.toContain('metal');
     expect(within(card).getAllByRole('button')).toEqual([startButton()]);
     // The figure is read again for the card, as the player's own sheet does.
@@ -142,7 +142,7 @@ describe('confirming a Session card', () => {
     server.sent[0]!.answer(started());
 
     await waitFor(() => expect(player.engage).toHaveBeenCalledWith(STARTED, { autoplay: true }));
-    const card = screen.getByRole('group', { name: 'Start a new Session' });
+    const card = screen.getByRole('group', { name: 'Start a New Session' });
     await waitFor(() => expect(card.textContent).toContain('Session started'));
     expect(within(card).queryByRole('button')).toBeNull();
   });
@@ -162,8 +162,8 @@ describe('confirming a Session card', () => {
 
     server.sent[0]!.answer(refused());
 
-    const card = screen.getByRole('group', { name: 'Start a new Session' });
-    await waitFor(() => expect(card.textContent).toContain('This Session did not start'));
+    const card = screen.getByRole('group', { name: 'Start a New Session' });
+    await waitFor(() => expect(card.textContent).toContain('This session did not start'));
     expect(within(card).queryByRole('button')).toBeNull();
     expect(player.engage).not.toHaveBeenCalled();
     // Where a refused Start from Home waits to be shown: the Player takes it.

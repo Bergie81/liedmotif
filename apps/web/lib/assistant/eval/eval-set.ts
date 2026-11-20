@@ -128,7 +128,7 @@ export const EVAL_SET: readonly EvalEntry[] = [
     ],
     link: '/settings/cover-art',
     goodAnswer:
-      'In Settings › Cover art: Use Tailored Cover Art Generation, Default cover style, Custom style definition and Enhance prompts. Says that styled covers cost money with the image provider.',
+      'In Settings › Cover Art: Use Tailored Cover Art Generation, Default cover style, Custom style definition and Enhance prompts. Says that styled covers cost money with the image provider.',
   },
   {
     id: 'disable-member',
@@ -152,7 +152,7 @@ export const EVAL_SET: readonly EvalEntry[] = [
     ],
     link: '/settings/diagnostics',
     goodAnswer:
-      'Settings › Diagnostics & worker shows the health of the instance: the providers, storage, the worker and recent events.',
+      'Settings › Diagnostics & Worker shows the health of the instance: the providers, storage, the worker and recent events.',
   },
   {
     id: 'clear-listening-history',
@@ -239,7 +239,7 @@ export const EVAL_SET: readonly EvalEntry[] = [
     ],
     link: '/settings/my-budget',
     goodAnswer:
-      'Settings › My budget shows the user’s own budget and the shared one. It is read-only: the Admin sets both.',
+      'Settings › My Budget shows the user’s own budget and the shared one. It is read-only: the Admin sets both.',
   },
   {
     id: 'people-in-lyrics',
@@ -430,7 +430,7 @@ export const EVAL_SET: readonly EvalEntry[] = [
     docs: 'none',
     calls: [{ tool: 'newMusicOff' }],
     goodAnswer:
-      'Switches New music off for Night Drive and says so. Does not stop the Session and does not pause the music.',
+      'Switches New Music off for Night Drive and says so. Does not stop the Session and does not pause the music.',
   },
   {
     id: 'next',
@@ -508,7 +508,7 @@ export const EVAL_SET: readonly EvalEntry[] = [
       },
     ],
     goodAnswer:
-      'Finds the Session, then resumes it, with no card: resuming is not new spending. A few words in German; may add that it can generate new Tracks if its New music is on.',
+      'Finds the Session, then resumes it, with no card: resuming is not new spending. A few words in German; may add that it can generate new Tracks if its New Music is on.',
   },
   {
     id: 'play-a-track',
@@ -603,7 +603,7 @@ export const EVAL_SET: readonly EvalEntry[] = [
       },
     ],
     goodAnswer:
-      'Says a card for New music with no limit on Night Drive is prepared, and that confirming it generates new Tracks. Never says it is switched on.',
+      'Says a card for New Music with no limit on Night Drive is prepared, and that confirming it generates new Tracks. Never says it is switched on.',
   },
   {
     id: 'remove-from-favorites',
@@ -632,7 +632,7 @@ export const EVAL_SET: readonly EvalEntry[] = [
       },
     ],
     goodAnswer:
-      'Says in a few words that Include the owner in Covers is now Seldom. Says nothing it did not do.',
+      'Says in a few words that Include the owner in covers is now Seldom. Says nothing it did not do.',
   },
   {
     id: 'change-a-setting-that-spends',
@@ -794,7 +794,7 @@ export const EVAL_SET: readonly EvalEntry[] = [
     link: '/library',
     calls: [],
     goodAnswer:
-      'Says it cannot delete anything: old covers are deleted under Previous covers in the Playlist’s cover dialog, opened from its menu in the Library, with the link. Never says a cover is deleted.',
+      'Says it cannot delete anything: old covers are deleted under Previous Covers in the Playlist’s cover dialog, opened from its menu in the Library, with the link. Never says a cover is deleted.',
   },
   {
     id: 'pick-an-older-cover',
@@ -805,6 +805,6 @@ export const EVAL_SET: readonly EvalEntry[] = [
     link: '/sessions',
     calls: [],
     goodAnswer:
-      'A no in German: it does not pick an earlier cover; the user does that under Previous covers with Edit Session Cover Art in the Session’s options in Sessions, with the link. Offers no card for a new cover. Never says the cover is changed.',
+      'A no in German: it does not pick an earlier cover; the user does that under Previous Covers with Edit Session Cover Art in the Session’s options in Sessions, with the link. Offers no card for a new cover. Never says the cover is changed.',
   },
 ];

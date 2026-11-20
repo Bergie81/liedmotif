@@ -45,7 +45,7 @@ export function setMediaSessionMetadata(
 ): void {
   if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
   navigator.mediaSession.metadata = new MediaMetadata({
-    title: track.title ?? session.title ?? 'Liedmotif session',
+    title: track.title ?? session.title ?? 'Liedmotif Session',
     // The line shown under the title on lock screens: the session Name (the
     // generated artist name is cosmetic and rarely set), never a bare app name.
     artist: session.title ?? track.artist ?? 'Liedmotif',

@@ -320,7 +320,7 @@ describe.skipIf(skip)('the Assistant asked to resume a Session', () => {
     ]);
     expect(turn.results[0]).toBe('Done: the player was told to play the Session "Deep Focus".');
     // No Session is created, resumed or switched to another mode on the server:
-    // the browser's own Resume does that, with the New music setting as it is.
+    // the browser's own Resume does that, with the New Music setting as it is.
     expect(await sessionRows()).toEqual(before);
     expect(before).toHaveLength(2);
   });
@@ -363,7 +363,7 @@ describe.skipIf(skip)('the Assistant asked to resume a Session', () => {
     );
   });
 
-  it('sends nothing for a Session that cannot be resumed: no Track to play and New music off', async () => {
+  it('sends nothing for a Session that cannot be resumed: no Track to play and New Music off', async () => {
     const asker = await createMember();
     const spent = await seedSession(
       asker,
@@ -376,11 +376,11 @@ describe.skipIf(skip)('the Assistant asked to resume a Session', () => {
 
     expect(commands(turn)).toEqual([]);
     expect(turn.results[0]).toMatch(
-      /^The Session "Worn Out" cannot be resumed: it has no Track left to play, and its New music is off\./,
+      /^The Session "Worn Out" cannot be resumed: it has no Track left to play, and its New Music is off\./,
     );
   });
 
-  it('resumes a Session with no Track left when its New music is on, as Resume does', async () => {
+  it('resumes a Session with no Track left when its New Music is on, as Resume does', async () => {
     const asker = await createMember();
     const fresh = await seedSession(asker, 'Blank Page', []);
 

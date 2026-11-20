@@ -20,7 +20,7 @@ describe('genre vocabulary', () => {
   it('browses the vocabulary as record-shop families, alphabetically', () => {
     const names = GENRE_FAMILIES.map((family) => family.name);
     expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, 'en')));
-    expect(names[0]).toBe('Acoustic, rock & pop');
+    expect(names[0]).toBe('Acoustic, Rock & Pop');
     expect(names).toHaveLength(7);
   });
 });

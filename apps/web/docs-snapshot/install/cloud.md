@@ -1,5 +1,5 @@
 ---
-title: Install Liedmotif on a cloud provider
+title: Install Liedmotif on a Cloud Provider
 description: Rent a small server, point your own domain at it and invite your friends, even if you have never touched a server, DNS or SSH.
 checkedOn: 2026-11-20
 howTo: true
@@ -22,7 +22,7 @@ It stays your own instance on your own provider keys. There's no Liedmotif-run s
 
 **Keep secrets out of chats.** Never paste a password, your provider key, the setup link or the contents of `.env` into an AI chat, a forum or a screenshot.
 
-## Before you start
+## Before You Start
 
 You need:
 
@@ -40,7 +40,7 @@ You need:
 
 **In every example,** `203.0.113.10` stands for your server's IP address, `ubuntu` for its username and `music.example.com` for your domain. Replace them with your own each time.
 
-## Pick a provider and a size
+## Pick a Provider and a Size
 
 You need a 64-bit Debian or Ubuntu server with **2 vCPU and 4 GB of RAM**. That's enough for you and about ten friends. Your disk decides how long the plan lasts, not your memory or processor:
 
@@ -68,7 +68,7 @@ Any other provider with the same size works too. Read these offers closely first
 
 Availability percentages are what providers commit to in their terms, not uptime anyone measured.
 
-### What doesn't fit
+### What Doesn't Fit
 
 - **AWS, Google Cloud and Azure** charge about $0.09 for every GB of music you stream, with nothing in return at this size.
 - **Vercel and Netlify** have no lasting disk for your music, and nowhere to run the worker that makes it.
@@ -77,13 +77,13 @@ Availability percentages are what providers commit to in their terms, not uptime
 - **Render, Railway and Fly.io** can work, but they won't run the one-line install. Their disks attach to one service, but Liedmotif's web app and worker share one, so you'd have to use [S3-compatible storage](/docs/email-and-storage) and rebuild the setup in their own configuration. Most also charge for traffic, which adds up for streamed audio.
 - **Coolify and Dokploy** can make a server nicer to manage, but you still run the server, and they use up memory on a 4 GB plan.
 
-### Why a domain
+### Why a Domain
 
 Phones need a real HTTPS address to install Liedmotif as an app, keep music offline, and show the lock-screen controls. [On your phone](/docs/install/phone-access) explains why. An address on your own domain also stays yours when you change servers, and every member's browser trusts its certificate without any extra steps.
 
 Don't use the hostname your VPS provider gives you. It's tied to that one server, so moving means a new address for everyone, and a name shared with the provider's other customers can run into certificate limits.
 
-## 1. Rent the server
+## 1. Rent the Server
 
 1. Open [ovhcloud.com/en/vps](https://www.ovhcloud.com/en/vps/) and create an OVHcloud account.
 2. Choose **VPS-1**. Paying 12 months up front costs less than paying monthly.
@@ -99,7 +99,7 @@ Don't use the hostname your VPS provider gives you. It's tied to that one server
 
 The IP address is also in the OVHcloud Control Panel under **Bare Metal Cloud › Virtual private servers**, on your VPS.
 
-## 2. Buy a domain
+## 2. Buy a Domain
 
 Buy any domain you like. The easiest place is the same account, at [ovhcloud.com/en/domains](https://www.ovhcloud.com/en/domains/), but any domain seller works.
 
@@ -107,7 +107,7 @@ Liedmotif will live at a subdomain such as `music.yourdomain.com`, so the domain
 
 **You should now see** the domain in your account, at OVHcloud under **Web Cloud › Domain names**. A new domain can take a few minutes to show up.
 
-## 3. Point the domain at your server
+## 3. Point the Domain at Your Server
 
 Do this first, because the installer checks it before it installs anything. You add exactly one record, an **A record**, which says "`music.example.com` lives at `203.0.113.10`":
 
@@ -128,13 +128,13 @@ The record usually works within minutes, but it can take up to 24 hours. Carry o
 
 **You should now see** your new line in the DNS zone table: type `A`, subdomain `music`, target your server's IP address.
 
-## 4. Check that ports 80 and 443 are open
+## 4. Check That Ports 80 and 443 Are Open
 
 Caddy, the HTTPS proxy that comes with Liedmotif, needs both ports open to the internet to get your certificate. OVHcloud leaves them open. On another provider, or if you turned on a firewall, allow them there.
 
-## 5. Connect to your server with SSH
+## 5. Connect to Your Server with SSH
 
-### Open a terminal
+### Open a Terminal
 
 - **macOS:** press Cmd+Space, type `Terminal` and press Enter.
 - **Windows 10 or 11:** open Start, type `PowerShell` and open **Windows PowerShell**.
@@ -142,7 +142,7 @@ Caddy, the HTTPS proxy that comes with Liedmotif, needs both ports open to the i
 
 To paste into the terminal, use Cmd+V on macOS, Ctrl+V or a right-click on Windows, and Ctrl+Shift+V on Linux.
 
-### Log in for the first time
+### Log In for the First Time
 
 Type this with your own IP address and press Enter:
 
@@ -157,7 +157,7 @@ ssh ubuntu@203.0.113.10
 
 **You should now see** a line ending in `$`, like `ubuntu@vps-1a2b3c4d:~$`. You're now typing on your server. Type `exit` and press Enter to get back to your own computer.
 
-### Set up an SSH key
+### Set Up an SSH Key
 
 An SSH key is a pair of files on your computer that logs you in instead of a password, and nobody can guess it. Run this on **your own computer**. If the line ends in `ubuntu@vps-…:~$`, you're still on the server, so type `exit` first.
 
@@ -182,7 +182,7 @@ type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh ubuntu@203.0.113.10 "mkdir -p ~/
 
 **You should now see** that `ssh ubuntu@203.0.113.10` logs you in **without asking for the server password**. It may ask for the key's passphrase, if you set one. If it still asks for the server password, stop here and see [Common problems](#common-problems). Don't turn off password login until this works.
 
-### Turn off password login
+### Turn Off Password Login
 
 Now that your key works, turn off logging in with a password, so nobody can guess their way in. **Keep this terminal window open until the check below passes.** It's your way back in if something goes wrong. Logged in to the server, paste:
 
@@ -203,7 +203,7 @@ It answers `Permission denied (publickey).` That's the goal: passwords no longer
 
 The Liedmotif installer never changes these SSH settings, because a wrong change there can lock you out of your own server.
 
-## 6. Paste the install line
+## 6. Paste the Install Line
 
 Logged in to your server, paste this with your own domain and press Enter:
 
@@ -238,7 +238,7 @@ Open this link to create your Admin account:
 
 Below it are a reminder to copy `.env` and the command to update later. Copy the setup link into a private note, and treat it as a password until you've used it: anyone who has it can create the admin account before you do.
 
-## 7. Get your music provider key
+## 7. Get Your Music Provider Key
 
 Liedmotif makes its music with Suno through sunoapi.org, an independent service not run by Suno. **Every track costs real money** on your own sunoapi.org account, at about 4 cents a track, and tracks are made two at a time. Credit is prepaid, so you can never spend more than you've loaded. Rights to the music depend on your provider and plan.
 
@@ -250,49 +250,49 @@ Keep the key in your password manager or in the private note with your setup lin
 
 **You should now see** your new key listed under **Dashboard › API Keys** on sunoapi.org, and your credit on the dashboard.
 
-## 8. Create your admin account
+## 8. Create Your Admin Account
 
 1. Open the setup link from step 6 in your browser, on your computer or your phone.
-2. On **Create your admin login**, fill in **Email**, **Password** and **Confirm password**. Your password needs at least 12 characters, with a number, an uppercase letter and a special character.
-3. Press **Create admin**, and save the password in your password manager.
+2. On **Create Your Admin Login**, fill in **Email**, **Password** and **Confirm password**. Your password needs at least 12 characters, with a number, an uppercase letter and a special character.
+3. Press **Create Admin**, and save the password in your password manager.
 
 [First-run safety](#first-run-safety) explains what the token in that link does.
 
-## 9. Walk through guided setup
+## 9. Walk Through Guided Setup
 
-- **Welcome. What should we call you?** Fill in your **First name**. The rest is optional. Press **Continue**.
-- **Put people on your Covers.** Optional. Press **Continue**.
-- **Connect your music model.** Paste your key from step 7 into the field that says **Paste it here**, then press **Test the key**. It answers `Music provider reachable; … credits available.` Press **Save and continue**.
-- **Set a Track limit.** This is your own spending limit, and it's off by default. Turn on **Limit my Tracks**, set **Tracks per day** and **Tracks per month** to what you're happy to pay, and press **Save and continue**. Neither goes below 6 tracks by default, the room a new session needs to start. The note under them names the one that runs out first.
-- **Add a Text AI.** Optional. It writes better session names and prompts. Pick **OpenAI**, **Gemini** or **Ollama**, or open **More options** for OpenRouter or another OpenAI-compatible service. The line under the picker says what it costs and whether its key can also paint covers. `.env` calls it a text LLM. **Skip for now** is fine.
-- **Choose your Cover art.** Optional. Turn on **Generate Tailored Cover Art** to paint covers around your session and your people, on OpenAI at about 6 cents each, Gemini at about 4, or OpenRouter at about 7. If that's your text AI's service, it uses the same key and asks for none. Without it, covers come from your music provider at no extra cost. **Limit my Covers** caps every generated cover, your music provider's included. Press **Save and continue**.
-- On the last screen, press **Start your first Session**.
+- **Welcome. What Should We Call You?** Fill in your **First name**. The rest is optional. Press **Continue**.
+- **Put People on Your Covers.** Optional. Press **Continue**.
+- **Connect Your Music Model.** Paste your key from step 7 into the field that says **Paste it here**, then press **Test the Key**. It answers `Music provider reachable; … credits available.` Press **Save and Continue**.
+- **Set a Track Limit.** This is your own spending limit, and it's off by default. Turn on **Limit my tracks**, set **Tracks per day** and **Tracks per month** to what you're happy to pay, and press **Save and Continue**. Neither goes below 6 tracks by default, the room a new session needs to start. The note under them names the one that runs out first.
+- **Add a Text AI.** Optional. It writes better session names and prompts. Pick **OpenAI**, **Gemini** or **Ollama**, or open **More Options** for OpenRouter or another OpenAI-compatible service. The line under the picker says what it costs and whether its key can also paint covers. `.env` calls it a text LLM. **Skip for Now** is fine.
+- **Choose Your Cover Art.** Optional. Turn on **Generate Tailored Cover Art** to paint covers around your session and your people, on OpenAI at about 6 cents each, Gemini at about 4, or OpenRouter at about 7. If that's your text AI's service, it uses the same key and asks for none. Without it, covers come from your music provider at no extra cost. **Limit my covers** caps every generated cover, your music provider's included. Press **Save and Continue**.
+- On the last screen, press **Start Your First Session**.
 
 **You should now see** Liedmotif's home screen. Describe the moment you're in and start a session.
 
 **Where the spending limits are later:** **Settings** is in the account menu, under your picture in the corner.
 
-- **Yours:** **Settings › Cost limits**, under **Usage**. It opens **Cost Controls**, with **Limit my Tracks**, **Daily limit** and **Monthly limit**.
+- **Yours:** **Settings › Cost Limits**, under **Usage**. It opens **Cost Controls**, with **Limit my tracks**, **Daily limit** and **Monthly limit**.
 - **Your friends':** every invite carries its own budget, and **Settings › Members › Shared Budget** caps all your friends together. Set that one to what you actually want to spend.
 - **The backstop:** your prepaid sunoapi.org credit.
 
-## 10. Invite friends
+## 10. Invite Friends
 
 1. Open **Settings › Members**.
 2. Under **Invite Someone**, type your friend's name in **Who is this invite for?**.
-3. Pick a budget and adjust the numbers. **One-time** is one total that never renews. **Rolling** is a set of limits that reset daily and at the start of each month.
-4. Press **Create invite link**. An **Invite link** box appears. Press **Copy**, because the link is shown once and works once. It expires after 7 days.
+3. Pick a budget and adjust the numbers. **One-Time** is one total that never renews. **Rolling** is a set of limits that reset daily and at the start of each month.
+4. Press **Create Invite Link**. An **Invite link** box appears. Press **Copy**, because the link is shown once and works once. It expires after 7 days.
 5. Send it to your friend in any messenger.
 
-Your friend opens the link and sees a welcome with their name. They fill in **Your name**, **Email**, **Password** and **Confirm password**, then press **Create my account**. That's all: they listen from any browser, anywhere, with nothing to install.
+Your friend opens the link and sees a welcome with their name. They fill in **Your name**, **Email**, **Password** and **Confirm password**, then press **Create My Account**. That's all: they listen from any browser, anywhere, with nothing to install.
 
 You need no email setup for this. If you'd like Liedmotif to mail invites and password resets itself, see [Email and storage](/docs/email-and-storage).
 
-To take access away, press **Disable account** on your friend's card under **Settings › Members**. You can remove an invite nobody has used yet with **Revoke** under **Open invites**. [Members](/docs/members) has the rest.
+To take access away, press **Disable Account** on your friend's card under **Settings › Members**. You can remove an invite nobody has used yet with **Revoke** under **Open Invites**. [Members](/docs/members) has the rest.
 
 **You should now see** your friend's card under **Members** once they've created their account.
 
-## 11. Keep copies off the server
+## 11. Keep Copies off the Server
 
 A server can break or be deleted, so keep two things on your own computer.
 
@@ -304,19 +304,19 @@ scp ubuntu@203.0.113.10:/opt/liedmotif/.env liedmotif.env
 
 That saves `liedmotif.env` in the folder your terminal is in, usually your home folder. Move it to a password manager or a USB stick, never to a shared folder or an email. Copy it again whenever you change `.env`.
 
-**A backup, now and then.** Once a month is a good start. Liedmotif backs itself up every week on its own, on Sundays at 03:00, and keeps the last 4, but those backups sit on the same server. VPS-1's daily backup stays in the same datacenter too, so neither counts as a copy elsewhere. Open **Settings › Backups** and press **Back up now**. Wait for the new entry to appear, then press **Download** next to it. The file is encrypted and opens only with the passphrase in `.env`.
+**A backup, now and then.** Once a month is a good start. Liedmotif backs itself up every week on its own, on Sundays at 03:00, and keeps the last 4, but those backups sit on the same server. VPS-1's daily backup stays in the same datacenter too, so neither counts as a copy elsewhere. Open **Settings › Backups** and press **Back Up Now**. Wait for the new entry to appear, then press **Download** next to it. The file is encrypted and opens only with the passphrase in `.env`.
 
 **You should now see** `liedmotif.env` and a `liedmotif-backup-….tar.enc` file on your own computer. Test a restore once, so you know your backup works. [Backups](/docs/backups) covers restoring one.
 
-## First-run safety
+## First-Run Safety
 
 Setup creates the only admin, and whoever reaches it first gets it. On the internet, that's a real race: scanners find new hosts within minutes of a new DNS or certificate entry. So the installer puts a `SETUP_TOKEN` in your setup link before Liedmotif can be reached, and setup refuses everyone without it.
 
 **Treat the link as a secret.** It lands in your browser history, and in the logs of any proxy you put in front of Caddy. Caddy's own log hides it. Once the admin exists, setup locks and the token grants nothing. [The setup token](/docs/privacy-and-security#the-setup-token) has the details, including how to set one on an install by hand.
 
-## Keep your server healthy
+## Keep Your Server Healthy
 
-**Set your storage quota.** Liedmotif stops making new tracks when it reaches its quota, 10 GiB by default, and keeps playing everything it already has. Set it to what your disk can really hold under **Storage quota** in **Settings › Cost limits**. That's about 20 GiB on a 40 GB plan, because the system, the app, the database and your logs need room too. Never set it to the plan's full disk size, and check the disk itself now and then with `df -h`, because the quota doesn't count the database, backups or Docker. [Alerts](/docs/alerts) can warn you as the quota fills.
+**Set your storage quota.** Liedmotif stops making new tracks when it reaches its quota, 10 GiB by default, and keeps playing everything it already has. Set it to what your disk can really hold under **Storage quota** in **Settings › Cost Limits**. That's about 20 GiB on a 40 GB plan, because the system, the app, the database and your logs need room too. Never set it to the plan's full disk size, and check the disk itself now and then with `df -h`, because the quota doesn't count the database, backups or Docker. [Alerts](/docs/alerts) can warn you as the quota fills.
 
 **When the disk runs short,** move to the next plan up, such as VPS-2, or move your music to [S3-compatible storage](/docs/email-and-storage). Deleted tracks free up room too. netcup also sells extra block storage at €0.012 per GB before VAT, but its snapshots need the server stopped, and they're no replacement for a backup elsewhere.
 
@@ -334,9 +334,9 @@ echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 
 **Update Docker yourself.** Docker never updates on its own, because an upgrade restarts every container and would stop the music at a random moment. When nobody's listening, run `sudo apt update && sudo apt upgrade`.
 
-**Update Liedmotif** by pressing **Back up now** in **Settings › Backups**, then running the install line from step 6 again. Liedmotif is offline for about a minute, and it ends with `Liedmotif <version> is running at https://music.example.com`. [Updates](/docs/updates) has the details.
+**Update Liedmotif** by pressing **Back Up Now** in **Settings › Backups**, then running the install line from step 6 again. Liedmotif is offline for about a minute, and it ends with `Liedmotif <version> is running at https://music.example.com`. [Updates](/docs/updates) has the details.
 
-## Running behind a proxy such as Cloudflare
+## Running Behind a Proxy Such as Cloudflare
 
 You don't need a proxy, because Caddy handles HTTPS on its own. Using Cloudflare for **DNS only** is fine and needs no changes. The rest of this section applies if something stands between your visitors and Caddy, such as a cloud load balancer or Cloudflare's proxy.
 
@@ -385,9 +385,9 @@ The two settings have to agree:
 
 A Cloudflare Tunnel is a different setup, with its own steps in [On your phone](/docs/install/phone-access#cloudflare-tunnel).
 
-## Common problems
+## Common Problems
 
-### Connecting to the server
+### Connecting to the Server
 
 - **`Connection timed out` or `Connection refused`.** Check the IP address against the delivery email. A brand-new VPS can take a few more minutes to start.
 - **`Permission denied (publickey,password)` on your first login.** Check the username: `ubuntu` or `debian`, never `root`. A password stays invisible while you type, so type it slowly, or paste it.
@@ -396,7 +396,7 @@ A Cloudflare Tunnel is a different setup, with its own steps in [On your phone](
 - **`WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!`** This happens after you reinstall the VPS. Run `ssh-keygen -R 203.0.113.10` and connect again.
 - **Locked out, or on a new computer.** In the OVHcloud Control Panel, open your VPS and use its **KVM** console, which works in the browser without SSH. Log in with your server password. To add a new computer's key, paste that computer's `id_ed25519.pub` line into `~/.ssh/authorized_keys`. To turn password login back on, run `sudo rm /etc/ssh/sshd_config.d/00-no-passwords.conf && sudo systemctl restart ssh`.
 
-### The domain and the installer
+### The Domain and the Installer
 
 - **The installer stops with `has no DNS record yet`.** The record isn't live yet, or has a typo. Check [step 3](#3-point-the-domain-at-your-server), wait a few minutes and run the same line again. The server may remember the old answer for a while.
 - **The installer stops with `points at …, but this server's address is …`.** A record still points elsewhere. Set the `A` record to the address it names, and delete every other `A` and `AAAA` line for that name.
@@ -407,12 +407,12 @@ A Cloudflare Tunnel is a different setup, with its own steps in [On your phone](
 - **You lost the setup link.** Run `grep '^SETUP_TOKEN=' /opt/liedmotif/.env` on the server. Your link is `https://music.example.com/setup?token=` followed by the value after the `=`.
 - **Docker commands say "permission denied".** Your user isn't in the `docker` group. Put `sudo` in front of `docker compose`.
 
-### The app
+### The App
 
-- **Pressing Create admin answers `Setup is not available.`** The link is missing its `?token=…` part. Open the full link from step 6.
+- **Pressing Create Admin answers `Setup is not available.`** The link is missing its `?token=…` part. Open the full link from step 6.
 - **The setup page sends you to the sign-in page.** The admin account already exists. Sign in with it.
-- **Save and continue stays grey on the music screen.** Press **Test the key** first. The button turns on once the test answers `Music provider reachable; … credits available.`
-- **`The music provider rejected these credentials.`** The key has a typo or was deleted at sunoapi.org. Create a new one, paste it and press **Test the key** again. After setup, change it under **Settings › AI Providers**.
+- **Save and Continue stays grey on the music screen.** Press **Test the Key** first. The button turns on once the test answers `Music provider reachable; … credits available.`
+- **`The music provider rejected these credentials.`** The key has a typo or was deleted at sunoapi.org. Create a new one, paste it and press **Test the Key** again. After setup, change it under **Settings › AI Providers**.
 - **Sign-in fails, or your saves are refused.** Check the address bar. Liedmotif accepts only the one address in `APP_PUBLIC_URL`, which here is your domain.
 - **You forgot the admin password.** See [Troubleshooting](/docs/troubleshooting).
 

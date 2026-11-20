@@ -2,7 +2,7 @@
 
 // Available offline sits at the top of every options menu that reaches a
 // Playlist or Session: My Sessions and both Player sources. In the Player the
-// one-tap tiles stay above the list, and a Session's New music row, the one
+// one-tap tiles stay above the list, and a Session's New Music row, the one
 // control over what it spends, comes just before the switch.
 
 import { createElement as h } from 'react';
@@ -136,7 +136,7 @@ describe('options menus keep Available offline at the top', () => {
 
   it('for a Session in the Player, under the tiles and above the list', () => {
     render(h(SessionInPlayer));
-    act(() => screen.getByRole('button', { name: 'Session and Track options' }).click());
+    act(() => screen.getByRole('button', { name: 'Session and Track Options' }).click());
 
     const dialog = within(screen.getByRole('dialog'));
     const toggle = dialog.getByTestId('offline-toggle');
@@ -147,7 +147,7 @@ describe('options menus keep Available offline at the top', () => {
 
   it('for a Playlist in the Player, under the tiles and above the list', () => {
     render(playlistInPlayer());
-    act(() => screen.getByRole('button', { name: 'Playlist and Track options' }).click());
+    act(() => screen.getByRole('button', { name: 'Playlist and Track Options' }).click());
 
     const dialog = within(screen.getByRole('dialog'));
     const toggle = dialog.getByTestId('offline-toggle');

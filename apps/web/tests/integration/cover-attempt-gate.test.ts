@@ -44,8 +44,8 @@ let readOnlyDb: Database;
 type Subject = { kind: 'session'; id: string } | { kind: 'playlist'; id: string };
 
 const SUBJECTS = [
-  { kind: 'session', max: MAX_SESSION_COVER_HISTORY, fullMessage: /This Session already keeps/ },
-  { kind: 'playlist', max: MAX_PLAYLIST_COVER_HISTORY, fullMessage: /This Playlist already keeps/ },
+  { kind: 'session', max: MAX_SESSION_COVER_HISTORY, fullMessage: /This session already keeps/ },
+  { kind: 'playlist', max: MAX_PLAYLIST_COVER_HISTORY, fullMessage: /This playlist already keeps/ },
 ] as const;
 
 function readOnlyUrl(url: string): string {
@@ -212,7 +212,7 @@ describe.skipIf(skip).each(SUBJECTS)(
       expect(await gate(ownerUserId, subject)).toEqual({
         outcome: 'refused',
         reason: 'provider_unconfigured',
-        message: 'No image provider is set up on this server. Ask the Admin to add one.',
+        message: 'No image provider is set up on this server. Ask the admin to add one.',
       });
     });
 
@@ -225,7 +225,7 @@ describe.skipIf(skip).each(SUBJECTS)(
       expect(await gate(ownerUserId, subject)).toEqual({
         outcome: 'refused',
         reason: 'generation_disabled',
-        message: 'Tailored Cover Art is turned off on this server. Ask the Admin to turn it on.',
+        message: 'Tailored Cover Art is turned off on this server. Ask the admin to turn it on.',
       });
     });
 

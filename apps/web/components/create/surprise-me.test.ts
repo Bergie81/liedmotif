@@ -115,9 +115,9 @@ describe('Surprise Me', () => {
     const dialog = await openModal();
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Adventurous' }));
-    fireEvent.click(within(dialog).getByRole('button', { name: 'On the road' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'On the Road' }));
     fireEvent.click(within(dialog).getByRole('button', { name: 'Vocals' }));
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Find a surprise' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Find a Surprise' }));
 
     const preview = await screen.findByTestId('surprise-preview');
     expect(api.proposeSurprise).toHaveBeenCalledExactlyOnceWith(
@@ -141,7 +141,7 @@ describe('Surprise Me', () => {
   it('a song about me is always sung', async () => {
     mount();
     const dialog = await openModal();
-    fireEvent.click(within(dialog).getByRole('button', { name: 'A song about me' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'A Song About Me' }));
     const vocals = within(dialog).getByRole('button', { name: 'Vocals' });
     expect(vocals.getAttribute('aria-pressed')).toBe('true');
     expect(vocals.hasAttribute('disabled')).toBe(true);
@@ -181,7 +181,7 @@ describe('Surprise Me', () => {
     );
     api.proposeSurprise.mockResolvedValue({ ok: true, data: { proposal: EMBER } });
     await openModal();
-    fireEvent.click(screen.getByRole('button', { name: 'Try another' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Try Another' }));
 
     await waitFor(() => expect(api.proposeSurprise).toHaveBeenCalledOnce());
     expect(api.proposeSurprise.mock.calls[0]![0]).toMatchObject({
@@ -197,7 +197,7 @@ describe('Surprise Me', () => {
     api.getPendingSurprise.mockResolvedValueOnce(reread);
     mount({ initialProposal: TIDE });
     const dialog = await openModal();
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Try another' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Try Another' }));
     expect(within(dialog).getByRole('progressbar')).toBeTruthy();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
@@ -229,7 +229,7 @@ describe('Surprise Me', () => {
     const reopened = await openModal();
     expect(within(reopened).getByText('Ember Choir')).toBeTruthy();
     api.proposeSurprise.mockReturnValueOnce(new Promise(() => {}));
-    fireEvent.click(within(reopened).getByRole('button', { name: 'Try another' }));
+    fireEvent.click(within(reopened).getByRole('button', { name: 'Try Another' }));
     expect(api.proposeSurprise.mock.calls.at(-1)![0]).toMatchObject({ replaces: EMBER.id });
     expect(onProposalChange).not.toHaveBeenCalled();
   });
@@ -239,7 +239,7 @@ describe('Surprise Me', () => {
     await waitFor(() => expect(onProposalReread).toHaveBeenCalledExactlyOnceWith(null));
 
     const reopened = await openModal();
-    expect(within(reopened).getByRole('button', { name: 'Find a surprise' })).toBeTruthy();
+    expect(within(reopened).getByRole('button', { name: 'Find a Surprise' })).toBeTruthy();
     expect(within(reopened).queryByTestId('surprise-preview')).toBeNull();
   });
 
@@ -273,7 +273,7 @@ describe('Surprise Me', () => {
     mount({ initialProposal: TIDE });
     const dialog = await openModal();
 
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Try another' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Try Another' }));
 
     expect(await within(dialog).findByText('Ember Choir')).toBeTruthy();
     expect(onProposalReread).toHaveBeenCalledExactlyOnceWith(EMBER);
@@ -289,7 +289,7 @@ describe('Surprise Me', () => {
     mount();
     const dialog = await openModal();
 
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Find a surprise' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Find a Surprise' }));
     expect(within(dialog).queryByRole('button', { name: 'Close' })).toBeNull();
     // Radix arms its outside-pointer listener on the next tick.
     await new Promise((resolve) => setTimeout(resolve));
@@ -318,7 +318,7 @@ describe('Surprise Me', () => {
     mount({ initialProposal: TIDE });
     const dialog = await openModal();
 
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Try another' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Try Another' }));
 
     await waitFor(() =>
       expect(shownToasts()).toEqual([
@@ -340,10 +340,10 @@ describe('Surprise Me', () => {
     api.proposeSurprise.mockReturnValueOnce(new Promise(() => {}));
     mount({ initialProposal: TIDE });
     const dialog = await openModal();
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Try another' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Try Another' }));
     await waitFor(() => expect(shownToasts()).toHaveLength(1));
 
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Try another' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Try Another' }));
 
     expect(shownToasts()).toEqual([]);
   });
@@ -379,10 +379,10 @@ describe('Surprise Me', () => {
     mount();
     const dialog = await openModal();
 
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Find a surprise' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Find a Surprise' }));
 
     const blocked = await screen.findByTestId('creation-blocked-dialog');
-    expect(within(blocked).getByText('Not enough Tracks left to start')).toBeTruthy();
+    expect(within(blocked).getByText('Not Enough Tracks Left to Start')).toBeTruthy();
     expect(within(blocked).getByText('Today’s generation budget is used up.')).toBeTruthy();
     expect(within(blocked).getByRole('button', { name: /Resume a Session/ })).toBeTruthy();
     expect(within(blocked).getByRole('button', { name: /Browse Library/ })).toBeTruthy();
@@ -398,6 +398,6 @@ describe('Surprise Me', () => {
     await waitFor(() => expect(screen.queryByTestId('surprise-preview')).toBeNull());
     expect(api.dismissSurprise).toHaveBeenCalledWith(TIDE.id);
     expect(onProposalChange).toHaveBeenCalledExactlyOnceWith(null);
-    expect(within(dialog).getByRole('button', { name: 'Find a surprise' })).toBeTruthy();
+    expect(within(dialog).getByRole('button', { name: 'Find a Surprise' })).toBeTruthy();
   });
 });

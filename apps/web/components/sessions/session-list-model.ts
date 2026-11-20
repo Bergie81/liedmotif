@@ -86,8 +86,8 @@ export function formatSessionLastActive(iso: string, now = Date.now()): string {
 }
 
 export function formatTrackCount(count: number): string {
-  if (count < 1) return 'No Tracks yet';
-  return `${count} Track${count === 1 ? '' : 's'}`;
+  if (count < 1) return 'No tracks yet';
+  return `${count} track${count === 1 ? '' : 's'}`;
 }
 
 /** The count, then the total length once it is known and there is any. */

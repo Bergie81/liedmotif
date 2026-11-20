@@ -165,13 +165,13 @@ function CoverAttemptView({
     return (
       <CardStatus ok>
         This card can no longer tell how the cover went. If it was generated, it is under Previous
-        covers.
+        Covers.
       </CardStatus>
     );
   }
   if (cover.state === 'gone') return <CardStatus ok={false}>{cover.refusal}</CardStatus>;
   if (cover.state === 'deleted') {
-    return <CardStatus ok={false}>This cover was deleted from Previous covers.</CardStatus>;
+    return <CardStatus ok={false}>This cover was deleted from Previous Covers.</CardStatus>;
   }
   return (
     <>
@@ -197,7 +197,7 @@ function CoverAttemptView({
               className={cn(compactPrimaryButtonClass, 'mt-1 self-start')}
             >
               {cover.state === 'using' ? <LiedmotifLoader /> : null}
-              Use this cover
+              Use This Cover
             </button>
           </OnlineOnly>
           {cover.state === 'ready' && cover.refusal ? (

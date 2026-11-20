@@ -10,21 +10,21 @@ import {
 
 describe('formatSessionTrackLine', () => {
   it.each<[number, number, string]>([
-    [4, 780, '4 Tracks · 13 min'],
-    [1, 200, '1 Track · 3 min'],
-    [20, 3900, '20 Tracks · 1 hr 5 min'],
-    [14, 7200, '14 Tracks · 2 hr'],
-    [1, 20, '1 Track · 1 min'],
+    [4, 780, '4 tracks · 13 min'],
+    [1, 200, '1 track · 3 min'],
+    [20, 3900, '20 tracks · 1 hr 5 min'],
+    [14, 7200, '14 tracks · 2 hr'],
+    [1, 20, '1 track · 1 min'],
   ])('puts the total after the count: %i Tracks, %s seconds', (count, seconds, expected) => {
     expect(formatSessionTrackLine(count, seconds)).toBe(expected);
   });
 
   it('shows only the count while no Track’s length is known', () => {
-    expect(formatSessionTrackLine(4, 0)).toBe('4 Tracks');
+    expect(formatSessionTrackLine(4, 0)).toBe('4 tracks');
   });
 
   it('shows no length for a Session with no Tracks', () => {
-    expect(formatSessionTrackLine(0, 0)).toBe('No Tracks yet');
+    expect(formatSessionTrackLine(0, 0)).toBe('No tracks yet');
   });
 });
 
@@ -38,9 +38,9 @@ describe('Session list model', () => {
   });
 
   it('formats Track activity for Session cards', () => {
-    expect(formatTrackCount(0)).toBe('No Tracks yet');
-    expect(formatTrackCount(1)).toBe('1 Track');
-    expect(formatTrackCount(12)).toBe('12 Tracks');
+    expect(formatTrackCount(0)).toBe('No tracks yet');
+    expect(formatTrackCount(1)).toBe('1 track');
+    expect(formatTrackCount(12)).toBe('12 tracks');
     expect(formatGenreTag('drum-and-bass')).toBe('Drum & Bass');
     expect(formatGenreTag('lofi')).toBe('Lo-fi');
   });

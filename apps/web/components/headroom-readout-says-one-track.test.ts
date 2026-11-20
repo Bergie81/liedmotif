@@ -21,15 +21,15 @@ describe('the headroom readout with one Track left', () => {
   it('reads "1 Track left" on the compact chip', () => {
     render(h(HeadroomLink, { headroom: ONE_LEFT, href: '/settings/limits', compact: true }));
     const link = screen.getByRole('link');
-    expect(link.getAttribute('aria-label')).toBe('Generation headroom: 1 Track left today');
+    expect(link.getAttribute('aria-label')).toBe('Generation headroom: 1 track left today');
     // The figure and its unit are separate flex items, spaced by the layout.
-    expect(link.textContent).toBe('1Track left today');
+    expect(link.textContent).toBe('1track left today');
   });
 
   it('reads "1 Track left" on the rail', () => {
     render(h(HeadroomLink, { headroom: ONE_LEFT, href: '/settings/limits' }));
     const link = screen.getByRole('link');
-    expect(link.getAttribute('aria-label')).toBe('Generation headroom: 1 Track left today');
-    expect(link.textContent).toBe('1Track left today');
+    expect(link.getAttribute('aria-label')).toBe('Generation headroom: 1 track left today');
+    expect(link.textContent).toBe('1track left today');
   });
 });

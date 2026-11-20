@@ -32,7 +32,7 @@ export function EmailConfirmationStatus({
   if (confirmed) return <SettingsStatusBadge status={{ label: 'Confirmed', tone: 'ok' }} />;
   return (
     <>
-      <SettingsStatusBadge status={{ label: 'Not confirmed', tone: 'warn' }} />
+      <SettingsStatusBadge status={{ label: 'Not Confirmed', tone: 'warn' }} />
       <span aria-hidden className="text-dim">
         ·
       </span>
@@ -42,7 +42,7 @@ export function EmailConfirmationStatus({
         disabled={sending}
         className="text-[13px] font-semibold text-lamp underline-offset-4 hover:underline disabled:opacity-60"
       >
-        {sending ? 'Sending…' : 'Send confirm link'}
+        {sending ? 'Sending…' : 'Send Confirm Link'}
       </button>
     </>
   );

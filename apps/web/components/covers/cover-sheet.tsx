@@ -118,21 +118,21 @@ function coverBlockedReason(
   if (!usage.providerConfigured) {
     if (!usage.sunoFallbackActive) return coverSetupMessage('provider_unconfigured', viewerRole);
     return viewerRole === 'admin'
-      ? 'Covers come from Suno while no image provider is configured; Suno creates one cover per Session, so regenerating needs an image provider under Settings → Providers.'
-      : 'Covers come from Suno while no image provider is set up; Suno creates one cover per Session, so regenerating needs the Admin to add an image provider.';
+      ? 'Covers come from Suno while no image provider is configured; Suno creates one cover per session, so regenerating needs an image provider under Settings → Providers.'
+      : 'Covers come from Suno while no image provider is set up; Suno creates one cover per session, so regenerating needs the admin to add an image provider.';
   }
   if (!usage.enabled) {
     if (kind === 'Playlist') return coverSetupMessage('generation_disabled', viewerRole);
     const consequence = usage.sunoFallbackActive
-      ? 'Covers come from Suno — one cover per Session.'
-      : 'Sessions wear the branded placeholder Cover.';
+      ? 'Covers come from Suno — one cover per session.'
+      : 'Sessions wear the branded placeholder cover.';
     return viewerRole === 'admin'
       ? `Tailored Cover Art is turned off under Settings → Generation, so ${consequence}`
-      : `Tailored Cover Art is turned off on this server, so ${consequence} Ask the Admin to turn it on.`;
+      : `Tailored Cover Art is turned off on this server, so ${consequence} Ask the admin to turn it on.`;
   }
   if (usage.remaining !== null && usage.remaining <= 0) {
     return usage.oneTime && usage.limitDay !== null && usage.usedDay >= usage.limitDay
-      ? 'Your cover budget is used up. Ask the Admin for more.'
+      ? 'Your cover budget is used up. Ask the admin for more.'
       : 'The cover generation limit is reached. It resets with the usage window.';
   }
   return null;
@@ -233,7 +233,7 @@ export function CoverSheetContent<S extends CoverStatusBase>({
   // `run`: a failure must leave the dialog open with the framing intact.
   const picker = useImageCropPicker({
     target: COVER_UPLOAD,
-    heading: `${kind} cover`,
+    heading: `${kind} Cover`,
     onError: reportFailure,
     onUpload: async (file) => {
       reportFailure(null);
@@ -359,7 +359,7 @@ export function CoverSheetContent<S extends CoverStatusBase>({
               type="button"
               onClick={() => setPeekCurrent((value) => !value)}
               aria-label={
-                peekCurrent ? 'Back to the previewed cover' : 'Compare with the current cover'
+                peekCurrent ? 'Back to the Previewed Cover' : 'Compare with the Current Cover'
               }
               aria-pressed={peekCurrent}
               data-testid="cover-peek"
@@ -382,7 +382,7 @@ export function CoverSheetContent<S extends CoverStatusBase>({
               onClick={() => void adopt(candidate.target)}
               data-testid="cover-confirm"
             >
-              <Check className="h-4 w-4" /> Use this cover
+              <Check className="h-4 w-4" /> Use This Cover
             </button>
             <button
               type="button"
@@ -390,14 +390,14 @@ export function CoverSheetContent<S extends CoverStatusBase>({
               onClick={leavePreview}
               data-testid="cover-keep"
             >
-              Keep current
+              Keep Current
             </button>
           </div>
         ) : null}
 
         <div className="mt-4">
           <h3 className="flex items-baseline justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-            <span>Previous covers · tap to preview</span>
+            <span>Previous Covers · Tap to Preview</span>
             <span
               data-testid="cover-count"
               className={cn(historyFull && 'font-semibold text-warn')}
@@ -415,7 +415,7 @@ export function CoverSheetContent<S extends CoverStatusBase>({
               type="button"
               disabled={working || historyFull}
               onClick={picker.pick}
-              aria-label="Upload image"
+              aria-label="Upload Image"
               data-testid="cover-upload"
               className={actionTileClass}
             >
@@ -428,7 +428,7 @@ export function CoverSheetContent<S extends CoverStatusBase>({
                 type="button"
                 disabled={working}
                 onClick={() => preview(mosaicPreviewed ? null : { kind: 'mosaic' })}
-                aria-label="Preview the Mosaic View made from the tracks' covers"
+                aria-label="Preview the Mosaic View Made from the Tracks' Covers"
                 title="Mosaic View, made from the tracks' covers"
                 aria-pressed={mosaicPreviewed}
                 data-testid="cover-mosaic"
@@ -453,7 +453,7 @@ export function CoverSheetContent<S extends CoverStatusBase>({
                     disabled={working}
                     aria-pressed={entry.isCurrent ? candidate === null : isPreviewed}
                     aria-label={
-                      entry.isCurrent ? 'Show the current cover' : 'Preview this earlier cover'
+                      entry.isCurrent ? 'Show the Current Cover' : 'Preview This Earlier Cover'
                     }
                     onClick={() => {
                       if (entry.isCurrent || isPreviewed) leavePreview();
@@ -470,7 +470,7 @@ export function CoverSheetContent<S extends CoverStatusBase>({
                   {!entry.isCurrent ? (
                     <button
                       type="button"
-                      aria-label="Delete this cover"
+                      aria-label="Delete This Cover"
                       disabled={working}
                       data-testid={`cover-history-delete-${entry.coverImageId}`}
                       onClick={() => void run(() => api.remove(subjectId, entry.coverImageId))}
@@ -485,8 +485,8 @@ export function CoverSheetContent<S extends CoverStatusBase>({
           </div>
           {historyFull ? (
             <p className="mt-1 text-[12.5px] text-muted" data-testid="cover-history-full">
-              This {kind} holds the maximum of {maxHistory} covers. Delete a previous cover to make
-              room for a new one.
+              This {kind.toLowerCase()} holds the maximum of {maxHistory} covers. Delete a previous
+              cover to make room for a new one.
             </p>
           ) : null}
           {picker.element}
@@ -494,7 +494,7 @@ export function CoverSheetContent<S extends CoverStatusBase>({
 
         <div className="mt-4 border-t border-line pt-4">
           <h3 className="flex items-baseline justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-            <span>Generate a new one</span>
+            <span>Generate a New One</span>
             {usageLine ? (
               <span className="normal-case tracking-[0.04em] text-dim" data-testid="cover-usage">
                 {usageLine}
@@ -571,9 +571,9 @@ export function CoverStyleField<T extends CoverStyleChoice>({
   return (
     <div className="flex flex-col gap-1">
       <label className={labelClass}>
-        Cover Style
+        Cover style
         <Select value={value} onValueChange={(next) => onChange(next as T)} disabled={disabled}>
-          <SelectTrigger aria-label="Cover Style" data-testid={testId} className="w-full">
+          <SelectTrigger aria-label="Cover style" data-testid={testId} className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -658,10 +658,10 @@ export function PeopleReferencesField({
   testId: string;
 }) {
   const available = status?.peopleReferencesAvailable ?? false;
-  const label = 'Use People reference photos';
+  const label = 'Use people reference photos';
   const hint = available
-    ? `Draws the People named in ${namedIn} or art direction — you when nobody is named${ownerNote ? `, ${ownerNote}` : ''}.`
-    : 'Needs a Person with a reference photo under Settings → People, with cover references not set to Never.';
+    ? `Draws the people named in ${namedIn} or art direction — you when nobody is named${ownerNote ? `, ${ownerNote}` : ''}.`
+    : 'Needs a person with a reference photo under Settings → People, with cover references not set to Never.';
   return (
     <div className="mt-1 flex items-center justify-between gap-3">
       <div className="min-w-0">

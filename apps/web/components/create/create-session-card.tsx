@@ -213,7 +213,7 @@ export function CreateSessionCard({
   return (
     <section aria-labelledby="create-session-heading" data-testid="create-session">
       <h2 id="create-session-heading" className={cn(sectionHeadingClass, 'mt-6 mb-3')}>
-        Start a new Session
+        Start a New Session
       </h2>
       <DescribeSessionPanel
         prompt={prompt}
@@ -265,7 +265,7 @@ export function CreateSessionCard({
 
       {/* The card commits from below the extras stack, so every pick a Session
           starts with sits above the button that sends it. */}
-      <div className="mt-2">
+      <div className="mt-3">
         <OnlineOnly>
           <button
             type="button"

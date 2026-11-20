@@ -1,58 +1,58 @@
 ---
-title: Backups and restore
+title: Backups and Restore
 description: How Liedmotif protects your library, how to keep a copy somewhere safe, and how to restore it on the same machine or a new one.
-checkedOn: 2026-11-07
+checkedOn: 2026-11-20
 ---
 
 A deleted volume, a mistyped command, a dead disk or ransomware could otherwise take every session, playlist and track with it. So backups start with Liedmotif and need nothing from you. Your job is the part software can't do for you: keep one copy off the machine, and keep your secrets safe.
 
-## What's in a backup
+## What's in a Backup
 
 One backup is one folder holding the whole library at one moment: the database, with every account and prompt, and a copy of your music, covers and people's photos. The two belong together, because a database restored beside the wrong files gives you tracks that won't play. Liedmotif copies the database first and the files right after it, so the files cover what the database names. The one gap is a file deleted while the backup runs: it can be missing from the copy, and that one track won't play after a restore.
 
-## Set the schedule
+## Set the Schedule
 
 Open **Settings › Backups**. Only the admin sees this page.
 
 | Setting | Choices | Default |
 | --- | --- | --- |
-| **Scheduled backups** | On or off. When off, backups run only from **Back up now** | On |
+| **Scheduled backups** | On or off. When off, backups run only from **Back Up Now** | On |
 | How often | Daily or weekly | Weekly |
 | **Day** | Any day of the week, for weekly backups | Sunday |
 | **Time** | Any hour, in your instance timezone | 03:00 |
 | **Keep** | 1 to 52 backups. Older ones are deleted after a new one finishes | 4 |
 | **Include music & covers** | On or off | On |
 
-**Instance timezone** shows on the same page. You change it in **Settings › Cost limits**, and it also sets when limits reset.
+**Instance timezone** shows on the same page. You change it in **Settings › Cost Limits**, and it also sets when limits reset.
 
 The defaults are a starting point. Ask yourself how much music you could stand to lose, and how often you'd copy a backup somewhere else.
 
-## When backups run
+## When Backups Run
 
-The backup service checks once a minute. It runs a backup when a scheduled time has passed since the newest finished backup, or when you press **Back up now**.
+The backup service checks once a minute. It runs a backup when a scheduled time has passed since the newest finished backup, or when you press **Back Up Now**.
 
 - **Restarts and updates never make a backup.** They can't push a scheduled one out of your list.
 - **A time missed while the machine was off runs when it comes back.**
 - **The first backup runs within a minute** of a new install, so a broken setup shows up at once.
-- **A failed run tries again after 5 minutes while a scheduled backup is due,** then waits twice as long each time, up to a day. **Back up now** skips the wait. To change the first wait, set `BACKUP_RETRY_SECONDS` in `.env`. A failed **Back up now** with no scheduled backup due doesn't retry, so press it again.
+- **A failed run tries again after 5 minutes while a scheduled backup is due,** then waits twice as long each time, up to a day. **Back Up Now** skips the wait. To change the first wait, set `BACKUP_RETRY_SECONDS` in `.env`. A failed **Back Up Now** with no scheduled backup due doesn't retry, so press it again.
 - **A new backup never costs you the old one.** A run works in a temporary folder and takes its final name only when it's complete. Old backups are deleted only after that.
 
-## Back up now
+## Back Up Now
 
-**Back up now** runs one backup right away, even with the schedule off. It starts within a minute. Press it before an update or any risky change, and wait for the new backup to appear in the list.
+**Back Up Now** runs one backup right away, even with the schedule off. It starts within a minute. Press it before an update or any risky change, and wait for the new backup to appear in the list.
 
-## Read the status
+## Read the Status
 
 The **Status** card tells you whether you're protected.
 
 | Badge | What it means |
 | --- | --- |
-| **Healthy** | Backups run on schedule, or the schedule is off and **Back up now** still works. |
-| **Requested** | **Back up now** was pressed. The backup starts within a minute. |
+| **Healthy** | Backups run on schedule, or the schedule is off and **Back Up Now** still works. |
+| **Requested** | **Back Up Now** was pressed. The backup starts within a minute. |
 | **Running** | A backup is running right now. |
 | **Overdue** | A scheduled backup is due and hasn't run yet. |
 | **Failing** | The last backup failed. The card gives the reason, and the next try when one is planned. |
-| **Not running** | The backup service has stopped reporting. No backup runs until it's back. |
+| **Not Running** | The backup service has stopped reporting. No backup runs until it's back. |
 
 Below the badge you see **Last success**, **Next run**, **Disk used** and **Free space**. A warning that starts with "Unencrypted" means your database dumps are readable by anyone with the disk. [Encryption and the passphrase](#encryption-and-the-passphrase) explains the fix.
 
@@ -74,7 +74,7 @@ docker compose exec backup ls -l /backups
 
 In `docker compose ps`, `backup` turns `healthy` once the first backup has finished. It turns unhealthy when its once-a-minute check stops, or when the schedule is on and the last success is more than one scheduled time behind. The page warns sooner, as soon as one time is missed.
 
-## Encryption and the passphrase
+## Encryption and the Passphrase
 
 Set `BACKUP_ENCRYPTION_PASSPHRASE` in `.env` and every database dump is encrypted (AES-256-CBC with PBKDF2). The installer and the [laptop guide](/docs/install/local) both set it for you.
 
@@ -90,7 +90,7 @@ Music, covers and photos in a backup are plain files either way, because that's 
 
 A dump stays encrypted with the passphrase it was written under, and a restore opens it with the one in `.env`. So before you change the passphrase, download the backups you want to keep, and keep the old passphrase with them until every older backup has been rotated out. An older backup downloaded after the change won't restore: the file uses the new passphrase and the dump inside it the old one. To restore an older backup still on the machine, put the old passphrase back in `.env` for that restore.
 
-## Download a copy
+## Download a Copy
 
 Every backup in the list has a **Download** button. You get one file, `liedmotif-backup-<stamp>.tar.enc`: the whole backup, encrypted with your passphrase.
 
@@ -107,7 +107,7 @@ openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -md sha256 \
 
 The first line waits for you to paste the passphrase and press <kbd>Enter</kbd>. You should see a list of files.
 
-## Where backups live, and why that's not enough
+## Where Backups Live, and Why That's Not Enough
 
 Your instance keeps its data in Docker volumes, listed in [Email and storage](/docs/email-and-storage#where-your-data-lives). Backups have their own volume, `liedmotif-backups`, so losing the database or the music volume doesn't take them along. They still sit on the same disk. They protect you from a mistake, not from a dead disk, a stolen laptop or ransomware that can write to that disk.
 
@@ -126,7 +126,7 @@ Inside the volume, it looks like this. The stamp is UTC.
   .partial-20261108T020000Z/          a run in progress
 ```
 
-## Disk use
+## Disk Use
 
 Music and covers cost about one library, not one per backup. Each backup links to every file that hasn't changed since the last one, so four backups of a 20 GB library take about 20 GB plus what changed between them. Deleting one backup never affects the others, and **Disk used** counts each shared file once. The first backup copies the whole library, so it needs that much room.
 
@@ -137,11 +137,11 @@ Backups share a disk with your database, and a full disk takes the database down
 
 The 2 GiB floor is `BACKUP_MIN_FREE_BYTES` in `.env`.
 
-## If your music lives in object storage
+## If Your Music Lives in Object Storage
 
 With `STORAGE_PROVIDER=s3` there are no local files to copy. Backups hold the database only, and the list says "Database only · object storage". Turn on versioning for your bucket. If you also snapshot the bucket, do it at or after the database backup, never before: a track whose file is missing from the snapshot will never play. [Email and storage](/docs/email-and-storage) covers the setup.
 
-## Keep these secrets
+## Keep These Secrets
 
 A backup is only half of a recovery. These lines in `.env` aren't in the backup, on purpose: whoever got the backup would otherwise get your provider keys too.
 
@@ -153,7 +153,7 @@ A backup is only half of a recovery. These lines in `.env` aren't in the backup,
 
 Keep them in a password manager or a sealed offline copy, with tighter access than the backups themselves. Never store them next to a downloaded backup.
 
-## Restore a backup
+## Restore a Backup
 
 A restore replaces the database with the one in the backup, and replaces every file in your library if the backup holds files. It works from a backup on the machine or from a downloaded `.tar.enc`. The host needs nothing but Docker, since the tools come with the backup image.
 
@@ -175,7 +175,7 @@ A downloaded file also needs temporary disk space while it's unpacked: about the
 
 Each command below is for a machine where your user can reach Docker. If it can't, write `sudo docker` for `docker`.
 
-### On the same machine
+### On the Same Machine
 
 Use this to take your instance back to an earlier moment. Run it from your install folder: `/opt/liedmotif` unless you chose another, or the `liedmotif` folder on a laptop.
 
@@ -209,7 +209,7 @@ docker compose up -d
 
 The `-v liedmotif-data:/restore/data -e MEDIA_DIR=/restore/data` part is needed because the backup service can only read your files, not change them. Without it, the restore refuses before changing anything. If you moved your music to a `./data` folder, as in [Email and storage](/docs/email-and-storage), write `-v "$PWD/data:/restore/data"` instead of `-v liedmotif-data:/restore/data` in every restore command.
 
-### On a new machine
+### On a New Machine
 
 Use this to move your instance to a new server, or to recover from a dead one.
 
@@ -244,7 +244,7 @@ If you never started the stack on this machine, skip the `stop` and the `sleep`.
 
 **5. Sign in with your old admin account** at the new address, and play an old track. Keep the old instance switched off from now on: both copies spend on the same provider accounts.
 
-### On a laptop
+### On a Laptop
 
 The commands are the same. Run them from your `liedmotif` folder, and put the backup there too:
 
@@ -266,7 +266,7 @@ npm run backup:restore -- ~/Downloads/liedmotif-backup-20261101T020000Z.tar.enc 
 npm run db:migrate
 ```
 
-### If a restore refuses
+### If a Restore Refuses
 
 | The restore says | What to do |
 | --- | --- |
@@ -283,7 +283,7 @@ npm run db:migrate
 
 On a managed Postgres, restore as the database owner: the restore recreates the `public` schema, and only the owner may do that. The Postgres that ships with Liedmotif needs nothing.
 
-## Test a restore
+## Test a Restore
 
 A backup you've never restored is a hope. Try one now and then, so a problem shows up while the original still works. Use a Liedmotif on a different computer from your real instance: the restore replaces whatever library it runs on, and the last step below deletes it. A second folder on the same computer isn't separate, because it shares the real instance's Docker volumes by default. To test on one computer, the copy's `.env` needs its own `COMPOSE_PROJECT_NAME` and ports before it first starts.
 
@@ -301,11 +301,11 @@ docker compose down -v
 
 Any step that fails is a backup that wouldn't have worked. Fix it before you need it.
 
-## Deleted content in old backups
+## Deleted Content in Old Backups
 
 A deleted track, session or member stays in every backup made before the deletion, until that backup is rotated out. At the defaults, that's four weeks: the keep count times the schedule, as long as new backups keep landing. Old backups are removed only after a new one finishes, so with the schedule off or backups failing, they stay until you delete them. Copies you downloaded are yours to delete.
 
-## Coming from an older version
+## Coming from an Older Version
 
 The schedule, keep count and media setting used to live in `.env`. `BACKUP_INTERVAL_SECONDS`, `BACKUP_KEEP` and `BACKUP_INCLUDE_MEDIA` are now ignored, and the service logs a line saying so at the start. Delete them from `.env`.
 

@@ -29,7 +29,7 @@ const FRESH_QUEUE_STATES = new Set<QueueItem['state']>(LIVE_QUEUE_ITEM_STATES);
 /** One applied poll result: the playable projection + the session signals. */
 export interface SessionQueueSnapshot {
   kind: 'session';
-  /** The live New music policy; absent from a response that does not carry it. */
+  /** The live New Music policy; absent from a response that does not carry it. */
   sessionMode?: QueueData['sessionMode'];
   targetDurationMinutes?: number | null;
   generatedDurationSeconds?: number;

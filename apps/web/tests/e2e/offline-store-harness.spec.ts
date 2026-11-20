@@ -360,7 +360,7 @@ test('without a connection the app opens the Offline Library and plays an offlin
   });
 
   // Lyrics and Track Data come from the device.
-  const options = page.getByRole('button', { name: 'Playlist and Track options' }).last();
+  const options = page.getByRole('button', { name: 'Playlist and Track Options' }).last();
   await options.click();
   await page.getByTestId('player-open-track-data').click();
   await expect(page.getByText('night drive')).toBeVisible();
@@ -393,7 +393,7 @@ test('without a connection the app opens the Offline Library and plays an offlin
   await sessionRow.click();
   await expect(cold.getByTestId('track-title')).toContainText('Session Track');
   await expect(
-    cold.getByRole('button', { name: 'Session and Track options' }).last(),
+    cold.getByRole('button', { name: 'Session and Track Options' }).last(),
   ).toBeVisible();
   await cold.close();
 
@@ -509,13 +509,13 @@ test('offline, a Lounge Track whose week runs out during playback does not start
   await page.clock.setFixedTime(syncedAt + 8 * 24 * 60 * 60 * 1000);
 
   await expect(nowPlaying.getByRole('alert')).toHaveText(
-    'The rest of this Playlist expired on this device. Connect to refresh it.',
+    'The rest of this playlist expired on this device. Connect to refresh it.',
     { timeout: 15_000 },
   );
   await expect(page.getByTestId('track-title')).toContainText('Own Track');
   expect(titles.some((title) => title.includes('Lounge Track'))).toBe(false);
 
-  await page.getByRole('button', { name: 'Tracks in this Playlist' }).click();
+  await page.getByRole('button', { name: 'Tracks in This Playlist' }).click();
   const list = page.getByTestId('playlist-queue');
   await expect(list.locator('li', { hasText: 'Lounge Track' })).toContainText('Expired');
   await expect(list.getByRole('button', { name: 'Play Lounge Track' })).toHaveCount(0);

@@ -24,8 +24,8 @@ export default async function AccountDisabledPage() {
         <LiedmotifMark className="h-8 w-8" />
         <LiedmotifWordmark className="text-[22px]" />
       </div>
-      <p className={eyebrowClass}>Account status</p>
-      <h1 className={`${displayHeadingClass} mt-3`}>This account is disabled</h1>
+      <p className={eyebrowClass}>Account Status</p>
+      <h1 className={`${displayHeadingClass} mt-3`}>This Account Is Disabled</h1>
       <p className="mt-3 text-[14px] leading-relaxed text-muted">
         Your account has been disabled by the person running this instance. Your music and playlists
         are kept — ask them to re-enable your access.

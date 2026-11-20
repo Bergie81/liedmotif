@@ -134,7 +134,7 @@ export function OnboardingRail({
 
       <dl className="mt-6 border-t border-line pt-5">
         <p className="mb-2 font-mono text-[9.5px] font-bold uppercase tracking-[0.2em] text-dim">
-          Set so far
+          Set So Far
         </p>
         {record.map((row) => (
           <div

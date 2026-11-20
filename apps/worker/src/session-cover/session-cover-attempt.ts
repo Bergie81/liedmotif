@@ -417,7 +417,7 @@ export async function freezePlanInputs(
         styleFallbackReason: session.coverStyleFallbackReason,
         conceptMode: 'title symbol',
         selectedPersonIds: referenceSelection.selectedPersonIds,
-        altText: name || 'Session Cover',
+        altText: name || 'Session cover',
         diversityRelaxedAxes: [],
       });
   // Prompt planning can only refuse a PROMPT-DRIVEN attempt: a music-task

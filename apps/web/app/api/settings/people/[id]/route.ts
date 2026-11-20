@@ -33,7 +33,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (body instanceof NextResponse) return body;
   const name = boundedText(body.name, MAX_PERSON_NAME_LENGTH);
   const about = boundedText(body.about ?? '', MAX_PERSON_ABOUT_LENGTH);
-  if (!name) return error('Enter a Person name.', 400);
+  if (!name) return error('Enter a person name.', 400);
   if (about === null) {
     return error(`About must be at most ${MAX_PERSON_ABOUT_LENGTH} characters.`, 400);
   }
@@ -62,6 +62,6 @@ export async function DELETE(request: Request, context: RouteContext) {
   if (!uuidSchema.safeParse(id).success) return error('Person not found.', 404);
   const result = await deletePerson(getDb(), { ownerUserId, personId: id });
   if (result === 'not_found') return error('Person not found.', 404);
-  if (result === 'owner') return error('The owner Person cannot be deleted.', 400);
+  if (result === 'owner') return error('The owner person cannot be deleted.', 400);
   return NextResponse.json({ ok: true, deleted: true });
 }

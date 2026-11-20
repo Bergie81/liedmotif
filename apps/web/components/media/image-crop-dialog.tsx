@@ -26,7 +26,7 @@ export function ImageCropDialog({
   source,
   target,
   heading,
-  confirmLabel = 'Use photo',
+  confirmLabel = 'Use Photo',
   busy,
   onConfirm,
   onCancel,
@@ -74,7 +74,7 @@ export function ImageCropDialog({
         <div className="px-8 text-center">
           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-lamp">{heading}</p>
           <DialogTitle className="mt-1 font-display text-[22px] font-extrabold leading-[1.2] tracking-[-0.02em] text-paper">
-            Frame your image
+            Frame Your Image
           </DialogTitle>
         </div>
 
@@ -112,7 +112,7 @@ export function ImageCropDialog({
           <button
             type="button"
             disabled={busy}
-            aria-label="Rotate 90 degrees"
+            aria-label="Rotate 90 Degrees"
             data-testid="image-crop-rotate"
             onClick={rotate}
             className={secondaryButtonClass}

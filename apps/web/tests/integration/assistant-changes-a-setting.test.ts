@@ -140,7 +140,7 @@ describe.skipIf(skip)('the Assistant asked to change one of the asker’s own se
       { action: 'changeSetting', setting: 'ownerInCovers', value: 'Seldom', previous: 'Always' },
     ]);
     expect(turn.results[0]).toBe(
-      'Done: changed the setting "Include the owner in Covers" from Always to Seldom.',
+      'Done: changed the setting "Include the owner in covers" from Always to Seldom.',
     );
     expect(turn.events.at(-1)).toEqual({ type: 'done' });
   });
@@ -155,7 +155,7 @@ describe.skipIf(skip)('the Assistant asked to change one of the asker’s own se
     expect(await getCoverReferenceFrequency(testDb.db, asker)).toBe('always');
     expect(receipts(turn)).toEqual([]);
     expect(turn.results[0]).toBe(
-      '"Include the owner in Covers" takes Always, Regularly, Seldom or Never. Nothing was changed.',
+      '"Include the owner in covers" takes Always, Regularly, Seldom or Never. Nothing was changed.',
     );
   });
 
@@ -168,7 +168,7 @@ describe.skipIf(skip)('the Assistant asked to change one of the asker’s own se
 
     expect(receipts(turn)).toEqual([]);
     expect(turn.results[0]).toBe(
-      '"Include the owner in Covers" is already Seldom. Nothing was changed.',
+      '"Include the owner in covers" is already Seldom. Nothing was changed.',
     );
   });
 
@@ -194,7 +194,7 @@ describe.skipIf(skip)('the Assistant asked to change one of the asker’s own se
     expect(await getCoverReferenceFrequency(testDb.db, asker)).toBe('regularly');
     expect(receipts(turn)).toEqual([]);
     expect(turn.results[0]).toBe(
-      '"Include the owner in Covers" stays at Never until the user\'s own card in Settings › People has a reference photo: they add one there first. Nothing was changed.',
+      '"Include the owner in covers" stays at Never until the user\'s own card in Settings › People has a reference photo: they add one there first. Nothing was changed.',
     );
   });
 
@@ -208,7 +208,7 @@ describe.skipIf(skip)('the Assistant asked to change one of the asker’s own se
       { action: 'changeSetting', setting: 'blend', value: 'Off', previous: 'On' },
     ]);
     expect(turn.results[0]).toBe(
-      'Done: changed the setting "Blend consecutive Tracks" from On to Off.',
+      'Done: changed the setting "Blend consecutive tracks" from On to Off.',
     );
   });
 

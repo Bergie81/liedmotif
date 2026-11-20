@@ -21,7 +21,7 @@ export function SearchSortSheet({
     <Sheet>
       <SheetTrigger asChild>{children}</SheetTrigger>
       <SheetContent side="bottom">
-        <SheetHeader title="Sort results" />
+        <SheetHeader title="Sort Results" />
         <fieldset className="my-5 border-y border-line">
           <legend className="sr-only">Sort search results</legend>
           {SEARCH_SORTS.map((option) => {

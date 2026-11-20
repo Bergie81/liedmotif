@@ -12,18 +12,18 @@ import { NOW_PLAYING_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 
 /**
- * New music as the player's status reads it: a reached duration target is
+ * New Music as the player's status reads it: a reached duration target is
  * "finished", since the stored mode alone would say "on" for a Session that
  * generates nothing more.
  */
 function newMusicLine(session: SessionRecord): string {
-  if (session.sessionMode !== 'keep_going') return 'New music: off';
+  if (session.sessionMode !== 'keep_going') return 'New Music: off';
   const target = session.targetDurationMinutes;
-  if (target == null) return 'New music: on, no duration target';
+  if (target == null) return 'New Music: on, no duration target';
   const generated = Math.floor((session.generatedDurationSeconds ?? 0) / 60);
   return isDurationTargetReached(target, session.generatedDurationSeconds)
-    ? `New music: finished, the duration target of ${target} min is reached (${generated} min generated): no new Tracks generate until it is raised or cleared`
-    : `New music: on, duration target ${target} min (${generated} min generated)`;
+    ? `New Music: finished, the duration target of ${target} min is reached (${generated} min generated): no new Tracks generate until it is raised or cleared`
+    : `New Music: on, duration target ${target} min (${generated} min generated)`;
 }
 
 function sessionLines(session: SessionRecord): string[] {
@@ -88,7 +88,7 @@ export function createNowPlayingTool(asker: AssistantAsker): LlmTool<NoToolInput
   return {
     name: NOW_PLAYING_TOOL_NAME,
     description:
-      'What the user is listening to right now: the Session or Playlist, the current Track, whether it is playing or paused, how long a running Sleep Timer has left, and for a Session its New music setting.',
+      'What the user is listening to right now: the Session or Playlist, the current Track, whether it is playing or paused, how long a running Sleep Timer has left, and for a Session its New Music setting.',
     inputSchema: noToolInputSchema,
     async execute() {
       const engaged = await engagedLines(asker);

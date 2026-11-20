@@ -37,7 +37,7 @@ describe('onboarding music step', () => {
     const markup = renderMusic(music());
 
     expect(markup).toContain('type="password"');
-    expect(markup).toContain('Test the key');
+    expect(markup).toContain('Test the Key');
     // Nothing is resolvable yet, so the only way forward is disabled.
     expect(markup).toMatch(/<button[^>]*disabled=""[^>]*>Continue<\/button>/);
   });
@@ -49,7 +49,7 @@ describe('onboarding music step', () => {
 
     expect(markup).toContain('SUNO_API_KEY');
     expect(markup).toContain('The music model is already set up');
-    expect(markup).toContain('Test the configured key');
+    expect(markup).toContain('Test the Configured Key');
     // A key typed here could never win over env, so there is nothing to type into.
     expect(markup).not.toContain('type="password"');
   });
@@ -65,7 +65,7 @@ describe('onboarding music step', () => {
   it('keeps the optional endpoint out of the way of a screen that gates the flow', () => {
     const markup = renderMusic(music());
 
-    expect(markup).toContain('Use a different endpoint');
+    expect(markup).toContain('Use a Different Endpoint');
     // Inside the disclosure, not standing beside the key field.
     expect(markup).toMatch(/<details[\s\S]*Base URL[\s\S]*<\/details>/);
   });
@@ -123,7 +123,7 @@ describe('onboarding text-LLM step', () => {
 
     expect(markup).toContain('SET IN .env (LLM_PROVIDER)');
     expect(markup).toMatch(/<button[^>]*disabled[^>]*>OpenAI<\/button>/);
-    expect(markup).not.toContain('More options');
+    expect(markup).not.toContain('More Options');
     expect(markup).toContain('Gemini API key');
     expect(markup).toContain('type="password"');
     expect(renderLlm(openRouter)).not.toContain('SET IN .env');
@@ -132,8 +132,8 @@ describe('onboarding text-LLM step', () => {
   it('always offers a way past, because the LLM is optional', () => {
     const markup = renderLlm(openRouter);
 
-    expect(markup).toContain('Skip for now');
-    expect(markup).toContain('Save and continue');
+    expect(markup).toContain('Skip for Now');
+    expect(markup).toContain('Save and Continue');
   });
 
   const providerButtons = (markup: string) =>
@@ -146,7 +146,7 @@ describe('onboarding text-LLM step', () => {
 
     expect(providerButtons(markup)).toEqual(['OpenAI', 'Gemini', 'Ollama']);
     expect(markup).toMatch(/data-state="active"[^>]*>OpenAI</);
-    expect(markup).toMatch(/<button[^>]*>More options<\/button>/);
+    expect(markup).toMatch(/<button[^>]*>More Options<\/button>/);
   });
 
   it('shows and selects a stored preset that sits behind More options', () => {
@@ -160,7 +160,7 @@ describe('onboarding text-LLM step', () => {
       'OpenAI-compatible',
     ]);
     expect(markup).toMatch(/data-state="active"[^>]*>OpenRouter</);
-    expect(markup).not.toContain('More options');
+    expect(markup).not.toContain('More Options');
   });
 
   it('explains where to get a Gemini key when Gemini is selected', () => {
@@ -183,13 +183,13 @@ describe('onboarding text-LLM step', () => {
 
   it("states the selected option's cost under the picker", () => {
     expect(renderLlm({ ...openRouter, providerKey: 'openai', displayName: 'OpenAI' })).toContain(
-      'Under 1 cent per Session. This key can also paint your Covers, about 6 cents each.',
+      'Under 1 cent per session. This key can also paint your covers, about 6 cents each.',
     );
     expect(renderLlm({ ...openRouter, providerKey: 'gemini', displayName: 'Gemini' })).toContain(
       'Covers need billing turned on at Google.',
     );
     expect(renderLlm({ ...openRouter, providerKey: 'ollama', displayName: 'Ollama' })).toContain(
-      'Free, runs on your machine. It cannot paint Covers.',
+      'Free, runs on your machine. It cannot paint covers.',
     );
     expect(renderLlm(openRouter)).toContain('Cost depends on the model.');
     expect(
@@ -198,7 +198,7 @@ describe('onboarding text-LLM step', () => {
         providerKey: 'openai-compatible',
         displayName: 'OpenAI-compatible',
       }),
-    ).toContain('Cost depends on your service. It cannot paint Covers.');
+    ).toContain('Cost depends on your service. It cannot paint covers.');
   });
 
   it('reports the environment as the source and offers no skip it cannot honour', () => {
@@ -206,13 +206,13 @@ describe('onboarding text-LLM step', () => {
 
     expect(markup).toContain('LLM_API_KEY');
     expect(markup).toContain('LLM_PROVIDER');
-    expect(markup).not.toContain('Skip for now');
+    expect(markup).not.toContain('Skip for Now');
   });
 
   it('never offers to "skip" a key that is already stored — skipping only declines a new one', () => {
     const markup = renderLlm({ ...openRouter, configured: true });
 
-    expect(markup).toContain('Leave it as it is');
-    expect(markup).not.toContain('Skip for now');
+    expect(markup).toContain('Leave It as It Is');
+    expect(markup).not.toContain('Skip for Now');
   });
 });

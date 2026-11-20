@@ -452,10 +452,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       </PlayerActionsContext.Provider>
       {askingOtherMusic ? (
         <ConfirmDialog
-          heading="Your new Session is currently starting"
-          body="Play this instead and cancel your new Session?"
-          confirmLabel="Play this instead"
-          cancelLabel="Keep starting"
+          heading="Your New Session Is Currently Starting"
+          body="Play this instead and cancel your new session?"
+          confirmLabel="Play This Instead"
+          cancelLabel="Keep Starting"
           onConfirm={() => answerOtherMusic(true)}
           onClose={() => answerOtherMusic(false)}
         />

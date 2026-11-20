@@ -98,7 +98,7 @@ describe('Cover images card — shared key', () => {
       sharedKeyVendor: 'openai',
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Use the same OpenAI key' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use the Same OpenAI Key' }));
     fireEvent.click(screen.getByRole('button', { name: 'Test' }));
     await waitFor(() => expect(bodies).toHaveLength(1));
 
@@ -115,7 +115,7 @@ describe('Cover images card — shared key', () => {
       sharedKeyVendor: 'openai',
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Use a separate key' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use a Separate Key' }));
     fireEvent.change(keyField()!, { target: { value: 'sk-proj-image' } });
 
     const body = await saveAndReadBody(bodies);
@@ -123,7 +123,7 @@ describe('Cover images card — shared key', () => {
     expect(body.shareTextLlmKey).toBeUndefined();
   });
 
-  it('offers "Use the same Gemini key" beside an own key, and saves the switch', async () => {
+  it('offers "Use the Same Gemini Key" beside an own key, and saves the switch', async () => {
     const bodies = stubFetch();
     renderCoverEditor({
       initialProviderKey: 'gemini',
@@ -133,7 +133,7 @@ describe('Cover images card — shared key', () => {
     });
 
     expect(keyField()).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Use the same Gemini key' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use the Same Gemini Key' }));
     expect(screen.getByText('Uses your Gemini key')).toBeTruthy();
     expect(keyField()).toBeNull();
 
@@ -153,7 +153,7 @@ describe('Cover images card — shared key', () => {
 
     expect(keyField()).toBeTruthy();
     expect(screen.queryByText(/Uses your/)).toBeNull();
-    expect(screen.queryByRole('button', { name: /Use the same/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Use the Same/ })).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'OpenAI' }));
     expect(screen.getByText('Uses your OpenAI key')).toBeTruthy();

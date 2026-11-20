@@ -24,7 +24,7 @@ it('does not prefetch the page its link goes to', async () => {
   render(h(Toaster));
 
   act(() =>
-    toast.warning('New music is paused for today.', {
+    toast.warning('New Music is paused for today.', {
       link: { label: 'Cost settings', href: '/settings/costs' },
     }),
   );

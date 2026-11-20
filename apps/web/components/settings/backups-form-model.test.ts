@@ -20,7 +20,7 @@ describe('Back up now', () => {
     for (const service of ['healthy', 'overdue', 'failing', 'not-running'] as const) {
       expect(backUpNowButton({ service, submitting: false })).toEqual({
         disabled: false,
-        label: 'Back up now',
+        label: 'Back Up Now',
       });
     }
   });
@@ -36,7 +36,7 @@ describe('Back up now', () => {
     });
     expect(backUpNowButton({ service: 'running', submitting: false })).toEqual({
       disabled: true,
-      label: 'Backing up…',
+      label: 'Backing Up…',
     });
   });
 });

@@ -1,8 +1,8 @@
-// `proposeNewMusicOn`: prepares switching New music on for the asking user's
+// `proposeNewMusicOn`: prepares switching New Music on for the asking user's
 // active Session, up to a duration or with no limit, and switches nothing.
-// New music on buys music, so the tool only hands the chat a card; the user's
+// New Music on buys music, so the tool only hands the chat a card; the user's
 // click on that card is what saves the choice, through the route the player's
-// New music control saves through. Switching it off buys nothing and is
+// New Music control saves through. Switching it off buys nothing and is
 // `newMusicOff`.
 
 import { getActiveSession } from '@liedmotif/db';
@@ -21,7 +21,7 @@ import type { AssistantAsker } from './tools';
 import type { TurnActions } from './turn-actions';
 
 const WHICH_CHOICE =
-  'New music is switched on up to a length, which is a whole number from 1 to 600 minutes, or no limit: one of the two. Ask the user which they want.';
+  'New Music is switched on up to a length, which is a whole number from 1 to 600 minutes, or no limit: one of the two. Ask the user which they want.';
 
 export function createProposeNewMusicOnTool(
   asker: AssistantAsker,
@@ -31,13 +31,13 @@ export function createProposeNewMusicOnTool(
   return {
     name: PROPOSE_NEW_MUSIC_ON_TOOL_NAME,
     description:
-      "Prepares switching New music on for the user's active Session, so it generates new Tracks again, and shows the user a card for it: up to a length of music in minutes, or with no limit. Give one of the two. Switches nothing and spends nothing: it is saved only when the user confirms the card.",
+      "Prepares switching New Music on for the user's active Session, so it generates new Tracks again, and shows the user a card for it: up to a length of music in minutes, or with no limit. Give one of the two. Switches nothing and spends nothing: it is saved only when the user confirms the card.",
     inputSchema: proposeNewMusicOnInputSchema,
     execute: ({ targetDurationMinutes: minutes, noLimit }) =>
       actions.take('proposed', async () => {
         const active = await getActiveSession(db, { ownerUserId: userId });
         if (!active) {
-          return notOffered(`${NO_ACTIVE_SESSION} New music belongs to an active Session.`);
+          return notOffered(`${NO_ACTIVE_SESSION} New Music belongs to an active Session.`);
         }
         const target = targetDurationMinutesSchema.safeParse(minutes);
         if ((minutes == null) === !noLimit || (!noLimit && !target.success)) {
@@ -53,7 +53,7 @@ export function createProposeNewMusicOnTool(
           active.targetDurationMinutes === card.targetDurationMinutes
         ) {
           return notOffered(
-            `New music is already on for the Session ${quoted(active.title)}, ${newMusicLimitNote(card.targetDurationMinutes)}.`,
+            `New Music is already on for the Session ${quoted(active.title)}, ${newMusicLimitNote(card.targetDurationMinutes)}.`,
           );
         }
         // Saved at or below what the Session holds, the target is met at once

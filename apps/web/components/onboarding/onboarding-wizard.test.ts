@@ -95,9 +95,9 @@ describe('first-login onboarding wizard', () => {
   it('opens on the profile step with the whole flow already listed in the rail', () => {
     const markup = render(makeData());
 
-    expect(markup).toContain('Welcome. What should we call you?');
+    expect(markup).toContain('Welcome. What Should We Call You?');
     // Every step is named from the first screen, so the shape is knowable up front.
-    for (const title of ['You', 'People', 'Music model', 'Track limit', 'Text AI', 'Cover art']) {
+    for (const title of ['You', 'People', 'Music Model', 'Track Limit', 'Text AI', 'Cover Art']) {
       expect(markup).toContain(title);
     }
     expect(markup).toContain('Step 1 of 7');
@@ -115,11 +115,11 @@ describe('first-login onboarding wizard', () => {
     const markup = render(makeData());
 
     // The rail lists Cover art, but nothing past the opening step can be clicked.
-    expect(markup).toMatch(/<button[^>]*disabled=""[^>]*>[\s\S]{0,400}?Cover art/);
+    expect(markup).toMatch(/<button[^>]*disabled=""[^>]*>[\s\S]{0,400}?Cover Art/);
   });
 
   it('reports a daily ceiling in Tracks, converted from provider calls', () => {
     // 20 calls x 2 Tracks per call.
-    expect(render(makeData())).toContain('40 Tracks');
+    expect(render(makeData())).toContain('40 tracks');
   });
 });

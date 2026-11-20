@@ -20,7 +20,7 @@ describe('what the player says about new music', () => {
       short: 'Generating 2',
       detail: null,
       icon: 'generating',
-      sentence: 'Buying 2 new Tracks right now.',
+      sentence: 'Buying 2 new tracks right now.',
     });
   });
 
@@ -35,7 +35,7 @@ describe('what the player says about new music', () => {
       text: 'Generating 1',
       detail: '22 / 60 min',
       icon: 'generating',
-      sentence: 'Buying 1 new Track right now.',
+      sentence: 'Buying 1 new track right now.',
     });
   });
 
@@ -48,7 +48,7 @@ describe('what the player says about new music', () => {
       detail: null,
       icon: 'generating',
       sentence:
-        'New music is off. 2 Tracks already started will finish, then nothing more is bought.',
+        'New Music is off. 2 tracks already started will finish, then nothing more is bought.',
     });
   });
 
@@ -56,11 +56,11 @@ describe('what the player says about new music', () => {
     expect(
       presentNewMusicStatus({ session: on60, generatingAhead: 0, generationStatus: 'ok' }),
     ).toMatchObject({
-      text: '12 / 60 min generated',
+      text: '12 / 60 min Generated',
       short: '12 / 60 min',
       icon: 'target',
       sentence:
-        'Nothing is being bought right now. New Tracks come when the Queue runs low, up to 48 more min, then it repeats.',
+        'Nothing is being bought right now. New tracks come when the queue runs low, up to 48 more min, then it repeats.',
     });
   });
 
@@ -72,12 +72,12 @@ describe('what the player says about new music', () => {
         generationStatus: 'ok',
       }),
     ).toMatchObject({
-      text: '12+ / 60 min generated',
+      text: '12+ / 60 min Generated',
       short: '12+ / 60 min',
       icon: 'target',
       generatedLine: '12+ / 60 min generated',
       sentence:
-        'Some audio durations are unknown. New Tracks wait until they are measured, and your music stays playable.',
+        'Some audio durations are unknown. New tracks wait until they are measured, and your music stays playable.',
     });
   });
 
@@ -89,7 +89,7 @@ describe('what the player says about new music', () => {
         generationStatus: 'ok',
       }),
     ).toMatchObject({
-      text: 'New music finished · 62 min',
+      text: 'New Music Finished · 62 min',
       short: 'Done · 62 min',
       icon: 'finished',
       sentence: 'The 60 min target is reached. Repeating, nothing more is bought.',
@@ -100,11 +100,11 @@ describe('what the player says about new music', () => {
     expect(
       presentNewMusicStatus({ session: onNoLimit, generatingAhead: 0, generationStatus: 'ok' }),
     ).toMatchObject({
-      text: 'New music on · no limit',
-      short: 'On · no limit',
+      text: 'New Music On · No Limit',
+      short: 'On · No Limit',
       icon: 'no-limit',
       generatedLine: '12 min generated so far',
-      sentence: 'Keeps buying new Tracks for as long as you listen.',
+      sentence: 'Keeps buying new tracks for as long as you listen.',
     });
   });
 
@@ -116,7 +116,7 @@ describe('what the player says about new music', () => {
         generationStatus: 'repeat_cost_limit',
       }),
     ).toMatchObject({
-      text: 'Limit reached · Repeating',
+      text: 'Limit Reached · Repeating',
       short: 'Limit · Repeat',
       icon: 'paused',
       sentence: 'Your generation limit is used up. Nothing is being bought.',
@@ -132,10 +132,10 @@ describe('what the player says about new music', () => {
     expect(
       presentNewMusicStatus({ session: onNoLimit, generatingAhead: 0, generationStatus }),
     ).toMatchObject({
-      text: 'New music paused',
+      text: 'New Music Paused',
       short: 'Paused',
       icon: 'paused',
-      sentence: 'New music is on, but a problem is holding it. Nothing is being bought.',
+      sentence: 'New Music is on, but a problem is holding it. Nothing is being bought.',
     });
   });
 
@@ -146,7 +146,7 @@ describe('what the player says about new music', () => {
         generatingAhead: 2,
         generationStatus: 'worker_stalled',
       }).text,
-    ).toBe('New music paused');
+    ).toBe('New Music Paused');
   });
 
   it('still says Finishing for an Off Session whose Tracks in flight have stalled', () => {
@@ -160,8 +160,8 @@ describe('what the player says about new music', () => {
   });
 
   it.each([
-    ['no limit', onNoLimit, 'New music on · no limit'],
-    ['a target', on60, '12 / 60 min generated'],
+    ['no limit', onNoLimit, 'New Music On · No Limit'],
+    ['a target', on60, '12 / 60 min Generated'],
   ])('keeps the wording but says a loop is holding the buying with %s', (_kind, session, text) => {
     expect(
       presentNewMusicStatus({
@@ -183,7 +183,7 @@ describe('what the player says about new music', () => {
         generatingAhead: 0,
         generationStatus: 'repeat_buffer_complete',
       }).text,
-    ).toBe('New music on · no limit');
+    ).toBe('New Music On · No Limit');
   });
 
   it.each<SessionGenerationStatus>(['repeat_cost_limit', 'provider_error'])(
@@ -192,10 +192,10 @@ describe('what the player says about new music', () => {
       expect(
         presentNewMusicStatus({ session: off, generatingAhead: 0, generationStatus }),
       ).toMatchObject({
-        text: 'New music off',
-        short: 'New music off',
+        text: 'New Music Off',
+        short: 'New Music Off',
         icon: 'off',
-        sentence: 'Playing the Tracks you already have. Nothing is being bought.',
+        sentence: 'Playing the tracks you already have. Nothing is being bought.',
       });
     },
   );
@@ -207,7 +207,7 @@ describe('what the player says about new music', () => {
         generatingAhead: 0,
         generationStatus: 'repeat_cost_limit',
       }).text,
-    ).toBe('New music finished · 60 min');
+    ).toBe('New Music Finished · 60 min');
   });
 
   it('puts Tracks in flight ahead of a fault that has not silenced them', () => {

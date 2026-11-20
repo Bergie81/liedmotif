@@ -49,7 +49,7 @@ function ResetLink({ reset }: { reset: MemberResetLink }) {
           <SettingsFeedback kind="info">{line}</SettingsFeedback>
         </div>
       ) : null}
-      <CopyLinkBox url={reset.url} label="Password reset link" />
+      <CopyLinkBox url={reset.url} label="Password Reset Link" />
     </>
   );
 }
@@ -170,7 +170,7 @@ function MemberCard({
       <div className="flex flex-wrap items-center gap-2">
         <b className="text-[15px] font-semibold">{member.name || 'Unnamed'}</b>
         <SettingsStatusBadge
-          status={{ label: `${budgetKindLabel(member.budget.kind)} budget`, tone: 'muted' }}
+          status={{ label: `${budgetKindLabel(member.budget.kind)} Budget`, tone: 'muted' }}
         />
         {member.disabled ? (
           <SettingsStatusBadge status={{ label: 'Disabled', tone: 'warn' }} />
@@ -217,7 +217,7 @@ function MemberCard({
               disabled={busy !== null}
               className={compactPrimaryButtonClass}
             >
-              {busy === 'budget' ? 'Saving…' : 'Save budget'}
+              {busy === 'budget' ? 'Saving…' : 'Save Budget'}
             </button>
             <button
               type="button"
@@ -237,7 +237,7 @@ function MemberCard({
             disabled={busy !== null}
             className={secondaryButtonClass}
           >
-            Edit budget
+            Edit Budget
           </button>
           <button
             type="button"
@@ -245,7 +245,7 @@ function MemberCard({
             disabled={busy !== null}
             className={secondaryButtonClass}
           >
-            {busy === 'reset' ? 'Minting link…' : 'Reset password'}
+            {busy === 'reset' ? 'Minting Link…' : 'Reset Password'}
           </button>
           <button
             type="button"
@@ -256,8 +256,8 @@ function MemberCard({
             {busy === 'disable'
               ? 'Working…'
               : member.disabled
-                ? 'Enable account'
-                : 'Disable account'}
+                ? 'Enable Account'
+                : 'Disable Account'}
           </button>
           <button
             type="button"
@@ -278,8 +278,8 @@ function MemberCard({
           <p className="text-[13px] leading-relaxed text-muted">
             This permanently deletes{' '}
             <b className="font-semibold text-paper">{member.name || 'this member'}</b> — their{' '}
-            {member.trackCount} {member.trackCount === 1 ? 'Track' : 'Tracks'}, Sessions, Playlists,
-            People, and at least {formatBinaryBytes(member.storageBytes)} of stored files. Music
+            {member.trackCount} {member.trackCount === 1 ? 'track' : 'tracks'}, sessions, playlists,
+            people, and at least {formatBinaryBytes(member.storageBytes)} of stored files. Music
             they kept offline on their own devices stays there. It cannot be undone. Type the
             member&apos;s name to confirm.
           </p>
@@ -298,7 +298,7 @@ function MemberCard({
               disabled={busy !== null || confirmName.trim() !== member.name.trim()}
               className={`${compactPrimaryButtonClass} bg-warn`}
             >
-              {busy === 'delete' ? 'Deleting…' : 'Delete forever'}
+              {busy === 'delete' ? 'Deleting…' : 'Delete Forever'}
             </button>
             <button
               type="button"
@@ -306,7 +306,7 @@ function MemberCard({
               disabled={busy !== null}
               className={secondaryButtonClass}
             >
-              Keep the account
+              Keep the Account
             </button>
           </div>
         </div>

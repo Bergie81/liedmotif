@@ -130,11 +130,11 @@ it.each([
   {
     failure: 'a refusal before any answer',
     respond: (headers: Record<string, string>) =>
-      Response.json(makeApiError('provider_error', 'The Text AI gave no answer.', true), {
+      Response.json(makeApiError('provider_error', 'The text AI gave no answer.', true), {
         status: 502,
         headers,
       }),
-    notice: 'The Text AI gave no answer.',
+    notice: 'The text AI gave no answer.',
   },
   {
     failure: 'an answer that broke off',

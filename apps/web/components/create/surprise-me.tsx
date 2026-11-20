@@ -56,13 +56,13 @@ const THEME_LABELS: Record<SurpriseTheme, string> = {
   morning: 'Morning',
   focus: 'Focus',
   movement: 'Movement',
-  travel: 'On the road',
-  home: 'At home',
-  friends: 'With friends',
+  travel: 'On the Road',
+  home: 'At Home',
+  friends: 'With Friends',
   rest: 'Rest',
-  mood: 'A feeling',
-  place: 'A place',
-  'about-me': 'A song about me',
+  mood: 'A Feeling',
+  place: 'A Place',
+  'about-me': 'A Song About Me',
 };
 
 /** What the User asks the next proposal for. */
@@ -171,7 +171,7 @@ function SurpriseSettingsForm({
         onChange={(value) => onChange({ adventurous: value === 'adventurous' })}
       />
       <button type="button" onClick={onFind} className={cn(primaryButtonClass, 'w-full')}>
-        Find a surprise
+        Find a Surprise
       </button>
     </div>
   );
@@ -223,7 +223,7 @@ function SurprisePreview({
           disabled={locked}
           className={secondaryButtonClass}
         >
-          Try another
+          Try Another
         </button>
         <button
           type="button"
@@ -231,7 +231,7 @@ function SurprisePreview({
           disabled={locked}
           className="px-2 py-2 text-[13px] font-semibold text-muted hover:text-paper disabled:opacity-50"
         >
-          Change settings
+          Change Settings
         </button>
         <button
           type="button"
@@ -432,7 +432,7 @@ export function SurpriseMe({
           </div>
           {step === 'settings' ? (
             <DialogDescription className="mt-1 text-[13px] leading-relaxed text-dim">
-              Get a fresh Session idea shaped by your listening taste. Pick a theme, try ideas until
+              Get a fresh session idea shaped by your listening taste. Pick a theme, try ideas until
               one fits, then start it.
             </DialogDescription>
           ) : null}

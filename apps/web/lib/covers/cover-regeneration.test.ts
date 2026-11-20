@@ -23,7 +23,7 @@ describe('a failed Cover regeneration', () => {
     ],
     [
       'member',
-      "The image provider's account on this server isn't ready for images. Ask the Admin to check it.",
+      "The image provider's account on this server isn't ready for images. Ask the admin to check it.",
     ],
   ] as const)('tells the %s the image account is not ready and who can fix it', (role, message) => {
     expect(toSessionCoverAttempt(settled('account_not_ready'), role)).toEqual({

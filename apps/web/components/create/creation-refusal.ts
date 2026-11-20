@@ -13,8 +13,8 @@ import type { ApiErrorCode } from '@liedmotif/shared';
 export type CreationRefusalKind = 'headroom' | 'paused';
 
 export const CREATION_REFUSAL_TITLES: { readonly [Kind in CreationRefusalKind]: string } = {
-  headroom: 'Not enough Tracks left to start',
-  paused: 'New music is paused',
+  headroom: 'Not Enough Tracks Left to Start',
+  paused: 'New Music Is Paused',
 };
 
 export interface CreationRefusal {

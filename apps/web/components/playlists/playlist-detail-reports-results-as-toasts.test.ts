@@ -107,7 +107,7 @@ describe('PlaylistDetail — results as toasts', () => {
       expect(shown()).toEqual([
         {
           tone: 'success',
-          message: 'Track deleted — its audio is removed and it left every Playlist.',
+          message: 'Track deleted — its audio is removed and it left every playlist.',
         },
       ]),
     );

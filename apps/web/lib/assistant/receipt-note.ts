@@ -29,7 +29,7 @@ export function receiptNote(receipt: AssistantReceipt): string {
     case 'pinPlaylist':
       return `pinned ${playlist(receipt.playlist)}`;
     case 'newMusicOff':
-      return `switched New music off for ${session(receipt.session)}`;
+      return `switched New Music off for ${session(receipt.session)}`;
     case 'renameSession':
       return `renamed the Session ${quoted(receipt.previousName)} to ${named(receipt.session.name, receipt.session.id)}`;
     case 'pinSession':

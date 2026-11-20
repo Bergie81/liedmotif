@@ -37,7 +37,7 @@ function renderAnswer(
 
 it('formats an answer written in Markdown', () => {
   const answer = renderAnswer(
-    'Open **Settings › Members**.\n\n1. Create an invite link\n2. Send it\n\nUse `New music` to keep going.',
+    'Open **Settings › Members**.\n\n1. Create an invite link\n2. Send it\n\nUse `New Music` to keep going.',
   );
 
   expect(answer.querySelector('strong')?.textContent).toBe('Settings › Members');
@@ -45,7 +45,7 @@ it('formats an answer written in Markdown', () => {
     'Create an invite link',
     'Send it',
   ]);
-  expect(answer.querySelector('code')?.textContent).toBe('New music');
+  expect(answer.querySelector('code')?.textContent).toBe('New Music');
 });
 
 it("turns a link to a page on the user's route map into a button that opens it", () => {

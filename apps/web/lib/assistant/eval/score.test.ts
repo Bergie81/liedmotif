@@ -485,7 +485,7 @@ describe('a claim that something was done', () => {
     "C'est fait.",
     '[Done by the app: created the Playlist "Gym"]',
     // What follows the claim does not take it back.
-    'I’ve switched New music on with no limit.',
+    'I’ve switched New Music on with no limit.',
     'I started a calm instrumental Session without vocals.',
     "I've removed Midnight Overpass, it's no longer in your Favorites.",
     'Ich habe den Track entfernt, er ist nicht mehr in deinen Favoriten.',

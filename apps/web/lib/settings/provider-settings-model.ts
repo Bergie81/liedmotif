@@ -89,7 +89,7 @@ export function generatedImageProviderPresentation(input: {
     // A stored row always carries a display name; an env-only selection has none.
     if (credential?.displayName == null) {
       return {
-        name: 'Not configured',
+        name: 'Not Configured',
         configured: false,
         source: null,
         model,
@@ -101,7 +101,7 @@ export function generatedImageProviderPresentation(input: {
       configured: false,
       source: null,
       model,
-      status: { label: 'Needs a key', tone: 'warn' },
+      status: { label: 'Needs a Key', tone: 'warn' },
     };
   }
   const name = providerDisplayName('image', credential.providerKey, credential.displayName);
@@ -127,7 +127,7 @@ function imageKeySource(source: CredentialSource | null, name: string): string {
     case 'env':
       return 'Environment';
     case 'shared':
-      return `Shared ${name} key`;
+      return `Shared ${name} Key`;
     default:
       return 'Database';
   }
@@ -166,7 +166,7 @@ export function coverAccountAlert(input: {
 }
 
 export const COVER_KEY_NOTICE =
-  'Cover images use this key too. Changing the provider or removing this key turns Tailored Cover Art off until Cover images has its own key.';
+  'Cover images use this key too. Changing the provider or removing this key turns Tailored Cover Art off until Cover Images has its own key.';
 
 /**
  * The Text AI card's warning, while Cover images use its key: a change to the

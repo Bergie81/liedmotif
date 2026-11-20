@@ -109,7 +109,7 @@ export function PlayerOptionsSheet({
         <SheetTrigger asChild>
           <button
             type="button"
-            aria-label={`${sourceKind} and Track options`}
+            aria-label={`${sourceKind} and Track Options`}
             className={iconButtonClass}
           >
             <MoreHorizontal className="h-[22px] w-[22px]" aria-hidden />
@@ -177,7 +177,7 @@ function OptionsPlate({
           `${sourceKind} options`
         )
       }
-      closeLabel={`Close ${sourceKind} and Track options`}
+      closeLabel={`Close ${sourceKind} and Track Options`}
       offlineMark
     />
   );

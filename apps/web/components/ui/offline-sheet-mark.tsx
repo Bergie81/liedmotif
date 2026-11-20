@@ -13,7 +13,7 @@ export function OfflineSheetMark() {
   if (useOnline()) return null;
   return (
     <Popover>
-      <PopoverTrigger className={iconButtonClass} aria-label="Offline: why options are missing">
+      <PopoverTrigger className={iconButtonClass} aria-label="Offline: Why Options Are Missing">
         <WifiOff className="h-[18px] w-[18px] text-warn" aria-hidden />
       </PopoverTrigger>
       <PopoverContent align="end" aria-label="Offline">

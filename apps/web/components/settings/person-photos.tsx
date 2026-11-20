@@ -42,7 +42,7 @@ export function PersonPhotos({
   // per reference, so the owner decides which part of the photo it is spent on.
   const picker = useImageCropPicker({
     target: REFERENCE_PHOTO_UPLOAD,
-    heading: 'Reference photo',
+    heading: 'Reference Photo',
     onError: report,
     onUpload: async (file) => {
       setBusy(true);
@@ -91,9 +91,9 @@ export function PersonPhotos({
   return (
     <div className="border-t border-line pt-4">
       <div className="mb-2 flex items-baseline justify-between gap-2">
-        <span className="text-[13px] font-semibold text-paper">Reference photos</span>
+        <span className="text-[13px] font-semibold text-paper">Reference Photos</span>
         <span className="text-right font-mono text-[10px] uppercase tracking-[0.08em] text-dim">
-          {person.photos.length}/{maxPhotosPerPerson} for this Person · {totalPhotoCount}/
+          {person.photos.length}/{maxPhotosPerPerson} for this person · {totalPhotoCount}/
           {maxPhotosTotal} total
         </span>
       </div>
@@ -158,7 +158,7 @@ function ReferencePhoto({
       <button
         type="button"
         disabled={disabled}
-        aria-label={`Delete ${personName} reference photo`}
+        aria-label={`Delete ${personName} Reference Photo`}
         onClick={onRemove}
         className="absolute right-1 top-1 grid h-[26px] w-[26px] place-items-center rounded-[7px] bg-ink/70 text-paper backdrop-blur-[4px] hover:text-warn disabled:opacity-45"
       >

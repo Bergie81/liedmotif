@@ -1,7 +1,7 @@
 ---
-title: Install Liedmotif on a home server
+title: Install Liedmotif on a Home Server
 description: Run your own always-on Liedmotif on an old PC, a Raspberry Pi or a dedicated home server, reachable from your phone and closed to everyone else.
-checkedOn: 2026-11-19
+checkedOn: 2026-11-20
 howTo: true
 ---
 
@@ -9,9 +9,9 @@ A small computer on a shelf keeps Liedmotif running day and night, so your phone
 
 > **Not hand-tested on real hardware yet.** The installer's Tailscale mode passes its automated tests, but it hasn't had its full hand test on a real Raspberry Pi or PC.
 
-## Before you start
+## Before You Start
 
-### Pick a machine
+### Pick a Machine
 
 Any 64-bit Linux computer (x86_64 or arm64) with 4 GB of RAM or more runs Liedmotif. These are good choices:
 
@@ -23,7 +23,7 @@ Any 64-bit Linux computer (x86_64 or arm64) with 4 GB of RAM or more runs Liedmo
 
 **RAM.** 4 GB runs personal use comfortably. With 2 GB, Liedmotif can run slowly or stop under load, and the installer warns you when it finds less than about 3.5 GB. A 32-bit system can't run it: the installer stops and asks you to install a 64-bit one.
 
-### Choose your storage
+### Choose Your Storage
 
 **Use an SSD if you can.** The database and your music library write all day. An ordinary microSD card wears out under that, and a power cut in the middle of a write can corrupt the card and your library with it.
 
@@ -35,15 +35,15 @@ Any 64-bit Linux computer (x86_64 or arm64) with 4 GB of RAM or more runs Liedmo
 
 **How big?** A track takes about 5 MB, so 1,000 tracks need about 5 GB. Backups reuse the music files that haven't changed, so they add little on top. 64 GB is plenty to start.
 
-Liedmotif has its own storage quota, 10 GiB by default, or about 2,000 tracks. At the quota, sessions stop making new tracks and uploads are refused, but everything you already have keeps playing, and nothing is deleted to make room. With a bigger disk, raise it under **Storage quota** in **Settings › Cost limits**.
+Liedmotif has its own storage quota, 10 GiB by default, or about 2,000 tracks. At the quota, sessions stop making new tracks and uploads are refused, but everything you already have keeps playing, and nothing is deleted to make room. With a bigger disk, raise it under **Storage quota** in **Settings › Cost Limits**.
 
-### Have these ready
+### Have These Ready
 
 - **A free [Tailscale](https://tailscale.com) account.** It's what connects your phone to the box. You can sign up with Google, Apple, Microsoft or GitHub.
 - **A key from a music provider.** Sign up at [sunoapi.org](https://sunoapi.org), buy credits, and create a key under **Dashboard › API Keys**. You pay the provider directly, at about 4 cents per track.
 - **A way to type on the machine:** a keyboard and screen, or SSH from another computer.
 
-## 1. Set up the machine
+## 1. Set Up the Machine
 
 Put the system on the machine, start it and connect it to your network. Then make sure `curl` is there, because a minimal system may not have it:
 
@@ -53,7 +53,7 @@ sudo apt-get update && sudo apt-get install -y curl
 
 **Choose the machine's name with care.** It becomes part of your address, as in `https://liedmotif.tail1234.ts.net`, and it ends up in public logs ([here's why](#what-tailscale-mode-means-for-you)). Pick one that says nothing private.
 
-## 2. Turn on HTTPS in Tailscale
+## 2. Turn On HTTPS in Tailscale
 
 Your phone needs a real certificate, and Tailscale can provide one once you allow it. The installer stops if you skip this.
 
@@ -61,7 +61,7 @@ Your phone needs a real certificate, and Tailscale can provide one once you allo
 2. Turn on **MagicDNS**.
 3. Under **HTTPS Certificates**, select **Enable HTTPS**.
 
-## 3. Paste the install line
+## 3. Paste the Install Line
 
 On the machine, as your normal user:
 
@@ -94,13 +94,13 @@ If a step fails, the error names the step and what to try. Fix that and run the 
 
 **You should now see** `Liedmotif <version> is running at https://…ts.net`, followed by your setup link. Keep that link private until you've used it: anyone who has it can create the admin account before you do.
 
-## 4. Put Tailscale on your phone
+## 4. Put Tailscale on Your Phone
 
 The setup link opens only on devices in your tailnet, so your phone has to join first. Install Tailscale from [tailscale.com/download](https://tailscale.com/download), sign in with the same account, and switch it on. You don't need anything else on the phone: no certificate, and no app besides Tailscale.
 
 Do the same on any other device you want to listen on. [On your phone](/docs/install/phone-access) has more, including how to add Liedmotif to your home screen.
 
-## 5. Copy `.env` somewhere safe
+## 5. Copy `.env` Somewhere Safe
 
 `.env` holds keys nobody can recover. Without `CREDENTIAL_ENCRYPTION_KEY` and `BACKUP_ENCRYPTION_PASSPHRASE`, your saved provider keys and your encrypted backups can never be read again. If this machine dies, this copy is what brings your library back.
 
@@ -112,21 +112,21 @@ scp your-user@your-machine:/opt/liedmotif/.env liedmotif.env
 
 Move the file to a password manager or a USB stick, never to a shared folder or an email. Copy it again whenever you change `.env`.
 
-## 6. Create your admin account
+## 6. Create Your Admin Account
 
 Open your setup link on your phone or on any other device in your tailnet. There's no certificate warning, because the certificate is real.
 
-Press **Create admin** once you've filled in your email and a password. Your password needs at least 12 characters, with a number, an uppercase letter and a special character. Setup locks as soon as the admin exists, so nobody can take it after you, and the token in the link stops granting anything.
+Press **Create Admin** once you've filled in your email and a password. Your password needs at least 12 characters, with a number, an uppercase letter and a special character. Setup locks as soon as the admin exists, so nobody can take it after you, and the token in the link stops granting anything.
 
-## 7. Walk through guided setup
+## 7. Walk Through Guided Setup
 
 Guided setup starts right away and asks one thing per screen. Only your name and your music key are required. [The laptop guide](/docs/install/local) lists every screen.
 
 A key you save here works at once, with no restart. It's stored encrypted on your own server. You can also put keys in `.env` instead (`SUNO_API_KEY`, `LLM_*`, `IMAGE_*`), and a value there wins over one saved in the app. Until a music key exists, Liedmotif stays up, but music jobs fail with `needs an API key`.
 
-Press **Start your first Session** on the last screen, describe the moment you're in, and listen.
+Press **Start Your First Session** on the last screen, describe the moment you're in, and listen.
 
-## What Tailscale mode means for you
+## What Tailscale Mode Means for You
 
 Installing without `--domain` is Tailscale mode, and it shapes how you use Liedmotif from here on.
 
@@ -137,7 +137,7 @@ Installing without `--domain` is Tailscale mode, and it shapes how you use Liedm
 - **Friends get one machine.** To let a friend in, share this one machine with them from the Tailscale admin console. Never invite them into your tailnet, because that gives them every device in it. [Share Liedmotif with a friend](/docs/share-with-a-friend) walks you through it.
 - **Renaming has a cost.** If the machine's name or address changes on your tailnet, the next update stops and tells you what to edit. [Updates](/docs/updates) has the details.
 
-### What stays your job
+### What Stays Your Job
 
 Security updates and Tailscale take care of themselves, but Docker doesn't. A Docker upgrade restarts every container, which would stop the music at a random moment, so it never runs on its own. Update it now and then, when nobody's listening:
 
@@ -147,7 +147,7 @@ sudo apt update && sudo apt upgrade
 
 To update Liedmotif itself, see [Updates](/docs/updates). Backups run on their own, but they stay on this machine until you download one, so read [Backups](/docs/backups) too.
 
-## Installer options
+## Installer Options
 
 Add flags after `bash -s --`, like this:
 
@@ -161,7 +161,7 @@ curl -fsSL https://github.com/bergie81/liedmotif/releases/latest/download/instal
 | `--version <tag>` | The latest release | The release to install, such as `v1.4.0` |
 | `--dir <path>` | `/opt/liedmotif` | The install folder, which holds the Compose file and `.env` |
 
-### Give a slow machine more time
+### Give a Slow Machine More Time
 
 A slow machine can take longer than five minutes for its first start. Set `LIEDMOTIF_HEALTH_TIMEOUT`, in seconds, to wait longer:
 
@@ -169,7 +169,7 @@ A slow machine can take longer than five minutes for its first start. Set `LIEDM
 curl -fsSL https://github.com/bergie81/liedmotif/releases/latest/download/install.sh | LIEDMOTIF_HEALTH_TIMEOUT=900 bash
 ```
 
-### Install from a copy of the code
+### Install from a Copy of the Code
 
 To try code that isn't released yet, point `LIEDMOTIF_SOURCE_DIR` at a copy of it:
 
@@ -216,11 +216,11 @@ sudo docker compose logs caddy
 
 Then run the same line again. If your first start failed, the new run still prints your setup link.
 
-### The setup link won't open
+### The Setup Link Won't Open
 
 Check that Tailscale is on, on that device, and signed in to the same tailnet as the machine.
 
-### You lost the setup link
+### You Lost the Setup Link
 
 The installer prints it only on the first install. Rebuild it from `.env`, on the machine:
 
@@ -230,15 +230,15 @@ grep '^SETUP_TOKEN=' /opt/liedmotif/.env
 
 Your link is `https://<machine>.<tailnet>.ts.net/setup?token=` followed by the value after the `=`.
 
-### **Create admin** says `Setup is not available.`
+### **Create Admin** Says `Setup is not available.`
 
 The link lost its `?token=…` part. Open the full link.
 
-### The setup link takes you to the sign-in page
+### The Setup Link Takes You to the Sign-In Page
 
 The admin account already exists. Sign in with it.
 
-### Commands say "permission denied" for Docker
+### Commands Say "permission denied" for Docker
 
 Your user isn't in the `docker` group. Put `sudo` in front of `docker compose`, as this page does.
 

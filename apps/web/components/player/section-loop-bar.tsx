@@ -104,7 +104,7 @@ export function SectionLoopBar({
         <>
           {bar}
           <p className="truncate text-center font-mono text-[10.5px] tracking-[0.08em] text-muted">
-            This Track can’t loop: its full audio isn’t ready
+            This track can’t loop: its full audio isn’t ready
           </p>
         </>
       );
@@ -310,7 +310,7 @@ function WaveformBar({
             {region && !marks ? (
               <button
                 type="button"
-                aria-label="Stop looping"
+                aria-label="Stop Looping"
                 onClick={onClearLoop}
                 className="-my-3 grid h-9 w-9 place-items-center text-paper"
               >

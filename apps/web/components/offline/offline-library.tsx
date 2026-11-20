@@ -186,11 +186,11 @@ function OfflineLibraryView({ library }: { library: Library }) {
       <>
         <LibraryHeader />
         <div className="mt-6 rounded-card border border-dashed border-line-2 px-4 py-10 text-center">
-          <p className="font-display text-[17px] font-bold">Nothing on this device yet</p>
+          <p className="font-display text-[17px] font-bold">Nothing on This Device Yet</p>
           <p className="mt-2 text-[13.5px] text-muted">
             {library.phase === 'unavailable'
               ? 'This browser can’t keep music on this device.'
-              : 'While you’re online, turn on Available offline for a Playlist or Session. It plays here without a connection.'}
+              : 'While you’re online, turn on Available Offline for a playlist or session. It plays here without a connection.'}
           </p>
         </div>
       </>
@@ -238,7 +238,7 @@ function LibraryHeader() {
         <OfflineBadge />
       </header>
       <div className="mt-8">
-        <p className={eyebrowClass}>On this device</p>
+        <p className={eyebrowClass}>On This Device</p>
         <h1 className={cn(displayHeadingClass, 'mt-2')}>Offline Library</h1>
         <p className="mt-2 text-[13.5px] text-muted">
           {online ? (
@@ -249,7 +249,7 @@ function LibraryHeader() {
               </a>
             </>
           ) : (
-            'No connection. Your offline Playlists and Sessions play from this device.'
+            'No connection. Your offline playlists and sessions play from this device.'
           )}
         </p>
       </div>
@@ -259,7 +259,7 @@ function LibraryHeader() {
 
 function countLine({ tracks, expiredCount }: OfflineCollection): string {
   const parts = [
-    ...(tracks.length > 0 ? [`${tracks.length} ${tracks.length === 1 ? 'Track' : 'Tracks'}`] : []),
+    ...(tracks.length > 0 ? [`${tracks.length} ${tracks.length === 1 ? 'track' : 'tracks'}`] : []),
     ...(expiredCount > 0 ? [`${expiredCount} expired`] : []),
   ];
   return parts.length > 0 ? parts.join(' · ') : 'Not on this device yet';

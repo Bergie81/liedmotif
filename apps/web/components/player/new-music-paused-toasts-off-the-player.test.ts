@@ -134,7 +134,7 @@ describe('new music paused, seen off the Player', () => {
 
     expect(shownToasts()).toEqual([
       expect.objectContaining({
-        link: { label: 'Adjust cost limits', href: '/settings/limits' },
+        link: { label: 'Adjust Cost Limits', href: '/settings/limits' },
       }),
     ]);
   });
@@ -149,7 +149,7 @@ describe('new music paused, seen off the Player', () => {
 
     expect(shownToasts()).toEqual([
       expect.objectContaining({
-        link: { label: 'See your budget', href: '/settings/my-budget' },
+        link: { label: 'See Your Budget', href: '/settings/my-budget' },
       }),
     ]);
   });

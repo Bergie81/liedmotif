@@ -99,7 +99,7 @@ export function ProfileForm({
       setCurrentPassword('');
       if (confirmLinkSent === false) {
         toast.warning(
-          'Profile saved, but the confirm link could not be sent. Use Send confirm link to try again.',
+          'Profile saved, but the confirm link could not be sent. Use Send Confirm Link to try again.',
           { key: SAVE_KEY },
         );
       } else if (confirmLinkSent) {
@@ -214,7 +214,7 @@ export function ProfileForm({
         disabled={saving}
         className={`${primaryButtonClass} w-full`}
       >
-        {saving ? 'Saving…' : 'Save profile'}
+        {saving ? 'Saving…' : 'Save Profile'}
       </button>
     </div>
   );

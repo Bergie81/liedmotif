@@ -231,7 +231,7 @@ export function PlayerView() {
     <>
       {view.kind === 'connecting' ? (
         <div className="mb-4 flex items-center justify-between gap-4">
-          <p className="text-[13.5px] text-muted">Setting up your new Session…</p>
+          <p className="text-[13.5px] text-muted">Setting up your new session…</p>
           <CancelStartButton />
         </div>
       ) : null}
@@ -310,7 +310,7 @@ const IDLE_SAMPLE: PlaybackSample = {
 
 /** The options control the live player will carry, not usable until it arrives. */
 const CONNECTING_OPTIONS = (
-  <button type="button" disabled aria-label="Session and Track options" className={iconButtonClass}>
+  <button type="button" disabled aria-label="Session and Track Options" className={iconButtonClass}>
     <MoreHorizontal className="h-[22px] w-[22px]" aria-hidden />
   </button>
 );
@@ -324,12 +324,12 @@ function ConnectingCard({ startedAt }: { startedAt: string }) {
   const connectingPhrase = useConnectingPhrase();
   return (
     <section
-      aria-label="Now playing"
+      aria-label="Now Playing"
       data-testid="player-connecting"
       className={nowPlayingLayoutClass}
     >
       <div>
-        <PlayerMobileHeader title="Now Playing your Session" action={CONNECTING_OPTIONS} />
+        <PlayerMobileHeader title="Now Playing Your Session" action={CONNECTING_OPTIONS} />
         <div className="relative mx-auto mt-4 aspect-square w-full overflow-hidden rounded-[20px] desk:max-w-[calc(var(--shell-col)-32px)] @split:max-w-none bg-panel-2 shadow-[0_34px_90px_-24px_var(--lamp-glow),0_18px_50px_rgba(0,0,0,0.55)] light:shadow-[0_30px_70px_-26px_rgba(232,143,47,0.35),0_16px_44px_rgba(34,29,48,0.28)]">
           <PlaceholderCoverMotion />
           <CoverChip className="absolute left-3 top-3">{CONNECTING_COPY}</CoverChip>
@@ -339,8 +339,8 @@ function ConnectingCard({ startedAt }: { startedAt: string }) {
         <PlayerHeader
           statusLabel="Connecting"
           title={connectingPhrase}
-          subtitle="Preparing your new Session"
-          announcement="Connecting: preparing your new Session."
+          subtitle="Preparing your new session"
+          announcement="Connecting: preparing your new session."
           // Narrow screens hide the options slot, so this holds the height the
           // live player's icon row takes over.
           newMusic={<span aria-hidden className={cn(iconButtonClass, 'invisible')} />}
@@ -399,11 +399,11 @@ function StartFailedCard({
       )}
     >
       <Heading className="font-display text-[18px] font-bold text-paper">
-        Your Session didn’t start
+        Your Session Didn’t Start
       </Heading>
       <p className="text-[12px] leading-relaxed text-warn">{message}</p>
       <Link href="/" className={cn(primaryButtonClass, 'mt-2')}>
-        Try again
+        Try Again
       </Link>
     </div>
   );

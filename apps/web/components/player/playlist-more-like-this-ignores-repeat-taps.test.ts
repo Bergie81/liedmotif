@@ -135,7 +135,7 @@ function showPlaylist() {
 }
 
 async function tapMoreLikeThis() {
-  fireEvent.click(screen.getAllByRole('button', { name: 'Playlist and Track options' })[0]!);
+  fireEvent.click(screen.getAllByRole('button', { name: 'Playlist and Track Options' })[0]!);
   fireEvent.click(within(screen.getByRole('dialog')).getByTestId('playlist-more-like-this'));
   await act(async () => {});
 }
@@ -158,7 +158,7 @@ it('sends one More Like This while the first is still in flight', async () => {
 });
 
 it('opens the blocked dialog, not an error, when the new Session has no headroom', async () => {
-  const message = 'A new Session needs 5 Tracks; you have 4 left today.';
+  const message = 'A new session needs 5 tracks; you have 4 left today.';
   api.moreLikeThis.mockResolvedValue({
     ok: false,
     error: { code: 'session_headroom_blocked', message, retryable: false },

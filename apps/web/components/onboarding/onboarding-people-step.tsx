@@ -34,9 +34,9 @@ export function OnboardingPeopleStep({
 }) {
   return (
     <section>
-      <OnboardingStepHeader eyebrow="Optional" title="Put people on your Covers">
-        Add a Person with photos, then use their exact name in a music request to put them on that
-        Session&apos;s Cover.
+      <OnboardingStepHeader eyebrow="Optional" title="Put People on Your Covers">
+        Add a person with photos, then use their exact name in a music request to put them on that
+        session&apos;s cover.
       </OnboardingStepHeader>
 
       <div className="mt-5">

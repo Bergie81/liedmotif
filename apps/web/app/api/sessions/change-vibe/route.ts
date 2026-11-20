@@ -53,7 +53,7 @@ export const dynamic = 'force-dynamic';
 const logger = createLogger({ name: 'change-vibe' });
 
 const UNREADABLE_STYLE_MESSAGE =
-  "This Session's current style could not be read. Describe the change in words instead.";
+  "This session's current style could not be read. Describe the change in words instead.";
 
 /** A vibe change changes direction, not language: for an intent without a
  * language pick the running session's language rides along as an explicit pick

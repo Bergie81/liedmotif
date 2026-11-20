@@ -48,7 +48,7 @@ function shown() {
 
 function setUp() {
   fireEvent.click(screen.getByRole('checkbox'));
-  fireEvent.click(screen.getByRole('button', { name: 'Set up my voice' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Set Up My Voice' }));
 }
 
 describe('MyVoiceSetup — failures as toasts', () => {
@@ -76,12 +76,12 @@ describe('MyVoiceSetup — failures as toasts', () => {
     expect(screen.queryByRole('status')).toBeNull();
     await waitFor(() =>
       expect(
-        (screen.getByRole('button', { name: 'Set up my voice' }) as HTMLButtonElement).disabled,
+        (screen.getByRole('button', { name: 'Set Up My Voice' }) as HTMLButtonElement).disabled,
       ).toBe(false),
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Set up my voice' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Set Up My Voice' }));
 
-    expect(await screen.findByText('Source sample')).toBeTruthy();
+    expect(await screen.findByText('Source Sample')).toBeTruthy();
     expect(shown()).toEqual([]);
   });
 
@@ -89,7 +89,7 @@ describe('MyVoiceSetup — failures as toasts', () => {
     stubAnswers();
     render(createElement(MyVoiceSetup, { initial: { ...NONE, status: 'draft' } }));
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Start recording' })[0]!);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Start Recording' })[0]!);
 
     await waitFor(() =>
       expect(shown()).toEqual([

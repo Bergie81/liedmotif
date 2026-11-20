@@ -155,7 +155,7 @@ export function ChangeVibeSheet({
       <SheetContent side="bottom" className="flex max-h-[86vh] flex-col">
         <SheetHeader
           title="Change Vibe"
-          description="Choose a new direction for newly generated tracks without starting a new Session."
+          description="Choose a new direction for newly generated tracks without starting a new session."
         />
         <div className="-mx-5 mt-1 min-h-0 flex-1 overflow-y-auto overscroll-contain px-5">
           <label htmlFor="change-vibe-prompt" className="mt-4 block text-[13px] font-semibold">
@@ -225,7 +225,7 @@ export function ChangeVibeSheet({
                         value={picks.ownVoice ? 'own' : 'generic'}
                         options={[
                           { value: 'generic', label: 'Generic' },
-                          { value: 'own', label: 'My voice' },
+                          { value: 'own', label: 'My Voice' },
                         ]}
                         onChange={(singer) =>
                           setPicks((p) => ({ ...p, ownVoice: singer === 'own' }))
@@ -272,7 +272,7 @@ export function ChangeVibeSheet({
               <p className="text-[11.5px] leading-[1.4] text-dim">
                 {switchNowLocked
                   ? 'Unavailable while a track loop is on — looping pauses new generation.'
-                  : 'Current track keeps playing; upcoming tracks from the old vibe are set aside (they stay in this Session).'}
+                  : 'Current track keeps playing; upcoming tracks from the old vibe are set aside (they stay in this session).'}
               </p>
             </div>
             <Switch
@@ -291,7 +291,7 @@ export function ChangeVibeSheet({
           onClick={submit}
           className={cn(primaryButtonClass, 'mt-4 w-full shrink-0')}
         >
-          {durationChanged && !creativeChange ? 'Save duration' : 'Change Vibe'}
+          {durationChanged && !creativeChange ? 'Save Duration' : 'Change Vibe'}
         </button>
       </SheetContent>
     </Sheet>

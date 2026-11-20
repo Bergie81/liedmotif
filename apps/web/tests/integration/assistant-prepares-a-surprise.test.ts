@@ -263,7 +263,7 @@ describe.skipIf(skip)('the Assistant asked to surprise the user', () => {
     const turn = await askForSurprise(asker, {});
 
     expect(cards(turn)).toEqual([]);
-    expect(turn.results[0]).toContain('A new Session needs 4 Tracks; you have none left today.');
+    expect(turn.results[0]).toContain('A new session needs 4 tracks; you have none left today.');
     expect(turn.results[0]).toMatch(/no card was shown/i);
     expect(holder.written).toEqual([]);
     expect(await getPendingProposal(testDb.db, asker)).toBeNull();

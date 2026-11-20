@@ -16,7 +16,7 @@ export function SignOutButton() {
       className={`${dangerButtonClass} w-full`}
     >
       <LogOut className="h-4 w-4" aria-hidden />
-      {busy ? 'Signing out…' : 'Sign out'}
+      {busy ? 'Signing Out…' : 'Sign Out'}
     </button>
   );
 }

@@ -28,7 +28,7 @@ export function newMusicStatusLine(status: NewMusicStatus): string {
 const LOOP_HOLD_SENTENCE = 'A loop is playing, so nothing is being bought until it ends.';
 
 export function tracksWord(count: number): string {
-  return count === 1 ? 'Track' : 'Tracks';
+  return count === 1 ? 'track' : 'tracks';
 }
 
 /**
@@ -75,7 +75,7 @@ export function presentNewMusicStatus({
       ...common,
       text,
       short: text,
-      sentence: `New music is off. ${generatingAhead} ${tracksWord(generatingAhead)} already started will finish, then nothing more is bought.`,
+      sentence: `New Music is off. ${generatingAhead} ${tracksWord(generatingAhead)} already started will finish, then nothing more is bought.`,
       icon: 'generating',
     };
   }
@@ -93,16 +93,16 @@ export function presentNewMusicStatus({
   if (off) {
     return {
       ...common,
-      text: 'New music off',
-      short: 'New music off',
-      sentence: 'Playing the Tracks you already have. Nothing is being bought.',
+      text: 'New Music Off',
+      short: 'New Music Off',
+      sentence: 'Playing the tracks you already have. Nothing is being bought.',
       icon: 'off',
     };
   }
   if (isDurationTargetReached(target, session.generatedDurationSeconds)) {
     return {
       ...common,
-      text: `New music finished · ${generated} min`,
+      text: `New Music Finished · ${generated} min`,
       short: `Done · ${generated} min`,
       sentence: `The ${target} min target is reached. Repeating, nothing more is bought.`,
       icon: 'finished',
@@ -111,7 +111,7 @@ export function presentNewMusicStatus({
   if (generationStatus === 'repeat_cost_limit') {
     return {
       ...common,
-      text: 'Limit reached · Repeating',
+      text: 'Limit Reached · Repeating',
       short: 'Limit · Repeat',
       sentence: 'Your generation limit is used up. Nothing is being bought.',
       icon: 'paused',
@@ -120,30 +120,30 @@ export function presentNewMusicStatus({
   if (generationStatus !== 'ok' && generationStatus !== 'repeat_buffer_complete') {
     return {
       ...common,
-      text: 'New music paused',
+      text: 'New Music Paused',
       short: 'Paused',
-      sentence: 'New music is on, but a problem is holding it. Nothing is being bought.',
+      sentence: 'New Music is on, but a problem is holding it. Nothing is being bought.',
       icon: 'paused',
     };
   }
   if (target !== null && progress !== null) {
     return {
       ...common,
-      text: `${progress} generated`,
+      text: `${progress} Generated`,
       short: progress,
       sentence: loopHeld
         ? LOOP_HOLD_SENTENCE
         : unknown
-          ? 'Some audio durations are unknown. New Tracks wait until they are measured, and your music stays playable.'
-          : `Nothing is being bought right now. New Tracks come when the Queue runs low, up to ${target - generated} more min, then it repeats.`,
+          ? 'Some audio durations are unknown. New tracks wait until they are measured, and your music stays playable.'
+          : `Nothing is being bought right now. New tracks come when the queue runs low, up to ${target - generated} more min, then it repeats.`,
       icon: 'target',
     };
   }
   return {
     ...common,
-    text: 'New music on · no limit',
-    short: 'On · no limit',
-    sentence: loopHeld ? LOOP_HOLD_SENTENCE : 'Keeps buying new Tracks for as long as you listen.',
+    text: 'New Music On · No Limit',
+    short: 'On · No Limit',
+    sentence: loopHeld ? LOOP_HOLD_SENTENCE : 'Keeps buying new tracks for as long as you listen.',
     icon: 'no-limit',
   };
 }

@@ -16,7 +16,7 @@ import { DescribeFineTuneSection } from './describe-session-panel';
 
 afterEach(cleanup);
 
-const HINT_TEXT = /Settings → My voice/;
+const HINT_TEXT = /Settings → My Voice/;
 const noop = () => {};
 
 const DESCRIBE_PICKS: DescribeFineTune = {

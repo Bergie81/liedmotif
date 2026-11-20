@@ -39,7 +39,7 @@ export async function POST(request: Request) {
       coverImageId: parsed.coverImageId,
     });
     if (!entry) {
-      return apiError('not_found', 'This cover is not part of the Playlist’s cover history.');
+      return apiError('not_found', 'This cover is not part of the playlist’s cover history.');
     }
   }
 

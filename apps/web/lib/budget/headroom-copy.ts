@@ -57,8 +57,8 @@ export function creationHeadroomMessage(
 ): string {
   const { scope, window, resetWindow, remainingTracks, minHeadroomTracks, windowCapTracks } =
     decision;
-  const needs = `A new Session needs ${minHeadroomTracks} ${trackNoun(minHeadroomTracks)}`;
-  const admin = adminName ?? 'the Admin';
+  const needs = `A new session needs ${minHeadroomTracks} ${trackNoun(minHeadroomTracks)}`;
+  const admin = adminName ?? 'the admin';
   const noReset = `Your budget doesn’t reset — ask ${admin} for more.`;
 
   if (window === 'total') {
@@ -85,7 +85,7 @@ export function creationHeadroomMessage(
   const holder = scope === 'pool' ? 'the shared budget has' : 'you have';
   const shortfall = `${needs}; ${holder} ${left} left${HEADROOM_PERIOD[window]}.`;
   if (resetWindow === 'total') return `${shortfall} ${noReset} ${WAY_OUT}`;
-  return `${shortfall} More Tracks ${RESET[resetWindow]} (${resetTimezone}). ${WAY_OUT}`;
+  return `${shortfall} More tracks ${RESET[resetWindow]} (${resetTimezone}). ${WAY_OUT}`;
 }
 
 /**
@@ -96,6 +96,6 @@ export function creationHeadroomMessage(
 export function newMusicPausedMessage(
   viewer: { role: 'admin' } | { role: 'member'; adminName: string | null },
 ): string {
-  if (viewer.role === 'admin') return 'New music is paused in Settings › Generation.';
-  return `${viewer.adminName ?? 'The Admin'} has paused new music.`;
+  if (viewer.role === 'admin') return 'New Music is paused in Settings › Generation.';
+  return `${viewer.adminName ?? 'The admin'} has paused new music.`;
 }

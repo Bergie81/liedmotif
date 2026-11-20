@@ -126,11 +126,11 @@ describe('TrackOptionsSheet — a Track that could not be kept', () => {
     renderSheet(vi.fn(), FAILED);
 
     const row = (label: string) => screen.getByText(label).closest('button') as HTMLButtonElement;
-    expect(row('Play now').disabled).toBe(true);
+    expect(row('Play Now').disabled).toBe(true);
     expect(row('Add to Favorites').disabled).toBe(true);
     const download = screen.getByTestId('library-download-track') as HTMLButtonElement;
     expect(download.disabled).toBe(true);
-    expect(download.textContent).toContain('Could not be kept');
+    expect(download.textContent).toContain('Could Not Be Kept');
   });
 
   it('can still leave Favorites, the Library and be deleted', () => {

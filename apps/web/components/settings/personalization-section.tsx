@@ -44,7 +44,7 @@ export function PersonalizationSection({ initialEnabled }: { initialEnabled: boo
       <SettingsCard>
         <SettingsControlRow
           label="Personalize suggestions"
-          description="Learns from what you play, favorite and keep in Playlists to suggest For you genres. Off stops learning and its use; your stats keep recording."
+          description="Learns from what you play, favorite and keep in playlists to suggest For you genres. Off stops learning and its use; your stats keep recording."
           descriptionId={PERSONALIZE_DESCRIPTION_ID}
         >
           <Switch
@@ -70,9 +70,9 @@ export function PersonalizationSection({ initialEnabled }: { initialEnabled: boo
       </SettingsCard>
       {confirmingReset ? (
         <ConfirmDialog
-          heading="Reset learned taste"
-          body="What Liedmotif has learned about your taste is forgotten for good, and your current Favorites and Playlists will not refill it: only what you play and keep from now on teaches it again. Your listening history, stats and music are not touched."
-          confirmLabel="Reset taste"
+          heading="Reset Learned Taste"
+          body="What Liedmotif has learned about your taste is forgotten for good, and your current Favorites and playlists will not refill it: only what you play and keep from now on teaches it again. Your listening history, stats and music are not touched."
+          confirmLabel="Reset Taste"
           onConfirm={reset}
           onClose={() => setConfirmingReset(false)}
         />

@@ -286,8 +286,7 @@ it('keeps what was written when the answer fails part-way', async () => {
   reply.send({ type: 'text', text: 'Open **Settings' });
   reply.send({
     type: 'error',
-    error: makeApiError('provider_error', 'The Text AI stopped answering. Try again.', true)
-      .error,
+    error: makeApiError('provider_error', 'The Text AI stopped answering. Try again.', true).error,
   });
 
   await vi.waitFor(() => expect(conversation.getState().answering).toBe(false));
@@ -570,7 +569,7 @@ it('records what became of an action, and tells the next request', async () => {
   expect(asked[1]!.request.messages[1]).toEqual({
     role: 'assistant',
     content:
-      '[Not done by the app: the browser refused to start the audio when the player was told to play on. The user was shown a "Tap to play" button.]',
+      '[Not done by the app: the browser refused to start the audio when the player was told to play on. The user was shown a "Tap to Play" button.]',
   });
 });
 

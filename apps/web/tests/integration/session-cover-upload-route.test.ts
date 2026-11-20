@@ -289,7 +289,7 @@ describe.skipIf(skip)('POST /api/sessions/cover/upload', () => {
     const { response } = await uploadImage(sessionId);
     expect(response.status).toBe(429);
     const { error } = (await response.clone().json()) as { error: { message: string } };
-    expect(error.message).toContain('The Admin needs to free space or raise the quota.');
+    expect(error.message).toContain('The admin needs to free space or raise the quota.');
     expect(error.message).not.toContain('Settings');
     expect(holder.stored.size).toBe(0);
     expect(await testDb.db.select().from(coverImages)).toEqual([]);

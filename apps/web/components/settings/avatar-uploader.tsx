@@ -67,7 +67,7 @@ export function AvatarUploader({
 
   const picker = useImageCropPicker({
     target: AVATAR_UPLOAD,
-    heading: 'Profile photo',
+    heading: 'Profile Photo',
     onError: report,
     onUpload: (file) => {
       const form = new FormData();
@@ -93,7 +93,7 @@ export function AvatarUploader({
             className={secondaryButtonClass}
           >
             <ImageUp className="h-4 w-4" aria-hidden />
-            {working ? 'Working…' : imageUrl ? 'Change photo' : 'Upload photo'}
+            {working ? 'Working…' : imageUrl ? 'Change Photo' : 'Upload Photo'}
           </button>
           {imageUrl ? (
             <button

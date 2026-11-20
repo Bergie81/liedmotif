@@ -6,7 +6,7 @@
 import type { AssistantCard } from '@liedmotif/shared';
 import { quoted } from './music-names';
 
-/** How much music New music on may make, as the model reads it; null minutes is No limit. */
+/** How much music New Music on may make, as the model reads it; null minutes is No limit. */
 export const newMusicLimitNote = (targetMinutes: number | null) =>
   targetMinutes === null ? 'with no limit' : `up to ${targetMinutes} minutes of music`;
 
@@ -35,7 +35,7 @@ export function cardNote(card: AssistantCard): string {
       return length ? `${note}, ${length}` : note;
     }
     case 'newMusicOn':
-      return `switch New music on for the Session ${quoted(card.session.name)}, ${newMusicLimitNote(card.targetDurationMinutes)}`;
+      return `switch New Music on for the Session ${quoted(card.session.name)}, ${newMusicLimitNote(card.targetDurationMinutes)}`;
     case 'surprise': {
       const { suggestion } = card;
       const minutes = card.targetDurationMinutes;

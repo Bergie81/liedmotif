@@ -115,7 +115,7 @@ function NewMusicPanel({
 
   return (
     <OnlineOnly>
-      <div className="mt-4 space-y-2" role="group" aria-label="New music">
+      <div className="mt-4 space-y-2" role="group" aria-label="New Music">
         {CHOICE_ORDER.map((id) => {
           const { label, detail } = NEW_MUSIC_CHOICES[id];
           const selected = choice === id;
@@ -204,7 +204,7 @@ export function NewMusicSheet({
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent side="bottom" className="flex flex-col">
-        <SheetHeader title="New music" description={status.sentence} closeDisabled={saving} />
+        <SheetHeader title="New Music" description={status.sentence} closeDisabled={saving} />
         <SheetBody>
           <NewMusicPanel
             session={session}

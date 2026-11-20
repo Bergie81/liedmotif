@@ -93,7 +93,7 @@ export function OfflineMenuRow({ kind, id }: { kind: OfflineMarkKind; id: string
         />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate">Available offline</p>
+        <p className="truncate">Available Offline</p>
         <p role="status" data-testid="offline-status" className={menuRowDescriptionClass}>
           {message ?? statusLine(status)}
         </p>
@@ -103,7 +103,7 @@ export function OfflineMenuRow({ kind, id }: { kind: OfflineMarkKind; id: string
         disabled={busy || markBlocked}
         title={markBlocked ? OFFLINE_HINT : undefined}
         aria-busy={busy}
-        aria-label="Available offline"
+        aria-label="Available Offline"
         data-testid="offline-toggle"
         onCheckedChange={(next) => void toggle(next)}
       />

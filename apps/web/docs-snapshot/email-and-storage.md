@@ -1,26 +1,26 @@
 ---
-title: Email and storage
+title: Email and Storage
 description: Let Liedmotif send invites and password resets, decide whether your library belongs on disk or in a bucket, and see how much room your music takes.
-checkedOn: 2026-11-19
+checkedOn: 2026-11-20
 ---
 
 Both of these are optional, and Liedmotif works fine without them. Add account email when other people use your instance, or when you want a way back in if you forget your password. Most people should leave storage on the server's own disk, the default.
 
-## Account email
+## Account Email
 
 With email on, Liedmotif mails its one-time links for you. Without it, you copy each link and hand it over yourself.
 
 | | Email on | Email off |
 | --- | --- | --- |
 | Inviting someone | You type their address, and the invite arrives by mail. That address becomes their login | You copy the invite link and send it yourself |
-| Forgot password | **Forgot password?** on the sign-in page mails a link | The sign-in page doesn't offer it |
-| Changing your password | **Change password** in **Settings › Profile** mails a link | The same button asks for your current password |
-| Resetting a member's password | **Reset password** on their card mails a link | You copy the link and send it yourself |
+| Forgot password | **Forgot Password?** on the sign-in page mails a link | The sign-in page doesn't offer it |
+| Changing your password | **Change Password** in **Settings › Profile** mails a link | The same button asks for your current password |
+| Resetting a member's password | **Reset Password** on their card mails a link | You copy the link and send it yourself |
 | [Instance alerts](/docs/alerts) by email | Possible | Webhook only |
 
 Everything else, music included, works the same either way. An admin locked out with email off can still [reset the password on the server](/docs/troubleshooting).
 
-### Set it up
+### Set It Up
 
 Account email has no settings page. Add these two lines to `.env`, in the folder that holds your Liedmotif files (`/opt/liedmotif` after a one-line install, `liedmotif` on a laptop):
 
@@ -54,26 +54,26 @@ MAIL_FROM=Liedmotif <you@gmail.com>
 
 Keep `MAIL_FROM` on the same Gmail address, because Gmail replaces any sender it hasn't verified with the account's own address.
 
-### Where to send from
+### Where to Send From
 
 Use a mailbox you already have, as above, or a mail service. At this volume, both are free, and your own domain delivers best. Sending directly from a home server isn't supported, because mail from a residential address lands in spam or gets refused.
 
-### Confirm your address
+### Confirm Your Address
 
 A reset mail only goes to a confirmed address on an account that isn't disabled. A member who joined through a mailed invite is confirmed from the start. Everyone else, the admin included, confirms like this:
 
-1. Open **Settings › Profile** and press **Send confirm link**.
-2. Open the mail, follow the link, and press **Confirm email**.
+1. Open **Settings › Profile** and press **Send Confirm Link**.
+2. Open the mail, follow the link, and press **Confirm Email**.
 
-Until then, **Forgot password?** sends that address nothing, and its reply reads the same either way, so nobody can use it to test which addresses exist. **Reset password** on a member's card shows a link to copy instead and says why. Instance alerts by email also go only to the admin's confirmed address.
+Until then, **Forgot Password?** sends that address nothing, and its reply reads the same either way, so nobody can use it to test which addresses exist. **Reset Password** on a member's card shows a link to copy instead and says why. Instance alerts by email also go only to the admin's confirmed address.
 
 **Do this now if you're the admin.** It's what gets you back in when you forget your password.
 
-### If you set up with a placeholder address
+### If You Set Up with a Placeholder Address
 
-A reset mail can only reach you at a real inbox. To replace the address you used during setup, open **Settings › Profile** and change the email. It asks for your current password and signs out your other devices. With email on, a confirm link goes to the new address straight away, and **Send confirm link** sends another if it doesn't arrive. Moving away from a confirmed address also mails that old address a notice of the change. An address that an open invite was mailed to is refused with `That address has an open invite. Revoke the invite first.` Revoke it under **Open invites** in **Settings › Members**, then save again.
+A reset mail can only reach you at a real inbox. To replace the address you used during setup, open **Settings › Profile** and change the email. It asks for your current password and signs out your other devices. With email on, a confirm link goes to the new address straight away, and **Send Confirm Link** sends another if it doesn't arrive. Moving away from a confirmed address also mails that old address a notice of the change. An address that an open invite was mailed to is refused with `That address has an open invite. Revoke the invite first.` Revoke it under **Open Invites** in **Settings › Members**, then save again.
 
-### How long links last
+### How Long Links Last
 
 | Link | Lasts |
 | --- | --- |
@@ -84,7 +84,7 @@ A reset mail can only reach you at a real inbox. To replace the address you used
 
 A new reset link cancels any older ones for that account.
 
-## Where your data lives
+## Where Your Data Lives
 
 By default, everything stays in Docker volumes on the machine running Liedmotif, separate from the app itself. Updates and restarts leave them alone.
 
@@ -99,7 +99,7 @@ By default, everything stays in Docker volumes on the machine running Liedmotif,
 
 **The database and the music belong together.** A track is an audio file plus a database row, and one without the other won't play. Keep them together when you move things around.
 
-### Using your own folder
+### Using Your Own Folder
 
 To keep music in a folder you can see, rather than a Docker volume, replace `liedmotif-data` with `./data` in `docker-compose.yml`, on the `/data` line of `web`, `worker` and `backup`. The folder has to exist and belong to user 1000, or the app can't write to it:
 
@@ -116,13 +116,13 @@ Liedmotif checks its storage folder at every start and refuses to start if it ca
 
 > **The one-line installer replaces `docker-compose.yml` on every update.** Your edit would be lost and the app would be back on the empty volume, so stay with the volume on an installer setup.
 
-## How much room you need
+## How Much Room You Need
 
 A track takes about 5 MB, so 1,000 tracks need about 5 GB, and that's about 58 hours of music. Backups share unchanged files with each other, so they add little on top. A 64 GB disk is plenty to start.
 
 **Settings › Storage** shows what you've used. Two limits keep a growing library from causing harm:
 
-**The storage quota** is 10 GiB by default, about 2,000 tracks. It counts track audio, covers and photos of your people, but not avatars. Change it under **Storage quota** in **Settings › Cost limits**. At the quota:
+**The storage quota** is 10 GiB by default, about 2,000 tracks. It counts track audio, covers and photos of your people, but not avatars. Change it under **Storage quota** in **Settings › Cost Limits**. At the quota:
 
 - Sessions stop making new tracks, and uploads are refused, with a message that names the quota.
 - Playing, deleting and work already underway carry on.
@@ -132,7 +132,7 @@ Room you free up shows after the next measurement, which happens hourly and when
 
 **The free-space floor** sits underneath the quota. With less than 256 MB left on the disk, uploads are refused and downloads of finished tracks wait and retry, so a full disk can't take your database down with it.
 
-## S3-compatible object storage
+## S3-Compatible Object Storage
 
 Instead of the server's disk, Liedmotif can keep all its files in a bucket on a storage service. Sessions, playback and everything else behave the same.
 
@@ -151,7 +151,7 @@ Instead of the server's disk, Liedmotif can keep all its files in a bucket on a 
 - Liedmotif's backups then hold only the database, and the list says so. Turn on versioning for your bucket. If you also snapshot it, do that at or after the database backup, never before, because a snapshot taken earlier misses files the backup points to, and those tracks won't play.
 - The quota still applies, but the free-space floor doesn't, because a bucket has no disk to measure.
 
-### Set it up
+### Set It Up
 
 Any service that speaks the S3 API works: AWS S3, Cloudflare R2, Backblaze B2, Hetzner Object Storage or a MinIO you run yourself. Liedmotif doesn't include MinIO. Create a private bucket and a key for it, then add this to `.env`:
 
@@ -182,7 +182,7 @@ Start Liedmotif with `docker compose up -d`. If a required line is missing, it r
 
 **How your media is served.** Your bucket can stay fully private, and it should. Your server reads the files and passes them to the browser, after checking that the listener is allowed to have them. No bucket address ever reaches a browser.
 
-### Move an existing library
+### Move an Existing Library
 
 Copy the library across before you switch, or your existing tracks won't play. The folders on disk match the names in the bucket, so a plain sync is all it takes, with nothing to change in the database. Copy everything in your data folder or volume to the top of the bucket, or into your `S3_KEY_PREFIX` folder if you use one.
 

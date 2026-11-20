@@ -66,14 +66,14 @@ export function PlaybackForm({ initial }: { initial: PlaybackSettings }) {
       <SettingsSection title="Blending">
         <SettingsCard>
           <SettingsControlRow
-            label="Blend consecutive Tracks"
-            description="Crossfades between Tracks; off plays them back to back"
+            label="Blend consecutive tracks"
+            description="Crossfades between tracks; off plays them back to back"
           >
             <Switch
               checked={blendEnabled}
               onCheckedChange={setBlendEnabled}
               disabled={saving}
-              aria-label="Blend consecutive Tracks"
+              aria-label="Blend consecutive tracks"
             />
           </SettingsControlRow>
 
@@ -104,7 +104,7 @@ export function PlaybackForm({ initial }: { initial: PlaybackSettings }) {
           disabled={saving}
           className={`${primaryButtonClass} mt-4 w-full`}
         >
-          {saving ? 'Saving…' : 'Save playback'}
+          {saving ? 'Saving…' : 'Save Playback'}
         </button>
       </SettingsSection>
     </>

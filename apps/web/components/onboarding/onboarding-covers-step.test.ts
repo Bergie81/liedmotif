@@ -160,32 +160,32 @@ describe('onboarding covers step budget note', () => {
       renderCovers({ imageConnected: false, ceilingEnabled: true }),
       renderCovers({ tailoredCoverArtEnabled: false, ceilingEnabled: true }),
     ]) {
-      expect(markup).not.toContain('Covers a day');
-      expect(markup).not.toContain('No cap on your own Covers');
+      expect(markup).not.toContain('covers a day');
+      expect(markup).not.toContain('No cap on your own covers');
     }
   });
 
   it('keeps the Cover caps inert while only the placeholder is coming', () => {
     const markup = renderCovers({ imageConnected: false, tailoredCoverArtEnabled: false });
-    expect(markup).toMatch(/<button[^>]*aria-label="Limit my Covers"[^>]*\sdisabled=""/);
+    expect(markup).toMatch(/<button[^>]*aria-label="Limit my covers"[^>]*\sdisabled=""/);
   });
 
   it('lets the caps be set for music-provider Covers, which count toward them at no image price', () => {
     const music = { imageConnected: false, musicProviderCoverConfigured: true };
     const switchOnly = renderCovers({ ...music, tailoredCoverArtEnabled: false });
-    expect(switchOnly).not.toMatch(/<button[^>]*aria-label="Limit my Covers"[^>]*\sdisabled=""/);
-    expect(switchOnly).toContain('count toward your Cover limits');
+    expect(switchOnly).not.toMatch(/<button[^>]*aria-label="Limit my covers"[^>]*\sdisabled=""/);
+    expect(switchOnly).toContain('count toward your cover limits');
     expect(switchOnly).not.toContain('for free');
 
     const capped = renderCovers({ ...music, tailoredCoverArtEnabled: false, ceilingEnabled: true });
-    expect(capped).toContain('25 Covers a day');
+    expect(capped).toContain('25 covers a day');
     expect(capped).not.toContain('$');
     expect(capped).not.toMatch(
       /<button[^>]*aria-label="Decrease Covers per day"[^>]*\sdisabled=""/,
     );
 
     const uncapped = renderCovers({ ...music, tailoredCoverArtEnabled: false });
-    expect(uncapped).toContain('No cap on your own Covers');
+    expect(uncapped).toContain('No cap on your own covers');
     expect(uncapped).toContain('plus any you regenerate, at no extra cost.');
     expect(uncapped).not.toMatch(/cents<\/span> each/);
   });
@@ -193,12 +193,12 @@ describe('onboarding covers step budget note', () => {
   it('explains the uncapped spend while painting with the ceiling off', () => {
     const markup = renderCovers({ ceilingEnabled: false });
 
-    expect(markup).toContain('No cap on your own Covers');
-    expect(markup).not.toContain('Covers a day');
+    expect(markup).toContain('No cap on your own covers');
+    expect(markup).not.toContain('covers a day');
   });
 
   it('prices the daily cap while painting with the ceiling on', () => {
-    expect(renderCovers({ ceilingEnabled: true })).toContain('25 Covers a day');
+    expect(renderCovers({ ceilingEnabled: true })).toContain('25 covers a day');
   });
 });
 
@@ -209,11 +209,11 @@ describe('onboarding covers step price', () => {
   const gemini = { ...openRouter, providerKey: 'gemini', displayName: 'Gemini' };
 
   it("states the selected provider's price per Cover on the switch", () => {
-    expect(renderCovers({ credential: gemini })).toContain('about 4 cents a Cover');
+    expect(renderCovers({ credential: gemini })).toContain('about 4 cents a cover');
     expect(renderCovers({ imageConnected: false, credential: gemini })).toContain(
-      'about 4 cents a Cover',
+      'about 4 cents a cover',
     );
-    expect(renderCovers({})).toContain('about 7 cents a Cover');
+    expect(renderCovers({})).toContain('about 7 cents a cover');
   });
 
   it("prices the Cover budget note at the selected provider's price", () => {
@@ -257,7 +257,7 @@ describe('onboarding covers step provider', () => {
     expect(screen.getByRole('button', { name: 'OpenAI' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Gemini' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'OpenRouter' })).toBeNull();
-    pick('More options');
+    pick('More Options');
     expect(screen.getByRole('button', { name: 'OpenRouter' })).toBeTruthy();
     expect(screen.getByText('Model')).toBeTruthy();
   });
@@ -279,7 +279,7 @@ describe('onboarding covers step provider', () => {
     fresh({ sharedKeyVendor: 'openai' });
 
     expect(screen.getByText('Uses your OpenAI key')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Use a separate key' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Use a Separate Key' })).toBeTruthy();
     expect(keyField()).toBeNull();
     expect(screen.queryByText('Where do I get an OpenAI key?')).toBeNull();
   });
@@ -342,7 +342,7 @@ describe('onboarding covers step provider', () => {
       },
     });
 
-    pick('Use a separate key');
+    pick('Use a Separate Key');
     expect(keyField()).toBeTruthy();
     expect(screen.queryByText('LEAVE BLANK TO KEEP')).toBeNull();
   });
@@ -410,7 +410,7 @@ describe('onboarding covers step provider', () => {
         { onConnected },
       ),
     );
-    pick('Save and continue');
+    pick('Save and Continue');
     await waitFor(() => expect(onConnected).toHaveBeenCalled());
     expect(onConnected).toHaveBeenLastCalledWith(
       expect.objectContaining({ providerKey: 'openai', ownKey: false }),
@@ -419,10 +419,10 @@ describe('onboarding covers step provider', () => {
 
   it('names the selected vendor and its price on the switch', () => {
     fresh({ sharedKeyVendor: 'openai' });
-    expect(screen.getByText('Uses OpenAI · about 6 cents a Cover')).toBeTruthy();
+    expect(screen.getByText('Uses OpenAI · about 6 cents a cover')).toBeTruthy();
 
     pick('Gemini');
-    expect(screen.getByText('Uses Gemini · about 4 cents a Cover')).toBeTruthy();
+    expect(screen.getByText('Uses Gemini · about 4 cents a cover')).toBeTruthy();
   });
 
   it('asks for no key while the switch is off, even with a shared key', () => {
@@ -445,7 +445,7 @@ describe('onboarding covers step provider', () => {
     const onDone = vi.fn();
     fresh({ sharedKeyVendor: 'gemini', onDone });
 
-    pick('Save and continue');
+    pick('Save and Continue');
     await waitFor(() => expect(onDone).toHaveBeenCalled());
 
     expect(sent[0]).toMatchObject({
@@ -471,7 +471,7 @@ describe('onboarding covers step provider', () => {
     const onDone = vi.fn();
     fresh({ sharedKeyVendor: 'gemini', tailoredCoverArtEnabled: false, onDone });
 
-    pick('Save and continue');
+    pick('Save and Continue');
     await waitFor(() => expect(onDone).toHaveBeenCalled());
 
     expect(urls).toEqual(['/api/settings/limits']);

@@ -111,10 +111,10 @@ export function PoolPanel({
         disabled={busy}
         className={`${compactPrimaryButtonClass} mt-4`}
       >
-        {busy ? 'Saving…' : 'Save shared budget'}
+        {busy ? 'Saving…' : 'Save Shared Budget'}
       </button>
       <SettingsFootnote>
-        Every Member generation needs headroom in their own budget AND here. The Admin&apos;s own
+        Every member generation needs headroom in their own budget AND here. The admin&apos;s own
         listening never draws from this pool.
       </SettingsFootnote>
     </SettingsCard>

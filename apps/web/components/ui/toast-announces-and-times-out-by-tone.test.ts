@@ -85,14 +85,14 @@ describe('Toaster', () => {
     wait(60_000);
     expect(shownToasts()).toHaveLength(1);
 
-    act(() => screen.getByRole('button', { name: 'Close notification' }).click());
+    act(() => screen.getByRole('button', { name: 'Close Notification' }).click());
     expect(shownToasts()).toEqual([]);
   });
 
   it('times the next toast out after the last one was closed from its button', () => {
     render(h(Toaster));
     show(() => toast.error('Delete failed: Offline.'));
-    const close = screen.getByRole('button', { name: 'Close notification' });
+    const close = screen.getByRole('button', { name: 'Close Notification' });
     act(() => close.focus());
     act(() => close.click());
     wait(300);
@@ -137,7 +137,7 @@ describe('Toaster', () => {
     render(h(Toaster));
 
     show(() =>
-      toast.warning('New music is paused for today.', {
+      toast.warning('New Music is paused for today.', {
         title: 'Daily limit reached',
         link: { label: 'Cost settings', href: '/settings/costs' },
       }),

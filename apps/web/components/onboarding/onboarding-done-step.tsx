@@ -43,8 +43,8 @@ function ownVoiceRow(ready: boolean): UntouchedRow {
     title: ready ? 'Your singing voice is ready' : 'Your singing voice not set up',
     description: ready
       ? 'Sessions can sing in your voice when you ask them to'
-      : 'Record a sample and Sessions can sing in your voice',
-    where: 'My voice',
+      : 'Record a sample and sessions can sing in your voice',
+    where: 'My Voice',
   };
 }
 
@@ -62,8 +62,8 @@ function untouchedRows({
       title: 'Instrumental by default',
       description:
         generation.defaultLanguage === 'auto'
-          ? 'Turn on vocals for any Session, in the language you type'
-          : `Turn on vocals for any Session, in ${sessionLanguageLabel(generation.defaultLanguage)}`,
+          ? 'Turn on vocals for any session, in the language you type'
+          : `Turn on vocals for any session, in ${sessionLanguageLabel(generation.defaultLanguage)}`,
       where: 'Generation',
     },
     {
@@ -76,11 +76,11 @@ function untouchedRows({
     {
       icon: Gauge,
       title: generation.bufferEnabled
-        ? `New Sessions generate ${generation.bufferAheadTracks} Tracks ahead`
-        : 'New Sessions play existing Tracks',
+        ? `New sessions generate ${generation.bufferAheadTracks} tracks ahead`
+        : 'New sessions play existing tracks',
       description: generation.bufferEnabled
         ? 'Keeps new music ready while you listen'
-        : 'One first batch, then they loop. Change it for any Session in the player',
+        : 'One first batch, then they loop. Change it for any session in the player',
       where: 'Generation',
     },
     {
@@ -88,9 +88,9 @@ function untouchedRows({
       title: `Cover style set to ${COVER_STYLE_LABELS[coverStyle]}`,
       description:
         coverStyle === 'auto'
-          ? 'Each Session picks a look from its own mood'
-          : 'Every Session uses this look until you change it',
-      where: 'Cover art',
+          ? 'Each session picks a look from its own mood'
+          : 'Every session uses this look until you change it',
+      where: 'Cover Art',
     },
     {
       icon: HardDrive,
@@ -140,14 +140,14 @@ export function OnboardingDoneStep({ untouched }: { untouched: OnboardingUntouch
           <Check className="h-[22px] w-[22px] desk:h-[30px] desk:w-[30px]" strokeWidth={2.6} />
         </span>
         <h1 className="font-display text-[clamp(26px,7vw,34px)] font-extrabold leading-[1.12] tracking-[-0.025em]">
-          You&apos;re on the air!
+          You&apos;re on the Air!
         </h1>
       </header>
       <p className="mt-2 text-[14.5px] leading-relaxed text-muted">
         Describe what the music is for. Liedmotif makes it and keeps playing until you stop.
       </p>
 
-      <OnboardingSubhead>Left at the defaults</OnboardingSubhead>
+      <OnboardingSubhead>Left at the Defaults</OnboardingSubhead>
       <p className="mb-3.5 text-[14.5px] leading-relaxed text-muted">
         Change them any time in Settings, or in <EnvVar>.env</EnvVar> where marked.
       </p>
@@ -176,7 +176,7 @@ export function OnboardingDoneStep({ untouched }: { untouched: OnboardingUntouch
 
       <OnboardingActions>
         <OnboardingPrimaryAction
-          label="Start your first Session"
+          label="Start Your First Session"
           busyLabel="Opening Liedmotif…"
           busy={finishing}
           icon={<Play className="h-[17px] w-[17px]" aria-hidden />}

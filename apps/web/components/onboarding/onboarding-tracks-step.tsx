@@ -61,9 +61,9 @@ export function OnboardingTracksStep({
 
   return (
     <section>
-      <OnboardingStepHeader eyebrow="Optional" title="Set a Track limit">
-        Every new Track costs money. A limit stops new Tracks for the day or month, across all your
-        Sessions. Leave it off for no limit.
+      <OnboardingStepHeader eyebrow="Optional" title="Set a Track Limit">
+        Every new track costs money. A limit stops new tracks for the day or month, across all your
+        sessions. Leave it off for no limit.
       </OnboardingStepHeader>
 
       <OnboardingSubhead icon={<Gauge className="h-[17px] w-[17px]" aria-hidden />}>
@@ -72,14 +72,14 @@ export function OnboardingTracksStep({
 
       <OnboardingCard className="mt-0">
         <SettingsControlRow
-          label="Limit my Tracks"
+          label="Limit my tracks"
           description="Only affects you. Members have their own budgets."
         >
           <Switch
             checked={ceiling.enabled}
             disabled={saving}
             onCheckedChange={(enabled) => onChange(switchTrackCeiling(ceiling, enabled, capFloor))}
-            aria-label="Limit my Tracks"
+            aria-label="Limit my tracks"
           />
         </SettingsControlRow>
       </OnboardingCard>
@@ -111,19 +111,19 @@ export function OnboardingTracksStep({
         {ceiling.enabled ? (
           <>
             <b className="font-semibold text-paper">
-              Up to {note.tracks} Tracks a {binding.window}
+              Up to {note.tracks} tracks a {binding.window}
             </b>
             , about{' '}
             <span className="text-lamp">
               {note.hours > 0 ? `${note.hours} h ` : ''}
               {note.minutes} min
             </span>{' '}
-            of new music. At a limit, Sessions replay what they already made until it resets.
+            of new music. At a limit, sessions replay what they already made until it resets.
           </>
         ) : (
           <>
-            <b className="font-semibold text-paper">No limit on your own Tracks.</b> Tracks only
-            generate while a Session is running, and one nobody is listening to stops by itself.
+            <b className="font-semibold text-paper">No limit on your own tracks.</b> Tracks only
+            generate while a session is running, and one nobody is listening to stops by itself.
           </>
         )}
       </OnboardingNote>
@@ -135,7 +135,7 @@ export function OnboardingTracksStep({
       <OnboardingCard className="mt-0">
         <OnboardingLimitRow
           label="Generating at once"
-          description={`Higher fills the Queue faster and spends faster · ${trackYield} to ${concurrentMax}`}
+          description={`Higher fills the queue faster and spends faster · ${trackYield} to ${concurrentMax}`}
           value={ceiling.concurrentTracks}
           unit="trk"
           step={trackYield}
@@ -149,7 +149,7 @@ export function OnboardingTracksStep({
       </OnboardingCard>
 
       <OnboardingSpendActions
-        label="Save and continue"
+        label="Save and Continue"
         saving={saving}
         error={error}
         onCommit={() => void save(trackCeilingPatch(ceiling, tracksPerRequest))}

@@ -12,7 +12,7 @@ describe('musicSetupMessage', () => {
 
   it('tells a Member to ask the Admin, never naming a settings page', () => {
     const message = musicSetupMessage('member');
-    expect(message).toBe("Music isn't set up on this server yet. Ask the Admin to set it up.");
+    expect(message).toBe("Music isn't set up on this server yet. Ask the admin to set it up.");
     expect(message).not.toMatch(/Settings/);
   });
 });

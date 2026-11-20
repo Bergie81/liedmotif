@@ -38,10 +38,10 @@ export const SUBMIT_BLOCK_MESSAGES = {
       'raise it in Settings → Generation, or delete tracks you no longer keep.',
     member:
       'Storage on this server is full, so no new tracks are being generated — ' +
-      'playing your ready tracks. The Admin needs to free space or raise the quota.',
+      'playing your ready tracks. The admin needs to free space or raise the quota.',
   },
   own_voice:
-    'This Session sings with your voice, but no ready voice profile is available — use Change Vibe to switch to generic vocals.',
+    'This session sings with your voice, but no ready voice profile is available — use Change Vibe to switch to generic vocals.',
 } as const;
 
 export type SubmitBlockReason = keyof typeof SUBMIT_BLOCK_MESSAGES;
@@ -75,7 +75,7 @@ export const PROVIDER_UNAVAILABLE_MESSAGES = {
   playing:
     'The music provider is under maintenance — generation resumes automatically when it is back.',
   noTracks:
-    'No Tracks yet — the music provider is under maintenance; generation starts automatically when it is back.',
+    'No tracks yet — the music provider is under maintenance; generation starts automatically when it is back.',
 } as const;
 
 /** The bound a cost-limit stop recorded: the Member half of the scope vocabulary, and its window. */

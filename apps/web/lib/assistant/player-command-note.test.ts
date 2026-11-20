@@ -29,7 +29,7 @@ describe('what the next request is told about a player command', () => {
 
   it('says the browser refused to start the audio, and what the user was shown', () => {
     expect(record('blocked')).toBe(
-      '[Not done by the app: the browser refused to start the audio when the player was told to play on. The user was shown a "Tap to play" button.]',
+      '[Not done by the app: the browser refused to start the audio when the player was told to play on. The user was shown a "Tap to Play" button.]',
     );
   });
 

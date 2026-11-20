@@ -142,7 +142,7 @@ const shownErrors = () =>
   shownToasts().flatMap((shown) => (shown.tone === 'error' ? [shown.message] : []));
 
 async function deleteTrackFromOptions() {
-  fireEvent.click(screen.getAllByRole('button', { name: 'Session and Track options' })[0]!);
+  fireEvent.click(screen.getAllByRole('button', { name: 'Session and Track Options' })[0]!);
   fireEvent.click(within(screen.getByRole('dialog')).getByTestId('player-delete-track'));
   fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
   await act(async () => {});

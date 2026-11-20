@@ -118,8 +118,8 @@ describe('LoungeView — Admin Return to Private', () => {
     expect(moderate).not.toHaveBeenCalled();
     const dialog = screen.getByTestId('confirm-dialog');
     expect(dialog.textContent).toContain('Nightowl');
-    expect(dialog.textContent).toContain('Every Pin of it');
-    expect(dialog.textContent).toContain('Shared references');
+    expect(dialog.textContent).toContain('Every pin of it');
+    expect(dialog.textContent).toContain('shared references');
   });
 
   it('commits nothing when the dialog is cancelled', () => {
@@ -309,7 +309,7 @@ describe('LoungeView — sharer cards', () => {
       .split(' ')
       .map((id) => document.getElementById(id)?.textContent)
       .join(' ');
-    expect(description).toBe('4 Tracks shared Rainy windows, late trains');
+    expect(description).toBe('4 tracks shared Rainy windows, late trains');
   });
 
   it('toggles the member filter from the card', async () => {
@@ -449,7 +449,7 @@ describe('LoungeView — playing a foreign share', () => {
   });
 
   it('opens the blocked dialog when More Like This from the tile has no headroom', async () => {
-    const message = 'A new Session needs 5 Tracks; you have 4 left today.';
+    const message = 'A new session needs 5 tracks; you have 4 left today.';
     seedMoreLikeThis.mockResolvedValue({
       ok: false,
       error: { code: 'session_headroom_blocked', message, retryable: false },
@@ -484,7 +484,7 @@ describe('LoungeView — Load more', () => {
       }),
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Load more' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Load More' }));
 
     await waitFor(() =>
       expect(shownToasts()).toEqual([

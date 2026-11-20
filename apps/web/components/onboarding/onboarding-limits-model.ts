@@ -153,7 +153,7 @@ export function coverBudgetPatch(budget: CoverBudget): LimitPatch {
   const perDay = wholeLimitNumber(budget.coversPerDay);
   const perMonth = wholeLimitNumber(budget.coversPerMonth);
   if (perDay === null || perMonth === null) {
-    return { ok: false, error: 'Enter a whole number of Covers (0 or more).' };
+    return { ok: false, error: 'Enter a whole number of covers (0 or more).' };
   }
   return {
     ok: true,

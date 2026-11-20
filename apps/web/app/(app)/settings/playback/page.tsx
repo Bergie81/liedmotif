@@ -17,7 +17,7 @@ export default async function PlaybackSettingsPage() {
     <section>
       <SettingsPageHeader
         title="Playback"
-        description="Choose how one Track blends into the next."
+        description="Choose how one track blends into the next."
       />
       <SettingsColumns>
         <PlaybackForm initial={settings} />

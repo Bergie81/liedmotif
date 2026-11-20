@@ -8,9 +8,9 @@ Find your message or symptom below. A message about something you just did, such
 
 Running Liedmotif on a laptop? [The laptop guide](/docs/install/local#troubleshooting) has the problems specific to it, such as ports already in use and signing in at `localhost:2206`.
 
-## First, look
+## First, Look
 
-### Check health
+### Check Health
 
 ```bash
 docker compose ps -a
@@ -40,9 +40,9 @@ docker compose logs worker | grep -i "database reachable"
 docker compose exec worker node -e "console.log(require('fs').statSync('/tmp/liedmotif-worker-heartbeat').mtime)"
 ```
 
-**Settings › Diagnostics & worker** shows the same from inside the app, for the admin: your public URL, the version, the providers, storage, the worker and recent events.
+**Settings › Diagnostics & Worker** shows the same from inside the app, for the admin: your public URL, the version, the providers, storage, the worker and recent events.
 
-### Read the logs
+### Read the Logs
 
 ```bash
 docker compose logs -f              # everything, live. Stop with Ctrl+C
@@ -53,7 +53,7 @@ docker compose logs migrate         # why a database update failed
 
 Use `worker` for making music, `web` for pages and sign-in, `caddy` for certificates and `backup` for backups. Logs leave out keys, tokens and prompts, but read them over before you share them.
 
-### Everyday commands
+### Everyday Commands
 
 ```bash
 docker compose ps           # what's running
@@ -67,13 +67,13 @@ docker compose down         # stop and remove containers, and keep your data
 
 `docker compose restart` doesn't re-read `.env`. After changing `.env`, run `docker compose up -d`. For a change that should only reach the app, `docker compose up -d web` is enough.
 
-## Starting up
+## Starting Up
 
-### A stop takes up to 3 minutes
+### A Stop Takes up to 3 Minutes
 
 That's normal. Stopping Liedmotif lets the worker finish its running jobs first, such as a track download or a paid cover, so a retry doesn't pay twice. Docker gives it up to 3 minutes. The app also keeps serving music that's already streaming for 15 seconds before it closes. Let it finish instead of forcing it. You can lengthen that window with `WEB_SHUTDOWN_GRACE_MS`, and then raise `WEB_STOP_GRACE_PERIOD` above it, so Docker waits long enough. A value that isn't a number stops the app from starting.
 
-### The worker says `another worker process is running against this database; refusing to start a second one`
+### The Worker Says `another worker process is running against this database; refusing to start a second one`
 
 Only one worker may run per database. If the last one crashed, the new one waits up to about 35 seconds and then starts by itself, so give it a moment. If the message stays, look for a second copy of Liedmotif using the same database. Running more than one `web` or `worker` isn't supported.
 
@@ -103,7 +103,7 @@ Liedmotif won't start on a plain `http` address other than `localhost`, because 
 
 Related messages: `APP_PUBLIC_URL must be an absolute http(s):// URL` and `APP_PUBLIC_URL must use http:// or https://` mean the value itself is wrong. Use the full address, with `https://`.
 
-### The log warns `APP_DOMAIN is "<name>" ... but APP_PUBLIC_URL is "<address>"`
+### The Log Warns `APP_DOMAIN is "<name>" ... but APP_PUBLIC_URL is "<address>"`
 
 Caddy serves one address and sign-in expects another, so sign-in will fail or cookies won't be secure. Set `APP_PUBLIC_URL=https://<your APP_DOMAIN>` and run `docker compose up -d web`.
 
@@ -137,19 +137,19 @@ New installs don't need this. If you mounted a folder from the machine instead o
 
 Your database is on a public host, and its address doesn't say `sslmode=verify-full` or `sslmode=verify-ca`. Liedmotif accepts only that spelling. Add `?sslmode=verify-full` to the address, or `verify-ca` where the host name can't be verified. If the address says `ssl=true`, replace it with `sslmode=verify-full`: the connection would be encrypted, but Liedmotif doesn't accept that form. A Docker install sets the address in `DOCKER_DATABASE_URL`, running from source in `DATABASE_URL`.
 
-### A container exits with code 137, or `docker compose ps -a` shows it restarting
+### A Container Exits with Code 137, or `docker compose ps -a` Shows It Restarting
 
 It hit its memory limit, and Docker stopped it. `docker compose stats` shows the use. Raise the limit in `.env`, such as `WEB_MEM_LIMIT` or `WORKER_MEM_LIMIT`, and run `docker compose up -d`. If you raise `WORKER_TMPFS_SIZE`, raise `WORKER_MEM_LIMIT` with it: that temporary space counts as memory. The defaults suit a machine with a few GB of RAM to spare.
 
-### The worker log says `not enough temp-disk headroom`
+### The Worker Log Says `not enough temp-disk headroom`
 
 The worker's temporary space is too small for a large track. It retries by itself. If it keeps happening, raise `WORKER_TMPFS_SIZE` and `WORKER_MEM_LIMIT` together in `.env`.
 
-### An update or install stopped with an error
+### An Update or Install Stopped with an Error
 
 The error names the step and what to try, and running the same command again is safe. [Updates](/docs/updates#if-an-update-fails) lists every stop, including how to go back after a failed database update.
 
-### Database errors when running from source
+### Database Errors When Running from Source
 
 These three only come up when you run the app with `npm run dev`.
 
@@ -169,9 +169,9 @@ source .env
 set +a
 ```
 
-## Reaching your instance
+## Reaching Your Instance
 
-### Another device can't reach it
+### Another Device Can't Reach It
 
 By default, Caddy listens on the machine itself and nothing else. That depends on how you installed:
 
@@ -179,7 +179,7 @@ By default, Caddy listens on the machine itself and nothing else. That depends o
 - **`--domain`:** `.env` needs `CADDY_HTTP_PORT=80` and `CADDY_HTTPS_PORT=443`. The installer writes both, so check that nobody removed them.
 - **By hand, on a domain or local address:** add `CADDY_HTTP_PORT=80` and `CADDY_HTTPS_PORT=443` to `.env`, set `SETUP_TOKEN` before the internet can reach it, and run `docker compose up -d`.
 
-### `Liedmotif did not answer within <n> seconds`, or certificate errors
+### `Liedmotif did not answer within <n> seconds`, or Certificate Errors
 
 Caddy can't get or serve its certificate, or the app is slow to start.
 
@@ -189,7 +189,7 @@ Caddy can't get or serve its certificate, or the app is slow to start.
 
 `docker compose logs caddy` has the details. A request for a host name other than `APP_DOMAIN` only shows up in that log.
 
-## Setup and sign-in
+## Setup and Sign-In
 
 ### `Setup is not available.`
 
@@ -215,9 +215,9 @@ Ten failed attempts from one address lock that address out for 15 minutes. It cl
 
 "Too many requests. Please slow down." is the same kind of limit, on invites, resets, starting sessions and changing the vibe.
 
-### You forgot the admin password
+### You Forgot the Admin Password
 
-With account email on and a confirmed address, use **Forgot password?** on the sign-in page. Otherwise reset it on the machine. The first line waits for you to type the new password, without showing it, and keeps it out of your command history. Press <kbd>Enter</kbd> when you're done:
+With account email on and a confirmed address, use **Forgot Password?** on the sign-in page. Otherwise reset it on the machine. The first line waits for you to type the new password, without showing it, and keeps it out of your command history. Press <kbd>Enter</kbd> when you're done:
 
 ```bash
 read -rs ADMIN_RESET_PASSWORD && export ADMIN_RESET_PASSWORD && echo
@@ -233,11 +233,11 @@ sudo --preserve-env=ADMIN_RESET_PASSWORD docker compose exec -e ADMIN_RESET_PASS
 
 The new password has to meet the usual rules. To name the admin account, add `--email admin@example.com` to the end of that line, using your own address. Every device signed in as the admin is signed out within a minute, so sign in again. The logs record your account's ID and email, never the password.
 
-### A member can't sign in or lost their password
+### A Member Can't Sign In or Lost Their Password
 
 The admin can send a reset link from the member's card in **Settings › Members**. It's mailed if the member has a confirmed address, otherwise you copy the link and pass it on. It lasts 24 hours when copied, and 1 hour when mailed. A disabled member can't sign in until you enable them again.
 
-### Secrets changed
+### Secrets Changed
 
 Sessions fail with `failed to decrypt secret`, or **Settings › AI Providers** says "The stored value cannot be decrypted". `CREDENTIAL_ENCRYPTION_KEY` in `.env` no longer matches the database, usually because the secrets were generated a second time or a backup was restored without them. New `APP_SECRET` and `BETTER_AUTH_SECRET` values only sign everyone out, and people sign in again with their passwords.
 
@@ -246,7 +246,7 @@ Sessions fail with `failed to decrypt secret`, or **Settings › AI Providers** 
 
 Changing `CREDENTIAL_ENCRYPTION_KEY` always makes saved keys unreadable, so keep the [secrets](/docs/backups#keep-these-secrets) somewhere safe.
 
-## Providers and keys
+## Providers and Keys
 
 ### "The music provider rejected these credentials."
 
@@ -256,23 +256,23 @@ The key is wrong, was revoked, or your provider account has a problem. Create a 
 
 ### "The music key is missing or can't be read." or "Music isn't set up on this server yet."
 
-Starting a session, More Like This or Surprise Me is refused because Liedmotif has no music key it can use. Nothing is created or spent. The admin sees "The music key is missing or can't be read. Enter it under Settings › AI Providers." Enter or re-enter the music key there, then press **Test**. If that doesn't help, check `.env`: `MUSIC_PROVIDER` must say `suno`, and `CREDENTIAL_ENCRYPTION_KEY` must be the key the saved one was stored with. A changed `CREDENTIAL_ENCRYPTION_KEY` makes a saved key unreadable: put the original back as in [Secrets changed](#secrets-changed), and enter the key again only if it's lost. With no `CREDENTIAL_ENCRYPTION_KEY` at all, no key can be saved in the app: set one first, as in [`CREDENTIAL_ENCRYPTION_KEY must decode to 32 bytes`](#credential_encryption_key-must-decode-to-32-bytes). A member sees "Music isn't set up on this server yet. Ask the Admin to set it up." and should ask the admin.
+Starting a session, More Like This or Surprise Me is refused because Liedmotif has no music key it can use. Nothing is created or spent. The admin sees "The music key is missing or can't be read. Enter it under Settings › AI Providers." Enter or re-enter the music key there, then press **Test**. If that doesn't help, check `.env`: `MUSIC_PROVIDER` must say `suno`, and `CREDENTIAL_ENCRYPTION_KEY` must be the key the saved one was stored with. A changed `CREDENTIAL_ENCRYPTION_KEY` makes a saved key unreadable: put the original back as in [Secrets changed](#secrets-changed), and enter the key again only if it's lost. With no `CREDENTIAL_ENCRYPTION_KEY` at all, no key can be saved in the app: set one first, as in [`CREDENTIAL_ENCRYPTION_KEY must decode to 32 bytes`](#credential_encryption_key-must-decode-to-32-bytes). A member sees "Music isn't set up on this server yet. Ask the admin to set it up." and should ask the admin.
 
-### "... rejected this API key." on the text AI or image key
+### "... rejected this API key." on the Text AI or Image Key
 
 This comes from the **Test** button, as a notification at the top of the screen, with your provider's name at the start. The key is wrong for that provider. A message that starts "Key works, but" and goes on to say the provider has no such model means the key is fine and the model ID has a typo.
 
 ### "Google needs billing turned on for image models." or "OpenAI needs your organisation verified for image models."
 
-The **Cover Images** card shows this when a cover failed because the image account isn't set up for image models yet, even though the key works. Regenerating a cover says "Your image provider's account isn't ready for images. Check Settings › AI Providers." A Member sees "The image provider's account on this server isn't ready for images. Ask the Admin to check it." instead, and should ask the Admin. Turn on billing for the key's project at Google, or verify your organisation at OpenAI. The message goes away with the next successful cover, or when you save the provider again. [When the account isn't ready](/docs/providers-and-keys#when-the-account-isnt-ready) has the details.
+The **Cover Images** card shows this when a cover failed because the image account isn't set up for image models yet, even though the key works. Regenerating a cover says "Your image provider's account isn't ready for images. Check Settings › AI Providers." A member sees "The image provider's account on this server isn't ready for images. Ask the admin to check it." instead, and should ask the admin. Turn on billing for the key's project at Google, or verify your organisation at OpenAI. The message goes away with the next successful cover, or when you save the provider again. [When the account isn't ready](/docs/providers-and-keys#when-the-account-isnt-ready) has the details.
 
-### Generation paused: out of credits
+### Generation Paused: Out of Credits
 
-"The music provider is out of credits — playing your ready tracks until the Admin tops it up."
+"The music provider is out of credits — playing your ready tracks until the admin tops it up."
 
 Your provider account is empty. Your ready tracks keep playing. Top up at your provider, and generation picks up by itself. Liedmotif doesn't count this as spending.
 
-### Generation backing off
+### Generation Backing Off
 
 "The music provider is busy — playing your ready tracks until generation resumes automatically in a few minutes."
 
@@ -282,57 +282,57 @@ The provider is limiting requests. Wait, and it resumes by itself. Maintenance l
 
 The provider refused the request, often over a named artist. Nothing retries until something changes, so change the vibe and describe moods, moments and genres instead. "The music provider refused this request" has the same fix, or check your provider setup.
 
-### Free-text requests fail, but buttons work
+### Free-Text Requests Fail, but Buttons Work
 
-A text AI is set up and it's failing. Liedmotif treats that as a retryable error and doesn't quietly go without it. Test it in **Settings › AI Providers**. To go without one, do both of these, because Liedmotif uses `.env` first and the saved one next: clear the `LLM_` lines in `.env` and run `docker compose up -d web worker`, then press **Disable Text AI** in **Settings › AI Providers**. If `.env` still sets one up on its own, that button says **Delete stored fallback**. Your words then reach the music provider as you wrote them.
+A text AI is set up and it's failing. Liedmotif treats that as a retryable error and doesn't quietly go without it. Test it in **Settings › AI Providers**. To go without one, do both of these, because Liedmotif uses `.env` first and the saved one next: clear the `LLM_` lines in `.env` and run `docker compose up -d web worker`, then press **Disable Text AI** in **Settings › AI Providers**. If `.env` still sets one up on its own, that button says **Delete Stored Fallback**. Your words then reach the music provider as you wrote them.
 
-### Every track sounds like a test, or nothing comes from the music provider
+### Every Track Sounds Like a Test, or Nothing Comes from the Music Provider
 
 Check `MUSIC_PROVIDER` in `.env`. It must say `suno`. Blank or `mock` uses the built-in test provider, which makes no real music.
 
-### "Generation limit reached", "Not enough Tracks left to start" or "You have reached your generation headroom for now"
+### "Generation limit reached", "Not Enough Tracks Left to Start" or "You have reached your generation headroom for now"
 
-That's a budget, not a fault. A running session replays its own tracks for free and picks up again when the budget renews. A new session needs a few tracks left (**Headroom to start**), and the message says how many it needs, how many are left and when more come back. The admin can change limits in **Settings › Cost limits**, and a member sees their budget in **Settings › My budget**. A session that needs tracks but has none yet says "No Tracks yet — the generation limit was reached before the first one." [Costs and limits](/docs/costs-and-limits) explains how they work.
+That's a budget, not a fault. A running session replays its own tracks for free and picks up again when the budget renews. A new session needs a few tracks left (**Headroom to start**), and the message says how many it needs, how many are left and when more come back. The admin can change limits in **Settings › Cost Limits**, and a member sees their budget in **Settings › My Budget**. A session that needs tracks but has none yet says "No tracks yet — the generation limit was reached before the first one." [Costs and limits](/docs/costs-and-limits) explains how they work.
 
 ### "New music is paused" or "… has paused new music"
 
 **Pause all new music** is on in **Settings › Generation**, so a new session, More Like This, Surprise Me and Change Vibe are refused, and nothing is spent. The admin turns it off there; a member asks the admin. Resume, the Library, playlists and the Lounge keep working meanwhile.
 
-## Sessions and music
+## Sessions and Music
 
-### A session looks stuck on generating
+### A Session Looks Stuck on Generating
 
 Read the banner in the player first, because it names most problems. If the problem started while you were on another page, the same message showed once as a notification at the top of the screen. Then, in order:
 
 1. **Give it time.** The first track can take a minute or more, and longer when the provider has no early stream and the file has to finish first. "Generation is catching up" clears by itself.
-2. **Check the worker.** Run `docker compose ps` and `docker compose logs worker --tail 50`, or open **Settings › Diagnostics & worker**. The app can look fine while the worker is down, and then no track will arrive.
+2. **Check the worker.** Run `docker compose ps` and `docker compose logs worker --tail 50`, or open **Settings › Diagnostics & Worker**. The app can look fine while the worker is down, and then no track will arrive.
 3. **Check the provider.** Test your key in **Settings › AI Providers**, and look at your balance.
 
 A provider job that never finishes is given up on after about ten minutes of checking, so a session doesn't hang forever. Interrupted work resumes after a restart, without paying twice.
 
-If the session has no tracks and nothing can move it on, the banner offers **Try again** and **Delete Session**. **Try again** buys one new pair, the number shown on the button, and starts at once if your limits have room. If a limit is reached, the banner says so instead. Nothing tries again without your tap, so a failing provider never spends in the background. When the provider blocked the request for its content, there is no **Try again**: use **Change Vibe** to adjust it. The banner stays until a track arrives or you delete the session. You can also stop it and start a new one.
+If the session has no tracks and nothing can move it on, the banner offers **Try Again** and **Delete Session**. **Try Again** buys one new pair, the number shown on the button, and starts at once if your limits have room. If a limit is reached, the banner says so instead. Nothing tries again without your tap, so a failing provider never spends in the background. When the provider blocked the request for its content, there is no **Try Again**: use **Change Vibe** to adjust it. The banner stays until a track arrives or you delete the session. You can also stop it and start a new one.
 
 "Generation hit a problem" means the last try failed. Ready tracks keep playing while it recovers. Read `docker compose logs worker` for the reason.
 
-### A track is marked "Could not be kept"
+### A Track Is Marked "Could Not Be Kept"
 
-The music provider failed after the track had started streaming, so its finished file never arrived. A track that's playing at that moment plays to its end. After that it doesn't play anywhere, and the session leaves it out. If you had saved it, it stays in its playlists with this mark, so you can see what was lost. Remove or delete it whenever you like. The session makes up for the lost tracks only the usual way: while you listen, with **New music** on and within your limits.
+The music provider failed after the track had started streaming, so its finished file never arrived. A track that's playing at that moment plays to its end. After that it doesn't play anywhere, and the session leaves it out. If you had saved it, it stays in its playlists with this mark, so you can see what was lost. Remove or delete it whenever you like. The session makes up for the lost tracks only the usual way: while you listen, with **New Music** on and within your limits.
 
-### Only one session starts at a time
+### Only One Session Starts at a Time
 
 You can cancel a start that's under way. The limit is on purpose, to protect your spending.
 
-### Tracks don't play after a restore
+### Tracks Don't Play After a Restore
 
 The backup held no music, or the files came from a different moment than the database. Restore a backup with music and covers included. See [Backups and restore](/docs/backups).
 
-### No new music while nobody is listening
+### No New Music While Nobody Is Listening
 
 That's on purpose too. Sessions make music only while playing, and an idle session stops itself. Resume it from **Sessions**.
 
-## Disk and storage
+## Disk and Storage
 
-### Disk full
+### Disk Full
 
 Run these to see what's using the space:
 
@@ -346,7 +346,7 @@ Liedmotif has three levels of protection. Each one explains a message you may se
 
 | Message | What's happening | Fix |
 | --- | --- | --- |
-| "The storage quota is full" or "The configured storage quota is full" | There's no room left under your own limit, 10 GiB by default. A track claims up to 64 MiB before it downloads, so this can show up just before the total reaches the limit. Sessions stop making tracks and uploads are refused. Playback and deleting still work. | Delete tracks you no longer keep, or raise **Storage quota** in **Settings › Cost limits**. |
+| "The storage quota is full" or "The configured storage quota is full" | There's no room left under your own limit, 10 GiB by default. A track claims up to 64 MiB before it downloads, so this can show up just before the total reaches the limit. Sessions stop making tracks and uploads are refused. Playback and deleting still work. | Delete tracks you no longer keep, or raise **Storage quota** in **Settings › Cost Limits**. |
 | "The storage volume is nearly full, so new uploads are paused." | A write would leave under 256 MB on the disk. Uploads are refused and downloads of finished tracks wait and retry, so a full disk can't take the database down with it. | Free up disk space or add more. |
 | "the backups disk is nearly full" | A backup needs at least 2 GiB free. | Free up disk space or add more. A refused backup deletes nothing, and lower **Keep** in **Settings › Backups** only helps after the next backup finishes. |
 
@@ -356,21 +356,21 @@ To free space outside Liedmotif, remove old Docker images with `docker image pru
 
 When a database update fails on a full disk, [fix the disk and run the same command again](/docs/updates#if-an-update-fails).
 
-### Backups say Failing, Overdue or Not running
+### Backups Say Failing, Overdue or Not Running
 
-[Read the status](/docs/backups#read-the-status) has each one and its fix. **Not running** means the `backup` container has stopped. Start it with `docker compose up -d backup`, and look at `docker compose logs backup`.
+[Read the status](/docs/backups#read-the-status) has each one and its fix. **Not Running** means the `backup` container has stopped. Start it with `docker compose up -d backup`, and look at `docker compose logs backup`.
 
-### Download is greyed out in Settings › Backups
+### Download Is Greyed Out in Settings › Backups
 
 "Download is off: it is encrypted with BACKUP_ENCRYPTION_PASSPHRASE, and the web server has none set in .env." Set it in `.env` and run `docker compose up -d`.
 
 ## Alerts
 
-### The scheduled check fails or stays quiet
+### The Scheduled Check Fails or Stays Quiet
 
 [Instance alerts](/docs/alerts) lists what each status means, and how to test the whole path by hand.
 
-## Known limitations
+## Known Limitations
 
 These are real limits today, not faults on your side:
 
@@ -382,10 +382,10 @@ These are real limits today, not faults on your side:
 - **No taste import.** Taste comes only from listening in Liedmotif.
 - **No "export everything" and no global instrumental setting.** You can download tracks, sessions and playlists. Every session is instrumental until you choose vocals.
 - **Offline is listen-only.** No making, saving or editing offline, and offline marks don't sync across devices.
-- **No public share links.** Sharing stays inside your instance's lounge.
+- **No public share links.** Sharing stays inside your instance's Lounge.
 - **The installer is for 64-bit Debian, Ubuntu and Raspberry Pi OS.** A Mac or Windows laptop can run the Docker stack, and Windows hasn't been tested yet.
 - **Alerts can't report the machine itself being down.** Use an uptime check from elsewhere for that.
 
-## Still stuck
+## Still Stuck
 
-Open **Settings › Diagnostics & worker**, collect the last lines of `docker compose logs`, and check them for anything private. Then look at the [FAQ and license](/docs/faq-and-license) page.
+Open **Settings › Diagnostics & Worker**, collect the last lines of `docker compose logs`, and check them for anything private. Then look at the [FAQ and license](/docs/faq-and-license) page.

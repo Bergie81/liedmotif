@@ -55,7 +55,7 @@ function LoungePinRow({
       onlineOnly
       icon={<Pin className={cn(pinned && 'fill-current')} />}
       label={pinned ? 'Unpin Playlist' : 'Pin in the Lounge'}
-      description={pinned ? 'Stop listing it first' : 'List it first in your lounge'}
+      description={pinned ? 'Stop listing it first' : 'List it first in your Lounge'}
       data-testid={`lounge-menu-pin-${playlistId}`}
       onClick={onClick}
     />
@@ -107,7 +107,7 @@ export function LoungeOwnerRows({
         onlineOnly
         icon={<Armchair />}
         label="Edit Sharing"
-        description="Choose who can listen to it in the lounge"
+        description="Choose who can listen to it in the Lounge"
         data-testid={`lounge-menu-share-${playlistId}`}
         onClick={() => pick(actions.editSharing)}
       />
@@ -158,7 +158,7 @@ export function LoungeVisitorRows({
           onlineOnly
           icon={<Lock />}
           label="Return to Private"
-          description="Admin: make it private and remove it from everyone else's library"
+          description="Admin: make it private and remove it from everyone else's Library"
           tone="danger"
           data-testid={`lounge-menu-return-to-private-${playlistId}`}
           onClick={() => pick(returnToPrivate)}

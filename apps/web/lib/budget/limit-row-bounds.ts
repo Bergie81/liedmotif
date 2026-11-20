@@ -24,8 +24,8 @@ export interface LimitRowBound {
   label: (max: number) => string;
 }
 
-export const inTracks = (max: number): string => `${max} Tracks`;
-export const inCovers = (max: number): string => `${max} Covers`;
+export const inTracks = (max: number): string => `${max} tracks`;
+export const inCovers = (max: number): string => `${max} covers`;
 
 /** A row's ceiling in the unit it shows — what bounds its stepper. */
 export function limitRowMax(row: LimitRowBound, tracksPerRequest: number): number {
@@ -94,5 +94,5 @@ export function sessionStartWarning(
   minHeadroomTracks: number,
 ): string | null {
   if (capTracks === null || capTracks === 0 || capTracks >= minHeadroomTracks) return null;
-  return `Below ${minHeadroomTracks} Tracks, no new Session can start.`;
+  return `Below ${minHeadroomTracks} tracks, no new session can start.`;
 }

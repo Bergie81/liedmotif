@@ -22,7 +22,7 @@ afterEach(() => {
 });
 
 it('hands a headroom refusal to the caller with its error code', async () => {
-  const message = 'A new Session needs 5 Tracks; you have 4 left today.';
+  const message = 'A new session needs 5 tracks; you have 4 left today.';
   vi.stubGlobal('fetch', async () => ({
     json: async () => ({
       ok: false,

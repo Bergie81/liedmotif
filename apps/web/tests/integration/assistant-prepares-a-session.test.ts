@@ -256,7 +256,7 @@ describe.skipIf(skip)('the Assistant asked to start a Session', () => {
     expect(cards(turn)).toEqual([]);
     expect(turn.results[0]).toMatch(/repeats them/i);
     expect(turn.results[0]).toContain(
-      'A length switches New music on for that Session until it reaches the length.',
+      'A length switches New Music on for that Session until it reaches the length.',
     );
     expect(turn.results[0]).toMatch(/no card was shown/i);
   });
@@ -269,7 +269,7 @@ describe.skipIf(skip)('the Assistant asked to start a Session', () => {
     const turn = await propose(asker, { prompt: 'calm piano for reading' });
 
     expect(cards(turn)).toEqual([]);
-    expect(turn.results[0]).toContain('A new Session needs 4 Tracks; you have none left today.');
+    expect(turn.results[0]).toContain('A new session needs 4 tracks; you have none left today.');
     expect(turn.results[0]).toMatch(/no card was shown/i);
     expect(await rowsIn('activity_sessions')).toBe(0);
   });
@@ -283,8 +283,8 @@ describe.skipIf(skip)('the Assistant asked to start a Session', () => {
     const turn = await propose(asker, { prompt: 'calm piano for reading' });
 
     expect(cards(turn)).toEqual([]);
-    expect(turn.results[0]).toContain('New music is paused in Settings › Generation.');
-    expect(turn.results[0]).not.toContain('A new Session needs');
+    expect(turn.results[0]).toContain('New Music is paused in Settings › Generation.');
+    expect(turn.results[0]).not.toContain('A new session needs');
     expect(turn.results[0]).toMatch(/no card was shown/i);
     expect(await rowsIn('activity_sessions')).toBe(0);
   });

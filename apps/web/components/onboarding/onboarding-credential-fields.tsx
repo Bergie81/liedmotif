@@ -95,7 +95,7 @@ export function OnboardingCredentialFields({
           {baseUrlOptional ? (
             <details className="rounded-card-sm border border-line bg-[var(--segment-bg)] px-3.5 py-3">
               <summary className="cursor-pointer list-none text-[13px] font-semibold text-muted [-webkit-tap-highlight-color:transparent] hover:text-paper">
-                Use a different endpoint
+                Use a Different Endpoint
               </summary>
               <div className="pt-3">
                 <BaseUrlField editor={editor} />

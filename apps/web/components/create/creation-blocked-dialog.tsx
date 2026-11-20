@@ -108,7 +108,7 @@ export function CreationBlockedDialog({
             }}
           />
           <DialogClose className="mt-1 text-center text-[12px] text-dim hover:text-muted">
-            Not now
+            Not Now
           </DialogClose>
         </div>
       </DialogContent>
@@ -124,9 +124,9 @@ function settingsWayOut(
   isMember: boolean,
 ): { label: string; path: string } | null {
   if (isMember) {
-    return kind === 'paused' ? null : { label: 'See your budget', path: MY_BUDGET_PATH };
+    return kind === 'paused' ? null : { label: 'See Your Budget', path: MY_BUDGET_PATH };
   }
-  const label = kind === 'paused' ? 'Open Generation settings' : 'Adjust cost limits';
+  const label = kind === 'paused' ? 'Open Generation Settings' : 'Adjust Cost Limits';
   return { label, path: COST_SETTINGS_PATH };
 }
 

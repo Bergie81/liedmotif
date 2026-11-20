@@ -176,7 +176,7 @@ export async function POST(request: Request) {
   const storedModel = typeof stored?.model === 'string' ? stored.model.trim() : '';
   const effectiveModel = model ?? (storedModel || fromEnv.model || llmMeta?.defaultModel);
   if (providerType === 'llm' && !effectiveModel) {
-    return badRequest('A model is required for this Text AI provider.');
+    return badRequest('A model is required for this text AI provider.');
   }
 
   // The generic preset has no endpoint default (Ollama falls back to localhost),
@@ -185,7 +185,7 @@ export async function POST(request: Request) {
   const storedBaseUrl = clearsBaseUrl ? undefined : trimmed(stored?.baseUrl);
   const effectiveBaseUrl = baseUrl ?? storedBaseUrl ?? fromEnv.baseUrl;
   if (providerType === 'llm' && providerKey === 'openai-compatible' && !effectiveBaseUrl) {
-    return badRequest('A base URL is required for this Text AI provider.');
+    return badRequest('A base URL is required for this text AI provider.');
   }
 
   // Same invariant for the key: a key-requiring LLM or image preset saved with no

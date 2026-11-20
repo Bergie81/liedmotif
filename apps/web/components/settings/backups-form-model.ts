@@ -27,9 +27,9 @@ export function backUpNowButton(input: { service: BackupServiceState; submitting
   label: string;
 } {
   if (input.submitting) return { disabled: true, label: 'Requesting…' };
-  if (input.service === 'running') return { disabled: true, label: 'Backing up…' };
+  if (input.service === 'running') return { disabled: true, label: 'Backing Up…' };
   if (input.service === 'requested') return { disabled: true, label: 'Requested' };
-  return { disabled: false, label: 'Back up now' };
+  return { disabled: false, label: 'Back Up Now' };
 }
 
 /**
@@ -74,7 +74,7 @@ export function backupStatusSummary(
   switch (overview.service) {
     case 'not-running':
       return {
-        status: { label: 'Not running', tone: 'warn' },
+        status: { label: 'Not Running', tone: 'warn' },
         detail: report
           ? `The backup service last checked in ${at(report.checkedAt)}. No backup runs until it is back.`
           : 'The backup service has never reported. It is the backup container in Docker Compose; no backup runs without it.',
@@ -89,7 +89,7 @@ export function backupStatusSummary(
     case 'requested':
       return {
         status: { label: 'Requested', tone: 'muted' },
-        detail: 'Back up now was pressed. The backup starts within a minute.',
+        detail: 'Back Up Now was pressed. The backup starts within a minute.',
       };
     case 'failing': {
       const error = report?.lastAttempt?.error;
@@ -110,7 +110,7 @@ export function backupStatusSummary(
         status: { label: 'Healthy', tone: 'ok' },
         detail: overview.schedule.enabled
           ? 'Backups run on schedule.'
-          : 'Scheduled backups are off. Back up now still works.',
+          : 'Scheduled backups are off. Back Up Now still works.',
       };
   }
 }

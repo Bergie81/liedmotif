@@ -1,16 +1,16 @@
 ---
 title: Update Liedmotif
 description: Move to a new version without losing your library, what an update does, and how to get back if one fails.
-checkedOn: 2026-11-19
+checkedOn: 2026-11-20
 ---
 
 An update keeps your music, your playlists, your members and your provider keys. Liedmotif never updates itself, so you choose the moment. Pick one when nobody is listening, because the music stops for about a minute.
 
-## Before any update
+## Before Any Update
 
-Open **Settings › Backups**, press **Back up now** and wait for the new backup to appear in the list. Updates only go forward, so this backup is your way back. [Backups and restore](/docs/backups) has the details.
+Open **Settings › Backups**, press **Back Up Now** and wait for the new backup to appear in the list. Updates only go forward, so this backup is your way back. [Backups and restore](/docs/backups) has the details.
 
-## Update an install from the installer
+## Update an Install from the Installer
 
 Run the same command you installed with. The first install printed it at the end.
 
@@ -40,7 +40,7 @@ On a slow machine the app can take longer than five minutes to answer. Give it m
 curl -fsSL https://github.com/bergie81/liedmotif/releases/latest/download/install.sh | LIEDMOTIF_HEALTH_TIMEOUT=900 bash
 ```
 
-### What the update changes in `.env`
+### What the Update Changes in `.env`
 
 Almost nothing. `.env` holds your secrets, so it's never regenerated. The update changes only the `LIEDMOTIF_VERSION` line. The other files in the install folder, the `Caddyfile` among them, come fresh from the new release, so put your own settings in `.env`. The Caddy settings for a tunnel or a proxy, `CADDY_TLS` and `CADDY_TRUSTED_PROXIES`, live there.
 
@@ -48,7 +48,7 @@ The update also keeps the mode you installed with, Tailscale or `--domain`. Pass
 
 In Tailscale mode it first checks that the machine is still signed in, and runs `tailscale up` if it isn't. It also checks that the machine still has the name and address `.env` serves. If you removed the machine from your tailnet and added it again, those can change. The update then halts with the music still playing and names the three lines to edit: `APP_DOMAIN`, `APP_PUBLIC_URL` and `TAILSCALE_IP`.
 
-### What happens, in order
+### What Happens, in Order
 
 1. It downloads the new release into the install folder.
 2. It pulls the new images. The music keeps playing during this step. If the pull fails, nothing has changed and the old version keeps running.
@@ -57,7 +57,7 @@ In Tailscale mode it first checks that the machine is still signed in, and runs 
 5. It starts Liedmotif again and waits for the app to answer.
 6. It prints the new version and your address.
 
-### How long Liedmotif is down
+### How Long Liedmotif Is Down
 
 About a minute, or up to a few minutes when the worker was in the middle of a job.
 
@@ -65,7 +65,7 @@ A run that stopped halfway, after a network drop for example, is safe to run aga
 
 > **Always update with the installer on these installs.** A plain `docker compose up -d` updates the database while the old app is still running, and some updates must not run that way. The installer stops the app first, so no release needs its own upgrade steps.
 
-## Update a laptop or source install
+## Update a Laptop or Source Install
 
 Back up first, as above. Then run these from your `liedmotif` folder:
 
@@ -77,13 +77,13 @@ docker compose up -d --build
 
 `docker compose down` removes the running containers, not your music or your database. It can take up to 3 minutes while the worker finishes its jobs. Never add `-v` to it: that deletes your library and the backups next to it.
 
-## There's no rollback
+## There's No Rollback
 
 Database updates only go forward. An older Liedmotif can break on a database that a newer one has changed, so never point an older `--version` at an updated database.
 
 The way back is the backup you made before the update: restore it, and then install the version that made it. The next section has the exact commands.
 
-## If an update fails
+## If an Update Fails
 
 When the database update fails, the installer stops with this message and leaves the app stopped, so nothing runs on a half-updated database. Postgres and your data are still there.
 
@@ -121,7 +121,7 @@ git checkout <the commit you had>
 docker compose up -d --build
 ```
 
-### Other places an update can stop
+### Other Places an Update Can Stop
 
 Each of these names what to try, and each is safe to run again once it's fixed.
 
@@ -134,7 +134,7 @@ Each of these names what to try, and each is safe to run again once it's fixed.
 | `the stack did not start.` | Docker couldn't start the new version. | Look at `docker compose logs` in the install folder, then run the command again. |
 | `Liedmotif did not answer within <n> seconds` | The new version isn't answering yet. | Look at `docker compose ps` and `docker compose logs caddy web`. On a slow machine, raise `LIEDMOTIF_HEALTH_TIMEOUT`. |
 
-## Docker and system updates
+## Docker and System Updates
 
 Some parts of the machine update by themselves. Some wait for you.
 
@@ -155,7 +155,7 @@ sudo apt update && sudo apt upgrade
 
 The installer leaves a Docker you already have alone, and it never changes your SSH settings. On a laptop, Docker Desktop and your system update the way they always do.
 
-## What healthy looks like
+## What Healthy Looks Like
 
 After any update, give it a minute and run this in the install folder:
 
@@ -171,4 +171,4 @@ curl -s http://localhost:2206/api/health
 
 If you changed `WEB_PORT`, use your port instead of 2206.
 
-A good answer has `"status":"ok"` and `"database":true`. **Settings › Diagnostics & worker** shows the version you're now on. If something looks wrong, [Troubleshooting](/docs/troubleshooting) explains how to read each piece.
+A good answer has `"status":"ok"` and `"database":true`. **Settings › Diagnostics & Worker** shows the version you're now on. If something looks wrong, [Troubleshooting](/docs/troubleshooting) explains how to read each piece.

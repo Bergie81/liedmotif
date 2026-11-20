@@ -59,8 +59,8 @@ function LlmStepBody({ credential, encryptionKeyConfigured, onConnected, onDone 
 
   return (
     <section>
-      <OnboardingStepHeader eyebrow="Optional · recommended" title="Add a Text AI">
-        It turns what you type into a detailed music style and writes Session names, Track titles,
+      <OnboardingStepHeader eyebrow="Optional · Recommended" title="Add a Text AI">
+        It turns what you type into a detailed music style and writes session names, track titles,
         and lyric ideas.
         {credential.configured
           ? null
@@ -78,7 +78,7 @@ function LlmStepBody({ credential, encryptionKeyConfigured, onConnected, onDone 
           providerLabel={credential.displayName}
           keyLabel={`${editor.selected?.label ?? credential.displayName} API key`}
           keyPlaceholder="sk-…"
-          testLabel={environmentManaged ? 'Test the configured connection' : 'Test the connection'}
+          testLabel={environmentManaged ? 'Test the Configured Connection' : 'Test the Connection'}
           currentMasked={credential.masked}
           encryptionKeyConfigured={encryptionKeyConfigured}
           providerNote={textAiCostLine(editor.providerKey)}
@@ -99,7 +99,7 @@ function LlmStepBody({ credential, encryptionKeyConfigured, onConnected, onDone 
         ) : (
           <>
             <OnboardingPrimaryAction
-              label="Save and continue"
+              label="Save and Continue"
               busyLabel="Saving…"
               busy={editor.saving}
               disabled={editor.operationPending || !encryptionKeyConfigured}
@@ -112,7 +112,7 @@ function LlmStepBody({ credential, encryptionKeyConfigured, onConnected, onDone 
               disabled={editor.operationPending}
               className={cn(largeSecondaryButtonClass, 'w-full')}
             >
-              {credential.configured ? 'Leave it as it is' : 'Skip for now'}
+              {credential.configured ? 'Leave It as It Is' : 'Skip for Now'}
             </button>
           </>
         )}

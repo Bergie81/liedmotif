@@ -88,8 +88,8 @@ describe('a Surprise Me card in the chat', () => {
     expect(card.textContent).toContain(
       'Familiar · Lo-fi, Jazz · hazy · Low energy · Instrumental · 45 min',
     );
-    expect(card.textContent).toContain('Starting generates new Tracks from your budget.');
-    expect(card.textContent).toContain('38 Tracks left today');
+    expect(card.textContent).toContain('Starting generates new tracks from your budget.');
+    expect(card.textContent).toContain('38 tracks left today');
     expect(within(card).getAllByRole('button')).toEqual([startButton()]);
     expect(server.sent).toEqual([]);
   });

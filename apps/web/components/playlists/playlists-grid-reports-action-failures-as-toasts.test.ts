@@ -163,7 +163,7 @@ describe('PlaylistsGrid — action failures as toasts', () => {
     api.listPlaylists.mockResolvedValue({ ok: false, error: { message: 'Offline.' } });
     renderGrid([FOCUS], 'next-page');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Load more' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Load More' }));
 
     await waitFor(() =>
       expect(shown()).toEqual([

@@ -70,13 +70,13 @@ describe('other music during a Start', () => {
   it('plays at once when no Start is in flight', async () => {
     fireEvent.click(screen.getByText('Ask'));
     await waitFor(() => expect(screen.getByRole('status').textContent).toBe('true'));
-    expect(screen.queryByText('Your new Session is currently starting')).toBeNull();
+    expect(screen.queryByText('Your New Session Is Currently Starting')).toBeNull();
   });
 
   it('"Play this instead" cancels the Start and plays', async () => {
     const signal = startInFlight();
     fireEvent.click(screen.getByText('Ask'));
-    fireEvent.click(await screen.findByText('Play this instead'));
+    fireEvent.click(await screen.findByText('Play This Instead'));
 
     await waitFor(() => expect(screen.getByRole('status').textContent).toBe('true'));
     expect(signal.aborted).toBe(true);
@@ -86,7 +86,7 @@ describe('other music during a Start', () => {
   it('"Keep starting" drops the tap and keeps the Start', async () => {
     const signal = startInFlight();
     fireEvent.click(screen.getByText('Ask'));
-    fireEvent.click(await screen.findByText('Keep starting'));
+    fireEvent.click(await screen.findByText('Keep Starting'));
 
     await waitFor(() => expect(screen.getByRole('status').textContent).toBe('false'));
     expect(signal.aborted).toBe(false);
@@ -107,12 +107,12 @@ describe('other music during a Start', () => {
       () => undefined,
     );
     fireEvent.click(screen.getByText('Ask'));
-    await screen.findByText('Play this instead');
+    await screen.findByText('Play This Instead');
 
     settle();
 
     await waitFor(() => expect(screen.getByRole('status').textContent).toBe('false'));
-    expect(screen.queryByText('Your new Session is currently starting')).toBeNull();
+    expect(screen.queryByText('Your New Session Is Currently Starting')).toBeNull();
   });
 
   it('a late engage of other music keeps a newer Start', () => {

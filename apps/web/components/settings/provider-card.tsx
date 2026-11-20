@@ -54,7 +54,7 @@ export function ProviderCard({
       <div className="mb-4 flex flex-wrap items-center gap-2 font-mono text-[10.5px] uppercase tracking-[0.06em] text-dim">
         <span>Source</span>
         <span className="rounded-[5px] border border-line-2 px-2 py-[2px] text-muted">
-          {source ?? 'Not configured'}
+          {source ?? 'Not Configured'}
         </span>
         {masked ? (
           <>

@@ -33,15 +33,15 @@ export function GenerationForm({ initial }: { initial: GenerationSettings }) {
   return (
     <div>
       <SettingsControlRow
-        label="Generate new Tracks by default"
-        description="How new Sessions start — the player switches any Session either way"
+        label="Generate new tracks by default"
+        description="How new sessions start — the player switches any session either way"
         descriptionId={BUFFER_ENABLED_DESCRIPTION_ID}
       >
         <Switch
           checked={bufferEnabled}
           onCheckedChange={setBufferEnabled}
           disabled={saving}
-          aria-label="Generate new Tracks by default"
+          aria-label="Generate new tracks by default"
           aria-describedby={BUFFER_ENABLED_DESCRIPTION_ID}
         />
       </SettingsControlRow>
@@ -61,7 +61,7 @@ export function GenerationForm({ initial }: { initial: GenerationSettings }) {
         minLabel={BUFFER_AHEAD_TRACKS_MIN}
         maxLabel={BUFFER_AHEAD_TRACKS_MAX}
       />
-      <SettingsFootnote>Changes reach a running Session within about a minute.</SettingsFootnote>
+      <SettingsFootnote>Changes reach a running session within about a minute.</SettingsFootnote>
       <button
         type="button"
         onClick={save}

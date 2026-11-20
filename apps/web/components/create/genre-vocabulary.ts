@@ -19,7 +19,7 @@ export interface GenreFamily {
 
 export const GENRE_FAMILIES: readonly GenreFamily[] = [
   {
-    name: 'Acoustic, rock & pop',
+    name: 'Acoustic, Rock & Pop',
     genres: [
       { id: 'acoustic', label: 'Acoustic' },
       { id: 'folk', label: 'Folk' },
@@ -41,7 +41,7 @@ export const GENRE_FAMILIES: readonly GenreFamily[] = [
     ],
   },
   {
-    name: 'Chill & beats',
+    name: 'Chill & Beats',
     genres: [
       { id: 'lofi', label: 'Lo-fi' },
       { id: 'chillhop', label: 'Chillhop' },
@@ -53,7 +53,7 @@ export const GENRE_FAMILIES: readonly GenreFamily[] = [
     ],
   },
   {
-    name: 'Electronic & dance',
+    name: 'Electronic & Dance',
     genres: [
       { id: 'house', label: 'House' },
       { id: 'deep-house', label: 'Deep House' },
@@ -65,7 +65,7 @@ export const GENRE_FAMILIES: readonly GenreFamily[] = [
     ],
   },
   {
-    name: 'Jazz & soul',
+    name: 'Jazz & Soul',
     genres: [
       { id: 'jazz', label: 'Jazz' },
       { id: 'soul', label: 'Soul' },
@@ -76,7 +76,7 @@ export const GENRE_FAMILIES: readonly GenreFamily[] = [
     ],
   },
   {
-    name: 'Orchestral & cinematic',
+    name: 'Orchestral & Cinematic',
     genres: [
       { id: 'classical', label: 'Classical' },
       { id: 'neoclassical', label: 'Neoclassical' },

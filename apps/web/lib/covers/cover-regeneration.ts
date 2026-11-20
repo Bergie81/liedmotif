@@ -37,7 +37,7 @@ export type CoverViewerRole = 'admin' | 'member';
 const ACCOUNT_NOT_READY_MESSAGES: Readonly<Record<CoverViewerRole, string>> = {
   admin: "Your image provider's account isn't ready for images. Check Settings › AI Providers.",
   member:
-    "The image provider's account on this server isn't ready for images. Ask the Admin to check it.",
+    "The image provider's account on this server isn't ready for images. Ask the admin to check it.",
 };
 
 /** A profile-less owner is the instance owner, so only a Member row reads as `member`. */

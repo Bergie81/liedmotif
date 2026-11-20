@@ -56,7 +56,7 @@ export function ConfirmEmailForm({ token }: { token: string }) {
       {error ? <AlertBanner>{error}</AlertBanner> : null}
       <button type="submit" disabled={busy} className={cn(primaryButtonClass, 'w-full')}>
         {busy ? <LiedmotifLoader /> : null}
-        {busy ? 'Confirming…' : 'Confirm email'}
+        {busy ? 'Confirming…' : 'Confirm Email'}
       </button>
     </form>
   );

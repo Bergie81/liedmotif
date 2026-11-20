@@ -133,7 +133,7 @@ describe('People form — results as toasts', () => {
     stubAnswers({ status: 500, body: { error: 'The photo is in use.' } });
     renderForm();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Delete Thomas reference photo' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Thomas Reference Photo' }));
 
     await waitFor(() =>
       expect(shown()).toEqual([{ tone: 'error', message: 'The photo is in use.' }]),

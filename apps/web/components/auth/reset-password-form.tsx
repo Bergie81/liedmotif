@@ -63,7 +63,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
 
       <button type="submit" disabled={busy} className={cn(primaryButtonClass, 'mt-1 w-full')}>
         {busy ? <LiedmotifLoader /> : null}
-        {busy ? 'Setting password…' : 'Set password and sign in'}
+        {busy ? 'Setting Password…' : 'Set Password and Sign In'}
       </button>
     </form>
   );

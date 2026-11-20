@@ -21,13 +21,13 @@ export function StoredLlmCredentialAction({
 }: StoredLlmCredentialActionProps) {
   const gate = useCredentialMutationGate();
   const deleting = gate.pending === 'delete';
-  const label = environmentActive ? 'Delete stored fallback' : 'Disable Text AI';
+  const label = environmentActive ? 'Delete Stored Fallback' : 'Disable Text AI';
 
   async function remove() {
     if (!gate.begin('delete')) return;
     try {
       const consequence = environmentActive
-        ? 'The environment-selected Text AI will remain active.'
+        ? 'The environment-selected text AI will remain active.'
         : 'Sessions keep working: your words will reach the music model exactly as written, without AI expansion.';
       const warning = [consequence, coverKeyNotice].filter(Boolean).join(' ');
       if (!window.confirm(`${label}? ${warning}`)) return;
@@ -49,7 +49,7 @@ export function StoredLlmCredentialAction({
         return;
       }
       const message = typeof body.error === 'string' ? body.error : body.error?.message;
-      toast.error(message ?? 'Could not remove the stored Text AI.', {
+      toast.error(message ?? 'Could not remove the stored text AI.', {
         key: DELETE_KEY,
       });
     } finally {

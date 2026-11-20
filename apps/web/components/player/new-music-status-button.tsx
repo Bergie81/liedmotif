@@ -1,7 +1,7 @@
 'use client';
 
 // The player header's plain statement of whether new music is being bought. The
-// button is the way into the New music sheet; its words come from
+// button is the way into the New Music sheet; its words come from
 // `presentNewMusicStatus`.
 
 import { ChevronDown } from 'lucide-react';
@@ -88,7 +88,7 @@ export function NewMusicStatusButton({
       type="button"
       data-testid="player-new-music"
       onClick={onOpen}
-      aria-label={`New music: ${newMusicStatusLine(status)}. Change.`}
+      aria-label={`New Music: ${newMusicStatusLine(status)}. Change.`}
       className={cn(
         '-ml-[5.5px] mr-auto inline-flex h-[42px] min-w-0 items-center gap-1 text-left text-[12.5px] font-medium',
         ICON_COLOUR[status.icon],

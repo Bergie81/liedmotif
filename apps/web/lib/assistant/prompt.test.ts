@@ -75,7 +75,7 @@ describe.each([
     expect(tools).toMatch(/^- addToPlaylist .*at most 20/m);
     expect(tools).toMatch(/^- createPlaylist .*renamePlaylist .*pinPlaylist /m);
     expect(tools).toMatch(/^- renameSession .*pinSession .*Sessions.*renameTrack /m);
-    expect(tools).toMatch(/^- newMusicOff .*New music off.*active Session/m);
+    expect(tools).toMatch(/^- newMusicOff .*New Music off.*active Session/m);
     expect(tools).toMatch(/leave out the Track id.*"this"/i);
     expect(tools).toMatch(/^- For renameSession and pinSession, leave out the Session id.*"this"/m);
   });
@@ -90,7 +90,7 @@ describe.each([
   it('names the settings the model changes, and leaves every other one to the user', () => {
     const tools = prompt.slice(prompt.indexOf('Tools:'), prompt.indexOf('Links:'));
     expect(tools).toMatch(
-      /^- changeSetting .*Include the owner in Covers, Blend consecutive Tracks, Crossfade length or Default language/m,
+      /^- changeSetting .*Include the owner in covers, Blend consecutive tracks, Crossfade length or Default language/m,
     );
     expect(tools).toMatch(/changeSetting changes those settings and no other/);
     expect(tools).toMatch(/whatever can spend, such as a limit, a budget or how many Tracks/);
@@ -124,7 +124,7 @@ describe.each([
     const tools = prompt.slice(prompt.indexOf('Tools:'), prompt.indexOf('Links:'));
     expect(tools).toMatch(/^- play plays music this user already has/m);
     expect(tools).toMatch(/resumes a Session.*plays a Playlist.*starts one Track/i);
-    expect(tools).toMatch(/keeps its New music setting/i);
+    expect(tools).toMatch(/keeps its New Music setting/i);
     expect(tools).toMatch(/music that does not exist yet.*proposeSession/i);
   });
 
@@ -159,7 +159,7 @@ describe.each([
     const tools = prompt.slice(prompt.indexOf('Tools:'), prompt.indexOf('Links:'));
     expect(tools).toMatch(/^- proposeChangeVibe prepares a Change Vibe for the active Session/m);
     expect(tools).toMatch(/^- proposeMoreLikeThis prepares a new Session in the style of Tracks/m);
-    expect(tools).toMatch(/^- proposeNewMusicOn prepares switching New music on/m);
+    expect(tools).toMatch(/^- proposeNewMusicOn prepares switching New Music on/m);
     expect(tools).toMatch(/up to a length .* or with no limit/i);
     expect(tools).toMatch(
       /each of these five only shows the user a card.*nothing happens until they confirm it/i,
@@ -274,7 +274,7 @@ describe('buildAssistantSystemPrompt', () => {
       expect(memberPrompt, route.label).not.toContain(route.label);
     }
     expect(memberPrompt).toContain(routeLine('/library', 'Library'));
-    expect(memberPrompt).toContain(routeLine('/settings/my-budget', 'Settings › My budget'));
+    expect(memberPrompt).toContain(routeLine('/settings/my-budget', 'Settings › My Budget'));
   });
 
   it('tells a Member\'s model to say "ask your Admin" for what only the Admin can do', () => {

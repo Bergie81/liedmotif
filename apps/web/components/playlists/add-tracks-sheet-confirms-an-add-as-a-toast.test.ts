@@ -173,7 +173,7 @@ describe('add tracks sheet — a failed Track', () => {
 
     const boxes = await screen.findAllByRole('checkbox');
     const failed = boxes.find((box) => box.textContent?.includes('Lost'))!;
-    expect(failed.textContent).toContain('Could not be kept');
+    expect(failed.textContent).toContain('Could Not Be Kept');
     expect((failed as HTMLButtonElement).disabled).toBe(true);
   });
 });

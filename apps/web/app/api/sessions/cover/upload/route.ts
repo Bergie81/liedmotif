@@ -20,7 +20,7 @@ import type { RecordStoredBytes } from '@/lib/media/storage-quota';
 
 export const dynamic = 'force-dynamic';
 
-const SESSION_FULL_MESSAGE = `This Session already keeps ${MAX_SESSION_COVER_HISTORY} covers. Delete a previous cover to upload another one.`;
+const SESSION_FULL_MESSAGE = `This session already keeps ${MAX_SESSION_COVER_HISTORY} covers. Delete a previous cover to upload another one.`;
 
 export async function POST(request: Request) {
   const ownerUserId = await requireOwnerId(request);

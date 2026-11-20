@@ -170,7 +170,7 @@ export function usePlaybackSettings({ read }: { read: boolean }): {
       }
       if (newest) applyBlend(confirmedBlendRef.current ?? previous);
       const kept = settingsRef.current.blendEnabled;
-      return `The blend change didn’t save — Tracks keep ${kept ? 'blending' : 'hard cuts'}. ${result.error.message}`;
+      return `The blend change didn’t save — tracks keep ${kept ? 'blending' : 'hard cuts'}. ${result.error.message}`;
     },
     [applyBlend],
   );

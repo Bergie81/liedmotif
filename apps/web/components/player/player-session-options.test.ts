@@ -71,13 +71,13 @@ function Options({
   });
 }
 
-it('states the New music status in its row and hands over to the New music sheet', () => {
+it('states the New Music status in its row and hands over to the New Music sheet', () => {
   const onOpenNewMusic = vi.fn();
   render(h(Options, { onOpenNewMusic }));
-  act(() => screen.getByRole('button', { name: 'Session and Track options' }).click());
+  act(() => screen.getByRole('button', { name: 'Session and Track Options' }).click());
 
   const row = screen.getByTestId('player-new-music-row');
-  expect(row.textContent).toContain('New music');
+  expect(row.textContent).toContain('New Music');
   expect(row.textContent).toContain('Generating 2 · 22 / 60 min');
 
   act(() => row.click());
@@ -89,7 +89,7 @@ it('states the New music status in its row and hands over to the New music sheet
 it('opens the Lyrics from their tile', () => {
   const onOpenLyrics = vi.fn();
   render(h(Options, { lyricsAvailable: true, onOpenLyrics }));
-  act(() => screen.getByRole('button', { name: 'Session and Track options' }).click());
+  act(() => screen.getByRole('button', { name: 'Session and Track Options' }).click());
 
   act(() => screen.getByTestId('player-open-lyrics').click());
 
@@ -99,14 +99,14 @@ it('opens the Lyrics from their tile', () => {
 it('offers Convert to Playlist with no current Track, as after a reload before play', () => {
   const onConvertToPlaylist = vi.fn();
   render(h(Options, { onConvertToPlaylist }));
-  act(() => screen.getByRole('button', { name: 'Session and Track options' }).click());
+  act(() => screen.getByRole('button', { name: 'Session and Track Options' }).click());
   act(() => screen.getByTestId('player-convert-session-to-playlist').click());
   expect(onConvertToPlaylist).toHaveBeenCalledOnce();
 });
 
 it('keeps Change Vibe unavailable while the player says so', () => {
   render(h(Options, { changeVibeAvailable: false }));
-  act(() => screen.getByRole('button', { name: 'Session and Track options' }).click());
+  act(() => screen.getByRole('button', { name: 'Session and Track Options' }).click());
   expect((screen.getByTestId('player-options-change-vibe') as HTMLButtonElement).disabled).toBe(
     true,
   );

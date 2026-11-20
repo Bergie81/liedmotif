@@ -134,7 +134,7 @@ it('saving an earlier cover after a reroll ends the preview', async () => {
   });
 
   await waitFor(() =>
-    expect(historyTile(OLDER).getAttribute('aria-label')).toBe('Show the current cover'),
+    expect(historyTile(OLDER).getAttribute('aria-label')).toBe('Show the Current Cover'),
   );
   expect(bigCoverId()).toBe(OLDER);
   expect(screen.queryByTestId('cover-confirm')).toBeNull();
@@ -157,7 +157,7 @@ it('the fresh cover that was not chosen stays in the history and can still be sa
 
   expect(api.selectSessionCover).toHaveBeenLastCalledWith('session-1', FRESH);
   await waitFor(() =>
-    expect(historyTile(FRESH).getAttribute('aria-label')).toBe('Show the current cover'),
+    expect(historyTile(FRESH).getAttribute('aria-label')).toBe('Show the Current Cover'),
   );
   expect(bigCoverId()).toBe(FRESH);
   expect(screen.queryByTestId('cover-confirm')).toBeNull();
@@ -183,7 +183,7 @@ it('saving the fresh cover and then an earlier one does not bring the fresh one 
     fireEvent.click(screen.getByTestId('cover-confirm'));
   });
   await waitFor(() =>
-    expect(historyTile(FRESH).getAttribute('aria-label')).toBe('Show the current cover'),
+    expect(historyTile(FRESH).getAttribute('aria-label')).toBe('Show the Current Cover'),
   );
 
   fireEvent.click(historyTile(OLDER));
@@ -192,7 +192,7 @@ it('saving the fresh cover and then an earlier one does not bring the fresh one 
   });
 
   await waitFor(() =>
-    expect(historyTile(OLDER).getAttribute('aria-label')).toBe('Show the current cover'),
+    expect(historyTile(OLDER).getAttribute('aria-label')).toBe('Show the Current Cover'),
   );
   expect(bigCoverId()).toBe(OLDER);
   expect(screen.queryByTestId('cover-confirm')).toBeNull();
@@ -282,7 +282,7 @@ it('a reroll still running when an earlier cover is saved is previewed once it l
     fireEvent.click(screen.getByTestId('cover-confirm'));
   });
   await waitFor(() =>
-    expect(historyTile(OLDER).getAttribute('aria-label')).toBe('Show the current cover'),
+    expect(historyTile(OLDER).getAttribute('aria-label')).toBe('Show the Current Cover'),
   );
 
   landed = true;

@@ -66,7 +66,7 @@ export function ForgotPasswordForm() {
 
       <button type="submit" disabled={busy} className={cn(primaryButtonClass, 'mt-1 w-full')}>
         {busy ? <LiedmotifLoader /> : null}
-        {busy ? 'Sending…' : 'Email me a reset link'}
+        {busy ? 'Sending…' : 'Email Me a Reset Link'}
       </button>
     </form>
   );

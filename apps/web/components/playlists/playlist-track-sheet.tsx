@@ -65,7 +65,7 @@ export function PlaylistTrackSheet({
                 {formatPlaylistMemberMetadata(item)}
               </span>
             }
-            closeLabel={`Close options for ${title}`}
+            closeLabel={`Close Options for ${title}`}
           />
           <SheetBody className="mt-4" role="group" aria-label="Track options">
             {visitor ? null : (
@@ -73,7 +73,7 @@ export function PlaylistTrackSheet({
                 onlineOnly
                 icon={<Minus />}
                 label="Remove from Playlist"
-                description="It leaves your library if this is its only playlist"
+                description="It leaves your Library if this is its only playlist"
                 data-testid="playlist-remove-track"
                 onClick={() => onRemove(item)}
               />

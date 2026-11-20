@@ -30,9 +30,9 @@ describe('People settings form', () => {
     );
 
     expect(markup).toContain('6 of 6');
-    expect(markup).toContain('6 of 6 People added');
+    expect(markup).toContain('6 of 6 People Added');
     expect(markup).toMatch(
-      /<button[^>]*disabled=""[^>]*>[^<]*(?:<svg[\s\S]*?<\/svg>)?6 of 6 People added/,
+      /<button[^>]*disabled=""[^>]*>[^<]*(?:<svg[\s\S]*?<\/svg>)?6 of 6 People Added/,
     );
     expect(markup).toMatch(
       /<input[^>]*type="radio"[^>]*name="cover-reference-frequency"[^>]*checked=""[^>]*value="never"/,

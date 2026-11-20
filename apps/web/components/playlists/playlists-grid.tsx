@@ -323,7 +323,7 @@ export function PlaylistsGrid({
       )}
       {action?.kind === 'create' ? (
         <RenameDialog
-          heading="New playlist"
+          heading="New Playlist"
           currentName=""
           maxLength={MAX_PLAYLIST_NAME_LENGTH}
           confirmLabel="Create"
@@ -435,7 +435,7 @@ export function PlaylistsGridContent({
             )}
           >
             <span className="flex flex-col items-center gap-2 text-[13.5px]">
-              <Plus className="h-5 w-5" aria-hidden /> New playlist
+              <Plus className="h-5 w-5" aria-hidden /> New Playlist
             </span>
           </button>
         </OnlineOnly>
@@ -502,8 +502,8 @@ function PlaylistCard({
 
 function PlaylistsNoMatches({ searchQuery }: { searchQuery: string }) {
   return (
-    <EmptyState icon={<ListMusic className="h-6 w-6" />} title="No matches" className="mt-4">
-      No playlist name, Track, or genre in a playlist matches “{searchQuery}”.
+    <EmptyState icon={<ListMusic className="h-6 w-6" />} title="No Matches" className="mt-4">
+      No playlist name, track, or genre in a playlist matches “{searchQuery}”.
     </EmptyState>
   );
 }
@@ -580,7 +580,7 @@ function PlaylistCardMenu({
           onlineOnly
           icon={<Armchair />}
           label={playlist.sharedAt ? 'Edit Sharing' : 'Share Playlist in the Lounge'}
-          description="Choose who can listen to it in the lounge"
+          description="Choose who can listen to it in the Lounge"
           data-testid={`playlist-menu-share-${playlist.id}`}
           onClick={() => pick(actions.onShare)}
         />

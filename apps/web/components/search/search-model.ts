@@ -27,7 +27,7 @@ export const SEARCH_GROUP_LABELS: Record<SearchGroupKind, string> = {
 
 export const SEARCH_SORT_LABELS: Record<SearchSort, string> = {
   relevance: 'Relevance',
-  newest: 'Newest first',
+  newest: 'Newest First',
   title: 'Title A–Z',
 };
 

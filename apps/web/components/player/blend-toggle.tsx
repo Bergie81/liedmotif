@@ -22,15 +22,15 @@ interface BlendToggleProps {
 
 /** The short name both surfaces show — the tip on the icon, the row's own text. */
 function blendToggleName(enabled: boolean): string {
-  return enabled ? 'Blend Tracks' : 'Don’t blend Tracks';
+  return enabled ? 'Blend Tracks' : 'Don’t Blend Tracks';
 }
 
 /** The accessible name: it must also say what a press does, which the short
  *  name has no room for. */
 function blendToggleLabel(enabled: boolean): string {
   return enabled
-    ? 'Blended Track transitions on — switch to hard cuts'
-    : 'Blended Track transitions off — switch to blends';
+    ? 'Blended track transitions on — switch to hard cuts'
+    : 'Blended track transitions off — switch to blends';
 }
 
 const glyphLayerClass =

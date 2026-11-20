@@ -728,7 +728,7 @@ describeIfDb('ensure-session-buffer controller', () => {
     // The player's own credits copy, not the change-the-prompt refusal copy.
     expect(await statusMessage(sessionId)).toBeNull();
     for (const shown of await shownCopy(sessionId, 'provider_credits')) {
-      expect(shown).toMatch(/out of credits.*Admin tops it up/);
+      expect(shown).toMatch(/out of credits.*admin tops it up/);
       expect(shown).not.toMatch(/Change Vibe|prompt/);
     }
     expect(calls()).toBe(1);
@@ -1886,7 +1886,7 @@ describeIfDb('ensure-session-buffer controller', () => {
             { readyTrackCount: 0, generationInFlight: false },
           );
           expect(shown.message).toBe(
-            'No Tracks yet — generation hit a problem before the first one landed.',
+            'No tracks yet — generation hit a problem before the first one landed.',
           );
           expect(shown.isStuck).toBe(true);
         });

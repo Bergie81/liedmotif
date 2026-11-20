@@ -116,7 +116,7 @@ export const APP_ROUTES: readonly AppRoute[] = [
   },
   {
     path: '/settings/my-budget',
-    label: 'Settings › My budget',
+    label: 'Settings › My Budget',
     description:
       'How many Tracks and covers you can still generate, from your own budget and the shared one. Read-only.',
     adminOnly: false,
@@ -124,7 +124,7 @@ export const APP_ROUTES: readonly AppRoute[] = [
   },
   {
     path: '/settings/limits',
-    label: 'Settings › Cost limits',
+    label: 'Settings › Cost Limits',
     description:
       'Set the daily and monthly limits on Tracks and covers that keep spending in check.',
     adminOnly: true,
@@ -145,7 +145,7 @@ export const APP_ROUTES: readonly AppRoute[] = [
   },
   {
     path: '/settings/cover-art',
-    label: 'Settings › Cover art',
+    label: 'Settings › Cover Art',
     description:
       'Your default cover style, Tailored Cover Art, your own Custom style and whether the Text AI polishes cover text.',
     adminOnly: false,
@@ -158,7 +158,7 @@ export const APP_ROUTES: readonly AppRoute[] = [
   },
   {
     path: '/settings/diagnostics',
-    label: 'Settings › Diagnostics & worker',
+    label: 'Settings › Diagnostics & Worker',
     description: 'Check that providers, storage and the background worker are running properly.',
     adminOnly: true,
   },

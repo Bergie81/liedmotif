@@ -113,7 +113,7 @@ export function useResumableSessions({
     });
     if (!settle(token)) return;
     if (!result.ok) {
-      toast.error(`Couldn’t load more Sessions: ${result.error.message}`, { key: LOAD_MORE_KEY });
+      toast.error(`Couldn’t load more sessions: ${result.error.message}`, { key: LOAD_MORE_KEY });
       return;
     }
     // An activity-ordered keyset can hand back a session that moved while

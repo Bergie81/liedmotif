@@ -154,7 +154,7 @@ export function MyVoiceSetup({ initial }: { initial: VoiceProfileView }) {
       {!view.generationSupported ? (
         <SettingsFeedback kind="info">
           The configured music model cannot sing with a custom voice yet — switch to a music model
-          that supports it (Settings → AI Providers) to use it in Sessions. You can still set the
+          that supports it (Settings → AI Providers) to use it in sessions. You can still set the
           profile up.
         </SettingsFeedback>
       ) : null}
@@ -182,7 +182,7 @@ export function MyVoiceSetup({ initial }: { initial: VoiceProfileView }) {
           ) : null}
           <RecorderPanel
             kind="source"
-            title="Source sample"
+            title="Source Sample"
             description={`Sing or rap for ${VOICE_SOURCE_MIN_SECONDS}–${VOICE_SOURCE_MAX_SECONDS} seconds in a quiet room. Dry vocals only — no backing music.`}
             minSeconds={VOICE_SOURCE_MIN_SECONDS}
             maxSeconds={VOICE_SOURCE_MAX_SECONDS}
@@ -197,7 +197,7 @@ export function MyVoiceSetup({ initial }: { initial: VoiceProfileView }) {
               onClick={() => void mutate('/api/settings/voice/validate', { method: 'POST' })}
               className={cn(primaryButtonClass, 'w-full')}
             >
-              Submit for validation
+              Submit for Validation
             </button>
             <SettingsFootnote>
               The selected recording is sent to the music provider to validate your voice. The
@@ -233,8 +233,8 @@ export function MyVoiceSetup({ initial }: { initial: VoiceProfileView }) {
             label={view.status === 'ready' ? 'My voice is ready' : 'My voice is disabled'}
             description={
               view.status === 'ready'
-                ? 'Vocal Sessions can sing with your voice — turn on “Own Voice” when starting one.'
-                : 'The profile is kept but not offered when starting Sessions.'
+                ? 'Vocal sessions can sing with your voice — turn on “Own Voice” when starting one.'
+                : 'The profile is kept but not offered when starting sessions.'
             }
           >
             <Switch
@@ -243,18 +243,18 @@ export function MyVoiceSetup({ initial }: { initial: VoiceProfileView }) {
               onCheckedChange={(enabled) =>
                 void mutate('/api/settings/voice', { method: 'PATCH', body: { enabled } })
               }
-              aria-label="Offer my voice for new Sessions"
+              aria-label="Offer my voice for new sessions"
             />
           </SettingsControlRow>
           {view.hasSourceRecording ? (
             <div className="border-b border-line py-3 last:border-b-0">
-              <p className="mb-2 text-[13px] font-semibold text-paper">Source sample</p>
+              <p className="mb-2 text-[13px] font-semibold text-paper">Source Sample</p>
               <StoredRecordingPreview kind="source" />
             </div>
           ) : null}
           {view.hasVerificationRecording ? (
             <div className="py-3">
-              <p className="mb-2 text-[13px] font-semibold text-paper">Verification recording</p>
+              <p className="mb-2 text-[13px] font-semibold text-paper">Verification Recording</p>
               <StoredRecordingPreview kind="verification" />
             </div>
           ) : null}
@@ -299,7 +299,7 @@ function ConsentCard({
     <SettingsCard>
       <div className="py-4">
         <p className="text-[13.5px] leading-[1.6] text-muted">
-          Record your own singing voice and let vocal Sessions sing with it. Before you start:
+          Record your own singing voice and let vocal sessions sing with it. Before you start:
         </p>
         <ul className="mt-3 list-disc space-y-1.5 pl-5 text-[13px] leading-[1.5] text-muted">
           <li>Liedmotif stores your recordings on this server.</li>
@@ -323,7 +323,7 @@ function ConsentCard({
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="w-[var(--radix-select-trigger-width)]">
-              <SelectItem value="provider">Let the provider decide</SelectItem>
+              <SelectItem value="provider">Let the Provider Decide</SelectItem>
               {VOICE_LANGUAGES.map((code) => (
                 <SelectItem key={code} value={code}>
                   {LANGUAGE_LABELS[code]}
@@ -347,7 +347,7 @@ function ConsentCard({
           onClick={() => onCreate(language)}
           className={cn(primaryButtonClass, 'mt-4 w-full')}
         >
-          Set up my voice
+          Set Up My Voice
         </button>
       </div>
     </SettingsCard>
@@ -366,7 +366,7 @@ function VerificationSection({
   return (
     <>
       <div className="border-t border-line py-4">
-        <p className="text-[13px] font-semibold text-paper">Verification phrase</p>
+        <p className="text-[13px] font-semibold text-paper">Verification Phrase</p>
         <p className="mt-1 text-[12.5px] text-dim">
           Record exactly this phrase — singing it works best:
         </p>
@@ -376,7 +376,7 @@ function VerificationSection({
       </div>
       <RecorderPanel
         kind="verification"
-        title="Verification recording"
+        title="Verification Recording"
         description={`Record the phrase above (${VOICE_VERIFICATION_MIN_SECONDS}–${VOICE_VERIFICATION_MAX_SECONDS} seconds).`}
         minSeconds={VOICE_VERIFICATION_MIN_SECONDS}
         maxSeconds={VOICE_VERIFICATION_MAX_SECONDS}
@@ -391,7 +391,7 @@ function VerificationSection({
           onClick={() => void mutate('/api/settings/voice/verify', { method: 'POST' })}
           className={cn(primaryButtonClass, 'w-full')}
         >
-          Create my voice
+          Create My Voice
         </button>
         <SettingsFootnote>
           The verification recording is sent to the music provider; your voice profile is ready a
@@ -507,7 +507,7 @@ function RecorderPanel({
             className={cn(secondaryButtonClass, 'inline-flex items-center gap-2')}
           >
             <Mic className="h-4 w-4" aria-hidden />
-            {take || hasStored ? 'Record again' : 'Start recording'}
+            {take || hasStored ? 'Record Again' : 'Start Recording'}
           </button>
         )}
         {recorder.state === 'processing' ? (
@@ -548,7 +548,7 @@ function RecorderPanel({
             onClick={() => void saveTake()}
             className={cn(primaryButtonClass, 'mt-3 w-full')}
           >
-            {uploading ? 'Saving…' : hasStored ? 'Replace saved recording' : 'Save recording'}
+            {uploading ? 'Saving…' : hasStored ? 'Replace Saved Recording' : 'Save Recording'}
           </button>
         </div>
       ) : null}

@@ -47,10 +47,10 @@ export const ONBOARDING_GROUPS: readonly { group: OnboardingGroup; steps: Onboar
   {
     group: 'Connect',
     steps: [
-      { id: 'music', title: 'Music model' },
-      { id: 'tracks', title: 'Track limit', optional: true },
+      { id: 'music', title: 'Music Model' },
+      { id: 'tracks', title: 'Track Limit', optional: true },
       { id: 'llm', title: 'Text AI', optional: true },
-      { id: 'covers', title: 'Cover art', optional: true },
+      { id: 'covers', title: 'Cover Art', optional: true },
     ],
   },
   { group: 'Finish', steps: [{ id: 'done', title: 'Done' }] },
@@ -71,7 +71,7 @@ export const MEMBER_ONBOARDING_GROUPS: OnboardingGroupTable = [
       { id: 'people', title: 'People', optional: true },
     ],
   },
-  { group: 'Finish', steps: [{ id: 'done', title: 'Your budget' }] },
+  { group: 'Finish', steps: [{ id: 'done', title: 'Your Budget' }] },
 ];
 
 function flattenSteps(
@@ -209,7 +209,7 @@ export function coverBudgetNote(covers: number, imageProviderKey: string): Cover
 
 /** What each Text AI preset costs to run, before saying whether it can paint Covers. */
 const TEXT_AI_COSTS: Record<string, string> = {
-  openai: 'Under 1 cent per Session.',
+  openai: 'Under 1 cent per session.',
   gemini: 'Free to start.',
   ollama: 'Free, runs on your machine.',
   openrouter: 'Cost depends on the model.',
@@ -225,9 +225,9 @@ export function textAiCostLine(providerKey: string): string | null {
   const cost = TEXT_AI_COSTS[providerKey];
   if (!cost) return null;
   if (!IMAGE_PROVIDERS.some((option) => option.value === providerKey)) {
-    return `${cost} It cannot paint Covers.`;
+    return `${cost} It cannot paint covers.`;
   }
-  const covers = `${cost} This key can also paint your Covers, about ${coverPriceCents(providerKey)} cents each.`;
+  const covers = `${cost} This key can also paint your covers, about ${coverPriceCents(providerKey)} cents each.`;
   return providerKey === 'gemini' ? `${covers} Covers need billing turned on at Google.` : covers;
 }
 
@@ -296,8 +296,8 @@ export function memberOnboardingRecord(
     row('Location', place || 'Not set', Boolean(place)),
     row('People', named ? `${named} ${named === 1 ? 'person' : 'people'}` : 'None', named > 0),
     budget.kind === 'oneTime'
-      ? row('Tracks', `${budget.tracks.limit} Tracks in total`, true)
-      : row('Tracks / day', `${budget.figures.tracksDay.limit} Tracks`, true),
+      ? row('Tracks', `${budget.tracks.limit} tracks in total`, true)
+      : row('Tracks / day', `${budget.figures.tracksDay.limit} tracks`, true),
   ];
 }
 
@@ -339,7 +339,7 @@ export function onboardingRecord(
     row('People', named ? `${named} ${named === 1 ? 'person' : 'people'}` : 'None', named > 0),
     credentialRow('Music model', data.music, draft.musicConnected, 'Connected', 'Not connected'),
     draft.savedCeiling.enabled
-      ? row('Tracks / day', `${draft.savedCeiling.dailyTracks} Tracks`, true)
+      ? row('Tracks / day', `${draft.savedCeiling.dailyTracks} tracks`, true)
       : row('Tracks / day', 'No limit', false),
     credentialRow('Text AI', data.llm, draft.llmConnected, draft.llmModel || 'Connected', 'Off'),
     // Having no source is what a Session falls back to when nothing was chosen,

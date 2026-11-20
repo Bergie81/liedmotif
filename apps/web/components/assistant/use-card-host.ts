@@ -92,7 +92,7 @@ export interface CardHost {
    */
   moreLikeThis: (request: Omit<MoreLikeThisRequest, 'clientId'>) => CardFlow;
   /**
-   * Saves New music on the way the player's New music sheet does; null minutes
+   * Saves New Music on the way the player's New Music sheet does; null minutes
    * is No limit. The player and the mini player follow.
    */
   newMusicOn: (sessionId: string, targetMinutes: number | null) => CardFlow;
@@ -172,7 +172,7 @@ export function useCardHost(
           if (!result.ok) {
             return {
               carriedOut: false,
-              refusal: `New music didn’t switch on: ${result.error.message}`,
+              refusal: `New Music didn’t switch on: ${result.error.message}`,
             };
           }
           const { session } = result.data;

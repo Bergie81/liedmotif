@@ -61,7 +61,7 @@ export function PersonEditor({
       body: JSON.stringify({ name, about }),
     }).catch(() => null);
     if (!response?.ok) {
-      toast.error(await peopleResponseMessage(response, 'Could not save this Person.'), {
+      toast.error(await peopleResponseMessage(response, 'Could not save this person.'), {
         key: saveKey,
       });
       setBusy(null);
@@ -86,7 +86,7 @@ export function PersonEditor({
       method: 'DELETE',
     }).catch(() => null);
     if (!response?.ok) {
-      toast.error(await peopleResponseMessage(response, 'Could not delete this Person.'), {
+      toast.error(await peopleResponseMessage(response, 'Could not delete this person.'), {
         key: deleteKey,
       });
       setBusy(null);
@@ -111,7 +111,7 @@ export function PersonEditor({
         </span>
         {person.role === 'owner' ? (
           <span className="rounded-[5px] border border-lamp/45 px-2 py-[2px] font-mono text-[9.5px] uppercase tracking-[0.1em] text-lamp">
-            Owner profile
+            Owner Profile
           </span>
         ) : null}
       </div>

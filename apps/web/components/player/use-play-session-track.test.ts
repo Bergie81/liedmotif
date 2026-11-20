@@ -150,7 +150,7 @@ describe('direct Session track playback', () => {
       await result.current.playViaSession({ id: trackId, originSessionId: sessionId });
     });
     await act(async () => vi.advanceTimersByTime(10_000));
-    expect(error).toHaveBeenCalledWith('Couldn’t load that Track. Please retry.');
+    expect(error).toHaveBeenCalledWith('Couldn’t load that track. Please retry.');
     expect(result.current.busyTrackId).toBeNull();
     context.playback = {
       ...context.playback,

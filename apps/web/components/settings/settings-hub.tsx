@@ -30,8 +30,8 @@ export function SettingsHub({ data }: { data: SettingsHubData }) {
     <>
       <SettingsPageHeader
         root
-        title="Set up Liedmotif"
-        description="Your profile, AI providers, cost limits, and how new Sessions sound."
+        title="Set Up Liedmotif"
+        description="Your profile, AI providers, cost limits, and how new sessions sound."
       />
 
       <SettingsColumns>
@@ -96,14 +96,14 @@ export function SettingsHub({ data }: { data: SettingsHubData }) {
                 <SettingsRow
                   href="/settings/voice"
                   icon={<Mic />}
-                  label="My voice"
+                  label="My Voice"
                   summary={data.voice}
                 />
               ) : null}
               <SettingsRow
                 href="/settings/cover-art"
                 icon={<Image />}
-                label="Cover art"
+                label="Cover Art"
                 summary={data.coverArt}
               />
             </SettingsCard>
@@ -129,7 +129,7 @@ export function SettingsHub({ data }: { data: SettingsHubData }) {
               <SettingsRow
                 href="/settings/diagnostics"
                 icon={<Stethoscope />}
-                label="Diagnostics &amp; worker"
+                label="Diagnostics &amp; Worker"
                 summary={data.diagnostics}
               />
             </SettingsCard>
@@ -164,7 +164,7 @@ export function SettingsHub({ data }: { data: SettingsHubData }) {
                 <SettingsRow
                   href="/settings/limits"
                   icon={<Gauge />}
-                  label="Cost limits"
+                  label="Cost Limits"
                   summary={data.limits}
                 />
               </div>

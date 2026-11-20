@@ -637,7 +637,7 @@ describe.skipIf(skip)('POST /api/sessions/cover/regenerate', () => {
     const response = await postJson(regeneratePost, { activitySessionId: sessionId });
     expect(response.status).toBe(409);
     const { error } = (await response.clone().json()) as { error: { message: string } };
-    expect(error.message).toContain('Admin');
+    expect(error.message).toContain('admin');
     expect(error.message).not.toContain('Settings');
     expect(holder.enqueued).toHaveLength(0);
   });

@@ -52,7 +52,7 @@ export function AssistantToneForm({ initial }: { initial: AssistantTone }) {
           disabled={saving}
           className={secondaryButtonClass}
         >
-          {ASSISTANT_NAME}&apos;s own
+          {ASSISTANT_NAME}&apos;s Own
         </button>
         <div className="flex flex-wrap gap-2">
           {TONE_PRESETS.map((preset) => (
@@ -96,7 +96,7 @@ export function AssistantToneForm({ initial }: { initial: AssistantTone }) {
         disabled={saving}
         className={`${primaryButtonClass} w-full`}
       >
-        {saving ? 'Saving…' : 'Save tone'}
+        {saving ? 'Saving…' : 'Save Tone'}
       </button>
     </div>
   );

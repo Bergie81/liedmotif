@@ -31,7 +31,7 @@ export default async function PeopleSettingsPage() {
     <section>
       <SettingsPageHeader
         title="People"
-        description="Add People who can appear in generated covers and inspire personalized lyrics."
+        description="Add people who can appear in generated covers and inspire personalized lyrics."
       />
       <SettingsColumns>
         <PeopleForm

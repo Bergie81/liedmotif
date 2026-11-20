@@ -23,8 +23,8 @@ export default function ForgotPasswordPage() {
         <LiedmotifMark className="h-8 w-8" />
         <LiedmotifWordmark className="text-[22px]" />
       </div>
-      <p className={eyebrowClass}>Password reset</p>
-      <h1 className={`${displayHeadingClass} mt-3`}>Forgot your password?</h1>
+      <p className={eyebrowClass}>Password Reset</p>
+      <h1 className={`${displayHeadingClass} mt-3`}>Forgot Your Password?</h1>
       <p className="mt-3 text-[14px] leading-relaxed text-muted">
         Enter the email you sign in with. If it is confirmed, we mail you a link to pick a new
         password.
@@ -36,7 +36,7 @@ export default function ForgotPasswordPage() {
         href="/login"
         className="mt-6 self-center text-[13.5px] font-semibold text-lamp underline-offset-4 hover:underline"
       >
-        Back to sign in
+        Back to Sign In
       </Link>
     </main>
   );

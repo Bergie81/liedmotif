@@ -39,7 +39,7 @@ src/
   index.ts             Public surface: pool factory + typed Drizzle layer
 ```
 
-## Application schema
+## Application Schema
 
 The 15 Liedmotif tables, by domain area. Every user-owned table carries
 `ownerUserId` (or `userId` for the event logs) as a `text` FK to Better Auth's
@@ -91,10 +91,10 @@ single typed `UsageLimits` object under the `usageLimits` key
 (`dailyGenerationTasks=40`, `monthlyGenerationTasks=400`, `maxConcurrentJobs=1`,
 `maxQueuedTracks=6`, `maxSessionMinutesWithoutConfirmation=60`,
 `maxRetriesPerJob=2`, `storageQuotaBytes=10 GiB`, `manualGenerationOnly=false`,
-`idleAutoPauseAfterMinutes=15`, `resetTimezone=INSTANCE_TIMEZONE|UTC`). A Member's
+`idleAutoPauseAfterMinutes=15`, `resetTimezone=INSTANCE_TIMEZONE|UTC`). A member's
 personal budget is the `limits` key in `user_settings`.
 
-### Key indexes and constraints
+### Key Indexes and Constraints
 
 - **Partial unique** `activity_sessions_one_active_per_owner` on `owner_user_id`
   `WHERE status = 'active'` — at most one active session per owner.
@@ -127,7 +127,7 @@ duplicates rows or clobbers admin-tuned values. Exposed at the
 DATABASE_URL=postgres://liedmotif:liedmotif@localhost:5433/liedmotif_dev npm run db:seed
 ```
 
-## Not in the schema
+## Not in the Schema
 
 These tables do not exist:
 
@@ -136,7 +136,7 @@ These tables do not exist:
   `playlist_tracks`) and in `feedback_events`.
 - **Export bundles** — downloadable track/metadata archives.
 
-## Migration order
+## Migration Order
 
 Migrations are applied in a fixed order. Two systems own schema independently of
 the Liedmotif app schema — Better Auth (its auth tables) and Graphile Worker (its
@@ -179,7 +179,7 @@ Run from the repo root (each delegates into this workspace):
 DATABASE_URL=postgres://liedmotif:liedmotif@localhost:5433/liedmotif_dev npm run db:migrate
 ```
 
-## Typed client
+## Typed Client
 
 Each process owns one `pg.Pool` and wraps it once:
 
@@ -198,7 +198,7 @@ Transaction helpers live alongside it: `withTransaction(db, fn)` and
 `withRetryableTransaction(db, fn)` (bounded retry on serialization-failure /
 deadlock — SQLSTATE `40001` / `40P01`).
 
-## Test database
+## Test Database
 
 The migrate-from-clean integration test (`src/migrate.test.ts`) runs the
 committed migrations against an **empty** database and asserts the Better Auth

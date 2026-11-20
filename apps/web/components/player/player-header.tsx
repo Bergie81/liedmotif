@@ -59,7 +59,7 @@ export function PlayerHeader({
      * Shared reference into the LISTENER's own playlists. */
     onAddToPlaylist: () => void;
   };
-  /** The Session's New music status; a Playlist generates nothing and omits it. */
+  /** The Session's New Music status; a Playlist generates nothing and omits it. */
   newMusic?: ReactNode;
   /** The source's options control, revealed on the desk breakpoint only. */
   options: ReactNode;

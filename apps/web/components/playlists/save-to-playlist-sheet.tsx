@@ -189,7 +189,7 @@ function PickerContent({
         {loadError ? <AlertBanner className="mt-4">{loadError}</AlertBanner> : null}
 
         {playlists === null && !loadError ? (
-          <LoadingRow className="mt-6 py-6" label="Loading Playlists…" />
+          <LoadingRow className="mt-6 py-6" label="Loading playlists…" />
         ) : null}
 
         {playlists ? (
@@ -236,7 +236,7 @@ function PickerContent({
                 >
                   <Plus className="h-[18px] w-[18px]" aria-hidden />
                 </span>
-                <span className="min-w-0 flex-1 truncate text-left">New playlist</span>
+                <span className="min-w-0 flex-1 truncate text-left">New Playlist</span>
               </button>
             )}
 

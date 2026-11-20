@@ -29,13 +29,13 @@ function ownBudgetRows(yours: MyBudgetPageData['yours'], payerName: string | nul
     return [
       {
         icon: Music,
-        title: `${yours.tracks.limit} Tracks in total`,
-        description: `New music made for you. This budget does not renew. When it runs out, Sessions replay what they already made, and ${payerName ?? 'your host'} can give you more.`,
+        title: `${yours.tracks.limit} tracks in total`,
+        description: `New music made for you. This budget does not renew. When it runs out, sessions replay what they already made, and ${payerName ?? 'your host'} can give you more.`,
       },
       {
         icon: Image,
-        title: `${yours.covers.limit} Covers in total`,
-        description: 'Generated art for your Sessions. Uploading your own pictures does not count.',
+        title: `${yours.covers.limit} covers in total`,
+        description: 'Generated art for your sessions. Uploading your own pictures does not count.',
       },
     ];
   }
@@ -43,14 +43,14 @@ function ownBudgetRows(yours: MyBudgetPageData['yours'], payerName: string | nul
   return [
     {
       icon: Music,
-      title: `${figures.tracksDay.limit} Tracks a day, ${figures.tracksMonth.limit} a month`,
+      title: `${figures.tracksDay.limit} tracks a day, ${figures.tracksMonth.limit} a month`,
       description:
-        'New music made for you. When you run out, Sessions replay what they already made until your budget resets.',
+        'New music made for you. When you run out, sessions replay what they already made until your budget resets.',
     },
     {
       icon: Image,
-      title: `${figures.coversDay.limit} Covers a day, ${figures.coversMonth.limit} a month`,
-      description: 'Generated art for your Sessions. Uploading your own pictures does not count.',
+      title: `${figures.coversDay.limit} covers a day, ${figures.coversMonth.limit} a month`,
+      description: 'Generated art for your sessions. Uploading your own pictures does not count.',
     },
   ];
 }
@@ -60,14 +60,14 @@ function budgetRows(budget: MyBudgetPageData): BudgetRow[] {
     ...ownBudgetRows(budget.yours, budget.payerName),
     {
       icon: Users,
-      title: `A shared budget of ${budget.shared.tracksDay.limit} Tracks a day`,
+      title: `A shared budget of ${budget.shared.tracksDay.limit} tracks a day`,
       description:
         'Everyone invited here shares it, so it can run out before your own budget does.',
     },
     {
       icon: Wallet,
       title: `${budget.payerName || 'Your host'} pays for your music`,
-      description: 'New Tracks and Covers go on their account. Budgets keep that in check.',
+      description: 'New tracks and covers go on their account. Budgets keep that in check.',
     },
   ];
 }
@@ -102,7 +102,7 @@ export function MemberOnboardingDoneStep({ budget }: { budget: MyBudgetPageData 
           <Check className="h-[22px] w-[22px] desk:h-[30px] desk:w-[30px]" strokeWidth={2.6} />
         </span>
         <h1 className="font-display text-[clamp(26px,7vw,34px)] font-extrabold leading-[1.12] tracking-[-0.025em]">
-          You&apos;re on the air!
+          You&apos;re on the Air!
         </h1>
       </header>
       <p className="mt-2 text-[14.5px] leading-relaxed text-muted">
@@ -110,7 +110,7 @@ export function MemberOnboardingDoneStep({ budget }: { budget: MyBudgetPageData 
         music stays private unless you share it.
       </p>
 
-      <OnboardingSubhead>Your budget</OnboardingSubhead>
+      <OnboardingSubhead>Your Budget</OnboardingSubhead>
       <OnboardingCard className="mt-0">
         {budgetRows(budget).map(({ icon: Icon, title, description }) => (
           <div
@@ -127,14 +127,14 @@ export function MemberOnboardingDoneStep({ budget }: { budget: MyBudgetPageData 
       </OnboardingCard>
       <p className="mt-3.5 text-[13px] leading-relaxed text-dim">
         See what you have left any time in{' '}
-        <b className="font-semibold text-paper">Settings › My budget</b>.
+        <b className="font-semibold text-paper">Settings › My Budget</b>.
       </p>
 
       <OnboardingError error={error} />
 
       <OnboardingActions>
         <OnboardingPrimaryAction
-          label="Start your first Session"
+          label="Start Your First Session"
           busyLabel="Opening Liedmotif…"
           busy={finishing}
           icon={<Play className="h-[17px] w-[17px]" aria-hidden />}

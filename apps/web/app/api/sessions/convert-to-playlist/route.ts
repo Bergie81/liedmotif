@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   const parsed = await parseJsonBody(
     request,
     convertSessionToPlaylistRequestSchema,
-    'Invalid convert-to-Playlist request.',
+    'Invalid convert-to-playlist request.',
   );
   if (parsed instanceof NextResponse) return parsed;
 
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   if (!result.ok) {
     return result.reason === 'not_found'
       ? apiError('not_found', 'Session not found.')
-      : apiError('validation_error', 'This Session has no Tracks yet.');
+      : apiError('validation_error', 'This session has no tracks yet.');
   }
   return apiOk({ playlistId: result.playlistId, trackCount: result.trackCount });
 }

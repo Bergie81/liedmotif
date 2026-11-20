@@ -115,14 +115,14 @@ it('tapping the current cover after a reroll shows it big, and the new cover sta
     fireEvent.click(screen.getByTestId('cover-generate'));
   });
   await waitFor(() => expect(bigCoverId()).toBe(FRESH));
-  expect(screen.getByLabelText(/Preview this earlier/)).toHaveProperty('ariaPressed', 'true');
+  expect(screen.getByLabelText(/Preview This Earlier/)).toHaveProperty('ariaPressed', 'true');
 
-  fireEvent.click(screen.getByLabelText('Show the current cover'));
+  fireEvent.click(screen.getByLabelText('Show the Current Cover'));
   expect(bigCoverId()).toBe(CURRENT);
-  expect(screen.getByLabelText('Show the current cover')).toHaveProperty('ariaPressed', 'true');
+  expect(screen.getByLabelText('Show the Current Cover')).toHaveProperty('ariaPressed', 'true');
   expect(screen.queryByTestId('cover-confirm')).toBeNull();
 
-  fireEvent.click(screen.getByLabelText(/Preview this earlier/));
+  fireEvent.click(screen.getByLabelText(/Preview This Earlier/));
   expect(bigCoverId()).toBe(FRESH);
   expect(screen.getByTestId('cover-confirm')).toBeTruthy();
 });

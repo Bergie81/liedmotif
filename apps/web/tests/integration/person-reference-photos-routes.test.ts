@@ -201,8 +201,8 @@ describe('Person reference photo routes', () => {
   });
 
   it.each([
-    ['person_limit_reached', 'This Person already has 3 reference photos.'],
-    ['owner_limit_reached', 'You already have 18 Person reference photos.'],
+    ['person_limit_reached', 'This person already has 3 reference photos.'],
+    ['owner_limit_reached', 'You already have 18 person reference photos.'],
   ])('returns explicit cap feedback for %s and removes refused bytes', async (reason, message) => {
     holder.insertResult = { inserted: false, reason };
     const jpeg = await makeJpeg(32, 32);

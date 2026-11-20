@@ -25,7 +25,7 @@ export function assistantRefusal(standing: AssistantStanding): NextResponse {
   if (!standing.enabled) {
     return apiError(
       'assistant_access_off',
-      `${ASSISTANT_NAME} is switched off for your account. Ask your Admin to switch it on.`,
+      `${ASSISTANT_NAME} is switched off for your account. Ask your admin to switch it on.`,
       { headers },
     );
   }

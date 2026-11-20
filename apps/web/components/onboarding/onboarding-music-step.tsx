@@ -82,9 +82,9 @@ function MusicStepBody({
       <OnboardingStepHeader
         eyebrow="Required"
         eyebrowTone="required"
-        title="Connect your music model"
+        title="Connect Your Music Model"
       >
-        It makes every Track, billed to your own account at about {TRACK_COST_CENTS} cents each.
+        It makes every track, billed to your own account at about {TRACK_COST_CENTS} cents each.
         {credential.configured ? null : ' Paste your key and test it to continue.'}
       </OnboardingStepHeader>
 
@@ -98,7 +98,7 @@ function MusicStepBody({
           providerLabel="The music model"
           keyLabel={`${credential.displayName} API key`}
           keyPlaceholder="Paste it here"
-          testLabel={environmentManaged ? 'Test the configured key' : 'Test the key'}
+          testLabel={environmentManaged ? 'Test the Configured Key' : 'Test the Key'}
           currentMasked={credential.masked}
           encryptionKeyConfigured={encryptionKeyConfigured}
         />
@@ -132,7 +132,7 @@ function MusicStepBody({
 
       <OnboardingActions>
         <OnboardingPrimaryAction
-          label={edited ? 'Save and continue' : 'Continue'}
+          label={edited ? 'Save and Continue' : 'Continue'}
           busyLabel="Saving…"
           busy={editor.saving}
           disabled={!proven || editor.operationPending}

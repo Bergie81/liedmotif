@@ -58,7 +58,7 @@ export function usePlaySessionTrack(onError: (message: string) => void, onStarte
     if (!pendingJump) return;
     const timer = setTimeout(() => {
       settle();
-      latest.current.onError('Couldn’t load that Track. Please retry.');
+      latest.current.onError('Couldn’t load that track. Please retry.');
     }, 10_000);
     return () => clearTimeout(timer);
   }, [pendingJump]);
@@ -89,7 +89,7 @@ export function usePlaySessionTrack(onError: (message: string) => void, onStarte
     }
     if (!result.ok) {
       settle();
-      onError(`Couldn’t play that Track: ${result.error.message}`);
+      onError(`Couldn’t play that track: ${result.error.message}`);
       return true;
     }
     const current = latest.current.playback;

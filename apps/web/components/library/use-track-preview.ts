@@ -67,7 +67,7 @@ export function useTrackPreview(onError: (message: string) => void) {
     meter().close(trackId, 'failed');
     setPreview({ trackId, state: 'idle' });
     clearTrackPreview(ownerRef.current);
-    onError('This Track could not be played. Try again later.');
+    onError('This track could not be played. Try again later.');
   }
 
   // A pause while `play()` is pending rejects it with AbortError: that is the

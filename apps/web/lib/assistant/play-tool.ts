@@ -67,7 +67,7 @@ async function trackInItsSession(asker: AssistantAsker, trackId: string): Promis
 /**
  * One of the asker's Sessions that Resume would bring back with something to
  * play. Resume itself refuses none, so the one Session turned down here is the
- * one that would sit silent: no Track left and no New music to make one.
+ * one that would sit silent: no Track left and no New Music to make one.
  */
 async function resumableSession(asker: AssistantAsker, sessionId: string): Promise<Checked> {
   const { db, userId, player } = asker;
@@ -86,7 +86,7 @@ async function resumableSession(asker: AssistantAsker, sessionId: string): Promi
     });
     if (!tracks?.items.length) {
       return {
-        why: `The Session ${name} cannot be resumed: it has no Track left to play, and its New music is off.`,
+        why: `The Session ${name} cannot be resumed: it has no Track left to play, and its New Music is off.`,
       };
     }
   }
@@ -164,7 +164,7 @@ export function createPlayTool(asker: AssistantAsker, actions: TurnActions): Llm
   return {
     name: PLAY_TOOL_NAME,
     description:
-      "Plays music the user already has, in the player in their browser: resumes one of their Sessions, plays a Playlist, or starts one Track. It generates nothing by itself; a resumed Session keeps the user's New music setting.",
+      "Plays music the user already has, in the player in their browser: resumes one of their Sessions, plays a Playlist, or starts one Track. It generates nothing by itself; a resumed Session keeps the user's New Music setting.",
     inputSchema: playInputSchema,
     execute: (input) =>
       actions.take('player', async () => {

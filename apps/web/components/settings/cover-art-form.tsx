@@ -75,7 +75,7 @@ export function CoverArtForm({
     // not — is exactly what the field shows after saving.
     if (data.settings) setDefinition(data.settings.customStyleDefinition);
     if (data.enhancement?.applied) {
-      toast.success('Saved. Your definition was optimized by your Text AI.', { key: SAVE_KEY });
+      toast.success('Saved. Your definition was optimized by your text AI.', { key: SAVE_KEY });
     } else if (data.enhancement?.attempted) {
       toast.warning('Saved. Enhancement was unavailable, so your definition was kept as written.', {
         key: SAVE_KEY,
@@ -90,18 +90,18 @@ export function CoverArtForm({
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="text-[13px] font-semibold text-paper">
-            Use Tailored Cover Art Generation
+            Use Tailored Cover Art generation
           </div>
           <p className="mt-1 text-[11.5px] leading-[1.5] text-dim">
-            New Sessions get covers in your chosen style from your image provider, which costs per
+            New sessions get covers in your chosen style from your image provider, which costs per
             cover. Off, they use the basic cover art that comes with the music at no extra cost.
-            Every Session can override this on the create card.
+            Every session can override this on the create card.
           </p>
         </div>
         <Switch
           checked={!useStandardCoverArt}
           onCheckedChange={(on) => setUseStandardCoverArt(!on)}
-          aria-label="Use Tailored Cover Art Generation"
+          aria-label="Use Tailored Cover Art generation"
           data-testid="use-tailored-cover-art"
         />
       </div>
@@ -152,15 +152,15 @@ export function CoverArtForm({
           <div className="text-[13px] font-semibold text-paper">Enhance prompts</div>
           <p className="mt-1 text-[11.5px] leading-[1.5] text-dim">
             {llmConfigured
-              ? 'Your Text AI rewrites cover guidance and custom style definitions into image-model-friendly phrasing before generation.'
-              : 'Requires a Text AI under Settings → Providers.'}
+              ? 'Your text AI rewrites cover guidance and custom style definitions into image-model-friendly phrasing before generation.'
+              : 'Requires a text AI under Settings → Providers.'}
           </p>
         </div>
         <Switch
           checked={llmConfigured && enhancementEnabled}
           onCheckedChange={setEnhancementEnabled}
           disabled={!llmConfigured}
-          aria-label="Enhance prompts with the Text AI"
+          aria-label="Enhance prompts with the text AI"
           data-testid="prompt-enhancement-toggle"
         />
       </div>
@@ -170,7 +170,7 @@ export function CoverArtForm({
         disabled={saving}
         className={`${primaryButtonClass} w-full`}
       >
-        {saving ? 'Saving…' : 'Save cover art'}
+        {saving ? 'Saving…' : 'Save Cover Art'}
       </button>
     </div>
   );

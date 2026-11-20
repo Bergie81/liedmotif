@@ -80,7 +80,7 @@ const note = (control: HTMLElement) =>
 it('shows a hint instead of the default while no Text AI is connected', () => {
   render(h(AssistantDefaultPanel, { access: null }));
 
-  expect(screen.getByText(/runs on your Text AI/)).toBeTruthy();
+  expect(screen.getByText(/runs on your text AI/)).toBeTruthy();
   expect(screen.queryByRole('switch')).toBeNull();
   expect(screen.queryByRole('textbox')).toBeNull();
 });
@@ -96,7 +96,7 @@ it("leaves the Assistant controls off a Member's card while no Text AI is connec
 it('saves a change to the default as soon as it is made', async () => {
   const sent = stubSaves({ enabled: false, dailyMessages: 30 });
   render(h(AssistantDefaultPanel, { access: INSTANCE_DEFAULT }));
-  const toggle = screen.getByRole('switch', { name: 'Assistant for Members' });
+  const toggle = screen.getByRole('switch', { name: 'Assistant for members' });
   expect(toggle.getAttribute('aria-checked')).toBe('true');
 
   fireEvent.click(toggle);
@@ -110,7 +110,7 @@ it('saves a change to the default as soon as it is made', async () => {
 it('puts the default back and says why in a toast when a save fails', async () => {
   stubFailingSaves('Could not save.');
   render(h(AssistantDefaultPanel, { access: INSTANCE_DEFAULT }));
-  const toggle = screen.getByRole('switch', { name: 'Assistant for Members' });
+  const toggle = screen.getByRole('switch', { name: 'Assistant for members' });
 
   fireEvent.click(toggle);
 
@@ -143,7 +143,7 @@ it('shows a Member without values of their own on the default, and moves them wi
   expect(memberAllowance().value).toBe('30');
   expect(within(note(memberSwitch())).getByText('Default')).toBeTruthy();
   expect(within(note(memberAllowance())).getByText('Default')).toBeTruthy();
-  expect(screen.queryByRole('button', { name: /Use default/ })).toBeNull();
+  expect(screen.queryByRole('button', { name: /Use Default/ })).toBeNull();
 
   rerender(memberCards({}, { enabled: false, dailyMessages: 12 }));
 
@@ -153,7 +153,7 @@ it('shows a Member without values of their own on the default, and moves them wi
 
 it("keeps a Member's own allowance when the default moves, and marks it as theirs", () => {
   const { rerender } = render(memberCards({ dailyMessages: 5 }));
-  expect(within(note(memberAllowance())).getByText(/Set for this Member/)).toBeTruthy();
+  expect(within(note(memberAllowance())).getByText(/Set for this member/)).toBeTruthy();
   expect(within(note(memberSwitch())).getByText('Default')).toBeTruthy();
 
   rerender(memberCards({ dailyMessages: 5 }, { enabled: false, dailyMessages: 12 }));
@@ -174,7 +174,7 @@ it('switches the Assistant off for one Member', async () => {
     ]),
   );
   expect(memberSwitch().getAttribute('aria-checked')).toBe('false');
-  expect(within(note(memberSwitch())).getByText(/Set for this Member/)).toBeTruthy();
+  expect(within(note(memberSwitch())).getByText(/Set for this member/)).toBeTruthy();
 });
 
 it("saves a Member's typed allowance when the field is left", async () => {
@@ -189,7 +189,7 @@ it("saves a Member's typed allowance when the field is left", async () => {
       { url: '/api/settings/members/member-1/assistant', body: { dailyMessages: 5 } },
     ]),
   );
-  expect(within(note(memberAllowance())).getByText(/Set for this Member/)).toBeTruthy();
+  expect(within(note(memberAllowance())).getByText(/Set for this member/)).toBeTruthy();
 });
 
 it('names the range and saves nothing when the typed allowance is outside it', () => {
@@ -208,7 +208,7 @@ it("takes one of a Member's values back to the default", async () => {
   render(memberCards({ enabled: false, dailyMessages: 5 }));
 
   fireEvent.click(
-    within(note(memberSwitch())).getByRole('button', { name: 'Use default for Assistant' }),
+    within(note(memberSwitch())).getByRole('button', { name: 'Use Default for Assistant' }),
   );
 
   await waitFor(() =>

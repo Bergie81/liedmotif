@@ -144,7 +144,7 @@ export function BackupsPanel({ initial }: { initial: BackupsOverview }) {
           <SettingsSection title="Status">
             <SettingsCard>
               <div className="mb-1 flex items-center justify-between gap-3">
-                <span className="text-[15px] font-semibold">Backup service</span>
+                <span className="text-[15px] font-semibold">Backup Service</span>
                 <SettingsStatusBadge status={summary.status} />
               </div>
               <p
@@ -212,7 +212,7 @@ export function BackupsPanel({ initial }: { initial: BackupsOverview }) {
             <SettingsCard>
               <SettingsControlRow
                 label="Scheduled backups"
-                description="When off, backups run only from Back up now"
+                description="When off, backups run only from Back Up Now"
               >
                 <Switch
                   checked={schedule.enabled}
@@ -305,8 +305,8 @@ export function BackupsPanel({ initial }: { initial: BackupsOverview }) {
                   value={schedule.keep}
                   onDecrement={() => change('keep', schedule.keep - 1)}
                   onIncrement={() => change('keep', schedule.keep + 1)}
-                  decrementLabel="Keep fewer backups"
-                  incrementLabel="Keep more backups"
+                  decrementLabel="Keep Fewer Backups"
+                  incrementLabel="Keep More Backups"
                   canDecrement={!saving && schedule.keep > BACKUP_KEEP_MIN}
                   canIncrement={!saving && schedule.keep < BACKUP_KEEP_MAX}
                 />
@@ -329,7 +329,7 @@ export function BackupsPanel({ initial }: { initial: BackupsOverview }) {
               disabled={saving}
               className={`${primaryButtonClass} mt-4 w-full`}
             >
-              {saving ? 'Saving…' : 'Save schedule'}
+              {saving ? 'Saving…' : 'Save Schedule'}
             </button>
           </SettingsSection>
         </div>
@@ -385,7 +385,7 @@ export function BackupsPanel({ initial }: { initial: BackupsOverview }) {
               </p>
             ) : null}
             <SettingsFootnote>
-              A backup holds every account&rsquo;s content: Tracks, covers, prompts and voice
+              A backup holds every account&rsquo;s content: tracks, covers, prompts and voice
               recordings. The download opens only with the passphrase.
             </SettingsFootnote>
             <SettingsFootnote>

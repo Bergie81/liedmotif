@@ -474,7 +474,7 @@ describeIfDb('ensure-session-buffer — Member cost-limit status payload', () =>
     expect(calls()).toBe(0);
 
     const message = (await sessionStatusRow(sessionId)).statusMessageSafe;
-    expect(message).toContain('The Admin needs to free space or raise the quota.');
+    expect(message).toContain('The admin needs to free space or raise the quota.');
     expect(message).not.toContain('Settings');
   });
   // A One-time budget is one total counted since the Grant.

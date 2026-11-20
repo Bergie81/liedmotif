@@ -72,7 +72,7 @@ export function LoginForm({ canResetByEmail }: { canResetByEmail: boolean }) {
 
       <button type="submit" disabled={busy} className={cn(primaryButtonClass, 'mt-1 w-full')}>
         {busy ? <LiedmotifLoader /> : null}
-        {busy ? 'Signing in…' : 'Sign in'}
+        {busy ? 'Signing In…' : 'Sign In'}
       </button>
 
       {canResetByEmail ? (
@@ -80,7 +80,7 @@ export function LoginForm({ canResetByEmail }: { canResetByEmail: boolean }) {
           href="/forgot"
           className="self-center text-[13.5px] font-semibold text-lamp underline-offset-4 hover:underline"
         >
-          Forgot password?
+          Forgot Password?
         </Link>
       ) : null}
     </form>

@@ -78,16 +78,16 @@ describe('player presentation', () => {
   });
 
   it('names the playing order for the source it belongs to', () => {
-    expect(QUEUE_LABEL.Session).toBe('Tracks in this Session');
-    expect(QUEUE_LABEL.Playlist).toBe('Tracks in this Playlist');
+    expect(QUEUE_LABEL.Session).toBe('Tracks in This Session');
+    expect(QUEUE_LABEL.Playlist).toBe('Tracks in This Playlist');
   });
 
   it('names only the committed source without implying a provider URL', () => {
     expect(presentSource('stream')).toEqual({
-      label: 'Live stream',
+      label: 'Live Stream',
       detail: 'Local final on the way',
     });
-    expect(presentSource('final')).toEqual({ label: 'Local final', detail: 'Stored locally' });
+    expect(presentSource('final')).toEqual({ label: 'Local Final', detail: 'Stored locally' });
     expect(presentSource(null)).toBeNull();
   });
 
@@ -380,23 +380,23 @@ describe('player presentation', () => {
       ),
     ).toEqual({
       chip: 'Preparing “Night Drive”…',
-      detail: 'This Session keeps playing until the new one is ready.',
+      detail: 'This session keeps playing until the new one is ready.',
     });
     expect(
       presentIncomingSource({ stage: 'preparing', noun: 'Session', title: null }, 'Session'),
     ).toEqual({
-      chip: 'Preparing your next Session…',
-      detail: 'This Session keeps playing until the new one is ready.',
+      chip: 'Preparing your next session…',
+      detail: 'This session keeps playing until the new one is ready.',
     });
     expect(presentIncomingSource({ stage: 'connecting' }, 'Session')).toEqual({
       chip: 'Setting the vibe…',
-      detail: 'This Session keeps playing until the new one is ready.',
+      detail: 'This session keeps playing until the new one is ready.',
     });
   });
 
   it('names an incoming Playlist "Next Playlist"', () => {
     const playlist = { stage: 'preparing', noun: 'Playlist', title: null } as const;
-    expect(presentIncomingSource(playlist, 'Session').chip).toBe('Preparing your next Playlist…');
+    expect(presentIncomingSource(playlist, 'Session').chip).toBe('Preparing your next playlist…');
     expect(presentIncomingSource({ ...playlist, title: 'Focus Nights' }, 'Session').chip).toBe(
       'Preparing “Focus Nights”…',
     );
@@ -414,11 +414,11 @@ describe('player presentation', () => {
     expect(
       presentIncomingSource({ stage: 'preparing', noun: 'Session', title: null }, 'Playlist'),
     ).toEqual({
-      chip: 'Preparing your next Session…',
-      detail: 'This Playlist keeps playing until the new one is ready.',
+      chip: 'Preparing your next session…',
+      detail: 'This playlist keeps playing until the new one is ready.',
     });
     expect(presentIncomingSource({ stage: 'connecting' }, 'Playlist').detail).toBe(
-      'This Playlist keeps playing until the new one is ready.',
+      'This playlist keeps playing until the new one is ready.',
     );
   });
 

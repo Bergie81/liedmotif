@@ -123,7 +123,7 @@ function PlaylistCoverContent({
             checked={usePeople}
             onChange={setUsePeople}
             disabled={disabled}
-            namedIn="this Playlist’s name"
+            namedIn="this playlist’s name"
             testId="playlist-cover-use-people"
           />
         </>

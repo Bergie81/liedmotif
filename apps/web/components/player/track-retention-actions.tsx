@@ -71,7 +71,7 @@ export function TrackRetentionActions({
     <div className="flex flex-none">
       <RetentionButton
         testId="player-favorite"
-        label={favorited ? 'Favorited — remove Favorite' : 'Favorite this Track'}
+        label={favorited ? 'Favorited — remove favorite' : 'Favorite This Track'}
         pressed={favorited}
         disabled={disabled}
         onPress={onToggleFavorite}
@@ -79,7 +79,7 @@ export function TrackRetentionActions({
       />
       <RetentionButton
         testId="player-add-to-playlist"
-        label={inCuratedPlaylist ? 'In a Playlist — edit Playlists' : 'Add to Playlists'}
+        label={inCuratedPlaylist ? 'In a Playlist — edit playlists' : 'Add to Playlists'}
         pressed={inCuratedPlaylist}
         disabled={disabled}
         onPress={onAddToPlaylist}

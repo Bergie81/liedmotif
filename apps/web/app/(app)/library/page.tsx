@@ -17,9 +17,9 @@ export default async function LibraryPage() {
   return (
     <>
       <header>
-        <h1 className={`${displayHeadingClass} mb-2`}>Your saved music</h1>
+        <h1 className={`${displayHeadingClass} mb-2`}>Your Saved Music</h1>
         <p className="text-[14.5px] text-muted">
-          Add a Track to a Playlist to keep it. Other Tracks go when you delete their Session.
+          Add a track to a playlist to keep it. Other tracks go when you delete their session.
         </p>
       </header>
       <LibraryView initialPlaylists={initialPlaylists} />

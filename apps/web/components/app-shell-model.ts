@@ -85,12 +85,12 @@ export function deriveGenerationHeadroom(usage: ShellUsage): GenerationHeadroom 
 /** The period a readout's figure covers, as the suffix after "left". */
 export const HEADROOM_PERIOD = { day: ' today', month: ' this month', total: '' } as const;
 
-/** The readout's unit for `count` Tracks: one Track, never "1 Tracks". */
-export function trackNoun(count: number): 'Track' | 'Tracks' {
-  return count === 1 ? 'Track' : 'Tracks';
+/** The readout's unit for `count` Tracks: one track, never "1 tracks". */
+export function trackNoun(count: number): 'track' | 'tracks' {
+  return count === 1 ? 'track' : 'tracks';
 }
 
-/** The readout as a line of text, naming the period its figure covers: "38 Tracks left today". */
+/** The readout as a line of text, naming the period its figure covers: "38 tracks left today". */
 export function headroomLine({ remainingTracks, window }: GenerationHeadroom): string {
   return `${remainingTracks} ${trackNoun(remainingTracks)} left${HEADROOM_PERIOD[window]}`;
 }

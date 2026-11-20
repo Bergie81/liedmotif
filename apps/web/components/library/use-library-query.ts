@@ -60,7 +60,7 @@ export function useLibraryQuery(view: LibraryView, search = '') {
       setItems((current) => appendUniqueById(current ?? [], result.data.items));
       setNextCursor(result.data.nextCursor);
     } else {
-      toast.error(`Couldn’t load more Tracks: ${result.error.message}`, { key: LOAD_MORE_KEY });
+      toast.error(`Couldn’t load more tracks: ${result.error.message}`, { key: LOAD_MORE_KEY });
     }
   }
 

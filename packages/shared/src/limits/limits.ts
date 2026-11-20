@@ -26,7 +26,7 @@ export type CostLimitWindow = 'day' | 'month' | 'total';
  * "the Admin" when the instance has no name to give.
  */
 export function oneTimeBudgetUsedUpMessage(adminName: string | null): string {
-  return `Your budget is used up. Ask ${adminName ?? 'the Admin'} for more.`;
+  return `Your budget is used up. Ask ${adminName ?? 'the admin'} for more.`;
 }
 
 /**

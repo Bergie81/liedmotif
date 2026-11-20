@@ -35,7 +35,7 @@ function sessionActions(
       kind: 'confirm',
       heading: 'More Like This',
       body: 'Start a new Session seeded from this Track?',
-      confirmLabel: 'Start new Session',
+      confirmLabel: 'Start New Session',
       onConfirm: asyncNoop,
     },
     'rename-track': { kind: 'button', onSelect: noop },
@@ -94,7 +94,7 @@ function renderSessionSheet(
       actions,
     }),
   );
-  act(() => row(/Session and Track options/).click());
+  act(() => row(/Session and Track Options/).click());
   return view;
 }
 
@@ -133,7 +133,7 @@ describe('player options sheet', () => {
           }),
         }),
       );
-      act(() => row(/Playlist and Track options/).click());
+      act(() => row(/Playlist and Track Options/).click());
       expect(
         screen.getByTestId('player-open-lyrics').closest('[role="dialog"]')?.textContent,
       ).toContain('Read along with this track');
@@ -212,7 +212,7 @@ describe('player options sheet', () => {
       expect(screen.getByTestId('player-open-lyrics').matches(':disabled')).toBe(false);
       expect(screen.getByTestId('player-regenerate-cover').matches(':disabled')).toBe(true);
       // The header says why the sheet is short.
-      expect(screen.getByRole('button', { name: /Offline: why options are missing/ })).toBeTruthy();
+      expect(screen.getByRole('button', { name: /Offline: Why Options Are Missing/ })).toBeTruthy();
     } finally {
       delete (navigator as { onLine?: boolean }).onLine;
       act(() => {

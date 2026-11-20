@@ -23,7 +23,7 @@ export default async function LoungePage() {
   return (
     <>
       <header>
-        <h1 className={`${displayHeadingClass} mb-2`}>Share your music</h1>
+        <h1 className={`${displayHeadingClass} mb-2`}>Share Your Music</h1>
         <p className="text-[14.5px] text-muted">
           Playlists the people here have set out to play. Listen, pin, save what you like — it stays
           yours while they keep sharing it.

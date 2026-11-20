@@ -104,7 +104,7 @@ describe('Playlists grid', () => {
       },
     ]);
 
-    expect(markup).toContain('14 Tracks · 52 min');
+    expect(markup).toContain('14 tracks · 52 min');
     expect(markup).toMatch(/Edited .+ ago/);
     expect(markup).toContain('aria-label="Play Focus"');
   });

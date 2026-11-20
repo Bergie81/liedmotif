@@ -47,7 +47,7 @@ it('retries the load from the alert', () => {
   const retry = vi.fn();
   render(h(RecentSessions, { state: failedToLoad(retry) }));
 
-  fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Try Again' }));
 
   expect(retry).toHaveBeenCalledTimes(1);
 });

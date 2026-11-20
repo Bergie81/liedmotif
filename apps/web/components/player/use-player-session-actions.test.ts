@@ -49,7 +49,7 @@ it('says why when the conversion is refused', async () => {
     ok: false,
     error: {
       code: 'validation_error',
-      message: 'This Session has no Tracks yet.',
+      message: 'This session has no tracks yet.',
       retryable: false,
     },
   });
@@ -58,7 +58,7 @@ it('says why when the conversion is refused', async () => {
   expect(shownToasts()).toEqual([
     expect.objectContaining({
       tone: 'error',
-      message: 'Convert to Playlist failed: This Session has no Tracks yet.',
+      message: 'Convert to Playlist failed: This session has no tracks yet.',
     }),
   ]);
 });

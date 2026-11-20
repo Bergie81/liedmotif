@@ -105,14 +105,14 @@ describe('a card as the model reads it', () => {
       'start a new Session that sounds like the Track "Night Drive", with no limit',
     ],
     [
-      'New music on up to a duration',
+      'New Music on up to a duration',
       { kind: 'newMusicOn', session: RAINY, targetDurationMinutes: 90 },
-      'switch New music on for the Session "Rainy Window", up to 90 minutes of music',
+      'switch New Music on for the Session "Rainy Window", up to 90 minutes of music',
     ],
     [
-      'New music on with no limit',
+      'New Music on with no limit',
       { kind: 'newMusicOn', session: RAINY, targetDurationMinutes: null },
-      'switch New music on for the Session "Rainy Window", with no limit',
+      'switch New Music on for the Session "Rainy Window", with no limit',
     ],
     [
       'a cover for a Session, with art direction',

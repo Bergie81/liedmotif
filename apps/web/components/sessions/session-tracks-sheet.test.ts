@@ -122,12 +122,12 @@ it.each(['cover', 'title', 'genres', 'summary'])(
       }),
     );
     await screen.findByText('Ambient');
-    const header = screen.getByRole('button', { name: 'Open Focus in player' });
+    const header = screen.getByRole('button', { name: 'Open Focus in Player' });
     const node =
       target === 'cover'
         ? header.querySelector('img')!
         : screen.getByText(
-            target === 'title' ? 'Focus' : target === 'genres' ? 'Ambient' : '0:00 · No Tracks yet',
+            target === 'title' ? 'Focus' : target === 'genres' ? 'Ambient' : '0:00 · No tracks yet',
           );
     fireEvent.click(node);
     await waitFor(() => expect(navigation.push).toHaveBeenCalledWith('/player'));
@@ -201,10 +201,10 @@ it('resumes a stopped Session before navigating and prevents duplicate header re
   const close = vi.fn();
   const props = { open: true, onOpenChange: close, session: { ...session, genreTags: [] } };
   const view = render(createElement(SessionTracksDialog, props));
-  fireEvent.click(screen.getByRole('button', { name: 'Open Focus in player' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Open Focus in Player' }));
   await waitFor(() => expect(finishResume).toBeTypeOf('function'));
   expect(navigation.push).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole('button', { name: 'Open Focus in player' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Open Focus in Player' }));
   expect(fetcher.mock.calls.filter(([url]) => url.includes('/resume'))).toHaveLength(1);
   view.rerender(createElement(SessionTracksDialog, { ...props, open: false }));
   await act(async () => finishResume());
@@ -247,7 +247,7 @@ it.each(['source change', 'page unmount'])(
       session: { ...TARGET_SESSION, genreTags: [] },
     };
     const view = render(createElement(SessionTracksDialog, props));
-    fireEvent.click(screen.getByRole('button', { name: 'Open Focus in player' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open Focus in Player' }));
     await waitFor(() => expect(finishResume).toBeTypeOf('function'));
     if (interruption === 'page unmount') view.unmount();
     else {
@@ -276,7 +276,7 @@ it('opens an active Session from another playback source without attempting Resu
       session: active,
     }),
   );
-  fireEvent.click(screen.getByRole('button', { name: 'Open Focus in player' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Open Focus in Player' }));
   await waitFor(() => expect(navigation.push).toHaveBeenCalledWith('/player'));
   expect(context.engage).toHaveBeenCalledWith(active, { autoplay: true });
   expect(fetcher.mock.calls.some(([url]) => url.includes('/resume'))).toBe(false);
@@ -308,7 +308,7 @@ it('keeps the panel and playback on a failed Resume, and retries opening that Se
       session: { ...TARGET_SESSION, genreTags: [] },
     }),
   );
-  fireEvent.click(screen.getByRole('button', { name: 'Open Focus in player' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Open Focus in Player' }));
   await screen.findByText('Session could not resume.');
   expect(close).not.toHaveBeenCalled();
   expect(context.engage).not.toHaveBeenCalled();
@@ -340,7 +340,7 @@ it('clears a header failure when the listener chooses a Track instead', async ()
       session: { ...TARGET_SESSION, genreTags: [] },
     }),
   );
-  fireEvent.click(screen.getByRole('button', { name: 'Open Focus in player' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Open Focus in Player' }));
   await screen.findByText('Could not open Session.');
   fireEvent.click(screen.getByRole('button', { name: 'Pause Morning' }));
   expect(player.toggle).toHaveBeenCalledOnce();
@@ -384,11 +384,11 @@ it('opens the complete Session list from the player transport without changing p
   }
   render(createElement(Player));
   expect(fetcher).not.toHaveBeenCalled();
-  const opener = screen.getByRole('button', { name: 'Tracks in this Session' });
+  const opener = screen.getByRole('button', { name: 'Tracks in This Session' });
   opener.focus();
   fireEvent.click(opener);
   await screen.findByText('Older vibe');
-  expect(screen.getByText('Ambient').nextElementSibling?.textContent).toBe('1:10:00 · 35 Tracks');
+  expect(screen.getByText('Ambient').nextElementSibling?.textContent).toBe('1:10:00 · 35 tracks');
   expect(screen.getByRole('list', { name: 'Session tracks' }).textContent).toBe(
     'Older vibe3:00Morning2:05',
   );
@@ -400,7 +400,7 @@ it('opens the complete Session list from the player transport without changing p
   fireEvent.click(screen.getByRole('button', { name: 'Pause Morning' }));
   expect(player.toggle).toHaveBeenCalledOnce();
   expect(screen.getByRole('dialog')).toBeTruthy();
-  fireEvent.click(screen.getByRole('button', { name: 'Close Session tracks' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Close Session Tracks' }));
   await waitFor(() => expect(document.activeElement).toBe(opener));
 });
 
@@ -414,17 +414,17 @@ it('shows live generation progress separately from playable Tracks, only for its
   context.playback.player.generatingTracksAhead = 2;
   const view = render(createElement(SessionTracksDialog, props));
   await screen.findByText('No playable tracks yet.');
-  expect(screen.getByRole('status').textContent).toBe('Preparing 2 Tracks…');
+  expect(screen.getByRole('status').textContent).toBe('Preparing 2 tracks…');
   expect(screen.getByRole('list', { name: 'Session tracks' }).children).toHaveLength(0);
   context.playback.player.generatingTracksAhead = 1;
   view.rerender(createElement(SessionTracksDialog, props));
-  expect(screen.getByRole('status').textContent).toBe('Preparing 1 Track…');
+  expect(screen.getByRole('status').textContent).toBe('Preparing 1 track…');
   context.playback.player.generatingTracksAhead = 0;
   view.rerender(createElement(SessionTracksDialog, props));
   expect(screen.queryByRole('status')).toBeNull();
   context.playback.player.queueItems = [queueItem()];
   view.rerender(createElement(SessionTracksDialog, props));
-  expect(screen.getByRole('status').textContent).toBe('Preparing 1 Track…');
+  expect(screen.getByRole('status').textContent).toBe('Preparing 1 track…');
   context.playback.player.queueItems = [];
   context.playback.player.generatingTracksAhead = 2;
   view.rerender(
@@ -471,17 +471,17 @@ it('preserves a divider for every changed vibe across pages and reopening withou
   for (let opening = 0; opening < 2; opening++) {
     fireEvent.click(screen.getByRole('button', { name: 'Focus' }));
     await screen.findByText('Track 3');
-    expect(screen.getAllByText('New vibe from here')).toHaveLength(1);
-    fireEvent.click(screen.getByRole('button', { name: 'Load more' }));
+    expect(screen.getAllByText('New Vibe from Here')).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Load More' }));
     await screen.findByText('Track 7');
-    const dividers = screen.getAllByText('New vibe from here');
+    const dividers = screen.getAllByText('New Vibe from Here');
     expect(dividers).toHaveLength(2);
     expect(dividers[0]!.closest('li')!.textContent).toContain('Track 3');
     expect(dividers[1]!.closest('li')!.textContent).toContain('Track 6');
     expect(
       screen.getByRole('list', { name: 'Session tracks' }).querySelectorAll('button'),
     ).toHaveLength(7);
-    fireEvent.click(screen.getByRole('button', { name: 'Close Session tracks' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close Session Tracks' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   }
 });
@@ -559,7 +559,7 @@ it('opens without changing playback, shows Session details and duration, and sta
   fireEvent.click(screen.getByRole('button', { name: 'Pause Morning' }));
   expect(player.toggle).toHaveBeenCalledOnce();
   expect(screen.getByRole('dialog')).toBeTruthy();
-  fireEvent.click(screen.getByRole('button', { name: 'Close Session tracks' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Close Session Tracks' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 });
 
@@ -625,7 +625,7 @@ it('finishes an accepted Track selection after its sheet closes', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Focus' }));
   fireEvent.click(await screen.findByRole('button', { name: 'Play Older' }));
   await waitFor(() => expect(player.refreshQueue).toHaveBeenCalledOnce());
-  fireEvent.click(screen.getByRole('button', { name: 'Close Session tracks' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Close Session Tracks' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   context.playback.player.queueItems = [
     queueItem({ id: 'old-slot', trackId: OLDER.id, assets: { final: '/audio', stream: null } }),
@@ -701,13 +701,13 @@ it('keeps a late failure with its Session and retries its Track after reopening'
   fireEvent.click(screen.getByRole('button', { name: 'Focus' }));
   fireEvent.click(await screen.findByRole('button', { name: 'Play Older' }));
   await waitFor(() => expect(failSelection).toBeTypeOf('function'));
-  fireEvent.click(screen.getByRole('button', { name: 'Close Session tracks' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Close Session Tracks' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   fireEvent.click(screen.getByRole('button', { name: 'Sleep' }));
   await screen.findByText('Older');
   await act(async () => failSelection());
   expect(screen.queryByText(/Track unavailable/)).toBeNull();
-  fireEvent.click(screen.getByRole('button', { name: 'Close Session tracks' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Close Session Tracks' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   fireEvent.click(screen.getByRole('button', { name: 'Focus' }));
   await screen.findByText(/Track unavailable/);

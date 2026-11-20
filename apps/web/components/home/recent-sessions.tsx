@@ -25,7 +25,7 @@ export function RecentSessions({ state }: { state: ResumableSessionsState }) {
   return (
     <aside className="mb-12 @split:sticky @split:top-6 @split:col-start-2 @split:row-start-1 @split:mb-0">
       <h2 className={cn(sectionHeadingClass, 'mb-3 mt-6 flex items-center justify-between gap-2')}>
-        Jump back in
+        Jump Back In
         <Link
           href="/sessions"
           className="font-mono text-[12px] font-normal tracking-[0.06em] text-dim hover:text-muted"
@@ -35,7 +35,7 @@ export function RecentSessions({ state }: { state: ResumableSessionsState }) {
       </h2>
 
       {items === null && !error ? (
-        <LoadingRow className={cn(cardClass, 'py-10')} label="Loading Sessions…" />
+        <LoadingRow className={cn(cardClass, 'py-10')} label="Loading sessions…" />
       ) : null}
 
       <SessionTracksProvider>
@@ -47,7 +47,7 @@ export function RecentSessions({ state }: { state: ResumableSessionsState }) {
             title={session.title}
             coverImageId={session.coverImageId}
             genreTags={session.genreTags}
-            activityFallback="Stopped Session"
+            activityFallback="Stopped session"
             coverVariant={index}
             className={cn('mb-2', index >= MOBILE_RECENT_SESSIONS_LIMIT && '@max-split:hidden')}
             details={
@@ -69,7 +69,7 @@ export function RecentSessions({ state }: { state: ResumableSessionsState }) {
             onClick={retry}
             className="mt-3 inline-flex items-center gap-2 font-semibold text-paper"
           >
-            <RotateCcw className="h-3.5 w-3.5" aria-hidden /> Try again
+            <RotateCcw className="h-3.5 w-3.5" aria-hidden /> Try Again
           </button>
         </AlertBanner>
       ) : null}

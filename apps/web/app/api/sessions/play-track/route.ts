@@ -35,7 +35,7 @@ export async function POST(request: Request) {
   });
   if (!result.ok) {
     if (result.reason === 'not_found') return apiError('not_found', 'Session not found.');
-    return apiError('not_found', 'That Track is no longer available in this Session.');
+    return apiError('not_found', 'That track is no longer available in this session.');
   }
 
   // Same best-effort kick as Resume: a resumed session's first top-up (when

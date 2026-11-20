@@ -46,7 +46,7 @@ export function AccountMenu({
   return (
     <Popover>
       <PopoverTrigger
-        aria-label="Account menu"
+        aria-label="Account Menu"
         className={cn(
           'group flex min-h-[42px] min-w-[42px] items-center justify-center gap-2 rounded-xl text-left hover:bg-[var(--control-bg-hover)]',
           expandedRail ? 'w-full justify-center p-2 rail-exp:justify-start' : 'flex-none',
@@ -120,7 +120,7 @@ export function AccountMenu({
         <div className="mx-2 my-1 h-px bg-line" role="separator" />
         <button type="button" onClick={signOut} disabled={busy} className={accountRowClass}>
           <LogOut className="h-[18px] w-[18px] text-muted" />
-          {busy ? 'Signing out…' : 'Sign out'}
+          {busy ? 'Signing Out…' : 'Sign Out'}
         </button>
       </PopoverContent>
     </Popover>

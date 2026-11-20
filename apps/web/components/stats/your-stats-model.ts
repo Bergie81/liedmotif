@@ -8,9 +8,9 @@ import {
 import { searchQueryString } from '@/components/search/search-model';
 
 export const RANGE_LABELS: Record<ListeningRange, string> = {
-  '7d': '7 days',
-  '30d': '30 days',
-  all: 'All time',
+  '7d': '7 Days',
+  '30d': '30 Days',
+  all: 'All Time',
 };
 
 export function formatListeningTime(ms: number): string {
@@ -26,7 +26,7 @@ export const counted = (count: number, one: string, many: string) =>
 
 /** Where a range opens, on the calendar of `timezone`. */
 export function rangeOpening(period: { from: string | null; timezone: string }): string {
-  if (period.from === null) return 'All time';
+  if (period.from === null) return 'All Time';
   const from = new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
     month: 'short',
@@ -60,7 +60,7 @@ export function coverageNote(stats: ListeningStatsData): string {
     timeZone: stats.timezone,
   }).format(new Date(stats.collectionStartedAt));
   const incomplete = stats.range === 'all' || stats.rangePredatesCollection;
-  const covered = `Your own Tracks in Sessions, Playlists and previews, recorded since ${since}.`;
+  const covered = `Your own tracks in sessions, playlists and previews, recorded since ${since}.`;
   return incomplete
     ? `${covered} Earlier listening is not on record, so it is missing here — not zero.`
     : covered;
@@ -117,7 +117,7 @@ function trackAction(entry: ListeningStatsData['topTracks'][number]): TrackRow['
 export function trackRows(stats: ListeningStatsData): TrackRow[] {
   return stats.topTracks.map((entry, index) => ({
     key: entry.trackId ?? `deleted-${index}`,
-    label: entry.trackId === null ? 'Deleted track' : (entry.title ?? 'Untitled track'),
+    label: entry.trackId === null ? 'Deleted Track' : (entry.title ?? 'Untitled Track'),
     coverImageId: entry.coverImageId,
     plays: counted(entry.plays, 'play', 'plays'),
     playCount: entry.plays,

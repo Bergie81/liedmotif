@@ -139,7 +139,7 @@ const SUBJECTS = [
   },
 ];
 
-const coverCard = () => screen.getByRole('group', { name: 'New cover' });
+const coverCard = () => screen.getByRole('group', { name: 'New Cover' });
 const statusReads = (sent: SentRequest[]) => sent.filter(({ path }) => /cover\/status/.test(path));
 const selects = (sent: SentRequest[]) => sent.filter(({ path }) => /cover\/select/.test(path));
 const shownCover = () => coverCard().querySelector('img')?.getAttribute('src') ?? null;
@@ -154,10 +154,10 @@ async function confirmCover(
   answer: Response = regenerated('started'),
   options?: Parameters<typeof askForCard>[2],
 ) {
-  const asked = await askForCard('New cover', [cardEvent(card)], options);
+  const asked = await askForCard('New Cover', [cardEvent(card)], options);
   const kind = card.kind === 'cover' ? card.subject.kind : 'session';
   asked.server.sent[0]!.answer(coverStatus(kind, {}));
-  fireEvent.click(screen.getByRole('button', { name: 'Generate cover' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Generate Cover' }));
   asked.server.sent.find(({ path }) => /regenerate/.test(path))!.answer(answer);
   return asked;
 }
@@ -185,7 +185,7 @@ describe.each(SUBJECTS)(
         within(coverCard())
           .getAllByRole('button')
           .map((b) => b.textContent),
-      ).toEqual(['Use this cover']);
+      ).toEqual(['Use This Cover']);
     });
 
     it('sends the cover select request once, then says the cover is in use and the app’s views follow', async () => {
@@ -193,7 +193,7 @@ describe.each(SUBJECTS)(
       (await attemptReads(server.sent, 1))[0]!.answer(
         coverStatus(kind, { latest: attempt('ready'), history: [NEW_COVER, CURRENT_COVER] }),
       );
-      const use = await screen.findByRole('button', { name: 'Use this cover' });
+      const use = await screen.findByRole('button', { name: 'Use This Cover' });
       const chromeReads = refresh.mock.calls.length;
 
       fireEvent.click(use);
@@ -217,7 +217,7 @@ describe.each(SUBJECTS)(
       (await attemptReads(server.sent, 1))[0]!.answer(
         coverStatus(kind, { latest: attempt('ready'), history: [NEW_COVER, CURRENT_COVER] }),
       );
-      await screen.findByRole('button', { name: 'Use this cover' });
+      await screen.findByRole('button', { name: 'Use This Cover' });
 
       expect(selects(server.sent)).toEqual([]);
       expect(navigation.refresh).not.toHaveBeenCalled();
@@ -255,7 +255,7 @@ describe('following a cover attempt', () => {
       coverStatus('session', { latest: attempt('ready'), history: [NEW_COVER, CURRENT_COVER] }),
     );
 
-    await screen.findByRole('button', { name: 'Use this cover' });
+    await screen.findByRole('button', { name: 'Use This Cover' });
     await act(() => vi.advanceTimersByTimeAsync(30_000));
     expect(statusReads(server.sent)).toHaveLength(3);
   });
@@ -284,16 +284,16 @@ describe('following a cover attempt', () => {
       }),
     );
 
-    await screen.findByRole('button', { name: 'Use this cover' });
+    await screen.findByRole('button', { name: 'Use This Cover' });
     expect(shownCover()).toBe(`/api/covers/${NEW_COVER}`);
   });
 });
 
 describe('a cover attempt the status route no longer tells of', () => {
   const NO_LONGER_TOLD =
-    'This card can no longer tell how the cover went. If it was generated, it is under Previous covers.';
+    'This card can no longer tell how the cover went. If it was generated, it is under Previous Covers.';
 
-  it('settles on a line pointing to Previous covers when a later attempt came first', async () => {
+  it('settles on a line pointing to Previous Covers when a later attempt came first', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const { server } = await confirmCover(RAINY);
 
@@ -374,7 +374,7 @@ describe('a cover card shown again', () => {
     (await attemptReads(server.sent, 1))[0]!.answer(
       coverStatus('session', { latest: attempt('ready'), history: [NEW_COVER, CURRENT_COVER] }),
     );
-    await screen.findByRole('button', { name: 'Use this cover' });
+    await screen.findByRole('button', { name: 'Use This Cover' });
 
     reopen();
     (await attemptReads(server.sent, 2))[1]!.answer(
@@ -394,7 +394,7 @@ describe('a cover card shown again', () => {
     (await attemptReads(server.sent, 1))[0]!.answer(
       coverStatus('session', { latest: attempt('ready'), history: [NEW_COVER, CURRENT_COVER] }),
     );
-    await screen.findByRole('button', { name: 'Use this cover' });
+    await screen.findByRole('button', { name: 'Use This Cover' });
 
     reopen();
     (await attemptReads(server.sent, 2))[1]!.answer(
@@ -402,7 +402,7 @@ describe('a cover card shown again', () => {
     );
 
     await waitFor(() =>
-      expect(coverCard().textContent).toContain('This cover was deleted from Previous covers.'),
+      expect(coverCard().textContent).toContain('This cover was deleted from Previous Covers.'),
     );
     expect(within(coverCard()).queryByRole('button')).toBeNull();
   });
@@ -414,7 +414,7 @@ describe('what the next request is told of a cover card', () => {
     (await attemptReads(server.sent, 1))[0]!.answer(
       coverStatus('session', { latest: attempt('ready'), history: [NEW_COVER, CURRENT_COVER] }),
     );
-    fireEvent.click(await screen.findByRole('button', { name: 'Use this cover' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Use This Cover' }));
     selects(server.sent)[0]!.answer(Response.json({ ok: true, data: { coverImageId: NEW_COVER } }));
     await waitFor(() => expect(coverCard().textContent).toContain('This cover is in use.'));
 
@@ -431,7 +431,7 @@ describe('what the next request is told of a cover card', () => {
     (await attemptReads(server.sent, 1))[0]!.answer(
       coverStatus('session', { latest: attempt('ready'), history: [NEW_COVER, CURRENT_COVER] }),
     );
-    await screen.findByRole('button', { name: 'Use this cover' });
+    await screen.findByRole('button', { name: 'Use This Cover' });
 
     askAgain('Hm.');
 
@@ -448,7 +448,7 @@ describe('what the next request is told of a cover card', () => {
         latest: attempt('failed', { coverGenerationId: OTHER_ATTEMPT_ID }),
       }),
     );
-    await waitFor(() => expect(coverCard().textContent).toContain('Previous covers'));
+    await waitFor(() => expect(coverCard().textContent).toContain('Previous Covers'));
 
     askAgain('And?');
 
@@ -480,20 +480,20 @@ describe('a failed cover select', () => {
     (await attemptReads(server.sent, 1))[0]!.answer(
       coverStatus('session', { latest: attempt('ready'), history: [NEW_COVER, CURRENT_COVER] }),
     );
-    fireEvent.click(await screen.findByRole('button', { name: 'Use this cover' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Use This Cover' }));
 
     selects(server.sent)[0]!.answer(
       Response.json(
-        makeApiError('not_found', 'This cover is not part of the Session’s cover history.'),
+        makeApiError('not_found', 'This cover is not part of the session’s cover history.'),
         { status: 404 },
       ),
     );
 
     await waitFor(() =>
       expect(coverCard().textContent).toContain(
-        'This cover is not part of the Session’s cover history.',
+        'This cover is not part of the session’s cover history.',
       ),
     );
-    expect(screen.getByRole('button', { name: 'Use this cover' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Use This Cover' })).toBeTruthy();
   });
 });

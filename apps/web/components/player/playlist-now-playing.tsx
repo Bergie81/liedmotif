@@ -286,7 +286,7 @@ export function PlaylistNowPlaying({
 
   return (
     <section
-      aria-label="Now playing"
+      aria-label="Now Playing"
       data-testid="now-playing"
       data-playlist-id={playlist.id}
       data-player-status={player.status}
@@ -295,7 +295,7 @@ export function PlaylistNowPlaying({
     >
       <div className="min-w-0">
         <PlayerMobileHeader
-          title={foreign ? 'Now Playing from the Lounge' : 'Now Playing your Playlist'}
+          title={foreign ? 'Now Playing from the Lounge' : 'Now Playing Your Playlist'}
           action={playlistOptions}
         />
         <PlayerCoverSleeve

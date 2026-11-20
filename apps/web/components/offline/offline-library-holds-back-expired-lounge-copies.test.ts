@@ -98,14 +98,14 @@ const pastExpiry = () => vi.setSystemTime(SYNCED_AT + LOUNGE_OFFLINE_EXPIRY_MS +
 
 it('holds back an expired Lounge copy once the page comes back to the foreground', async () => {
   const row = await openLibrary();
-  expect(row.textContent).toContain('2 Tracks');
+  expect(row.textContent).toContain('2 tracks');
 
   pastExpiry();
   act(() => {
     document.dispatchEvent(new Event('visibilitychange'));
   });
 
-  expect(row.textContent).toContain('1 Track · 1 expired');
+  expect(row.textContent).toContain('1 track · 1 expired');
   expect(row.textContent).toContain('Go online to refresh');
 });
 

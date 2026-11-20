@@ -106,7 +106,7 @@ const COPY_WITH_TRACKS: Record<SessionGenerationStatus, string | null> = {
     "Daily/monthly generation limit reached — repeating this session's own tracks.",
   repeat_buffer_complete: null,
   provider_credits:
-    'The music provider is out of credits — playing your ready tracks until the Admin tops it up.',
+    'The music provider is out of credits — playing your ready tracks until the admin tops it up.',
   provider_rate_limited:
     'The music provider is busy — playing your ready tracks until generation resumes automatically in a few minutes.',
   worker_stalled: 'Generation is catching up — playing your ready tracks in the meantime.',
@@ -144,7 +144,7 @@ describe('presentGenerationStatus — a session with no tracks yet', () => {
   it('names the absence instead of promising ready tracks when there are none', () => {
     for (const status of BLOCKED_STATUSES) {
       const p = presentGenerationStatus(status, null, null, EMPTY_AND_IDLE);
-      expect(p.message).toContain('No Tracks yet');
+      expect(p.message).toContain('No tracks yet');
       expect(p.message).not.toContain('ready tracks');
       // Same severity and headline — only the promise changes.
       expect(p.tone).toBe(presentGenerationStatus(status).tone);
@@ -169,7 +169,7 @@ describe('presentGenerationStatus — a session with no tracks yet', () => {
     // What the controller stores for a Session whose paid batch gave nothing:
     // the failure status and no server message, for as long as it is stuck.
     const p = presentGenerationStatus('provider_error', null, null, EMPTY_AND_IDLE);
-    expect(p.message).toBe('No Tracks yet — generation hit a problem before the first one landed.');
+    expect(p.message).toBe('No tracks yet — generation hit a problem before the first one landed.');
     expect(p.isStuck).toBe(true);
   });
 
@@ -225,7 +225,7 @@ describe('presentGenerationStatus — a cost limit hit before the first Track', 
     for (const safe of [null, ...SERVER_REPLAY_MESSAGES]) {
       for (const scope of [null, 'member', 'pool'] as const) {
         const p = presentGenerationStatus('repeat_cost_limit', safe, scope, EMPTY_AND_IDLE);
-        expect(p.message).toContain('No Tracks yet');
+        expect(p.message).toContain('No tracks yet');
         expect(p.message).not.toMatch(/replay|repeating/i);
         // A One-time budget never resets, and the client cannot tell which window bound.
         expect(p.message).not.toMatch(/reset/i);
@@ -259,13 +259,13 @@ describe('presentGenerationStatus — cost-limit scope', () => {
   it('links the admin to cost limits and a member to their read-only budget page', () => {
     const admin = presentGenerationStatus('repeat_cost_limit', null, null);
     expect(admin.costSettingsPath).toBe('/settings/limits');
-    expect(admin.costSettingsLabel).toBe('Adjust cost limits');
+    expect(admin.costSettingsLabel).toBe('Adjust Cost Limits');
 
     for (const scope of ['member', 'pool'] as const) {
       const member = presentGenerationStatus('repeat_cost_limit', null, scope);
       // A Member must never be invited to "adjust" a limit they cannot touch.
       expect(member.costSettingsPath).toBe('/settings/my-budget');
-      expect(member.costSettingsLabel).toBe('See your budget');
+      expect(member.costSettingsLabel).toBe('See Your Budget');
     }
   });
 });

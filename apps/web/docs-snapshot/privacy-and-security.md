@@ -1,5 +1,5 @@
 ---
-title: Privacy and security
+title: Privacy and Security
 description: What stays on your own Liedmotif instance, what each provider sees, what an admin can see, and how the instance protects itself.
 checkedOn: 2026-11-20
 ---
@@ -8,7 +8,7 @@ Everything on this page is about your own instance: the copy of Liedmotif you ru
 
 Your instance does talk to the providers you connect, because they're the ones making the music. This page says exactly what goes where.
 
-## What stays on your instance
+## What Stays on Your Instance
 
 Your library lives in your own database and on your own disk, or in your own storage bucket if you chose that:
 
@@ -21,11 +21,11 @@ Your library lives in your own database and on your own disk, or in your own sto
 
 The app's own build has Next.js telemetry turned off, and the browser only ever talks to your instance. Audio and images from providers are fetched by the server and served from your own address, so a provider never sees your listeners' devices.
 
-## What each provider sees
+## What Each Provider Sees
 
 You choose these services and you pay them directly, so what they do with your data is covered by their own terms. Deleting something on your instance doesn't delete what a provider already received. Your provider key identifies your account to them.
 
-### The music provider
+### The Music Provider
 
 This is the one service Liedmotif can't work without. For each batch of tracks it receives:
 
@@ -38,7 +38,7 @@ This is the one service Liedmotif can't work without. For each batch of tracks i
 
 **With a text AI,** the provider gets the direction the AI wrote rather than your raw request. The lyric brief may carry details the AI developed from your profile and from people you named, so those can reach the music provider in a vocal session.
 
-### The text AI
+### The Text AI
 
 This is optional, and it's the service `.env` calls the text LLM: OpenAI, Gemini, OpenRouter, a service of your own, or Ollama on your machine. If you connect one, it receives:
 
@@ -55,7 +55,7 @@ About text is only for lyrics. It's never used for style, titles or covers.
 
 With no text AI, none of this leaves your instance. With a local Ollama, it stays on your own machine.
 
-### The image provider
+### The Image Provider
 
 This is optional too, and it's what makes tailored covers: OpenAI, Gemini or OpenRouter. When it shares your text AI's key, it's the same company with the same account. If you turn tailored covers on, it receives:
 
@@ -65,7 +65,7 @@ This is optional too, and it's what makes tailored covers: OpenAI, Gemini or Ope
 
 A photo is sent only in these cases, and never for a cover generated with **Use People reference photos** off: you name that person exactly in your request or in the art direction of a session cover reroll, the text AI reads your request, or the art direction of a cover you generate, as putting you in the scene ("me", "we"), you generate a session or playlist cover with **Use People reference photos** on (the default once you have People photos), or your own photo fits the frequency you set in **Settings › People**. One named person sends up to three photos, and several named people send one each. **Never** switches off all your reference photos, named people included, and refuses a cover that asks for them. When a cover uses photos of several people, their names in your request are swapped for neutral labels such as "subject one". With one person, their name stays in the request. The session name and the cover idea aren't changed, so a name in either one reaches the provider. Without an image key, the music provider makes a standard cover from a finished track, or your session keeps the free cover, and no photo is sent.
 
-### What OpenAI and Google do with it
+### What OpenAI and Google Do with It
 
 Their terms decide this, not Liedmotif, and they can change, so check them yourself. This is what they said when we read them on 18 November 2026.
 
@@ -83,7 +83,7 @@ So if you'd rather keep Google from learning from your words, turn on billing fo
 
 Turn on **Run Without My Profile Details** when you start a session to keep your own details out of that session's AI prompts and its cover references: your profile, your own About text and your photos. People you name exactly in the request are still used, with their About text and photos. The lyric brief is then built from your request and those people alone. **More Like This** starts a new session with personalization back on.
 
-### Other services you may connect
+### Other Services You May Connect
 
 | Service | What it sees |
 | --- | --- |
@@ -94,7 +94,7 @@ Turn on **Run Without My Profile Details** when you start a session to keep your
 
 The installer also contacts GitHub, the Docker image registry, and, when it needs to install them, Docker and Tailscale. A first `--domain` install looks up the machine's public address and your domain's DNS records through public services.
 
-## What an admin can and can't see
+## What an Admin Can and Can't See
 
 One instance can serve a household, and everyone keeps their own private space.
 
@@ -105,7 +105,7 @@ One instance can serve a household, and everyone keeps their own private space.
 | Their budget, usage and estimated cost | Their people, photos and About text |
 | Whether they're disabled | What they play |
 
-A playlist a member shares in the lounge is visible to its audience. The admin sees it only if they're in that audience, and can make a shared playlist they can see private again.
+A playlist a member shares in the Lounge is visible to its audience. The admin sees it only if they're in that audience, and can make a shared playlist they can see private again.
 
 A backup holds everyone's content, so the admin can download one only as a file encrypted with the passphrase from `.env`. The app itself never shows that passphrase.
 
@@ -113,7 +113,7 @@ A backup holds everyone's content, so the admin can download one only as a file 
 
 Members never see provider keys, the settings for the whole instance or the alerts. An admin can disable a member, which blocks sign-in and spending and keeps everything. An admin can also delete a member, which permanently removes their account and content, apart from the records listed under [When you delete something](#when-you-delete-something).
 
-## Provider keys
+## Provider Keys
 
 Your keys stay on the server, and they never reach a browser:
 
@@ -125,13 +125,13 @@ Your keys stay on the server, and they never reach a browser:
 
 Without `CREDENTIAL_ENCRYPTION_KEY`, saved keys can never be read again, so keep it safe: [Backups and restore](/docs/backups) lists what to store.
 
-## Private media
+## Private Media
 
-Audio, covers, avatars, people's photos and downloads are served only through signed-in routes that check who owns them. The one exception is what a person chose to share in the lounge, for that share's audience. An ID you don't own looks the same as one that doesn't exist.
+Audio, covers, avatars, people's photos and downloads are served only through signed-in routes that check who owns them. The one exception is what a person chose to share in the Lounge, for that share's audience. An ID you don't own looks the same as one that doesn't exist.
 
 Provider and storage addresses never reach the browser, so a copied link isn't a way in. Providers' addresses are fetched on the server, over `https` only, and addresses inside your own network are refused. On a network you trust, a self-hosted provider without TLS can opt out with `ALLOW_INSECURE_PROVIDER_MEDIA=1`. The other checks stay on.
 
-## Signing in
+## Signing In
 
 There's no public sign-up. The first account comes from the setup page, and everyone else joins through an invite.
 
@@ -141,7 +141,7 @@ There's no public sign-up. The first account comes from the setup page, and ever
 - **A reset signs that person out everywhere,** within a minute.
 - **One address only.** Sign-in and every change compare the browser's address with `APP_PUBLIC_URL`, so another site can't act on your behalf. It's also why a second address for the same instance is [refused](/docs/troubleshooting).
 
-### Rate limits
+### Rate Limits
 
 | What | Limit | Counted per |
 | --- | --- | --- |
@@ -168,7 +168,7 @@ Plain `http` works on `localhost`. On any other address, the app refuses to star
 
 Caddy also adds strict security headers, turns on HSTS, and caps every request body at 40 MB.
 
-## What's open to the network
+## What's Open to the Network
 
 A fresh Liedmotif opens nothing to the network by default.
 
@@ -184,7 +184,7 @@ To expose Caddy by hand, on a domain or a local address without the installer, s
 
 `/api/health` is reachable through Caddy on purpose, so an outside uptime check can use it. It answers only with a status, whether the database is reachable, and the time. To hide it, uncomment the `handle /api/health` block in the `Caddyfile`. Docker's own health check talks to the app directly, so nothing else changes.
 
-## The setup token
+## The Setup Token
 
 The setup page creates the one admin, and on an open instance it answers whoever gets there first. Scanners find new servers within minutes of a DNS or certificate entry appearing, and the account they claim would own your keys, members and music.
 
@@ -200,7 +200,7 @@ Without the right token, the setup routes answer `Setup is not available.`, the 
 
 Without a token, the app logs a warning at every start until an admin exists: `No administrator exists yet and SETUP_TOKEN is unset`.
 
-## How the containers are locked down
+## How the Containers Are Locked Down
 
 A compromised process has very little to work with:
 
@@ -230,7 +230,7 @@ The first should fail with `Read-only file system`. The second should print noth
 
 There are two kinds of logs, both on your machine.
 
-**App logs** (`docker compose logs web`, `docker compose logs worker`) leave out, by field name: passwords, tokens, keys, cookies, provider audio addresses and prompts. Anything that looks like a key, a bearer token or a password inside an address is cut out too, and so is everything after the `?` in any address. **Settings › Diagnostics & worker** shows the same kind of cleaned-up events. Backup logs never show a password or the passphrase.
+**App logs** (`docker compose logs web`, `docker compose logs worker`) leave out, by field name: passwords, tokens, keys, cookies, provider audio addresses and prompts. Anything that looks like a key, a bearer token or a password inside an address is cut out too, and so is everything after the `?` in any address. **Settings › Diagnostics & Worker** shows the same kind of cleaned-up events. Backup logs never show a password or the passphrase.
 
 **The access log** records one line per request: source address, method, path, status, duration and size.
 
@@ -242,7 +242,7 @@ It rolls over at 10 MiB, and keeps 10 files for up to 30 days, so it can't fill 
 
 A request for any other host name never reaches the site, so it isn't in this file. It's in `docker compose logs caddy`.
 
-## When you delete something
+## When You Delete Something
 
 | You do this | What happens |
 | --- | --- |
@@ -259,11 +259,11 @@ Four things can outlive a delete:
 - **Backups.** A deleted item stays in every backup made before the deletion until that backup rotates out, four weeks at the default settings. [Backups and restore](/docs/backups) has the details, and copies you downloaded are yours to delete.
 - **Hidden records.** The database keeps a record of each deleted track, with its title and prompt, and of every request made to a provider, which spending limits count. The app no longer shows them and has no button to remove them, but anyone with access to the database can read them.
 - **Your own stats.** Your private totals and a musical summary stay after a delete, with an ID that doesn't link back to anything. Nobody else sees them. Your listening records have no age limit either. **Clear listening history** on your stats page removes them for good, and **Reset learned taste** in **Settings › Playback** starts your taste afresh.
-- **Devices.** A playlist or session you've made available offline stays on that device until the next sync, and signing out wipes it. A disabled or deleted member can't sign in any more, so their device never syncs again and has nothing to sign out of. Their own tracks kept offline stay on it and keep playing until the site's data is cleared in that browser. Copies of other people's lounge tracks stop playing 7 days after its last successful sync.
+- **Devices.** A playlist or session you've made available offline stays on that device until the next sync, and signing out wipes it. A disabled or deleted member can't sign in any more, so their device never syncs again and has nothing to sign out of. Their own tracks kept offline stay on it and keep playing until the site's data is cleared in that browser. Copies of other people's Lounge tracks stop playing 7 days after its last successful sync.
 
 Separately, playback records no feature needs any more are pruned after 180 days, and the spending log after 730 days.
 
-## Rights and your music
+## Rights and Your Music
 
 Liedmotif doesn't guarantee that generated music is free of other people's rights, original or safe to use in any particular way. What you may do with a track, such as sharing it or using it commercially, depends on your music provider's terms and your plan with them. Read them before you publish anything.
 

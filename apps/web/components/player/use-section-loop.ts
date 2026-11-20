@@ -15,7 +15,7 @@ import type { PlayableTrack } from './playable-track';
 import { CLOSED_SECTION_LOOP_TOOL, type SectionLoopTool } from './playback-controller-api';
 import type { LoopQueueSnapshot } from './use-repeat-one';
 
-const LOOP_FAILED_NOTICE = 'That part couldn’t loop, so the Track carried on from there.';
+const LOOP_FAILED_NOTICE = 'That part couldn’t loop, so the track carried on from there.';
 
 /** What an open tool has prepared: a final that lands prepares the Track again. */
 function preparationKey(queueItemId: string, finalPath: string | null): string {

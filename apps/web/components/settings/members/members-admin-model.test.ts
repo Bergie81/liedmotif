@@ -119,8 +119,8 @@ describe('member budget form', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.errors).toEqual({
-      dailyTracks: 'Enter at most 2000 Tracks.',
-      coversPerDay: 'Enter at most 1000 Covers.',
+      dailyTracks: 'Enter at most 2000 tracks.',
+      coversPerDay: 'Enter at most 1000 covers.',
     });
   });
 
@@ -170,7 +170,7 @@ describe('member meta line', () => {
         },
         'UTC',
       ),
-    ).toBe('Joined Jul 12, 2026 · Sign-in active Jul 29, 2026 · 1 Track · 3.0 MiB');
+    ).toBe('Joined Jul 12, 2026 · Sign-in active Jul 29, 2026 · 1 track · 3.0 MiB');
   });
 
   it('says a Member without a current sign-in has none, without claiming they never signed in', () => {
@@ -184,7 +184,7 @@ describe('member meta line', () => {
       'UTC',
     );
 
-    expect(line).toBe('Joined Jul 12, 2026 · No active sign-in · 0 Tracks · 0 B');
+    expect(line).toBe('Joined Jul 12, 2026 · No active sign-in · 0 tracks · 0 B');
     expect(line).not.toContain('Never');
   });
 
@@ -223,14 +223,14 @@ describe('over-subscription copy', () => {
     expect(
       overSubscriptionMessage({ field: 'dailyGenerationTasks', membersTotal: 60, poolCap: 40 }, 2),
     ).toBe(
-      "Members' daily Track budgets add up to 120 Tracks; the shared pool allows 80. That is fine — the pool is first come, first served.",
+      "Members' daily track budgets add up to 120 tracks; the shared pool allows 80. That is fine — the pool is first come, first served.",
     );
     expect(
       overSubscriptionMessage(
         { field: 'generatedCoversPerMonth', membersTotal: 240, poolCap: 200 },
         2,
       ),
-    ).toContain('240 Covers; the shared pool allows 200');
+    ).toContain('240 covers; the shared pool allows 200');
   });
 });
 
@@ -238,7 +238,7 @@ describe('Member reset fallback line', () => {
   it('says why a reset was not mailed, and adds nothing while account email is off', () => {
     expect(resetFallbackLine('email_off')).toBeNull();
     expect(resetFallbackLine('unconfirmed')).toBe(
-      "This Member hasn't confirmed their email, so copy the link and send it yourself.",
+      "This member hasn't confirmed their email, so copy the link and send it yourself.",
     );
     expect(resetFallbackLine('disabled')).toMatch(/disabled/);
     expect(resetFallbackLine('send_failed')).toMatch(/could not be sent/);
@@ -324,7 +324,7 @@ describe('budgets below the Session-start headroom', () => {
     totalTracks: '50',
     totalCovers: '1',
   };
-  const warning = 'Below 5 Tracks, no new Session can start.';
+  const warning = 'Below 5 tracks, no new session can start.';
 
   it('warns on 4 Tracks a day with headroom 5, and the budget still saves', () => {
     const low = { ...values, dailyTracks: '4' };

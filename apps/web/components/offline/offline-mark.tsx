@@ -41,8 +41,8 @@ export function OfflineMark({
   return (
     <span
       role="img"
-      aria-label="Available offline"
-      title="Available offline"
+      aria-label="Available Offline"
+      title="Available Offline"
       data-testid="offline-mark"
       className={cn('inline-flex flex-none align-[-2px] text-lamp', className)}
     >

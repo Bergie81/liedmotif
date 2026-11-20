@@ -192,7 +192,7 @@ export const SESSION_OPTIONS_SCOPES = [
         icon: 'trash',
         availability: 'available',
         tone: 'danger',
-        description: 'Delete its audio for good; it leaves this session and your library',
+        description: 'Delete its audio for good; it leaves this session and your Library',
       },
     ],
   },
@@ -267,11 +267,11 @@ export const PLAYLIST_OPTIONS_SCOPES = [
       // above Delete Track so the reversible way out is met first.
       {
         id: 'remove-from-playlist',
-        label: 'Remove from this Playlist',
+        label: 'Remove from This Playlist',
         icon: 'list-minus',
         availability: 'available',
         tone: 'neutral',
-        description: 'It leaves your library if this is its only playlist',
+        description: 'It leaves your Library if this is its only playlist',
       },
       {
         id: 'delete-track',
@@ -279,7 +279,7 @@ export const PLAYLIST_OPTIONS_SCOPES = [
         icon: 'trash',
         availability: 'available',
         tone: 'danger',
-        description: 'Delete its audio for good, from every playlist and your library',
+        description: 'Delete its audio for good, from every playlist and your Library',
       },
     ],
   },
@@ -370,7 +370,7 @@ const OWNER_ONLY_PLAYLIST_ROW_IDS: readonly OptionsRowId[] = [
  *  read-only there, and More Like This spends the visitor's money, not the
  *  sharer's. */
 const VISITOR_ROW_DESCRIPTIONS: Partial<Record<OptionsRowId, string>> = {
-  'go-to-playlist': 'See all its tracks in the lounge',
+  'go-to-playlist': 'See all its tracks in the Lounge',
   'more-like-this': 'Start a new session in this style, on your own budget',
 };
 

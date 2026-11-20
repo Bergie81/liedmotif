@@ -39,7 +39,7 @@ export function formatCollectionLength(seconds: number): string {
 }
 
 /** How every list marks a failed Track: its final never arrived. */
-export const FAILED_TRACK_NOTICE = 'Could not be kept';
+export const FAILED_TRACK_NOTICE = 'Could Not Be Kept';
 
 /**
  * The row mark for a Track that cannot play: a failed Track (its final never
@@ -48,9 +48,9 @@ export const FAILED_TRACK_NOTICE = 'Could not be kept';
  */
 export function trackAudioNotice(
   track: Pick<TrackSummary, 'status' | 'audioUrl'>,
-): typeof FAILED_TRACK_NOTICE | 'Audio unavailable' | null {
+): typeof FAILED_TRACK_NOTICE | 'Audio Unavailable' | null {
   if (track.status === 'failed') return FAILED_TRACK_NOTICE;
-  return track.audioUrl === null ? 'Audio unavailable' : null;
+  return track.audioUrl === null ? 'Audio Unavailable' : null;
 }
 
 /** Why a Track's Download row is off, or undefined while it can be downloaded. */
@@ -58,7 +58,7 @@ export function trackDownloadNote(
   track: Pick<TrackSummary, 'status' | 'downloadable'>,
 ): string | undefined {
   if (track.downloadable) return undefined;
-  return track.status === 'failed' ? FAILED_TRACK_NOTICE : 'Still generating';
+  return track.status === 'failed' ? FAILED_TRACK_NOTICE : 'Still Generating';
 }
 
 export function getTrackAvailability(

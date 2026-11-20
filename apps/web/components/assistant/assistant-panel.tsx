@@ -27,7 +27,7 @@ import type { AssistantConversation, ConversationMessage } from './conversation'
 
 const GREETING_HELLO = `Hi, I'm ${ASSISTANT_NAME}`;
 const GREETING_ABOUT =
-  "I'm your personal AI assistant. I can start music, control the player, manage your Tracks and Playlists, change settings, or answer questions about Liedmotif.";
+  "I'm your personal AI assistant. I can start music, control the player, manage your tracks and playlists, change settings, or answer questions about Liedmotif.";
 
 // Each works with nothing playing and spends nothing when tapped (a Session
 // starts only from its confirmed card); together they show doing, knowing
@@ -83,10 +83,10 @@ export function AssistantPanel({
             pressed button shows its box, and the focus ring is drawn inside
             the box so it never crosses the other icon. */}
         <div className="flex flex-none">
-          <WithTooltip label="New chat" side="bottom">
+          <WithTooltip label="New Chat" side="bottom">
             <button
               type="button"
-              aria-label="New chat"
+              aria-label="New Chat"
               disabled={messages.length === 0}
               onClick={() => {
                 conversation.newChat();
@@ -288,7 +288,7 @@ function Composer({
       {answering ? (
         <button
           type="button"
-          aria-label="Stop the answer"
+          aria-label="Stop the Answer"
           onClick={onStop}
           className="grid h-9 w-9 flex-none place-items-center rounded-full border border-line-2 bg-[var(--control-bg)] text-paper hover:bg-[var(--control-bg-hover)]"
         >

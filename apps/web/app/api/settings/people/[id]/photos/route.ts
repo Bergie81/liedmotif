@@ -105,12 +105,12 @@ async function storePhoto(
     if (result.reason === 'person_limit_reached') {
       return apiError(
         'conflict',
-        `This Person already has ${MAX_PERSON_REFERENCE_PHOTOS} reference photos.`,
+        `This person already has ${MAX_PERSON_REFERENCE_PHOTOS} reference photos.`,
       );
     }
     return apiError(
       'conflict',
-      `You already have ${MAX_OWNER_PERSON_REFERENCE_PHOTOS} Person reference photos.`,
+      `You already have ${MAX_OWNER_PERSON_REFERENCE_PHOTOS} person reference photos.`,
     );
   }
   // Only a photo that kept its bytes counts: every refusal above deletes them.

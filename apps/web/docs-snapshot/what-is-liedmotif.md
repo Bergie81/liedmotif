@@ -1,18 +1,18 @@
 ---
-title: What Liedmotif is
+title: What Liedmotif Is
 description: How Liedmotif works from your first request to the music you keep, what an instance is made of, and what the words in the app mean.
-checkedOn: 2026-11-18
+checkedOn: 2026-11-20
 ---
 
 Liedmotif is an app you run yourself. You ask for music in your own words, your music provider makes it, and Liedmotif keeps making more while you listen. This page explains how that works, what you're installing, and what the app's words mean.
 
-## How it works
+## How It Works
 
-### You ask
+### You Ask
 
 Type what the music is for: a mood, a moment, a place, a sound. For example, `Late train home, soft piano, nothing too sad`. Next to your request, you can pick a genre, an energy, vocals or instrumental, a singer and a language. Music is instrumental unless you choose vocals.
 
-### A session starts
+### A Session Starts
 
 Your request becomes a session: one continuous listen with its own style, queue, name and cover.
 
@@ -22,13 +22,13 @@ You have one session running at a time. Starting a new one stops the old one, wh
 
 The first track takes a while, because your provider has to make it. The player tells you what's happening at each stage.
 
-### Tracks are made ahead of you
+### Tracks Are Made Ahead of You
 
 While you listen, the session keeps a few tracks ready, three by default, so there's little or no wait between them. They crossfade into each other.
 
 New tracks are only ordered while someone is listening. Starting or resuming a session counts, because it has to fill its queue first, and when playback stops, new orders end within about two minutes. A session nobody plays stops itself, after 15 minutes by default, and you can resume it later.
 
-### You steer
+### You Steer
 
 - **Change Vibe** changes the direction of the session you're in. Say what should change, or change your picks. The tracks already in the queue play out first, unless you ask to switch as soon as the first new track is ready. This is the only action that changes the direction.
 - **Dislike** removes a track and brings a different take on the same vibe. The button says **Reroll Track**. It often costs nothing, because your provider makes tracks in pairs, and Liedmotif plays the unplayed partner first. With no partner left, it orders a new take only while the session is making new tracks, within your limits, and only if the track belongs to the current vibe. Otherwise the track is just removed.
@@ -37,20 +37,20 @@ New tracks are only ordered while someone is listening. Starting or resuming a s
 
 There's no like button. If you let a track play, the session simply carries on.
 
-### You keep what you love
+### You Keep What You Love
 
-Add a track to a playlist, or star it to put it in your favorites, a playlist every account has. The rest stays too: your history lists every track made for you, and a session stays until you delete it. The one exception is a track you disliked, which is deleted after about 24 hours.
+Add a track to a playlist, or star it to put it in your Favorites, a playlist every account has. The rest stays too: your history lists every track made for you, and a session stays until you delete it. The one exception is a track you disliked, which is deleted after about 24 hours.
 
-### Spending stops when you say
+### Spending Stops When You Say
 
 - **Give a session a duration.** It makes about that much new music, then replays its tracks at no cost. The music keeps playing until you stop it.
-- **Turn off New music.** The session replays what it has. No more new tracks, and work your provider has already started still finishes. The exception is **Change Vibe**, which still makes a first batch in the new direction.
+- **Turn off New Music.** The session replays what it has. No more new tracks, and work your provider has already started still finishes. The exception is **Change Vibe**, which still makes a first batch in the new direction.
 - **Set limits, counted in tracks.** At a limit, a running session loops its own tracks instead of stopping, and you can't start a new one. On a new install, the admin's own daily and monthly limits stay off until you set them, for example in guided setup.
 - **Stop listening.** New orders end within about two minutes, and work your provider has already started still finishes.
 
 [Costs and limits](/docs/costs-and-limits) has the details.
 
-## What's in an instance
+## What's in an Instance
 
 An instance is one install of Liedmotif. It belongs to whoever set it up, and it's made of these parts:
 
@@ -66,19 +66,19 @@ Two helpers run beside them: a backup service, and Caddy, which gives a server i
 
 Your provider keys stay on the server, and browsers never see them. Your requests do go to the providers you connect, because they make the music. [Providers and keys](/docs/providers-and-keys) covers your choices.
 
-## Who's who
+## Who's Who
 
-**The admin** is the person who set up the instance, and there's exactly one. Only the admin manages provider keys, instance limits, instance storage, backups and the list of members, and the admin pays the providers. In the app, the admin sees usage and storage totals, not other people's music, unless it's shared with them in the lounge.
+**The admin** is the person who set up the instance, and there's exactly one. Only the admin manages provider keys, instance limits, instance storage, backups and the list of members, and the admin pays the providers. In the app, the admin sees usage and storage totals, not other people's music, unless it's shared with them in the Lounge.
 
-**A member** joins through an invite link from the admin, and gets their own private sessions, library, people and settings. Their music is made with the admin's keys, within a budget of tracks and covers that the admin sets. Members never see the keys. [Members, invites and the lounge](/docs/members) has the rest.
+**A member** joins through an invite link from the admin, and gets their own private sessions, library, people and settings. Their music is made with the admin's keys, within a budget of tracks and covers that the admin sets. Members never see the keys. [Members, invites and the Lounge](/docs/members) has the rest.
 
-## The app's words
+## The App's Words
 
 | Word | What it means |
 | --- | --- |
 | Session | One continuous listen, born from one request. It has its own style, queue, place in the queue, name and cover. It stays until you delete it, and you can resume it. |
 | Track | One song. Limits and budgets are counted in tracks. |
-| New music | Your choice of whether a session makes new tracks while you listen, within your limits: **Off**, **Up to a duration** or **No limit**. |
+| New Music | Your choice of whether a session makes new tracks while you listen, within your limits: **Off**, **Up to a Duration** or **No Limit**. |
 | Repeat | What a session does when it isn't making new music: it loops the tracks it already has, at no cost, and orders no more on its own. Only a session's start and **Change Vibe** still make a first batch. |
 | Change Vibe | Changes the direction of the running session, while keeping the same session, queue and place. It's the only action that steers. |
 | More Like This | Starts a new session from one or more tracks, and stops the one that's running. |
@@ -91,10 +91,10 @@ Your provider keys stay on the server, and browsers never see them. Your request
 | Music model | The service that turns a prompt into audio, for every new track. It's the one required provider, and today it's a Suno-compatible one. |
 | Cover | The square artwork of a session, shared by all its tracks. An image provider can paint one to suit the session. Otherwise your music provider draws one at no extra cost. Every session starts on a built-in placeholder, and keeps it if no cover can be made. Generated covers count toward the cover limits, whichever provider made them. You can also upload your own, and **Change Vibe** never replaces it. A session keeps up to ten covers. |
 
-## What it isn't
+## What It Isn't
 
 **It isn't a hosted service.** There's no Liedmotif account to sign up for and no subscription. Each instance runs on its owner's own machine or rented server, with their own provider keys, and they pay those providers directly.
 
-**It isn't a catalog of existing music.** You can't search for a song or an artist and play it. Your library starts empty, and holds what's been made on your instance for you, plus what people share with you in the lounge.
+**It isn't a catalog of existing music.** You can't search for a song or an artist and play it. Your library starts empty, and holds what's been made on your instance for you, plus what people share with you in the Lounge.
 
 Ready to try it? [Pick where to install it](/docs).

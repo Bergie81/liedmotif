@@ -935,7 +935,7 @@ describe.skipIf(skip)('POST /api/playlists/cover/upload', () => {
     const body = (await refusedUpload.json()) as { error: { code: string; message: string } };
     expect(body.error.code).toBe('limit_reached');
     expect(body.error.message).toBe(
-      `This Playlist already keeps ${MAX_PLAYLIST_COVER_HISTORY} covers. Delete a previous cover to upload another one.`,
+      `This playlist already keeps ${MAX_PLAYLIST_COVER_HISTORY} covers. Delete a previous cover to upload another one.`,
     );
     expect((await postJson(regeneratePost, { playlistId })).status).toBe(429);
 

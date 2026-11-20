@@ -550,7 +550,7 @@ docker compose up -d --build   # migrations apply automatically
 then run the production smoke checklist in `docker/README.md`. If you also
 develop in a checkout on the same machine, give each instance its own `.env`
 with a unique `COMPOSE_PROJECT_NAME` and non-overlapping ports —
-`docker/README.md` ("Two instances on one machine") documents that split.
+`docker/README.md` ("Two Instances on One Machine") documents that split.
 
 ## Testing first-login onboarding
 

@@ -13,7 +13,7 @@ export const MATCH_FIELD_LABELS: Record<SearchMatchField, string> = {
   session: 'Session',
   tracks: 'Tracks',
   lyrics: 'Lyrics',
-  owner: 'Shared by',
+  owner: 'Shared By',
 };
 
 export interface SnippetPart {

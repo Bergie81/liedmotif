@@ -1,4 +1,4 @@
-# Docker / self-hosting
+# Docker / Self-Hosting
 
 Liedmotif ships as a Docker Compose stack: `postgres`, `migrate` (a one-shot
 schema migration), `web`, `worker`, and `caddy` (an HTTPS-capable reverse
@@ -12,7 +12,7 @@ backups and restore, alerts, account email, storage and troubleshooting. This
 file keeps the developer and operator internals they leave out. A user-visible
 change updates those pages too.
 
-## Install with one command
+## Install with One Command
 
 User guide: [Install on a home server](https://liedmotif.com/docs/install/home-server/)
 (Tailscale mode, the default) and
@@ -45,9 +45,9 @@ with a new password.
 
 User guide: [Update Liedmotif](https://liedmotif.com/docs/updates/). The installer always
 stops `web`, `caddy` and then `worker` before `migrate` runs, never a plain
-`docker compose up -d`; "Session Cover planner cutover" below is why.
+`docker compose up -d`; "Session Cover Planner Cutover" below is why.
 
-### Tailscale mode
+### Tailscale Mode
 
 What it means for users is on the website:
 [What Tailscale mode means for you](https://liedmotif.com/docs/install/home-server/#what-tailscale-mode-means-for-you).
@@ -104,7 +104,7 @@ To let a friend in, the website has
 [Share a home server with a friend](https://liedmotif.com/docs/share-with-a-friend/) for you and
 [Help for members](https://liedmotif.com/docs/member-help/) for your friend.
 
-### Tailscale mode hand test
+### Tailscale Mode Hand Test
 
 Not yet done on a real device: until it has passed on a Raspberry Pi 5 and one
 amd64 box, treat Tailscale mode as unverified. You need a tailnet with MagicDNS
@@ -114,7 +114,7 @@ without Tailscale (or with Tailscale switched off).
 1. On a fresh OS, run the install command. It prints the Tailscale sign-in link,
    waits, and ends with `https://<machine>.<tailnet>.ts.net/setup?token=…`.
 2. On the phone, open that link: no certificate warning, nothing to install.
-   Create the Admin account.
+   Create the admin account.
 3. From a tailnet device, `curl -sI https://<machine>.<tailnet>.ts.net/` lists
    `content-security-policy`, `strict-transport-security` and `x-frame-options`.
 4. On the box, `sudo ss -tlnp | grep -E ':(80|443) '` shows only the
@@ -146,7 +146,7 @@ and [Choose your storage](https://liedmotif.com/docs/install/home-server/#choose
 ## Prerequisites
 
 - Docker Engine 24+ and Docker Compose v2+ (`docker compose`, not `docker-compose`).
-  Engine 28+ if ports published to `127.0.0.1` must stay private: see "Who can reach
+  Engine 28+ if ports published to `127.0.0.1` must stay private: see "Who Can Reach
   Caddy".
 - A `.env` file at the repo root. Copy the example and edit:
 
@@ -170,7 +170,7 @@ and [Choose your storage](https://liedmotif.com/docs/install/home-server/#choose
   Postgres and the `/data` volume. To run the stack against an external
   Postgres instead, set `DOCKER_DATABASE_URL`.
 
-## Who can reach Caddy
+## Who Can Reach Caddy
 
 With `CADDY_HTTP_PORT` and `CADDY_HTTPS_PORT` unset, Caddy publishes on `127.0.0.1`,
 so only this machine can reach the app: `https://localhost`. Anything other devices
@@ -192,7 +192,7 @@ through Caddy, also set `APP_PUBLIC_URL=https://localhost:8443`, then run
 An install made with `--domain localhost` and later moved to a real domain needs
 those two lines added by hand: the installer never rewrites an existing `.env`.
 
-## First-run setup on an exposed instance
+## First-Run Setup on an Exposed Instance
 
 User guide: [First-run safety](https://liedmotif.com/docs/install/cloud/#first-run-safety)
 and [The setup token](https://liedmotif.com/docs/privacy-and-security/#the-setup-token).
@@ -200,7 +200,7 @@ and [The setup token](https://liedmotif.com/docs/privacy-and-security/#the-setup
 identical response for a missing and a wrong token; unset, both routes stay open
 to anyone who can reach them.
 
-## Behind a load balancer (trusted proxies)
+## Behind a Load Balancer (Trusted Proxies)
 
 Rate limiting — failed sign-ins, invite-claim, reset, confirm, and
 forgot-password submits, the setup wizard — keys on the client address the
@@ -245,13 +245,13 @@ that happens *after* that first request can carry it. That first request still
 does. **Exclude `/join/*`, `/reset/*`, and `/confirm/*` from request-path
 logging** anywhere in front of the app (CDN, load balancer, WAF): a 7-day
 invite sitting in a log aggregator is a claimable account. Caddy is already configured for this — see
-"Access logs" below for the shape to copy.
+"Access Logs" below for the shape to copy.
 
 The limiters live in the web process's memory. That assumes **one web replica**:
 run two and each budget doubles, and every redeploy resets them. Scaling out
-means moving the windows into Postgres first (see Deployment topology below).
+means moving the windows into Postgres first (see Deployment Topology below).
 
-## Deployment topology
+## Deployment Topology
 
 The stack runs **exactly one `web` and one `worker` container per database**.
 The web side is the rate-limit assumption above. The worker side is stronger: a
@@ -277,7 +277,7 @@ A worker whose predecessor was killed sees a heartbeat that is fresh but frozen,
 waits for it to age out (up to ~35 s), and then starts normally — so an OOM or
 `docker kill` costs one short delay, not a crash loop.
 
-## Provider media egress
+## Provider Media Egress
 
 Every URL the music provider hands back (stream audio, final audio, cover
 images) is fetched server-side through the egress guard, never by the browser.
@@ -292,7 +292,7 @@ trusted network that cannot serve TLS can opt out with
 applies. The bundled `mock` music provider is unaffected either way — its
 sample URLs are not http at all.
 
-## Ollama on the same machine
+## Ollama on the Same Machine
 
 Setting it up is on the website:
 [Ollama on the same machine](https://liedmotif.com/docs/providers-and-keys/#ollama-on-the-same-machine).
@@ -327,7 +327,7 @@ A violation you did not provoke means the policy is blocking something the app
 needs: relax that directive in **both** copies with a comment saying what
 depends on it — never by dropping the header.
 
-## External or managed Postgres (TLS and passwords)
+## External or Managed Postgres (TLS and Passwords)
 
 The shipped stack reaches Postgres over the Compose network, where the
 connection never leaves the host. Point `DOCKER_DATABASE_URL` (or `DATABASE_URL`)
@@ -351,7 +351,7 @@ connection, so both processes check its posture at boot:
   password in `DOCKER_DATABASE_URL` — to a generated value before exposing the
   instance.
 
-## Database connection pools
+## Database Connection Pools
 
 Web and worker each own one pool, sized and timed for the work they do. The
 defaults suit the shipped single-host stack; every value is `.env`-overridable
@@ -377,7 +377,7 @@ On a managed Postgres, size `WEB_DB_POOL_MAX + WORKER_DB_POOL_MAX` against the
 instance's connection cap, leaving room for the one-shot migration pool and your
 own `psql`. A malformed value fails the boot rather than defaulting.
 
-## Graceful shutdown (web)
+## Graceful Shutdown (Web)
 
 On SIGTERM — every `docker compose up`/rolling redeploy — the web container does
 not exit immediately. The image sets `NEXT_MANUAL_SIG_HANDLE=1`, so
@@ -407,7 +407,7 @@ docker compose stop -t 25 web
 #    abrupt exit. Confirm the container stopped within the grace period.
 ```
 
-## Graceful shutdown (worker)
+## Graceful Shutdown (Worker)
 
 On SIGTERM the worker stops its Graphile runner — letting in-flight jobs finish —
 and then closes the pool. Both steps are bounded: the runner stop gets the 150 s
@@ -418,7 +418,7 @@ lands on a process that ignored its own deadline — which matters because a
 SIGKILLed worker leaves its job locks marked live until the next boot reaps them.
 A stop can therefore legitimately take a few minutes when a job just started.
 
-## Database migrations
+## Database Migrations
 
 Migrations run automatically: the one-shot `migrate` service applies the
 committed Drizzle app migrations and the `graphile_worker` schema, then exits;
@@ -442,10 +442,10 @@ The same migration builds a GIN index over `tracks.lyrics`, which holds a write
 lock on `tracks` for the duration of the build. On a large library, expect that
 migration step to take longer than the others.
 
-### Session Cover planner cutover
+### Session Cover Planner Cutover
 
-The migration that introduces persisted Custom styles and the private Session
-Cover generation ledger is an atomic runtime cutover. Do not run it while an old
+The migration that introduces persisted Custom styles and the private session
+cover generation ledger is an atomic runtime cutover. Do not run it while an old
 web or worker process is alive: the old web can write the legacy Auto-plus-hint
 shape, and the old worker cannot consume the new persisted `custom` value.
 
@@ -473,17 +473,17 @@ The 90-second example exceeds the 60-second default image timeout. If
 `IMAGE_REQUEST_TIMEOUT_MS` is higher, use a stop grace period longer than that
 configured value. If the worker does not stop cleanly, inspect its sanitized logs
 and do not start the migration until the old worker is confirmed stopped.
-Existing generated covers and Session cover pointers are not rewritten or
+Existing generated covers and session cover pointers are not rewritten or
 regenerated.
 
-### Generated Session Cover operations
+### Generated Session Cover Operations
 
-Every Session gets a Cover; the owner's switch picks which source paints it.
+Every session gets a cover; the owner's switch picks which source paints it.
 An OpenAI, Gemini or OpenRouter image key (saved under Settings → Providers →
-Cover images, or `IMAGE_PROVIDER=openai` / `gemini` / `openrouter` with
+Cover Images, or `IMAGE_PROVIDER=openai` / `gemini` / `openrouter` with
 `IMAGE_API_KEY` in `.env`)
 plus Settings → Generation → "Generate Tailored Cover Art" (on by default)
-enables that hosted adapter, the only source that can honor a Cover style or carry People. With either missing, covers come from the
+enables that hosted adapter, the only source that can honor a cover style or carry people. With either missing, covers come from the
 music provider instead — derived from the session's first completed Suno music
 task using the music provider's key (`SUNO_API_KEY`, or the one saved in the
 app), at no extra credit cost and counting
@@ -491,10 +491,10 @@ against the same cover budget. With neither source available, no generated cover
 is coming and sessions keep the built-in branded placeholder.
 
 The OpenAI adapter has fixed capabilities and needs no discovery: it paints one
-square 1024px image, through image generation, or image editing when People
+square 1024px image, through image generation, or image editing when people
 photos ride along. The Gemini adapter is fixed too: one native
-`generateContent` call carries the prompt and up to four People photos as
-inline images and returns one square 1K image. Gemini paints Covers only on a
+`generateContent` call carries the prompt and up to four people photos as
+inline images and returns one square 1K image. Gemini paints covers only on a
 Google project with billing turned on.
 
 The rest of this section applies to the OpenRouter adapter only. The worker discovers the configured model's definitive
@@ -513,7 +513,7 @@ capability assertion. Keep any assertion no broader than capabilities confirmed
 for the exact configured model and endpoint — it fails silently, not loudly.
 Changing the model, endpoint, assertion, resolution, or aspect ratio requires
 restarting the worker so its cached descriptor is rebuilt. Provider validation failure does not stop the worker;
-new Session Cover operations settle terminally and Sessions keep the branded
+new session cover operations settle terminally and sessions keep the branded
 placeholder cover.
 
 Each admitted operation persists one plan, idempotency key, cost disposition,
@@ -526,7 +526,7 @@ entry point. It probes the final storage key before any permitted provider retry
 there is no second recovery pipeline.
 
 Logs should contain only controlled identifiers and sanitized categories. Do not
-add full prompts, Session intent, Custom definitions, `coverConcept`, reference
+add full prompts, session intent, Custom definitions, `coverConcept`, reference
 descriptions or bytes, credentials, raw provider bodies, signed URLs, or provider
 URLs to diagnostics.
 
@@ -539,7 +539,7 @@ independent blind rating exports and the comparison report are required before
 interpreting a run. A failed gate blocks release rather than weakening thresholds
 or triggering an automatic paid rerun.
 
-## FFmpeg pin and source releases
+## FFmpeg Pin and Source Releases
 
 `NOTICE.md` names the worker image's ffmpeg package and where its source is.
 This keeps that true:
@@ -567,7 +567,7 @@ This keeps that true:
 Bumping the pin updates `NOTICE.md`'s version, source URLs and release tag in
 the same change.
 
-## Common commands
+## Common Commands
 
 Run these from the repo root.
 
@@ -599,7 +599,7 @@ docker compose down
 docker compose down -v
 ```
 
-## What "healthy" looks like
+## What "Healthy" Looks Like
 
 After `docker compose up -d`, give it ~30–60s and run `docker compose ps`. Expected:
 
@@ -634,7 +634,7 @@ docker compose exec worker node -e "console.log(require('fs').statSync('/tmp/lie
 Open `http://localhost:2206` (direct) or `https://localhost` (via Caddy) to see
 the placeholder mobile-first shell.
 
-## Instance alerts
+## Instance Alerts
 
 User guide: [Instance alerts](https://liedmotif.com/docs/alerts/), with the `.env` lines, the
 cron line, the status codes and the webhook payload.
@@ -650,13 +650,13 @@ so the slowest one bounds the run. Which payload field each receiver reads:
 | Gotify | `message` and `title` |
 | ntfy | The `Title` and `Priority` request headers (critical `urgent`, warning `high`, recovery `default`). On a topic URL the JSON body becomes the message text; ntfy's own JSON publishing needs a `topic` field this payload does not have. |
 
-## Data and persistence
+## Data and Persistence
 
 - `liedmotif-pg` — Postgres data (named volume).
 - `liedmotif-data` — the `/data` volume mounted into `web` and `worker` for audio
   and covers (addressed by storage key, never hardcoded paths).
 - `liedmotif-backups` — backups: database dumps and media snapshots, written by
-  `backup` and read by `web` (read-only). See "Backups and restore".
+  `backup` and read by `web` (read-only). See "Backups and Restore".
 - `caddy-data` / `caddy-config` — Caddy's certificates and state.
 
 To use a host bind mount instead of the named `liedmotif-data` volume, follow
@@ -667,7 +667,7 @@ is an absolute path that exists and is writable by the user they run as. A
 relative `DATA_DIR` would resolve against each process's own working directory,
 which is how a library ends up written under one tree while deletes silently
 no-op against another; an unwritable root is usually a volume left `root`-owned
-(see "Upgrading an instance that ran as root" below). The failure names the
+(see "Upgrading an Instance That Ran as Root" below). The failure names the
 variable, never the path.
 
 Every folder inside the storage root must be readable and writable too. Mount a
@@ -677,7 +677,7 @@ refuses to start on it.
 
 Two ceilings bound growth. **The storage quota** (Settings → Generation,
 `storageQuotaBytes`, 10 GiB by default) covers track audio, covers and their
-thumbnails, Person reference photos, and voice recordings — everything but
+thumbnails, person reference photos, and voice recordings — everything but
 avatars, which are one per user and replaced rather than accumulated. An
 upload or a download claims room for its largest possible
 size before it starts and gives back what it did not use, so a write that would
@@ -693,7 +693,7 @@ the volume, uploads are refused and final-audio downloads defer and retry, so a
 full disk cannot take Postgres down with it. Object storage has no volume to
 stat, so only the quota applies there.
 
-## Backups and restore
+## Backups and Restore
 
 User guide: [Backups and restore](https://liedmotif.com/docs/backups/), with the schedule,
 status, encryption, downloads, disk use, restoring and testing a restore. The
@@ -732,15 +732,15 @@ passed by name (never on a command line), and restored files belong to the user
 who ran it. It takes a downloaded file only and assumes Docker Desktop: on Linux,
 `host.docker.internal` cannot reach a database published on 127.0.0.1.
 
-### Restore drill
+### Restore Drill
 
 The steps are on the website: [Test a restore](https://liedmotif.com/docs/backups/#test-a-restore). Run
-it into local development or an **isolated** second stack (see "Two instances on
-one machine"), never against production, and record the date and result here.
+it into local development or an **isolated** second stack (see "Two Instances on
+One Machine"), never against production, and record the date and result here.
 
 **Last drill:** 2026-10-31, prod → local, passed.
 
-## Container hardening
+## Container Hardening
 
 `web` and `worker` run as the unprivileged `node` user (uid 1000), never root.
 Every service in the stack also carries `no-new-privileges` and a PID ceiling,
@@ -805,7 +805,7 @@ docker compose exec web sh -c 'touch /app/probe'   # Read-only file system
 docker compose exec worker sh -c 'touch /tmp/probe && rm /tmp/probe'
 ```
 
-### Upgrading an instance that ran as root
+### Upgrading an Instance That Ran as Root
 
 Docker seeds a **fresh** `/data` volume from the image, where the directory is
 already `node`-owned — new installs need nothing. A volume created by an older
@@ -821,12 +821,12 @@ docker compose up -d
 The same applies to a host bind mount (`./data:/data`) — `sudo chown -R 1000:1000 ./data`
 on the host instead. Skipping this shows up as storage writes failing with
 `EACCES` in the web and worker logs. Ownership must be correct throughout the
-tree: a writable `/data` can hide root-owned Member or Session folders. The
+tree: a writable `/data` can hide root-owned member or session folders. The
 web and worker check existing directories at startup and refuse an unusable
 tree. The temporary `CHOWN` capability lets the repair command change ownership;
 normal web and worker containers keep their capabilities dropped.
 
-## Access logs
+## Access Logs
 
 Caddy writes one JSON line per request to `/data/logs/access.log` on the
 `caddy-data` volume — source address, method, path, status, duration, size:
@@ -847,13 +847,13 @@ the same exclusion.
 A request that does not match `APP_DOMAIN` never reaches the site, so it is not
 in this file; it is in `docker compose logs caddy` instead.
 
-## S3-compatible object storage
+## S3-Compatible Object Storage
 
 User guide:
 [S3-compatible object storage](https://liedmotif.com/docs/email-and-storage/#s3-compatible-object-storage),
 including [moving an existing library](https://liedmotif.com/docs/email-and-storage/#move-an-existing-library).
 
-### S3 adapter tests
+### S3 Adapter Tests
 
 The storage adapter contract tests run against a real S3 server (Versity S3
 Gateway) started like the test database: `npm run s3:test:up` starts the
@@ -861,13 +861,13 @@ Gateway) started like the test database: `npm run s3:test:up` starts the
 9400), and `TEST_S3_ENDPOINT` in `.env` points the suite at it. With
 `TEST_S3_ENDPOINT` unset the S3 leg skips visibly.
 
-## Account email (optional SMTP)
+## Account Email (Optional SMTP)
 
 User guide: [Account email](https://liedmotif.com/docs/email-and-storage/#account-email),
 with the `.env` lines, Gmail, confirmed addresses, link lifetimes and
 [replacing a placeholder address](https://liedmotif.com/docs/email-and-storage/#if-you-set-up-with-a-placeholder-address).
 
-### Mailpit for development and tests
+### Mailpit for Development and Tests
 
 `npm run mail:test:up` starts Mailpit (the `mailpit-test` service, compose
 `test` profile). It catches every mail on SMTP port 1025 (`TEST_SMTP_PORT`)
@@ -885,31 +885,31 @@ mail back over its HTTP API, gated on `TEST_SMTP_URL` and `TEST_MAILPIT_URL`;
 with either blank that leg skips visibly. `npm run mail:test:down` removes it.
 Production Compose has no Mailpit.
 
-### Try it locally
+### Try It Locally
 
 With Mailpit up and the development `.env` above, run `npm run dev` and keep
 two tabs open: the app at http://localhost:2206 and the inbox at
 http://127.0.0.1:8025. Mail links are built from `APP_PUBLIC_URL`, so it must
 point at the dev server (`http://localhost:2206`).
 
-1. **Confirm the Admin address.** Settings → Profile → **Send confirm link**,
-   open the mail in Mailpit, follow the link, press **Confirm email**. Most
+1. **Confirm the admin address.** Settings → Profile → **Send Confirm Link**,
+   open the mail in Mailpit, follow the link, press **Confirm Email**. Most
    mails below only go to a confirmed address.
-2. **Forgot password.** Sign out, press **Forgot password?** on the sign-in
+2. **Forgot password.** Sign out, press **Forgot Password?** on the sign-in
    page, enter the address. Open the mail and set a new password.
-3. **Change own password.** Settings → Profile → **Change password** →
-   **Send link**, then follow the mail.
+3. **Change own password.** Settings → Profile → **Change Password** →
+   **Send Link**, then follow the mail.
 4. **Invite.** Settings → Members, enter any address (e.g.
-   `member@example.test`) and press **Send invite**. Open the link in a private
+   `member@example.test`) and press **Send Invite**. Open the link in a private
    window and join; the email shows read-only and starts confirmed.
-5. **Admin reset.** On that Member's card press **Reset password**; the mail
+5. **Admin reset.** On that member's card press **Reset Password**; the mail
    lands in Mailpit.
 
 To see the mail-off behavior, blank `SMTP_URL` and `MAIL_FROM` and restart
 `npm run dev`: links go back to copy-and-hand-over, and Settings → Profile
 changes a password with the current one.
 
-## Two instances on one machine (dev + production)
+## Two Instances on One Machine (Dev + Production)
 
 The reference deployment runs development and production on the same host with
 nothing shared — no ports, no env file, no containers, no volumes. Production
@@ -918,7 +918,7 @@ local dev repo path, so "deploy" means commit to dev `main`, then pull and
 rebuild in the prod clone. The dev working tree is never used to build or run
 production.
 
-### Compose project isolation
+### Compose Project Isolation
 
 The prod clone's `.env` sets `COMPOSE_PROJECT_NAME=liedmotif-prod`, overriding
 the compose file's `name: liedmotif`. Compose namespaces containers, networks,
@@ -928,10 +928,10 @@ No compose-file changes are needed; the stack is fully env-driven.
 
 The project name is also what keeps two stacks separate for
 `docker/install.sh`: it refuses a folder whose project already has containers
-started from another folder ("Install with one command"). A second stack needs
+started from another folder ("Install with One Command"). A second stack needs
 its own `COMPOSE_PROJECT_NAME` in its `.env` before its first start.
 
-### Port map
+### Port Map
 
 | Port | Owner | Purpose |
 | --- | --- | --- |
@@ -942,7 +942,7 @@ its own `COMPOSE_PROJECT_NAME` in its `.env` before its first start.
 | 5433 (loopback) | dev/test Postgres | `db:test:up` profile database |
 | 2216 / 8080 / 8443 | dev checkout's Docker stack | re-ported so a dev `docker compose up` never collides with production |
 
-### Env split
+### Env Split
 
 The prod `.env` is written once by hand (never copied wholesale from dev):
 
@@ -964,7 +964,7 @@ The prod `.env` is written once by hand (never copied wholesale from dev):
 - The host-only `DATABASE_URL` / `DATA_DIR` / `TEST_*` entries stay out — the
   containers always use the in-cluster Postgres and the `/data` volume.
 
-### HTTPS on a LAN IP (internal CA)
+### HTTPS on a LAN IP (Internal CA)
 
 Caddy's internal CA supports IP-address certificates, so `APP_DOMAIN` can be
 the host's LAN IP directly (with `CADDY_HTTP_PORT=80` and `CADDY_HTTPS_PORT=443`)
@@ -999,7 +999,7 @@ the installer makes, is still verified. A timeout then points at
 `docker compose ps` and `docker compose logs caddy web`, not at DNS or open
 ports.
 
-### One-time library migration (dev → prod)
+### One-Time Library Migration (Dev → Prod)
 
 Non-destructive to dev by construction: dump, never move. With the production
 web/worker stopped:
@@ -1027,7 +1027,7 @@ Afterwards verify: table counts match the dump-time dev counts, an existing
 track plays with its cover, and stored provider credentials still validate
 (they decrypt because prod reuses the dev `CREDENTIAL_ENCRYPTION_KEY`).
 
-### Update flow
+### Update Flow
 
 ```bash
 # 1. Land the change on dev main (commit or merge).
@@ -1039,12 +1039,12 @@ docker compose up -d --build
 ```
 
 Migrations apply automatically through the migrate gate. The
-maintenance-window sequence above still applies to the flagged Session Cover
+maintenance-window sequence above still applies to the flagged session cover
 planner cutover class of migration. An instance whose `/data` volume predates
-the non-root containers needs the one-time chown from "Container hardening"
+the non-root containers needs the one-time chown from "Container Hardening"
 before this flow works.
 
-### Production smoke checklist
+### Production Smoke Checklist
 
 Run after every deploy (a few minutes total):
 
@@ -1057,19 +1057,19 @@ Run after every deploy (a few minutes total):
 4. Phone on WLAN: `https://<LAN-IP>` loads with no certificate warning; repeat
    once over WireGuard with WLAN off.
 5. The installed PWA launches standalone with the Liedmotif icon.
-6. Start a Session and let one track generate end-to-end (paid — one track is
+6. Start a session and let one track generate end-to-end (paid — one track is
    enough).
 
-## Admin password reset (CLI)
+## Admin Password Reset (CLI)
 
 User guide:
 [If you forget the admin password](https://liedmotif.com/docs/members/#if-you-forget-the-admin-password).
 The CLI ships in the worker image (`dist/reset-admin-password.js`), hashes with
 Better Auth's own hasher, and revokes every sign-in session that admin holds, as
-the Members reset link does; the session cookie cache is why sign-out can take up
+the member reset link does; the session cookie cache is why sign-out can take up
 to a minute.
 
-## Android phone HTTPS access (PWA secure context)
+## Android Phone HTTPS Access (PWA Secure Context)
 
 User guide: [Use Liedmotif on your phone](https://liedmotif.com/docs/install/phone-access/),
 with every HTTPS path (Tailscale, your own domain, Cloudflare Tunnel, a DNS

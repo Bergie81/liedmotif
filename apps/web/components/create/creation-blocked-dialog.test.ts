@@ -51,7 +51,7 @@ function renderDialog(viewerRole: AppChromeContextValue['viewerRole']): HTMLElem
 describe('creation-blocked dialog title', () => {
   it('titles a headroom refusal by what is short', () => {
     const dialog = renderDialog('admin');
-    expect(within(dialog).getByRole('heading').textContent).toBe('Not enough Tracks left to start');
+    expect(within(dialog).getByRole('heading').textContent).toBe('Not Enough Tracks Left to Start');
   });
 });
 
@@ -73,9 +73,9 @@ describe('paused new music refusal', () => {
 
   it('opens under its own title, with the message and the free ways out', () => {
     renderHost('admin');
-    const dialog = presentPaused('New music is paused in Settings › Generation.');
-    expect(within(dialog).getByRole('heading').textContent).toBe('New music is paused');
-    expect(within(dialog).getByText('New music is paused in Settings › Generation.')).toBeTruthy();
+    const dialog = presentPaused('New Music is paused in Settings › Generation.');
+    expect(within(dialog).getByRole('heading').textContent).toBe('New Music Is Paused');
+    expect(within(dialog).getByText('New Music is paused in Settings › Generation.')).toBeTruthy();
     expect(within(dialog).getByRole('button', { name: /Resume a Session/ })).toBeTruthy();
     expect(within(dialog).getByRole('button', { name: /Browse Library/ })).toBeTruthy();
   });
@@ -83,8 +83,8 @@ describe('paused new music refusal', () => {
   it('takes the Admin to the switch, and offers a Member no budget page', () => {
     renderHost('admin');
     fireEvent.click(
-      within(presentPaused('New music is paused.')).getByRole('button', {
-        name: /Open Generation settings/,
+      within(presentPaused('New Music is paused.')).getByRole('button', {
+        name: /Open Generation Settings/,
       }),
     );
     expect(push).toHaveBeenCalledExactlyOnceWith('/settings/limits');
@@ -93,8 +93,8 @@ describe('paused new music refusal', () => {
 
     renderHost('member');
     const dialog = presentPaused('Thomas has paused new music.');
-    expect(within(dialog).queryByRole('button', { name: /See your budget/ })).toBeNull();
-    expect(within(dialog).queryByRole('button', { name: /Adjust cost limits/ })).toBeNull();
+    expect(within(dialog).queryByRole('button', { name: /See Your Budget/ })).toBeNull();
+    expect(within(dialog).queryByRole('button', { name: /Adjust Cost Limits/ })).toBeNull();
   });
 });
 
@@ -109,13 +109,13 @@ describe('presentCreationFailure', () => {
     let inline: string | null = 'unset';
     act(() => {
       inline = presentCreationFailure(
-        { code: 'session_headroom_blocked', message: 'A new Session needs 5 Tracks.' },
+        { code: 'session_headroom_blocked', message: 'A new session needs 5 Tracks.' },
         'More Like This didn’t start',
       );
     });
     expect(inline).toBeNull();
     const dialog = screen.getByTestId('creation-blocked-dialog');
-    expect(within(dialog).getByText('A new Session needs 5 Tracks.')).toBeTruthy();
+    expect(within(dialog).getByText('A new session needs 5 Tracks.')).toBeTruthy();
     expect(within(dialog).getByRole('button', { name: /Resume a Session/ })).toBeTruthy();
     expect(within(dialog).getByRole('button', { name: /Browse Library/ })).toBeTruthy();
   });
@@ -137,15 +137,15 @@ describe('presentCreationFailure', () => {
 describe('creation-blocked dialog settings way out', () => {
   it('sends the Admin to cost limits', () => {
     const dialog = renderDialog('admin');
-    expect(within(dialog).queryByRole('button', { name: /See your budget/ })).toBeNull();
-    fireEvent.click(within(dialog).getByRole('button', { name: /Adjust cost limits/ }));
+    expect(within(dialog).queryByRole('button', { name: /See Your Budget/ })).toBeNull();
+    fireEvent.click(within(dialog).getByRole('button', { name: /Adjust Cost Limits/ }));
     expect(push).toHaveBeenCalledExactlyOnceWith('/settings/limits');
   });
 
   it('sends a Member to their own budget', () => {
     const dialog = renderDialog('member');
-    expect(within(dialog).queryByRole('button', { name: /Adjust cost limits/ })).toBeNull();
-    fireEvent.click(within(dialog).getByRole('button', { name: /See your budget/ }));
+    expect(within(dialog).queryByRole('button', { name: /Adjust Cost Limits/ })).toBeNull();
+    fireEvent.click(within(dialog).getByRole('button', { name: /See Your Budget/ }));
     expect(push).toHaveBeenCalledExactlyOnceWith('/settings/my-budget');
   });
 });

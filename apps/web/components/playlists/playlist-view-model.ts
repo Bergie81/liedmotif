@@ -86,7 +86,7 @@ export function sameTrackOrder(items: readonly { id: string }[], trackIds: strin
  * count is a fact about it, where an empty Session reads `No Tracks yet`.
  */
 export function formatPlaylistTrackCount(count: number): string {
-  return `${count} ${count === 1 ? 'Track' : 'Tracks'}`;
+  return `${count} ${count === 1 ? 'track' : 'tracks'}`;
 }
 
 function trackCountLabel(count: number): string {
@@ -206,7 +206,7 @@ export function playlistMenuRows(
       label: 'Reorder Tracks',
       description: 'Change the order its tracks play in',
       disabled: tooManyToReorder || playlist.trackCount < 2,
-      note: tooManyToReorder ? 'Too many Tracks' : undefined,
+      note: tooManyToReorder ? 'Too Many Tracks' : undefined,
     },
     {
       id: 'cover',
@@ -216,7 +216,7 @@ export function playlistMenuRows(
     },
     {
       id: 'download',
-      label: 'Download all Playlist Tracks',
+      label: 'Download All Playlist Tracks',
       description: MENU_COPY.downloadAllTracks,
       disabled: !canDownloadPlaylist(playlist),
     },
@@ -249,11 +249,11 @@ export function deletePlaylistConfirmBody(
   const sole = playlist.soleMemberTrackCount;
   const gone = playlist.soleMemberDeletedTrackCount;
   const ask = `Delete “${playlist.name}”?`;
-  if (sole === 0) return `${ask} Its Tracks stay in your Library through their other playlists.`;
-  const only = `${sole} ${sole === 1 ? 'Track is' : 'Tracks are'} only in this playlist and will`;
-  const sessionGone = `because ${gone === 1 ? 'its' : 'their'} Session is gone`;
+  if (sole === 0) return `${ask} Its tracks stay in your Library through their other playlists.`;
+  const only = `${sole} ${sole === 1 ? 'track is' : 'tracks are'} only in this playlist and will`;
+  const sessionGone = `because ${gone === 1 ? 'its' : 'their'} session is gone`;
   if (gone === 0) {
-    return `${only} leave your Library (Tracks from your Sessions stay in History). ${ask}`;
+    return `${only} leave your Library (tracks from your sessions stay in History). ${ask}`;
   }
   if (gone === sole) return `${only} be deleted for good, ${sessionGone}. ${ask}`;
   return `${only} leave your Library. ${gone} of them will be deleted for good, ${sessionGone}. ${ask}`;
@@ -280,7 +280,7 @@ export function lastRemovalNotice(removal: {
   sharedReference: boolean;
 }): string {
   if (removal.deletedForGood) {
-    return 'Removed — that was its last playlist and its Session is gone, so the track was deleted for good.';
+    return 'Removed — that was its last playlist and its session is gone, so the track was deleted for good.';
   }
   if (removal.sharedReference) {
     return 'Removed — that was its last playlist, so the track left your Library.';

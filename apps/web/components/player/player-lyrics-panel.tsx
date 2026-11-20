@@ -103,7 +103,7 @@ export function PlayerLyricsPanel({
         <span className="flex items-center gap-1">
           <button
             type="button"
-            aria-label="Open full lyrics"
+            aria-label="Open Full Lyrics"
             onClick={onExpand}
             className="inline-flex h-[30px] w-[30px] items-center justify-center rounded-[8px] text-[#a79fba] transition-colors duration-150 ease-[ease] hover:bg-[rgba(240,234,222,0.07)] hover:text-[#f0eade]"
           >
@@ -111,7 +111,7 @@ export function PlayerLyricsPanel({
           </button>
           <button
             type="button"
-            aria-label="Back to the cover"
+            aria-label="Back to the Cover"
             onClick={onClose}
             className="inline-flex h-[30px] w-[30px] items-center justify-center rounded-[8px] text-[#a79fba] transition-colors duration-150 ease-[ease] hover:bg-[rgba(240,234,222,0.07)] hover:text-[#f0eade]"
           >

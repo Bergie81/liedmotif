@@ -56,7 +56,7 @@ export function LibraryTrackList({
             const availability = getTrackAvailability(track);
             const badges: TrackRowBadge[] = [];
             if (view === 'history' && !availability.hasPlayed)
-              badges.push({ label: 'Never played' });
+              badges.push({ label: 'Never Played' });
             if (availability.audioNotice) badges.push({ label: availability.audioNotice });
             return (
               <TrackRow
@@ -92,16 +92,16 @@ export function LibraryError({ message }: { message: string }) {
 
 function LibraryNoMatches({ query }: { query: string }) {
   return (
-    <EmptyState icon={<Disc3 className="h-6 w-6" />} title="No matches" className="mt-4">
-      Nothing here matches “{query}”. Try a Track or Session title, or a genre.
+    <EmptyState icon={<Disc3 className="h-6 w-6" />} title="No Matches" className="mt-4">
+      Nothing here matches “{query}”. Try a track or session title, or a genre.
     </EmptyState>
   );
 }
 
 function LibraryEmpty({ view }: { view: LibraryTrackTab }) {
   const copy = {
-    saved: ['No Saved Tracks yet', 'Save a Track during a Session and it will wait here.'],
-    history: ['No History yet', 'Every generated Track appears here, even if it was never played.'],
+    saved: ['No Saved Tracks Yet', 'Save a track during a session and it will wait here.'],
+    history: ['No History Yet', 'Every generated track appears here, even if it was never played.'],
   } as const;
   return (
     <EmptyState

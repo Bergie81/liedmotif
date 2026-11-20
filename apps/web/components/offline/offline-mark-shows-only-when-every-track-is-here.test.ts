@@ -26,13 +26,13 @@ describe('OfflineMark', () => {
   it('shows once the device holds every Track of the marked Playlist', () => {
     statuses.current = new Map([['playlist:p1', { state: 'ready', total: 30 }]]);
     render(h(OfflineMark, { kind: 'playlist', id: 'p1' }));
-    expect(screen.getByRole('img', { name: 'Available offline' })).toBeTruthy();
+    expect(screen.getByRole('img', { name: 'Available Offline' })).toBeTruthy();
   });
 
   it('follows the same rule for a Session', () => {
     statuses.current = new Map([['session:s1', { state: 'ready', total: 4 }]]);
     render(h(OfflineMark, { kind: 'session', id: 's1' }));
-    expect(screen.getByRole('img', { name: 'Available offline' })).toBeTruthy();
+    expect(screen.getByRole('img', { name: 'Available Offline' })).toBeTruthy();
   });
 
   it.each<[string, OfflineMarkStatus]>([

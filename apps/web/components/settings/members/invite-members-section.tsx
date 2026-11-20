@@ -71,8 +71,8 @@ export function InviteMembersSection({
   const [revokingId, setRevokingId] = useState<string | null>(null);
 
   const createLabel = inviteByEmail
-    ? { idle: 'Send invite', busy: 'Sending invite…' }
-    : { idle: 'Create invite link', busy: 'Creating invite…' };
+    ? { idle: 'Send Invite', busy: 'Sending Invite…' }
+    : { idle: 'Create Invite Link', busy: 'Creating Invite…' };
 
   async function create() {
     if (busy) return;
@@ -173,12 +173,12 @@ export function InviteMembersSection({
         <UserRoundPlus className="h-4 w-4" aria-hidden />
         {busy ? createLabel.busy : createLabel.idle}
       </button>
-      {mintedUrl ? <CopyLinkBox url={mintedUrl} label="Invite link" /> : null}
+      {mintedUrl ? <CopyLinkBox url={mintedUrl} label="Invite Link" /> : null}
 
       {invites.length > 0 ? (
         <div className="mt-5 border-t border-line pt-4">
           <p className="mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-dim">
-            Open invites
+            Open Invites
           </p>
           {invites.map((invite) => (
             <div

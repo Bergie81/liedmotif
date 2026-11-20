@@ -99,7 +99,7 @@ function LoadError({ message, onRetry }: { message: string; onRetry: () => void 
         onClick={onRetry}
         className="mt-3 inline-flex items-center gap-2 font-semibold text-paper"
       >
-        <RotateCcw className="h-3.5 w-3.5" aria-hidden /> Try again
+        <RotateCcw className="h-3.5 w-3.5" aria-hidden /> Try Again
       </button>
     </div>
   );

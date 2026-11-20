@@ -217,7 +217,7 @@ function SessionTracksSheet({
         <SheetHeader
           title={session.title ?? 'Untitled Session'}
           action={{
-            label: `Open ${session.title ?? 'Untitled Session'} in player`,
+            label: `Open ${session.title ?? 'Untitled Session'} in Player`,
             onClick: onOpenPlayer,
             disabled: busy,
           }}
@@ -232,7 +232,7 @@ function SessionTracksSheet({
               ) : null}
             </>
           }
-          closeLabel="Close Session tracks"
+          closeLabel="Close Session Tracks"
           leading={
             <span className="grid h-16 w-16 shrink-0 self-end place-items-center overflow-hidden rounded-[6px] bg-panel-2">
               {session.coverImageId ? (
@@ -258,7 +258,7 @@ function SessionTracksSheet({
           />
         ) : null}
         {playError ? <RetryBanner message={playError} disabled={busy} onRetry={onRetry} /> : null}
-        {!list.data && !list.error ? <LoadingRow label="Loading Tracks…" /> : null}
+        {!list.data && !list.error ? <LoadingRow label="Loading tracks…" /> : null}
         {list.data?.total === 0 ? (
           <p className="py-8 text-center text-sm text-muted">No playable tracks yet.</p>
         ) : null}
@@ -275,7 +275,7 @@ function SessionTracksSheet({
                 {newVibe ? (
                   <div className="flex items-center gap-2 py-2 font-mono text-[9px] uppercase tracking-[0.16em] text-lamp">
                     <span className="h-px flex-1 bg-lamp/35" aria-hidden />
-                    <span>New vibe from here</span>
+                    <span>New Vibe from Here</span>
                     <span className="h-px flex-1 bg-lamp/35" aria-hidden />
                   </div>
                 ) : null}

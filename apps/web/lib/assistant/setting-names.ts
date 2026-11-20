@@ -5,8 +5,8 @@
 import { ASSISTANT_SETTINGS, type AssistantSetting } from '@liedmotif/shared';
 
 export const SETTING_NAMES: Record<AssistantSetting, { label: string; page: string }> = {
-  ownerInCovers: { label: 'Include the owner in Covers', page: '/settings/people' },
-  blend: { label: 'Blend consecutive Tracks', page: '/settings/playback' },
+  ownerInCovers: { label: 'Include the owner in covers', page: '/settings/people' },
+  blend: { label: 'Blend consecutive tracks', page: '/settings/playback' },
   crossfadeSeconds: { label: 'Crossfade length', page: '/settings/playback' },
   defaultLanguage: { label: 'Default language', page: '/settings/generation' },
 };

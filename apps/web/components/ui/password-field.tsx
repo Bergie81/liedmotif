@@ -44,7 +44,7 @@ export function PasswordField({
         />
         <button
           type="button"
-          aria-label={revealed ? 'Hide password' : 'Show password'}
+          aria-label={revealed ? 'Hide Password' : 'Show Password'}
           aria-pressed={revealed}
           onClick={() => setRevealed((current) => !current)}
           className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-[9px] text-dim transition-colors duration-[120ms] hover:text-paper"

@@ -25,10 +25,10 @@ export default async function ConfirmEmailPage({ params }: { params: Promise<{ t
 
   return (
     <OneShotLinkPage basePath={CONFIRM_BASE_PATH}>
-      <p className={eyebrowClass}>Confirm email</p>
+      <p className={eyebrowClass}>Confirm Email</p>
       {link ? (
         <>
-          <h1 className={`${displayHeadingClass} mt-3`}>Confirm your email</h1>
+          <h1 className={`${displayHeadingClass} mt-3`}>Confirm Your Email</h1>
           <p className="mt-3 text-[14px] leading-relaxed text-muted">
             Confirm that <span className="text-paper">{link.label}</span> belongs to your Liedmotif
             account. This link works once.

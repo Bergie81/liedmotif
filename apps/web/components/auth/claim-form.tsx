@@ -114,7 +114,7 @@ export function ClaimForm({
 
       <button type="submit" disabled={busy} className={cn(primaryButtonClass, 'mt-1 w-full')}>
         {busy ? <LiedmotifLoader /> : null}
-        {busy ? 'Creating your account…' : 'Create my account'}
+        {busy ? 'Creating Your Account…' : 'Create My Account'}
       </button>
     </form>
   );

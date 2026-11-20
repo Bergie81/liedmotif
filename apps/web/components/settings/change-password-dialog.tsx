@@ -52,12 +52,12 @@ export function ChangePasswordButton({
     <Dialog onOpenChange={(open) => open && router.refresh()}>
       <DialogTrigger className={secondaryButtonClass}>
         <KeyRound className="h-4 w-4" aria-hidden />
-        Change password
+        Change Password
       </DialogTrigger>
       <DialogContent data-testid="change-password-dialog">
         <DialogCloseButton />
         <DialogTitle className="pr-8 font-display text-[18px] font-bold tracking-[-0.01em]">
-          Change password
+          Change Password
         </DialogTitle>
         <ChangePasswordStep email={email} emailConfirmed={emailConfirmed} />
       </DialogContent>
@@ -80,7 +80,7 @@ function ChangePasswordStep({
 function resetLinkErrorMessage(status: number, serverMessage: string): string {
   switch (status) {
     case 409:
-      return 'Confirm your email first with Send confirm link next to your email.';
+      return 'Confirm your email first with Send Confirm Link next to your email.';
     case 429:
       return 'Too many reset links. Wait a few minutes, then try again.';
     default:
@@ -121,7 +121,7 @@ function ResetLinkRequest({ email }: { email: string }) {
         disabled={sending}
         className={cn(primaryButtonClass, 'mt-6 w-full')}
       >
-        {sending ? 'Sending…' : 'Send link'}
+        {sending ? 'Sending…' : 'Send Link'}
       </button>
     </>
   );
@@ -156,7 +156,7 @@ function ConfirmEmailFirst({ email }: { email: string }) {
         disabled={sending}
         className={cn(primaryButtonClass, 'mt-6 w-full')}
       >
-        {sending ? 'Sending…' : 'Send confirm link'}
+        {sending ? 'Sending…' : 'Send Confirm Link'}
       </button>
     </>
   );
@@ -228,7 +228,7 @@ function CurrentPasswordChange() {
         {...confirmation.field}
       />
       <button type="submit" disabled={busy} className={cn(primaryButtonClass, 'mt-2 w-full')}>
-        {busy ? 'Changing…' : 'Change password'}
+        {busy ? 'Changing…' : 'Change Password'}
       </button>
     </form>
   );

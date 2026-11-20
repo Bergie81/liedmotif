@@ -188,8 +188,8 @@ describe.skipIf(skip)('the Assistant asked what is playing', () => {
     expect(result).toContain('Track: "Night Drive"');
     expect(result).toContain(trackId);
     expect(result).toContain('Player: playing');
-    // A Playlist never generates, so it has no New music mode to report.
-    expect(result).not.toContain('New music');
+    // A Playlist never generates, so it has no New Music mode to report.
+    expect(result).not.toContain('New Music');
   });
 
   it('keeps the player state and what was looked up out of the system prompt and the logs', async () => {
@@ -211,7 +211,7 @@ describe.skipIf(skip)('the Assistant asked what is playing', () => {
     }
   });
 
-  it('answers an engaged Session with its New music mode and duration target', async () => {
+  it('answers an engaged Session with its New Music mode and duration target', async () => {
     const asker = await createProfiledUser('member-1', 'member');
     const { sessionId, trackId } = await seedSession(
       asker,
@@ -229,10 +229,10 @@ describe.skipIf(skip)('the Assistant asked what is playing', () => {
     expect(result).toContain(sessionId);
     expect(result).toContain('Track: "First Light"');
     expect(result).toContain('Player: paused');
-    expect(result).toContain('New music: on, duration target 60 min');
+    expect(result).toContain('New Music: on, duration target 60 min');
   });
 
-  it('says New music has finished for a Session that reached its duration target', async () => {
+  it('says New Music has finished for a Session that reached its duration target', async () => {
     const asker = await createProfiledUser('member-1', 'member');
     const sessionId = await createSession(testDb.db, {
       ownerUserId: asker,
@@ -261,12 +261,12 @@ describe.skipIf(skip)('the Assistant asked what is playing', () => {
     });
 
     expect(result).toContain(
-      'New music: finished, the duration target of 5 min is reached (6 min generated)',
+      'New Music: finished, the duration target of 5 min is reached (6 min generated)',
     );
-    expect(result).not.toContain('New music: on');
+    expect(result).not.toContain('New Music: on');
   });
 
-  it('says New music is off for a Session in Repeat', async () => {
+  it('says New Music is off for a Session in Repeat', async () => {
     const asker = await createProfiledUser('member-1', 'member');
     const { sessionId, trackId } = await seedSession(
       asker,
@@ -280,7 +280,7 @@ describe.skipIf(skip)('the Assistant asked what is playing', () => {
       playing: true,
     });
 
-    expect(result).toContain('New music: off');
+    expect(result).toContain('New Music: off');
   });
 
   it('says that an engaged Session which is stopped generates nothing', async () => {
@@ -369,7 +369,7 @@ describe.skipIf(skip)('the Assistant asked what is playing', () => {
     expect(result).toContain('Nothing is playing in this browser.');
     expect(result).toContain('Session: "Deep Focus"');
     expect(result).toContain(sessionId);
-    expect(result).toContain('New music: on, no duration target');
+    expect(result).toContain('New Music: on, no duration target');
     expect(result).not.toContain('Player:');
   });
 
@@ -410,7 +410,7 @@ describe.skipIf(skip)('the Assistant asked what is left of the budget', () => {
       'Shared budget of all Members: 40 of 50 Tracks left today, 240 of 250 Tracks left this month. 22 of 25 covers left today, 122 of 125 covers left this month.',
     );
     expect(result).toContain(
-      'New music and covers are generated only while both budgets have some left.',
+      'New Music and covers are generated only while both budgets have some left.',
     );
     // The other Member's own bound: 8 a day, 18 a month, 2 and 12 of them left.
     expect(result).not.toMatch(/of (8|18) Tracks/);

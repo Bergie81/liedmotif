@@ -88,7 +88,7 @@ it('starts with People photos on, saying who they draw, and asks for them', asyn
   expect(toggle.getAttribute('aria-checked')).toBe('true');
   expect(
     screen.getByText(
-      'Draws the People named in this Session’s prompt or art direction — you when nobody is named, unless it runs without your profile details.',
+      'Draws the people named in this session’s prompt or art direction — you when nobody is named, unless it runs without your profile details.',
     ),
   ).toBeTruthy();
 

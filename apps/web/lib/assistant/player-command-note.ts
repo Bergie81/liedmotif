@@ -60,7 +60,7 @@ export function playerCommandRecord(
   const told = playerCommandNote(command);
   switch (outcome) {
     case 'blocked':
-      return `[Not done by the app: the browser refused to start the audio when the player was told to ${told}. The user was shown a "Tap to play" button.]`;
+      return `[Not done by the app: the browser refused to start the audio when the player was told to ${told}. The user was shown a "Tap to Play" button.]`;
     case 'failed':
       return `[Not done by the app: the player could not ${told}]`;
     case 'declined':

@@ -109,8 +109,8 @@ async function openSheet({
 
 const choice = (name: RegExp) => screen.getByRole('button', { name }) as HTMLButtonElement;
 const OFF = /^Off/;
-const UP_TO = /^Up to a duration/;
-const NO_LIMIT = /^No limit/;
+const UP_TO = /^Up to a Duration/;
+const NO_LIMIT = /^No Limit/;
 const saveButton = () => screen.queryByRole('button', { name: /^Save/ });
 const press = (button: HTMLElement) => act(async () => fireEvent.click(button));
 
@@ -140,7 +140,7 @@ describe('choosing how much new music a Session may buy', () => {
     expect(writes).toEqual([]);
     expect(choice(NO_LIMIT).getAttribute('aria-pressed')).toBe('true');
 
-    await press(screen.getByRole('button', { name: 'Save · no limit' }));
+    await press(screen.getByRole('button', { name: 'Save · No Limit' }));
 
     expect(writes).toEqual([
       {
@@ -166,7 +166,7 @@ describe('choosing how much new music a Session may buy', () => {
     const { onSessionChange } = await openSheet();
 
     fireEvent.change(screen.getByRole('slider'), { target: { value: '70' } });
-    await press(screen.getByRole('button', { name: 'Save · up to 70 min' }));
+    await press(screen.getByRole('button', { name: 'Save · Up to 70 min' }));
 
     expect(writes).toEqual([
       {
@@ -185,7 +185,7 @@ describe('choosing how much new music a Session may buy', () => {
 
     await press(choice(UP_TO));
     expect(screen.getByRole('slider').getAttribute('aria-valuetext')).toBe('40 min');
-    await press(screen.getByRole('button', { name: 'Save · up to 40 min' }));
+    await press(screen.getByRole('button', { name: 'Save · Up to 40 min' }));
 
     expect(writes.map((write) => write.url)).toEqual(['/api/sessions/duration']);
   });
@@ -198,7 +198,7 @@ describe('choosing how much new music a Session may buy', () => {
     await openSheet({ current });
 
     await press(choice(NO_LIMIT));
-    await press(screen.getByRole('button', { name: 'Save · no limit' }));
+    await press(screen.getByRole('button', { name: 'Save · No Limit' }));
 
     expect(writes).toEqual([
       {
@@ -216,7 +216,7 @@ describe('choosing how much new music a Session may buy', () => {
 
     await press(choice(OFF));
     expect(
-      (screen.getByRole('button', { name: 'Close New music' }) as HTMLButtonElement).disabled,
+      (screen.getByRole('button', { name: 'Close New Music' }) as HTMLButtonElement).disabled,
     ).toBe(true);
     fireEvent.keyDown(document.body, { key: 'Escape' });
     expect(onOpenChange).not.toHaveBeenCalled();
@@ -306,12 +306,12 @@ describe('what the sheet says about spending', () => {
 
   it('counts the minutes generated and the Tracks left today', async () => {
     await openSheet();
-    expect(dialogText()).toContain('12 / 60 min generated · 38 Tracks left today');
+    expect(dialogText()).toContain('12 / 60 min generated · 38 tracks left today');
   });
 
   it('names the month when the monthly limit is the one binding', async () => {
     await openSheet({ usage: { ...BOUNDED_USAGE, monthlyTracksUsed: 990 } });
-    expect(dialogText()).toContain('10 Tracks left this month');
+    expect(dialogText()).toContain('10 tracks left this month');
   });
 
   it('names no period for a One-time budget', async () => {
@@ -325,7 +325,7 @@ describe('what the sheet says about spending', () => {
         budgetKind: 'oneTime',
       },
     });
-    expect(dialogText()).toContain('· 10 Tracks left');
+    expect(dialogText()).toContain('· 10 tracks left');
     expect(dialogText()).not.toContain('today');
   });
 

@@ -12,4 +12,4 @@ export function isDurationTargetReached(
 
 /** Why a creative Change Vibe is refused at the target, and the way out. */
 export const DURATION_TARGET_REACHED_MESSAGE =
-  'Duration target reached — this Session repeats its Tracks. Raise or clear the target to hear a new vibe.';
+  'Duration target reached — this session repeats its tracks. Raise or clear the target to hear a new vibe.';

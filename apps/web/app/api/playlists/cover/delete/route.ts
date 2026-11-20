@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     coverImageId: parsed.coverImageId,
   });
   if (result === 'not_found') {
-    return apiError('not_found', 'This cover is not part of the Playlist’s cover history.');
+    return apiError('not_found', 'This cover is not part of the playlist’s cover history.');
   }
   if (result === 'current_cover') {
     return apiError('conflict', 'The current cover cannot be deleted. Select another one first.');

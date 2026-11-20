@@ -38,7 +38,7 @@ export function RemoveFromLoungeDialog({
   return (
     <ConfirmDialog
       heading="Remove from Lounge"
-      body={`“${playlist.name}” leaves the Lounge and turns Private. Every Pin of it, yours included, is removed, and others lose any saved Shared references to its Tracks that no other playlist of yours in the Lounge still holds — sharing it again won’t bring them back. You keep the playlist and its Tracks.`}
+      body={`“${playlist.name}” leaves the Lounge and turns Private. Every pin of it, yours included, is removed, and others lose any saved shared references to its tracks that no other playlist of yours in the Lounge still holds — sharing it again won’t bring them back. You keep the playlist and its tracks.`}
       confirmLabel="Remove"
       onConfirm={remove}
       onClose={onClose}
@@ -74,7 +74,7 @@ export function ReturnToPrivateDialog({
   return (
     <ConfirmDialog
       heading="Return to Private"
-      body={`“${playlist.name}” by ${owner} leaves the Lounge. Every Pin of it, ${owner}’s included, is removed, and other Members lose any saved Shared references to its Tracks that no other shared playlist of ${owner}’s still holds — sharing it again won’t bring them back. ${owner} keeps the playlist and its Tracks.`}
+      body={`“${playlist.name}” by ${owner} leaves the Lounge. Every pin of it, ${owner}’s included, is removed, and other members lose any saved shared references to its tracks that no other shared playlist of ${owner}’s still holds — sharing it again won’t bring them back. ${owner} keeps the playlist and its tracks.`}
       confirmLabel="Return to Private"
       onConfirm={returnToPrivate}
       onClose={onClose}

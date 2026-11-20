@@ -96,7 +96,7 @@ describe('generation limit form units', () => {
 
     expect(buildLimitsPatch(values, 2)).toEqual({
       ok: false,
-      errors: { dailyTracks: 'Enter a multiple of 2 Tracks.' },
+      errors: { dailyTracks: 'Enter a multiple of 2 tracks.' },
     });
   });
 
@@ -161,8 +161,8 @@ describe('generation limit form units', () => {
     expect(buildLimitsPatch(overCeiling, 2)).toEqual({
       ok: false,
       errors: {
-        dailyTracks: 'Enter at most 2000 Tracks.',
-        maxQueuedTracks: 'Enter at most 100 Tracks.',
+        dailyTracks: 'Enter at most 2000 tracks.',
+        maxQueuedTracks: 'Enter at most 100 tracks.',
       },
     });
   });
@@ -182,7 +182,7 @@ describe('limits below the Session-start headroom', () => {
     trackCeilingEnabled: true,
     minHeadroomTracksToStartSession: '5',
   };
-  const warning = 'Below 5 Tracks, no new Session can start.';
+  const warning = 'Below 5 tracks, no new session can start.';
 
   it('warns on a Daily or Monthly limit below the headroom and still saves it', () => {
     const low = { ...base, dailyTracks: '4', monthlyTracks: '2' };
@@ -197,7 +197,7 @@ describe('limits below the Session-start headroom', () => {
     expect(limitFieldWarnings({ ...base, dailyTracks: '6' })).toEqual({});
     expect(
       limitFieldWarnings({ ...base, dailyTracks: '6', minHeadroomTracksToStartSession: '8' }),
-    ).toEqual({ dailyTracks: 'Below 8 Tracks, no new Session can start.' });
+    ).toEqual({ dailyTracks: 'Below 8 tracks, no new session can start.' });
   });
 
   it('leaves a monthly limit below the daily one alone while both clear the headroom', () => {

@@ -27,7 +27,7 @@ export function LoadMoreButton({
         aria-busy={loading}
       >
         {loading ? <LiedmotifLoader /> : null}
-        Load more
+        Load More
       </button>
     </div>
   );

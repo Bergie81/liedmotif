@@ -64,7 +64,7 @@ export function CostsPanel({ unitCosts }: { unitCosts: UnitCosts }) {
     <SettingsCard>
       <div className="space-y-4">
         <ProfileField
-          label="Per Track"
+          label="Per track"
           badge="USD"
           inputMode="decimal"
           value={values.perTrackUsd}
@@ -75,7 +75,7 @@ export function CostsPanel({ unitCosts }: { unitCosts: UnitCosts }) {
           onChange={(value) => change('perTrackUsd', value)}
         />
         <ProfileField
-          label="Per Cover"
+          label="Per cover"
           badge="USD"
           inputMode="decimal"
           value={values.perCoverUsd}
@@ -99,10 +99,10 @@ export function CostsPanel({ unitCosts }: { unitCosts: UnitCosts }) {
         disabled={busy}
         className={`${compactPrimaryButtonClass} mt-4`}
       >
-        {busy ? 'Saving…' : 'Save unit costs'}
+        {busy ? 'Saving…' : 'Save Unit Costs'}
       </button>
       <SettingsFootnote>
-        Whole cents, US dollars. Round up to absorb Text AI tokens — estimates are count × price,
+        Whole cents, US dollars. Round up to absorb text AI tokens — estimates are count × price,
         never a bill.
       </SettingsFootnote>
     </SettingsCard>

@@ -91,7 +91,7 @@ export function PeopleForm(props: PeopleFormProps) {
       body: JSON.stringify({ name: newName, about: newAbout }),
     }).catch(() => null);
     if (!response?.ok) {
-      toast.error(await peopleResponseMessage(response, 'Could not add this Person.'), {
+      toast.error(await peopleResponseMessage(response, 'Could not add this person.'), {
         key: CREATE_KEY,
       });
       setCreating(false);
@@ -211,12 +211,12 @@ export function PeopleForm(props: PeopleFormProps) {
           >
             <Plus className="h-[17px] w-[17px]" aria-hidden />
             {people.length >= props.maxPeople
-              ? `${props.maxPeople} of ${props.maxPeople} People added`
+              ? `${props.maxPeople} of ${props.maxPeople} People Added`
               : 'Add Person'}
           </button>
         )}
         <SettingsFootnote>
-          JPEG, PNG, or WebP; two or three varied, clear, solo portraits per Person work best:
+          JPEG, PNG, or WebP; two or three varied, clear, solo portraits per person work best:
           visible face, useful lighting, front plus slight side angles. Avoid group photos, distant
           subjects, sunglasses, and heavy filters.
         </SettingsFootnote>
@@ -224,7 +224,7 @@ export function PeopleForm(props: PeopleFormProps) {
 
       <SettingsSection title="When Nobody Is Named in the Music Prompt">
         <SettingsCard>
-          <div className="text-[13px] font-semibold text-paper">Include the owner in Covers</div>
+          <div className="text-[13px] font-semibold text-paper">Include the owner in covers</div>
           <fieldset
             disabled={!fallbackReady}
             className={cn(segmentedListClass, 'mt-3 overflow-x-auto')}
@@ -256,18 +256,18 @@ export function PeopleForm(props: PeopleFormProps) {
             <p className="mt-3 text-[11.5px] leading-[1.5] text-dim">
               <b className="text-muted">Add a reference photo to your own card above</b> to use
               this. Until then it stays on <b className="text-muted">Never</b>: putting you on a
-              Cover takes a likeness of you, and another Person&apos;s photo cannot stand in for it.
+              cover takes a likeness of you, and another person&apos;s photo cannot stand in for it.
             </p>
           )}
           <p className="mt-2 text-[11.5px] leading-[1.5] text-dim">
-            <b className="text-muted">Never</b> is the privacy opt-out. A named Person can appear
+            <b className="text-muted">Never</b> is the privacy opt-out. A named person can appear
             regardless of the fallback frequency. The choice saves as soon as you pick it.
           </p>
         </SettingsCard>
         <SettingsFootnote>
           Person names and About text stay private unless a matching request needs them. Named About
-          text can inspire personalized lyrics for vocal requests when a Text AI is connected.
-          Selected photos go only to the configured image provider for Cover generation; Never keeps
+          text can inspire personalized lyrics for vocal requests when a text AI is connected.
+          Selected photos go only to the configured image provider for cover generation; Never keeps
           every personal photo on this instance.
         </SettingsFootnote>
       </SettingsSection>

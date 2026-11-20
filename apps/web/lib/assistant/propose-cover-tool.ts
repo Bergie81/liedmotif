@@ -72,7 +72,7 @@ export function createProposeCoverTool(
         if (gate.outcome === 'refused') return notOffered(gate.message);
         if (gate.outcome === 'pending') {
           return notOffered(
-            `A new cover is already being generated for the ${label} ${quoted(subject.name)}. It will be under Previous covers in its cover dialog.`,
+            `A new cover is already being generated for the ${label} ${quoted(subject.name)}. It will be under Previous Covers in its cover dialog.`,
           );
         }
         const card: AssistantCoverCard = {

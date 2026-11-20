@@ -93,22 +93,22 @@ const playlistStatus = (usage: SessionCoverUsage) =>
 const started = () =>
   Response.json({ ok: true, data: { outcome: 'started', coverGenerationId: ATTEMPT_ID } });
 
-const coverCard = () => screen.getByRole('group', { name: 'New cover' });
-const generateButton = () => screen.getByRole('button', { name: 'Generate cover' });
+const coverCard = () => screen.getByRole('group', { name: 'New Cover' });
+const generateButton = () => screen.getByRole('button', { name: 'Generate Cover' });
 
 /** The requests a click sent to a regenerate route; the budget read goes elsewhere. */
 const regenerations = (sent: SentRequest[]) => sent.filter(({ path }) => /regenerate/.test(path));
 
 describe('a cover card in the chat', () => {
   it('shows what the cover is for, the art direction, the cover dialog’s budget line and one button', async () => {
-    const { card, server } = await askForCard('New cover', [cardEvent(RAINY)]);
+    const { card, server } = await askForCard('New Cover', [cardEvent(RAINY)]);
 
     expect(server.sent.map(({ path, body }) => ({ path, body }))).toEqual([
       { path: '/api/sessions/cover/status', body: { activitySessionId: SESSION_ID } },
     ]);
     server.sent[0]!.answer(sessionStatus(USAGE));
 
-    expect(card.textContent).toContain('For the Session Rainy Window');
+    expect(card.textContent).toContain('For the session Rainy Window');
     expect(card.textContent).toContain('“darker, neon city”');
     expect(card.textContent).toContain('Generating uses one cover from your budget.');
     await waitFor(() => expect(coverCard().textContent).toContain('Covers today: 3 of 10.'));
@@ -117,7 +117,7 @@ describe('a cover card in the chat', () => {
   });
 
   it('names the month too when it is the window that binds', async () => {
-    const { server } = await askForCard('New cover', [cardEvent(RUNNING)]);
+    const { server } = await askForCard('New Cover', [cardEvent(RUNNING)]);
 
     expect(server.sent[0]!.path).toBe(`/api/playlists/cover/status?playlistId=${PLAYLIST_ID}`);
     server.sent[0]!.answer(playlistStatus({ ...USAGE, usedMonth: 22 }));
@@ -130,7 +130,7 @@ describe('a cover card in the chat', () => {
 
 describe('confirming a cover card', () => {
   it('sends the cover dialog’s regenerate request once, then says the cover is being generated', async () => {
-    const { server } = await askForCard('New cover', [cardEvent(RAINY)]);
+    const { server } = await askForCard('New Cover', [cardEvent(RAINY)]);
     server.sent[0]!.answer(sessionStatus(USAGE));
 
     const button = generateButton();
@@ -148,7 +148,7 @@ describe('confirming a cover card', () => {
 
     await waitFor(() =>
       expect(coverCard().textContent).toContain(
-        'Generating the new cover. It will be under Previous covers.',
+        'Generating the new cover. It will be under Previous Covers.',
       ),
     );
     expect(within(coverCard()).queryByRole('button')).toBeNull();
@@ -157,7 +157,7 @@ describe('confirming a cover card', () => {
   });
 
   it('sends a Playlist’s request to the Playlist route, with nothing the card does not carry', async () => {
-    const { server } = await askForCard('New cover', [cardEvent(RUNNING)]);
+    const { server } = await askForCard('New Cover', [cardEvent(RUNNING)]);
 
     fireEvent.click(generateButton());
 
@@ -167,7 +167,7 @@ describe('confirming a cover card', () => {
   });
 
   it('shows the route’s refusal on the card in the app’s words', async () => {
-    const { server } = await askForCard('New cover', [cardEvent(RAINY)]);
+    const { server } = await askForCard('New Cover', [cardEvent(RAINY)]);
     fireEvent.click(generateButton());
 
     regenerations(server.sent)[0]!.answer(

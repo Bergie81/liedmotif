@@ -312,9 +312,9 @@ const SESSION_SURFACE: Surface = {
   name: 'Session',
   noun: 'Session',
   statusLine: {
-    waiting: 'Preparing your Session',
+    waiting: 'Preparing Your Session',
     loading: 'Connecting',
-    playing: 'Now playing',
+    playing: 'Now Playing',
     paused: 'Paused',
   },
   queueSheet: 'Late Rain',
@@ -348,7 +348,7 @@ const PLAYLIST_SURFACE: Surface = {
   statusLine: {
     waiting: 'Preparing · Playlist',
     loading: 'Connecting · Playlist',
-    playing: 'Now playing · Playlist',
+    playing: 'Now Playing · Playlist',
     paused: 'Paused · Playlist',
   },
   queueSheet: 'Focus Nights',
@@ -365,7 +365,7 @@ const OFFLINE_SURFACE: Surface = {
   statusLine: {
     waiting: 'Preparing · Offline',
     loading: 'Connecting · Offline',
-    playing: 'Now playing · Offline',
+    playing: 'Now Playing · Offline',
     paused: 'Paused · Offline',
   },
   queueSheet: OFFLINE_NAME,
@@ -381,7 +381,7 @@ function button(name: string | RegExp): HTMLElement {
 
 const press = (name: string | RegExp) => fireEvent.click(button(name));
 
-const BACK = 'Back — restart or previous Track';
+const BACK = 'Back — restart or previous track';
 const SKIP = 'Skip — direction unchanged';
 
 const TRANSPORT_PRESSES = [
@@ -424,7 +424,7 @@ function swipeCover(dx: number) {
 
 function openOptions(noun: SourceNoun) {
   // The phone header and the desk header each carry the trigger.
-  fireEvent.click(screen.getAllByRole('button', { name: `${noun} and Track options` })[0]!);
+  fireEvent.click(screen.getAllByRole('button', { name: `${noun} and Track Options` })[0]!);
   return within(screen.getByRole('dialog'));
 }
 
@@ -455,7 +455,7 @@ describe.each(SURFACES)('the $name surface', (surface) => {
     surface.show(player);
     expect(screen.queryByRole('dialog')).toBeNull();
 
-    press(`Tracks in this ${surface.noun}`);
+    press(`Tracks in This ${surface.noun}`);
 
     expect(screen.getByRole('dialog', { name: surface.queueSheet })).toBeTruthy();
     expect(fired(player)).toEqual({});
@@ -533,13 +533,13 @@ describe.each(SURFACES)('the $name surface', (surface) => {
     expect(fired(player)).toEqual({ seekTo: 1 });
     expect(player.seekTo).toHaveBeenCalledWith(SEEK_LINE.timeSeconds);
 
-    press('Open full lyrics');
+    press('Open Full Lyrics');
 
     expect(screen.getByRole('dialog', { name: 'Lyrics' })).toBeTruthy();
   });
 });
 
-describe('the New music status on a Session', () => {
+describe('the New Music status on a Session', () => {
   const status = () => screen.getByTestId('player-new-music');
 
   it('counts live generation towards the target, from the same numbers as the slider', () => {
@@ -569,16 +569,16 @@ describe('the New music status on a Session', () => {
       playingPlayer({ generatingTracksAhead: 2, generationStatus: 'worker_stalled' }),
     );
 
-    expect(status().getAttribute('aria-label')).toBe('New music: New music paused. Change.');
+    expect(status().getAttribute('aria-label')).toBe('New Music: New Music Paused. Change.');
     expect(screen.queryByTestId('new-music-ring')).toBeNull();
   });
 
-  it('opens the New music sheet from the header', () => {
+  it('opens the New Music sheet from the header', () => {
     SESSION_SURFACE.show(playingPlayer());
 
     fireEvent.click(status());
 
-    expect(screen.getByRole('dialog', { name: 'New music' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: 'New Music' })).toBeTruthy();
   });
 
   it('opens the same sheet from the options menu, one sheet at a time', () => {
@@ -588,7 +588,7 @@ describe('the New music status on a Session', () => {
     fireEvent.click(sheet.getByTestId('player-new-music-row'));
 
     expect(screen.getAllByRole('dialog')).toHaveLength(1);
-    expect(screen.getByRole('dialog', { name: 'New music' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: 'New Music' })).toBeTruthy();
   });
 });
 
@@ -608,19 +608,19 @@ describe('the Session shell belongs to a Session alone', () => {
 
   const SHELL: Record<string, () => HTMLElement[]> = {
     'generation banner': () => screen.queryAllByText(/playing your ready tracks/),
-    'source badge': () => screen.queryAllByText(/Live stream/),
+    'source badge': () => screen.queryAllByText(/Live Stream/),
     'vibe switch chip': () => screen.queryAllByText(/Switching to the new vibe/),
     'slider Session status': () => screen.queryAllByText('Generating 2'),
     Reroll: () => screen.queryAllByRole('button', { name: /^Reroll Track/ }),
     'Change Vibe': () => screen.queryAllByRole('button', { name: 'Change Vibe' }),
     'More Like This': () => screen.queryAllByRole('button', { name: 'More Like This' }),
-    'New music': () => screen.queryAllByRole('button', { name: /^New music:/ }),
+    'New Music': () => screen.queryAllByRole('button', { name: /^New Music:/ }),
   };
 
   const shellOnScreen = () => Object.keys(SHELL).filter((piece) => SHELL[piece]!().length > 0);
 
   const SHELL_OPTIONS = [
-    'New music',
+    'New Music',
     'Reroll Track',
     'Change Vibe',
     'Rename Session',
@@ -680,7 +680,7 @@ describe('a Session prepared behind a Playlist', () => {
     const chip = screen.getByTestId('incoming-source-chip');
     expect(chip.getAttribute('role')).toBe('status');
     expect(chip.textContent).toBe(
-      'Preparing “Night Drive”… This Playlist keeps playing until the new one is ready.',
+      'Preparing “Night Drive”… This playlist keeps playing until the new one is ready.',
     );
     expect(chip.getAttribute('title')).toBe(chip.textContent);
   });
@@ -688,7 +688,7 @@ describe('a Session prepared behind a Playlist', () => {
   it('carries no Session status on the progress bar', () => {
     showPlaylistWith({ stage: 'preparing', noun: 'Session', title: null });
 
-    expect(screen.getByText('Preparing your next Session…')).toBeTruthy();
+    expect(screen.getByText('Preparing your next session…')).toBeTruthy();
     expect(screen.queryByText('Next Session')).toBeNull();
   });
 });
@@ -711,8 +711,8 @@ describe('the Offline surface holds nothing that writes to the server', () => {
       expect(controls(screen)).toEqual(
         [
           'Offline Library',
-          `${noun} and Track options`,
-          `Tracks in this ${noun}`,
+          `${noun} and Track Options`,
+          `Tracks in This ${noun}`,
           BACK,
           'Pause',
           SKIP,
@@ -729,7 +729,7 @@ describe('the Offline surface holds nothing that writes to the server', () => {
 
       // A row's text carries its description too, so it is matched by how it starts.
       const offered = controls(sheet);
-      const expected = [`Close ${noun} and Track options`, 'Lyrics', 'Track Data', 'Sleep Timer'];
+      const expected = [`Close ${noun} and Track Options`, 'Lyrics', 'Track Data', 'Sleep Timer'];
       expect(offered).toHaveLength(expected.length);
       for (const label of expected) {
         expect(offered.some((name) => name?.startsWith(label))).toBe(true);
@@ -753,14 +753,14 @@ describe('the Offline surface holds nothing that writes to the server', () => {
 describe('the Offline surface past a Lounge copy’s week', () => {
   const OWN = track({ queueItemId: 'own', trackId: 'own', title: 'Own Track' });
   const LOUNGE = track({ queueItemId: 'lounge', trackId: 'lounge', title: 'Lounge Track' });
-  const EXPIRED_LINE = 'The rest of this Playlist expired on this device. Connect to refresh it.';
+  const EXPIRED_LINE = 'The rest of this playlist expired on this device. Connect to refresh it.';
   const loungeExpired = (trackId: string) => trackId === 'lounge';
 
   it('marks an expired Track in its list, and the row cannot start it', () => {
     const player = playingPlayer({ currentTrack: OWN });
     showOffline(player, 'Playlist', noop, { tracks: [LOUNGE, OWN], expired: loungeExpired });
 
-    press('Tracks in this Playlist');
+    press('Tracks in This Playlist');
     const sheet = within(screen.getByTestId('playlist-queue'));
 
     expect(sheet.getByText('Lounge Track').closest('li')?.textContent).toContain('Expired');

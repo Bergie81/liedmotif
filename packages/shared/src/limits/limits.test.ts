@@ -393,7 +393,7 @@ describe('One-time bounds', () => {
   it('names the Admin — never a rollover — in the used-up copy', () => {
     expect(oneTimeBudgetUsedUpMessage('John')).toBe('Your budget is used up. Ask John for more.');
     expect(oneTimeBudgetUsedUpMessage(null)).toBe(
-      'Your budget is used up. Ask the Admin for more.',
+      'Your budget is used up. Ask the admin for more.',
     );
   });
 });

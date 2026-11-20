@@ -51,7 +51,7 @@ describe('coverageNote', () => {
   });
 
   it('names every surface the figures cover', () => {
-    expect(coverageNote(base)).toMatch(/Sessions, Playlists and previews/);
+    expect(coverageNote(base)).toMatch(/sessions, playlists and previews/);
   });
 
   it('says earlier listening is unknown when the range reaches before collection', () => {
@@ -114,7 +114,7 @@ describe('trackRows', () => {
       },
       {
         key: 't2',
-        label: 'Untitled track',
+        label: 'Untitled Track',
         coverImageId: null,
         plays: '2 plays',
         playCount: 2,
@@ -123,7 +123,7 @@ describe('trackRows', () => {
       },
       {
         key: 'deleted-2',
-        label: 'Deleted track',
+        label: 'Deleted Track',
         coverImageId: null,
         plays: '1 play',
         playCount: 1,
@@ -158,7 +158,7 @@ describe('periodLabel', () => {
       'Since 22 Aug 2026 · Europe/Berlin',
     );
     expect(periodLabel({ ...base, range: 'all', from: null, rangePredatesCollection: false })).toBe(
-      'All time · Europe/Berlin',
+      'All Time · Europe/Berlin',
     );
   });
 

@@ -568,7 +568,7 @@ describe.skipIf(skip)('the Assistant asked to create, rename or pin a Playlist',
   });
 });
 
-describe.skipIf(skip)('the Assistant asked to switch New music off', () => {
+describe.skipIf(skip)('the Assistant asked to switch New Music off', () => {
   it('switches the asker’s active Session to Repeat and sends a receipt naming it', async () => {
     const asker = await createMember('member');
     const other = await createMember('other');
@@ -584,10 +584,10 @@ describe.skipIf(skip)('the Assistant asked to switch New music off', () => {
     expect(receipts(turn)).toEqual([
       { action: 'newMusicOff', session: { id: sessionId, name: 'Rainy Window' } },
     ]);
-    expect(turn.results[0]).toMatch(/^Done: switched New music off for the Session "Rainy Window"/);
+    expect(turn.results[0]).toMatch(/^Done: switched New Music off for the Session "Rainy Window"/);
   });
 
-  it('says New music is already off, and sends no receipt', async () => {
+  it('says New Music is already off, and sends no receipt', async () => {
     const asker = await createMember('member');
     await createSession(testDb.db, { ownerUserId: asker, title: 'Loop', sessionMode: 'repeat' });
 

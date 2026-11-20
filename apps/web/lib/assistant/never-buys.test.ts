@@ -1,6 +1,6 @@
 // The Assistant has no code that can buy music or a cover. Six things can
 // spend: a new Session, a Surprise Me start, a More Like This, a Change Vibe,
-// New music on, and a new cover. Each is written by one function, called from
+// New Music on, and a new cover. Each is written by one function, called from
 // the app's own route, and the only way there from the chat is the user's
 // click on a card: a request the browser sends. This reads the Assistant's own
 // source, so a later tool that reached for one of those functions, or for a
@@ -149,7 +149,7 @@ const CREATES_A_SESSION = /\bcreateSession\b/;
 const STARTS_A_SURPRISE = /\bstartSurprise\b/;
 /** The function that gives a Session a new vibe, by the name the Change Vibe route calls it. */
 const CHANGES_THE_VIBE = /\brestyleSession\b/;
-/** The function behind New music on, by the name the duration route and the api client call it. */
+/** The function behind New Music on, by the name the duration route and the api client call it. */
 const SETS_THE_DURATION = /\bsetSessionDuration\b/;
 /**
  * What reserves and starts a paid cover attempt, by the names both regenerate
@@ -216,12 +216,12 @@ describe('the Assistant’s own code', () => {
     expect(mentioning(PANEL, REGENERATES_A_COVER)).toEqual([CARD_HOST]);
   });
 
-  it('never references the function that changes a vibe, or the one that sets New music on', () => {
+  it('never references the function that changes a vibe, or the one that sets New Music on', () => {
     expect(mentioning([...SERVER, ...PANEL], CHANGES_THE_VIBE)).toEqual([]);
     expect(mentioning([...SERVER, ...PANEL], SETS_THE_DURATION)).toEqual([]);
   });
 
-  it('writes a Session’s mode in one place, and only to switch New music off', () => {
+  it('writes a Session’s mode in one place, and only to switch New Music off', () => {
     const writers = mentioning([...SERVER, ...PANEL], SWITCHES_THE_MODE);
 
     expect(writers).toEqual([join('lib/assistant', 'new-music-off-tool.ts')]);

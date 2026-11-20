@@ -1,7 +1,7 @@
 ---
-title: Help for members
+title: Help for Members
 description: You have an account on a Liedmotif that someone else runs. How to get in, what your budget means, what stays private, and what to do when something fails.
-checkedOn: 2026-11-19
+checkedOn: 2026-11-20
 howTo: true
 ---
 
@@ -22,7 +22,7 @@ Never tell me to click through a certificate warning. Never ask me for a link fr
 
 > **Keep your admin's links private.** Each one works once, for you. Never post them in a group chat, an AI chat or a screenshot.
 
-## What you need
+## What You Need
 
 - **A phone or a computer.** An iPhone, an Android phone or a computer all work.
 - **The invite link** from your admin, which creates your account. If their Liedmotif sends email, it comes by mail instead of in a message.
@@ -41,7 +41,7 @@ For an address ending in `.ts.net`, you need two more things:
 
 In every example, `https://liedmotif.tail1234.ts.net` stands for the address of the Liedmotif you're joining. Your invite link starts with the real one.
 
-### Is this safe for me?
+### Is This Safe for Me?
 
 It's a fair question, so here's exactly what happens:
 
@@ -50,7 +50,7 @@ It's a fair question, so here's exactly what happens:
 - **Your admin's box can't connect to your phone or your other devices.**
 - **Your admin sees the email address and picture** of the Tailscale account you accept the share with.
 
-## 1. Install Tailscale and sign in
+## 1. Install Tailscale and Sign In
 
 This step and the next are only for an address ending in `.ts.net`. With any other address, go to [step 3](#3-create-your-liedmotif-account).
 
@@ -68,7 +68,7 @@ The first sign-in creates your own free Tailscale network, which is just your de
 
 **You should now see** Tailscale switched on, with your own device in its list of devices.
 
-## 2. Accept the share
+## 2. Accept the Share
 
 1. Open the share link from your admin. Any browser works, and using the same device is easiest.
 2. Sign in with **the same account** you used in step 1.
@@ -76,7 +76,7 @@ The first sign-in creates your own free Tailscale network, which is just your de
 
 **You should now see** your admin's machine in the Tailscale app's list of devices, next to your own. Its name is the first part of the Liedmotif address: `liedmotif` in `liedmotif.tail1234.ts.net`.
 
-## 3. Create your Liedmotif account
+## 3. Create Your Liedmotif Account
 
 1. If the address ends in `.ts.net`, check that Tailscale is switched on.
 2. Open the invite link from your admin. It looks like `https://liedmotif.tail1234.ts.net/join/…`.
@@ -85,17 +85,17 @@ The first sign-in creates your own free Tailscale network, which is just your de
    - **Email:** what you sign in with. It can be any address you use. Liedmotif only sends you email if your admin has turned that on;
    - **Password:** at least 12 characters, with a number, an uppercase letter and a special character. The list under the field ticks off each one;
    - **Confirm password:** the same password again.
-4. Press **Create my account**. Save the email and password in your password manager, or somewhere else safe.
+4. Press **Create My Account**. Save the email and password in your password manager, or somewhere else safe.
 5. A short first-time setup follows:
-   - **Welcome. What should we call you?** Fill in your **First name**. The rest is optional, including a **Short description** (up to 80 characters) for your profile card in the lounge. Press **Continue**.
-   - **Put people on your Covers** is optional, so you can skip it for now. Press **Continue**.
-   - **You're on the air!** shows the budget your admin gave you, which is how much new music you can make. Press **Start your first Session**.
+   - **Welcome. What Should We Call You?** Fill in your **First name**. The rest is optional, including a **Short description** (up to 80 characters) for your profile card in the Lounge. Press **Continue**.
+   - **Put People on Your Covers** is optional, so you can skip it for now. Press **Continue**.
+   - **You're on the Air!** shows the budget your admin gave you, which is how much new music you can make. Press **Start Your First Session**.
 
 If the **Email** field is already filled in and greyed out, your admin sent the invite by email, and that address is your sign-in.
 
 **You should now see** Liedmotif's home screen, with no certificate warning: the browser shows the normal padlock (or nothing at all) next to the address. Describe what the music is for and start a session. The first track can take a few minutes, and the player tells you what's happening.
 
-## 4. Add Liedmotif to your home screen
+## 4. Add Liedmotif to Your Home Screen
 
 This makes Liedmotif one tap away, like any other app. With Liedmotif open:
 
@@ -105,22 +105,22 @@ This makes Liedmotif one tap away, like any other app. With Liedmotif open:
 | Android (Chrome) | Tap **⋮** (More) to the right of the address bar, then **Install and create shortcut**, then **Install**. Older Chrome versions call it **Add to Home screen**. |
 | Computer | Bookmark the page. |
 
-**You should now see** a Liedmotif icon on your home screen. Tapping it opens Liedmotif like an app. If it asks you to sign in (**Welcome back**), use your email and password and press **Sign in**.
+**You should now see** a Liedmotif icon on your home screen. Tapping it opens Liedmotif like an app. If it asks you to sign in (**Welcome Back**), use your email and password and press **Sign In**.
 
 That's it. You're in.
 
-## Every time you listen
+## Every Time You Listen
 
 1. If the address ends in `.ts.net`, make sure Tailscale is switched on. You can leave it on all the time.
 2. Tap the Liedmotif icon.
 
 A box at your admin's home has to be on as well. If it's off, Liedmotif won't load until they switch it back on.
 
-## Your budget
+## Your Budget
 
-Your admin pays the providers for every new track and cover you make, so your account comes with a budget. **Settings › My budget** shows what's left. You can read it, and only your admin can change it.
+Your admin pays the providers for every new track and cover you make, so your account comes with a budget. **Settings › My Budget** shows what's left. You can read it, and only your admin can change it.
 
-| | **One-time** | **Rolling** |
+| | **One-Time** | **Rolling** |
 | --- | --- | --- |
 | What it is | One total, used at your own pace | Caps per day and per calendar month |
 | When it renews | Never. Your admin raises the number to top it up | Daily at midnight and monthly on the 1st, in the instance's timezone |
@@ -129,19 +129,19 @@ All members together also share a second budget, and a new track or cover has to
 
 **When a budget runs out,** a session that's playing doesn't stop. It repeats the tracks it already has, and the player tells you which budget ran out. Everything you already made keeps playing: your library, your playlists and anything you kept offline. New tracks come back when the day or month rolls over, or, on a one-time budget, when your admin raises the total.
 
-Starting a new session needs a few tracks left in both budgets: 5, unless your admin set another number. Below that, you see **Not enough Tracks left to start**, with what a new session needs, what is left and when more come back. If your budget is smaller than what a session needs, waiting won't help, and the message tells you to ask your admin. You can still resume a session or play your library. [Costs and limits](/docs/costs-and-limits#when-a-limit-is-reached) lists each message you might see.
+Starting a new session needs a few tracks left in both budgets: 5, unless your admin set another number. Below that, you see **Not Enough Tracks Left to Start**, with what a new session needs, what is left and when more come back. If your budget is smaller than what a session needs, waiting won't help, and the message tells you to ask your admin. You can still resume a session or play your library. [Costs and limits](/docs/costs-and-limits#when-a-limit-is-reached) lists each message you might see.
 
-## What's yours here
+## What's Yours Here
 
 - **Your own music.** Sessions, tracks, playlists, Favorites, covers and People are yours, and you can download your own tracks. [Features](/docs/features) covers everything the app can do.
-- **The lounge.** It's where people on this Liedmotif share playlists with each other. You choose what you share and with whom. [The lounge](/docs/members#the-lounge) explains it.
+- **The Lounge.** It's where people on this Liedmotif share playlists with each other. You choose what you share and with whom. [The Lounge](/docs/members#the-lounge) explains it.
 - **Not the admin's side.** Provider keys, cost limits, backups and other members belong to your admin, so those screens are left out of your app. You can change your password, but not your sign-in email.
 
-## Common problems
+## Common Problems
 
 None of these mean you did anything wrong. Most take a moment to fix.
 
-### Liedmotif does not load
+### Liedmotif Does Not Load
 
 The browser says the site can't be reached, can't find the server, or keeps loading. With an address that doesn't end in `.ts.net`, check your own internet connection, then ask your admin whether their Liedmotif is running. With a `.ts.net` address, check these in order:
 
@@ -152,11 +152,11 @@ The browser says the site can't be reached, can't find the server, or keeps load
 5. **The machine is in your list, but the address still doesn't open.** If your Tailscale account is older than October 2022, a setting called MagicDNS may be off in it. Open the **DNS** page of your Tailscale admin console, [console.tailscale.com/admin/dns](https://console.tailscale.com/admin/dns), and press **Enable MagicDNS**.
 6. **None of these.** Your admin's box may be off, or they took the share back. Ask them.
 
-### You can't accept the share
+### You Can't Accept the Share
 
 Only the person who manages a Tailscale network can accept a share. If you signed in with a work account and your employer uses Tailscale, you joined their network instead of making your own. Sign out of Tailscale, sign in again with a personal account, and open the share link again.
 
-### The invite link
+### The Invite Link
 
 | What it says | What to do |
 | --- | --- |
@@ -167,11 +167,11 @@ Only the person who manages a Tailscale network can accept a share. If you signe
 | `That email is already in use. Pick another.` | Someone on this Liedmotif already signs in with that address. Use a different one. |
 | `Someone already signs in with this invite's address. Ask your admin for a new invite.` | Your invite came by email for an address someone else now signs in with. You can't change it on this form, so ask your admin for a new invite. |
 
-### Anything else
+### Anything Else
 
 - **A certificate warning,** such as "Your connection is not private". You opened an address like `100.x.y.z` instead of the name ending in `.ts.net`. Never continue past the warning. Open the invite link or your Liedmotif icon instead.
 - **`This account is disabled`.** Your admin turned your account off. Your music is kept, so ask them to turn it back on. Music you kept offline on this device stays and keeps playing in the Offline Library; to free that space, clear this site's data in your browser.
-- **You forgot your password.** Ask your admin: they can make you a password reset link. If **Forgot password?** appears on the sign-in page, try that first. It mails you a link if your email is confirmed.
+- **You forgot your password.** Ask your admin: they can make you a password reset link. If **Forgot Password?** appears on the sign-in page, try that first. It mails you a link if your email is confirmed.
 - **Your music stops changing and starts to repeat.** A budget has probably run out. See [your budget](#your-budget).
 
 ## Sources
@@ -185,4 +185,4 @@ We checked these on 3 November 2026:
 - [Apple: Turn a website into an app in Safari on iPhone](https://support.apple.com/guide/iphone/open-as-web-app-iphea86e5236/ios)
 - [Google: Use web apps in Chrome on Android](https://support.google.com/chrome/answer/9658361?hl=en&co=GENIE.Platform%3DAndroid)
 
-Your admin's side of this is in [Members, invites and the lounge](/docs/members) and, for a box at home, [Share a home server with a friend](/docs/share-with-a-friend).
+Your admin's side of this is in [Members, invites and the Lounge](/docs/members) and, for a box at home, [Share a home server with a friend](/docs/share-with-a-friend).

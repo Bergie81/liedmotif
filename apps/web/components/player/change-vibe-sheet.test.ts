@@ -31,7 +31,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const HINT_TEXT = /Settings → My voice/;
+const HINT_TEXT = /Settings → My Voice/;
 const noop = () => {};
 
 const VOCAL_VIBE: SessionVibe = {
@@ -180,7 +180,7 @@ describe('ChangeVibeSheet preselection', () => {
     const pressed = (name: string) =>
       within(dialog).getByRole('button', { name }).getAttribute('aria-pressed');
     expect(pressed('Vocals')).toBe('true');
-    expect(pressed('My voice')).toBe('true');
+    expect(pressed('My Voice')).toBe('true');
 
     act(() => within(dialog).getByRole('button', { name: 'High' }).click());
     act(() => within(dialog).getByRole('button', { name: 'Change Vibe' }).click());

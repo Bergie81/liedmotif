@@ -74,7 +74,7 @@ function SortableMemberRow({ item, onPlay }: { item: PlaylistMemberItem; onPlay:
       grip={
         <button
           type="button"
-          aria-label={`Drag to reorder ${item.title ?? 'Untitled Track'}`}
+          aria-label={`Drag to Reorder ${item.title ?? 'Untitled Track'}`}
           {...attributes}
           {...listeners}
           className="grid h-10 cursor-grab touch-none place-items-center text-dim active:cursor-grabbing"

@@ -1,4 +1,4 @@
-// Writing a Session's mode (server-only): the one path the New music control
+// Writing a Session's mode (server-only): the one path the New Music control
 // and the Assistant share, so a switch takes effect the same way from both.
 
 import { setSessionMode, type Database, type SessionRecord } from '@liedmotif/db';

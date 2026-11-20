@@ -35,7 +35,7 @@ export const VOICE_CONSENT_VERSION = 'v1';
 export const OWN_VOICE_UNSUPPORTED_MESSAGE =
   'The configured music provider or model cannot sing with your voice — check the music model in Settings.';
 export const OWN_VOICE_NOT_READY_MESSAGE =
-  'Your voice profile is not ready yet — finish setting it up in Settings → My voice.';
+  'Your voice profile is not ready yet — finish setting it up in Settings → My Voice.';
 export const OWN_VOICE_NOT_OFFERED_MESSAGE =
   'Singing with your own voice is not available on this account.';
 

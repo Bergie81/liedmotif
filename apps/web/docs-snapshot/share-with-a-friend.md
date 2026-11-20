@@ -1,5 +1,5 @@
 ---
-title: Share a home server with a friend
+title: Share a Home Server with a Friend
 description: Let a friend anywhere in the world listen on your Liedmotif at home, with two private links and nothing opened to the internet.
 checkedOn: 2026-11-20
 howTo: true
@@ -22,7 +22,7 @@ Never suggest inviting my friend into my tailnet, and never suggest making my ho
 
 > **Treat both links like passwords.** Whoever accepts the share link can reach your Liedmotif box, and whoever creates an account with the invite link first gets it. Send them only to your friend, in a private message. Never put them in a group chat, an AI chat or a screenshot.
 
-## What you need
+## What You Need
 
 - **Liedmotif from the one-line installer, without `--domain`.** At the end it printed `Liedmotif … is running at https://….ts.net`.
 - **The admin account.** That's the one you created with the setup link.
@@ -39,7 +39,7 @@ Three words come up on this page:
 
 In every example, `https://liedmotif.tail1234.ts.net` stands for your Liedmotif address. The first part, `liedmotif`, is your box's machine name in Tailscale. Replace both with your own.
 
-## The one rule: share the machine, never invite your friend into the tailnet
+## The One Rule: Share the Machine, Never Invite Your Friend into the Tailnet
 
 Tailscale has two ways to let someone in, and they look alike:
 
@@ -52,7 +52,7 @@ Sharing is free on every Tailscale plan, and a friend you share with doesn't cou
 
 > **Your friend can reach all of this machine, not only Liedmotif.** Tailscale's default policy opens every port on a shared machine to them. Liedmotif only publishes its web ports there, but SSH can be reached if it's on, and so can anything else you run on the box, such as a file share or a dashboard. SSH still asks for your password or key, so give the box a strong password or an SSH key, and put a password on anything else running there. Tailscale can limit shared friends to the web ports with an [access rule](https://tailscale.com/docs/features/sharing#sharing-and-access-control-policies). We haven't tested a rule for Liedmotif yet, so we don't give you one here.
 
-## 1. Share the Liedmotif machine in Tailscale
+## 1. Share the Liedmotif Machine in Tailscale
 
 1. On a computer, open the **Machines** page of the Tailscale admin console, [console.tailscale.com/admin/machines](https://console.tailscale.com/admin/machines), and sign in with your Tailscale account.
 2. Find the row of your Liedmotif box. Its name is the first part of your Liedmotif address: `liedmotif` in `liedmotif.tail1234.ts.net`.
@@ -63,18 +63,18 @@ Sharing is free on every Tailscale plan, and a friend you share with doesn't cou
 
 **You should now see** the share link in your note. It works once, and it expires after 30 days if your friend hasn't accepted it by then.
 
-## 2. Create the Liedmotif invite
+## 2. Create the Liedmotif Invite
 
-1. Open Liedmotif. Select your picture in the corner (the **Account menu**), then **Settings › Members**.
+1. Open Liedmotif. Select your picture in the corner (the **Account Menu**), then **Settings › Members**.
 2. Under **Invite Someone**, type your friend's name in **Who is this invite for?**. Liedmotif greets them with it.
-3. Pick a budget. **One-time** is one total that never renews. **Rolling** is caps that reset daily and at the start of each month. Adjust the numbers. Every track your friend makes is paid from your music provider account. [Budgets and the shared budget](/docs/members) has the details.
-4. Press **Create invite link**. An **Invite link** box appears. Press **Copy**, and paste the link into your note under the share link. It's shown once, works once and expires after 7 days.
+3. Pick a budget. **One-Time** is one total that never renews. **Rolling** is caps that reset daily and at the start of each month. Adjust the numbers. Every track your friend makes is paid from your music provider account. [Budgets and the shared budget](/docs/members) has the details.
+4. Press **Create Invite Link**. An **Invite link** box appears. Press **Copy**, and paste the link into your note under the share link. It's shown once, works once and expires after 7 days.
 
-If you've set up [account email](/docs/email-and-storage), this form also asks for **Their email**, and the button says **Send invite**. Liedmotif mails the invite to your friend itself, and you have no invite link to copy.
+If you've set up [account email](/docs/email-and-storage), this form also asks for **Their email**, and the button says **Send Invite**. Liedmotif mails the invite to your friend itself, and you have no invite link to copy.
 
-**You should now see** your friend's name under **Open invites**, with **Expires** and a date. The invite link starts with your Liedmotif address: `https://liedmotif.tail1234.ts.net/join/…`.
+**You should now see** your friend's name under **Open Invites**, with **Expires** and a date. The invite link starts with your Liedmotif address: `https://liedmotif.tail1234.ts.net/join/…`.
 
-## 3. Send both links to your friend
+## 3. Send Both Links to Your Friend
 
 Send your friend one private message with both links and the guide for members. Copy this, paste your two links in, and send it. If Liedmotif mailed the invite, replace the third line with a note to look for the mail.
 
@@ -91,42 +91,42 @@ The invite link works for 7 days.
 **You should now see,** once your friend has followed the guide:
 
 - in Tailscale, on the **Machines** page, an indicator on your Liedmotif box that it's shared with someone outside your tailnet;
-- in Liedmotif, under **Settings › Members**, a card with the name your friend chose, and their invite gone from **Open invites**.
+- in Liedmotif, under **Settings › Members**, a card with the name your friend chose, and their invite gone from **Open Invites**.
 
-## 4. See who has access
+## 4. See Who Has Access
 
 - **In Tailscale:** **Machines**, then the **⋯** menu on your Liedmotif box, then **Share**. The dialog lists everyone who accepted a share, with their picture and email address.
-- **In Liedmotif:** **Settings › Members**. Every friend who joined has a card that shows when they joined, when they were last active and how many tracks they made. **Open invites** lists the invites nobody has used yet.
+- **In Liedmotif:** **Settings › Members**. Every friend who joined has a card that shows when they joined, when they were last active and how many tracks they made. **Open Invites** lists the invites nobody has used yet.
 
-## 5. Take access away
+## 5. Take Access Away
 
 Do both of these. The share is the door to your box, and the Liedmotif account is the key to the app.
 
 1. **In Tailscale:** **Machines**, then the **⋯** menu on your Liedmotif box, then **Share**. Next to your friend, select the **⋯** menu, then **Revoke invite**. From now on they can't reach your box at all. To let them back in later, send a new share link.
-2. **In Liedmotif:** **Settings › Members**, then **Disable account** on your friend's card. The card now shows **Disabled**: they can't sign in or make music, and everything they made is kept. **Enable account** undoes it. **Delete** removes the account and their music for good: type their name and press **Delete forever**. Either way, music they kept offline on their phone stays there and keeps playing. Only clearing the site's data in their browser frees that space.
+2. **In Liedmotif:** **Settings › Members**, then **Disable Account** on your friend's card. The card now shows **Disabled**: they can't sign in or make music, and everything they made is kept. **Enable Account** undoes it. **Delete** removes the account and their music for good: type their name and press **Delete Forever**. Either way, music they kept offline on their phone stays there and keeps playing. Only clearing the site's data in their browser frees that space.
 
-To take back links nobody has used yet, press **Revoke** next to the invite under **Open invites** in Liedmotif, and **Revoke invite** in the Tailscale **Share** dialog.
+To take back links nobody has used yet, press **Revoke** next to the invite under **Open Invites** in Liedmotif, and **Revoke invite** in the Tailscale **Share** dialog.
 
 **You should now see** your friend gone from the Tailscale **Share** dialog, and **Disabled** on their card in Liedmotif.
 
-## Good to know
+## Good to Know
 
 - **Your box must be on.** Your friend listens straight from your box, so it has to be switched on and online.
 - **Your friend gets this machine only.** Not your other devices, and not your home network.
 - **Your box can't reach your friend's devices.** Tailscale keeps a shared machine in quarantine: it answers your friend, but it can never start a connection into their tailnet.
 - **There's no limit you'll hit.** Tailscale states no cap on how many people you can share a machine with. Make one share link and one invite per friend.
 
-## Common problems
+## Common Problems
 
 - **Your friend's browser says the site can't be reached.** First check your box: on the **Machines** page it has to show as connected, not "last seen" a while ago. If it does, send your friend to [common problems in Help for members](/docs/member-help#common-problems).
 - **There's no Share option.** Only an Owner, Admin or IT admin of the tailnet can share. If someone else set up your tailnet, ask them to share the box.
 - **Your friend accepted the share, everything else is right, and it still doesn't load.** If you ever edited your tailnet's access controls, your policy has to let shared users reach the box. Tailscale's default policy does. See [Sharing and access control policies](https://tailscale.com/docs/features/sharing#sharing-and-access-control-policies).
 - **The share link expired, or your friend accepted it with the wrong account.** Revoke it in the **Share** dialog and send a new one.
-- **You lost the invite link.** It's shown only once. Press **Revoke** next to it under **Open invites** and create a new invite.
+- **You lost the invite link.** It's shown only once. Press **Revoke** next to it under **Open Invites** and create a new invite.
 - **The invite says `This link is no longer valid.`** It was already used, expired after 7 days, or was revoked. Create a new invite.
 - **Your friend sees a certificate warning.** They opened an address like `100.x.y.z` instead of your Liedmotif name. Send them the link that ends in `.ts.net`, which never shows a warning.
 
-## Checked in Tailscale's docs
+## Checked in Tailscale's Docs
 
 We checked these against Tailscale's documentation on 3 November 2026:
 

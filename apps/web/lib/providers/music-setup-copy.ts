@@ -5,7 +5,7 @@
 
 const MUSIC_SETUP_MESSAGES: Readonly<Record<'admin' | 'member', string>> = {
   admin: "The music key is missing or can't be read. Enter it under Settings › AI Providers.",
-  member: "Music isn't set up on this server yet. Ask the Admin to set it up.",
+  member: "Music isn't set up on this server yet. Ask the admin to set it up.",
 };
 
 export function musicSetupMessage(role: 'admin' | 'member'): string {

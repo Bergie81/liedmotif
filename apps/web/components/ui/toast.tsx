@@ -140,7 +140,7 @@ function ToastItem({ entry }: { entry: ToastEntry }) {
       {/* The standard 42 px icon button, its hit area grown by 1 px a side to
           the 44 px tap target. */}
       <ToastPrimitive.Close
-        aria-label="Close notification"
+        aria-label="Close Notification"
         className={cn(
           iconButtonClass,
           "relative shrink-0 after:absolute after:-inset-px after:content-['']",

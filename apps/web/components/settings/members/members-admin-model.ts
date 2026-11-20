@@ -57,7 +57,7 @@ export type MemberBudgetErrors = Partial<Record<MemberBudgetField, string>>;
 export const BUDGET_KIND_ORDER: readonly BudgetKind[] = ['oneTime', 'rolling'];
 
 const BUDGET_KIND_LABELS: Record<BudgetKind, string> = {
-  oneTime: 'One-time',
+  oneTime: 'One-Time',
   rolling: 'Rolling',
 };
 
@@ -271,7 +271,7 @@ export function memberMetaLine(
     member.lastActiveAt
       ? `Sign-in active ${formatShortDate(member.lastActiveAt, timeZone)}`
       : 'No active sign-in',
-    `${member.trackCount} ${member.trackCount === 1 ? 'Track' : 'Tracks'}`,
+    `${member.trackCount} ${member.trackCount === 1 ? 'track' : 'tracks'}`,
     formatBinaryBytes(member.storageBytes),
   ].join(' · ');
 }
@@ -281,10 +281,10 @@ const OVERSUBSCRIPTION_COPY: Record<
   PoolOverSubscription['field'],
   { label: string; unit: 'Tracks' | 'Covers' }
 > = {
-  dailyGenerationTasks: { label: 'daily Track budgets', unit: 'Tracks' },
-  monthlyGenerationTasks: { label: 'monthly Track budgets', unit: 'Tracks' },
-  generatedCoversPerDay: { label: 'daily Cover budgets', unit: 'Covers' },
-  generatedCoversPerMonth: { label: 'monthly Cover budgets', unit: 'Covers' },
+  dailyGenerationTasks: { label: 'daily track budgets', unit: 'Tracks' },
+  monthlyGenerationTasks: { label: 'monthly track budgets', unit: 'Tracks' },
+  generatedCoversPerDay: { label: 'daily cover budgets', unit: 'Covers' },
+  generatedCoversPerMonth: { label: 'monthly cover budgets', unit: 'Covers' },
 };
 
 /** One warning sentence, in Tracks/Covers. Over-subscription is allowed — first come, first served. */
@@ -295,7 +295,7 @@ export function overSubscriptionMessage(
   const { label, unit } = OVERSUBSCRIPTION_COPY[warning.field];
   const display = (stored: number) =>
     unit === 'Tracks' ? providerTasksToTracks(stored, tracksPerCall) : stored;
-  return `Members' ${label} add up to ${display(warning.membersTotal)} ${unit}; the shared pool allows ${display(warning.poolCap)}. That is fine — the pool is first come, first served.`;
+  return `Members' ${label} add up to ${display(warning.membersTotal)} ${unit.toLowerCase()}; the shared pool allows ${display(warning.poolCap)}. That is fine — the pool is first come, first served.`;
 }
 
 /**
@@ -304,7 +304,7 @@ export function overSubscriptionMessage(
  */
 const RESET_FALLBACK_LINES: Record<MemberResetFallbackReason, string | null> = {
   email_off: null,
-  unconfirmed: "This Member hasn't confirmed their email, so copy the link and send it yourself.",
+  unconfirmed: "This member hasn't confirmed their email, so copy the link and send it yourself.",
   disabled: 'This account is disabled, so no mail went out. Copy the link and send it yourself.',
   send_failed: 'The reset mail could not be sent, so copy the link and send it yourself.',
 };

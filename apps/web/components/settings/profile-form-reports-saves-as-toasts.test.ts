@@ -44,7 +44,7 @@ function renderForm(emailConfirmed: boolean | null = null) {
   render(h(ProfileForm, { initial: PROFILE, role: 'admin', emailConfirmed }));
 }
 
-const saveButton = () => screen.getByRole('button', { name: 'Save profile' }) as HTMLButtonElement;
+const saveButton = () => screen.getByRole('button', { name: 'Save Profile' }) as HTMLButtonElement;
 
 /** Waits until the one toast on screen is this one. */
 async function expectToast(tone: string, message: string) {
@@ -78,7 +78,7 @@ describe('saving the profile', () => {
 
     await expectToast(
       'warning',
-      'Profile saved, but the confirm link could not be sent. Use Send confirm link to try again.',
+      'Profile saved, but the confirm link could not be sent. Use Send Confirm Link to try again.',
     );
   });
 
@@ -110,7 +110,7 @@ describe('sending a confirm link', () => {
     serve(Response.json({ ok: true, data: {} }));
     renderForm(false);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Send confirm link' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Send Confirm Link' }));
 
     await expectToast('success', 'Confirm link sent. Open it within 24 hours.');
   });
@@ -119,7 +119,7 @@ describe('sending a confirm link', () => {
     serve(Response.json(makeApiError('rate_limited', 'Too many requests.'), { status: 429 }));
     renderForm(false);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Send confirm link' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Send Confirm Link' }));
 
     await expectToast('error', 'Too many confirm links. Wait a few minutes, then try again.');
   });

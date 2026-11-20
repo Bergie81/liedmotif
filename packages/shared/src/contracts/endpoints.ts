@@ -643,7 +643,7 @@ export const getSessionQueueResponseSchema = apiResponse(
     ...sessionDurationFields,
     sessionId: uuidSchema,
     sessionStatus: z.enum(ACTIVITY_SESSION_STATUSES),
-    // The live Session mode, so a New music change made on another device
+    // The live Session mode, so a New Music change made on another device
     // reaches this player's status with the target above.
     sessionMode: z.enum(SESSION_MODES).optional(),
     // The generation-controller state rides ALONGSIDE the two-value `sessionStatus`

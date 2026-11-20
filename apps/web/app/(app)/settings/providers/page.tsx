@@ -60,7 +60,7 @@ export default async function ProvidersPage() {
     <section>
       <SettingsPageHeader
         title="Providers"
-        description="Connect the AI services that make your music, covers and Session ideas. Your keys stay on this server."
+        description="Connect the AI services that make your music, covers and session ideas. Your keys stay on this server."
         docs={{ path: 'providers-and-keys', label: 'How providers and keys work' }}
       />
       {!data.encryptionKeyConfigured ? <CredentialStorageWarning /> : null}
@@ -114,7 +114,7 @@ export default async function ProvidersPage() {
             requirement="optional"
             source={data.llm.presentation.source}
             masked={llm?.masked}
-            description="Used once for each Session request. Without it, your words reach the music model exactly as written, with the fine-tune picks applied."
+            description="Used once for each session request. Without it, your words reach the music model exactly as written, with the fine-tune picks applied."
             environmentManaged={data.llm.presentation.source === 'Environment'}
             decryptError={llm?.decryptError}
             notice={data.llm.coverKeyNotice}
@@ -158,7 +158,7 @@ export default async function ProvidersPage() {
             requirement="optional"
             source={data.cover.source}
             masked={cover?.masked}
-            description="Generates Session and Playlist Covers. Without it, Covers come from the music provider, else the branded placeholder."
+            description="Generates session and playlist covers. Without it, covers come from the music provider, else the branded placeholder."
             environmentManaged={cover?.source === 'env'}
             decryptError={cover?.decryptError}
             accountAlert={coverAccountAlert}

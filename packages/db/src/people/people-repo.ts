@@ -28,14 +28,14 @@ export type PersonRow = typeof people.$inferSelect;
 
 export class PersonLimitError extends Error {
   constructor() {
-    super(`Each owner may configure at most ${MAX_PEOPLE_PER_OWNER} People.`);
+    super(`Each owner may configure at most ${MAX_PEOPLE_PER_OWNER} people.`);
     this.name = 'PersonLimitError';
   }
 }
 
 export class PersonNameConflictError extends Error {
   constructor() {
-    super('Each Person needs a unique name.');
+    super('Each person needs a unique name.');
     this.name = 'PersonNameConflictError';
   }
 }
@@ -53,7 +53,7 @@ function personValues(
 ): { name: string; nameMatchKey: string; about: string } {
   const normalizedName = name.normalize('NFKC').replace(/\s+/gu, ' ').trim();
   const normalizedAbout = about.trim();
-  if (!normalizedName) throw new PersonValidationError('Enter a Person name.');
+  if (!normalizedName) throw new PersonValidationError('Enter a person name.');
   if (normalizedName.length > MAX_PERSON_NAME_LENGTH) {
     throw new PersonValidationError(
       `Person names must be at most ${MAX_PERSON_NAME_LENGTH} characters.`,

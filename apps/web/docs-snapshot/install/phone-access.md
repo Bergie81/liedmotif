@@ -1,12 +1,12 @@
 ---
-title: Use Liedmotif on your phone
+title: Use Liedmotif on Your Phone
 description: How to reach your Liedmotif from a phone or tablet for each kind of install, why it needs HTTPS, and every way to get it.
-checkedOn: 2026-11-19
+checkedOn: 2026-11-20
 ---
 
 Liedmotif is a web app, so your phone needs a browser and an address, and there's no native app to find in a store. If you used the one-line installer, your phone is nearly there already. The rest of this page is for anyone who set things up by hand.
 
-## Reach it from your phone
+## Reach It from Your Phone
 
 | Where it runs | What to do on the phone | Who else can reach it |
 | --- | --- | --- |
@@ -17,13 +17,13 @@ Liedmotif is a web app, so your phone needs a browser and an address, and there'
 
 A tablet works the same way.
 
-## Why it needs HTTPS
+## Why It Needs HTTPS
 
 Browsers keep some features for pages they can trust. Such a page is called a secure context: it arrived over HTTPS with a certificate the browser accepts, or it's on the device itself as `localhost`. Your phone isn't the machine running Liedmotif, so for your phone, only HTTPS with a trusted certificate counts.
 
 Without it, you can't:
 
-- **Keep music offline.** The **Available offline** switch disappears, and **Settings › Storage** says **Offline music needs HTTPS.** If your instance has an HTTPS address, it offers **Open the secure address**.
+- **Keep music offline.** The **Available Offline** switch disappears, and **Settings › Storage** says **Offline music needs HTTPS.** If your instance has an HTTPS address, it offers **Open the Secure Address**.
 - **Add Liedmotif to your home screen** as a proper app.
 - **Rely on background playback.** Music can stop when the phone locks, and the lock-screen controls may not work.
 
@@ -31,7 +31,7 @@ Your sign-in also depends on it. Liedmotif marks its cookies as secure only when
 
 **Liedmotif has one address.** Sign-in and every save check the browser's address against `APP_PUBLIC_URL`: scheme, host and port. Setup checks host and port, so the first account is made at that address too. Anything else is refused, even when it's the same machine, so you can't use both `https://music.example.com` and a home network address for one install. Pick one and use it everywhere.
 
-## Add it to your home screen
+## Add It to Your Home Screen
 
 Once Liedmotif opens over HTTPS, you can give it its own icon. Liedmotif has no install button of its own, so you do this from your browser, and its menu wording can vary by version:
 
@@ -42,9 +42,9 @@ It then opens full-screen, without the browser's address bar, and stays in portr
 
 **On an iPhone or iPad, do this if you keep music offline.** iOS may clear a browser's stored music after a few days without use, and a home screen app keeps it. Liedmotif reminds you in **Settings › Storage**.
 
-It's still your server's app, not a copy on your phone. Every page loads from your server, so on a home server, Tailscale has to be on. With no connection at all, it opens the offline library, where you can play whatever you've marked **Available offline**. New music needs a connection.
+It's still your server's app, not a copy on your phone. Every page loads from your server, so on a home server, Tailscale has to be on. With no connection at all, it opens the Offline Library, where you can play whatever you've marked **Available Offline**. New music needs a connection.
 
-## Ways to get HTTPS on a phone
+## Ways to Get HTTPS on a Phone
 
 The one-line installer sets up the first two for you, so you only need the others for a by-hand setup.
 
@@ -56,7 +56,7 @@ The one-line installer sets up the first two for you, so you only need the other
 | [A domain with a DNS challenge](#a-domain-with-a-dns-challenge) | Your own domain on a box that keeps its ports closed | Nothing | Wherever the address reaches |
 | [A home network address with an installed certificate](#a-home-network-address-with-an-installed-certificate) | Fully local, with nothing outside your home involved | One certificate to install | Your home network |
 
-### What every by-hand setup needs
+### What Every By-Hand Setup Needs
 
 For a new instance, start with [steps 1 and 2 of the laptop guide](/docs/install/local) to get the code and your secrets, on a machine with Docker Engine 28+ and Docker Compose 2.24+ (the `docker compose` command, not `docker-compose`). If Liedmotif already runs on this machine, keep its folder and its `.env`: don't create the secrets again, and leave out the `PG_PASSWORD` and `printf` lines below, because the database keeps the password it started with.
 
@@ -127,7 +127,7 @@ docker compose up -d --build
 
 This doesn't work with Docker Desktop on a Mac, which has no Tailscale connection for Caddy to use.
 
-## Your own domain
+## Your Own Domain
 
 Point a domain at a server with ports 80 and 443 open, and Caddy gets a public certificate by itself. Phones trust it automatically. [Install on a cloud provider](/docs/install/cloud) does this for you with `--domain`, and it's the way to go on a rented server.
 
@@ -173,7 +173,7 @@ Without `originServerName`, `cloudflared` asks Caddy for a certificate for `cadd
 
 Exclude `/join/*`, `/reset/*`, `/confirm/*` and `/setup` from request logging in Cloudflare, so your one-time links don't sit in a log. Then start it with `docker compose up -d --build`.
 
-## A domain with a DNS challenge
+## A Domain with a DNS Challenge
 
 If you own a domain and your DNS provider has a Caddy plugin, Caddy can get a publicly trusted Let's Encrypt certificate without ports 80 and 443 being reachable from the internet. Phones trust it automatically.
 
@@ -183,7 +183,7 @@ If you own a domain and your DNS provider has a Caddy plugin, Caddy can get a pu
 
 If the record holds a home network address, the instance works only where that address does.
 
-## A home network address with an installed certificate
+## A Home Network Address with an Installed Certificate
 
 This is fully local, with nothing outside your home involved. The price is installing a certificate once on every device, and Liedmotif works only on your home network. The steps below are for Android, the one phone these docs cover for this path.
 

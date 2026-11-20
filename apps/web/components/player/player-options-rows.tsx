@@ -249,5 +249,5 @@ function ShippedRow({
 }
 
 function RoadmapRow({ row }: { row: OptionsRowSpec }) {
-  return <MenuRow {...rowFace(row, { kind: 'unavailable', note: 'Coming later' })} disabled />;
+  return <MenuRow {...rowFace(row, { kind: 'unavailable', note: 'Coming Later' })} disabled />;
 }

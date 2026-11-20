@@ -1,5 +1,5 @@
 ---
-title: FAQ and license
+title: FAQ and License
 description: Straight answers on costs, providers, rights, downloads, offline use, moving your install and the license.
 checkedOn: 2026-11-20
 faq: true
@@ -7,63 +7,63 @@ faq: true
 
 These are the questions that come up once the basics are clear. For the basics, such as which services you need or why you can't just sign up somewhere, start with the [home page FAQ](/#faq).
 
-## Costs and providers
+## Costs and Providers
 
-### What does it cost?
+### What Does It Cost?
 
 There's no single number, because you put the bill together yourself. Four things decide it: your music provider and its price, how many new tracks you make, your text AI (none, a hosted one, or a local one with Ollama), and your covers (generated, or the free ones). Playing a track you already have costs nothing, however often you play it. A rented server, if you go that way, is a separate bill. Today there's one kind of music provider to choose, a Suno-compatible one. [Costs and limits](/docs/costs-and-limits) shows how to keep it all in check.
 
-### Can I use another music provider?
+### Can I Use Another Music Provider?
 
 Not yet. Liedmotif works with one kind of music provider today: a Suno-compatible service, sunoapi.org by default. `SUNO_BASE_URL` in `.env` can point it at another service with the same API, but nothing else is supported. You do get a choice of text AI, of image provider for covers (OpenAI, Gemini or OpenRouter) and of storage. See [Providers and keys](/docs/providers-and-keys).
 
-### Can I run music generation on my own hardware?
+### Can I Run Music Generation on My Own Hardware?
 
 Not yet. That's the goal once local models sound good enough, but nothing is built, so every new track needs a music provider and an internet connection. Your text AI can already run locally, with Ollama on the same machine, and the free covers need no extra service.
 
-## Your music
+## Your Music
 
-### Who owns the music I make, and can I publish it?
+### Who Owns the Music I Make, and Can I Publish It?
 
 That depends on your music provider and your plan with it, not on Liedmotif. Liedmotif's license covers the app, not your tracks, and Liedmotif gives no guarantee that a track is free of other people's rights or safe to publish. Before you publish, sell or upload a track, read the terms of the service you pay, and of the company behind the model if that's a different one. **Track Data** on a track shows which provider and model made it.
 
-### Can I make music that sounds like a named artist?
+### Can I Make Music That Sounds Like a Named Artist?
 
 No, Liedmotif doesn't offer that. Describe what the music is for instead: moods, moments, genres, sounds. If you name one anyway, a text AI turns the name into a description of the sound. Without a text AI, your words go to your music provider as typed, its rules decide what it accepts, and some providers refuse a request that names an artist.
 
-### Can I use Liedmotif commercially?
+### Can I Use Liedmotif Commercially?
 
 Not without permission. Liedmotif is free for non-commercial use only, so running it for a business or charging people for access needs separate terms. Write to [liedmotif@gmail.com](mailto:liedmotif@gmail.com). The music is a separate matter: what you may do with it commercially depends on your provider and your plan.
 
-### What happens to my music if I stop paying the provider?
+### What Happens to My Music If I Stop Paying the Provider?
 
-It stays, and it keeps playing. Liedmotif fetches every finished track to your own instance, so your sessions, playlists, downloads and the lounge don't rely on your provider account. From then on, your music is only as safe as your own machine, so keep [backups](/docs/backups).
+It stays, and it keeps playing. Liedmotif fetches every finished track to your own instance, so your sessions, playlists, downloads and the Lounge don't rely on your provider account. From then on, your music is only as safe as your own machine, so keep [backups](/docs/backups).
 
 What stops is new music. A running session shows **Generation paused** and plays its ready tracks until the provider has credits again, and a new session has nothing to play until then. This hits everyone on your instance, because members use your keys.
 
 The optional services fail gently or clearly. A cover that can't be made leaves the session with the cover it has. A text AI that stops answering gives you an error you can retry when you start a session or use **Change Vibe**, until you top it up or press **Disable Text AI** in **Settings › AI Providers**. If `.env` configures it, remove those lines too. Lyrics timing is fetched from your music provider the first time someone opens a vocal track's lyrics, so a track nobody opened yet shows plain lyrics instead of synced ones.
 
-### Can I download my music?
+### Can I Download My Music?
 
 Yes. **Download Track** gives you a finished track as an MP3. **Download Session** and **Download Playlist** give you a ZIP of MP3s, numbered in play order. A ZIP holds up to 500 tracks, so a longer session or playlist stops there. Each MP3 carries its title, artist name, cover, lyrics and generation details, so it stays recognizable in any other player.
 
-Only your own finished tracks are included. A track still in progress, a track you disliked and a track someone shared with you in the lounge are left out. There's no button for your whole library at once. A [backup](/docs/backups) holds the whole instance, but only the admin can download one and it opens only with the passphrase from `.env`, so it isn't a way to export your music.
+Only your own finished tracks are included. A track still in progress, a track you disliked and a track someone shared with you in the Lounge are left out. There's no button for your whole library at once. A [backup](/docs/backups) holds the whole instance, but only the admin can download one and it opens only with the passphrase from `.env`, so it isn't a way to export your music.
 
-## Using it
+## Using It
 
-### Do I have to type my own name to be in my songs?
+### Do I Have to Type My Own Name to Be in My Songs?
 
 No. With a text LLM, your **About you** shapes the lyrics of every vocal session, and a request that puts you in the scene names you in the lyrics and puts you on the cover. It goes by what you mean: "With Jonas and Clara on the way back to Berlin" includes you, and so does "Auf dem Weg mit Jonas und Clara nach Berlin". Other people need their saved name. [You in your own songs](/docs/features#you-in-your-own-songs) has examples, and **Run Without My Profile Details** on **Home** leaves you out of one session.
 
-### Does it work offline?
+### Does It Work Offline?
 
 Listening does, making music doesn't. New tracks need your instance to reach your provider over the internet.
 
-To listen without a signal, open the options menu of a playlist or session while you're online and turn on **Available offline**. This device then keeps its tracks. The download only runs while the app is open, so keep it open until the menu says **Ready offline**. With no connection, Liedmotif opens the **Offline Library** and plays them in the normal player. It's listen-only, so you can't make, save or edit anything there.
+To listen without a signal, open the options menu of a playlist or session while you're online and turn on **Available Offline**. This device then keeps its tracks. The download only runs while the app is open, so keep it open until the menu says **Ready offline**. With no connection, Liedmotif opens the **Offline Library** and plays them in the normal player. It's listen-only, so you can't make, save or edit anything there.
 
-The mark is per device, needs HTTPS or `localhost`, and holds up to 5 GB by default. [Available offline](/docs/features#available-offline) has every limit, including what iPhones need.
+The mark is per device, needs HTTPS or `localhost`, and holds up to 5 GB by default. [Available Offline](/docs/features#available-offline) has every limit, including what iPhones need.
 
-### Which browsers and devices does it work on?
+### Which Browsers and Devices Does It Work On?
 
 Liedmotif is a web app, so it runs in a browser on your phone, tablet or computer, and there's no native app to install. Phones get bottom navigation, and wide screens get a sidebar. On a phone, you can add it to your home screen to open it like an app.
 
@@ -71,7 +71,7 @@ Chrome on Android is the first target for phone testing, and there's no official
 
 A phone needs an HTTPS address to get the most out of it. [Phone access](/docs/install/phone-access) shows the ways to set that up.
 
-### How many people can share one instance?
+### How Many People Can Share One Instance?
 
 One admin, and as many members as you invite: the app sets no fixed number. What limits you is money, disk space and how many listen at once.
 
@@ -79,9 +79,9 @@ One admin, and as many members as you invite: the app sets no fixed number. What
 - **Disk.** A track takes about 5 MB, and the instance has a storage quota of 10 GiB by default. At the quota, sessions stop making new tracks until you raise it or delete tracks.
 - **Server.** The app's hosting notes size a server with 2 cores and 4 GB of RAM for you plus up to ten members, and the disk fills up before the memory does. Members' tracks are made a few at a time, so when many people listen at once, new ones can take longer.
 
-Everyone has their own one running session. See [Members, invites and the lounge](/docs/members).
+Everyone has their own one running session. See [Members, invites and the Lounge](/docs/members).
 
-### Can I move to a different install later?
+### Can I Move to a Different Install Later?
 
 Yes. A backup carries your whole instance: accounts, sessions, playlists, history and, when the backup includes them, music and covers. Download one from **Settings › Backups**, install Liedmotif in the new place, then restore it there with one command. [Backups and restore](/docs/backups) has the steps.
 

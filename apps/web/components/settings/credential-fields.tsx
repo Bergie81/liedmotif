@@ -50,7 +50,7 @@ export function ProviderChoice({
         ))}
       </div>
       {picker.moreOptionsHidden && !locked ? (
-        <TextAction onClick={() => setMoreOptionsOpened(true)}>More options</TextAction>
+        <TextAction onClick={() => setMoreOptionsOpened(true)}>More Options</TextAction>
       ) : null}
     </div>
   );
@@ -88,7 +88,7 @@ export function SecretField({
         <div className="flex flex-wrap items-center justify-between gap-2 text-[13.5px] font-normal text-muted">
           <span>Uses your {vendor} key</span>
           <TextAction disabled={editor.operationPending} onClick={() => editor.shareKey(false)}>
-            Use a separate key
+            Use a Separate Key
           </TextAction>
         </div>
       </div>
@@ -113,7 +113,7 @@ export function SecretField({
       </label>
       {editor.canShareKey ? (
         <TextAction disabled={editor.operationPending} onClick={() => editor.shareKey(true)}>
-          Use the same {vendor} key
+          Use the Same {vendor} Key
         </TextAction>
       ) : null}
     </div>

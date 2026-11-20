@@ -66,7 +66,7 @@ describe('trackCeilingPatch', () => {
   it('names the multiple a figure has to be, rather than refusing blankly', () => {
     expect(trackCeilingPatch({ ...ceiling, dailyTracks: '51' }, 2)).toEqual({
       ok: false,
-      error: 'Enter a multiple of 2 Tracks.',
+      error: 'Enter a multiple of 2 tracks.',
     });
   });
 
@@ -184,7 +184,7 @@ describe('cover budget', () => {
   it('refuses a ceiling that is not a whole count', () => {
     expect(coverBudgetPatch({ ...budget, coversPerMonth: '' })).toEqual({
       ok: false,
-      error: 'Enter a whole number of Covers (0 or more).',
+      error: 'Enter a whole number of covers (0 or more).',
     });
   });
 });

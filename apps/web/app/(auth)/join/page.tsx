@@ -10,7 +10,7 @@ export default function JoinWithoutTokenPage() {
   return (
     <OneShotLinkPage basePath={JOIN_BASE_PATH}>
       <p className={eyebrowClass}>Invite</p>
-      <h1 className={`${displayHeadingClass} mt-3`}>Open your invite link again</h1>
+      <h1 className={`${displayHeadingClass} mt-3`}>Open Your Invite Link Again</h1>
       <p className="mt-3 text-[14px] leading-relaxed text-muted">
         Your invite is not used yet. The link you were sent still works.
       </p>

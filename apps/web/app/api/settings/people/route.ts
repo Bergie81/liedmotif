@@ -67,7 +67,7 @@ export async function POST(request: Request) {
 
   const name = boundedText(body.name, MAX_PERSON_NAME_LENGTH);
   const about = boundedText(body.about ?? '', MAX_PERSON_ABOUT_LENGTH);
-  if (!name) return error('Enter a Person name.', 400);
+  if (!name) return error('Enter a person name.', 400);
   if (about === null) {
     return error(`About must be at most ${MAX_PERSON_ABOUT_LENGTH} characters.`, 400);
   }

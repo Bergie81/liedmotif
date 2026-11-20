@@ -103,7 +103,7 @@ export function LimitsForm({
       disabled={saving}
       className={`${primaryButtonClass} mt-4 w-full`}
     >
-      {saving ? 'Saving…' : 'Save limits'}
+      {saving ? 'Saving…' : 'Save Limits'}
     </button>
   );
 
@@ -121,14 +121,14 @@ export function LimitsForm({
             />
           </SettingsControlRow>
           <SettingsControlRow
-            label="Limit my Tracks"
+            label="Limit my tracks"
             description="Caps your own generation per day and month · Members keep their own budget"
           >
             <Switch
               checked={values.trackCeilingEnabled}
               onCheckedChange={(checked) => change('trackCeilingEnabled', checked)}
               disabled={saving}
-              aria-label="Limit my Tracks"
+              aria-label="Limit my tracks"
             />
           </SettingsControlRow>
           <LimitStepperRow
@@ -167,8 +167,8 @@ export function LimitsForm({
             onStep={step}
           />
           <LimitStepperRow
-            label="Max queued Tracks"
-            description="Ready-ahead ceiling per Session"
+            label="Max queued tracks"
+            description="Ready-ahead ceiling per session"
             value={`${values.maxQueuedTracks} trk`}
             field="maxQueuedTracks"
             tracksPerRequest={tracksPerRequest}
@@ -192,7 +192,7 @@ export function LimitsForm({
           />
           <LimitStepperRow
             label="Idle auto-stop"
-            description="A paused Session stops generating after this long"
+            description="A paused session stops generating after this long"
             value={`${values.idleAutoStopAfterMinutes} min`}
             field="idleAutoStopAfterMinutes"
             tracksPerRequest={tracksPerRequest}
@@ -215,7 +215,7 @@ export function LimitsForm({
           />
           <SettingsControlRow
             label="Pause all new music"
-            description="Stops all music generation, including a new Session's first Tracks"
+            description="Stops all music generation, including a new session's first tracks"
           >
             <Switch
               checked={values.manualGenerationOnly}
@@ -225,7 +225,7 @@ export function LimitsForm({
             />
           </SettingsControlRow>
           <SettingsFootnote>
-            A Session that reaches a limit repeats its own Tracks instead of stopping. Zero is a
+            A session that reaches a limit repeats its own tracks instead of stopping. Zero is a
             valid limit and deliberately blocks that kind of generation.
           </SettingsFootnote>
         </SettingsCard>
@@ -236,7 +236,7 @@ export function LimitsForm({
         <SettingsCard>
           <SettingsControlRow
             label="Generate Tailored Cover Art"
-            description="Needs an image provider; off, Covers come from Suno instead — drawn from the music alone, without the chosen Cover style"
+            description="Needs an image provider; off, covers come from Suno instead — drawn from the music alone, without the chosen cover style"
           >
             <Switch
               checked={values.tailoredCoverArtEnabled}
@@ -246,14 +246,14 @@ export function LimitsForm({
             />
           </SettingsControlRow>
           <SettingsControlRow
-            label="Limit my Covers"
-            description="Caps your own Covers per day and month · Members keep their own budget"
+            label="Limit my covers"
+            description="Caps your own covers per day and month · Members keep their own budget"
           >
             <Switch
               checked={values.coverCeilingEnabled}
               onCheckedChange={(checked) => change('coverCeilingEnabled', checked)}
               disabled={saving}
-              aria-label="Limit my Covers"
+              aria-label="Limit my covers"
             />
           </SettingsControlRow>
           <LimitStepperRow
@@ -279,7 +279,7 @@ export function LimitsForm({
             onStep={step}
           />
           <SettingsFootnote>
-            These ceilings cap every generated Cover, including the Suno Covers a Session gets with
+            These ceilings cap every generated cover, including the Suno covers a session gets with
             Tailored Cover Art off.
           </SettingsFootnote>
         </SettingsCard>

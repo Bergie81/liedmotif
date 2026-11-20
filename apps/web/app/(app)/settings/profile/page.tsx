@@ -29,7 +29,7 @@ export default async function ProfileSettingsPage() {
     <section>
       <SettingsPageHeader
         title="Profile"
-        description="Your account and listener details. City and country give your Sessions a sense of place."
+        description="Your account and listener details. City and country give your sessions a sense of place."
       />
       <SettingsColumns>
         <SettingsSection title="Identity">
@@ -57,7 +57,7 @@ export default async function ProfileSettingsPage() {
               <SettingsRow
                 href="/settings/members"
                 icon={<UsersRound />}
-                label="Invite members"
+                label="Invite Members"
                 summary={{ text: 'Invites, budgets, access' }}
               />
             ) : null}

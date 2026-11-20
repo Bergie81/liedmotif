@@ -131,7 +131,7 @@ export function NowPlaying({
   const router = useRouter();
   playerRef.current = player;
   // Target edits return the policy immediately; queue polls supply live accounting.
-  // The New music policy follows whichever moved last: this player's own edit
+  // The New Music policy follows whichever moved last: this player's own edit
   // (the summary) or a poll reporting a change made on another device.
   const [newMusicPolicy, setNewMusicPolicy] = useState(() => ({
     sessionMode: session.sessionMode,
@@ -346,7 +346,7 @@ export function NowPlaying({
         showPlayerError(
           session.id,
           'delete-session',
-          `Delete failed — the Session is unchanged. ${stopped.error.message}`,
+          `Delete failed — the session is unchanged. ${stopped.error.message}`,
         );
         return;
       }
@@ -355,7 +355,7 @@ export function NowPlaying({
         showPlayerError(
           session.id,
           'delete-session',
-          `The Session is stopped but not deleted: ${result.error.message} It remains in Sessions.`,
+          `The session is stopped but not deleted: ${result.error.message} It remains in Sessions.`,
         );
         return;
       }
@@ -372,7 +372,7 @@ export function NowPlaying({
     clearPlayerError(session.id, 'try-again');
     const result = await tryAgainSession(session.id);
     if (!result.ok) {
-      showPlayerError(session.id, 'try-again', `Try again failed. ${result.error.message}`);
+      showPlayerError(session.id, 'try-again', `Try Again failed. ${result.error.message}`);
       return;
     }
     playerRef.current.refreshQueue();
@@ -413,7 +413,7 @@ export function NowPlaying({
 
   return (
     <section
-      aria-label="Now playing"
+      aria-label="Now Playing"
       data-testid="now-playing"
       data-session-id={session.id}
       data-player-status={player.status}
@@ -423,7 +423,7 @@ export function NowPlaying({
       className={nowPlayingLayoutClass}
     >
       <div className="min-w-0">
-        <PlayerMobileHeader title="Now Playing your Session" action={sessionOptions} />
+        <PlayerMobileHeader title="Now Playing Your Session" action={sessionOptions} />
 
         <GenerationBanner
           player={player}

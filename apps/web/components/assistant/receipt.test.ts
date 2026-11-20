@@ -43,25 +43,25 @@ describe('a receipt line', () => {
     [
       'a new Playlist',
       { action: 'createPlaylist', playlist: PLAYLIST },
-      'Created Playlist: Running',
+      'Created playlist: Running',
       { path: playlistPage(PLAYLIST.id), place: 'Running' },
     ],
     [
       'a renamed Playlist',
       { action: 'renamePlaylist', playlist: PLAYLIST, previousName: 'Jogging' },
-      'Renamed Playlist: Jogging → Running',
+      'Renamed playlist: Jogging → Running',
       { path: playlistPage(PLAYLIST.id), place: 'Running' },
     ],
     [
       'a pinned Playlist',
       { action: 'pinPlaylist', playlist: PLAYLIST },
-      'Pinned Playlist: Running',
+      'Pinned playlist: Running',
       { path: '/library', place: 'Library' },
     ],
     [
-      'New music switched off',
+      'New Music switched off',
       { action: 'newMusicOff', session: SESSION },
-      'New music off: Rainy Window',
+      'New Music off: Rainy Window',
       { path: '/player', place: 'Now Playing' },
     ],
     [
@@ -71,13 +71,13 @@ describe('a receipt line', () => {
         session: { ...SESSION, name: 'Sunday Coffee' },
         previousName: 'Rainy Window',
       },
-      'Renamed Session: Rainy Window → Sunday Coffee',
+      'Renamed session: Rainy Window → Sunday Coffee',
       { path: '/sessions', place: 'Sessions' },
     ],
     [
       'a pinned Session',
       { action: 'pinSession', session: SESSION },
-      'Pinned Session: Rainy Window',
+      'Pinned session: Rainy Window',
       { path: '/sessions', place: 'Sessions' },
     ],
     [
@@ -87,13 +87,13 @@ describe('a receipt line', () => {
         track: { ...TRACK, name: 'Harbor Lights' },
         previousName: 'Night Drive',
       },
-      'Renamed Track: Night Drive → Harbor Lights',
+      'Renamed track: Night Drive → Harbor Lights',
       { path: '/library', place: 'Library' },
     ],
     [
       'a setting changed',
       { action: 'changeSetting', setting: 'ownerInCovers', value: 'Seldom', previous: 'Always' },
-      'Include the owner in Covers: Always → Seldom',
+      'Include the owner in covers: Always → Seldom',
       { path: '/settings/people', place: 'Settings › People' },
     ],
     [
@@ -124,13 +124,13 @@ describe('a receipt line', () => {
       }).text,
     ).toBe('Added to Favorites: Untitled Track');
     expect(receiptLine({ action: 'newMusicOff', session: { ...SESSION, name: null } }).text).toBe(
-      'New music off: Untitled Session',
+      'New Music off: Untitled Session',
     );
     expect(
       receiptLine({ action: 'renameSession', session: SESSION, previousName: null }).text,
-    ).toBe('Renamed Session: Untitled Session → Rainy Window');
+    ).toBe('Renamed session: Untitled Session → Rainy Window');
     expect(receiptLine({ action: 'renameTrack', track: TRACK, previousName: null }).text).toBe(
-      'Renamed Track: Untitled Track → Night Drive',
+      'Renamed track: Untitled Track → Night Drive',
     );
   });
 });

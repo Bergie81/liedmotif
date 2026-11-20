@@ -67,7 +67,7 @@ export function TrackOptionsSheet({
       <SheetBody className="mt-4">
         <MenuRow
           icon={<Play className="fill-current" />}
-          label="Play now"
+          label="Play Now"
           description="Start this track right away"
           disabled={locked || !track.audioUrl}
           onClick={onPlay}
@@ -87,8 +87,8 @@ export function TrackOptionsSheet({
           label={track.favoritedAt ? 'Remove from Favorites' : 'Add to Favorites'}
           description={
             track.favoritedAt
-              ? 'Take it out of your favorites playlist'
-              : 'Keep it in your favorites playlist'
+              ? 'Take it out of your Favorites playlist'
+              : 'Keep it in your Favorites playlist'
           }
           busy={busyAction === 'favorite'}
           disabled={locked || (failed && !track.favoritedAt)}
@@ -128,7 +128,7 @@ export function TrackOptionsSheet({
             onlineOnly
             icon={<Bookmark className="fill-current" />}
             label="Remove from Library"
-            description="Take it out of favorites and every playlist"
+            description="Take it out of Favorites and every playlist"
             busy={busyAction === 'save'}
             disabled={locked}
             onClick={onUnsave}

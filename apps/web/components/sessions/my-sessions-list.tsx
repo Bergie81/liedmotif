@@ -237,7 +237,7 @@ const MySessionsListContent = memo(function MySessionsListContent({
             {active ? (
               <section aria-labelledby="active-session-heading">
                 <h2 id="active-session-heading" className={cn(sectionHeadingClass, 'mb-3')}>
-                  Active now
+                  Active Now
                 </h2>
                 <div className={sessionGridClass}>{renderActiveCard(active)}</div>
               </section>
@@ -246,7 +246,7 @@ const MySessionsListContent = memo(function MySessionsListContent({
             {items === null && error === null ? (
               <LoadingRow
                 className={cn(cardClass, 'py-12', active && 'mt-6')}
-                label="Loading Sessions…"
+                label="Loading sessions…"
               />
             ) : null}
 
@@ -306,7 +306,7 @@ const MySessionsListContent = memo(function MySessionsListContent({
               onClick={retry}
               className="mt-3 inline-flex items-center gap-2 font-semibold text-paper"
             >
-              <RotateCcw className="h-3.5 w-3.5" aria-hidden /> Try again
+              <RotateCcw className="h-3.5 w-3.5" aria-hidden /> Try Again
             </button>
           </AlertBanner>
         ) : null}
@@ -333,15 +333,15 @@ function SessionSearchResults({
     <section aria-label="Session search results">
       {search.error ? <AlertBanner>{search.error}</AlertBanner> : null}
       {search.results === null && !search.error ? (
-        <LoadingRow className={cn(cardClass, 'py-12')} label="Searching Sessions…" />
+        <LoadingRow className={cn(cardClass, 'py-12')} label="Searching sessions…" />
       ) : null}
       {search.results?.length === 0 ? (
         <EmptyState
           icon={<SearchX className="h-6 w-6" />}
-          title={`No Sessions match “${search.resultsQuery}”`}
+          title={`No Sessions Match “${search.resultsQuery}”`}
           className="py-10"
         >
-          Search looks at Session names, Track titles, genres and prompts.
+          Search looks at session names, track titles, genres and prompts.
         </EmptyState>
       ) : null}
       <div className={sessionGridClass}>
@@ -369,13 +369,13 @@ function NoSessionsYet() {
       <div className="relative mx-auto mb-4 grid h-[84px] w-[84px] place-items-center overflow-hidden rounded-[10px] bg-panel-2 opacity-55 [background:radial-gradient(120%_120%_at_20%_10%,#3b2f63,#14101f_70%)] after:absolute after:inset-0 after:bg-[repeating-linear-gradient(0deg,rgba(255,255,255,0.035)_0_1px,transparent_1px_3px)] after:mix-blend-overlay after:content-['']">
         <Disc3 className="h-7 w-7 text-paper/55" aria-hidden />
       </div>
-      <h2 className="mb-2 font-display text-[19px] font-bold">No Sessions yet</h2>
+      <h2 className="mb-2 font-display text-[19px] font-bold">No Sessions Yet</h2>
       <p className="mx-auto mb-5 text-[14.5px] text-muted">
-        Describe what the music is for, and your first Session appears here — ready to resume any
+        Describe what the music is for, and your first session appears here — ready to resume any
         time.
       </p>
       <Link href="/" className={cn(primaryButtonClass, 'mx-auto w-full max-w-[260px]')}>
-        Start your first Session
+        Start Your First Session
       </Link>
     </div>
   );

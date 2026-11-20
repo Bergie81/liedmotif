@@ -143,7 +143,7 @@ export function createOfflineStore(backing: OfflineBacking): OfflineStore {
 
   async function claimed(): Promise<void> {
     if (claimant === null || (await backing.get('meta', OWNER_KEY)) !== claimant) {
-      throw new Error('The offline store no longer belongs to the User who claimed it.');
+      throw new Error('The offline store no longer belongs to the user who claimed it.');
     }
   }
 
@@ -152,7 +152,7 @@ export function createOfflineStore(backing: OfflineBacking): OfflineStore {
       await claimed();
       const held = (await backing.get('tracks', input.trackId)) as OfflineTrackCopy | undefined;
       if (!input.audio && !held) {
-        throw new Error('An offline Track needs its audio before its metadata can be refreshed.');
+        throw new Error('An offline track needs its audio before its metadata can be refreshed.');
       }
       const copy: OfflineTrackCopy = {
         trackId: input.trackId,

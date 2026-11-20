@@ -39,7 +39,7 @@ export async function POST(request: Request) {
   const patch = await parseJsonBody(
     request,
     updateMembersPoolRequestSchema,
-    'Invalid Members Pool patch.',
+    'Invalid members pool patch.',
   );
   if (patch instanceof NextResponse) return patch;
 
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
   // meanwhile.
   const merged = membersPoolSchema.safeParse({ ...(await getMembersPool(db)), ...patch });
   if (!merged.success) {
-    return apiError('validation_error', 'Invalid Members Pool.', {
+    return apiError('validation_error', 'Invalid members pool.', {
       details: merged.error.flatten(),
     });
   }

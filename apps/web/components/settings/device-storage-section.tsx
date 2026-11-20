@@ -83,7 +83,7 @@ export function DeviceStorageSection({ publicUrl }: { publicUrl: string }) {
               href={availability.secureAddress}
               className="mt-3 inline-block font-mono text-[11px] uppercase tracking-[0.05em] text-lamp hover:text-paper"
             >
-              Open the secure address
+              Open the Secure Address
             </a>
           ) : null}
         </SettingsCard>
@@ -217,8 +217,8 @@ function DeviceOfflineCard() {
           onIncrement={() => stepCap('up')}
           canDecrement={!busy && down !== null}
           canIncrement={!busy && up !== null}
-          decrementLabel="Lower the cap"
-          incrementLabel="Raise the cap"
+          decrementLabel="Lower the Cap"
+          incrementLabel="Raise the Cap"
         />
       </SettingsControlRow>
 
@@ -265,7 +265,7 @@ function DeviceOfflineCard() {
             className={compactDangerButtonClass}
             onClick={clearAll}
           >
-            Clear all
+            Clear All
           </button>
         </div>
       ) : null}

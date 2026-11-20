@@ -385,9 +385,9 @@ describe('the line a player command gets in the chat', () => {
 
     expect(said(named('pause'))).toBe('Paused');
     expect(said(named('continue'))).toBe('Playing');
-    expect(said(named('next'))).toBe('Skipped to the next Track');
-    expect(said(named('previous'))).toBe('Back to the previous Track');
-    expect(said(named('restart'))).toBe('Playing the Track from its start');
+    expect(said(named('next'))).toBe('Skipped to the next track');
+    expect(said(named('previous'))).toBe('Back to the previous track');
+    expect(said(named('restart'))).toBe('Playing the track from its start');
     expect(said(named('loopOn'))).toBe('Loop Track on');
     expect(said(named('loopOff'))).toBe('Loop Track off');
     expect(said(named('endSession'))).toBe('Session stopped');
@@ -415,7 +415,7 @@ describe('the line a player command gets in the chat', () => {
 
   it('says a play command was left alone when the user kept the Session that was starting', () => {
     expect(playerCommandLine(PLAY_RUNNING, 'declined')).toEqual({
-      text: 'Not played: you kept your new Session starting.',
+      text: 'Not played: you kept your new session starting.',
       tapToPlay: false,
     });
   });

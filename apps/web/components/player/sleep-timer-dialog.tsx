@@ -65,7 +65,7 @@ export function SleepTimerDialog({ onClose }: { onClose: () => void }) {
               onClose();
             }}
           >
-            {running ? 'Turn off' : 'Cancel'}
+            {running ? 'Turn Off' : 'Cancel'}
           </button>
           <button
             type="button"
@@ -76,7 +76,7 @@ export function SleepTimerDialog({ onClose }: { onClose: () => void }) {
               onClose();
             }}
           >
-            {running ? 'Restart timer' : 'Start timer'}
+            {running ? 'Restart Timer' : 'Start Timer'}
           </button>
         </div>
       </DialogContent>

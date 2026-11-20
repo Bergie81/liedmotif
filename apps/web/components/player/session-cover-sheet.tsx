@@ -122,7 +122,7 @@ function SessionCoverContent({
             onChange={setStyleChoice}
             disabled={disabled}
             testId="session-cover-style"
-            note="A changed style becomes this Session’s style going forward."
+            note="A changed style becomes this session’s style going forward."
           />
           <ArtDirectionField
             value={guidance}
@@ -135,7 +135,7 @@ function SessionCoverContent({
             checked={usePeople}
             onChange={setUsePeople}
             disabled={disabled}
-            namedIn="this Session’s prompt"
+            namedIn="this session’s prompt"
             ownerNote="unless it runs without your profile details"
             testId="session-cover-use-people"
           />

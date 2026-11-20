@@ -95,7 +95,7 @@ describe('Playback', () => {
       .mockResolvedValueOnce({ ok: true, data: DEFAULT_PLAYBACK_SETTINGS });
     render(h(PlaybackForm, { initial: DEFAULT_PLAYBACK_SETTINGS }));
 
-    await failThenSucceed('Save playback', 'Could not save playback.', 'Playback settings saved.');
+    await failThenSucceed('Save Playback', 'Could not save playback.', 'Playback settings saved.');
   });
 });
 
@@ -118,7 +118,7 @@ describe('Language', () => {
     render(h(LanguageForm, { initial: DEFAULT_GENERATION_SETTINGS }));
 
     await failThenSucceed(
-      'Save language',
+      'Save Language',
       'Could not save the language.',
       'Language setting saved.',
     );
@@ -136,7 +136,7 @@ describe('Unit costs', () => {
     );
     render(h(CostsPanel, { unitCosts: { perTrackUsd: 0, perCoverUsd: 0 } }));
 
-    await failThenSucceed('Save unit costs', 'Could not save unit costs.', 'Unit costs saved.');
+    await failThenSucceed('Save Unit Costs', 'Could not save unit costs.', 'Unit costs saved.');
     expect(screen.getByText(UNIT_COSTS_HINT)).toBeTruthy();
   });
 });
@@ -149,11 +149,11 @@ describe('Cover art', () => {
     serve(saved({ attempted: true, applied: true }));
     render(h(CoverArtForm, { initial: COVER_ART, llmConfigured: true }));
 
-    fireEvent.click(button('Save cover art'));
+    fireEvent.click(button('Save Cover Art'));
 
     await expectToasts({
       tone: 'success',
-      message: 'Saved. Your definition was optimized by your Text AI.',
+      message: 'Saved. Your definition was optimized by your text AI.',
     });
   });
 
@@ -161,7 +161,7 @@ describe('Cover art', () => {
     serve(saved({ attempted: true, applied: false }));
     render(h(CoverArtForm, { initial: COVER_ART, llmConfigured: true }));
 
-    fireEvent.click(button('Save cover art'));
+    fireEvent.click(button('Save Cover Art'));
 
     await expectToasts({
       tone: 'warning',
@@ -176,7 +176,7 @@ describe('Cover art', () => {
     );
     render(h(CoverArtForm, { initial: COVER_ART, llmConfigured: false }));
 
-    await failThenSucceed('Save cover art', 'Could not save cover art.', 'Saved.');
+    await failThenSucceed('Save Cover Art', 'Could not save cover art.', 'Saved.');
   });
 });
 
@@ -201,7 +201,7 @@ describe('Personalization', () => {
     render(h(PersonalizationSection, { initialEnabled: true }));
 
     fireEvent.click(button('Reset'));
-    fireEvent.click(await screen.findByRole('button', { name: 'Reset taste' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Reset Taste' }));
 
     await expectToasts({ tone: 'success', message: 'Learned taste reset.' });
   });
@@ -211,7 +211,7 @@ describe('Personalization', () => {
     render(h(PersonalizationSection, { initialEnabled: true }));
 
     fireEvent.click(button('Reset'));
-    fireEvent.click(await screen.findByRole('button', { name: 'Reset taste' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Reset Taste' }));
 
     await expectToasts({ tone: 'error', message: 'Your learned taste could not be reset.' });
   });

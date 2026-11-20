@@ -113,7 +113,7 @@ export async function POST(request: Request) {
   // which cancels too): creating now would buy music nobody asked for and
   // supersede the Session they are listening to.
   if (request.signal.aborted) {
-    return apiError('conflict', 'The Session start was cancelled.');
+    return apiError('conflict', 'The session start was cancelled.');
   }
   const { session: created, supersededSessionId } = await createSession(db, {
     ownerUserId,
@@ -156,11 +156,11 @@ export async function GET(request: Request) {
       includeActive: url.searchParams.get('includeActive') ?? undefined,
       includePinned: url.searchParams.get('includePinned') ?? undefined,
     },
-    'Invalid Sessions request.',
+    'Invalid sessions request.',
   );
   if (parsed instanceof NextResponse) return parsed;
 
-  const cursor = validateKeysetCursor(parsed.cursor, 'Invalid Sessions cursor.');
+  const cursor = validateKeysetCursor(parsed.cursor, 'Invalid sessions cursor.');
   if (cursor instanceof NextResponse) return cursor;
 
   return apiOk(

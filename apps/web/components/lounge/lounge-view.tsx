@@ -442,7 +442,7 @@ function NothingSetOut() {
       <span className="mx-auto mb-4 grid h-[58px] w-[58px] place-items-center rounded-full border border-dashed border-line-2 text-dim">
         <Armchair className="h-6 w-6" aria-hidden />
       </span>
-      <h2 className="font-display text-[19px] font-bold">Nothing set out for that</h2>
+      <h2 className="font-display text-[19px] font-bold">Nothing Set Out for That</h2>
       <p className="mt-2 text-[13.5px] text-muted">
         No shared playlist or sharing member matches. Clear the search or pick another member.
       </p>
@@ -458,17 +458,17 @@ function LoungeTeach() {
         <Armchair className="h-[30px] w-[30px]" aria-hidden />
       </span>
       <h2 className="font-display text-[22px] font-extrabold tracking-[-0.015em]">
-        The Lounge is open
+        The Lounge Is Open
       </h2>
       <p className="mt-2 text-[14px] text-muted">
         Nobody has shared a playlist yet. Anything placed here plays for everyone on this instance —
         and stays theirs to take back.
       </p>
       <div className="mx-auto mt-7 grid max-w-[640px] gap-3 text-left desk:grid-cols-3">
-        <TeachStep number="01" title="Open one of your playlists">
+        <TeachStep number="01" title="Open One of Your Playlists">
           In your Library, under Playlists.
         </TeachStep>
-        <TeachStep number="02" title="Share it to the Lounge">
+        <TeachStep number="02" title="Share It to the Lounge">
           Tap{' '}
           <span
             aria-hidden
@@ -479,7 +479,7 @@ function LoungeTeach() {
           on the playlist and pick “Share to the Lounge”. It stays live — you keep curating,
           everyone hears the latest.
         </TeachStep>
-        <TeachStep number="03" title="Take it back anytime">
+        <TeachStep number="03" title="Take It Back Anytime">
           Return it to Private and it leaves every Library the same moment.
         </TeachStep>
       </div>
@@ -487,7 +487,7 @@ function LoungeTeach() {
         href="/library"
         className="mt-7 inline-flex items-center gap-2 rounded-[13px] px-5 py-3 text-[15px] font-semibold text-[var(--on-lamp)] shadow-[var(--shadow-primary)] [background:var(--gradient-primary)]"
       >
-        Open your Library
+        Open Your Library
         <ArrowRight className="h-4 w-4" aria-hidden />
       </Link>
     </div>

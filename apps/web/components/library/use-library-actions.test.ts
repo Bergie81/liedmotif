@@ -167,7 +167,7 @@ describe('useLibraryActions failures', () => {
 
 describe('useLibraryActions More Like This', () => {
   it('opens the blocked dialog, not an error, when there is no headroom', async () => {
-    const message = 'A new Session needs 5 Tracks; you have 4 left today.';
+    const message = 'A new session needs 5 tracks; you have 4 left today.';
     seed.refusal = { code: 'session_headroom_blocked', message };
     const { result } = renderActions();
 

@@ -1,13 +1,13 @@
 ---
-title: Install Liedmotif on your laptop
+title: Install Liedmotif on Your Laptop
 description: Run Liedmotif on your Mac, Windows or Linux computer with Docker, from a clean start to your first session.
-checkedOn: 2026-11-18
+checkedOn: 2026-11-20
 howTo: true
 ---
 
 This is the easiest way to try Liedmotif, with nothing new to buy or rent. The app runs on your own computer, and only that computer can reach it. Your provider makes the music, so you need an internet connection. It plays while your laptop is awake and Docker is running. When you want music on your phone, or friends on your instance, move to a [home server](/docs/install/home-server) or a [cloud provider](/docs/install/cloud).
 
-## Before you start
+## Before You Start
 
 You need four things:
 
@@ -18,7 +18,7 @@ You need four things:
 
 > **On Windows,** run every command in a WSL 2 terminal, such as Ubuntu, and keep the `liedmotif` folder inside it. This guide has been tested on a Mac, but not yet on Windows.
 
-## 1. Get the code
+## 1. Get the Code
 
 ```bash
 git clone https://github.com/bergie81/liedmotif.git
@@ -27,7 +27,7 @@ cd liedmotif
 
 Run every command in this guide from the `liedmotif` folder.
 
-## 2. Create your secrets
+## 2. Create Your Secrets
 
 This makes your settings file, `.env`, and fills it with fresh secrets. Liedmotif won't work with the examples it ships with.
 
@@ -61,7 +61,7 @@ docker compose ps -a
 
 You should see `backup`, `postgres`, `web` and `worker` as `Up (healthy)`, `caddy` as `Up`, and `migrate` as `Exited (0)`. If some still say `health: starting`, give them a minute and check again. `migrate` prepares the database and then stops, so that one is meant to look finished.
 
-## 4. Create your admin account
+## 4. Create Your Admin Account
 
 Open [http://localhost:2206](http://localhost:2206) in your browser. A fresh instance goes straight to setup, where you create the admin account. If you see a sign-in page or a different app instead, another program on your computer already uses that port: see [the port fix](#port-is-already-allocated-or-address-already-in-use).
 
@@ -69,7 +69,7 @@ Use exactly that address. Liedmotif accepts setup and sign-ins from only one add
 
 Your password needs at least 12 characters, with a number, an uppercase letter and a special character.
 
-## 5. Walk through guided setup
+## 5. Walk Through Guided Setup
 
 Guided setup starts right after your account is created and asks one thing per screen. Only two of the setup screens are required.
 
@@ -77,16 +77,16 @@ Guided setup starts right after your account is created and asks one thing per s
 | --- | --- | --- |
 | You | Your profile | Yes |
 | People | People who can appear on tailored covers | No |
-| Music model | Your provider key. Paste it and test it to continue | Yes |
-| Track limit | How many tracks Liedmotif may make. It won't go below what a new session needs to start, 6 tracks by default | No |
+| Music Model | Your provider key. Paste it and test it to continue | Yes |
+| Track Limit | How many tracks Liedmotif may make. It won't go below what a new session needs to start, 6 tracks by default | No |
 | Text AI | A service that expands your requests and names your sessions | No |
-| Cover art | An image provider for tailored covers, and a limit on all generated covers, your music provider's included. Your text AI's key works when it's the same service. Every session gets a free cover without one | No |
+| Cover Art | An image provider for tailored covers, and a limit on all generated covers, your music provider's included. Your text AI's key works when it's the same service. Every session gets a free cover without one | No |
 
 A key you save here works right away, with no restart. Setup doesn't make any music: your spending starts when you start a session.
 
-Press **Start your first Session** on the last screen, describe the moment you're in, and listen.
+Press **Start Your First Session** on the last screen, describe the moment you're in, and listen.
 
-## Stop and start
+## Stop and Start
 
 Done for the day? This stops Liedmotif and keeps everything:
 
@@ -106,7 +106,7 @@ If you leave it running, it comes back by itself whenever Docker Desktop starts.
 
 ## Update
 
-Press **Back up now** in **Settings › Backups** and wait for the new backup to appear in the list. Then run:
+Press **Back Up Now** in **Settings › Backups** and wait for the new backup to appear in the list. Then run:
 
 ```bash
 docker compose down
@@ -118,7 +118,7 @@ Your library stays where it is. `docker compose down` removes the running contai
 
 Updates only go forward. An older version can break on a database that a newer one has changed, so the way back is the backup you just made.
 
-## Keep your library safe
+## Keep Your Library Safe
 
 **Your `.env` holds secrets nobody can recover:**
 
@@ -151,7 +151,7 @@ printf 'WEB_PORT=2207\nAPP_PUBLIC_URL=http://localhost:2207\n' >> .env
 docker compose up -d
 ```
 
-### Every page shows a server error
+### Every Page Shows a Server Error
 
 Run this to read the reason:
 
@@ -165,7 +165,7 @@ If it says `BETTER_AUTH_SECRET/APP_SECRET is still the .env.example placeholder`
 docker compose up -d
 ```
 
-### Sessions fail with "failed to decrypt secret"
+### Sessions Fail with "failed to decrypt secret"
 
 `CREDENTIAL_ENCRYPTION_KEY` has changed since you saved your provider keys, usually because the secrets were created a second time. Put your copy of `.env` back and run `docker compose up -d`, or enter your provider keys again in Settings.
 

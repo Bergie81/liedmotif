@@ -152,19 +152,19 @@ function CoversStepBody({
 
   return (
     <section>
-      <OnboardingStepHeader eyebrow="Optional" title="Choose your Cover art">
-        Every Session gets a free Cover. For art in your Cover style, with your People on it, turn
+      <OnboardingStepHeader eyebrow="Optional" title="Choose Your Cover Art">
+        Every session gets a free cover. For art in your cover style, with your people on it, turn
         on Tailored Cover Art and add an image key. No key? Just continue.
       </OnboardingStepHeader>
 
       <OnboardingSubhead icon={<Image className="h-[17px] w-[17px]" aria-hidden />}>
-        How Covers are made
+        How Covers Are Made
       </OnboardingSubhead>
 
       <OnboardingCard className="mt-0">
         <SettingsControlRow
           label="Generate Tailored Cover Art"
-          description={`Uses ${keyProvider} · about ${coverPriceCents(editor.providerKey)} cents a Cover`}
+          description={`Uses ${keyProvider} · about ${coverPriceCents(editor.providerKey)} cents a cover`}
         >
           <Switch
             checked={budget.tailoredCoverArtEnabled}
@@ -190,8 +190,8 @@ function CoversStepBody({
               keyPlaceholder="sk-…"
               testLabel={
                 credential.environmentManaged
-                  ? 'Test the configured key and model'
-                  : 'Test the key and model'
+                  ? 'Test the Configured Key and Model'
+                  : 'Test the Key and Model'
               }
               currentMasked={ownKeyMasked(editor.providerKey)}
               encryptionKeyConfigured={encryptionKeyConfigured}
@@ -217,14 +217,14 @@ function CoversStepBody({
 
       <OnboardingCard className={cn('mt-0', !generating && 'opacity-45')}>
         <SettingsControlRow
-          label="Limit my Covers"
+          label="Limit my covers"
           description="Only affects you. Members have their own budgets."
         >
           <Switch
             checked={budget.ceilingEnabled}
             disabled={busy || !generating}
             onCheckedChange={(ceilingEnabled) => onChange({ ...budget, ceilingEnabled })}
-            aria-label="Limit my Covers"
+            aria-label="Limit my covers"
           />
         </SettingsControlRow>
       </OnboardingCard>
@@ -232,7 +232,7 @@ function CoversStepBody({
       <OnboardingCard className={cn('mt-3', !capped && 'opacity-45')}>
         <OnboardingLimitRow
           label="Covers per day"
-          description="Includes Covers you regenerate"
+          description="Includes covers you regenerate"
           value={budget.coversPerDay}
           unit="cov"
           step={5}
@@ -267,7 +267,7 @@ function CoversStepBody({
       ) : null}
 
       <OnboardingSpendActions
-        label="Save and continue"
+        label="Save and Continue"
         saving={saving || editor.saving}
         error={error}
         onCommit={commit}
@@ -297,7 +297,7 @@ function CoverBudgetExplainer({
   if (uncapped) {
     return (
       <>
-        <b className="font-semibold text-paper">No cap on your own Covers.</b> Each new Session gets
+        <b className="font-semibold text-paper">No cap on your own covers.</b> Each new session gets
         one, plus any you regenerate, {price ? <>at about {price} each</> : 'at no extra cost'}.
       </>
     );
@@ -305,7 +305,7 @@ function CoverBudgetExplainer({
   if (coversPerDay <= 0) {
     return (
       <>
-        <b className="font-semibold text-paper">No generated Covers.</b> Sessions use the free{' '}
+        <b className="font-semibold text-paper">No generated covers.</b> Sessions use the free{' '}
         <span className="text-lamp">Liedmotif Cover</span> instead.
       </>
     );
@@ -313,7 +313,7 @@ function CoverBudgetExplainer({
   if (imageProviderKey === null) {
     return (
       <>
-        <b className="font-semibold text-paper">{coversPerDay} Covers a day</b> at most, at no extra
+        <b className="font-semibold text-paper">{coversPerDay} covers a day</b> at most, at no extra
         cost.
       </>
     );
@@ -321,7 +321,7 @@ function CoverBudgetExplainer({
   const note = coverBudgetNote(coversPerDay, imageProviderKey);
   return (
     <>
-      <b className="font-semibold text-paper">{note.covers} Covers a day</b> costs at most{' '}
+      <b className="font-semibold text-paper">{note.covers} covers a day</b> costs at most{' '}
       <span className="text-lamp">${note.dailyCostUsd} a day</span>.
     </>
   );
@@ -343,10 +343,10 @@ function CoverSourceExplainer({
     case 'image':
       return (
         <>
-          Covers use your Cover style and can show your People. Turn it off and{' '}
+          Covers use your cover style and can show your people. Turn it off and{' '}
           {withoutImageModel === 'music-provider'
             ? 'your music provider makes them at no extra cost, from the music alone'
-            : 'Sessions use the free Liedmotif Cover instead'}
+            : 'sessions use the free Liedmotif Cover instead'}
           .
         </>
       );
@@ -354,8 +354,8 @@ function CoverSourceExplainer({
       return (
         <>
           Covers come from <b className="font-semibold text-paper">your music provider</b>, at no
-          extra cost, and count toward your Cover limits. They are based on the music alone, so they
-          cannot use your Cover style or show your People.
+          extra cost, and count toward your cover limits. They are based on the music alone, so they
+          cannot use your cover style or show your people.
           {awaitingKey ? ' Add the image key above for Tailored Cover Art.' : null}
         </>
       );
@@ -363,7 +363,7 @@ function CoverSourceExplainer({
       return (
         <>
           Sessions use the free <b className="font-semibold text-paper">Liedmotif Cover</b>. It
-          cannot use your Cover style or show your People.
+          cannot use your cover style or show your people.
           {awaitingKey ? ' Add the image key above for Tailored Cover Art.' : null}
         </>
       );

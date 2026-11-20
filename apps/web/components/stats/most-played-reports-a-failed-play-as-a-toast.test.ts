@@ -15,7 +15,7 @@ const play = vi.hoisted(() => ({ fails: true }));
 vi.mock('@/components/player/use-play-session-track', () => ({
   usePlaySessionTrack: (onError: (message: string) => void) => ({
     playViaSession: async () => {
-      if (play.fails) onError('Couldn’t load that Track. Please retry.');
+      if (play.fails) onError('Couldn’t load that track. Please retry.');
       return true;
     },
     busyTrackId: null,
@@ -49,7 +49,7 @@ it('reports a failed play as an error toast and keeps the ranking', async () => 
     expect(shownToasts()).toEqual([
       expect.objectContaining({
         tone: 'error',
-        message: 'Couldn’t load that Track. Please retry.',
+        message: 'Couldn’t load that track. Please retry.',
       }),
     ]),
   );

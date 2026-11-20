@@ -21,8 +21,8 @@ export default async function LoginPage() {
         <LiedmotifMark className="h-8 w-8" />
         <LiedmotifWordmark className="text-[22px]" />
       </div>
-      <p className={eyebrowClass}>Your listening space</p>
-      <h1 className={`${displayHeadingClass} mt-3`}>Welcome back</h1>
+      <p className={eyebrowClass}>Your Listening Space</p>
+      <h1 className={`${displayHeadingClass} mt-3`}>Welcome Back</h1>
       <div className={`${cardClass} mt-7`}>
         <LoginForm canResetByEmail={isAccountEmailEnabled()} />
       </div>

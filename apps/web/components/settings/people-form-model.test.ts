@@ -10,7 +10,7 @@ describe('Person field validation', () => {
   it('reports a blank name beside the name field', () => {
     expect(
       validatePersonFields({ name: '  ', about: '', maxNameLength: 120, maxAboutLength: 2_000 }),
-    ).toEqual({ name: 'Enter a Person name.' });
+    ).toEqual({ name: 'Enter a person name.' });
   });
 
   it('enforces the same name and About caps as the server', () => {

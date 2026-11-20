@@ -127,7 +127,7 @@ export function usePlaylistMembers({
     const result = await fetchMemberPage(cursor, PLAYLIST_DETAIL_PAGE_LIMIT);
     if (!settle(token)) return;
     if (!result.ok) {
-      onError(`Couldn’t load more Tracks: ${result.error.message}`, 'load-more');
+      onError(`Couldn’t load more tracks: ${result.error.message}`, 'load-more');
       return;
     }
     setPlaylist(result.data.playlist);

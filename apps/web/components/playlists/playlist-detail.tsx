@@ -191,7 +191,7 @@ export function PlaylistDetail({
       return;
     }
     members.dropMember(item);
-    toast.success('Track deleted — its audio is removed and it left every Playlist.');
+    toast.success('Track deleted — its audio is removed and it left every playlist.');
   }
 
   // The Pin toggle: pure navigation — lists this live
@@ -248,7 +248,7 @@ export function PlaylistDetail({
     return <AlertBanner className="mt-6">{members.loadError}</AlertBanner>;
   }
   if (!playlist || items === null) {
-    return <LoadingRow className="mt-8 py-8" label="Loading Playlist…" />;
+    return <LoadingRow className="mt-8 py-8" label="Loading playlist…" />;
   }
 
   // An unloaded page may still hold the playable member, so Play stays lit
@@ -366,12 +366,12 @@ export function PlaylistDetail({
           {items.length === 0 ? (
             <EmptyState
               icon={<ListMusic className="h-6 w-6" />}
-              title="This Playlist has no Tracks"
+              title="This Playlist Has No Tracks"
               className="border-0 py-8"
             >
               {isVisitor
-                ? 'Nothing to hear yet — the owner curates this Playlist live.'
-                : 'Add Saved Tracks from your Library — they play in the order you set here.'}
+                ? 'Nothing to hear yet — the owner curates this playlist live.'
+                : 'Add saved tracks from your Library — they play in the order you set here.'}
             </EmptyState>
           ) : (
             <PlaylistMemberList

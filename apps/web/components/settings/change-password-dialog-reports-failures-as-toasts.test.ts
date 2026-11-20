@@ -60,7 +60,7 @@ function openDialog(emailConfirmed: boolean | null) {
       h(Toaster),
     ),
   );
-  fireEvent.click(screen.getByRole('button', { name: 'Change password' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Change Password' }));
   return screen.getByTestId('change-password-dialog');
 }
 
@@ -73,7 +73,7 @@ function fillPasswords(next: string) {
 
 const submit = () =>
   fireEvent.click(
-    screen.getAllByRole('button', { name: 'Change password' }).find((b) => b.closest('form'))!,
+    screen.getAllByRole('button', { name: 'Change Password' }).find((b) => b.closest('form'))!,
   );
 
 /** A tap as a pointer, then the focus and click it brings. */
@@ -135,7 +135,7 @@ describe('change-password dialog — failures as toasts', () => {
     stubAnswers(failure('Slow down.', 429));
     openDialog(true);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Send link' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Send Link' }));
 
     await waitFor(() =>
       expect(shown()).toEqual([
@@ -149,9 +149,9 @@ describe('change-password dialog — failures as toasts', () => {
     stubAnswers(failure('Mail is down.', 500), success());
     openDialog(false);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Send confirm link' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Send Confirm Link' }));
     await waitFor(() => expect(shown()).toEqual([{ tone: 'error', message: 'Mail is down.' }]));
-    fireEvent.click(screen.getByRole('button', { name: 'Send confirm link' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Send Confirm Link' }));
 
     expect(await screen.findByText('Confirm link sent. Open it within 24 hours.')).toBeTruthy();
     expect(shown()).toEqual([]);

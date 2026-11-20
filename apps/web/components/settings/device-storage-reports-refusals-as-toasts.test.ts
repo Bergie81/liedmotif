@@ -52,7 +52,7 @@ it('reports a cap below what is stored, and clears it once the cap is set', asyn
     .mockResolvedValueOnce({ set: false, usedBytes: 3 * GIB })
     .mockResolvedValueOnce({ set: true });
   render(h(DeviceStorageSection, { publicUrl: 'https://music.example.test' }));
-  const lower = () => screen.getByRole('button', { name: 'Lower the cap' }) as HTMLButtonElement;
+  const lower = () => screen.getByRole('button', { name: 'Lower the Cap' }) as HTMLButtonElement;
 
   await waitFor(() => expect(lower().disabled).toBe(false));
   fireEvent.click(lower());
@@ -76,7 +76,7 @@ it('reports a cap below what is stored, and clears it once the cap is set', asyn
 it('reports storage that could not be changed', async () => {
   setCap.mockRejectedValue(new Error('quota'));
   render(h(DeviceStorageSection, { publicUrl: 'https://music.example.test' }));
-  const raise = () => screen.getByRole('button', { name: 'Raise the cap' }) as HTMLButtonElement;
+  const raise = () => screen.getByRole('button', { name: 'Raise the Cap' }) as HTMLButtonElement;
 
   await waitFor(() => expect(raise().disabled).toBe(false));
   fireEvent.click(raise());

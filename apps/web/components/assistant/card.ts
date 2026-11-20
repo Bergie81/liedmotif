@@ -80,14 +80,14 @@ export function cardWording(card: AssistantCard): CardWording {
       const length = lengthLabel(card.targetDurationMinutes);
       if (length) details.push(length);
       return {
-        title: 'Start a new Session',
+        title: 'Start a New Session',
         words: card.prompt,
         details: details.join(' · '),
-        cost: 'Starting generates new Tracks from your budget.',
+        cost: 'Starting generates new tracks from your budget.',
         confirm: 'Start Session',
         confirming: 'Starting…',
         confirmed: 'Session started',
-        failed: 'This Session did not start',
+        failed: 'This session did not start',
       };
     }
     case 'changeVibe':
@@ -95,7 +95,7 @@ export function cardWording(card: AssistantCard): CardWording {
         title: 'Change Vibe',
         words: card.prompt,
         details: `In ${sessionTitle(card.session)}`,
-        cost: 'Changing the vibe generates new Tracks from your budget.',
+        cost: 'Changing the vibe generates new tracks from your budget.',
         confirm: 'Change Vibe',
         confirming: 'Changing…',
         confirmed: 'Vibe changed',
@@ -104,8 +104,8 @@ export function cardWording(card: AssistantCard): CardWording {
     case 'moreLikeThis': {
       const titles = card.tracks.map(trackTitle).join(', ');
       const details = [
-        `A new Session seeded from ${
-          card.tracks.length === 1 ? titles : `${card.tracks.length} Tracks: ${titles}`
+        `A new session seeded from ${
+          card.tracks.length === 1 ? titles : `${card.tracks.length} tracks: ${titles}`
         }`,
       ];
       const length = lengthLabel(card.targetDurationMinutes);
@@ -113,27 +113,27 @@ export function cardWording(card: AssistantCard): CardWording {
       return {
         title: 'More Like This',
         details: details.join(' · '),
-        cost: 'Starting generates new Tracks from your budget.',
+        cost: 'Starting generates new tracks from your budget.',
         // The button of the player's own More Like This.
-        confirm: 'Start new Session',
+        confirm: 'Start New Session',
         confirming: 'Starting Session…',
         confirmed: 'Session started',
-        failed: 'This Session did not start',
+        failed: 'This session did not start',
       };
     }
     case 'newMusicOn': {
       const minutes = card.targetDurationMinutes;
       const choice = NEW_MUSIC_CHOICES[minutes === null ? 'no-limit' : 'target'];
       return {
-        title: 'Switch New music on',
+        title: 'Switch New Music On',
         details: `${sessionTitle(card.session)} · ${
           minutes === null ? choice.label : `Up to ${minutes} min`
         }`,
         cost: choice.detail,
         confirm: newMusicSaveLabel(minutes),
         confirming: NEW_MUSIC_SAVING,
-        confirmed: 'New music is on',
-        failed: 'New music was not switched on',
+        confirmed: 'New Music is on',
+        failed: 'New Music was not switched on',
       };
     }
     case 'surprise': {
@@ -148,28 +148,28 @@ export function cardWording(card: AssistantCard): CardWording {
           surpriseVocalLine(suggestion),
           minutes === null ? NEW_MUSIC_CHOICES['no-limit'].label : `${minutes} min`,
         ].join(' · '),
-        cost: 'Starting generates new Tracks from your budget.',
+        cost: 'Starting generates new tracks from your budget.',
         // The button of Home's Surprise Me.
         confirm: 'Start Session',
         confirming: 'Starting…',
         confirmed: 'Session started',
-        failed: 'This Session did not start',
+        failed: 'This session did not start',
       };
     }
     case 'cover': {
       const { subject } = card;
       return {
-        title: 'New cover',
+        title: 'New Cover',
         ...(card.guidance === undefined ? {} : { words: card.guidance }),
         details:
           subject.kind === 'session'
-            ? `For the Session ${sessionTitle(subject)}`
-            : `For the Playlist ${playlistName(subject)}`,
+            ? `For the session ${sessionTitle(subject)}`
+            : `For the playlist ${playlistName(subject)}`,
         // The cover dialog's rule: a new cover is previewed, never applied on its own.
         cost: 'Generating uses one cover from your budget. It becomes the cover only when you pick it.',
-        confirm: 'Generate cover',
+        confirm: 'Generate Cover',
         confirming: 'Generating…',
-        confirmed: 'Generating the new cover. It will be under Previous covers.',
+        confirmed: 'Generating the new cover. It will be under Previous Covers.',
         failed: 'No cover was generated',
       };
     }

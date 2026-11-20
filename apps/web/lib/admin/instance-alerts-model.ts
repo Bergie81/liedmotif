@@ -129,14 +129,14 @@ function classifyStorageQuota(
     return {
       severity: 'critical',
       title: 'Liedmotif storage quota reached',
-      message: `Storage quota: ${used} used. New Tracks are being refused until space is freed or the quota is raised.`,
+      message: `Storage quota: ${used} used. New tracks are being refused until space is freed or the quota is raised.`,
     };
   }
   if (percent < warnPercent) return 'clear';
   return {
     severity: 'warning',
     title: 'Liedmotif storage quota is nearly full',
-    message: `Storage quota: ${used} used. Free some space or raise the quota before new Tracks are refused.`,
+    message: `Storage quota: ${used} used. Free some space or raise the quota before new tracks are refused.`,
   };
 }
 

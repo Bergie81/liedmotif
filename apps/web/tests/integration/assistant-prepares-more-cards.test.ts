@@ -1,5 +1,5 @@
 // What happens when the Assistant's model asks for one of the other things
-// that can spend: a Change Vibe, a More Like This, New music on. The reply
+// that can spend: a Change Vibe, a More Like This, New Music on. The reply
 // stream carries a card, and nothing is changed, created or bought. The route,
 // the tools and the app's own gates run against a real database; a scripted
 // model stands in for the text LLM.
@@ -245,7 +245,7 @@ describe.skipIf(skip)('the Assistant asked to change the vibe', () => {
     const turn = await ask(asker, [changeVibe({ prompt: 'slower' })]);
 
     expect(cards(turn)).toEqual([]);
-    expect(turn.results[0]).toContain('New music is paused in Settings › Generation.');
+    expect(turn.results[0]).toContain('New Music is paused in Settings › Generation.');
     expect(turn.results[0]).toMatch(/no card was shown/i);
   });
 
@@ -521,7 +521,7 @@ describe.skipIf(skip)('the Assistant asked for more like some Tracks', () => {
       expect(cards(turn)).toEqual([]);
       expect(turn.results[0]).toMatch(/repeats them/i);
       expect(turn.results[0]).toContain(
-        'A length switches New music on for that Session until it reaches the length.',
+        'A length switches New Music on for that Session until it reaches the length.',
       );
       expect(turn.results[0]).toMatch(/no card was shown/i);
     });
@@ -536,7 +536,7 @@ describe.skipIf(skip)('the Assistant asked for more like some Tracks', () => {
     const turn = await ask(asker, [moreLikeThis({ trackIds: [trackId] })]);
 
     expect(cards(turn)).toEqual([]);
-    expect(turn.results[0]).toContain('A new Session needs 4 Tracks; you have 2 left today.');
+    expect(turn.results[0]).toContain('A new session needs 4 tracks; you have 2 left today.');
     expect(turn.results[0]).toMatch(/no card was shown/i);
   });
 
@@ -565,7 +565,7 @@ describe.skipIf(skip)('the Assistant asked for more like some Tracks', () => {
   });
 });
 
-describe.skipIf(skip)('the Assistant asked to switch New music on', () => {
+describe.skipIf(skip)('the Assistant asked to switch New Music on', () => {
   const newMusicOn = (input: unknown) => ({ name: 'proposeNewMusicOn', input });
 
   it('sends a card for the active Session with the duration the click will save, and switches nothing', async () => {
@@ -586,7 +586,7 @@ describe.skipIf(skip)('the Assistant asked to switch New music on', () => {
       },
     ]);
     expect(turn.results[0]).toMatch(
-      /^Prepared: a card to switch New music on for the Session "Rainy Window", up to 90 minutes of music/,
+      /^Prepared: a card to switch New Music on for the Session "Rainy Window", up to 90 minutes of music/,
     );
     const after = await sessionOf(asker, sessionId);
     expect(after).toMatchObject({ sessionMode: 'repeat', targetDurationMinutes: null });
@@ -651,7 +651,7 @@ describe.skipIf(skip)('the Assistant asked to switch New music on', () => {
   it.each([
     ['with no limit', null, { noLimit: true }, /already on for the Session "Loop", with no limit/],
     ['up to 60 minutes', 60, { targetDurationMinutes: 60 }, /already on .* up to 60 minutes/],
-  ])('says New music is already on %s, and sends no card', async (_what, target, input, told) => {
+  ])('says New Music is already on %s, and sends no card', async (_what, target, input, told) => {
     const asker = await createUser();
     await createSession(testDb.db, {
       ownerUserId: asker,

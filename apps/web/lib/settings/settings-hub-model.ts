@@ -173,18 +173,18 @@ function workerSummary(worker: SettingsHubInput['worker']): SettingsHubSummary {
   switch (health) {
     case 'healthy':
       return {
-        status: { label: 'Worker healthy', tone: 'ok' },
+        status: { label: 'Worker Healthy', tone: 'ok' },
         text: `Heartbeat ${heartbeatAgo}`,
       };
     case 'degraded':
     case 'misconfigured':
       return {
-        status: { label: 'Worker degraded', tone: 'warn' },
+        status: { label: 'Worker Degraded', tone: 'warn' },
         text: heartbeatAgo ? `Heartbeat ${heartbeatAgo}` : 'Worker cannot run jobs',
       };
     case 'unavailable':
       return {
-        status: { label: 'Worker unavailable', tone: 'muted' },
+        status: { label: 'Worker Unavailable', tone: 'muted' },
         text: 'The worker has never reported a heartbeat',
       };
   }
@@ -194,7 +194,7 @@ function voiceSummary(voiceStatus: SettingsHubRead<VoiceProfileStatus | null>): 
   if (!voiceStatus.ok) return unavailable('Voice profile could not be read');
   switch (voiceStatus.value) {
     case null:
-      return unavailable('Record your voice to sing in vocal Sessions');
+      return unavailable('Record your voice to sing in vocal sessions');
     case 'ready':
       return configured('My voice is ready');
     case 'disabled':
@@ -202,7 +202,7 @@ function voiceSummary(voiceStatus: SettingsHubRead<VoiceProfileStatus | null>): 
     case 'failed':
       return unhealthy('Voice setup failed — retry with a new recording');
     default:
-      return { status: { label: 'In progress', tone: 'ok' }, text: 'Voice setup in progress' };
+      return { status: { label: 'In Progress', tone: 'ok' }, text: 'Voice setup in progress' };
   }
 }
 
@@ -264,7 +264,7 @@ function peopleSummary(peopleCount: SettingsHubInput['peopleCount']): SettingsHu
   return !peopleCount.ok
     ? unhealthy('People could not be read')
     : configured(
-        `${peopleCount.value} ${peopleCount.value === 1 ? 'Person' : 'People'} configured`,
+        `${peopleCount.value} ${peopleCount.value === 1 ? 'person' : 'people'} configured`,
       );
 }
 
@@ -308,8 +308,8 @@ function trackCeilingSummary(
   },
   tracksPerCall: number,
 ): string {
-  if (!limits.trackCeilingEnabled) return 'No Track ceiling';
-  return `${providerTasksToTracks(limits.dailyGenerationTasks, tracksPerCall)} Tracks/day · ${providerTasksToTracks(limits.monthlyGenerationTasks, tracksPerCall)} Tracks/month`;
+  if (!limits.trackCeilingEnabled) return 'No track ceiling';
+  return `${providerTasksToTracks(limits.dailyGenerationTasks, tracksPerCall)} tracks/day · ${providerTasksToTracks(limits.monthlyGenerationTasks, tracksPerCall)} tracks/month`;
 }
 
 export function buildSettingsHubData(input: SettingsHubInput): SettingsHubData {
@@ -357,7 +357,7 @@ export function buildSettingsHubData(input: SettingsHubInput): SettingsHubData {
   const limits = !input.limits.ok
     ? unhealthy('Cost limits could not be read')
     : configured(
-        `${providerTasksToTracks(input.limits.value.maxConcurrentJobs, input.tracksPerCall)} Tracks generating at once · ${input.limits.value.maxQueuedTracks} Tracks queued · ${input.limits.value.minHeadroomTracksToStartSession} Tracks headroom`,
+        `${providerTasksToTracks(input.limits.value.maxConcurrentJobs, input.tracksPerCall)} tracks generating at once · ${input.limits.value.maxQueuedTracks} tracks queued · ${input.limits.value.minHeadroomTracksToStartSession} tracks headroom`,
       );
   const playback = playbackSummary(input.playback);
   // Unreadable limits count as the switch being off: the hub then reports the
@@ -387,7 +387,7 @@ export function buildSettingsHubData(input: SettingsHubInput): SettingsHubData {
     : input.providers.value.llm
       ? {
           status: input.providers.value.llm.status,
-          text: `${input.providers.value.llm.providerKey} · Optional Text AI`,
+          text: `${input.providers.value.llm.providerKey} · Optional text AI`,
         }
       : unavailable('Optional · prompts pass through as written without it');
 

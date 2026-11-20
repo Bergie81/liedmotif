@@ -133,7 +133,7 @@ export function AssistantDefaultPanel({ access }: { access: AssistantAccess | nu
     return (
       <SettingsCard>
         <p className="text-[13px] leading-relaxed text-muted">
-          The Assistant runs on your Text AI, and none is connected. Add one under{' '}
+          The Assistant runs on your text AI, and none is connected. Add one under{' '}
           <Link href="/settings/providers" className="text-paper underline underline-offset-2">
             Settings → AI Providers
           </Link>{' '}
@@ -154,25 +154,25 @@ function AssistantDefaultControls({ access }: { access: AssistantAccess }) {
   return (
     <SettingsCard>
       <SettingsControlRow
-        label="Assistant for Members"
+        label="Assistant for members"
         description="Members can ask the Assistant about your Liedmotif"
       >
         <Switch
           checked={value.enabled}
           onCheckedChange={(enabled) => void save({ enabled })}
           disabled={busy}
-          aria-label="Assistant for Members"
+          aria-label="Assistant for members"
         />
       </SettingsControlRow>
       <DailyMessagesRow
         name="Messages per day"
         value={value.dailyMessages}
-        note="What each Member may ask in a day"
+        note="What each member may ask in a day"
         disabled={busy}
         onCommit={(dailyMessages) => void save({ dailyMessages })}
       />
       <SettingsFootnote>
-        The default for every Member; set one Member&apos;s own on their card. Your own questions
+        The default for every member; set one member&apos;s own on their card. Your own questions
         have no daily allowance.
       </SettingsFootnote>
     </SettingsCard>
@@ -195,15 +195,15 @@ function SourceNote({
   if (source === 'default') return 'Default';
   return (
     <>
-      Set for this Member ·{' '}
+      Set for this member ·{' '}
       <button
         type="button"
         onClick={onUseDefault}
         disabled={disabled}
-        aria-label={`Use default for ${subject}`}
+        aria-label={`Use Default for ${subject}`}
         className="text-paper underline underline-offset-2 disabled:opacity-35"
       >
-        Use default
+        Use Default
       </button>
     </>
   );
@@ -241,7 +241,7 @@ export function MemberAssistantControls({
     previewMemberAccess,
   );
   const view = memberAssistantView(instanceDefault, value);
-  const who = memberName || 'this Member';
+  const who = memberName || 'this member';
   return (
     <div className="mt-2 border-t border-line">
       <SettingsControlRow

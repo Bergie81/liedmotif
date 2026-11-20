@@ -73,7 +73,7 @@ describe('PlayerView — a failed Start', () => {
   it('shows the error card alone when nothing is engaged', () => {
     render(h(PlayerView));
 
-    expect(screen.getByRole('alert').textContent).toContain('Your Session didn’t start');
+    expect(screen.getByRole('alert').textContent).toContain('Your Session Didn’t Start');
     expect(screen.queryByTestId('live-player')).toBeNull();
   });
 });

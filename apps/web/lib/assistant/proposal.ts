@@ -47,7 +47,7 @@ export async function newSessionRefusal({ db, userId }: AssistantAsker): Promise
 const HOW_LONG =
   'A new Session keeps generating new Tracks while the user listens, so it needs a length, which is a whole number from 1 to 600 minutes, or no limit. Ask the user how long it should run.';
 const NO_LIMIT_ON_REPEAT =
-  "This user's new Sessions start with New music off: a new Session generates its first Tracks and then repeats them, so it cannot start with no limit. Offer a length in minutes, or to start it without one and switch New music on afterwards. A length switches New music on for that Session until it reaches the length.";
+  "This user's new Sessions start with New Music off: a new Session generates its first Tracks and then repeats them, so it cannot start with no limit. Offer a length in minutes, or to start it without one and switch New Music on afterwards. A length switches New Music on for that Session until it reaches the length.";
 
 /**
  * The length a card for a new Session carries, from what the user said: a
