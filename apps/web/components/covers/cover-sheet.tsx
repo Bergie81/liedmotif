@@ -30,7 +30,7 @@ import { useAppChrome } from '@/components/app-chrome-context';
 import { coverUsageLine } from '@/components/player/cover-usage-line';
 import { AlertBanner } from '@/components/ui/design-system';
 import { Switch } from '@/components/ui/controls';
-import { SheetContent, SheetHeader } from '@/components/ui/sheet';
+import { SheetBody, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import {
   Select,
   SelectContent,
@@ -324,7 +324,7 @@ export function CoverSheetContent<S extends CoverStatusBase>({
   }
 
   return (
-    <SheetContent side="bottom" className="overflow-y-auto" data-testid="cover-sheet">
+    <SheetContent side="bottom" className="flex flex-col" data-testid="cover-sheet">
       <SheetHeader
         title={
           <>
@@ -334,200 +334,205 @@ export function CoverSheetContent<S extends CoverStatusBase>({
         closeLabel={`Close ${kind} Cover Art`}
         closeDisabled={working}
       />
-      {loadError ? <AlertBanner className="mt-4">{loadError}</AlertBanner> : null}
+      <SheetBody>
+        {loadError ? <AlertBanner className="mt-4">{loadError}</AlertBanner> : null}
 
-      <div
-        className="relative mx-auto mt-4 aspect-square w-full max-w-[400px] overflow-hidden rounded-[18px] bg-panel-2"
-        data-testid="cover-stage"
-        data-showing={stageShowsCandidate ? candidate.label.toLowerCase() : 'current'}
-      >
-        {renderCover(stageShowsCandidate ? candidate.target : currentCoverImageId, 'stage')}
-        {status?.generating ? (
-          <div
-            className="absolute inset-0 z-[1] grid place-items-center bg-black/45 backdrop-blur-[2px]"
-            role="status"
-            aria-live="polite"
-          >
-            <span className="flex flex-col items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-paper">
-              <LiedmotifLoader /> Generating…
-            </span>
-          </div>
-        ) : null}
-        {candidate ? (
-          <button
-            type="button"
-            onClick={() => setPeekCurrent((value) => !value)}
-            aria-label={
-              peekCurrent ? 'Back to the previewed cover' : 'Compare with the current cover'
-            }
-            aria-pressed={peekCurrent}
-            data-testid="cover-peek"
-            className="absolute bottom-3 right-3 z-[2] h-[84px] w-[84px] overflow-hidden rounded-[12px] border-2 border-white/80 shadow-[0_6px_20px_rgba(0,0,0,0.5)]"
-          >
-            {renderCover(peekCurrent ? candidate.target : currentCoverImageId, 'thumb')}
-            <span className="absolute inset-x-0 bottom-0 bg-black/60 py-0.5 text-center font-mono text-[9px] uppercase tracking-[0.12em] text-paper">
-              {peekCurrent ? candidate.label : 'Now'}
-            </span>
-          </button>
-        ) : null}
-      </div>
-
-      {candidate ? (
-        <div className="mx-auto mt-3 flex w-full max-w-[400px] gap-2">
-          <button
-            type="button"
-            className={cn(primaryButtonClass, 'flex-1')}
-            disabled={working}
-            onClick={() => void adopt(candidate.target)}
-            data-testid="cover-confirm"
-          >
-            <Check className="h-4 w-4" /> Use this cover
-          </button>
-          <button
-            type="button"
-            className={secondaryButtonClass}
-            onClick={leavePreview}
-            data-testid="cover-keep"
-          >
-            Keep current
-          </button>
-        </div>
-      ) : null}
-
-      <div className="mt-4">
-        <h3 className="flex items-baseline justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-          <span>Previous covers · tap to preview</span>
-          <span data-testid="cover-count" className={cn(historyFull && 'font-semibold text-warn')}>
-            {keptCovers}/{maxHistory}
-          </span>
-        </h3>
-        {/* The bleed padding keeps the selection rings from being clipped by
-            the scroll container. */}
         <div
-          className="-mx-1 mt-1 flex gap-2 overflow-x-auto px-1 pb-2 pt-1"
-          data-testid="cover-history"
+          className="relative mx-auto mt-4 aspect-square w-full max-w-[400px] overflow-hidden rounded-[18px] bg-panel-2"
+          data-testid="cover-stage"
+          data-showing={stageShowsCandidate ? candidate.label.toLowerCase() : 'current'}
         >
-          <button
-            type="button"
-            disabled={working || historyFull}
-            onClick={picker.pick}
-            aria-label="Upload image"
-            data-testid="cover-upload"
-            className={actionTileClass}
-          >
-            <span className="flex flex-col items-center gap-0.5 text-[9.5px] font-medium">
-              <ImageUp className="h-5 w-5" aria-hidden /> Upload
-            </span>
-          </button>
-          {api.selectMosaic && currentCoverImageId ? (
+          {renderCover(stageShowsCandidate ? candidate.target : currentCoverImageId, 'stage')}
+          {status?.generating ? (
+            <div
+              className="absolute inset-0 z-[1] grid place-items-center bg-black/45 backdrop-blur-[2px]"
+              role="status"
+              aria-live="polite"
+            >
+              <span className="flex flex-col items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-paper">
+                <LiedmotifLoader /> Generating…
+              </span>
+            </div>
+          ) : null}
+          {candidate ? (
             <button
               type="button"
-              disabled={working}
-              onClick={() => preview(mosaicPreviewed ? null : { kind: 'mosaic' })}
-              aria-label="Preview the Mosaic View made from the tracks' covers"
-              title="Mosaic View, made from the tracks' covers"
-              aria-pressed={mosaicPreviewed}
-              data-testid="cover-mosaic"
-              className={cn(actionTileClass, mosaicPreviewed && 'text-paper ring-2 ring-signal')}
+              onClick={() => setPeekCurrent((value) => !value)}
+              aria-label={
+                peekCurrent ? 'Back to the previewed cover' : 'Compare with the current cover'
+              }
+              aria-pressed={peekCurrent}
+              data-testid="cover-peek"
+              className="absolute bottom-3 right-3 z-[2] h-[84px] w-[84px] overflow-hidden rounded-[12px] border-2 border-white/80 shadow-[0_6px_20px_rgba(0,0,0,0.5)]"
             >
-              <span className="flex flex-col items-center gap-0.5 text-center text-[9.5px] font-medium leading-tight">
-                <LayoutGrid className="h-5 w-5" aria-hidden />
-                <span>
-                  Mosaic
-                  <br />
-                  View
-                </span>
+              {renderCover(peekCurrent ? candidate.target : currentCoverImageId, 'thumb')}
+              <span className="absolute inset-x-0 bottom-0 bg-black/60 py-0.5 text-center font-mono text-[9px] uppercase tracking-[0.12em] text-paper">
+                {peekCurrent ? candidate.label : 'Now'}
               </span>
             </button>
           ) : null}
-          {history.map((entry) => {
-            const isPreviewed = candidate !== null && entry.coverImageId === candidate.target;
-            return (
-              <div key={entry.coverImageId} className="relative h-16 w-16 flex-none">
-                <button
-                  type="button"
-                  disabled={working}
-                  aria-pressed={entry.isCurrent ? candidate === null : isPreviewed}
-                  aria-label={
-                    entry.isCurrent ? 'Show the current cover' : 'Preview this earlier cover'
-                  }
-                  onClick={() => {
-                    if (entry.isCurrent || isPreviewed) leavePreview();
-                    else preview({ kind: 'cover', coverImageId: entry.coverImageId });
-                  }}
-                  className={cn(
-                    'absolute inset-0 overflow-hidden rounded-[10px] border border-line',
-                    entry.isCurrent && 'ring-2 ring-lamp',
-                    isPreviewed && 'ring-2 ring-signal',
-                  )}
-                >
-                  {renderCover(entry.coverImageId, 'thumb')}
-                </button>
-                {!entry.isCurrent ? (
+        </div>
+
+        {candidate ? (
+          <div className="mx-auto mt-3 flex w-full max-w-[400px] gap-2">
+            <button
+              type="button"
+              className={cn(primaryButtonClass, 'flex-1')}
+              disabled={working}
+              onClick={() => void adopt(candidate.target)}
+              data-testid="cover-confirm"
+            >
+              <Check className="h-4 w-4" /> Use this cover
+            </button>
+            <button
+              type="button"
+              className={secondaryButtonClass}
+              onClick={leavePreview}
+              data-testid="cover-keep"
+            >
+              Keep current
+            </button>
+          </div>
+        ) : null}
+
+        <div className="mt-4">
+          <h3 className="flex items-baseline justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+            <span>Previous covers · tap to preview</span>
+            <span
+              data-testid="cover-count"
+              className={cn(historyFull && 'font-semibold text-warn')}
+            >
+              {keptCovers}/{maxHistory}
+            </span>
+          </h3>
+          {/* The bleed padding keeps the selection rings from being clipped by
+            the scroll container. */}
+          <div
+            className="-mx-1 mt-1 flex gap-2 overflow-x-auto px-1 pb-2 pt-1"
+            data-testid="cover-history"
+          >
+            <button
+              type="button"
+              disabled={working || historyFull}
+              onClick={picker.pick}
+              aria-label="Upload image"
+              data-testid="cover-upload"
+              className={actionTileClass}
+            >
+              <span className="flex flex-col items-center gap-0.5 text-[9.5px] font-medium">
+                <ImageUp className="h-5 w-5" aria-hidden /> Upload
+              </span>
+            </button>
+            {api.selectMosaic && currentCoverImageId ? (
+              <button
+                type="button"
+                disabled={working}
+                onClick={() => preview(mosaicPreviewed ? null : { kind: 'mosaic' })}
+                aria-label="Preview the Mosaic View made from the tracks' covers"
+                title="Mosaic View, made from the tracks' covers"
+                aria-pressed={mosaicPreviewed}
+                data-testid="cover-mosaic"
+                className={cn(actionTileClass, mosaicPreviewed && 'text-paper ring-2 ring-signal')}
+              >
+                <span className="flex flex-col items-center gap-0.5 text-center text-[9.5px] font-medium leading-tight">
+                  <LayoutGrid className="h-5 w-5" aria-hidden />
+                  <span>
+                    Mosaic
+                    <br />
+                    View
+                  </span>
+                </span>
+              </button>
+            ) : null}
+            {history.map((entry) => {
+              const isPreviewed = candidate !== null && entry.coverImageId === candidate.target;
+              return (
+                <div key={entry.coverImageId} className="relative h-16 w-16 flex-none">
                   <button
                     type="button"
-                    aria-label="Delete this cover"
                     disabled={working}
-                    data-testid={`cover-history-delete-${entry.coverImageId}`}
-                    onClick={() => void run(() => api.remove(subjectId, entry.coverImageId))}
-                    className="absolute right-1 top-1 grid h-[22px] w-[22px] place-items-center rounded-[7px] bg-ink/70 text-paper backdrop-blur-[4px] hover:text-warn disabled:opacity-45"
+                    aria-pressed={entry.isCurrent ? candidate === null : isPreviewed}
+                    aria-label={
+                      entry.isCurrent ? 'Show the current cover' : 'Preview this earlier cover'
+                    }
+                    onClick={() => {
+                      if (entry.isCurrent || isPreviewed) leavePreview();
+                      else preview({ kind: 'cover', coverImageId: entry.coverImageId });
+                    }}
+                    className={cn(
+                      'absolute inset-0 overflow-hidden rounded-[10px] border border-line',
+                      entry.isCurrent && 'ring-2 ring-lamp',
+                      isPreviewed && 'ring-2 ring-signal',
+                    )}
                   >
-                    <Trash2 className="h-[12px] w-[12px]" aria-hidden />
+                    {renderCover(entry.coverImageId, 'thumb')}
                   </button>
-                ) : null}
-              </div>
-            );
-          })}
-        </div>
-        {historyFull ? (
-          <p className="mt-1 text-[12.5px] text-muted" data-testid="cover-history-full">
-            This {kind} holds the maximum of {maxHistory} covers. Delete a previous cover to make
-            room for a new one.
-          </p>
-        ) : null}
-        {picker.element}
-      </div>
-
-      <div className="mt-4 border-t border-line pt-4">
-        <h3 className="flex items-baseline justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-          <span>Generate a new one</span>
-          {usageLine ? (
-            <span className="normal-case tracking-[0.04em] text-dim" data-testid="cover-usage">
-              {usageLine}
-            </span>
+                  {!entry.isCurrent ? (
+                    <button
+                      type="button"
+                      aria-label="Delete this cover"
+                      disabled={working}
+                      data-testid={`cover-history-delete-${entry.coverImageId}`}
+                      onClick={() => void run(() => api.remove(subjectId, entry.coverImageId))}
+                      className="absolute right-1 top-1 grid h-[22px] w-[22px] place-items-center rounded-[7px] bg-ink/70 text-paper backdrop-blur-[4px] hover:text-warn disabled:opacity-45"
+                    >
+                      <Trash2 className="h-[12px] w-[12px]" aria-hidden />
+                    </button>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+          {historyFull ? (
+            <p className="mt-1 text-[12.5px] text-muted" data-testid="cover-history-full">
+              This {kind} holds the maximum of {maxHistory} covers. Delete a previous cover to make
+              room for a new one.
+            </p>
           ) : null}
-        </h3>
-        <div className="mt-2 flex flex-col gap-2">
-          {renderFields({ status, disabled: fieldsDisabled })}
+          {picker.element}
         </div>
-        <button
-          type="button"
-          className={cn(primaryButtonClass, 'mt-3 w-full')}
-          disabled={generateDisabled}
-          data-testid="cover-generate"
-          onClick={startGeneration}
-        >
-          {status?.generating ? (
-            <>
-              <LiedmotifLoader /> Generating…
-            </>
-          ) : (
-            <>
-              <Sparkles className="h-4 w-4" /> Generate
-            </>
-          )}
-        </button>
-        {blockedReason ? (
-          <p className="mt-2 text-[12.5px] text-muted" data-testid="cover-blocked">
-            {blockedReason}
-          </p>
-        ) : null}
-        {attemptFailure ? (
-          <AlertBanner className="mt-2" data-testid="cover-error">
-            {attemptFailure}
-          </AlertBanner>
-        ) : null}
-      </div>
+
+        <div className="mt-4 border-t border-line pt-4">
+          <h3 className="flex items-baseline justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+            <span>Generate a new one</span>
+            {usageLine ? (
+              <span className="normal-case tracking-[0.04em] text-dim" data-testid="cover-usage">
+                {usageLine}
+              </span>
+            ) : null}
+          </h3>
+          <div className="mt-2 flex flex-col gap-2">
+            {renderFields({ status, disabled: fieldsDisabled })}
+          </div>
+          <button
+            type="button"
+            className={cn(primaryButtonClass, 'mt-3 w-full')}
+            disabled={generateDisabled}
+            data-testid="cover-generate"
+            onClick={startGeneration}
+          >
+            {status?.generating ? (
+              <>
+                <LiedmotifLoader /> Generating…
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4" /> Generate
+              </>
+            )}
+          </button>
+          {blockedReason ? (
+            <p className="mt-2 text-[12.5px] text-muted" data-testid="cover-blocked">
+              {blockedReason}
+            </p>
+          ) : null}
+          {attemptFailure ? (
+            <AlertBanner className="mt-2" data-testid="cover-error">
+              {attemptFailure}
+            </AlertBanner>
+          ) : null}
+        </div>
+      </SheetBody>
 
       <div className="mt-5">
         <button
@@ -566,9 +571,9 @@ export function CoverStyleField<T extends CoverStyleChoice>({
   return (
     <div className="flex flex-col gap-1">
       <label className={labelClass}>
-        Cover style
+        Cover Style
         <Select value={value} onValueChange={(next) => onChange(next as T)} disabled={disabled}>
-          <SelectTrigger aria-label="Cover style" data-testid={testId} className="w-full">
+          <SelectTrigger aria-label="Cover Style" data-testid={testId} className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

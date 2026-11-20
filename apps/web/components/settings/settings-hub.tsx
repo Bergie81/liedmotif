@@ -36,9 +36,9 @@ export function SettingsHub({ data }: { data: SettingsHubData }) {
 
       <SettingsColumns>
         {/* Each column's sections travel as one unbreakable block, so desktop
-            reads User & instance over Generation & sound beside Usage. */}
+            reads Users, Generation & Sound and Instance beside Usage. */}
         <div className="break-inside-avoid">
-          <SettingsSection title="User &amp; instance">
+          <SettingsSection title="Users">
             <SettingsCard>
               <SettingsRow
                 href="/settings/profile"
@@ -69,31 +69,10 @@ export function SettingsHub({ data }: { data: SettingsHubData }) {
                   text: 'Invites, budgets, access',
                 }}
               />
-              <SettingsRow
-                href="/settings/storage"
-                icon={<HardDrive />}
-                label="Storage"
-                summary={data.storage}
-              />
-              <SettingsRow
-                href="/settings/backups"
-                icon={<DatabaseBackup />}
-                label="Backups"
-                summary={{
-                  status: { label: 'Admin', tone: 'muted' },
-                  text: 'Schedule, status, download',
-                }}
-              />
-              <SettingsRow
-                href="/settings/diagnostics"
-                icon={<Stethoscope />}
-                label="Diagnostics &amp; worker"
-                summary={data.diagnostics}
-              />
             </SettingsCard>
           </SettingsSection>
 
-          <SettingsSection title="Generation &amp; sound">
+          <SettingsSection title="Generation &amp; Sound">
             <SettingsCard>
               <SettingsRow
                 href="/settings/providers"
@@ -126,6 +105,32 @@ export function SettingsHub({ data }: { data: SettingsHubData }) {
                 icon={<Image />}
                 label="Cover art"
                 summary={data.coverArt}
+              />
+            </SettingsCard>
+          </SettingsSection>
+
+          <SettingsSection title="Instance">
+            <SettingsCard>
+              <SettingsRow
+                href="/settings/storage"
+                icon={<HardDrive />}
+                label="Storage"
+                summary={data.storage}
+              />
+              <SettingsRow
+                href="/settings/backups"
+                icon={<DatabaseBackup />}
+                label="Backups"
+                summary={{
+                  status: { label: 'Admin', tone: 'muted' },
+                  text: 'Schedule, status, download',
+                }}
+              />
+              <SettingsRow
+                href="/settings/diagnostics"
+                icon={<Stethoscope />}
+                label="Diagnostics &amp; worker"
+                summary={data.diagnostics}
               />
             </SettingsCard>
           </SettingsSection>

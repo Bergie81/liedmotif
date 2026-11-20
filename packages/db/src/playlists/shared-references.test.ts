@@ -527,6 +527,23 @@ describe.skipIf(skip)('Revocation purge', () => {
     expect((await ownerTrackFlags(trackId)).savedAt).not.toBeNull();
   });
 
+  it('the owner unstarring a track out of a shared Favorites purges its references', async () => {
+    const { ownerUserId, trackId } = await seedReadyTrack(testDb.db);
+    await setTrackFavorited(testDb.db, { ownerUserId, trackId, favorited: true });
+    const favorites = await ensureFavoritesPlaylist(testDb.db, { ownerUserId });
+    await setPlaylistShared(testDb.db, {
+      ownerUserId,
+      playlistId: favorites.id,
+      audience: { kind: 'everyone' },
+    });
+    const refs = await seedVisitorReferences(trackId);
+
+    await setTrackFavorited(testDb.db, { ownerUserId, trackId, favorited: false });
+
+    expect(await memberRows(refs.mixtapeId)).toEqual([[refs.ownTrackId, 0]]);
+    expect(await memberRows(refs.favoritesId)).toEqual([]);
+  });
+
   it('the owner unfiling the shared playlist through the picker purges the references too', async () => {
     const { ownerUserId, sharedPlaylistId, trackId } = await seedAudibleForeignTrack();
     const keep = await createPlaylist(testDb.db, { ownerUserId, name: 'Private keep' });

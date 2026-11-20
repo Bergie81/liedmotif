@@ -95,6 +95,13 @@ export function PlaylistOptions({
   const actions: Record<AvailablePlaylistOptionsId, OptionsRowAction> = {
     ...trackScopeActions({ track, lyricsAvailable, onOpenLyrics, onRenameTrack, onOpenTrackData }),
     'section-loop': sectionLoopAction(track, sectionLoop),
+    'add-to-playlists': track
+      ? {
+          kind: 'button',
+          testId: 'player-options-add-to-playlists',
+          onSelect: onAddTrackToPlaylist,
+        }
+      : { kind: 'unavailable', testId: 'player-options-add-to-playlists' },
     'remove-from-playlist': track
       ? {
           kind: 'button',
@@ -123,6 +130,12 @@ export function PlaylistOptions({
       currentName: playlist.name,
       maxLength: MAX_PLAYLIST_NAME_LENGTH,
       onRename: onRenamePlaylist,
+    },
+    'playlist-cover': {
+      kind: 'button',
+      testId: 'player-options-playlist-cover',
+      label: playlist.coverImageId ? 'Edit Playlist Cover Art' : 'Add Playlist Cover Art',
+      onSelect: () => setManagingCover(true),
     },
     'download-playlist': {
       kind: 'button',

@@ -56,6 +56,8 @@ const FOCUS = {
   trackCount: 2,
   containsTrack: false,
   sharedAt: null,
+  coverImageId: null,
+  mosaicCoverImageIds: [] as string[],
 } as PlaylistSummaryItem;
 
 function openPicker() {

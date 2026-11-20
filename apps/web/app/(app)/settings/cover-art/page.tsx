@@ -28,7 +28,7 @@ export default async function CoverArtPage() {
       />
 
       <SettingsColumns>
-        <SettingsSection title="Default style">
+        <SettingsSection title="Default Style">
           <SettingsCard>
             <CoverArtForm initial={settings} llmConfigured={llmProvider !== null} />
           </SettingsCard>

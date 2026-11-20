@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import type { LibraryTrackItem, LibraryView } from '@liedmotif/shared';
-import { CheckSquare, Disc3, Square } from 'lucide-react';
+import type { LibraryTrackItem } from '@liedmotif/shared';
+import { Disc3 } from 'lucide-react';
 import { AlertBanner, EmptyState } from '@/components/ui/design-system';
 import { primaryButtonClass } from '@/components/ui/form-styles';
 import { LoadMoreButton } from '@/components/ui/load-more-button';
@@ -8,6 +8,7 @@ import { LoadingRow } from '@/components/ui/loading';
 import { libraryTabLabel } from './library-navigation';
 import { formatLibraryTrackMetadata, getTrackAvailability } from './library-view-model';
 import { TrackRow, type PreviewState, type TrackRowBadge } from './track-row';
+import type { LibraryTrackTab } from './use-library-query';
 
 export function LibraryTrackList({
   view,
@@ -21,9 +22,8 @@ export function LibraryTrackList({
   onPreview,
   onOptions,
   onLoadMore,
-  selection,
 }: {
-  view: LibraryView;
+  view: LibraryTrackTab;
   /** The active search; a no-result page renders "no matches", not the tab's empty state. */
   searchQuery?: string;
   items: LibraryTrackItem[] | null;
@@ -35,8 +35,6 @@ export function LibraryTrackList({
   onPreview: (track: LibraryTrackItem) => void;
   onOptions: (track: LibraryTrackItem, opener: HTMLButtonElement) => void;
   onLoadMore: () => void;
-  /** Multi-select mode (add-to-playlist): rows toggle instead of previewing. */
-  selection?: { ids: ReadonlySet<string>; onToggle: (trackId: string) => void };
 }) {
   if (error && !items) return <LibraryError message={error} />;
   if (items === null) {
@@ -49,7 +47,7 @@ export function LibraryTrackList({
 
   return (
     <>
-      <div className="@container">
+      <div className="mt-3 @container">
         <section
           className="@pair:grid @pair:grid-cols-[repeat(2,1fr)] @pair:content-start @pair:gap-x-14"
           data-testid="library-list"
@@ -60,30 +58,6 @@ export function LibraryTrackList({
             if (view === 'history' && !availability.hasPlayed)
               badges.push({ label: 'Never played' });
             if (availability.audioNotice) badges.push({ label: availability.audioNotice });
-            if (selection) {
-              const isSelected = selection.ids.has(track.id);
-              return (
-                <TrackRow
-                  key={track.id}
-                  track={track}
-                  metadata={formatLibraryTrackMetadata(track)}
-                  badges={badges}
-                  minimalCoverRounding
-                  previewState="idle"
-                  busy={false}
-                  onPreview={() => selection.onToggle(track.id)}
-                  onOptions={() => selection.onToggle(track.id)}
-                  optionsLabel={isSelected ? 'Deselect track' : 'Select track'}
-                  optionsIcon={
-                    isSelected ? (
-                      <CheckSquare className="h-[19px] w-[19px] text-lamp" />
-                    ) : (
-                      <Square className="h-[19px] w-[19px]" />
-                    )
-                  }
-                />
-              );
-            }
             return (
               <TrackRow
                 key={track.id}
@@ -106,7 +80,6 @@ export function LibraryTrackList({
             />
           ) : null}
           {error ? <LibraryError message={error} /> : null}
-          <LibraryFooter view={view} />
         </section>
       </div>
     </>
@@ -125,10 +98,9 @@ function LibraryNoMatches({ query }: { query: string }) {
   );
 }
 
-function LibraryEmpty({ view }: { view: LibraryView }) {
+function LibraryEmpty({ view }: { view: LibraryTrackTab }) {
   const copy = {
     saved: ['No Saved Tracks yet', 'Save a Track during a Session and it will wait here.'],
-    favorites: ['No Favorites yet', 'Star a Saved Track to make it a Favorite.'],
     history: ['No History yet', 'Every generated Track appears here, even if it was never played.'],
   } as const;
   return (
@@ -144,20 +116,5 @@ function LibraryEmpty({ view }: { view: LibraryView }) {
     >
       {copy[view][1]}
     </EmptyState>
-  );
-}
-
-function LibraryFooter({ view }: { view: LibraryView }) {
-  const copy =
-    view === 'saved'
-      ? 'Every Track in your Playlists · kept when you delete its Session'
-      : view === 'history'
-        ? 'Every generated Track lands here'
-        : null;
-  if (!copy) return null;
-  return (
-    <p className="mt-4 font-mono text-[10.5px] uppercase leading-[1.7] tracking-[0.05em] text-dim @pair:col-span-full">
-      {copy}
-    </p>
   );
 }

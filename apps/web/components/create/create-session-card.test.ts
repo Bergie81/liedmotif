@@ -71,7 +71,7 @@ describe('Start Session duration controls', () => {
 
     expect(
       screen
-        .getByLabelText(/Session duration/, { selector: 'input' })
+        .getByLabelText(/Session Duration/, { selector: 'input' })
         .getAttribute('aria-valuetext'),
     ).toBe('Auto');
     expect(screen.getByText(/Without one, generation stays continuous/)).toBeTruthy();
@@ -90,7 +90,7 @@ describe('Start Session duration controls', () => {
         initialPrompt: 'Thirty minutes of quiet music',
       }),
     );
-    const duration = screen.getByLabelText(/Session duration/, { selector: 'input' });
+    const duration = screen.getByLabelText(/Session Duration/, { selector: 'input' });
     fireEvent.change(duration, { target: { value: '20' } });
     return { onStart, duration };
   }
@@ -179,7 +179,7 @@ describe('Surprise Me in the creation card', () => {
 
   it('Start Session starts the untouched proposal by identity with the card’s duration and cover choices', () => {
     const { onStart, onStartSurprise } = mount();
-    fireEvent.change(screen.getByLabelText(/Session duration/, { selector: 'input' }), {
+    fireEvent.change(screen.getByLabelText(/Session Duration/, { selector: 'input' }), {
       target: { value: '20' },
     });
     fireEvent.click(screen.getByTestId('start-vibe'));
@@ -221,7 +221,7 @@ describe('Surprise Me in the creation card', () => {
     const { onStartSurprise } = mount();
     expect(
       screen
-        .getByLabelText(/Session duration/, { selector: 'input' })
+        .getByLabelText(/Session Duration/, { selector: 'input' })
         .getAttribute('aria-valuetext'),
     ).toBe('45 min');
     fireEvent.click(screen.getByTestId('start-vibe'));
@@ -411,7 +411,7 @@ describe('Surprise Me in the creation card', () => {
     /** Try another from EMBER, Cancel it, and the server has kept HARBOR meanwhile. */
     async function cancelLate() {
       const mounted = mount();
-      fireEvent.change(screen.getByLabelText(/Session duration/, { selector: 'input' }), {
+      fireEvent.change(screen.getByLabelText(/Session Duration/, { selector: 'input' }), {
         target: { value: '20' },
       });
       api.proposeSurprise.mockReturnValueOnce(new Promise(() => {}));
@@ -433,7 +433,7 @@ describe('Surprise Me in the creation card', () => {
       );
       expect(
         screen
-          .getByLabelText(/Session duration/, { selector: 'input' })
+          .getByLabelText(/Session Duration/, { selector: 'input' })
           .getAttribute('aria-valuetext'),
       ).toBe('20 min');
     });

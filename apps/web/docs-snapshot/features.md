@@ -1,7 +1,7 @@
 ---
 title: Every feature, and how to use it
 description: The reference for using Liedmotif day to day, with what each feature does, where it is in the app and what to watch out for.
-checkedOn: 2026-11-19
+checkedOn: 2026-11-20
 ---
 
 Look up any feature here to see what it does, where to find it and what its limits are. Buttons and menus appear in bold, exactly as the app shows them.
@@ -13,10 +13,10 @@ Look up any feature here to see what it does, where to find it and what its limi
 | **Home** | Start a session, or jump back into a recent one under **Jump back in** |
 | **Search** | Find any session, track or playlist |
 | **Sessions** | Your sessions, under **Active now**, **Pinned** and **History** |
-| **Library** | Your tracks, under **Playlists**, **Favorites**, **Saved** and **History** |
+| **Library** | Your tracks, under **Playlists**, **Saved** and **History** |
 | **Lounge** | Playlists other people on your instance share with you |
 
-Tap your avatar for **Profile**, **Your Stats**, **Settings**, **Mode** and **Sign out**. The full player opens when you start music or tap the mini player.
+Tap your avatar for **Profile**, **Settings**, **Your Stats**, **Mode**, **Docs** and **Sign out**. The full player opens when you start music or tap the mini player.
 
 When something you do succeeds or fails, such as saving a setting or deleting a track, a short notification shows at the top of the screen, or top right on a wide screen. It floats over the page, so nothing moves, and it stays above an open menu or dialog. A success fades after a few seconds and a warning after a few more. An error stays until you close it, swipe it up, try again or go to another page. Problems that last show where they are instead: a page or list that couldn't load, with **Try again**, the banner in the player, or a note under a field.
 
@@ -73,12 +73,12 @@ Without one, **Home** says **No Text AI connected**. If a connected text AI fail
 
 ### Fine-tune picks
 
-Open **Fine-tune** under the request field. There's no need to repeat these picks in your words.
+Open **Fine-Tune** under the request field. There's no need to repeat these picks in your words.
 
 | Pick | Choices | What to know |
 | --- | --- | --- |
-| **Session duration** | **Auto**, or up to 180 minutes in steps of 5 | See [Session duration](#session-duration) |
-| **Genre** | Up to three | They blend, and the first one leads. **For you** marks suggestions from your listening, and **+ All genres** opens the full list |
+| **Session Duration** | **Auto**, or up to 180 minutes in steps of 5 | See [Session duration](#session-duration) |
+| **Genre** | Up to three | They blend, and the first one leads. Genres from your listening come first, and **+ All Genres** opens the full list |
 | **Energy** | **Auto**, **Low**, **Medium**, **High** | |
 | **Vocals** | **Auto**, **Instrumental**, **Vocals** | See [Instrumental or vocals](#instrumental-or-vocals) |
 | **Voice** | **Any**, **Female**, **Male** | Shows only when you pick **Vocals** |
@@ -109,7 +109,7 @@ With a text AI, each new pair of vocal tracks gets its own lyric angle within th
 
 Open **Guardrails** under the request field to set limits for one session.
 
-- **Follow style** goes from **Loose** to **Strict** and starts at 0.65. It sets how strictly the music sticks to the style.
+- **Follow Style** goes from **Loose** to **Strict** and starts at 0.65. It sets how strictly the music sticks to the style.
 - **Surprise** goes from **Safe** to **Wild** and starts at 0.30. It sets how experimental the music may get.
 - **Avoid** takes up to 500 characters of sounds you don't want.
 
@@ -170,7 +170,7 @@ Even with **New music** off, a new session gets its first batch, and a Change Vi
 | Skip | Moves to the next track |
 | Repeat button | Cycles through **Loop Session**, **Loop Track** and **Shuffle Session**, or the same for a playlist |
 | Progress bar | Drag to seek. With a keyboard, the arrow keys move 5 seconds |
-| Star and plus | **Favorite this Track** and **Add to Playlist** |
+| Star and plus | **Favorite this Track** and **Add to Playlists** |
 
 Swipe the cover left to skip or right to go back. In a session's track list, a "New vibe from here" line marks where a Change Vibe begins.
 
@@ -182,13 +182,13 @@ The **…** button in the player holds everything else, in two groups that act o
 
 | Group | While a session plays | While a playlist plays |
 | --- | --- | --- |
-| Top tiles | **Lyrics**, **Session Cover**, **Blend Tracks**, **Playlist** | **Playlist Cover**, **Blend Tracks**, **Playlist** |
+| Top tiles | **Lyrics**, **Session Cover**, **Blend Tracks**, **Add to Playlists** | **Playlist Cover**, **Blend Tracks**, **Add to Playlists** |
 | First rows | **New music**, **Available offline** | **Available offline** |
-| **This Track** | **Rename Track**, **Track Data**, **Loop a Part**, **Reroll Track**, **More Like This**, **Download Track**, **Delete Track** | **Lyrics**, **Rename Track**, **Track Data**, **Loop a Part**, **Download Track**, **Remove from this Playlist**, **Delete Track** |
-| This session or playlist | **Change Vibe**, **Sleep Timer**, **Rename Session**, **Convert to Playlist**, **Download Session**, **Delete Session** | **Go to Playlist**, **Sleep Timer**, **Rename Playlist**, **Download Playlist**, **More Like This**, **Delete Playlist** |
+| **This Track** | **Lyrics**, **Rename Track**, **Track Data**, **Loop a Part**, **Reroll Track**, **More Like This**, **Add to Playlists**, **Download Track**, **Delete Track** | **Lyrics**, **Rename Track**, **Track Data**, **Loop a Part**, **Add to Playlists**, **Download Track**, **Remove from this Playlist**, **Delete Track** |
+| This session or playlist | **Change Vibe**, **Sleep Timer**, **Rename Session**, **Edit Session Cover Art**, **Convert to Playlist**, **Download Session**, **Delete Session** | **Go to Playlist**, **Sleep Timer**, **Rename Playlist**, **Add Playlist Cover Art** or **Edit Playlist Cover Art**, **Download Playlist**, **More Like This**, **Delete Playlist** |
 | Bottom | **Stop Session** | |
 
-Favorites has no rename or delete row. On a playlist shared with you, the rows only its owner may use are gone.
+The tiles repeat as rows, so you find them either way. Favorites has no rename or delete row. On a playlist shared with you, the rows only its owner may use are gone.
 
 ### Loop a part
 
@@ -282,7 +282,7 @@ Offline, the app is for listening only. Nothing new gets made, saved or edited, 
 
 ### Offline storage on this device
 
-Open **Settings › Storage › On this device** to see what the device holds and how much space it takes. **Remove** drops one collection, and **Clear all** drops everything.
+Open **Settings › Storage › On This Device** to see what the device holds and how much space it takes. **Remove** drops one collection, and **Clear all** drops everything.
 
 A device holds up to 5 GB by default, and you can set the **Cap** to 1, 2, 5, 10, 20 or 50 GB. The cap counts the music and its covers. If something won't fit, it's refused before anything downloads, and nothing is removed to make room. You also can't set the cap below what the device already holds. A track in two collections is stored once. Signing out removes this account's offline music.
 
@@ -294,7 +294,7 @@ Change direction inside the running session, without starting over. Press **Chan
 
 - **New direction** takes your words, such as "Warmer, slower, more acoustic".
 - **Session Details** holds the duration, genres, energy, vocals, voice and language, set to the current vibe.
-- **Guardrails** holds **Follow style**, **Surprise** and **Avoid**.
+- **Guardrails** holds **Follow Style**, **Surprise** and **Avoid**.
 
 Only what you ask for moves. The session keeps its name, cover and tracks.
 
@@ -340,12 +340,11 @@ Pick **Pin Session** in a session's options to keep it in **Pinned** at the top 
 
 ### Your library
 
-**Library** has four tabs:
+**Library** has three tabs:
 
 | Tab | What's in it |
 | --- | --- |
-| **Playlists** | The playlists you made |
-| **Favorites** | Your starred tracks, in the order you set |
+| **Playlists** | Favorites first, then the playlists you made |
 | **Saved** | Every track in any of your playlists, Favorites included. These stay when you delete their session |
 | **History** | Every track ever generated, marked **Never played**, **Audio unavailable** or **Could not be kept** where that's true |
 
@@ -353,23 +352,23 @@ Pick **Pin Session** in a session's options to keep it in **Pinned** at the top 
 
 ### Favorites
 
-Tap the star in the player, or pick **Add to Favorites** in a track's menu. Favorites is a built-in playlist. You can reorder it, change its cover and keep it available offline, but you can't rename, delete or share it.
+Tap the star in the player, or pick **Add to Favorites** in a track's menu. Favorites is a built-in playlist, always the first card in the **Playlists** tab. It has every playlist option except rename and delete: you can add tracks, reorder it, change its cover, download it, keep it available offline and [share it in the lounge](/docs/members#share-a-playlist). While Favorites is shared, a track you star is heard in the lounge right away, and one you unstar leaves it, unless another playlist you share still has it.
 
 ### Playlists
 
 Press **New playlist** in the **Playlists** tab, or file a track from the player with the plus button. **Save to Playlists** shows a checklist, so one track can join several playlists at once. It can also create a new one. Unchecking everything turns the button into **Remove from Library**. A playlist that's shared shows **In the Lounge**, because anything you add is heard there at once. When the sheet closes, a notification says where the track went, such as "Saved to Running".
 
-A playlist's own menu has **Add Tracks**, **Rename Playlist**, **Reorder Tracks**, the cover, **Download all Playlist Tracks** and **Delete Playlist**. Each track's menu has **Remove from Playlist**, **Add to Playlist**, **More Like This**, **Track Data**, **Download Track** and **Delete Track**.
+A playlist's own menu has **Add Tracks**, **Rename Playlist**, **Reorder Tracks**, the cover, **Download all Playlist Tracks** and **Delete Playlist**. Each track's menu has **Remove from Playlist**, **Add to Playlists**, **More Like This**, **Track Data**, **Download Track** and **Delete Track**.
 
 - **Play:** press the round play button, or tap a track to start from there. Playlists loop by default. A playlist never generates music.
 - **Reorder:** drag the tracks, then press **Done**. **Cancel** changes nothing. It works for up to 500 tracks.
-- **Pin:** pick **Pin Playlist** in a card's menu to list it first in the **Playlists** tab.
+- **Pin:** pick **Pin Playlist** in a card's menu to list it first in the **Playlists** tab, right after Favorites. Favorites has no pin, because it always comes first.
 - **Names:** up to 60 characters. A track appears once per playlist.
 - **Could not be kept:** a track whose finished file never arrived from the music provider stays in its playlists with this mark. It doesn't play, and a playlist skips it. You can't add it to another playlist or star it, but you can remove or delete it.
 
 ### Add many tracks at once
 
-There are two ways, and both take any number of tracks. In a playlist, **Add Tracks** lists your full history: tick the tracks and press **Add**. Tracks already in it are locked. The search box at the top finds tracks by title, prompt, genre or mood, like the **History** tab's own search, and your ticks stay when you search again. Or in **Saved** or **History**, press **Select**, tap the tracks, press the **Add to playlist** button that shows your count and choose a playlist. A notification then says how many went in, such as "Added 12 tracks to Running". A track deleted or Disliked in the meantime is not added, and the notification says how many could not be added.
+In a playlist, **Add Tracks** lists your full history: tick any number of tracks and press **Add**. Tracks already in it are locked. The search box at the top finds tracks by title, prompt, genre or mood, like the **History** tab's own search, and your ticks stay when you search again. A notification then says how many went in, such as "Added 12 tracks to Running". A track deleted or Disliked in the meantime is not added, and the notification says how many could not be added.
 
 If adding stops part-way, for example when the connection drops, the tracks added so far stay in the playlist and "Adding failed" says why. Your picks stay ticked: try again and only the missing tracks are added, with nothing doubled.
 
@@ -401,12 +400,12 @@ Only finished tracks can be downloaded, so a track reads "Still generating" unti
 
 ### Session covers
 
-Every session has one cover, shared by all its tracks. It starts on built-in placeholder art until its own cover lands. Choose in the **Cover art** fold on **Home**:
+Every session has one cover, shared by all its tracks. It starts on built-in placeholder art until its own cover lands. Choose in the **Cover Art** fold on **Home**:
 
 - **Use Tailored Cover Art Generation** asks your image provider for a cover in your chosen style. Turn it off to use the cover that comes with the music, at no additional cost.
-- **Cover style** asks your image provider for **Auto**, **Random**, **Record Sleeve**, **Artistic**, **Photographic**, **Manga**, **Drawing**, **Minimal** or **Custom**. Styled covers need an image provider and cover budget. **Auto** lets your text AI pick the style that fits the session; without a text AI, it picks from the session's name and genres. **Record Sleeve** paints an album cover from one decade between the 1960s and the 2000s: name a decade or an era's sound in your prompt ("80s synthwave", in any language), or it picks one for you.
+- **Cover Style** asks your image provider for **Auto**, **Random**, **Record Sleeve**, **Artistic**, **Photographic**, **Manga**, **Drawing**, **Minimal** or **Custom**. Styled covers need an image provider and cover budget. **Auto** lets your text AI pick the style that fits the session; without a text AI, it picks from the session's name and genres. **Record Sleeve** paints an album cover from one decade between the 1960s and the 2000s: name a decade or an era's sound in your prompt ("80s synthwave", in any language), or it picks one for you.
 
-To change it later, use the **Session Cover** tile in the player, or **Edit Session Cover Art** in a session's options. You can set a **Cover style** and write up to 500 characters of **Art direction**; the session's own prompt always goes along, so leave it empty for a cover that just fits the session. With a text AI and **Enhance prompts** on in **Settings › Cover art**, it polishes your direction first. **Use People reference photos** draws the people named in the session's prompt or art direction, or you if nobody is named. It's on each time you open the sheet once you have People photos set up; turn it off for a cover without People photos. If none of the people it would draw has a photo, the cover is made without photos. Name someone from [People](#people) in your art direction and only the people you name there appear, not the ones the session is about, so write every name you want: "Anna at the beach" in a roadtrip with Jonas shows Anna alone. Names are found in what you typed, not in the polished version. With **Enhance prompts** on, the text AI also reads whether your art direction puts you in the picture, in any language ("me dancing with Jonas", "ich am Strand"), and adds you; otherwise write your own name from People. A session started without profile never shows you. Press **Generate**, or **Upload**, the first tile under **Previous covers**, which costs nothing.
+To change it later, use the **Session Cover** tile in the player, or **Edit Session Cover Art** in a session's options. You can set a **Cover Style** and write up to 500 characters of **Art direction**; the session's own prompt always goes along, so leave it empty for a cover that just fits the session. With a text AI and **Enhance prompts** on in **Settings › Cover art**, it polishes your direction first. **Use People reference photos** draws the people named in the session's prompt or art direction, or you if nobody is named. It's on each time you open the sheet once you have People photos set up; turn it off for a cover without People photos. If none of the people it would draw has a photo, the cover is made without photos. Name someone from [People](#people) in your art direction and only the people you name there appear, not the ones the session is about, so write every name you want: "Anna at the beach" in a roadtrip with Jonas shows Anna alone. Names are found in what you typed, not in the polished version. With **Enhance prompts** on, the text AI also reads whether your art direction puts you in the picture, in any language ("me dancing with Jonas", "ich am Strand"), and adds you; otherwise write your own name from People. A session started without profile never shows you. Press **Generate**, or **Upload**, the first tile under **Previous covers**, which costs nothing.
 
 It works like the [playlist cover](#playlist-covers) sheet: whatever you pick shows big at the top as a preview, with your current cover small in its corner as **Now**, and only **Use this cover** applies it. **Keep current** leaves things as they are. **Previous covers** keeps up to 10, uploads included. Tap one to preview it, or delete one to make room for more. Changing the vibe or the name never changes the cover.
 
@@ -422,7 +421,7 @@ A playlist shows a mosaic of its tracks' covers until you set one. Open **Add Pl
 
 - Nothing changes the playlist's cover until you press **Use this cover**. Whatever you pick shows big at the top as a preview, with your current cover small in its corner as **Now**. Tap it to switch between the two, or press **Keep current** to leave things as they are.
 - **Upload**, the first tile under **Previous covers**, adds your own picture and previews it.
-- **Generate** makes one from a **Cover style** and up to 500 characters of art direction. It previews when it's ready. The styles are the session ones without **Auto**, which needs a session's prompt to pick from; the sheet starts on **Random**, and **Custom** without a saved **Custom style definition** rolls like **Random**.
+- **Generate** makes one from a **Cover Style** and up to 500 characters of art direction. It previews when it's ready. The styles are the session ones without **Auto**, which needs a session's prompt to pick from; the sheet starts on **Random**, and **Custom** without a saved **Custom style definition** rolls like **Random**.
 - **Use People reference photos** draws the people named in the playlist's name or art direction, or you if nobody is named. With **Enhance prompts** on, "me dancing with Jonas" in the art direction shows you and Jonas, in any language. It's on each time you open the sheet once you have People photos set up; turn it off for a cover without People photos. If none of the people it would draw has a photo, the cover is made without photos.
 - Tap a cover under **Previous covers** to preview it. The **Mosaic View** tile there previews the playlist's mosaic of its tracks' covers.
 - A playlist keeps up to 10 covers, uploads included, and a cover still generating takes a slot too. At 10, **Upload** and **Generate** are off until you delete a previous cover to make room.
@@ -444,7 +443,7 @@ Sessions rename from their options or the player, playlists from their menus or 
 | **Vibe** | Genres, activity, mood, energy, vocals, measured BPM |
 | **Provenance** | Provider, model, license |
 
-The date generated is the day in the instance's timezone, set under **Cost controls** in **Settings › Generation**. Fields without a value are hidden. The prompts show what they were when that track was made, even if the session has moved on.
+The date generated is the day in the instance's timezone, set under **Cost Controls** in **Settings › Generation**. Fields without a value are hidden. The prompts show what they were when that track was made, even if the session has moved on.
 
 ### Removing and deleting
 
@@ -465,7 +464,7 @@ A deleted track still counts in your generated totals, and it lives on in [backu
 
 ### Learned taste
 
-Liedmotif learns from what you play, favorite and keep in playlists. It uses that only for **For you** genre suggestions and Surprise Me, and never changes your normal sessions.
+Liedmotif learns from what you play, favorite and keep in playlists. It uses that only to put your genres first on Home and for Surprise Me, and never changes your normal sessions.
 
 The controls are in **Settings › Playback › Personalization**. **Personalize suggestions** turns learning and its use off, while your stats keep recording. **Reset learned taste** starts again from what you do next. **Clear listening history** in **Your Stats** removes your listening records and your learned taste together.
 
@@ -506,19 +505,19 @@ Good to know:
 - **Change Vibe** keeps the answer. You can change it there: "put me in it too" or "without me".
 - **More Like This** and **Surprise Me** don't start from a request of yours, so nobody is read into the scene. Their cover follows your setting under [Your likeness on covers](#your-likeness-on-covers).
 - **Without a text LLM,** nothing is read into your request. Only saved names count, and About text doesn't reach the lyrics.
-- **To leave yourself out** of one session, turn on [Run without my profile details](#run-without-my-profile-details).
+- **To leave yourself out** of one session, turn on [Run Without My Profile Details](#run-without-my-profile-details).
 
 ### Your likeness on covers
 
-Under **When nobody is named in the music prompt**, **Include the owner in Covers** sets how often your own photo may appear: **Always**, **Regularly**, **Seldom** or **Never**. It needs a photo on your own card, and it saves as soon as you pick. A request that includes you counts as naming you, so your photo is used whatever you picked here, except **Never**.
+Under **When Nobody Is Named in the Music Prompt**, **Include the owner in Covers** sets how often your own photo may appear: **Always**, **Regularly**, **Seldom** or **Never**. It needs a photo on your own card, and it saves as soon as you pick. A request that includes you counts as naming you, so your photo is used whatever you picked here, except **Never**.
 
 **Never** keeps every personal photo on your instance, so no cover uses a photo of anyone, named or not. It doesn't stop a named person's notes from reaching the lyrics.
 
 Until your own card has a photo, the setting is locked and shows **Never**, but that isn't the opt-out yet: photos of people you name can still go to your image provider. To block them, add a photo to your own card and pick **Never**.
 
-### Run without my profile details
+### Run Without My Profile Details
 
-Turn on **Run without my profile details** on **Home** to keep your own details out of one session's lyrics and cover: your profile, your **About you** and your photos. That holds even if you type your own name or say "me". People you name in the request are still used, so "a birthday song for Clara" is then about Clara alone. It's off again on your next visit. A later Change Vibe respects it, and More Like This starts with personalization back on.
+Turn on **Run Without My Profile Details** on **Home** to keep your own details out of one session's lyrics and cover: your profile, your **About you** and your photos. That holds even if you type your own name or say "me". People you name in the request are still used, so "a birthday song for Clara" is then about Clara alone. It's off again on your next visit. A later Change Vibe respects it, and More Like This starts with personalization back on.
 
 ### Profile and artist name
 
@@ -533,7 +532,7 @@ Only the admin can change their sign-in email. A member's is fixed.
 
 ## Share with your people
 
-The admin can invite family and friends to the same instance. Each member gets their own private sessions, library and settings, on the admin's provider keys. In the lounge, you can share any playlist except Favorites with everyone or with selected people, and listeners hear it live as you keep curating. Nothing leaves your instance. See [members and the lounge](/docs/members).
+The admin can invite family and friends to the same instance. Each member gets their own private sessions, library and settings, on the admin's provider keys. In the lounge, you can share any playlist, Favorites included, with everyone or with selected people, and listeners hear it live as you keep curating. Nothing leaves your instance. See [members and the lounge](/docs/members).
 
 ## Your stats
 

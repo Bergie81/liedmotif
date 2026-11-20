@@ -1,7 +1,7 @@
 ---
 title: Providers and keys
 description: Which AI services Liedmotif uses, how to get a key for each, where to enter it, and what changes with and without the optional ones.
-checkedOn: 2026-11-19
+checkedOn: 2026-11-20
 ---
 
 Liedmotif doesn't make music itself. It sends your requests to AI services you choose, on your own accounts, and you pay them directly. There's one you need and two you can add later, and you can change any of them at any time. Only the admin can see or change provider keys. Members create music on the admin's keys, within [the budgets the admin sets](/docs/costs-and-limits).
@@ -61,7 +61,7 @@ When a text AI is connected, it's always used for your written requests. Liedmot
 
 The small jobs are the exception. If naming fails, the session still starts, with a plain name. If a lyric idea fails, the track still gets made with the session's own lyric notes. If enhancing cover text fails, your own text is used.
 
-To go without it, press **Disable Text AI** in **Settings › AI Providers**. If `.env` sets up the text AI on its own, remove those lines and apply the change as shown under [Where keys go](#where-keys-go), or they keep it on. Until then, the button reads **Delete stored fallback** and removes only the saved key. If your covers use the Text AI's key, the confirmation says so: Tailored Cover Art then stops until **Cover images** has a key of its own.
+To go without it, press **Disable Text AI** in **Settings › AI Providers**. If `.env` sets up the text AI on its own, remove those lines and apply the change as shown under [Where keys go](#where-keys-go), or they keep it on. Until then, the button reads **Delete stored fallback** and removes only the saved key. If your covers use the Text AI's key, the confirmation says so: Tailored Cover Art then stops until **Cover Images** has a key of its own.
 
 ### Choose a service
 
@@ -154,7 +154,7 @@ Generated covers can be limited, in [the cover budget](/docs/costs-and-limits). 
 
 ### Choose the image provider
 
-Choose it on the **Cover art** screen of guided setup, or under **Cover images** in **Settings › AI Providers**. The picker shows **OpenAI** and **Gemini**, with **OpenRouter** behind **More options**. You choose it separately from the text AI, so any combination works.
+Choose it on the **Cover art** screen of guided setup, or under **Cover Images** in **Settings › AI Providers**. The picker shows **OpenAI** and **Gemini**, with **OpenRouter** behind **More options**. You choose it separately from the text AI, so any combination works.
 
 | Provider | Default model | About per cover | Before the first cover |
 | --- | --- | --- | --- |
@@ -171,11 +171,11 @@ When the image provider is the same service as your text AI, OpenAI, Gemini or O
 - **Any combination works.** Text on OpenAI and covers on Gemini, the other way round, or covers with Ollama or no text AI at all. A provider that differs from your text AI's asks for its own key, right there.
 - **A key of its own always wins.** Press **Use a separate key** to give covers their own, for example to keep the two bills apart. **Use the same OpenAI key** (or your service's name) switches back.
 - **A custom endpoint shares nothing.** If your text AI runs on its own base URL, its key belongs to that endpoint and never goes to the image service.
-- **Changing the text AI can turn covers off.** While covers share its key, the **Text AI** card warns: "Cover images use this key too. Changing the provider or removing this key turns Tailored Cover Art off until Cover images has its own key." If that happens, the **Cover images** card says **Needs a key**, and covers come from your music provider or the free Liedmotif cover until you add one. Covers with a key of their own don't notice a text AI change.
+- **Changing the text AI can turn covers off.** While covers share its key, the **Text AI** card warns: "Cover images use this key too. Changing the provider or removing this key turns Tailored Cover Art off until Cover images has its own key." If that happens, the **Cover Images** card says **Needs a key**, and covers come from your music provider or the free Liedmotif cover until you add one. Covers with a key of their own don't notice a text AI change.
 
 ### When the account isn't ready
 
-A new OpenAI or Google account may refuse image models even with a working key, and **Test** can't tell, because it never pays for an image. The first cover then fails, the session keeps the cover it has, and Liedmotif doesn't count the attempt as spending. The **Cover images** card says why:
+A new OpenAI or Google account may refuse image models even with a working key, and **Test** can't tell, because it never pays for an image. The first cover then fails, the session keeps the cover it has, and Liedmotif doesn't count the attempt as spending. The **Cover Images** card says why:
 
 - "Google needs billing turned on for image models." Turn on billing for the key's project in Google AI Studio.
 - "OpenAI needs your organisation verified for image models." Verify your organisation in your OpenAI platform settings.

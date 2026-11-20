@@ -44,18 +44,16 @@ export function MenuRowContent({
 }: MenuRowFace) {
   return (
     <>
-      {busy ? (
-        <LiedmotifLoader />
-      ) : (
-        <span
-          className={cn(
-            'flex-none [&>svg]:h-[18px] [&>svg]:w-[18px]',
-            tone === 'danger' ? '[&>svg]:text-warn' : '[&>svg]:text-muted',
-          )}
-        >
-          {icon}
-        </span>
-      )}
+      {/* One label line tall and pinned to the top, so the icon sits on the
+          title rather than floating between title and description. */}
+      <span
+        className={cn(
+          'flex h-lh flex-none items-center self-start [&>svg]:h-[18px] [&>svg]:w-[18px]',
+          !busy && (tone === 'danger' ? '[&>svg]:text-warn' : '[&>svg]:text-muted'),
+        )}
+      >
+        {busy ? <LiedmotifLoader /> : icon}
+      </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate">{label}</span>
         <span className={menuRowDescriptionClass}>{description}</span>

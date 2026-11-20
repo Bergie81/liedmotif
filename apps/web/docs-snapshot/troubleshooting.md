@@ -1,7 +1,7 @@
 ---
 title: Troubleshooting
 description: Real Liedmotif problems with the exact message, the reason and the fix, plus how to read logs and check health.
-checkedOn: 2026-11-19
+checkedOn: 2026-11-20
 ---
 
 Find your message or symptom below. A message about something you just did, such as a failed save or a **Test** result, shows as a notification at the top of the screen; an error stays there until you close it. A problem that lasts shows where it is, such as the banner in the player or a page that couldn't load. Most fixes are one line. Run every command in your install folder: `/opt/liedmotif` from the installer, or your `liedmotif` folder on a laptop. If your user isn't in the `docker` group, write `sudo docker` for `docker`.
@@ -264,7 +264,7 @@ This comes from the **Test** button, as a notification at the top of the screen,
 
 ### "Google needs billing turned on for image models." or "OpenAI needs your organisation verified for image models."
 
-The **Cover images** card shows this when a cover failed because the image account isn't set up for image models yet, even though the key works. Regenerating a cover says "Your image provider's account isn't ready for images. Check Settings › AI Providers." A Member sees "The image provider's account on this server isn't ready for images. Ask the Admin to check it." instead, and should ask the Admin. Turn on billing for the key's project at Google, or verify your organisation at OpenAI. The message goes away with the next successful cover, or when you save the provider again. [When the account isn't ready](/docs/providers-and-keys#when-the-account-isnt-ready) has the details.
+The **Cover Images** card shows this when a cover failed because the image account isn't set up for image models yet, even though the key works. Regenerating a cover says "Your image provider's account isn't ready for images. Check Settings › AI Providers." A Member sees "The image provider's account on this server isn't ready for images. Ask the Admin to check it." instead, and should ask the Admin. Turn on billing for the key's project at Google, or verify your organisation at OpenAI. The message goes away with the next successful cover, or when you save the provider again. [When the account isn't ready](/docs/providers-and-keys#when-the-account-isnt-ready) has the details.
 
 ### Generation paused: out of credits
 

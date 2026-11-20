@@ -6,7 +6,7 @@
 // pick, and deleting a playlist's last selected User returns it to Private.
 
 import { and, asc, eq, inArray, isNotNull, ne, sql } from 'drizzle-orm';
-import { isCuratedPlaylist, type ShareAudience } from '@liedmotif/shared';
+import { isShareablePlaylist, type ShareAudience } from '@liedmotif/shared';
 import type { Database } from '../client';
 import type { Transaction } from '../transactions';
 import {
@@ -37,8 +37,8 @@ function toShareAudience(
 /**
  * The Lounge share write: place an owned playlist In Lounge
  * for an audience — `everyone`, or exactly the `selected` Users — or return it
- * to Private (`audience` null). Only curated user playlists can be shared —
- * Favorites and unlisted collections refuse (`'system'`). A `selected` audience
+ * to Private (`audience` null). Only curated user playlists and Favorites can
+ * be shared — unlisted collections refuse (`'system'`). A `selected` audience
  * keeps only real Users other than the owner; if none remain the write is
  * refused (`'empty_audience'`) and nothing changes — an empty audience is
  * Private, which the caller asks for explicitly.
@@ -70,7 +70,7 @@ export async function setPlaylistShared(
   return withOwnerPlaylistLock(db, args.ownerUserId, async (tx) => {
     const playlist = await lockOwnedPlaylist(tx, args.ownerUserId, args.playlistId);
     if (!playlist) return null;
-    if (!isCuratedPlaylist(playlist)) return 'system';
+    if (!isShareablePlaylist(playlist)) return 'system';
     if (args.visibleTo !== undefined) {
       const [visible] = await tx
         .select({ id: playlists.id })

@@ -149,7 +149,7 @@ export default async function ProvidersPage() {
         </SettingsSection>
 
         <SettingsSection
-          title="Cover images"
+          title="Cover Images"
           action={<SettingsStatusBadge status={data.cover.status} />}
         >
           <ProviderCard
@@ -186,7 +186,7 @@ export default async function ProvidersPage() {
           </p>
         </SettingsSection>
 
-        <SettingsSection title="Unit costs">
+        <SettingsSection title="Unit Costs">
           <CostsPanel unitCosts={unitCosts} />
         </SettingsSection>
       </SettingsColumns>

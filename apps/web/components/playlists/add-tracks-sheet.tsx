@@ -13,7 +13,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/cn';
 import { coverArtSrc } from '@/components/player/player-presentation';
-import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';
+import { Sheet, SheetBody, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { AlertBanner, CheckIndicator, menuRowClass } from '@/components/ui/design-system';
 import { primaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
 import { LoadingRow, LiedmotifLoader } from '@/components/ui/loading';
@@ -38,7 +38,8 @@ export function AddTracksSheet({
   playlistId: string;
   /** Names the Playlist in the toast that confirms the add. */
   playlistName: string;
-  existingTrackIds: string[];
+  /** Null while the Playlist's members are still loading. */
+  existingTrackIds: string[] | null;
   onClose: () => void;
   /** The commit landed — the caller reloads its membership. */
   onAdded: () => void;
@@ -67,14 +68,14 @@ function AddTracksContent({
 }: {
   playlistId: string;
   playlistName: string;
-  existingTrackIds: string[];
+  existingTrackIds: string[] | null;
   onClose: () => void;
   onAdded: () => void;
 }) {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const {
-    items: tracks,
+    items: libraryTracks,
     nextCursor,
     error: loadError,
     loadingMore,
@@ -83,6 +84,8 @@ function AddTracksContent({
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const members = useMemo(() => new Set(existingTrackIds), [existingTrackIds]);
+  // A row can only say whether it is already in once the members are known.
+  const tracks = existingTrackIds ? libraryTracks : null;
 
   function toggle(trackId: string) {
     if (members.has(trackId)) return;
@@ -117,7 +120,9 @@ function AddTracksContent({
   }
 
   return (
-    <SheetContent side="bottom" className="overflow-y-auto" data-testid="add-tracks-sheet">
+    // One fixed height from the first frame: the sheet does not jump when the
+    // list replaces the loading row.
+    <SheetContent side="bottom" className="flex h-[86vh] flex-col" data-testid="add-tracks-sheet">
       <SheetHeader
         title="Add Tracks"
         closeDisabled={busy}
@@ -128,69 +133,69 @@ function AddTracksContent({
         placeholder="Search titles, prompts, genres, moods…"
         onSearch={setSearch}
       />
-      {loadError ? (
-        <AlertBanner className="mt-4">Couldn’t load your tracks: {loadError}</AlertBanner>
-      ) : null}
-      {tracks === null && !loadError ? (
-        <LoadingRow className="mt-6 py-6" label="Loading Tracks…" />
-      ) : null}
-      {tracks ? (
-        <div className="mt-4" role="group" aria-label="Tracks">
-          {tracks.length === 0 && search ? (
-            <p className="px-1 text-[13.5px] text-muted">No tracks match “{search}”.</p>
-          ) : null}
-          {tracks.map((track) => {
-            const isMember = members.has(track.id);
-            const isChecked = isMember || checked.has(track.id);
-            // A failed Track's final never arrived: it can never join a Playlist.
-            const failed = track.status === 'failed';
-            return (
+      <SheetBody className="mt-4">
+        {loadError ? <AlertBanner>Couldn’t load your tracks: {loadError}</AlertBanner> : null}
+        {tracks === null && !loadError ? (
+          <LoadingRow className="mt-2 py-6" label="Loading Tracks…" />
+        ) : null}
+        {tracks ? (
+          <div role="group" aria-label="Tracks">
+            {tracks.length === 0 && search ? (
+              <p className="px-1 text-[13.5px] text-muted">No tracks match “{search}”.</p>
+            ) : null}
+            {tracks.map((track) => {
+              const isMember = members.has(track.id);
+              const isChecked = isMember || checked.has(track.id);
+              // A failed Track's final never arrived: it can never join a Playlist.
+              const failed = track.status === 'failed';
+              return (
+                <button
+                  key={track.id}
+                  type="button"
+                  role="checkbox"
+                  aria-checked={isChecked}
+                  disabled={busy || isMember || failed}
+                  onClick={() => toggle(track.id)}
+                  className={cn(menuRowClass, 'w-full', (isMember || failed) && 'opacity-50')}
+                >
+                  <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-[8px] bg-panel-2">
+                    {track.coverImageId ? (
+                      <Image
+                        src={coverArtSrc(track.coverImageId, 'thumb')}
+                        alt=""
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <Disc3 className="absolute left-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 text-muted" />
+                    )}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-left">
+                    {track.title ?? 'Untitled Track'}
+                  </span>
+                  <span className="font-mono text-[10.5px] tracking-[0.04em] text-dim">
+                    {failed ? FAILED_TRACK_NOTICE : formatTrackDuration(track.durationSeconds)}
+                  </span>
+                  <CheckIndicator checked={isChecked} />
+                </button>
+              );
+            })}
+            {nextCursor ? (
               <button
-                key={track.id}
                 type="button"
-                role="checkbox"
-                aria-checked={isChecked}
-                disabled={busy || isMember || failed}
-                onClick={() => toggle(track.id)}
-                className={cn(menuRowClass, 'w-full', (isMember || failed) && 'opacity-50')}
+                className={cn(secondaryButtonClass, 'mt-3 w-full')}
+                disabled={loadingMore || busy}
+                aria-busy={loadingMore}
+                onClick={() => void loadMore()}
               >
-                <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-[8px] bg-panel-2">
-                  {track.coverImageId ? (
-                    <Image
-                      src={coverArtSrc(track.coverImageId, 'thumb')}
-                      alt=""
-                      fill
-                      className="object-cover"
-                    />
-                  ) : (
-                    <Disc3 className="absolute left-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 text-muted" />
-                  )}
-                </span>
-                <span className="min-w-0 flex-1 truncate text-left">
-                  {track.title ?? 'Untitled Track'}
-                </span>
-                <span className="font-mono text-[10.5px] tracking-[0.04em] text-dim">
-                  {failed ? FAILED_TRACK_NOTICE : formatTrackDuration(track.durationSeconds)}
-                </span>
-                <CheckIndicator checked={isChecked} />
+                {loadingMore ? <LiedmotifLoader /> : null}
+                Load more
               </button>
-            );
-          })}
-          {nextCursor ? (
-            <button
-              type="button"
-              className={cn(secondaryButtonClass, 'mt-3 w-full')}
-              disabled={loadingMore || busy}
-              aria-busy={loadingMore}
-              onClick={() => void loadMore()}
-            >
-              {loadingMore ? <LiedmotifLoader /> : null}
-              Load more
-            </button>
-          ) : null}
-        </div>
-      ) : null}
-      <div className="mt-5 flex gap-2">
+            ) : null}
+          </div>
+        ) : null}
+      </SheetBody>
+      <div className="mt-4 flex gap-2">
         <button
           type="button"
           className={cn(secondaryButtonClass, 'flex-1')}

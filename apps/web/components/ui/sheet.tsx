@@ -52,6 +52,18 @@ export function SheetContent({
   );
 }
 
+/** Everything below a sheet's header, scrolling on its own so the header stays
+ *  put. Needs a `flex flex-col` SheetContent; the negative margin carries the
+ *  scrollbar to the sheet's edge. */
+export function SheetBody({ className, ...props }: ComponentProps<'div'>) {
+  return (
+    <div
+      className={cn('-mx-5 min-h-0 flex-1 overflow-y-auto overscroll-contain px-5', className)}
+      {...props}
+    />
+  );
+}
+
 /** A plain-text title names the close button by itself; a title in markup
  *  needs `closeLabel`. Pass one too where the title names the sheet's subject
  *  rather than the sheet itself. */

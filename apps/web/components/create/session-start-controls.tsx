@@ -107,7 +107,7 @@ export function SegmentedControl<T extends string>({
 
   return (
     <fieldset>
-      <legend className="mb-2 flex w-full items-baseline justify-between text-[13px] font-semibold text-paper">
+      <legend className="mb-2 flex w-full items-baseline justify-between text-[15px] font-semibold text-paper">
         {label}
         {hint ? (
           <span className="font-mono text-[11px] font-normal tracking-[0.04em] text-dim">
@@ -138,7 +138,7 @@ export function SessionLanguageField({
   onChange: (value: SessionLanguageChoice) => void;
 }) {
   return (
-    <label className="flex flex-col gap-2 text-[13px] font-semibold text-paper">
+    <label className="flex flex-col gap-2 text-[15px] font-semibold text-paper">
       <span className="flex items-baseline justify-between">
         Language
         <span className="font-mono text-[11px] font-normal tracking-[0.04em] text-dim">
@@ -221,8 +221,8 @@ export function SkipProfileToggle({
   return (
     <div className={cn('flex items-center justify-end gap-2.5', className)}>
       <div className="text-right">
-        <p className="mb-1 text-[13px] font-semibold leading-tight text-paper">
-          Run without my profile details
+        <p className="mb-1 text-[15px] font-semibold leading-tight text-paper">
+          Run Without My Profile Details
         </p>
         <p className="text-[11.5px] leading-[1.1] text-dim">
           Your own details are not used for this Session&rsquo;s lyrics and cover art. People you
@@ -232,7 +232,7 @@ export function SkipProfileToggle({
       <Switch
         checked={checked}
         onCheckedChange={onCheckedChange}
-        aria-label="Run without my profile details"
+        aria-label="Run Without My Profile Details"
         data-testid="skip-profile"
       />
     </div>
@@ -261,20 +261,20 @@ export function SessionExtras({
   return (
     <div className="mt-2 overflow-hidden rounded-card border border-line [background:var(--gradient-card)] shadow-[var(--shadow-card)]">
       {children}
-      <FoldSection title="Cover art" embedded>
+      <FoldSection title="Cover Art" embedded>
         <label
           className={cn(
-            'flex flex-col gap-2 text-[13px] font-semibold text-paper',
+            'flex flex-col gap-2 text-[15px] font-semibold text-paper',
             useStandardCover && 'opacity-40',
           )}
         >
-          Cover style
+          Cover Style
           <Select
             value={coverStyle}
             onValueChange={(value) => onCoverStyleChange(value as CoverStyleChoice)}
             disabled={useStandardCover}
           >
-            <SelectTrigger aria-label="Cover style" data-testid="cover-style" className="w-full">
+            <SelectTrigger aria-label="Cover Style" data-testid="cover-style" className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="w-[var(--radix-select-trigger-width)]">
@@ -297,7 +297,7 @@ export function SessionExtras({
         ) : null}
         <div className="mt-4 flex items-center justify-between gap-3">
           <div>
-            <p className="text-[13px] font-semibold leading-tight text-paper">
+            <p className="text-[15px] font-semibold leading-tight text-paper">
               Use Tailored Cover Art Generation
             </p>
             <p className="text-[11.5px] leading-[1.4] text-dim">
@@ -336,7 +336,7 @@ export function GuardrailFields({
   return (
     <>
       <PresentationSlider
-        label="Follow style"
+        label="Follow Style"
         value={value.followStyle}
         left="Loose"
         right="Strict"
@@ -349,7 +349,7 @@ export function GuardrailFields({
         right="Wild"
         onChange={(surprise) => onChange({ surprise })}
       />
-      <label className="flex flex-col gap-2 text-[13px] font-semibold text-paper">
+      <label className="flex flex-col gap-2 text-[15px] font-semibold text-paper">
         Avoid
         <input
           value={value.avoid}
@@ -378,7 +378,7 @@ function PresentationSlider({
 }) {
   return (
     <div className="mb-6">
-      <div className="flex items-baseline justify-between text-[13px] font-semibold text-paper">
+      <div className="flex items-baseline justify-between text-[15px] font-semibold text-paper">
         <span>{label}</span>
         <span className="font-mono text-[11.5px] font-bold tracking-[0.06em] text-lamp">
           {(value / 100).toFixed(2)}

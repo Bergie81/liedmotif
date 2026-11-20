@@ -9,7 +9,7 @@ export const cardShellClass =
 export const cardClass = `${cardShellClass} p-4`;
 export const eyebrowClass = 'font-mono text-[10px] uppercase tracking-[0.22em] text-dim';
 export const displayHeadingClass =
-  'font-display text-[clamp(26px,7vw,34px)] font-extrabold leading-[1.12] tracking-[-0.025em]';
+  'font-display text-[clamp(26px,7vw,34px)] desk:text-[44px] font-extrabold leading-[1.12] tracking-[-0.025em]';
 export const sectionHeadingClass = 'font-display text-[17px] font-bold tracking-[-0.01em]';
 export const iconButtonClass =
   'inline-flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-transparent text-muted [transition:transform_.06s_ease,background_.15s_ease,color_.15s_ease] hover:bg-[var(--control-bg-hover)] hover:text-paper active:scale-[0.985]';

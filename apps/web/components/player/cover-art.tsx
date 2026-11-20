@@ -58,7 +58,7 @@ export function CoverFallback({ iconClassName = 'h-20 w-20' }: { iconClassName?:
  * beside the title rather than above it. */
 export function CoverThumb({ coverImageId }: { coverImageId: string | null }) {
   return (
-    <span className="h-11 w-11 flex-none overflow-hidden rounded-[10px] shadow-[inset_0_0_0_1px_var(--line)]">
+    <span className="h-11 w-11 flex-none overflow-hidden rounded-[2px] shadow-[inset_0_0_0_1px_var(--line)]">
       <CoverArt
         coverImageId={coverImageId}
         thumb

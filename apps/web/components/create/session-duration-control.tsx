@@ -23,8 +23,8 @@ export function SessionDurationControl({
   const label = durationLabel(value, auto);
   return (
     <div>
-      <label htmlFor={id} className="mb-2 flex justify-between text-[13px] font-semibold">
-        Session duration <output className="font-mono text-[11px] text-lamp">{label}</output>
+      <label htmlFor={id} className="mb-2 flex justify-between text-[15px] font-semibold">
+        Session Duration <output className="font-mono text-[11px] text-lamp">{label}</output>
       </label>
       <input
         id={id}

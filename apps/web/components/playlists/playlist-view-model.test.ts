@@ -9,8 +9,41 @@ import {
   lastRemovalNotice,
   nextMemberCursor,
   playlistMenuRows,
+  playlistsTabPlaylists,
   sameTrackOrder,
 } from './playlist-view-model';
+
+describe('playlistsTabPlaylists', () => {
+  const playlist = (id: string, kind: 'user' | 'favorites', listedInPlaylists: boolean) => ({
+    id,
+    kind,
+    listedInPlaylists,
+  });
+
+  it('leads with Favorites, ahead of pins, then the hand-picked playlists in their order', () => {
+    const listed = playlistsTabPlaylists([
+      playlist('pinned', 'user', true),
+      playlist('favorites', 'favorites', false),
+      playlist('focus', 'user', true),
+    ]);
+    expect(listed.map((p) => p.id)).toEqual(['favorites', 'pinned', 'focus']);
+  });
+
+  it('leaves out collections reached from their own Library surface', () => {
+    const listed = playlistsTabPlaylists([
+      playlist('favorites', 'favorites', false),
+      playlist('saved', 'user', false),
+      playlist('focus', 'user', true),
+    ]);
+    expect(listed.map((p) => p.id)).toEqual(['favorites', 'focus']);
+  });
+
+  it('lists no Favorites the server did not send (a search it does not match)', () => {
+    expect(playlistsTabPlaylists([playlist('focus', 'user', true)]).map((p) => p.id)).toEqual([
+      'focus',
+    ]);
+  });
+});
 
 describe('playlistMenuRows', () => {
   const userPlaylist = {

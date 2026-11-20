@@ -71,7 +71,7 @@ export function DeviceStorageSection({ publicUrl }: { publicUrl: string }) {
   if (!availability || availability.kind === 'unavailable') return null;
 
   return (
-    <SettingsSection title="On this device">
+    <SettingsSection title="On This Device">
       {availability.kind === 'needs-https' ? (
         <SettingsCard>
           <p className="text-[14px] font-semibold text-paper">Offline music needs HTTPS.</p>

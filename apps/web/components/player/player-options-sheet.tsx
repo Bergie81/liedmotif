@@ -16,7 +16,14 @@ import { ConfirmDialog } from '@/components/confirm-dialog';
 import { RenameDialog } from '@/components/rename-dialog';
 import { iconButtonClass, menuTileClass } from '@/components/ui/design-system';
 import { OnlineOnly } from '@/components/ui/online-only';
-import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTrigger } from '@/components/ui/sheet';
+import {
+  Sheet,
+  SheetBody,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { BlendToggleTile } from './blend-toggle';
 import { CoverThumb } from './cover-art';
 import type { OptionsRowId, OptionsScopeSpec } from './player-options-model';
@@ -110,26 +117,28 @@ export function PlayerOptionsSheet({
         </SheetTrigger>
         {/* Taller than the default bottom-sheet cap (important wins the
             conflict): this is the longest list in the app. */}
-        <SheetContent side="bottom" className="max-h-[94vh]! overflow-y-auto">
+        <SheetContent side="bottom" className="flex max-h-[94vh]! flex-col">
           <OptionsPlate
             coverImageId={coverImageId}
             trackTitle={trackTitle}
             sourceKind={sourceKind}
             sourceName={sourceName}
           />
-          {tiles ? <OptionsTiles {...tiles} /> : null}
-          {/* In their own wrapper the last of them is a last child, so it draws
-              no rule above the first scope's own heading rule. */}
-          {leadRows ? <div>{leadRows}</div> : null}
-          {scopes.map((scope) => (
-            <OptionsScope
-              key={scope.label}
-              scope={scope}
-              actions={actions}
-              onOpenModal={setModal}
-            />
-          ))}
-          {footer}
+          <SheetBody>
+            {tiles ? <OptionsTiles {...tiles} /> : null}
+            {/* In their own wrapper the last of them is a last child, so it draws
+                no rule above the first scope's own heading rule. */}
+            {leadRows ? <div>{leadRows}</div> : null}
+            {scopes.map((scope) => (
+              <OptionsScope
+                key={scope.label}
+                scope={scope}
+                actions={actions}
+                onOpenModal={setModal}
+              />
+            ))}
+            {footer}
+          </SheetBody>
         </SheetContent>
       </Sheet>
     </>
@@ -207,8 +216,7 @@ function OptionsTiles({ lyrics, blend, sourceCover, addToPlaylist }: TileTargets
         <OptionsTile
           testId="player-add-track-to-playlist"
           icon={ListPlus}
-          label="Playlist"
-          hint="Add Track to Playlist"
+          label="Add to Playlists"
           disabled={addToPlaylist.disabled}
           onSelect={addToPlaylist.onSelect}
         />

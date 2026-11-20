@@ -39,6 +39,8 @@ function playlist(name: string, containsTrack = false): PlaylistSummaryItem {
     trackCount: 2,
     containsTrack,
     sharedAt: null,
+    coverImageId: null,
+    mosaicCoverImageIds: [] as string[],
   } as PlaylistSummaryItem;
 }
 

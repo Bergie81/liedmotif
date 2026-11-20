@@ -12,7 +12,8 @@ import {
 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { OfflineMenuRow } from '@/components/offline/offline-menu-row';
-import { SheetContent, SheetHeader } from '@/components/ui/sheet';
+import { CoverThumb } from '@/components/player/cover-art';
+import { SheetBody, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { MenuRow } from '@/components/ui/menu-row';
 import { MENU_COPY } from '@/components/ui/menu-copy';
 import { sessionDownloadUrl, startFileDownload } from '@/lib/downloads/downloads';
@@ -50,8 +51,9 @@ export function SessionOptionsSheet({
   const title = session.title ?? 'Untitled Session';
   const busy = resuming || deleting || converting || pinning;
   return (
-    <SheetContent side="bottom" className="overflow-y-auto">
+    <SheetContent side="bottom" className="flex flex-col">
       <SheetHeader
+        leading={<CoverThumb coverImageId={session.coverImageId} />}
         title={title}
         description={
           formatGenreLine(session.genreTags) ??
@@ -59,7 +61,7 @@ export function SessionOptionsSheet({
         }
         offlineMark
       />
-      <div className="mt-4">
+      <SheetBody className="mt-4">
         <OfflineMenuRow kind="session" id={session.id} />
         <MenuRow
           onlineOnly
@@ -96,7 +98,7 @@ export function SessionOptionsSheet({
           onlineOnly
           icon={<ImagePlus />}
           label="Edit Session Cover Art"
-          description="Reroll, upload or pick a previous cover"
+          description={MENU_COPY.editSessionCover}
           disabled={busy}
           data-testid="change-session-cover"
           onClick={onChangeCover}
@@ -132,7 +134,7 @@ export function SessionOptionsSheet({
           aria-label={`Delete Session ${title}`}
           onClick={() => setConfirmingDelete(true)}
         />
-      </div>
+      </SheetBody>
       {confirmingDelete ? (
         <ConfirmDialog
           heading="Delete Session"

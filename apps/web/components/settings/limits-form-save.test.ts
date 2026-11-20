@@ -58,13 +58,13 @@ function section(title: string): HTMLElement {
 }
 
 describe('saving generation limits', () => {
-  it('offers a Save button under Cost controls as well as under Cover art budget', () => {
+  it('offers a Save button under Cost Controls as well as under Cover Art Budget', () => {
     renderForm();
     expect(
-      within(section('Cost controls')).getByRole('button', { name: 'Save limits' }),
+      within(section('Cost Controls')).getByRole('button', { name: 'Save limits' }),
     ).toBeTruthy();
     expect(
-      within(section('Cover art budget')).getByRole('button', { name: 'Save limits' }),
+      within(section('Cover Art Budget')).getByRole('button', { name: 'Save limits' }),
     ).toBeTruthy();
   });
 
@@ -72,7 +72,7 @@ describe('saving generation limits', () => {
     saveUsageLimits.mockResolvedValue({ ok: true, data: defaultUsageLimits() });
     const { fetchChrome } = renderForm();
 
-    fireEvent.click(within(section('Cost controls')).getByRole('button', { name: 'Save limits' }));
+    fireEvent.click(within(section('Cost Controls')).getByRole('button', { name: 'Save limits' }));
 
     await waitFor(() => expect(fetchChrome).toHaveBeenCalledTimes(1));
     expect(shownToasts()).toEqual([
@@ -85,7 +85,7 @@ describe('saving generation limits', () => {
     const { fetchChrome } = renderForm();
 
     fireEvent.click(
-      within(section('Cover art budget')).getByRole('button', { name: 'Save limits' }),
+      within(section('Cover Art Budget')).getByRole('button', { name: 'Save limits' }),
     );
 
     await expectToast('error', 'Could not save limits.');
@@ -96,7 +96,7 @@ describe('saving generation limits', () => {
     saveUsageLimits.mockResolvedValueOnce({ ok: false, error: 'Could not save limits.' });
     saveUsageLimits.mockResolvedValueOnce({ ok: true, data: defaultUsageLimits() });
     renderForm();
-    const save = within(section('Cost controls')).getByRole('button', { name: 'Save limits' });
+    const save = within(section('Cost Controls')).getByRole('button', { name: 'Save limits' });
 
     fireEvent.click(save);
     await waitFor(() => expect(shownToasts()).toHaveLength(1));
@@ -109,7 +109,7 @@ describe('saving generation limits', () => {
   it('reports out-of-range values as a toast and keeps the note under the field', async () => {
     renderForm({ ...defaultUsageLimits(), maxQueuedTracks: 100_000 });
 
-    fireEvent.click(within(section('Cost controls')).getByRole('button', { name: 'Save limits' }));
+    fireEvent.click(within(section('Cost Controls')).getByRole('button', { name: 'Save limits' }));
 
     await expectToast('error', 'Check the highlighted limit values.');
     expect(saveUsageLimits).not.toHaveBeenCalled();

@@ -8,11 +8,13 @@ import Link from 'next/link';
 import type { ComponentType } from 'react';
 import {
   Download,
+  ImagePlus,
   Info,
   ListMinus,
   ListMusic,
   MicVocal,
   Pencil,
+  Plus,
   ThumbsDown,
   Timer,
   Trash2,
@@ -34,6 +36,8 @@ import { sleepTimerNote } from './sleep-timer';
 
 const ROW_ICONS: Record<OptionsRowIcon, ComponentType<{ className?: string }>> = {
   pencil: Pencil,
+  'image-plus': ImagePlus,
+  plus: Plus,
   info: Info,
   download: Download,
   trash: Trash2,
@@ -71,8 +75,9 @@ export type OptionsRowModal =
   | { kind: 'sleep-timer' };
 
 /** Actions close the options sheet so a destination sheet can take its place.
- *  `note` is the row's live state, such as a running timer's time left. */
-export type OptionsRowAction = { testId?: string; note?: string } & (
+ *  `note` is the row's live state, such as a running timer's time left; `label`
+ *  replaces the row's own where the state renames the act ("Add" or "Edit"). */
+export type OptionsRowAction = { testId?: string; note?: string; label?: string } & (
   | { kind: 'button'; onSelect: () => void }
   | { kind: 'link'; href: string }
   /** Shipped, but with nothing to act on right now — an empty deck, an empty
@@ -195,9 +200,15 @@ export function OptionsScope({
   );
 }
 
-function rowFace(row: OptionsRowSpec, note?: string) {
+function rowFace(row: OptionsRowSpec, action?: OptionsRowAction) {
   const Icon = ROW_ICONS[row.icon];
-  return { icon: <Icon />, label: row.label, description: row.description, note, tone: row.tone };
+  return {
+    icon: <Icon />,
+    label: action?.label ?? row.label,
+    description: row.description,
+    note: action?.note,
+    tone: row.tone,
+  };
 }
 
 function ShippedRow({
@@ -210,7 +221,7 @@ function ShippedRow({
   onOpenModal: (modal: OptionsRowModal) => void;
 }) {
   if (action.kind === 'unavailable') {
-    return <MenuRow {...rowFace(row, action.note)} disabled data-testid={action.testId} />;
+    return <MenuRow {...rowFace(row, action)} disabled data-testid={action.testId} />;
   }
   if (action.kind === 'link') {
     return (
@@ -220,7 +231,7 @@ function ShippedRow({
           data-testid={action.testId}
           className={menuRowClassName({ tone: row.tone })}
         >
-          <MenuRowContent {...rowFace(row, action.note)} />
+          <MenuRowContent {...rowFace(row, action)} />
         </Link>
       </SheetClose>
     );
@@ -228,7 +239,7 @@ function ShippedRow({
   return (
     <SheetClose asChild>
       <MenuRow
-        {...rowFace(row, action.note)}
+        {...rowFace(row, action)}
         onlineOnly={!LISTEN_ONLY_ROW_IDS.has(row.id)}
         data-testid={action.testId}
         onClick={action.kind === 'button' ? action.onSelect : () => onOpenModal(action)}
@@ -238,5 +249,5 @@ function ShippedRow({
 }
 
 function RoadmapRow({ row }: { row: OptionsRowSpec }) {
-  return <MenuRow {...rowFace(row, 'Coming later')} disabled />;
+  return <MenuRow {...rowFace(row, { kind: 'unavailable', note: 'Coming later' })} disabled />;
 }

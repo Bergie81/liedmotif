@@ -26,11 +26,13 @@ describe('player options menu', () => {
 
   it('gives both sources the shared Track rows, plus what only that source can do', () => {
     expect(SESSION_OPTIONS_SCOPES[0].rows.map((row) => row.id)).toEqual([
+      'lyrics',
       'rename-track',
       'track-data',
       'section-loop',
       'reroll-track',
       'more-like-this-track',
+      'add-to-playlists',
       'download-track',
       'delete-track',
     ]);
@@ -39,6 +41,7 @@ describe('player options menu', () => {
       'rename-track',
       'track-data',
       'section-loop',
+      'add-to-playlists',
       'download-track',
       'remove-from-playlist',
       'delete-track',
@@ -50,6 +53,7 @@ describe('player options menu', () => {
       'change-vibe',
       'sleep-timer',
       'rename-session',
+      'session-cover',
       'convert-session-to-playlist',
       'download-session',
       'delete-session',
@@ -63,6 +67,17 @@ describe('player options menu', () => {
     });
     const vibe = SESSION_OPTIONS_SCOPES[1].rows.find((row) => row.id === 'change-vibe');
     expect(vibe).toMatchObject({ availability: 'available', tone: 'neutral' });
+  });
+
+  it('repeats every action tile as a row, so a listener reading the list still finds it', () => {
+    const ids = (scopes: readonly OptionsScopeSpec[]) =>
+      scopes.flatMap((scope) => scope.rows.map((row) => row.id));
+    expect(ids(SESSION_OPTIONS_SCOPES)).toEqual(
+      expect.arrayContaining(['lyrics', 'add-to-playlists', 'session-cover']),
+    );
+    expect(ids(PLAYLIST_OPTIONS_SCOPES)).toEqual(
+      expect.arrayContaining(['lyrics', 'add-to-playlists', 'playlist-cover']),
+    );
   });
 
   it('keeps removing a Track from a Playlist curation rather than destruction', () => {
@@ -128,6 +143,7 @@ describe('player options menu', () => {
     expect(rowIds(playlistOptionsScopes('favorites'))[1]).toEqual([
       'go-to-playlist',
       'sleep-timer',
+      'playlist-cover',
       'download-playlist',
       'more-like-this',
     ]);
@@ -144,7 +160,7 @@ describe('player options menu', () => {
     const scopes = visitorPlaylistOptionsScopes();
     expect(scopes.map((scope) => scope.label)).toEqual(['This Track', 'This Playlist']);
     expect(rowIds(scopes)).toEqual([
-      ['lyrics', 'track-data', 'section-loop'],
+      ['lyrics', 'track-data', 'section-loop', 'add-to-playlists'],
       ['go-to-playlist', 'sleep-timer', 'more-like-this'],
     ]);
   });

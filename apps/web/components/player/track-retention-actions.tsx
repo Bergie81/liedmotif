@@ -79,7 +79,7 @@ export function TrackRetentionActions({
       />
       <RetentionButton
         testId="player-add-to-playlist"
-        label={inCuratedPlaylist ? 'In a Playlist — edit Playlists' : 'Add to Playlist'}
+        label={inCuratedPlaylist ? 'In a Playlist — edit Playlists' : 'Add to Playlists'}
         pressed={inCuratedPlaylist}
         disabled={disabled}
         onPress={onAddToPlaylist}

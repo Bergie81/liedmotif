@@ -113,8 +113,24 @@ export function PlayerSessionOptions({
 }) {
   const [coverSheetOpen, setCoverSheetOpen] = useState(false);
 
+  const trackActions = trackScopeActions({
+    track,
+    lyricsAvailable,
+    onOpenLyrics,
+    onRenameTrack,
+    onOpenTrackData,
+  });
   const actions: Record<AvailableSessionOptionsId, OptionsRowAction> = {
-    ...trackScopeActions({ track, lyricsAvailable, onOpenLyrics, onRenameTrack, onOpenTrackData }),
+    ...trackActions,
+    // The Lyrics tile keeps the shared test id; the row repeating it takes its own.
+    lyrics: { ...trackActions.lyrics, testId: 'player-options-lyrics' },
+    'add-to-playlists': track
+      ? {
+          kind: 'button',
+          testId: 'player-options-add-to-playlists',
+          onSelect: onAddTrackToPlaylist,
+        }
+      : { kind: 'unavailable', testId: 'player-options-add-to-playlists' },
     'section-loop': sectionLoopAction(track, sectionLoop),
     'reroll-track': track
       ? { kind: 'button', testId: 'player-options-reroll', onSelect: onReroll }
@@ -151,6 +167,11 @@ export function PlayerSessionOptions({
       currentName: sessionTitle,
       maxLength: MAX_SESSION_TITLE_LENGTH,
       onRename: onRenameSession,
+    },
+    'session-cover': {
+      kind: 'button',
+      testId: 'player-options-session-cover',
+      onSelect: () => setCoverSheetOpen(true),
     },
     'convert-session-to-playlist': {
       kind: 'button',

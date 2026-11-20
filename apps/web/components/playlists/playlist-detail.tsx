@@ -103,15 +103,12 @@ type PlaylistOverlay =
 export function PlaylistDetail({
   playlistId,
   back,
-  onTrackCountChange,
   initial,
   visitor,
 }: {
   playlistId: string;
   /** Where the way back goes — only a surface that IS a page has one. */
   back?: { href: string; label: string };
-  /** Follows the member count through loads and curation (the Favorites tab count). */
-  onTrackCountChange?: (count: number) => void;
   /** Server-rendered playlist + first member page: paints immediately and skips
    * the mount fetch; mutations and conflicts still reload over the API. */
   initial?: PlaylistMembership;
@@ -150,11 +147,6 @@ export function PlaylistDetail({
     onUnsaved: (removal) => toast.info(lastRemovalNotice(removal)),
   });
   const { playlist, items, hasMore, setPlaylist, setItems } = members;
-
-  const trackCount = playlist?.trackCount;
-  useEffect(() => {
-    if (trackCount !== undefined) onTrackCountChange?.(trackCount);
-  }, [trackCount, onTrackCountChange]);
 
   const playback = usePlayPlaylist((message) => toast.error(message, { key: PLAY_KEY }), {
     foreign: isVisitor,

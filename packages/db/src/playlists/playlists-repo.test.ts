@@ -1466,7 +1466,7 @@ describe.skipIf(skip)('deletePlaylist cover reclaim', () => {
 // The Lounge share state: a nullable timestamp plus an
 // audience — null = Private, set = In Lounge for `everyone` or the
 // `selected` Users. Owner-scoped, idempotent, and gated to curated user playlists
-// (Favorites and unlisted collections can never be shared).
+// and Favorites (unlisted collections can never be shared).
 describe.skipIf(skip)('setPlaylistShared (Lounge share state)', () => {
   it('shares and unshares an owned user playlist, exposing sharedAt in list summaries', async () => {
     const ownerUserId = await createUser(testDb.db);
@@ -1510,7 +1510,7 @@ describe.skipIf(skip)('setPlaylistShared (Lounge share state)', () => {
     expect(summary?.sharedAt).toBeNull();
   });
 
-  it('refuses Favorites and unlisted collections (kind gate), at rest and shared alike', async () => {
+  it('shares Favorites but refuses an unlisted collection (kind gate)', async () => {
     const ownerUserId = await createUser(testDb.db);
     const favorites = await ensureFavoritesPlaylist(testDb.db, { ownerUserId });
     const unlisted = await createPlaylist(testDb.db, { ownerUserId, name: 'Saved tracks' });
@@ -1525,7 +1525,7 @@ describe.skipIf(skip)('setPlaylistShared (Lounge share state)', () => {
         audience: { kind: 'everyone' },
         now: NOW,
       }),
-    ).toBe('system');
+    ).toEqual({ sharedAt: NOW, audience: { kind: 'everyone' } });
     expect(
       await setPlaylistShared(testDb.db, {
         ownerUserId,
@@ -1534,8 +1534,8 @@ describe.skipIf(skip)('setPlaylistShared (Lounge share state)', () => {
         now: NOW,
       }),
     ).toBe('system');
-    const shared = await testDb.pool.query('select 1 from playlists where shared_at is not null');
-    expect(shared.rowCount).toBe(0);
+    const shared = await testDb.pool.query('select id from playlists where shared_at is not null');
+    expect(shared.rows.map((row) => row.id)).toEqual([favorites.id]);
   });
 
   it('re-sharing keeps the original sharedAt (the newest-first Lounge sort key must not bump)', async () => {

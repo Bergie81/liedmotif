@@ -222,7 +222,7 @@ export function PeopleForm(props: PeopleFormProps) {
         </SettingsFootnote>
       </SettingsSection>
 
-      <SettingsSection title="When nobody is named in the music prompt">
+      <SettingsSection title="When Nobody Is Named in the Music Prompt">
         <SettingsCard>
           <div className="text-[13px] font-semibold text-paper">Include the owner in Covers</div>
           <fieldset

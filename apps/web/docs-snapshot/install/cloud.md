@@ -1,7 +1,7 @@
 ---
 title: Install Liedmotif on a cloud provider
 description: Rent a small server, point your own domain at it and invite your friends, even if you have never touched a server, DNS or SSH.
-checkedOn: 2026-11-19
+checkedOn: 2026-11-20
 howTo: true
 ---
 
@@ -272,14 +272,14 @@ Keep the key in your password manager or in the private note with your setup lin
 
 **Where the spending limits are later:** **Settings** is in the account menu, under your picture in the corner.
 
-- **Yours:** **Settings › Cost limits**, under **Usage**. It opens **Cost controls**, with **Limit my Tracks**, **Daily limit** and **Monthly limit**.
-- **Your friends':** every invite carries its own budget, and **Settings › Members › Shared budget** caps all your friends together. Set that one to what you actually want to spend.
+- **Yours:** **Settings › Cost limits**, under **Usage**. It opens **Cost Controls**, with **Limit my Tracks**, **Daily limit** and **Monthly limit**.
+- **Your friends':** every invite carries its own budget, and **Settings › Members › Shared Budget** caps all your friends together. Set that one to what you actually want to spend.
 - **The backstop:** your prepaid sunoapi.org credit.
 
 ## 10. Invite friends
 
 1. Open **Settings › Members**.
-2. Under **Invite someone**, type your friend's name in **Who is this invite for?**.
+2. Under **Invite Someone**, type your friend's name in **Who is this invite for?**.
 3. Pick a budget and adjust the numbers. **One-time** is one total that never renews. **Rolling** is a set of limits that reset daily and at the start of each month.
 4. Press **Create invite link**. An **Invite link** box appears. Press **Copy**, because the link is shown once and works once. It expires after 7 days.
 5. Send it to your friend in any messenger.

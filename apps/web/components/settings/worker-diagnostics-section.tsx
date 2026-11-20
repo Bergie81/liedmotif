@@ -105,7 +105,7 @@ export function RecentEventsSection() {
   const { worker } = useWorkerDiagnostics();
   const events = worker ? workerEventRows(worker) : [];
   return (
-    <SettingsSection title="Recent events">
+    <SettingsSection title="Recent Events">
       <SettingsCard className={events.length === 0 ? 'border-dashed' : undefined}>
         {events.length === 0 ? (
           <p className="py-3 text-center text-[13px] text-dim">No recent worker activity.</p>

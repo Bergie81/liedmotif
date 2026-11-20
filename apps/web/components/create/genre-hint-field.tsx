@@ -29,7 +29,7 @@ export function GenreHintField({
   /** Learned-taste genres (ranked). A suggestion order only: picks and the full
    *  vocabulary are untouched by it. */
   forYouGenres?: readonly string[];
-  /** `selected-only` renders just the current picks beside "+ All genres" —
+  /** `selected-only` renders just the current picks beside "+ All Genres" —
    *  the Change Vibe overlay shows the vibe's OWN genres, not suggestions. */
   shortlist?: 'suggested' | 'selected-only';
 }) {
@@ -55,15 +55,8 @@ export function GenreHintField({
 
   return (
     <fieldset>
-      <legend className="mb-2 flex w-full items-baseline justify-between text-[13px] font-semibold text-paper">
-        <span className="flex items-baseline gap-2">
-          Genre
-          {shortlist === 'suggested' && forYouGenres.length > 0 ? (
-            <span className="font-mono text-[10px] font-normal uppercase tracking-[0.14em] text-lamp">
-              For you
-            </span>
-          ) : null}
-        </span>
+      <legend className="mb-2 flex w-full items-baseline justify-between text-[15px] font-semibold text-paper">
+        <span>Genre</span>
         {hint ? (
           <span
             aria-live="polite"
@@ -77,11 +70,11 @@ export function GenreHintField({
         {shortlistIds.map(chip)}
         <Sheet>
           <SheetTrigger className="rounded-full border border-dashed border-lamp/35 bg-lamp/[0.04] px-4 py-2 text-[13.5px] font-medium text-lamp transition-[color,border-color] duration-[120ms] ease-[ease] [-webkit-tap-highlight-color:transparent] hover:border-lamp/60 hover:text-paper">
-            + All genres
+            + All Genres
           </SheetTrigger>
           <SheetContent side="bottom" className="flex max-h-[86vh] flex-col">
             <SheetHeader
-              title="All genres"
+              title="All Genres"
               description="Pick up to three — they blend, and the first one leads."
             />
             <p

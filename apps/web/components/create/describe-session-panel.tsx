@@ -148,7 +148,7 @@ export function DescribeFineTuneSection({
   const showVoice = picks.vocal === 'vocal' && !picks.ownVoice;
 
   return (
-    <FoldSection title="Fine-tune" embedded className={className}>
+    <FoldSection title="Fine-Tune" embedded className={className}>
       <p className="mb-4 text-[11.5px] leading-[1.5] text-dim">
         No need to repeat these picks in your words.
       </p>

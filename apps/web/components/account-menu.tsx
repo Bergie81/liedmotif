@@ -92,11 +92,11 @@ export function AccountMenu({
         <AccountLink href="/settings/profile" icon={UserRound}>
           Profile
         </AccountLink>
-        <AccountLink href="/stats" icon={ChartNoAxesColumn}>
-          Your Stats
-        </AccountLink>
         <AccountLink href="/settings" icon={SlidersHorizontal}>
           Settings
+        </AccountLink>
+        <AccountLink href="/stats" icon={ChartNoAxesColumn}>
+          Your Stats
         </AccountLink>
         <button type="button" onClick={onToggleMode} className={accountRowClass}>
           {mode === 'light' ? (

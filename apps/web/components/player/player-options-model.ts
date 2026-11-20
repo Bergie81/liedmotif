@@ -20,6 +20,7 @@ import type { SourceNoun } from './player-presentation';
 
 type TrackOptionsRowId =
   | 'lyrics'
+  | 'add-to-playlists'
   | 'reroll-track'
   | 'more-like-this-track'
   | 'rename-track'
@@ -31,6 +32,7 @@ type SessionOptionsRowId =
   | 'change-vibe'
   | 'sleep-timer'
   | 'rename-session'
+  | 'session-cover'
   | 'convert-session-to-playlist'
   | 'download-session'
   | 'delete-session';
@@ -39,6 +41,7 @@ type PlaylistOptionsRowId =
   | 'remove-from-playlist'
   | 'go-to-playlist'
   | 'rename-playlist'
+  | 'playlist-cover'
   | 'download-playlist'
   | 'more-like-this'
   | 'delete-playlist';
@@ -46,6 +49,8 @@ export type OptionsRowId = TrackOptionsRowId | SessionOptionsRowId | PlaylistOpt
 
 export type OptionsRowIcon =
   | 'pencil'
+  | 'image-plus'
+  | 'plus'
   | 'info'
   | 'download'
   | 'trash'
@@ -94,6 +99,15 @@ const LYRICS_ROW = {
   availability: 'available',
   tone: 'neutral',
   description: 'Read along with this track',
+} as const satisfies OptionsRowSpec;
+
+const ADD_TO_PLAYLISTS_ROW = {
+  id: 'add-to-playlists',
+  label: 'Add to Playlists',
+  icon: 'plus',
+  availability: 'available',
+  tone: 'neutral',
+  description: MENU_COPY.choosePlaylists,
 } as const satisfies OptionsRowSpec;
 
 const RENAME_TRACK_ROW = {
@@ -146,6 +160,9 @@ export const SESSION_OPTIONS_SCOPES = [
   {
     label: 'This Track',
     rows: [
+      // Lyrics, Add to Playlists and the cover row repeat the tiles above, so
+      // a listener who reads the list rather than the tiles still finds them.
+      LYRICS_ROW,
       RENAME_TRACK_ROW,
       TRACK_DATA_ROW,
       SECTION_LOOP_ROW,
@@ -167,6 +184,7 @@ export const SESSION_OPTIONS_SCOPES = [
         tone: 'neutral',
         description: 'Start a new session seeded from this track',
       },
+      ADD_TO_PLAYLISTS_ROW,
       DOWNLOAD_TRACK_ROW,
       {
         id: 'delete-track',
@@ -198,6 +216,14 @@ export const SESSION_OPTIONS_SCOPES = [
         availability: 'available',
         tone: 'neutral',
         description: 'Give this session a new name',
+      },
+      {
+        id: 'session-cover',
+        label: 'Edit Session Cover Art',
+        icon: 'image-plus',
+        availability: 'available',
+        tone: 'neutral',
+        description: MENU_COPY.editSessionCover,
       },
       {
         id: 'convert-session-to-playlist',
@@ -235,6 +261,7 @@ export const PLAYLIST_OPTIONS_SCOPES = [
       RENAME_TRACK_ROW,
       TRACK_DATA_ROW,
       SECTION_LOOP_ROW,
+      ADD_TO_PLAYLISTS_ROW,
       DOWNLOAD_TRACK_ROW,
       // Curation while listening: a membership goes, the audio stays. It sits
       // above Delete Track so the reversible way out is met first.
@@ -275,6 +302,15 @@ export const PLAYLIST_OPTIONS_SCOPES = [
         availability: 'available',
         tone: 'neutral',
         description: MENU_COPY.renamePlaylist,
+      },
+      {
+        id: 'playlist-cover',
+        // "Add Playlist Cover Art" while it has none: the wiring says which.
+        label: 'Edit Playlist Cover Art',
+        icon: 'image-plus',
+        availability: 'available',
+        tone: 'neutral',
+        description: MENU_COPY.chooseCover,
       },
       {
         id: 'download-playlist',
@@ -325,6 +361,7 @@ const OWNER_ONLY_PLAYLIST_ROW_IDS: readonly OptionsRowId[] = [
   'remove-from-playlist',
   'delete-track',
   'rename-playlist',
+  'playlist-cover',
   'download-playlist',
   'delete-playlist',
 ];

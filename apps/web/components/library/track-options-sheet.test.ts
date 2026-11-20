@@ -74,7 +74,7 @@ describe('TrackOptionsSheet — retention rows', () => {
   it('offers the picker once, and Remove from Library only on a Durable Track', () => {
     renderSheet();
 
-    expect(screen.getByText('Add to Playlist')).toBeTruthy();
+    expect(screen.getByText('Add to Playlists')).toBeTruthy();
     expect(screen.getByText('Remove from Library')).toBeTruthy();
     expect(screen.queryByText('Save Track')).toBeNull();
   });
@@ -82,7 +82,7 @@ describe('TrackOptionsSheet — retention rows', () => {
   it('drops the Remove row for a Track that is in no Playlist', () => {
     renderSheet(vi.fn(), { ...TRACK, savedAt: null });
 
-    expect(screen.getByText('Add to Playlist')).toBeTruthy();
+    expect(screen.getByText('Add to Playlists')).toBeTruthy();
     expect(screen.queryByText('Remove from Library')).toBeNull();
   });
 

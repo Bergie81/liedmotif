@@ -1,7 +1,7 @@
 ---
 title: Privacy and security
 description: What stays on your own Liedmotif instance, what each provider sees, what an admin can see, and how the instance protects itself.
-checkedOn: 2026-11-19
+checkedOn: 2026-11-20
 ---
 
 Everything on this page is about your own instance: the copy of Liedmotif you run on your laptop, your server or your cloud provider. There's no Liedmotif-run service behind it. This website, liedmotif.com, has no accounts and no connection to your instance, so we can't see your music, your prompts or even that you exist.
@@ -79,9 +79,9 @@ Their terms decide this, not Liedmotif, and they can change, so check them yours
 
 So if you'd rather keep Google from learning from your words, turn on billing for the key's project before you use Gemini as your text AI.
 
-### Run without my profile details
+### Run Without My Profile Details
 
-Turn on **Run without my profile details** when you start a session to keep your own details out of that session's AI prompts and its cover references: your profile, your own About text and your photos. People you name exactly in the request are still used, with their About text and photos. The lyric brief is then built from your request and those people alone. **More Like This** starts a new session with personalization back on.
+Turn on **Run Without My Profile Details** when you start a session to keep your own details out of that session's AI prompts and its cover references: your profile, your own About text and your photos. People you name exactly in the request are still used, with their About text and photos. The lyric brief is then built from your request and those people alone. **More Like This** starts a new session with personalization back on.
 
 ### Other services you may connect
 

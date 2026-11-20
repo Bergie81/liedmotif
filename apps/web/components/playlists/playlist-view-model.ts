@@ -6,6 +6,7 @@
 
 import { MENU_COPY } from '@/components/ui/menu-copy';
 import {
+  isCuratedPlaylist,
   isOwnerNamedPlaylist,
   MAX_PLAYLIST_ORDER_TRACKS,
   type PlaylistMemberItem,
@@ -143,6 +144,20 @@ export function canDownloadPlaylist(
   playlist: Pick<PlaylistSummaryItem, 'downloadableTrackCount'>,
 ): boolean {
   return playlist.downloadableTrackCount > 0;
+}
+
+/**
+ * The cards the Playlists tab shows, in order: Favorites always first, then the
+ * hand-picked playlists in the server's order (pins first). The server's search
+ * already filtered both, so a Favorites that does not match never arrives.
+ */
+export function playlistsTabPlaylists<
+  T extends Pick<PlaylistSummaryItem, 'kind' | 'listedInPlaylists'>,
+>(playlists: readonly T[]): T[] {
+  return [
+    ...playlists.filter((playlist) => playlist.kind === 'favorites'),
+    ...playlists.filter(isCuratedPlaylist),
+  ];
 }
 
 /** The acts the Playlist screen keeps behind its one `⋯` — every act that

@@ -12,7 +12,7 @@ import {
 // The Lounge share route: owner-gated, with the uniform
 // 404 refusal — a cross-owner playlistId must be byte-for-byte
 // indistinguishable from an unknown one, so nothing leaks about what privately
-// exists. Favorites and unlisted collections refuse with 409 (the kind gate);
+// exists. Unlisted collections refuse with 409 (the kind gate);
 // a `selected` audience naming no valid User refuses with 400.
 
 const holder = vi.hoisted(() => ({ db: null as unknown, ownerUserId: null as string | null }));
@@ -110,17 +110,14 @@ describe.skipIf(skip)('POST /api/playlists/share', () => {
     expect(flipped.rowCount).toBe(0);
   });
 
-  it('Favorites refuses with 409 (the kind gate holds at the route)', async () => {
+  it('an unlisted collection refuses with 409 (the kind gate holds at the route)', async () => {
     holder.ownerUserId = await createUser(testDb.db);
-    // Surface Favorites the way the app does: the list ensures it exists.
-    await listGet(new Request('http://localhost/api/playlists'));
-    const favorites = await testDb.pool.query("select id from playlists where kind = 'favorites'");
-    const favoritesId = favorites.rows[0].id as string;
+    const playlistId = await createUserPlaylist('Saved tracks');
+    await testDb.pool.query('update playlists set listed_in_playlists = false where id = $1', [
+      playlistId,
+    ]);
 
-    const refused = await postJson(sharePost, {
-      playlistId: favoritesId,
-      audience: { kind: 'everyone' },
-    });
+    const refused = await postJson(sharePost, { playlistId, audience: { kind: 'everyone' } });
     expect(refused.status).toBe(409);
   });
 });

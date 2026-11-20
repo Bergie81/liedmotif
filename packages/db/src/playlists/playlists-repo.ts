@@ -693,6 +693,10 @@ export async function setTrackFavorited(
     } else if (!args.favorited && member) {
       await tx.delete(playlistTracks).where(eq(playlistTracks.id, member.id));
       await resequencePlaylistInTx(tx, favorites.id);
+      // Leaving an In-Lounge Favorites can end the track's audibility.
+      if (favorites.sharedAt && !foreign) {
+        await purgeRevokedSharedReferencesInTx(tx, { trackIds: [args.trackId] });
+      }
     }
     if (args.favorited === !member) {
       await tx.update(playlists).set({ updatedAt: now }).where(eq(playlists.id, favorites.id));

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { LibraryTrackItem, LibraryView, TrackFlags } from '@liedmotif/shared';
+import type { LibraryTrackItem, TrackFlags } from '@liedmotif/shared';
 import { deleteTrack as deleteTrackApi, favoriteTrack, unsaveTrack } from '@/lib/http/api-client';
 import { toast } from '@/lib/toast';
 import {
@@ -9,6 +9,7 @@ import {
   presentCreationFailure,
 } from '@/components/create/creation-refusal';
 import { useSeedMoreLikeThis } from '@/components/sessions/use-seed-more-like-this';
+import type { LibraryTrackTab } from './use-library-query';
 
 export type LibraryActionName = 'save' | 'favorite' | 'seed' | 'delete';
 export type BusyAction = { trackId: string; action: LibraryActionName } | null;
@@ -27,7 +28,7 @@ export function useLibraryActions({
   onFlagsResolved,
   onTrackRemoved,
 }: {
-  view: LibraryView;
+  view: LibraryTrackTab;
   /** `inCuratedPlaylist` rides alongside the flags because no flag implies it:
    *  only the save picker moves it, so every caller states what it knows. */
   onFlagsResolved: (
@@ -67,16 +68,13 @@ export function useLibraryActions({
       reportFailure('save', `Save change failed: ${result.error.message}`);
       return;
     }
-    const remove = view === 'saved' || (view === 'favorites' && !result.data.favoritedAt);
     // Unsave leaves EVERY playlist, so no curated membership survives it.
-    onFlagsResolved(track.id, result.data, false, remove);
+    onFlagsResolved(track.id, result.data, false, view === 'saved');
   }
 
   /** Reflect a settled save-picker commit (the picker owns the write). */
   function applyPickerFlags(trackId: string, flags: TrackFlags, inCuratedPlaylist: boolean) {
-    const remove =
-      (view === 'saved' && !flags.savedAt) || (view === 'favorites' && !flags.favoritedAt);
-    onFlagsResolved(trackId, flags, inCuratedPlaylist, remove);
+    onFlagsResolved(trackId, flags, inCuratedPlaylist, view === 'saved' && !flags.savedAt);
   }
 
   async function toggleFavorite(track: LibraryTrackItem) {
@@ -95,8 +93,7 @@ export function useLibraryActions({
       track.id,
       result.data,
       track.inCuratedPlaylist,
-      (view === 'favorites' && !result.data.favoritedAt) ||
-        (view === 'saved' && !result.data.savedAt),
+      view === 'saved' && !result.data.savedAt,
     );
   }
 

@@ -55,7 +55,7 @@ export function PlaylistCardShell({
     <div
       className={cn(
         cardShellClass,
-        'group relative overflow-hidden transition hover:border-line-2',
+        'group relative overflow-hidden transition-[translate,border-color,box-shadow] duration-200 ease-[ease] hover:-translate-y-0.5 hover:border-lamp/60 hover:shadow-[0_14px_44px_-10px_var(--lamp-glow)] motion-reduce:translate-none motion-reduce:transition-none',
       )}
       data-testid={testId}
     >

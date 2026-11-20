@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import type { PlaylistSummaryItem } from '@liedmotif/shared';
 import { OfflineMenuRow } from '@/components/offline/offline-menu-row';
-import { SheetContent, SheetHeader } from '@/components/ui/sheet';
+import { SheetBody, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { PlaylistCover } from './playlist-cover';
 import { formatPlaylistCardMeta } from './playlist-view-model';
 
@@ -23,7 +23,7 @@ export function PlaylistOptionsSheetContent({
   children?: ReactNode;
 }) {
   return (
-    <SheetContent side="bottom" className="overflow-y-auto">
+    <SheetContent side="bottom" className="flex flex-col">
       <SheetHeader
         title={playlist.name}
         closeLabel={`Close options for ${playlist.name}`}
@@ -39,14 +39,14 @@ export function PlaylistOptionsSheetContent({
             coverImageId={playlist.coverImageId}
             mosaicCoverImageIds={playlist.mosaicCoverImageIds}
             thumb
-            className="h-12 w-12 shrink-0 rounded-[10px]"
+            className="h-12 w-12 shrink-0 rounded-[2px]"
           />
         }
       />
-      <div className="mt-4">
+      <SheetBody className="mt-4">
         <OfflineMenuRow kind="playlist" id={playlist.id} />
         {children}
-      </div>
+      </SheetBody>
     </SheetContent>
   );
 }

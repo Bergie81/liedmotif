@@ -65,7 +65,7 @@ export default async function MyBudgetPage() {
           </SettingsCard>
         </SettingsSection>
 
-        <SettingsSection title="Shared budget">
+        <SettingsSection title="Shared Budget">
           <SettingsCard>
             <BudgetUsageMeters usage={{ kind: 'rolling', figures: data.shared }} />
             <SettingsFootnote>
@@ -75,7 +75,7 @@ export default async function MyBudgetPage() {
           </SettingsCard>
         </SettingsSection>
 
-        <SettingsSection title="Who pays">
+        <SettingsSection title="Who Pays">
           <SettingsCard>
             <p className="text-[13px] leading-relaxed text-muted">
               Every generation here is paid for by{' '}

@@ -1,13 +1,20 @@
 import {
   getCachedLearnedTaste,
+  getHomeGreetingFacts,
   getCoverArtSettings,
   getGenerationSettings,
   getUsageLimits,
   rankForYouGenres,
 } from '@liedmotif/db';
-import { GENRE_IDS, GENRE_SHORTLIST_SIZE } from '@/components/create/genre-vocabulary';
+import { GENRE_IDS, GENRE_SHORTLIST_SIZE, genreLabel } from '@/components/create/genre-vocabulary';
 import { INTENT_PARAM, intentFromParam } from '@/components/create/intent-prefill';
-import { hourInTimezone, pickGreeting } from '@/components/home/home-greeting';
+import {
+  anniversaryYears,
+  localClock,
+  NO_GREETING_FACTS,
+  pickGreeting,
+  type GreetingFacts,
+} from '@/components/home/home-greeting';
 import { HomeView } from '@/components/home/home-view';
 import { RECENT_SESSIONS_LIMIT } from '@/lib/constants';
 import { getDb } from '@/lib/db';
@@ -38,7 +45,8 @@ export default async function HomePage({
     forYouGenres,
     ownVoiceOffer,
     recentSessions,
-    localHour,
+    timezone,
+    greetingFacts,
     pendingSurprise,
   ] = await Promise.all([
     viewer
@@ -93,19 +101,49 @@ export default async function HomePage({
       )
       .catch(() => null),
     // The instance reset timezone is the app's one declared local clock (the
-    // container's own is typically UTC), so it decides which daypart the
+    // container's own is typically UTC), so it decides the day and hour the
     // headline may greet.
     getUsageLimits(getDb())
-      .then(({ resetTimezone }) => hourInTimezone(new Date(), resetTimezone))
+      .then(({ resetTimezone }) => resetTimezone)
+      .catch(() => null),
+    viewer
+      .then((value) =>
+        value
+          ? getHomeGreetingFacts(getDb(), { ownerUserId: value.session.user.id, now: new Date() })
+          : null,
+      )
       .catch(() => null),
     viewer
       .then((value) => (value ? loadPendingSurprise(getDb(), value.session.user.id) : null))
       .catch(() => null),
   ]);
 
+  const now = new Date();
+  const clock = timezone ? localClock(now, timezone) : null;
+  const joinedAt = await viewer.then((value) => value?.session.user.createdAt ?? null);
+  // Every fact is a best-effort cosmetic: a failed read only drops its lines.
+  const facts: GreetingFacts = {
+    ...NO_GREETING_FACTS,
+    lastSessionTitle: recentSessions?.items[0]?.title ?? null,
+    topGenre: forYouGenres[0] ? genreLabel(forYouGenres[0]) : null,
+    ...(greetingFacts
+      ? {
+          totalTracks: greetingFacts.totalTracks,
+          tracksThisWeek: greetingFacts.tracksThisWeek,
+          daysSinceListening: greetingFacts.lastListenedAt
+            ? Math.floor((now.getTime() - greetingFacts.lastListenedAt.getTime()) / 86_400_000)
+            : null,
+        }
+      : {}),
+    anniversaryYears:
+      timezone && joinedAt
+        ? anniversaryYears(localClock(new Date(joinedAt), timezone), clock)
+        : null,
+  };
+
   return (
     <HomeView
-      greeting={pickGreeting(localHour, Math.random)}
+      greeting={pickGreeting(clock, facts, Math.random)}
       llmConfigured={llmProvider !== null}
       forYouGenres={forYouGenres}
       ownVoiceOffer={ownVoiceOffer}

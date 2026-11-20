@@ -67,7 +67,7 @@ export function MemberSettingsHub({ data }: { data: MemberSettingsHubData }) {
           </SettingsCard>
         </SettingsSection>
 
-        <SettingsSection title="Generation &amp; sound">
+        <SettingsSection title="Generation &amp; Sound">
           <SettingsCard>
             <SettingsRow
               href="/settings/generation"

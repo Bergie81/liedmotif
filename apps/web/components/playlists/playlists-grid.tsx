@@ -1,8 +1,10 @@
 'use client';
 
-// The Library's Playlists tab: a search field over the owner's hand-picked
-// playlists, a dashed "New playlist" tile, and one card per playlist whose menu
-// carries the lifecycle (play, add tracks, cover, rename, delete). A card opens
+// The Library's Playlists tab: a search field over Favorites and the owner's
+// hand-picked playlists, a dashed "New playlist" tile, and one card per playlist
+// whose menu carries the lifecycle (play, add tracks, cover, share, rename,
+// delete — Favorites keeps its name and its place, so it has no rename, delete
+// or pin). A card opens
 // the detail page for curation. Every dialog a menu row opens is owned by the
 // grid, so one `action` at a time can be in flight and no card holds mutation
 // state of its own.
@@ -10,7 +12,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  isCuratedPlaylist,
+  isOwnerNamedPlaylist,
   MAX_PLAYLIST_NAME_LENGTH,
   type PlaylistMemberItem,
   type PlaylistSummaryItem,
@@ -72,6 +74,7 @@ import {
   deletePlaylistConfirmBody,
   formatPlaylistCardMeta,
   pinToggleFailure,
+  playlistsTabPlaylists,
 } from './playlist-view-model';
 import { MENU_COPY } from '@/components/ui/menu-copy';
 import { RemoveFromLoungeRow } from '@/components/lounge/lounge-menu-rows';
@@ -82,7 +85,8 @@ type PlaylistGridAction =
   | { kind: 'create' }
   | { kind: 'rename'; playlist: PlaylistSummaryItem }
   | { kind: 'delete'; playlist: PlaylistSummaryItem }
-  | { kind: 'add-tracks'; playlist: PlaylistSummaryItem; memberIds: string[] }
+  /** `memberIds` is null while the members load inside the already-open sheet. */
+  | { kind: 'add-tracks'; playlist: PlaylistSummaryItem; memberIds: string[] | null }
   | { kind: 'cover'; playlist: PlaylistSummaryItem }
   | { kind: 'share'; playlist: PlaylistSummaryItem }
   | { kind: 'remove-from-lounge'; playlist: PlaylistSummaryItem };
@@ -137,8 +141,13 @@ export function PlaylistsGrid({
   const playback = usePlayPlaylist((message) => toast.error(message, { key: PLAY_KEY }));
   const consumeServerSeed = useServerSeed(initialPlaylists != null);
   const { loadingMore, beginFirstPage, beginNextPage, settle } = usePageEpoch();
-  // One curated projection for both the tab count and the rendered grid.
-  const curatedPlaylists = useMemo(() => playlists?.filter(isCuratedPlaylist) ?? null, [playlists]);
+  /** Counts Add Tracks openings, so a members load answers only its own. */
+  const addTracksOpening = useRef(0);
+  // One projection for both the tab count and the rendered grid.
+  const tabPlaylists = useMemo(
+    () => (playlists ? playlistsTabPlaylists(playlists) : null),
+    [playlists],
+  );
 
   // A failed load keeps whatever the grid shows, and the search field that can retry it.
   const load = useCallback(async () => {
@@ -185,14 +194,14 @@ export function PlaylistsGrid({
   // would spin effect → state → render → effect forever.
   const lastReportedCount = useRef<{ shown: number; hasMore: boolean } | null>(null);
   useEffect(() => {
-    if (!curatedPlaylists) return;
-    const shown = curatedPlaylists.length;
+    if (!tabPlaylists) return;
+    const shown = tabPlaylists.length;
     const hasMore = nextCursor !== null;
     const last = lastReportedCount.current;
     if (last && last.shown === shown && last.hasMore === hasMore) return;
     lastReportedCount.current = { shown, hasMore };
     onCountChange?.(shown, hasMore);
-  }, [curatedPlaylists, nextCursor, onCountChange]);
+  }, [tabPlaylists, nextCursor, onCountChange]);
 
   async function create(name: string): Promise<string | null> {
     const result = await createPlaylist(name);
@@ -201,13 +210,16 @@ export function PlaylistsGrid({
     return null;
   }
 
-  /** `failureKey` is the act's own, so one act's retry never clears another's failure. */
+  /** `failureKey` is the act's own, so one act's retry never clears another's failure.
+   *  An answer the act no longer wants (`isCurrent`) lands nowhere, not even as a toast. */
   async function loadMembers(
     playlist: PlaylistSummaryItem,
     failureKey: string,
+    isCurrent: () => boolean = () => true,
   ): Promise<PlaylistMemberItem[] | null> {
     toast.dismiss(failureKey);
     const result = await getAllPlaylistMembers(playlist.id);
+    if (!isCurrent()) return null;
     if (!result.ok) {
       toast.error(`Couldn’t load the playlist: ${result.error.message}`, { key: failureKey });
       return null;
@@ -220,11 +232,19 @@ export function PlaylistsGrid({
     if (items) playback.play(playlist, items);
   }
 
+  /** The sheet opens at once so the options menu hands straight over to it;
+   *  the answer only lands while that same opening is still up — a closed or
+   *  reopened sheet starts a new opening, even for the same playlist. */
   async function startAddTracks(playlist: PlaylistSummaryItem) {
-    const items = await loadMembers(playlist, ADD_TRACKS_KEY);
-    if (items) {
-      setAction({ kind: 'add-tracks', playlist, memberIds: items.map((item) => item.id) });
-    }
+    const opening = ++addTracksOpening.current;
+    const isCurrent = () => addTracksOpening.current === opening;
+    setAction({ kind: 'add-tracks', playlist, memberIds: null });
+    const items = await loadMembers(playlist, ADD_TRACKS_KEY, isCurrent);
+    if (!isCurrent()) return;
+    setAction((current) => {
+      if (current?.kind !== 'add-tracks' || current.playlist.id !== playlist.id) return current;
+      return items ? { ...current, memberIds: items.map((item) => item.id) } : null;
+    });
   }
 
   async function applyRename(playlist: PlaylistSummaryItem, name: string): Promise<string | null> {
@@ -275,7 +295,7 @@ export function PlaylistsGrid({
       ) : (
         <>
           <PlaylistsGridContent
-            curatedPlaylists={curatedPlaylists ?? []}
+            playlists={tabPlaylists ?? []}
             searchQuery={search}
             onCreate={() => setAction({ kind: 'create' })}
             actions={{
@@ -349,7 +369,10 @@ export function PlaylistsGrid({
           playlistId={action.playlist.id}
           playlistName={action.playlist.name}
           existingTrackIds={action.memberIds}
-          onClose={() => setAction(null)}
+          onClose={() => {
+            addTracksOpening.current += 1;
+            setAction(null);
+          }}
           onAdded={() => void load()}
         />
       ) : null}
@@ -376,21 +399,24 @@ export function PlaylistsGrid({
 }
 
 export function PlaylistsGridContent({
-  curatedPlaylists,
+  playlists,
   searchQuery = '',
   onCreate,
   actions,
 }: {
-  /** Hand-picked playlists only — the caller filters with `isCuratedPlaylist`. */
-  curatedPlaylists: PlaylistSummaryItem[];
-  /** The active search; a no-result grid renders "no matches", not the starter copy. */
+  /** The cards in order — the caller projects them with `playlistsTabPlaylists`. */
+  playlists: PlaylistSummaryItem[];
+  /** The active search; a no-result grid renders "no matches". */
   searchQuery?: string;
   onCreate: () => void;
   actions: PlaylistCardActions;
 }) {
   return (
     <>
-      {curatedPlaylists.length === 0 ? <PlaylistsEmpty searchQuery={searchQuery} /> : null}
+      {/* Favorites is ensured by every load, so only a search can empty the grid. */}
+      {playlists.length === 0 && searchQuery ? (
+        <PlaylistsNoMatches searchQuery={searchQuery} />
+      ) : null}
       {/* Column counts follow the shell's bands, not the viewport: below `desk`
           the content column is a fixed --shell-col, so a viewport-keyed step
           there would squeeze cards into a column that never grew. */}
@@ -405,7 +431,7 @@ export function PlaylistsGridContent({
             data-testid="new-playlist-tile"
             className={cn(
               cardClass,
-              'grid min-h-[150px] place-items-center border-dashed text-muted transition hover:border-line-2 hover:text-fore',
+              'grid min-h-[150px] place-items-center border-dashed text-muted transition-[translate,border-color,color,box-shadow] duration-200 ease-[ease] hover:-translate-y-0.5 hover:border-lamp hover:text-lamp hover:shadow-[0_14px_44px_-10px_var(--lamp-glow)] motion-reduce:translate-none motion-reduce:transition-none',
             )}
           >
             <span className="flex flex-col items-center gap-2 text-[13.5px]">
@@ -413,7 +439,7 @@ export function PlaylistsGridContent({
             </span>
           </button>
         </OnlineOnly>
-        {curatedPlaylists.map((playlist) => (
+        {playlists.map((playlist) => (
           <PlaylistCard key={playlist.id} playlist={playlist} actions={actions} />
         ))}
       </div>
@@ -474,17 +500,10 @@ function PlaylistCard({
   );
 }
 
-function PlaylistsEmpty({ searchQuery }: { searchQuery: string }) {
-  if (searchQuery) {
-    return (
-      <EmptyState icon={<ListMusic className="h-6 w-6" />} title="No matches" className="mt-4">
-        No playlist name, Track, or genre in a playlist matches “{searchQuery}”.
-      </EmptyState>
-    );
-  }
+function PlaylistsNoMatches({ searchQuery }: { searchQuery: string }) {
   return (
-    <EmptyState icon={<ListMusic className="h-6 w-6" />} title="No playlists yet" className="mt-4">
-      Saving a Track files it into a playlist — or start one here and add tracks from your Library.
+    <EmptyState icon={<ListMusic className="h-6 w-6" />} title="No matches" className="mt-4">
+      No playlist name, Track, or genre in a playlist matches “{searchQuery}”.
     </EmptyState>
   );
 }
@@ -497,6 +516,9 @@ function PlaylistCardMenu({
   actions: PlaylistCardActions;
 }) {
   const [open, setOpen] = useState(false);
+  const ownerNamed = isOwnerNamedPlaylist(playlist.kind);
+  // Favorites always leads the grid, so a pin would move nothing.
+  const pinnable = playlist.kind !== 'favorites';
 
   function pick(action: (playlist: PlaylistSummaryItem) => void) {
     setOpen(false);
@@ -519,16 +541,18 @@ function PlaylistCardMenu({
           description="Play its tracks in order"
           onClick={() => pick(actions.onPlay)}
         />
-        <MenuRow
-          onlineOnly
-          icon={<Pin className={cn(playlist.pinnedAt && 'fill-current')} />}
-          label={playlist.pinnedAt ? 'Unpin Playlist' : 'Pin Playlist'}
-          description={
-            playlist.pinnedAt ? 'Stop listing it first' : 'List it first in your playlists'
-          }
-          data-testid={`playlist-menu-pin-${playlist.id}`}
-          onClick={() => pick(actions.onTogglePin)}
-        />
+        {pinnable ? (
+          <MenuRow
+            onlineOnly
+            icon={<Pin className={cn(playlist.pinnedAt && 'fill-current')} />}
+            label={playlist.pinnedAt ? 'Unpin Playlist' : 'Pin Playlist'}
+            description={
+              playlist.pinnedAt ? 'Stop listing it first' : 'List it first in your playlists'
+            }
+            data-testid={`playlist-menu-pin-${playlist.id}`}
+            onClick={() => pick(actions.onTogglePin)}
+          />
+        ) : null}
         <MenuRow
           onlineOnly
           icon={<Plus />}
@@ -543,13 +567,15 @@ function PlaylistCardMenu({
           description={MENU_COPY.chooseCover}
           onClick={() => pick(actions.onManageCover)}
         />
-        <MenuRow
-          onlineOnly
-          icon={<Pencil />}
-          label="Rename Playlist"
-          description={MENU_COPY.renamePlaylist}
-          onClick={() => pick(actions.onRename)}
-        />
+        {ownerNamed ? (
+          <MenuRow
+            onlineOnly
+            icon={<Pencil />}
+            label="Rename Playlist"
+            description={MENU_COPY.renamePlaylist}
+            onClick={() => pick(actions.onRename)}
+          />
+        ) : null}
         <MenuRow
           onlineOnly
           icon={<Armchair />}
@@ -573,15 +599,17 @@ function PlaylistCardMenu({
           data-testid={`playlist-menu-download-${playlist.id}`}
           onClick={() => pick((item) => startFileDownload(playlistDownloadUrl(item.id)))}
         />
-        <MenuRow
-          onlineOnly
-          icon={<Trash2 />}
-          label="Delete Playlist"
-          description={MENU_COPY.deletePlaylist}
-          tone="danger"
-          data-testid={`playlist-menu-delete-${playlist.id}`}
-          onClick={() => pick(actions.onDelete)}
-        />
+        {ownerNamed ? (
+          <MenuRow
+            onlineOnly
+            icon={<Trash2 />}
+            label="Delete Playlist"
+            description={MENU_COPY.deletePlaylist}
+            tone="danger"
+            data-testid={`playlist-menu-delete-${playlist.id}`}
+            onClick={() => pick(actions.onDelete)}
+          />
+        ) : null}
       </PlaylistOptionsSheetContent>
     </Sheet>
   );

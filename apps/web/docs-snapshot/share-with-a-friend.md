@@ -1,7 +1,7 @@
 ---
 title: Share a home server with a friend
 description: Let a friend anywhere in the world listen on your Liedmotif at home, with two private links and nothing opened to the internet.
-checkedOn: 2026-11-19
+checkedOn: 2026-11-20
 howTo: true
 ---
 
@@ -66,7 +66,7 @@ Sharing is free on every Tailscale plan, and a friend you share with doesn't cou
 ## 2. Create the Liedmotif invite
 
 1. Open Liedmotif. Select your picture in the corner (the **Account menu**), then **Settings › Members**.
-2. Under **Invite someone**, type your friend's name in **Who is this invite for?**. Liedmotif greets them with it.
+2. Under **Invite Someone**, type your friend's name in **Who is this invite for?**. Liedmotif greets them with it.
 3. Pick a budget. **One-time** is one total that never renews. **Rolling** is caps that reset daily and at the start of each month. Adjust the numbers. Every track your friend makes is paid from your music provider account. [Budgets and the shared budget](/docs/members) has the details.
 4. Press **Create invite link**. An **Invite link** box appears. Press **Copy**, and paste the link into your note under the share link. It's shown once, works once and expires after 7 days.
 

@@ -51,8 +51,8 @@ export const playlists = pgTable(
     // The Lounge share state: null = Private, set = In Lounge —
     // live, revocable, reaching `shareAudience`. Doubles as the Lounge's
     // newest-first sort key, so re-sharing an already-shared playlist must
-    // never bump it. Only curated user playlists may carry it (Favorites and
-    // unlisted collections are refused at the repo chokepoint).
+    // never bump it. Only curated user playlists and Favorites may carry it
+    // (unlisted collections are refused at the repo chokepoint).
     sharedAt: timestamp('shared_at', { withTimezone: true }),
     // Who the share reaches; read only while `sharedAt` is set, and reset to
     // the default whenever the playlist returns to Private. A `selected`

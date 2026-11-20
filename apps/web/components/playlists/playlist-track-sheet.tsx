@@ -9,13 +9,14 @@
 import { Download, Info, Minus, Plus } from 'lucide-react';
 import { MenuMoreLikeThisGlyph } from '@/components/ui/glyphs';
 import type { PlaylistMemberItem } from '@liedmotif/shared';
-import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';
+import { Sheet, SheetBody, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { MenuRow } from '@/components/ui/menu-row';
 import { startFileDownload, trackDownloadUrl } from '@/lib/downloads/downloads';
 import { CoverThumb } from '@/components/player/cover-art';
 import { DeleteTrackMenuRow } from '@/components/library/delete-track-menu-row';
 import { trackDownloadNote } from '@/components/library/library-view-model';
 import { formatPlaylistMemberMetadata } from './playlist-view-model';
+import { MENU_COPY } from '@/components/ui/menu-copy';
 
 export function PlaylistTrackSheet({
   item,
@@ -55,7 +56,7 @@ export function PlaylistTrackSheet({
   return (
     <Sheet open={item !== null} onOpenChange={(next) => !next && onClose()}>
       {item ? (
-        <SheetContent side="bottom" className="overflow-y-auto" data-testid="playlist-track-sheet">
+        <SheetContent side="bottom" className="flex flex-col" data-testid="playlist-track-sheet">
           <SheetHeader
             leading={<CoverThumb coverImageId={item.coverImageId} />}
             title={title}
@@ -66,7 +67,7 @@ export function PlaylistTrackSheet({
             }
             closeLabel={`Close options for ${title}`}
           />
-          <div className="mt-4" role="group" aria-label="Track options">
+          <SheetBody className="mt-4" role="group" aria-label="Track options">
             {visitor ? null : (
               <MenuRow
                 onlineOnly
@@ -82,8 +83,8 @@ export function PlaylistTrackSheet({
             <MenuRow
               onlineOnly
               icon={<Plus />}
-              label="Add to Playlist"
-              description="Choose which playlists it belongs to"
+              label="Add to Playlists"
+              description={MENU_COPY.choosePlaylists}
               data-testid="playlist-add-track-to-playlist"
               onClick={() => onAddToPlaylist(item)}
             />
@@ -126,7 +127,7 @@ export function PlaylistTrackSheet({
                 />
               </>
             )}
-          </div>
+          </SheetBody>
         </SheetContent>
       ) : null}
     </Sheet>

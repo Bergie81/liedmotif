@@ -2,7 +2,7 @@
 
 // The save picker (retention is membership): saving a Track means filing it into
 // at least one Playlist. One shared bottom sheet for the player Save button, the
-// Library options sheet, and "Add to Playlist" — a checklist of the playlists
+// Library options sheet, and "Add to Playlists" — a checklist of the playlists
 // the owner curates (checked = already a member), a "New playlist" row at the
 // head of the list, and one atomic commit through `applyTrackMemberships`.
 //
@@ -16,7 +16,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { isCuratedPlaylist, type PlaylistSummaryItem } from '@liedmotif/shared';
-import { Armchair, ListMusic, Plus } from 'lucide-react';
+import { Armchair, Plus } from 'lucide-react';
 import {
   applyTrackMemberships,
   getAllPlaylists,
@@ -24,13 +24,25 @@ import {
 } from '@/lib/http/api-client';
 import { cn } from '@/lib/cn';
 import { toast } from '@/lib/toast';
-import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';
-import { AlertBanner, CheckIndicator, menuRowClass } from '@/components/ui/design-system';
-import { inputClass, primaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
+import { Sheet, SheetBody, SheetContent, SheetHeader } from '@/components/ui/sheet';
+import { AlertBanner, CheckIndicator } from '@/components/ui/design-system';
+import { primaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
 import { LoadingRow, LiedmotifLoader } from '@/components/ui/loading';
 import { CoverThumb } from '@/components/player/cover-art';
+import { PlaylistCover } from './playlist-cover';
 
 const SAVE_KEY = 'save-to-playlist';
+
+/** A picker row: the menu row's rule and type, at the height a 48 px cover
+ *  sets — the size search rows show a playlist at, big enough to tell art apart. */
+const pickerRowClass =
+  'flex w-full items-center gap-3 border-b border-line px-1 py-2 text-left text-[14.5px] font-medium text-paper last:border-b-0 disabled:cursor-not-allowed disabled:opacity-45';
+/** The name field, boxed like every field but shorter than the 48 px cover, so
+ *  it opens inside the row it replaces without moving the list below it. */
+const newNameFieldClass =
+  'h-10 min-w-0 flex-1 rounded-xl border border-line-2 bg-[var(--field-bg)] px-3 text-[14.5px] text-paper shadow-[var(--shadow-field)] outline-none placeholder:text-dim focus:border-lamp/60 focus:shadow-[0_0_0_3px_var(--lamp-glow)] light:focus:bg-panel';
+/** The 48 px leading square every picker row carries, cover or not. */
+const pickerLeadClass = 'h-12 w-12 flex-none rounded-[10px]';
 
 /** One Playlist by name; several by count, since names run to 60 characters. */
 function playlistsPhrase(names: string[]): string {
@@ -163,7 +175,7 @@ function PickerContent({
   }
 
   return (
-    <SheetContent side="bottom" className="overflow-y-auto" data-testid="save-picker-sheet">
+    <SheetContent side="bottom" className="flex flex-col" data-testid="save-picker-sheet">
       <SheetHeader
         leading={<CoverThumb coverImageId={track.coverImageId} />}
         title="Save to Playlists"
@@ -173,78 +185,102 @@ function PickerContent({
         // suppresses the wrap and lets the line run past the header.
         description={<span className="block truncate">{track.title ?? 'Untitled Track'}</span>}
       />
-      {loadError ? <AlertBanner className="mt-4">{loadError}</AlertBanner> : null}
+      <SheetBody>
+        {loadError ? <AlertBanner className="mt-4">{loadError}</AlertBanner> : null}
 
-      {playlists === null && !loadError ? (
-        <LoadingRow className="mt-6 py-6" label="Loading Playlists…" />
-      ) : null}
+        {playlists === null && !loadError ? (
+          <LoadingRow className="mt-6 py-6" label="Loading Playlists…" />
+        ) : null}
 
-      {playlists ? (
-        <div className="mt-4" role="group" aria-label="Playlists">
-          {/* Making a playlist heads the list: it is the one row whose place
+        {playlists ? (
+          <div className="mt-4" role="group" aria-label="Playlists">
+            {/* Making a playlist heads the list: it is the one row whose place
               cannot depend on how many playlists the owner already has. Its rule
-              stays the rows' — a hairline separates it from what follows it. */}
-          {creating ? (
-            <div className="border-b border-line pb-3 last:border-b-0">
-              <input
-                className={cn(inputClass, 'w-full')}
-                value={newName}
-                maxLength={60}
-                autoFocus
-                placeholder="New playlist name"
-                aria-label="New playlist name"
-                disabled={busy}
-                onChange={(event) => setNewName(event.target.value)}
-              />
-            </div>
-          ) : (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => setCreating(true)}
-              className={cn(menuRowClass, 'w-full')}
-              data-testid="picker-new-playlist"
-            >
-              <Plus className="h-[18px] w-[18px]" aria-hidden />
-              <span className="min-w-0 flex-1 truncate text-left">New playlist</span>
-            </button>
-          )}
-
-          {playlists.filter(isCuratedPlaylist).map((playlist) => {
-            const isChecked = checked.has(playlist.id);
-            return (
-              <button
-                key={playlist.id}
-                type="button"
-                role="checkbox"
-                aria-checked={isChecked}
-                disabled={busy}
-                onClick={() => toggle(playlist.id)}
-                className={cn(menuRowClass, 'w-full')}
-                data-testid="picker-playlist"
-              >
-                <ListMusic className="h-[18px] w-[18px]" aria-hidden />
-                <span className="min-w-0 flex-1 truncate text-left">{playlist.name}</span>
-                {/* The consent cue: filing a Track here makes it
-                    instantly audible to everyone on the Instance. */}
-                {playlist.sharedAt ? (
-                  <span
-                    className="flex items-center gap-1 font-mono text-[10.5px] uppercase tracking-[0.04em] text-lamp"
-                    data-testid={`picker-in-lounge-${playlist.id}`}
-                  >
-                    <Armchair className="h-3 w-3 shrink-0" aria-hidden />
-                    In the Lounge
-                  </span>
-                ) : null}
-                <span className="font-mono text-[10.5px] tracking-[0.04em] text-dim">
-                  {playlist.trackCount}
+              stays the rows' — a hairline separates it from what follows it. Naming
+              happens in the row itself, so opening the field never moves the
+              list under the owner's finger. */}
+            {creating ? (
+              <div className={pickerRowClass}>
+                <span
+                  className={cn(
+                    pickerLeadClass,
+                    'grid place-items-center border border-dashed border-line-2 text-muted',
+                  )}
+                >
+                  <Plus className="h-[18px] w-[18px]" aria-hidden />
                 </span>
-                <CheckIndicator checked={isChecked} />
+                <input
+                  className={newNameFieldClass}
+                  value={newName}
+                  maxLength={60}
+                  autoFocus
+                  placeholder="New playlist name"
+                  aria-label="New playlist name"
+                  disabled={busy}
+                  onChange={(event) => setNewName(event.target.value)}
+                />
+              </div>
+            ) : (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setCreating(true)}
+                className={pickerRowClass}
+                data-testid="picker-new-playlist"
+              >
+                <span
+                  className={cn(
+                    pickerLeadClass,
+                    'grid place-items-center border border-dashed border-line-2 text-muted',
+                  )}
+                >
+                  <Plus className="h-[18px] w-[18px]" aria-hidden />
+                </span>
+                <span className="min-w-0 flex-1 truncate text-left">New playlist</span>
               </button>
-            );
-          })}
-        </div>
-      ) : null}
+            )}
+
+            {playlists.filter(isCuratedPlaylist).map((playlist) => {
+              const isChecked = checked.has(playlist.id);
+              return (
+                <button
+                  key={playlist.id}
+                  type="button"
+                  role="checkbox"
+                  aria-checked={isChecked}
+                  disabled={busy}
+                  onClick={() => toggle(playlist.id)}
+                  className={pickerRowClass}
+                  data-testid="picker-playlist"
+                >
+                  <PlaylistCover
+                    coverImageId={playlist.coverImageId}
+                    mosaicCoverImageIds={playlist.mosaicCoverImageIds}
+                    className={pickerLeadClass}
+                    thumb
+                  />
+                  <span className="min-w-0 flex-1 truncate text-left">{playlist.name}</span>
+                  {/* The consent cue: filing a Track here makes it
+                    instantly audible to everyone on the Instance. */}
+                  {playlist.sharedAt ? (
+                    <span
+                      className="flex items-center gap-1 font-mono text-[10.5px] uppercase tracking-[0.04em] text-lamp"
+                      data-testid={`picker-in-lounge-${playlist.id}`}
+                    >
+                      <Armchair className="h-3 w-3 shrink-0" aria-hidden />
+                      In the Lounge
+                    </span>
+                  ) : null}
+                  <span className="font-mono text-[10.5px] tracking-[0.04em] text-dim">
+                    {playlist.trackCount}
+                  </span>
+                  <CheckIndicator checked={isChecked} />
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+      </SheetBody>
 
       <div className="mt-5 flex gap-2">
         <button

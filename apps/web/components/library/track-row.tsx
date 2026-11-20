@@ -23,7 +23,6 @@ export function TrackRow({
   onPreview,
   onOptions,
   optionsLabel,
-  optionsIcon,
   minimalCoverRounding = false,
 }: {
   track: TrackSummary;
@@ -38,7 +37,6 @@ export function TrackRow({
    *  slot stays either way, so a list does not reflow when it drops them. */
   onOptions?: (opener: HTMLButtonElement) => void;
   optionsLabel?: string;
-  optionsIcon?: ReactNode;
   /** Library and Playlist lists keep their covers' rounding to a hairline. */
   minimalCoverRounding?: boolean;
 }) {
@@ -97,7 +95,7 @@ export function TrackRow({
             onClick={(event) => onOptions(event.currentTarget)}
             aria-label={optionsLabel ?? `Options for ${title}`}
           >
-            {optionsIcon ?? <EllipsisVertical className="h-[19px] w-[19px]" />}
+            <EllipsisVertical className="h-[19px] w-[19px]" />
           </button>
         ) : null}
       </div>

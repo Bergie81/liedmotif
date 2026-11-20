@@ -109,7 +109,7 @@ export function LimitsForm({
 
   return (
     <>
-      <SettingsSection id="cost-controls" title="Cost controls">
+      <SettingsSection id="cost-controls" title="Cost Controls">
         <SettingsCard>
           <SettingsControlRow label="Instance timezone">
             <TimezoneSelect
@@ -232,7 +232,7 @@ export function LimitsForm({
         {saveButton}
       </SettingsSection>
 
-      <SettingsSection title="Cover art budget">
+      <SettingsSection title="Cover Art Budget">
         <SettingsCard>
           <SettingsControlRow
             label="Generate Tailored Cover Art"

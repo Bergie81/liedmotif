@@ -40,7 +40,7 @@ export default async function ProfileSettingsPage() {
             </div>
           </SettingsCard>
         </SettingsSection>
-        <SettingsSection title="Users & invites">
+        <SettingsSection title="Users & Invites">
           <SettingsCard>
             <SettingsControlRow label="You">
               <span className="inline-flex items-center gap-1.5 rounded-[5px] border border-lamp/45 px-2 py-[2px] font-mono text-[9.5px] uppercase tracking-[0.1em] text-lamp">

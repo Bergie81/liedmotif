@@ -16,7 +16,7 @@ import {
 import { SessionDurationControl } from '@/components/create/session-duration-control';
 import { primaryButtonClass } from '@/components/ui/form-styles';
 import { OnlineOnly } from '@/components/ui/online-only';
-import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';
+import { Sheet, SheetBody, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { setSessionMode } from '@/lib/http/api-client';
 import { cn } from '@/lib/cn';
 import { toast } from '@/lib/toast';
@@ -203,17 +203,19 @@ export function NewMusicSheet({
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetContent side="bottom" className="overflow-y-auto">
+      <SheetContent side="bottom" className="flex flex-col">
         <SheetHeader title="New music" description={status.sentence} closeDisabled={saving} />
-        <NewMusicPanel
-          session={session}
-          generatedLine={status.generatedLine}
-          available={available}
-          saving={saving}
-          onSavingChange={setSaving}
-          onClose={() => onOpenChange(false)}
-          onSessionChange={onSessionChange}
-        />
+        <SheetBody>
+          <NewMusicPanel
+            session={session}
+            generatedLine={status.generatedLine}
+            available={available}
+            saving={saving}
+            onSavingChange={setSaving}
+            onClose={() => onOpenChange(false)}
+            onSessionChange={onSessionChange}
+          />
+        </SheetBody>
       </SheetContent>
     </Sheet>
   );

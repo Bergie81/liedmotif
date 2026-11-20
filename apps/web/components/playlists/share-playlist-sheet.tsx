@@ -12,7 +12,7 @@ import { cn } from '@/lib/cn';
 import { toast } from '@/lib/toast';
 import { AvatarBadge } from '@/components/avatar-badge';
 import { loungeOwnerDisplayName } from '@/components/lounge/lounge-view-model';
-import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';
+import { Sheet, SheetBody, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import {
   AlertBanner,
   CheckIndicator,
@@ -116,7 +116,11 @@ function ShareContent({
   }
 
   return (
-    <SheetContent side="bottom" className="overflow-y-auto" data-testid="share-playlist-sheet">
+    <SheetContent
+      side="bottom"
+      className="flex flex-col overflow-y-auto"
+      data-testid="share-playlist-sheet"
+    >
       <SheetHeader
         title="Share to the Lounge"
         closeDisabled={busy}
@@ -126,7 +130,7 @@ function ShareContent({
             coverImageId={playlist.coverImageId}
             mosaicCoverImageIds={playlist.mosaicCoverImageIds}
             thumb
-            className="h-12 w-12 shrink-0 rounded-[10px]"
+            className="h-12 w-12 shrink-0 rounded-[2px]"
           />
         }
       />
@@ -179,52 +183,59 @@ function ShareContent({
                 aria-label="Search people"
                 data-testid="share-search"
               />
-              {shown.length === 0 ? (
-                <p className="mt-3 px-1 text-[13.5px] text-muted">
-                  No one matches “{query.trim()}”.
-                </p>
-              ) : null}
-              <div className="mt-2" role="group" aria-label="People">
-                {shown.map((candidate) => {
-                  const label = loungeOwnerDisplayName(candidate.artistName, candidate.name);
-                  const isChecked = isShareTicked(selection, candidate.userId);
-                  return (
-                    <button
-                      key={candidate.userId}
-                      type="button"
-                      role="checkbox"
-                      aria-checked={isChecked}
-                      disabled={busy}
-                      onClick={() =>
-                        setSelection((current) =>
-                          toggleShareSelection(current, candidate.userId, candidates),
-                        )
-                      }
-                      className={cn(menuRowClass, 'w-full')}
-                      data-testid={`share-candidate-${candidate.userId}`}
-                    >
-                      <AvatarBadge
-                        name={label}
-                        imageUrl={candidate.imageUrl}
-                        className="h-7 w-7 text-[12px]"
-                      />
-                      <span className="min-w-0 flex-1 text-left">
-                        <span className="block truncate">{label}</span>
-                        {candidate.name !== label ? (
-                          <span className="block truncate text-[12px] text-muted">
-                            {candidate.name}
-                          </span>
-                        ) : null}
-                      </span>
-                      <CheckIndicator checked={isChecked} />
-                    </button>
-                  );
-                })}
-              </div>
             </>
           ) : null}
         </>
       ) : null}
+      {/* Only the people scroll: the search and All / None stay in reach of a long list.
+          The list keeps room for a few people; where even that does not fit, the
+          whole sheet scrolls instead, so every person stays reachable. */}
+      <SheetBody className={share && candidates.length > 0 ? 'min-h-36!' : undefined}>
+        {share && candidates.length > 0 ? (
+          <>
+            {shown.length === 0 ? (
+              <p className="mt-3 px-1 text-[13.5px] text-muted">No one matches “{query.trim()}”.</p>
+            ) : null}
+            <div className="mt-2" role="group" aria-label="People">
+              {shown.map((candidate) => {
+                const label = loungeOwnerDisplayName(candidate.artistName, candidate.name);
+                const isChecked = isShareTicked(selection, candidate.userId);
+                return (
+                  <button
+                    key={candidate.userId}
+                    type="button"
+                    role="checkbox"
+                    aria-checked={isChecked}
+                    disabled={busy}
+                    onClick={() =>
+                      setSelection((current) =>
+                        toggleShareSelection(current, candidate.userId, candidates),
+                      )
+                    }
+                    className={cn(menuRowClass, 'w-full')}
+                    data-testid={`share-candidate-${candidate.userId}`}
+                  >
+                    <AvatarBadge
+                      name={label}
+                      imageUrl={candidate.imageUrl}
+                      className="h-7 w-7 text-[12px]"
+                    />
+                    <span className="min-w-0 flex-1 text-left">
+                      <span className="block truncate">{label}</span>
+                      {candidate.name !== label ? (
+                        <span className="block truncate text-[12px] text-muted">
+                          {candidate.name}
+                        </span>
+                      ) : null}
+                    </span>
+                    <CheckIndicator checked={isChecked} />
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        ) : null}
+      </SheetBody>
 
       <div className="mt-5 flex gap-2">
         <button

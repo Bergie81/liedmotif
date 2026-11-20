@@ -1,7 +1,7 @@
 ---
 title: FAQ and license
 description: Straight answers on costs, providers, rights, downloads, offline use, moving your install and the license.
-checkedOn: 2026-11-19
+checkedOn: 2026-11-20
 faq: true
 ---
 
@@ -53,7 +53,7 @@ Only your own finished tracks are included. A track still in progress, a track y
 
 ### Do I have to type my own name to be in my songs?
 
-No. With a text LLM, your **About you** shapes the lyrics of every vocal session, and a request that puts you in the scene names you in the lyrics and puts you on the cover. It goes by what you mean: "With Jonas and Clara on the way back to Berlin" includes you, and so does "Auf dem Weg mit Jonas und Clara nach Berlin". Other people need their saved name. [You in your own songs](/docs/features#you-in-your-own-songs) has examples, and **Run without my profile details** on **Home** leaves you out of one session.
+No. With a text LLM, your **About you** shapes the lyrics of every vocal session, and a request that puts you in the scene names you in the lyrics and puts you on the cover. It goes by what you mean: "With Jonas and Clara on the way back to Berlin" includes you, and so does "Auf dem Weg mit Jonas und Clara nach Berlin". Other people need their saved name. [You in your own songs](/docs/features#you-in-your-own-songs) has examples, and **Run Without My Profile Details** on **Home** leaves you out of one session.
 
 ### Does it work offline?
 

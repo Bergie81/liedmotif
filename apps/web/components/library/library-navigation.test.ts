@@ -37,21 +37,19 @@ describe('Library navigation', () => {
     expect(markup).toMatch(/placeholder="Search playlists and their tracks…"/);
   });
 
-  it('opens on Playlists and orders the tabs by Library priority', () => {
+  it('opens on Playlists and offers Playlists, Saved and History, in that order', () => {
     const markup = renderToStaticMarkup(React.createElement(LibraryView));
-    const playlists = markup.indexOf('>Playlists<');
-    const favorites = markup.indexOf('>Favorites<');
-    const saved = markup.indexOf('>Saved<');
-    const history = markup.indexOf('>History<');
+    const tabs = [...markup.matchAll(/<button[^>]*aria-pressed="[^"]*"[^>]*>([^<]+)/g)].map(
+      (match) => match[1],
+    );
 
     expect(markup).toMatch(/aria-pressed="true"[^>]*>Playlists/);
-    expect([playlists, favorites, saved, history]).toEqual(
-      [...[playlists, favorites, saved, history]].sort((left, right) => left - right),
-    );
+    // Favorites is a card in the Playlists grid, not a tab of its own.
+    expect(tabs).toEqual(['Playlists', 'Saved', 'History']);
   });
 
   it('shows the count on the active tab only — Playlists included', () => {
-    for (const view of ['playlists', 'favorites', 'saved', 'history'] as const) {
+    for (const view of ['playlists', 'saved', 'history'] as const) {
       const markup = renderToStaticMarkup(
         React.createElement(LibraryNavigation, {
           view,
@@ -95,7 +93,7 @@ describe('Library navigation', () => {
   });
 
   it('does not show genre facets on any Library tab', () => {
-    for (const view of ['playlists', 'favorites', 'saved', 'history'] as const) {
+    for (const view of ['playlists', 'saved', 'history'] as const) {
       const markup = renderToStaticMarkup(
         React.createElement(LibraryNavigation, {
           view,

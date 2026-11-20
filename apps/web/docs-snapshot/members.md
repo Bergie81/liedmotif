@@ -1,7 +1,7 @@
 ---
 title: Members, invites and the lounge
 description: Bring people onto your Liedmotif, set what they can spend, share playlists with them, and take access back when you need to.
-checkedOn: 2026-11-19
+checkedOn: 2026-11-20
 ---
 
 Your instance can hold your whole household or a group of friends. Each person you invite becomes a member with their own account. Their music is paid from your provider keys, inside a budget you choose, so you always know the most they can cost. As the admin, you run all of this from **Settings › Members**, which only you can see.
@@ -19,7 +19,7 @@ An invite link starts with your instance's address, the one set as `APP_PUBLIC_U
 ## Invite someone
 
 1. Select your picture in the corner (the **Account menu**), then **Settings › Members**.
-2. Under **Invite someone**, type a name in **Who is this invite for?**. The invite page greets them with it. They choose the name they use in the app themselves.
+2. Under **Invite Someone**, type a name in **Who is this invite for?**. The invite page greets them with it. They choose the name they use in the app themselves.
 3. Pick a [budget](#budgets-and-the-shared-budget). A new invite starts on **One-time**, with 50 tracks and 25 covers.
 4. Press the button. What it does depends on whether you've set up [account email](/docs/email-and-storage).
 
@@ -95,7 +95,7 @@ Your provider makes tracks in pairs, so the track steppers land on even numbers 
 
 ### The shared budget
 
-This is the ceiling over all your members together, set under **Shared budget** on the same page. It starts at 50 tracks a day and 250 a month, and 25 covers a day and 125 a month.
+This is the ceiling over all your members together, set under **Shared Budget** on the same page. It starts at 50 tracks a day and 250 a month, and 25 covers a day and 125 a month.
 
 - **It always applies.** A member on a one-time budget is still held to its daily and monthly limits.
 - **Your own listening stays outside it.** The most your instance can spend is your own caps plus this budget, and neither side can use up the other's. Your own caps are off on a new install, so see [costs and limits](/docs/costs-and-limits) if you want them.
@@ -114,7 +114,7 @@ Starting a new session needs at least 5 tracks left in both budgets, or whatever
 
 ### What it costs you
 
-The card shows each number with an estimated price: the count multiplied by today's price, by default $0.04 per track and, per cover, your image provider's price ($0.07 until you choose one). Change those under **Settings › AI Providers › Unit costs**, or set both to 0 to hide every estimate. Only you see these. They're estimates, not a bill: you pay your providers directly, so their dashboards have the real figures.
+The card shows each number with an estimated price: the count multiplied by today's price, by default $0.04 per track and, per cover, your image provider's price ($0.07 until you choose one). Change those under **Settings › AI Providers › Unit Costs**, or set both to 0 to hide every estimate. Only you see these. They're estimates, not a bill: you pay your providers directly, so their dashboards have the real figures.
 
 Two costs sit outside every budget. Your text AI (the text LLM in `.env`) and the fetch that syncs lyrics to the music aren't counted. Questions to Roadie use the text AI too, and each member's daily allowance keeps that small. If you want the estimates to cover them, round your unit costs up a little.
 
@@ -182,7 +182,7 @@ To change your mind, open the same menu, now called **Edit Sharing**. Your own c
 
 To stop sharing in one step, pick **Remove from Lounge** in the same **⋮** menu, on the playlist's card or on your own card in the lounge, and press **Remove**. The playlist is Private again.
 
-A shared playlist is the real one, not a copy, so people hear it as you keep curating it. Adding a track makes it audible right away, and the **Add to Playlist** picker marks shared playlists with **In the Lounge** to remind you. Favorites can't be shared, and an empty playlist stays out of sight until it has tracks.
+A shared playlist is the real one, not a copy, so people hear it as you keep curating it. Adding a track makes it audible right away, and the **Add to Playlists** picker marks shared playlists with **In the Lounge** to remind you. Favorites works the same way: while it's shared, a track you star is heard right away. An empty playlist stays out of sight until it has tracks.
 
 ### What others can do
 

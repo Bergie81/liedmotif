@@ -48,7 +48,7 @@ export const APP_ROUTES: readonly AppRoute[] = [
   {
     path: '/library',
     label: 'Library',
-    description: 'Your Tracks, under Playlists, Favorites, Saved and History.',
+    description: 'Your Tracks, under Playlists (Favorites leads them), Saved and History.',
     adminOnly: false,
   },
   {

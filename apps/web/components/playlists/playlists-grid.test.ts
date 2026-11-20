@@ -1,8 +1,9 @@
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { isCuratedPlaylist, type PlaylistSummaryItem } from '@liedmotif/shared';
+import type { PlaylistSummaryItem } from '@liedmotif/shared';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { PlaylistsGridContent } from './playlists-grid';
+import { playlistsTabPlaylists } from './playlist-view-model';
 
 /** The cover URL each `img` actually requests, unwrapped from the Next image
  *  optimizer indirection when the test render goes through it. */
@@ -31,10 +32,10 @@ const basePlaylist = {
   updatedAt: '2026-07-23T10:00:00.000Z',
 };
 
-function renderGrid(curatedPlaylists: PlaylistSummaryItem[]): string {
+function renderGrid(playlists: PlaylistSummaryItem[]): string {
   return renderToStaticMarkup(
     React.createElement(PlaylistsGridContent, {
-      curatedPlaylists,
+      playlists,
       onCreate: () => undefined,
       actions: {
         onPlay: () => undefined,
@@ -54,7 +55,7 @@ describe('Playlists grid', () => {
   beforeAll(() => vi.stubGlobal('React', React));
   afterAll(() => vi.unstubAllGlobals());
 
-  it('shows New playlist first and omits the Favorites and Saved collections', () => {
+  it('shows New playlist first, then Favorites, and omits the Saved collection', () => {
     const playlists: PlaylistSummaryItem[] = [
       {
         ...basePlaylist,
@@ -72,19 +73,24 @@ describe('Playlists grid', () => {
       { ...basePlaylist, id: 'saved-user-id', name: 'Saved tracks' },
       { ...basePlaylist, id: 'playlist-id', name: 'Focus' },
     ];
-    // The grid renders the caller's curated projection (the one shared with the
-    // tab count); the curation rule itself lives in the view model.
-    const markup = renderGrid(playlists.filter(isCuratedPlaylist));
+    // The grid renders the caller's projection (the one shared with the tab
+    // count); the rule itself lives in the view model.
+    const markup = renderGrid(playlistsTabPlaylists(playlists));
 
     expect(
       [...markup.matchAll(/data-testid="(new-playlist-tile|playlist-card-[^"]+)"/g)].map(
         (match) => match[1],
       ),
-    ).toEqual(['new-playlist-tile', 'playlist-card-saved-user-id', 'playlist-card-playlist-id']);
+    ).toEqual([
+      'new-playlist-tile',
+      'playlist-card-favorites-id',
+      'playlist-card-saved-user-id',
+      'playlist-card-playlist-id',
+    ]);
 
     expect(
       [...markup.matchAll(/data-testid="playlist-menu-([^"]+)"/g)].map((match) => match[1]),
-    ).toEqual(['saved-user-id', 'playlist-id']);
+    ).toEqual(['favorites-id', 'saved-user-id', 'playlist-id']);
   });
 
   it('tells each playlist by size and freshness, and offers play from the cover', () => {

@@ -1,7 +1,7 @@
 ---
 title: Costs and limits
 description: What you pay for and to whom, what is free, how each action spends, and every limit Liedmotif offers, counted in tracks.
-checkedOn: 2026-11-19
+checkedOn: 2026-11-20
 ---
 
 Liedmotif is source-available, free for non-commercial use. The money goes straight from you to the providers you connect, and almost all of it pays for new tracks. This page shows how each action spends, which limits you can set, and what happens when one is reached.
@@ -103,7 +103,7 @@ A session with no listener then stops itself after **Idle auto-stop**, 15 minute
 
 ## Your own limits
 
-As the admin, you can leave your own spending open, since you're paying for it. A new install starts that way, and guided setup lets you turn limits on. Everything here is under **Cost controls** in **Settings › Generation**, and the **Cost limits** row in Settings leads to the same place.
+As the admin, you can leave your own spending open, since you're paying for it. A new install starts that way, and guided setup lets you turn limits on. Everything here is under **Cost Controls** in **Settings › Generation**, and the **Cost limits** row in Settings leads to the same place.
 
 | Setting | Default | Range | What it does |
 | --- | --- | --- | --- |
@@ -126,7 +126,7 @@ These apply whether or not your own limits are switched on:
 | **Pause all new music** | Off | | Stops all new music. New sessions, More Like This, Surprise Me and Change Vibe are refused; Resume and the Library keep working |
 | **Generate Tailored Cover Art** | On | | Needs an image provider with a key, its own or your text AI's. Off, covers come from your music provider |
 
-Zero is a valid limit where the range allows it, and it deliberately blocks that kind of generation. A daily or monthly limit above zero but below **Headroom to start** means no new session can ever start, so the form warns you, for example "Below 5 Tracks, no new Session can start." It still saves, and nothing else changes to make it fit. A monthly limit lower than the daily one is allowed; then the monthly one runs out first. Guided setup doesn't let your track limits go below **Headroom to start**, rounded up to a whole pair. Daily limits reset at midnight and monthly limits on the 1st, in the **Instance timezone** at the top of **Cost controls**. It starts from guided setup, or from `INSTANCE_TIMEZONE` in `.env`, and it applies to members as well.
+Zero is a valid limit where the range allows it, and it deliberately blocks that kind of generation. A daily or monthly limit above zero but below **Headroom to start** means no new session can ever start, so the form warns you, for example "Below 5 Tracks, no new Session can start." It still saves, and nothing else changes to make it fit. A monthly limit lower than the daily one is allowed; then the monthly one runs out first. Guided setup doesn't let your track limits go below **Headroom to start**, rounded up to a whole pair. Daily limits reset at midnight and monthly limits on the 1st, in the **Instance timezone** at the top of **Cost Controls**. It starts from guided setup, or from `INSTANCE_TIMEZONE` in `.env`, and it applies to members as well.
 
 ## Budgets for members
 
@@ -172,7 +172,7 @@ Resuming is never blocked, and **Change Vibe** needs room for just one more pair
 
 ## What the estimated costs show
 
-Enter your own prices under **Unit costs** in **Settings › AI Providers**, as **Per Track** and **Per Cover** in US dollars, to the cent: `0.04` for four cents, not `4`. They start at $0.04 and $0.07, the default providers' prices rounded up. On another music provider or model, change them to match. Set both to zero, and every dollar figure disappears.
+Enter your own prices under **Unit Costs** in **Settings › AI Providers**, as **Per Track** and **Per Cover** in US dollars, to the cent: `0.04` for four cents, not `4`. They start at $0.04 and $0.07, the default providers' prices rounded up. On another music provider or model, change them to match. Set both to zero, and every dollar figure disappears.
 
 **Per Cover** follows the image provider you save: $0.06 for OpenAI, $0.04 for Gemini and $0.07 for OpenRouter, the default models' prices rounded up. It follows only while it holds one of those three prices. Any other price, zero included, is your own, and changing provider leaves it alone. If you paint with a model that costs more or less, enter its price yourself.
 

@@ -908,6 +908,18 @@ export function isCuratedPlaylist(playlist: {
   return playlist.kind === 'user' && playlist.listedInPlaylists;
 }
 
+/**
+ * A Playlist its owner may place In Lounge: a curated playlist, or Favorites.
+ * A collection carrying `listedInPlaylists: false` stays private to its own
+ * Library surface; Favorites shares under its fixed name.
+ */
+export function isShareablePlaylist(playlist: {
+  kind: PlaylistKind;
+  listedInPlaylists: boolean;
+}): boolean {
+  return playlist.kind === 'favorites' || isCuratedPlaylist(playlist);
+}
+
 /** The sharing owner, as the visitor's read-only surfaces attribute them. */
 export const loungePlaylistOwnerSchema = z.strictObject({
   name: z.string(),

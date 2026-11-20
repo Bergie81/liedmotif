@@ -83,13 +83,15 @@ export function OfflineMenuRow({ kind, id }: { kind: OfflineMarkKind; id: string
 
   return (
     <div className={menuRowClassName()}>
-      <CircleArrowDown
-        className={cn(
-          'h-[18px] w-[18px] flex-none',
-          status?.state === 'ready' ? 'text-lamp' : 'text-muted',
-        )}
-        aria-hidden
-      />
+      <span className="flex h-lh flex-none items-center self-start">
+        <CircleArrowDown
+          className={cn(
+            'h-[18px] w-[18px]',
+            status?.state === 'ready' ? 'text-lamp' : 'text-muted',
+          )}
+          aria-hidden
+        />
+      </span>
       <div className="min-w-0 flex-1">
         <p className="truncate">Available offline</p>
         <p role="status" data-testid="offline-status" className={menuRowDescriptionClass}>

@@ -2,8 +2,8 @@
 // an owned playlist In Lounge for an audience (`everyone` or `selected`
 // Users), change who it reaches, or return it to Private (`audience` null).
 // GET → getPlaylistShare: the share picker's read — the current audience and
-// every other User as a candidate. Curated user playlists only —
-// Favorites and unlisted collections refuse (409); a `selected` audience naming
+// every other User as a candidate. Curated user playlists and Favorites only —
+// unlisted collections refuse (409); a `selected` audience naming
 // no valid User refuses (400). Owner-scoped: a cross-owner playlistId is
 // indistinguishable from a missing one (404 — no IDOR).
 

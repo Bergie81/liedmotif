@@ -4,13 +4,12 @@ import type { LibraryTab } from './use-library-query';
  *  tab cannot ship without one. */
 const TAB_LABELS: Record<LibraryTab, string> = {
   playlists: 'Playlists',
-  favorites: 'Favorites',
   saved: 'Saved',
   history: 'History',
 };
 
 /** The order the strip shows them in. */
-const TAB_ORDER: LibraryTab[] = ['playlists', 'favorites', 'saved', 'history'];
+const TAB_ORDER: LibraryTab[] = ['playlists', 'saved', 'history'];
 
 export function libraryTabLabel(tab: LibraryTab): string {
   return TAB_LABELS[tab];

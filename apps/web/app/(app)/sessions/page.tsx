@@ -22,8 +22,9 @@ export default async function SessionsPage() {
       <header>
         <h1 className={`${displayHeadingClass} mb-2`}>Pick up where you left off</h1>
         <p className="text-[14.5px] text-muted">
-          A Session remembers its style, queue and position. Resume any of them — it’s free until
-          fresh music is needed.
+          Pick Resume Session in a Session’s menu to keep listening from where you stopped, or tap
+          it to choose a track. Its tracks replay for free, and with New music on it keeps making
+          fresh ones in the same style.
         </p>
       </header>
       <MySessionsList initial={initial} />

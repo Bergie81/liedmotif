@@ -58,7 +58,7 @@ export default async function MembersSettingsPage() {
         </SettingsCard>
       ) : null}
       <SettingsColumns>
-        <SettingsSection title="Invite someone">
+        <SettingsSection title="Invite Someone">
           <InviteMembersSection
             invites={data.invites}
             inviteByEmail={isAccountEmailEnabled()}
@@ -81,7 +81,7 @@ export default async function MembersSettingsPage() {
           />
         </SettingsSection>
 
-        <SettingsSection title="Shared budget">
+        <SettingsSection title="Shared Budget">
           <PoolPanel
             pool={data.pool}
             poolFigures={data.poolFigures}

@@ -7,7 +7,7 @@
 
 import type { PlaylistMemberItem } from '@liedmotif/shared';
 import { FAILED_TRACK_NOTICE, formatTrackDuration } from '@/components/library/library-view-model';
-import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';
+import { Sheet, SheetBody, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { cn } from '@/lib/cn';
 import { QueueRow, queueEmptyNoteClass } from './queue-row';
 
@@ -45,44 +45,46 @@ export function PlaylistQueueSheet({
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="overflow-y-auto" data-testid="playlist-queue">
+      <SheetContent side="bottom" className="flex flex-col" data-testid="playlist-queue">
         <SheetHeader
           title={playlistName}
           description="Playback order — tap a Track to jump to it."
           closeLabel={`Close tracks in ${playlistName}`}
         />
-        {tracks.length === 0 ? (
-          <p className={queueEmptyNoteClass}>This Playlist has no Tracks left to play.</p>
-        ) : null}
-        <ol className="mt-4">
-          {tracks.map((member) => {
-            const current = member.id === currentTrackId;
-            const title = member.title ?? 'Untitled Track';
-            return (
-              <QueueRow
-                key={member.id}
-                title={title}
-                coverImageId={member.coverImageId}
-                playing={current}
-                onPlay={
-                  member.audioUrl && !member.expired ? () => onPlayTrack(member.id) : undefined
-                }
-              >
-                <span
-                  className={cn(
-                    'block min-w-0 truncate text-[14.5px] font-semibold',
-                    current && 'text-lamp',
-                  )}
+        <SheetBody>
+          {tracks.length === 0 ? (
+            <p className={queueEmptyNoteClass}>This Playlist has no Tracks left to play.</p>
+          ) : null}
+          <ol className="mt-4">
+            {tracks.map((member) => {
+              const current = member.id === currentTrackId;
+              const title = member.title ?? 'Untitled Track';
+              return (
+                <QueueRow
+                  key={member.id}
+                  title={title}
+                  coverImageId={member.coverImageId}
+                  playing={current}
+                  onPlay={
+                    member.audioUrl && !member.expired ? () => onPlayTrack(member.id) : undefined
+                  }
                 >
-                  {title}
-                </span>
-                <span className="font-mono text-[10.5px] tracking-[0.04em] text-dim">
-                  {queueRowNote(member)}
-                </span>
-              </QueueRow>
-            );
-          })}
-        </ol>
+                  <span
+                    className={cn(
+                      'block min-w-0 truncate text-[14.5px] font-semibold',
+                      current && 'text-lamp',
+                    )}
+                  >
+                    {title}
+                  </span>
+                  <span className="font-mono text-[10.5px] tracking-[0.04em] text-dim">
+                    {queueRowNote(member)}
+                  </span>
+                </QueueRow>
+              );
+            })}
+          </ol>
+        </SheetBody>
       </SheetContent>
     </Sheet>
   );

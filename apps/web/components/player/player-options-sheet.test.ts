@@ -27,6 +27,8 @@ function sessionActions(
   const noop = () => {};
   const asyncNoop = async () => {};
   return {
+    lyrics: { kind: 'button', onSelect: noop },
+    'add-to-playlists': { kind: 'button', onSelect: noop },
     'section-loop': { kind: 'button', onSelect: noop },
     'reroll-track': { kind: 'button', onSelect: noop },
     'more-like-this-track': {
@@ -51,6 +53,7 @@ function sessionActions(
     'change-vibe': { kind: 'button', onSelect: noop },
     'sleep-timer': { kind: 'button', onSelect: noop },
     'rename-session': { kind: 'button', onSelect: noop },
+    'session-cover': { kind: 'button', onSelect: noop },
     'delete-session': {
       kind: 'confirm',
       heading: 'Delete Session',
@@ -181,15 +184,16 @@ describe('player options sheet', () => {
     expect(onSelect).toHaveBeenCalledOnce();
   });
 
-  it('leads a Session’s tiles with Lyrics, once, and closes the sheet to open it', () => {
+  it('leads a Session’s tiles with Lyrics, repeats it as a row, and closes the sheet to open it', () => {
     const onOpenLyrics = vi.fn();
     renderSessionSheet(sessionActions(), { onOpenLyrics });
     const lyrics = screen.getByTestId('player-open-lyrics');
     const cover = screen.getByTestId('player-regenerate-cover');
 
     expect(lyrics.compareDocumentPosition(cover) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getAllByText('Lyrics')).toHaveLength(1);
-    expect(screen.queryByText('Read along with this track')).toBeNull();
+    // The tile, and the row a listener reading the list finds it by.
+    expect(screen.getAllByText('Lyrics')).toHaveLength(2);
+    expect(screen.getByText('Read along with this track')).toBeTruthy();
 
     act(() => lyrics.click());
 

@@ -9,7 +9,10 @@ import { usePageEpoch } from '@/components/use-page-epoch';
 import { withSettledRetention } from './library-view-model';
 import { useOutsideLibraryWrite } from './use-outside-library-write';
 
-export type LibraryTab = LibraryView | 'playlists';
+/** The Library tabs that list Tracks. Favorites is a Playlist, reached from the
+ *  Playlists grid, so its API view has no tab of its own. */
+export type LibraryTrackTab = Exclude<LibraryView, 'favorites'>;
+export type LibraryTab = LibraryTrackTab | 'playlists';
 
 const LOAD_MORE_KEY = 'library-load-more';
 

@@ -131,7 +131,7 @@ function SurpriseSettingsForm({
   return (
     <div className="flex flex-col gap-5">
       <fieldset>
-        <legend className="mb-2 text-[13px] font-semibold text-paper">Theme</legend>
+        <legend className="mb-2 text-[15px] font-semibold text-paper">Theme</legend>
         <div className="flex flex-wrap gap-2">
           {SURPRISE_THEMES.map((theme) => (
             <button
@@ -146,7 +146,7 @@ function SurpriseSettingsForm({
           ))}
         </div>
       </fieldset>
-      <label className="flex flex-col gap-2 text-[13px] font-semibold text-paper">
+      <label className="flex flex-col gap-2 text-[15px] font-semibold text-paper">
         Language
         <SessionLanguageSelect
           value={settings.language}

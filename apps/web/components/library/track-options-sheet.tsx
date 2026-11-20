@@ -5,12 +5,13 @@ import type { TrackSummary } from '@liedmotif/shared';
 import { Bookmark, Disc3, Download, Play, Plus, Star } from 'lucide-react';
 import { MenuMoreLikeThisGlyph } from '@/components/ui/glyphs';
 import { coverArtSrc } from '@/components/player/player-presentation';
-import { SheetContent, SheetHeader } from '@/components/ui/sheet';
+import { SheetBody, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { MenuRow } from '@/components/ui/menu-row';
 import { startFileDownload, trackDownloadUrl } from '@/lib/downloads/downloads';
 import { DeleteTrackMenuRow } from './delete-track-menu-row';
 import { formatTrackDuration, trackDownloadNote } from './library-view-model';
 import type { LibraryActionName } from './use-library-actions';
+import { MENU_COPY } from '@/components/ui/menu-copy';
 
 export function TrackOptionsSheet({
   track,
@@ -38,7 +39,7 @@ export function TrackOptionsSheet({
   // A failed Track's final never arrived: it can leave Favorites but not join them.
   const failed = track.status === 'failed';
   return (
-    <SheetContent side="bottom" className="overflow-y-auto">
+    <SheetContent side="bottom" className="flex flex-col">
       <SheetHeader
         title={track.title ?? 'Untitled Track'}
         closeDisabled={locked}
@@ -49,7 +50,7 @@ export function TrackOptionsSheet({
           </span>
         }
         leading={
-          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[10px] bg-panel-2">
+          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[2px] bg-panel-2">
             {track.coverImageId ? (
               <Image
                 src={coverArtSrc(track.coverImageId, 'thumb')}
@@ -63,7 +64,7 @@ export function TrackOptionsSheet({
           </div>
         }
       />
-      <div className="mt-4">
+      <SheetBody className="mt-4">
         <MenuRow
           icon={<Play className="fill-current" />}
           label="Play now"
@@ -103,8 +104,8 @@ export function TrackOptionsSheet({
         <MenuRow
           onlineOnly
           icon={<Plus />}
-          label="Add to Playlist"
-          description="Choose which playlists it belongs to"
+          label="Add to Playlists"
+          description={MENU_COPY.choosePlaylists}
           note={track.inCuratedPlaylist ? 'In a Playlist' : undefined}
           disabled={locked}
           data-testid="library-add-to-playlist"
@@ -140,7 +141,7 @@ export function TrackOptionsSheet({
           disabled={locked}
           onDelete={onDelete}
         />
-      </div>
+      </SheetBody>
     </SheetContent>
   );
 }
