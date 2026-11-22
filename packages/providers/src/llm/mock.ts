@@ -142,7 +142,11 @@ export interface MockAssistantScript {
 }
 
 export function mockLlmProvider(
-  options: { assistantScript?: MockAssistantScript } = {},
+  options: {
+    assistantScript?: MockAssistantScript;
+    /** What `readMessageLanguage` answers for every message; none by default. */
+    messageLanguage?: string;
+  } = {},
 ): LlmProvider {
   return {
     providerType: 'llm',
@@ -301,6 +305,11 @@ export function mockLlmProvider(
         applied: true,
         ...(LISTENER_HINT.test(trimmed) ? { includesListener: true } : {}),
       };
+    },
+
+    // A stand-in reads no language from words: it answers what its script names.
+    async readMessageLanguage() {
+      return options.messageLanguage ?? '';
     },
 
     async *streamAssistantReply(input: AssistantReplyInput) {

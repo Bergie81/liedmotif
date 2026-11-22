@@ -52,11 +52,26 @@ const SCRIPTED_USAGE = {
  * A language model for the text-LLM adapter's `languageModel` option that
  * replays one scripted step per model call (the last one repeats), so a
  * tool-calling exchange runs without a network. Its `doStreamCalls` hold what
- * each call was sent.
+ * each call was sent. With a `messageLanguage` it also answers the call that
+ * reads a chat message's language, and its `doGenerateCalls` hold that call;
+ * without one that call fails, and the reply is written without a language.
  */
-export function scriptedLanguageModel(steps: ScriptedModelStep[]): MockLanguageModelV4 {
+export function scriptedLanguageModel(
+  steps: ScriptedModelStep[],
+  { messageLanguage }: { messageLanguage?: string } = {},
+): MockLanguageModelV4 {
   let call = 0;
   return new MockLanguageModelV4({
+    ...(messageLanguage === undefined
+      ? {}
+      : {
+          doGenerate: async () => ({
+            finishReason: { unified: 'stop', raw: undefined },
+            usage: SCRIPTED_USAGE,
+            content: [{ type: 'text', text: JSON.stringify({ language: messageLanguage }) }],
+            warnings: [],
+          }),
+        }),
     doStream: async ({ abortSignal }) => {
       const step = steps[Math.min(call, steps.length - 1)]!;
       call += 1;

@@ -104,9 +104,12 @@ function became(outcome?: CardOutcome, cover?: CoverAttemptState): string {
   return BECAME[outcome];
 }
 
+/** How the app's record of a card opens. */
+export const CARD_RECORD_OPENER = '[Card shown by the app:';
+
 /**
  * What a later turn is told about a card: what it offered, and what the user
  * did with it. A confirmed cover card says how its cover is going.
  */
 export const cardRecord = (card: AssistantCard, outcome?: CardOutcome, cover?: CoverAttemptState) =>
-  `[Card shown by the app: ${cardNote(card)}. ${became(outcome, cover)}]`;
+  `${CARD_RECORD_OPENER} ${cardNote(card)}. ${became(outcome, cover)}]`;

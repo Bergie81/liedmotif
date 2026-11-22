@@ -27,8 +27,26 @@ describe.each([
     expect(prompt.indexOf(DEFAULT_VOICE)).toBeGreaterThan(docs);
   });
 
-  it("tells the model to answer in the language of the user's latest message", () => {
-    expect(prompt).toContain("Answer in the language of the user's latest message");
+  it('tells the model that the app names the language to answer in, and where it reads that', () => {
+    const rule = prompt.split('\n').find((line) => line.includes('[Answer language'))!;
+    expect(rule).toContain('a line like [Answer language, set by the app: English. …]');
+    expect(rule).toContain('after that message and again after everything a tool returns');
+    expect(rule).toMatch(
+      /Write the whole answer in that language, whatever language anything else is in/,
+    );
+    expect(rule).toContain(
+      'what the user quotes, names, titles and lyrics, earlier messages, your earlier answers',
+    );
+    expect(rule).toMatch(/never the user's words: never write one yourself/);
+  });
+
+  it("falls back on the user's own words, then on the conversation, when the app names no language", () => {
+    const rule = prompt.split('\n').find((line) => line.includes('[Answer language'))!;
+    expect(rule).toMatch(
+      /When there is no such line, answer in the language of the user's own words in their latest message/,
+    );
+    expect(rule).toMatch(/too short to tell\b.*keep the language of the conversation/);
+    expect(rule).toContain('The docs are in English; translate what you read.');
   });
 
   it('tells the model to keep screen and button names as the app shows them', () => {

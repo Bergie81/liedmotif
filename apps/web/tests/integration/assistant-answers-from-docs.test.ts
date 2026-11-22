@@ -9,6 +9,7 @@ import {
 } from '@liedmotif/shared';
 import { createOpenRouterLlmProvider, type LlmProvider } from '@liedmotif/providers';
 import { scriptedLanguageModel, type ScriptedModelStep } from '@liedmotif/providers/testing';
+import { answerLanguageLine } from '@/lib/assistant/answer-language';
 import { loadDocs } from '@/lib/assistant/docs';
 
 // The Assistant end to end, short of the network: the route, the system prompt,
@@ -38,8 +39,8 @@ vi.mock('@/lib/request-cache', () => ({
 const { POST } = await import('@/app/api/assistant/route');
 
 /** Configure a text LLM whose model follows the script; returns the model to inspect. */
-function scriptModel(steps: ScriptedModelStep[]) {
-  const model = scriptedLanguageModel(steps);
+function scriptModel(steps: ScriptedModelStep[], reads: { messageLanguage?: string } = {}) {
+  const model = scriptedLanguageModel(steps, reads);
   holder.llm = createOpenRouterLlmProvider({
     apiKey: 'sk-or-test-key',
     model: 'test-model',
@@ -144,9 +145,46 @@ describe('POST /api/assistant', () => {
     expect(systems[0]).toEqual(systems[1]);
     const system = JSON.stringify(systems[0]);
     expect(system).toContain('You are Roadie,');
-    expect(system).toContain("Answer in the language of the user's latest message");
+    expect(system).toContain('The app tells you which language to answer in.');
     // The docs index: every page is listed for the model to pick from.
     for (const page of loadDocs()) expect(system).toContain(`${page.slug}: `);
+  });
+
+  it('names the language the text LLM read from the latest message, on every model call of the turn', async () => {
+    const docs = someDocsSection();
+    const model = scriptModel(
+      [
+        { toolCalls: [{ name: 'readDocs', input: { page: docs.page, section: docs.section } }] },
+        { text: ['It plays.'] },
+      ],
+      { messageLanguage: 'English' },
+    );
+    const quoting = 'Play the song that goes “zu viert auf dem mnod”';
+
+    const events = await readEvents(
+      await send([
+        { role: 'user', content: 'Was läuft gerade?' },
+        { role: 'assistant', content: '„Vier im Mondorbit“ läuft. Passt schon.' },
+        { role: 'user', content: quoting },
+      ]),
+    );
+
+    // The language was asked about the latest message and nothing else.
+    expect(model.doGenerateCalls).toHaveLength(1);
+    const asked = JSON.stringify(model.doGenerateCalls[0]!.prompt);
+    expect(asked).toContain('zu viert auf dem mnod');
+    expect(asked).not.toContain('Was läuft gerade?');
+    expect(asked).not.toContain('Passt schon');
+    // The reply's calls read it after that message, and again after the tool's result.
+    const line = answerLanguageLine('English');
+    const [first, second] = promptsOf(model);
+    expect(first!.split(line)).toHaveLength(2);
+    expect(first!.indexOf(line)).toBeGreaterThan(first!.indexOf('zu viert auf dem mnod'));
+    expect(second!.split(line)).toHaveLength(3);
+    expect(second!.lastIndexOf(line)).toBeGreaterThan(
+      second!.indexOf(JSON.stringify(docs.markdown).slice(1, -1)),
+    );
+    expect(answerOf(events)).toBe('It plays.');
   });
 
   it('refuses a caller who is not signed in', async () => {
@@ -284,6 +322,36 @@ describe('POST /api/assistant', () => {
       true,
       false,
     ]);
+  });
+
+  it("never shows the user the app's record of an action, when the model writes one", async () => {
+    // The model copies the record of an earlier answer onto its own, split
+    // across chunks.
+    const recorded =
+      '[Done by the app: the player was told to play the Track "Vier im Mondorbit" in the Session "Mondflug"]';
+    scriptModel([
+      {
+        text: [
+          'Done. ',
+          'Passt.\n\n',
+          '[Done',
+          ' by the app: added the Track to the Playlist "',
+          'Running',
+          '"]',
+        ],
+      },
+    ]);
+
+    const events = await readEvents(
+      await send([
+        { role: 'user', content: 'Play the song that goes “zu viert auf dem mnod”' },
+        { role: 'assistant', content: `It's playing.\n\n${recorded}` },
+        { role: 'user', content: 'Put it in my running playlist' },
+      ]),
+    );
+
+    expect(answerOf(events)).toBe('Done. Passt.');
+    expect(events.at(-1)).toEqual({ type: 'done' });
   });
 
   it('sends the model a conversation that opens with the user', async () => {

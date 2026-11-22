@@ -41,6 +41,7 @@ import {
   type RenameSessionInput,
   type RenameTrackInput,
 } from '@liedmotif/shared';
+import { MIN_SEARCH_QUERY_LENGTH } from '@/components/search/search-model';
 import { LIST_NAMES } from '../find-music-tool';
 import {
   askedSource,
@@ -324,13 +325,23 @@ function findMusic({ kind, query, lyrics, list }: FindMusicInput): string {
   const words = (query ?? '').trim();
   const text = quoted(words);
   if (lyrics) {
-    return listed(
-      `Tracks with ${text} in their lyrics:`,
-      matching(tracks, words, (track) => track.lyrics ?? '').map(
-        (track) => `${trackRow(track)} · lyrics: ${quoted(track.lyrics ?? '')}`,
-      ),
-      `No Track has ${text} in its lyrics.`,
+    // As in the app: an exact line first, else the lines spelled nearest.
+    if (words.length < MIN_SEARCH_QUERY_LENGTH) {
+      return `A search needs at least ${MIN_SEARCH_QUERY_LENGTH} characters.`;
+    }
+    const lyricRow = (track: FixtureTrack) =>
+      `${trackRow(track)} · lyrics: ${quoted(track.lyrics ?? '')}`;
+    const none = `No Track has ${text} in its lyrics.`;
+    const exact = tracks.filter((track) =>
+      (track.lyrics ?? '').toLowerCase().includes(words.toLowerCase()),
     );
+    return exact.length > 0
+      ? listed(`Tracks with ${text} in their lyrics:`, exact.map(lyricRow), none)
+      : listed(
+          `${none} The lyric lines spelled nearest, none may be the one meant:`,
+          matching(tracks, words, (track) => track.lyrics ?? '').map(lyricRow),
+          none,
+        );
   }
   if (kind === 'track') {
     if (words) {

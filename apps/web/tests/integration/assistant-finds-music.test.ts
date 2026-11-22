@@ -450,6 +450,40 @@ describe.skipIf(skip)('the Assistant asked to find Tracks', () => {
     expect(result).not.toContain('Nobody sings the last verse');
   });
 
+  it('offers the closest lyric lines when a misremembered line matches nothing, the nearest first', async () => {
+    const asker = await createMember('member-1');
+    const meant = await seedSungTrack(
+      asker,
+      'Mondflug ohne Rückfahrkarte',
+      'Vier im Mondorbit',
+      [
+        'Die Luke geht zu, der Countdown läuft',
+        'Zu viert auf dem Mond, wir gehören hierher',
+        'Kein Weg zurück, nur Sterne vor dem Fenster',
+      ].join('\n'),
+    );
+    const other = await seedSungTrack(
+      asker,
+      'Nachtflug',
+      'Startbahn Sternenstaub',
+      'Wir fahren zum Mond, zu viert durch die Nacht',
+    );
+
+    const result = await findMusic(asker, {
+      kind: 'track',
+      query: 'zu viert auf dem mnod',
+      lyrics: true,
+    });
+
+    expect(result.split('\n')[0]).toBe(
+      'No Track has "zu viert auf dem mnod" in its lyrics. The lyric lines spelled nearest, none may be the one meant:',
+    );
+    expect(rows(result)).toEqual([
+      `- "Vier im Mondorbit" (id ${meant}) · Session "Mondflug ohne Rückfahrkarte" · lyrics: "Zu viert auf dem Mond, wir gehören hierher"`,
+      `- "Startbahn Sternenstaub" (id ${other}) · Session "Nachtflug" · lyrics: "Wir fahren zum Mond, zu viert durch die Nacht"`,
+    ]);
+  });
+
   it('searches lyrics whatever kind was asked for, because only Tracks have them', async () => {
     const asker = await createMember('member-1');
     const sung = await seedSungTrack(asker, 'Harbour Songs', 'Salt and Stone', 'The lighthouse');

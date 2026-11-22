@@ -210,6 +210,17 @@ export interface LlmProvider extends BaseProvider {
    */
   enhanceCoverDirection(input: CoverDirectionInput): Promise<CoverDirectionEnhancement>;
   /**
+   * The language the user's own words in one chat message are written in, as
+   * its canonical English name ("German"), for the Assistant's reply to that
+   * message. '' when those words tell none ("ok", a quote alone). The model is
+   * shown the message and nothing else of the conversation, so what a reply is
+   * written next to — lyrics, titles, earlier answers, tool results — cannot
+   * decide it. One bounded best-effort call that NEVER throws: any failure,
+   * timeout or answer that names no known language returns '', and the reply
+   * is written without it.
+   */
+  readMessageLanguage(input: { text: string; signal?: AbortSignal }): Promise<string>;
+  /**
    * The Assistant's reply to a conversation, as chunks of Markdown text in the
    * order the model writes them. The model may call the tools first; what they
    * return reaches the model only, never the stream. Outside the music path:

@@ -41,6 +41,9 @@ export function receiptNote(receipt: AssistantReceipt): string {
   }
 }
 
+/** How the app's record of something it did opens. */
+export const DONE_RECORD_OPENER = '[Done by the app:';
+
 /** What a later turn is told about a receipt: one line, in brackets. */
 export const receiptRecord = (receipt: AssistantReceipt) =>
-  `[Done by the app: ${receiptNote(receipt)}]`;
+  `${DONE_RECORD_OPENER} ${receiptNote(receipt)}]`;

@@ -1,4 +1,5 @@
-// Request-language canonicalization for the vocal-language tag.
+// Request-language canonicalization for the vocal-language tag, and for the
+// language the Assistant is told to answer in (`readMessageLanguage`).
 //
 // The detected language is appended to every vocal track's provider prompt
 // (`buildTrackPrompt` → "<language> vocals"), so it must never

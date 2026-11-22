@@ -8,6 +8,7 @@
 
 import type { UserRole } from '@liedmotif/db';
 import type { AssistantMessage } from '@liedmotif/shared';
+import { playerCommandRecord } from '../player-command-note';
 import { receiptRecord } from '../receipt-note';
 import { PLAYLISTS, SESSIONS, TRACKS } from './fixture';
 
@@ -63,6 +64,23 @@ export interface EvalEntry {
   /** What a good answer says, for the person judging it. */
   goodAnswer: string;
 }
+
+/** English words around a German lyric line, one letter off, of the fixture's Papierboote. */
+const QUOTES_A_GERMAN_LYRIC = 'Play the song that goes “papierbote treiben auf der morgenflut”';
+
+/** An answer to it that came out in the quote's language, as the chat panel sends it back. */
+const PLAYED_IN_GERMAN: AssistantMessage = {
+  role: 'assistant',
+  content: `„Papierboote“ läuft. Passt schon.\n\n${playerCommandRecord({
+    name: 'play',
+    source: {
+      kind: 'session',
+      id: SESSIONS.seasideSongs.id,
+      name: SESSIONS.seasideSongs.title,
+    },
+    track: { id: TRACKS.papierboote.id, name: TRACKS.papierboote.title },
+  })}`,
+};
 
 export const EVAL_SET: readonly EvalEntry[] = [
   {
@@ -440,6 +458,83 @@ export const EVAL_SET: readonly EvalEntry[] = [
     ],
     goodAnswer:
       'Understands that "it" is the Playlist of the turn before and takes its id from the app\'s record there, without searching again. A few words: it is called Summer Road Trip now.',
+  },
+  // An English request around a German lyric line, then English requests
+  // after answers that came out in German. The language to answer in is that
+  // of the user's own words: never the quote's, the Library's or an earlier
+  // answer's.
+  {
+    id: 'play-by-a-quoted-german-lyric',
+    role: 'admin',
+    language: 'en',
+    question: QUOTES_A_GERMAN_LYRIC,
+    docs: 'none',
+    calls: [
+      { tool: 'findMusic', input: [{ lyrics: true }] },
+      {
+        tool: 'play',
+        input: [
+          { kind: 'track', id: TRACKS.papierboote.id },
+          {
+            kind: 'session',
+            id: SESSIONS.seasideSongs.id,
+            trackId: TRACKS.papierboote.id,
+          },
+        ],
+      },
+    ],
+    goodAnswer:
+      'Finds Papierboote by the misspelled line and starts it. A few words in English, although the quote, the title and the lyrics are German.',
+  },
+  {
+    id: 'english-request-after-a-german-answer',
+    role: 'admin',
+    language: 'en',
+    nothingPlaying: true,
+    history: [{ role: 'user', content: QUOTES_A_GERMAN_LYRIC }, PLAYED_IN_GERMAN],
+    question: 'Put it in my running playlist',
+    docs: 'none',
+    calls: [
+      {
+        tool: 'addToPlaylist',
+        input: [{ playlistId: PLAYLISTS.running.id, trackIds: [TRACKS.papierboote.id] }],
+      },
+    ],
+    goodAnswer:
+      'Understands that "it" is Papierboote, finds it and adds it to Running. A few words in English, although the answer before was German.',
+  },
+  {
+    id: 'more-like-this-after-german-answers',
+    role: 'admin',
+    language: 'en',
+    history: [
+      { role: 'user', content: QUOTES_A_GERMAN_LYRIC },
+      PLAYED_IN_GERMAN,
+      { role: 'user', content: 'Put it in my running playlist' },
+      {
+        role: 'assistant',
+        content: `„Papierboote“ ist in „Running“. Passt.\n\n${receiptRecord({
+          action: 'addToPlaylist',
+          playlist: { id: PLAYLISTS.running.id, name: PLAYLISTS.running.name },
+          retention: 'curated',
+          tracks: [{ id: TRACKS.papierboote.id, name: TRACKS.papierboote.title }],
+        })}`,
+      },
+    ],
+    question: 'More like this, but for cooking',
+    docs: 'none',
+    calls: [
+      {
+        tool: 'proposeMoreLikeThis',
+        // "This" is the Track of the turns before, or the one on the deck.
+        input: [
+          { trackIds: [TRACKS.papierboote.id], context: /cook/i },
+          { trackIds: undefined, context: /cook/i },
+        ],
+      },
+    ],
+    goodAnswer:
+      'In English, although both answers before were German: a card for a new Session that sounds like Papierboote (or like Neon Rain, which is on the deck), for cooking, is prepared, and confirming it generates new Tracks from the budget. Names no length. Never says a Session has started.',
   },
   {
     id: 'pin-a-playlist',

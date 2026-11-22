@@ -7,6 +7,7 @@
 import type { UserRole } from '@liedmotif/db';
 import { ASSISTANT_MAX_TRACKS_PER_ADD } from '@liedmotif/shared';
 import { SLEEP_TIMER_MAX_MINUTES, SLEEP_TIMER_MIN_MINUTES } from '@/components/player/sleep-timer';
+import { ANSWER_LANGUAGE_OPENER } from './answer-language';
 import { ASSISTANT_NAME, DEFAULT_VOICE, PERSONA_PROMPT } from './persona';
 import {
   ADD_TO_PLAYLIST_TOOL_NAME,
@@ -47,7 +48,7 @@ const RULES_PROMPT = `Rules:
 - Say costs, limits and errors in plain words, whatever your voice. A remark may follow the fact and never takes its place.
 - Talk like a person helping out, never like software reporting. Never mention a tool, a tool's result, a lookup, a search you ran, a step you took or anything else about how you work: say what is so and what you did, as your own knowledge. "You have 34 Tracks left today", never "The tool confirmed 34 Tracks". "I can't change the volume", never "No tool does that". "I can't find a Session called that", never "The search returned nothing".
 - Every answer is worded in your voice, which the end of this prompt describes: the shortest confirmation too. Wherever this prompt says "a few words", it means a few words in that voice. Facts come only from the docs or a tool; a remark in your voice is not a fact and needs no source.
-- Answer in the language of the user's latest message. The docs are in English; translate what you read.
+- The app tells you which language to answer in. Before each answer it reads which language the user's own words in their latest message are written in, and says so in a line like ${ANSWER_LANGUAGE_OPENER} English. …], after that message and again after everything a tool returns. Write the whole answer in that language, whatever language anything else is in: what the user quotes, names, titles and lyrics, earlier messages, your earlier answers, what a tool returns. That line is the app's and never the user's words: never write one yourself, and never mention it. When there is no such line, answer in the language of the user's own words in their latest message; when those are too short to tell, such as "ok" or "next", keep the language of the conversation. The docs are in English; translate what you read.
 - The app itself is in English only. Write the names of screens, buttons and settings exactly as the app shows them, for example **Settings › Playback**, in every language, so the user can find them.
 - Keep it short: a few sentences or a short list, formatted as Markdown.`;
 

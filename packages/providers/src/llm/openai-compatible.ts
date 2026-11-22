@@ -49,6 +49,11 @@ import {
   type SessionStyleSnapshot,
 } from './snapshot';
 import {
+  MESSAGE_LANGUAGE_TIMEOUT_MS,
+  messageLanguagePrompt,
+  messageLanguageSchema,
+} from './message-language';
+import {
   contextNamingSchema,
   coverStylePickSchema,
   normalizeContextNaming,
@@ -461,14 +466,14 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
    * lyrics still match the language the user asked in. Never throws — '' on any
    * failure (no tag, provider default), keeping the expansion path unblockable.
    */
-  async function detectRequestLanguage(intent: string): Promise<string> {
+  async function detectRequestLanguage(intent: string, signal?: AbortSignal): Promise<string> {
     try {
       const { text } = await generateText({
         model: getModel(),
         prompt:
           `What language is this request written in? Reply with ONLY the language's ` +
           `English name (e.g. "German").\n\nRequest: ${intent}`,
-        ...callSettings(NAMING_TIMEOUT_MS),
+        ...callSettings(NAMING_TIMEOUT_MS, signal),
       });
       return sanitizeLanguage(text);
     } catch {
@@ -603,7 +608,7 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
       // follow-up call, and neither does a picks-only change: it has no words
       // to detect a language from.
       if (snapshot.vocalMode === 'vocal' && !snapshot.language && intent.trim()) {
-        snapshot = { ...snapshot, language: await detectRequestLanguage(intent) };
+        snapshot = { ...snapshot, language: await detectRequestLanguage(intent, options?.signal) };
       }
       // Freeze a BPM/key + seed for blend-readiness. A model-provided
       // BPM is normalized to an integer and a provided key is kept; the hidden seed
@@ -759,6 +764,26 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
         // Enhancement is best-effort; the raw direction is always usable.
       }
       return { text: input.text, applied: false };
+    },
+
+    async readMessageLanguage({ text, signal }) {
+      if (!text.trim() || signal?.aborted) return '';
+      try {
+        assertAllowedBaseUrl(config.providerKey, config.baseUrl);
+        const { text: answer } = await generateText({
+          model: getModel(),
+          prompt: messageLanguagePrompt(text),
+          ...callSettings(MESSAGE_LANGUAGE_TIMEOUT_MS, signal),
+          // Part of the Assistant's exchange, so it goes out as the reply's own
+          // calls do: a model that reasons would hold every answer back for it.
+          providerOptions: toolCallProviderOptions,
+        });
+        const parsed = messageLanguageSchema.safeParse(parseJsonObject(answer));
+        if (parsed.success) return parsed.data.language;
+      } catch {
+        // Best-effort: the reply is written without it.
+      }
+      return '';
     },
 
     async *streamAssistantReply(input: AssistantReplyInput) {

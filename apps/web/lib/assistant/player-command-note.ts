@@ -6,6 +6,10 @@
 
 import type { AssistantPlayCommand, AssistantPlayerCommand } from '@liedmotif/shared';
 import { quoted } from './music-names';
+import { DONE_RECORD_OPENER } from './receipt-note';
+
+/** How the app's record of a command that did not happen opens. */
+export const NOT_DONE_RECORD_OPENER = '[Not done by the app:';
 
 /** What a play command starts, by kind and name; a Track is named with what it plays in. */
 function played({ source, track }: AssistantPlayCommand): string {
@@ -60,12 +64,12 @@ export function playerCommandRecord(
   const told = playerCommandNote(command);
   switch (outcome) {
     case 'blocked':
-      return `[Not done by the app: the browser refused to start the audio when the player was told to ${told}. The user was shown a "Tap to Play" button.]`;
+      return `${NOT_DONE_RECORD_OPENER} the browser refused to start the audio when the player was told to ${told}. The user was shown a "Tap to Play" button.]`;
     case 'failed':
-      return `[Not done by the app: the player could not ${told}]`;
+      return `${NOT_DONE_RECORD_OPENER} the player could not ${told}]`;
     case 'declined':
-      return `[Not done by the app: the user kept the new Session that was starting, so the player did not ${told}]`;
+      return `${NOT_DONE_RECORD_OPENER} the user kept the new Session that was starting, so the player did not ${told}]`;
     default:
-      return `[Done by the app: the player was told to ${told}]`;
+      return `${DONE_RECORD_OPENER} the player was told to ${told}]`;
   }
 }

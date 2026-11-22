@@ -105,6 +105,20 @@ describe('an eval run', () => {
     expect(result?.ms).toBeGreaterThanOrEqual(0);
   });
 
+  it('scores what a tool returned as the app wrote it, in a turn that names the answer language', async () => {
+    const llm = mockLlmProvider({
+      messageLanguage: 'English',
+      assistantScript: { toolCalls: [readsInviteSection], reply: () => INVITE_ANSWER },
+    });
+
+    const [result] = await runEval(llm, [INVITE]);
+
+    expect(result?.turn.toolCalls).toEqual([
+      { ...readsInviteSection, result: sectionText('members', 'invite-someone') },
+    ]);
+    expect(result?.score).toMatchObject({ validRead: 'pass', expectedRead: 'pass' });
+  });
+
   it('offers the model every tool of a real turn', async () => {
     const offered: string[][] = [];
     const llm = mockLlmProvider();

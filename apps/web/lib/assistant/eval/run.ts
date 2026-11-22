@@ -2,7 +2,12 @@
 // turn — the app's own system prompt, route map and tools — asked once. The
 // user's music is the fixture's, so a run reads and changes nobody's data.
 
-import { ProviderError, type AssistantReplyInput, type LlmProvider } from '@liedmotif/providers';
+import {
+  ProviderError,
+  type AssistantReplyInput,
+  type LlmProvider,
+  type LlmTool,
+} from '@liedmotif/providers';
 import type { AssistantAction } from '@liedmotif/shared';
 import { loadDocs } from '../docs';
 import { answerLinkTargets } from '../link-targets';
@@ -68,7 +73,7 @@ async function ask(llm: LlmProvider, entry: EvalEntry, timeoutMs: number): Promi
     for await (const chunk of streamAssistantAnswer(
       observed.llm,
       { role: entry.role },
-      tools,
+      observed.tools(tools),
       messages,
       signal,
     )) {
@@ -105,11 +110,12 @@ async function ask(llm: LlmProvider, entry: EvalEntry, timeoutMs: number): Promi
 }
 
 /**
- * The provider with one turn made visible: what it was sent, and each tool call
- * with its result. The model sees no difference.
+ * One turn made visible: what the provider was sent, and each tool call with
+ * what the app's tool returned for it. The model sees no difference.
  */
 function observe(llm: LlmProvider): {
   llm: LlmProvider;
+  tools: (tools: readonly LlmTool[]) => LlmTool[];
   toolCalls: ObservedToolCall[];
   sent: { system: number; conversation: number };
 } {
@@ -118,22 +124,21 @@ function observe(llm: LlmProvider): {
   return {
     toolCalls,
     sent,
+    tools: (tools) =>
+      tools.map((tool) => ({
+        ...tool,
+        async execute(toolInput: unknown) {
+          const result = await tool.execute(toolInput);
+          toolCalls.push({ name: tool.name, input: toolInput, result });
+          return result;
+        },
+      })),
     llm: {
       ...llm,
       streamAssistantReply(input: AssistantReplyInput) {
         sent.system = input.system.length;
         sent.conversation = input.messages.reduce((sum, { content }) => sum + content.length, 0);
-        return llm.streamAssistantReply({
-          ...input,
-          tools: input.tools.map((tool) => ({
-            ...tool,
-            async execute(toolInput: unknown) {
-              const result = await tool.execute(toolInput);
-              toolCalls.push({ name: tool.name, input: toolInput, result });
-              return result;
-            },
-          })),
-        });
+        return llm.streamAssistantReply(input);
       },
     },
   };
