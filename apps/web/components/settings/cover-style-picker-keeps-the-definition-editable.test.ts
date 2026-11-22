@@ -14,7 +14,11 @@ import { COVER_STYLE_PRESETS } from '@liedmotif/shared';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { coverStyleExampleSrc } from '@/lib/covers/cover-styles';
 import { shownToasts, toast } from '@/lib/toast';
-import { CoverArtForm } from './cover-art-form';
+
+const router = vi.hoisted(() => ({ refresh: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => router }));
+
+const { CoverArtForm } = await import('./cover-art-form');
 
 const SAVED: CoverArtSettings = {
   defaultStyle: 'photographic',
@@ -27,6 +31,7 @@ afterEach(() => {
   cleanup();
   toast.dismiss();
   vi.unstubAllGlobals();
+  router.refresh.mockReset();
 });
 
 /**
@@ -174,6 +179,8 @@ describe('Custom style definition', () => {
     const bodies = stubSave();
     renderForm({ useStandardCoverArt: true, defaultStyle: 'auto' });
 
+    expect(definitionField().disabled).toBe(false);
+    expect(styleRadio('Manga').disabled).toBe(false);
     fireEvent.click(styleRadio('Manga'));
     fireEvent.change(definitionField(), { target: { value: 'ink wash' } });
 
@@ -235,6 +242,39 @@ describe('Save Cover Art', () => {
     await waitFor(() =>
       expect(shownToasts()).toMatchObject([{ tone: 'success', message: 'Saved.' }]),
     );
+  });
+
+  it('refreshes the cached pages after a save, so Home starts with the new defaults', async () => {
+    stubSave();
+    renderForm({ defaultStyle: 'auto' });
+
+    fireEvent.click(styleRadio('Manga'));
+    fireEvent.click(screen.getByRole('button', { name: 'Save Cover Art' }));
+
+    await waitFor(() => expect(router.refresh).toHaveBeenCalledTimes(1));
+  });
+
+  it('keeps what was typed while the save was running', async () => {
+    let answer: (response: Response) => void = () => {};
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise<Response>((resolve) => (answer = resolve))),
+    );
+    renderForm({ defaultStyle: 'minimal', promptEnhancementEnabled: true });
+
+    fireEvent.change(definitionField(), { target: { value: 'woodcut' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Cover Art' }));
+    fireEvent.change(definitionField(), { target: { value: 'woodcut, rough grain' } });
+    answer(
+      Response.json({
+        ok: true,
+        settings: { ...SAVED, customStyleDefinition: 'Hand-cut woodblock print.' },
+        enhancement: { attempted: true, applied: true },
+      }),
+    );
+
+    await waitFor(() => expect(shownToasts()).toHaveLength(1));
+    expect(definitionField().value).toBe('woodcut, rough grain');
   });
 
   it('shows the stored definition after a save the text AI enhanced', async () => {

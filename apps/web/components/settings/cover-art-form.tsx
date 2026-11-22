@@ -10,6 +10,7 @@
 // Cover Art is off. Persists to /api/settings/cover-art.
 
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useId, useState } from 'react';
 import { PenLine, Shuffle, WandSparkles } from 'lucide-react';
 import type { CoverArtSettings } from '@liedmotif/db';
@@ -72,7 +73,7 @@ function CoverStyleTile({ choice }: { choice: CoverStyleChoice }) {
             </span>
           ))}
         </span>
-        <span className="absolute left-1/2 top-1/2 grid h-[30px] w-[30px] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-ink/70 text-paper backdrop-blur-[4px]">
+        <span className="absolute left-1/2 top-1/2 grid h-[30px] w-[30px] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-night/75 text-paper backdrop-blur-[4px]">
           <Glyph className="h-4 w-4" aria-hidden />
         </span>
       </span>
@@ -97,18 +98,20 @@ export function CoverArtForm({
   const [enhancementEnabled, setEnhancementEnabled] = useState(initial.promptEnhancementEnabled);
   const [useStandardCoverArt, setUseStandardCoverArt] = useState(initial.useStandardCoverArt);
   const [saving, setSaving] = useState(false);
+  const router = useRouter();
   const idPrefix = useId();
   const showEmptyDefinitionHint = defaultStyle === 'custom' && definition.trim() === '';
 
   async function save() {
     setSaving(true);
     toast.dismiss(SAVE_KEY);
+    const sentDefinition = definition;
     const res = await fetch('/api/settings/cover-art', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         defaultStyle,
-        customStyleDefinition: definition,
+        customStyleDefinition: sentDefinition,
         promptEnhancementEnabled: enhancementEnabled,
         useStandardCoverArt,
       }),
@@ -126,8 +129,15 @@ export function CoverArtForm({
       return;
     }
     // Visible write-back (decision D4): the stored definition — enhanced or
-    // not — is exactly what the field shows after saving.
-    if (data.settings) setDefinition(data.settings.customStyleDefinition);
+    // not — is exactly what the field shows after saving, unless the field was
+    // edited while the save ran: that newer draft is kept for the next save.
+    const stored = data.settings?.customStyleDefinition;
+    if (stored !== undefined) {
+      setDefinition((current) => (current === sentDefinition ? stored : current));
+    }
+    // Home's create card is seeded from these defaults and the router cache
+    // would replay its old props for a while.
+    router.refresh();
     if (data.enhancement?.applied) {
       toast.success('Saved. Your definition was optimized by your text AI.', { key: SAVE_KEY });
     } else if (data.enhancement?.attempted) {
@@ -166,7 +176,7 @@ export function CoverArtForm({
             key={value}
             className="rounded-[13px] border border-line-2 bg-[var(--control-bg)] has-[:checked]:border-lamp/55 has-[:checked]:bg-lamp/[0.08] light:has-[:checked]:border-lamp-fill/55 light:has-[:checked]:bg-lamp-fill/[0.13]"
           >
-            <label className="group flex cursor-pointer items-center gap-3 rounded-[12px] px-3 py-3 [-webkit-tap-highlight-color:transparent] has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-lamp">
+            <label className="group flex cursor-pointer items-center gap-3 rounded-[12px] px-3 py-3 [-webkit-tap-highlight-color:transparent] has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-45 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-lamp">
               <input
                 type="radio"
                 name={`${idPrefix}-default-cover-style`}
@@ -181,7 +191,7 @@ export function CoverArtForm({
               <span className="min-w-0">
                 <span
                   id={`${idPrefix}-${value}-name`}
-                  className="block text-[14px] font-semibold text-paper group-has-[:checked]:text-lamp light:group-has-[:checked]:text-lamp-fill"
+                  className="block text-[14px] font-semibold text-paper group-has-[:checked]:text-lamp"
                 >
                   {COVER_STYLE_LABELS[value]}
                 </span>
