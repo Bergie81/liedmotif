@@ -496,9 +496,10 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
     return parseJsonObject(text);
   }
 
-  /** The naming call for a More Like This context: required, so it runs under the
-   *  expansion's budget and throws a sanitized `ProviderError` instead of
-   *  answering empty. The lyric-context rule is enforced on its output. */
+  /** The naming call for a More Like This context or language pick: required,
+   *  so it runs under the expansion's budget and throws a sanitized
+   *  `ProviderError` instead of answering empty. The lyric-context rule is
+   *  enforced on its output. */
   async function createContextNaming(input: SessionNamingInput): Promise<SessionNamingMetadata> {
     assertAllowedBaseUrl(config.providerKey, config.baseUrl);
     let value: unknown;

@@ -170,8 +170,9 @@ export interface LlmProvider extends BaseProvider {
    * budget, and throws a sanitized `ProviderError` when it cannot return a Name
    * and a title pool, so no Session starts that ignored them. A context's answer
    * also carries the `activity`, whether the listener is in the scene
-   * (`includesListener`), on Auto Detect the context's `language` and, on a
-   * vocal snapshot, lyric notes.
+   * (`includesListener`) and, on Auto Detect, the context's `language`. On a
+   * vocal snapshot, a context or a pick of a seed with lyric notes also gets
+   * lyric notes.
    */
   createSessionMetadata(input: SessionNamingInput): Promise<SessionNamingMetadata>;
   /**

@@ -27,8 +27,7 @@ export function clampCoverConcept(value: string): string {
 /** Why a More Like This context or language pick could not be honored: its
  *  naming call failed or answered no Name and title pool. Retryable, like a
  *  failed expansion. */
-export const CONTEXT_NAMING_FAILED =
-  'The text AI could not write names for that context. Try again.';
+export const CONTEXT_NAMING_FAILED = 'The text AI could not write the new names. Try again.';
 
 /** Creative naming a text LLM proposes for a session (all cosmetic; empty when
  *  the model omits them — consumers fall back to deterministic derivation). */
