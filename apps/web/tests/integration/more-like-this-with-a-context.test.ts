@@ -3,8 +3,11 @@ import { runMigrations } from 'graphile-worker';
 import { moreLikeThisResponseSchema, MAX_USER_PROMPT_LENGTH } from '@liedmotif/shared';
 import {
   addPlaylistTracks,
+  createPerson,
   createPlaylist,
+  ensureOwnerPerson,
   setPlaylistShared,
+  updatePerson,
   updateUsageLimits,
 } from '@liedmotif/db';
 import { ProviderError } from '@liedmotif/providers';
@@ -31,6 +34,11 @@ import {
 type NamingInput = {
   context?: string | null;
   snapshot: { lyricContext: string };
+  listener?: {
+    name?: string;
+    about?: string;
+    people?: { name: string; about: string }[];
+  } | null;
   avoidTitles?: string[];
 };
 
@@ -41,6 +49,7 @@ type NamingAnswer = {
   coverConcept: string;
   autoCoverStyle: 'photographic' | null;
   activity?: string;
+  includesListener?: boolean;
 };
 
 const holder = vi.hoisted(() => ({
@@ -155,6 +164,49 @@ async function seedOwnTrack(snapshot: Record<string, unknown> = VOCAL_SEED) {
   return { sessionId, trackId };
 }
 
+/** A track of another user's, Lounge-audible to everyone through a shared Playlist. */
+async function seedForeignTrack(sharerId: string) {
+  const sharerSession = await createSession(testDb.db, {
+    ownerUserId: sharerId,
+    styleSnapshot: VOCAL_SEED,
+  });
+  const requestId = await createGenerationRequest(testDb.db, {
+    ownerUserId: sharerId,
+    activitySessionId: sharerSession,
+  });
+  const jobId = await createProviderJob(testDb.db, { generationRequestId: requestId });
+  const trackId = await createTrack(testDb.db, {
+    ownerUserId: sharerId,
+    generationRequestId: requestId,
+    providerJobId: jobId,
+  });
+  const playlist = await createPlaylist(testDb.db, { ownerUserId: sharerId, name: 'Shelf' });
+  await addPlaylistTracks(testDb.db, {
+    ownerUserId: sharerId,
+    playlistId: playlist.id,
+    trackIds: [trackId],
+  });
+  await setPlaylistShared(testDb.db, {
+    ownerUserId: sharerId,
+    playlistId: playlist.id,
+    audience: { kind: 'everyone' },
+  });
+  return trackId;
+}
+
+/** Give `ownerUserId` an own About and the People Anna and Jonas, each with an About. */
+async function seedPeople(ownerUserId: string, prefix = '') {
+  const owner = await ensureOwnerPerson(testDb.db, ownerUserId);
+  await updatePerson(testDb.db, {
+    ownerUserId,
+    personId: owner.id,
+    name: owner.name,
+    about: `${prefix}grew up by the sea`,
+  });
+  await createPerson(testDb.db, { ownerUserId, name: 'Anna', about: `${prefix}bakes sourdough` });
+  await createPerson(testDb.db, { ownerUserId, name: 'Jonas', about: `${prefix}plays chess` });
+}
+
 function post(body: Record<string, unknown>) {
   return moreLikeThis(
     new Request('http://localhost/api/sessions/more-like-this', {
@@ -174,9 +226,10 @@ async function createdSession(response: Response) {
     user_prompt: string | null;
     cover_concept: string | null;
     auto_cover_style: string | null;
+    includes_listener: boolean;
     snapshot: Record<string, unknown>;
   }>(
-    `select title, user_prompt, cover_concept, auto_cover_style,
+    `select title, user_prompt, cover_concept, auto_cover_style, includes_listener,
             session_style_snapshot as snapshot
        from activity_sessions where id = $1`,
     [parsed.data.session.id],
@@ -289,32 +342,7 @@ describe.skipIf(skip)('POST /api/sessions/more-like-this — with a context', ()
   });
 
   it('never hands the call a foreign seed’s lyric notes', async () => {
-    const sharerId = await createUser(testDb.db);
-    const sharerSession = await createSession(testDb.db, {
-      ownerUserId: sharerId,
-      styleSnapshot: VOCAL_SEED,
-    });
-    const requestId = await createGenerationRequest(testDb.db, {
-      ownerUserId: sharerId,
-      activitySessionId: sharerSession,
-    });
-    const jobId = await createProviderJob(testDb.db, { generationRequestId: requestId });
-    const trackId = await createTrack(testDb.db, {
-      ownerUserId: sharerId,
-      generationRequestId: requestId,
-      providerJobId: jobId,
-    });
-    const playlist = await createPlaylist(testDb.db, { ownerUserId: sharerId, name: 'Shelf' });
-    await addPlaylistTracks(testDb.db, {
-      ownerUserId: sharerId,
-      playlistId: playlist.id,
-      trackIds: [trackId],
-    });
-    await setPlaylistShared(testDb.db, {
-      ownerUserId: sharerId,
-      playlistId: playlist.id,
-      audience: { kind: 'everyone' },
-    });
+    const trackId = await seedForeignTrack(await createUser(testDb.db));
 
     await createdSession(await post({ seedTrackIds: [trackId], context: 'for cooking' }));
 
@@ -345,6 +373,85 @@ describe.skipIf(skip)('POST /api/sessions/more-like-this — with a context', ()
     expect(holder.namingCalls).toHaveLength(0);
   });
 });
+
+describe.skipIf(skip)(
+  'POST /api/sessions/more-like-this — personal ingredients in a context',
+  () => {
+    it('hands the call the About of each Person the context names, and no one else’s', async () => {
+      await seedPeople(holder.viewerUserId!);
+      const { trackId } = await seedOwnTrack();
+
+      await createdSession(await post({ seedTrackIds: [trackId], context: 'for Anna’s birthday' }));
+
+      const input = holder.namingCalls[0] as NamingInput;
+      expect(input.listener?.people).toEqual([{ name: 'Anna', about: 'bakes sourdough' }]);
+      expect(JSON.stringify(input)).not.toContain('plays chess');
+    });
+
+    it('hands the call the listener’s profile and own About, as Start Session does', async () => {
+      await seedPeople(holder.viewerUserId!);
+      const { trackId } = await seedOwnTrack();
+
+      await createdSession(await post({ seedTrackIds: [trackId], context: 'for cooking' }));
+
+      expect((holder.namingCalls[0] as NamingInput).listener).toMatchObject({
+        name: 'Test Admin',
+        about: 'grew up by the sea',
+      });
+    });
+
+    it('sends no About for an instrumental seed', async () => {
+      await seedPeople(holder.viewerUserId!);
+      const { trackId } = await seedOwnTrack({
+        ...VOCAL_SEED,
+        vocalMode: 'instrumental',
+        lyricContext: '',
+      });
+
+      await createdSession(await post({ seedTrackIds: [trackId], context: 'for Anna’s birthday' }));
+
+      const sent = JSON.stringify(holder.namingCalls[0]);
+      expect(sent).not.toContain('bakes sourdough');
+      expect(sent).not.toContain('grew up by the sea');
+    });
+
+    it('stores the call’s answer to whether the listener is in the scene', async () => {
+      const { trackId } = await seedOwnTrack();
+      holder.naming = () => ({ ...COOKING, includesListener: true });
+
+      const stored = await createdSession(
+        await post({ seedTrackIds: [trackId], context: 'me cooking with Anna' }),
+      );
+
+      expect(stored.includes_listener).toBe(true);
+    });
+
+    it('stores the listener as not in the scene when the answer has no flag', async () => {
+      const { trackId } = await seedOwnTrack();
+
+      const stored = await createdSession(
+        await post({ seedTrackIds: [trackId], context: 'me cooking with Anna' }),
+      );
+
+      expect(stored.includes_listener).toBe(false);
+    });
+
+    it('gives a foreign seed’s call the Visitor’s People, never the sharer’s', async () => {
+      const sharerId = await createUser(testDb.db);
+      await seedPeople(sharerId, 'SHARER: ');
+      await seedPeople(holder.viewerUserId!);
+      const trackId = await seedForeignTrack(sharerId);
+
+      await createdSession(await post({ seedTrackIds: [trackId], context: 'for Anna’s birthday' }));
+
+      const input = holder.namingCalls[0] as NamingInput;
+      expect(input.listener?.people).toEqual([{ name: 'Anna', about: 'bakes sourdough' }]);
+      const sent = JSON.stringify(input);
+      expect(sent).not.toContain('SHARER');
+      expect(sent).not.toContain('Mira');
+    });
+  },
+);
 
 describe.skipIf(skip)('POST /api/sessions/more-like-this — a context refused', () => {
   it('refuses a context without a text AI, starting nothing', async () => {
@@ -438,6 +545,19 @@ describe.skipIf(skip)('POST /api/sessions/more-like-this — without a context',
     expect(stored.snapshot.activity).toBe('running');
     expect(stored.snapshot.lyricContext).toBe(SEED_NOTES);
     for (const field of MUSIC_FIELDS) expect(stored.snapshot[field]).toEqual(VOCAL_SEED[field]);
+  });
+
+  it('reads nobody into the scene', async () => {
+    await seedPeople(holder.viewerUserId!);
+    const { trackId } = await seedOwnTrack();
+    holder.naming = () => ({ ...COOKING, includesListener: true });
+
+    const stored = await createdSession(await post({ seedTrackIds: [trackId] }));
+
+    const sent = JSON.stringify(holder.namingCalls[0]);
+    expect(sent).not.toContain('grew up by the sea');
+    expect(sent).not.toContain('bakes sourdough');
+    expect(stored.includes_listener).toBe(false);
   });
 
   it('still creates the Session when the best-effort naming call fails', async () => {

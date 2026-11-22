@@ -47,6 +47,9 @@ export interface SessionNamingMetadata {
   /** The activity the Session is for, answered only for a More Like This
    *  context; '' when the model gave no valid one. */
   activity?: string;
+  /** Whether the request puts the listener in its scene, answered only for a
+   *  More Like This context; false when the model gave no valid answer. */
+  includesListener?: boolean;
 }
 
 /** The snapshot fields a title composes from — a structural subset of both the

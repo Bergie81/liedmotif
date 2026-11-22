@@ -333,10 +333,12 @@ const sessionNamingSchema = z.object({
   coverStyle: coverStylePickSchema,
 });
 
-/** The naming answer for a More Like This context: one more field, the activity,
- *  which an invalid answer leaves empty rather than failing the reply. */
+/** The naming answer for a More Like This context: two more fields, the activity
+ *  and whether the listener is in the scene, which an invalid answer leaves empty
+ *  and false rather than failing the reply. */
 const contextNamingSchema = sessionNamingSchema.extend({
   activity: z.string().catch(''),
+  includesListener: z.boolean().catch(false),
 });
 
 /** A usable naming proposal from a model value, or null. The title is required —
@@ -359,10 +361,12 @@ function normalizeSessionNaming(value: unknown): SessionNamingMetadata | null {
 function normalizeContextNaming(value: unknown): SessionNamingMetadata | null {
   const naming = normalizeSessionNaming(value);
   if (!naming || naming.trackTitles.length === 0) return null;
-  const activity = contextNamingSchema.shape.activity.parse(
-    (value as { activity?: unknown } | null)?.activity,
+  const answer = value as { activity?: unknown; includesListener?: unknown } | null;
+  const activity = contextNamingSchema.shape.activity.parse(answer?.activity);
+  const includesListener = contextNamingSchema.shape.includesListener.parse(
+    answer?.includesListener,
   );
-  return { ...naming, activity: clampActivity(activity) };
+  return { ...naming, activity: clampActivity(activity), includesListener };
 }
 
 export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmConfig): LlmProvider {

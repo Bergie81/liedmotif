@@ -131,7 +131,7 @@ export async function POST(request: Request) {
     });
     return apiError('provider_error', named.message, { retryable: true });
   }
-  const { snapshot: stored, title, coverConcept, autoCoverStyle } = named;
+  const { snapshot: stored, title, coverConcept, autoCoverStyle, includesListener } = named;
 
   const { session: created, supersededSessionId } = await createSession(db, {
     ownerUserId,
@@ -140,6 +140,7 @@ export async function POST(request: Request) {
     title,
     coverConcept,
     autoCoverStyle,
+    includesListener,
     ...(context ? { userPrompt: context } : {}),
     ...(targetDurationMinutes != null ? { targetDurationMinutes } : {}),
     coverImageId,

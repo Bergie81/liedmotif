@@ -444,15 +444,17 @@ export function stripPersonalIngredients(seed: StyleSnapshot): StyleSnapshot {
  * The naming a More Like This context gets: the one seeded naming call, made
  * required. The context is its listening request, the seed's lyric notes the
  * direction it edits; its activity answer replaces the seed's, and its lyric
- * notes replace the seed's ('' when it gave none). Throws `ProviderError` when
- * there is no usable Name and title pool, so no Session ignores the context.
+ * notes replace the seed's ('' when it gave none). The listener and People
+ * reach it as they reach a Start Session expansion of the same words, with the
+ * seed's vocal mode as the vocal pick. Throws `ProviderError` when there is no
+ * usable Name and title pool, so no Session ignores the context.
  */
 async function contextNaming(
   context: string,
   snapshot: SessionStyleSnapshot,
   listener: ListenerContext | null,
   avoidTitles: string[],
-): Promise<{ snapshot: SessionStyleSnapshot } & CoverDirection> {
+): Promise<{ snapshot: SessionStyleSnapshot; includesListener: boolean } & CoverDirection> {
   const llm = await getLlmProvider();
   if (!llm) throw new ProviderConfigError('More Like This with a context needs a text AI.');
   const naming = await llm.createSessionMetadata({ snapshot, listener, avoidTitles, context });
@@ -469,6 +471,7 @@ async function contextNaming(
     },
     coverConcept: naming.coverConcept,
     autoCoverStyle: naming.autoCoverStyle,
+    includesListener: naming.includesListener === true,
   };
 }
 
@@ -494,7 +497,7 @@ export async function nameSeededSnapshot(
   ownerUserId: string,
   seed: StyleSnapshot,
   context?: string | null,
-): Promise<NamedSnapshot> {
+): Promise<NamedSnapshot & { includesListener: boolean }> {
   const parsed = sessionStyleSnapshotSchema.safeParse(seed);
   // A seed that does not parse keeps its stored naming, which would ignore a
   // context; with one, that is a failed naming like any other.
@@ -507,16 +510,26 @@ export async function nameSeededSnapshot(
       title: deriveSessionTitle({ snapshot: seed }),
       coverConcept: null,
       autoCoverStyle: null,
+      includesListener: false,
     };
   const inherited = inheritedGuardrails(parsed.data);
-  const listener = await getListenerContext(db, ownerUserId);
   const unnamed = { ...parsed.data, ...inherited, title: '', trackTitles: [] };
+  const listener = context
+    ? await listenerContextForIntent(db, ownerUserId, {
+        mode: 'prompt',
+        prompt: context,
+        vocal: unnamed.vocalMode,
+      })
+    : await getListenerContext(db, ownerUserId);
   const avoidTitles = [parsed.data.title, ...parsed.data.trackTitles].filter(
     (title) => title.trim().length > 0,
   );
   const named = context
     ? await contextNaming(context, unnamed, listener, avoidTitles)
-    : await withCreativeNaming(null, unnamed, NO_COVER_DIRECTION, listener, { avoidTitles });
+    : {
+        ...(await withCreativeNaming(null, unnamed, NO_COVER_DIRECTION, listener, { avoidTitles })),
+        includesListener: false,
+      };
   return {
     snapshot: {
       ...seed,
@@ -532,6 +545,7 @@ export async function nameSeededSnapshot(
     ),
     coverConcept: named.coverConcept || null,
     autoCoverStyle: named.autoCoverStyle,
+    includesListener: named.includesListener,
   };
 }
 

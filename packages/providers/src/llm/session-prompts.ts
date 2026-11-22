@@ -65,6 +65,15 @@ const COVER_STYLE_ANSWER =
 const TITLE_CASE_RULE =
   'capitalized the way titles are written in their language, never all lowercase';
 
+/** What the expansion and a More Like This context's naming call answer as
+ * `includesListener`: the text LLM's reading, in any language, never a word list. */
+const INCLUDES_LISTENER_ANSWER =
+  'true ONLY when the request places the listener themself in ' +
+  'its scene or story as a participant, in any language — "me and Jonas on the moon", ' +
+  '"my friends and I", or implied as in "with Jonas on the road to Lisbon"; false when the ' +
+  'listener only asks for the music ("I want", "play me", "give us") or the scene belongs ' +
+  'to other people';
+
 function schemaFields(skipProfile: boolean): string {
   return (
     'stylePrompt (required, the music-generation style string), negativeTerms (string[]), ' +
@@ -79,11 +88,7 @@ function schemaFields(skipProfile: boolean): string {
     `lyricContext (string, normally "": ${lyricContextRule(skipProfile)}, ` +
     `compact labeled creative notes — max ${MAX_LYRIC_CONTEXT_LENGTH} chars — that ` +
     `${LYRIC_CONTEXT_PURPOSE}), ` +
-    'includesListener (boolean: true ONLY when the request places the listener themself in ' +
-    'its scene or story as a participant, in any language — "me and Jonas on the moon", ' +
-    '"my friends and I", or implied as in "with Jonas on the road to Lisbon"; false when the ' +
-    'listener only asks for the music ("I want", "play me", "give us") or the scene belongs ' +
-    'to other people), ' +
+    `includesListener (boolean: ${INCLUDES_LISTENER_ANSWER}), ` +
     `language (string, REQUIRED whenever vocals are wanted: the language the request's own ` +
     `words are written in, as an English name, e.g. "French", so the lyrics are sung in it; ` +
     `may be "" for instrumental), ` +
@@ -287,8 +292,9 @@ export interface SessionNamingInput {
   avoidTitles?: string[];
   /** A More Like This context: what the seeded Session is about or for, in the
    * user's words. It becomes the call's listening request; the snapshot's music
-   * stays fixed, and the answer also carries the activity and, on a vocal
-   * snapshot, lyric notes edited from the seed's. With a context the call is
+   * stays fixed, and the answer also carries the activity, whether the listener
+   * is in the scene and, on a vocal snapshot, lyric notes edited from the seed's
+   * (which may draw on the About text in `listener`). With a context the call is
    * required: it throws instead of answering empty. */
   context?: string | null;
 }
@@ -635,6 +641,9 @@ const CONTEXT_LYRIC_EDIT_RULE =
 export function namingPrompt(input: SessionNamingInput): string {
   const context = input.context?.trim();
   const wantsLyricContext = allowsNamingLyricContext(input.snapshot, input.listener, context);
+  // A context is the request the lyric notes are written for, so it sees About
+  // text the way the expansion does; nothing is sung on an instrumental seed.
+  const withAbout = Boolean(context) && input.snapshot.vocalMode === 'vocal';
   const request = context || input.userPrompt?.trim();
   const avoid = takenTitles(input.avoidTitles);
   return (
@@ -645,7 +654,8 @@ export function namingPrompt(input: SessionNamingInput): string {
     `"trackTitles": string[] (8-12 short distinct creative track titles fitting the vibe; ${TITLE_CASE_RULE})` +
     (context
       ? `, "activity": string (the activity or occasion the session is for, a few words in ` +
-        `the request's language; "" when the request names none)`
+        `the request's language; "" when the request names none), ` +
+        `"includesListener": boolean (${INCLUDES_LISTENER_ANSWER})`
       : '') +
     (wantsLyricContext
       ? `, "lyricContext": string (max ${MAX_LYRIC_CONTEXT_LENGTH} chars: ${LYRIC_CONTEXT_FORMAT})`
@@ -659,7 +669,7 @@ export function namingPrompt(input: SessionNamingInput): string {
         `spirit but make title and every track title clearly different from all of them: ` +
         `${avoid.join('; ')}.`
       : '') +
-    `${listenerBlock(input.listener, false)}\n\n` +
+    `${listenerBlock(input.listener, withAbout)}\n\n` +
     (request ? `Listening request: ${request}\n` : '') +
     (context && wantsLyricContext
       ? `Current lyricContext: ${input.snapshot.lyricContext.trim() || '(empty)'}\n`

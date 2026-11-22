@@ -679,3 +679,42 @@ describe('namingPrompt for a More Like This context', () => {
     expect(namingPrompt({ snapshot: instrumentalSeed })).not.toContain('"activity"');
   });
 });
+
+describe('namingPrompt for a More Like This context with personal ingredients', () => {
+  const vocalSeed = sessionStyleSnapshotSchema.parse({
+    stylePrompt: 'warm synthwave, night drive',
+    vocalMode: 'vocal',
+  });
+  const instrumentalSeed = sessionStyleSnapshotSchema.parse({ stylePrompt: 'calm piano' });
+  const listener = {
+    name: 'John',
+    about: 'grew up by the sea',
+    people: [{ name: 'Anna', about: 'bakes sourdough' }],
+  };
+
+  it('gives a vocal seed’s lyric notes the named People’s and the listener’s own About', () => {
+    const prompt = namingPrompt({ snapshot: vocalSeed, listener, context: 'for Anna’s birthday' });
+    expect(prompt).toContain('name: Anna; About: bakes sourdough');
+    expect(prompt).toContain("The listener's own private About");
+    expect(prompt).toContain('grew up by the sea');
+  });
+
+  it('sends an instrumental seed no About', () => {
+    const prompt = namingPrompt({
+      snapshot: instrumentalSeed,
+      listener,
+      context: 'for Anna’s birthday',
+    });
+    expect(prompt).not.toContain('bakes sourdough');
+    expect(prompt).not.toContain('grew up by the sea');
+  });
+
+  it('asks whether the listener is in the scene, on any seed', () => {
+    for (const snapshot of [vocalSeed, instrumentalSeed]) {
+      expect(namingPrompt({ snapshot, context: 'me cooking with Anna' })).toContain(
+        '"includesListener": boolean (true ONLY when the request places the listener themself',
+      );
+    }
+    expect(namingPrompt({ snapshot: vocalSeed, listener })).not.toContain('includesListener');
+  });
+});

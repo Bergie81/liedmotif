@@ -1545,6 +1545,28 @@ describe('createSessionMetadata with a More Like This context (required)', () =>
     }
   });
 
+  it.each([
+    ['structured output', true],
+    ['JSON in text', false],
+  ])('answers whether the listener is in the scene (%s)', async (_path, structured) => {
+    const naming = await provider(
+      [reply({ includesListener: true })],
+      structured,
+    ).createSessionMetadata({ snapshot: instrumentalSeed, context: 'me cooking with Anna' });
+    expect(naming.includesListener).toBe(true);
+  });
+
+  it('answers the listener as not in the scene when the reply has no flag or an invalid one', async () => {
+    for (const includesListener of [undefined, 'yes', 1]) {
+      const naming = await provider([reply({ includesListener })]).createSessionMetadata({
+        snapshot: instrumentalSeed,
+        context: 'me cooking with Anna',
+      });
+      expect(naming.title).toBe('Kitchen Lights');
+      expect(naming.includesListener).toBe(false);
+    }
+  });
+
   it('drops lyric notes an instrumental seed was given', async () => {
     const naming = await provider([reply({ lyricContext: 'made up' })]).createSessionMetadata({
       snapshot: instrumentalSeed,

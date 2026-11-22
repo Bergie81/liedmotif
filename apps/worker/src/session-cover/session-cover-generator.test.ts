@@ -1123,6 +1123,28 @@ describeIfDb('SessionCoverGenerator', () => {
     );
   });
 
+  it('puts a Person a More Like This context names on the cover', async () => {
+    const {
+      ownerUserId,
+      sessionId,
+      people: configuredPeople,
+    } = await seedMultiPersonSession(['John', 'Julia']);
+    // A context-seeded Session stores the context as its prompt.
+    await ctx.db
+      .update(activitySessions)
+      .set({ userPrompt: 'for Julia’s birthday' })
+      .where(eq(activitySessions.id, sessionId));
+    const { provider } = fakeCoverArt({ maxReferences: 3 });
+
+    await generator(ownerUserId, provider).ensureGenerated(sessionId);
+
+    const [ledger] = await ctx.db
+      .select()
+      .from(sessionCoverGenerations)
+      .where(eq(sessionCoverGenerations.activitySessionId, sessionId));
+    expect(ledger!.plan.selectedPersonIds).toEqual([configuredPeople[1]!.id]);
+  });
+
   it('matches references only from user-supplied Session context', async () => {
     const ownerUserId = await createUser(ctx.db);
     const owner = await ensureOwnerPerson(ctx.db, ownerUserId);

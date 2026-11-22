@@ -165,7 +165,8 @@ export interface LlmProvider extends BaseProvider {
    * posture holds.
    *
    * A More Like This context (`input.context`) makes the call required: it runs
-   * under the expansion's budget, also answers the `activity` and, on a vocal
+   * under the expansion's budget, also answers the `activity`, whether the
+   * listener is in the scene (`includesListener`) and, on a vocal
    * snapshot, lyric notes, and throws a sanitized `ProviderError` when it cannot
    * return a Name and a title pool, so no Session starts that ignored the context.
    */
