@@ -164,7 +164,7 @@ export function CoverArtForm({
         {COVER_STYLE_CHOICES.map((value) => (
           <div
             key={value}
-            className="rounded-[13px] border border-line-2 bg-[var(--control-bg)] has-[input[type=radio]:checked]:border-lamp/55 has-[input[type=radio]:checked]:bg-lamp/[0.08] light:has-[input[type=radio]:checked]:border-lamp-fill/55 light:has-[input[type=radio]:checked]:bg-lamp-fill/[0.13]"
+            className="rounded-[13px] border border-line-2 bg-[var(--control-bg)] has-[:checked]:border-lamp/55 has-[:checked]:bg-lamp/[0.08] light:has-[:checked]:border-lamp-fill/55 light:has-[:checked]:bg-lamp-fill/[0.13]"
           >
             <label className="group flex cursor-pointer items-center gap-3 rounded-[12px] px-3 py-3 [-webkit-tap-highlight-color:transparent] has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-lamp">
               <input

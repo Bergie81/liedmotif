@@ -51,7 +51,8 @@ function renderForm(initial: Partial<CoverArtSettings> = {}, llmConfigured = tru
 }
 
 const styleGroup = () => screen.getByRole('group', { name: 'Default cover style' });
-const styleRadio = (name: string) => within(styleGroup()).getByRole('radio', { name });
+const styleRadio = (name: string) =>
+  within(styleGroup()).getByRole('radio', { name }) as HTMLInputElement;
 const definitionField = () => screen.getByTestId('cover-style-definition') as HTMLTextAreaElement;
 
 /** The file each image in a style's row requests, unwrapped from the Next image URL. */
@@ -162,7 +163,7 @@ describe('Custom style definition', () => {
     fireEvent.focus(definitionField());
     fireEvent.change(definitionField(), { target: { value: 'woodcut, rough grain' } });
 
-    expect((styleRadio('Photographic') as HTMLInputElement).checked).toBe(true);
+    expect(styleRadio('Photographic').checked).toBe(true);
     expect(await saveAndReadBody(bodies)).toMatchObject({
       defaultStyle: 'photographic',
       customStyleDefinition: 'woodcut, rough grain',
@@ -176,7 +177,7 @@ describe('Custom style definition', () => {
     fireEvent.click(styleRadio('Manga'));
     fireEvent.change(definitionField(), { target: { value: 'ink wash' } });
 
-    expect((styleRadio('Manga') as HTMLInputElement).checked).toBe(true);
+    expect(styleRadio('Manga').checked).toBe(true);
     expect(await saveAndReadBody(bodies)).toMatchObject({
       defaultStyle: 'manga',
       customStyleDefinition: 'ink wash',
@@ -249,7 +250,7 @@ describe('Save Cover Art', () => {
     await waitFor(() =>
       expect(definitionField().value).toBe('Hand-cut woodblock print, rough grain.'),
     );
-    expect((styleRadio('Minimal') as HTMLInputElement).checked).toBe(true);
+    expect(styleRadio('Minimal').checked).toBe(true);
   });
 
   it('locks Enhance prompts only without a text AI', () => {
@@ -262,6 +263,6 @@ describe('Save Cover Art', () => {
     renderForm({}, false);
     expect(enhance().disabled).toBe(true);
     expect(definitionField().disabled).toBe(false);
-    expect((styleRadio('Custom') as HTMLInputElement).disabled).toBe(false);
+    expect(styleRadio('Custom').disabled).toBe(false);
   });
 });
