@@ -313,7 +313,7 @@ You get another track in the same vibe, using the other half of its pair when th
 
 ### More Like This
 
-Start a new session from music you love. The old session stops and stays resumable. **More Like This** opens a sheet that shows what the new session starts from, and **Start New Session** there starts it. You find **More Like This** here:
+Start a new session from music you love. Your current session keeps playing until the new one is ready to take over, and you can resume it later. **More Like This** opens a sheet that shows what the new session starts from, and **Start New Session** there starts it. You find **More Like This** here:
 
 - **The player:** the current track is the seed.
 - **A track menu:** in **Library**, **Search** or a playlist's track menu.
@@ -322,7 +322,7 @@ Start a new session from music you love. The old session stops and stays resumab
 
 The new session sounds like the seed: same style, genres, mood, energy, tempo, vocals and guardrails. Your profile details apply again even if the seed ran without them. Like any new session, it needs budget left. On a playlist shared with you, it runs on your own budget.
 
-**What is it for?** is an optional field in the sheet. Write a few words on what the new session is about or for, in any language: "for cooking", "for Anna's birthday", "about autumn in Berlin". Leave it empty, and More Like This works as described above. With words in it:
+**What is it for?** is an optional field in the sheet. Write a few words on what the new session is about or for, in any language: "for cooking", "about autumn in Berlin". Leave it empty, and More Like This works as described above. With words in it:
 
 - **The music stays the seed's.** Your words never change how it sounds. For that, use [Change Vibe](#change-the-vibe) once the new session plays, or start a new session.
 - **Everything written around the music follows your words:** the session name, the track titles, the cover and, in a sung session, the lyrics. The lyrics keep the people of the seed's lyrics unless your words name others.

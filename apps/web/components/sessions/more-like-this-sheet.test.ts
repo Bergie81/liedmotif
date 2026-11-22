@@ -97,10 +97,10 @@ it('closes once the new Session started', async () => {
 
 it('stays open with the typed words when the start is refused', async () => {
   const { onOpenChange } = renderSheet({ onStart: async () => false });
-  typeContext('for Anna’s birthday');
+  typeContext('about autumn in Berlin');
   await start();
   expect(onOpenChange).not.toHaveBeenCalled();
-  expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('for Anna’s birthday');
+  expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('about autumn in Berlin');
 });
 
 it('ignores a repeat tap while the first start is in flight', async () => {

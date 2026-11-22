@@ -83,7 +83,7 @@ function MoreLikeThisForm({
     <>
       <SheetHeader
         title="More Like This"
-        description="Start a new session in this style. The current session becomes stopped and remains resumable."
+        description="Start a new session in this style. The current session keeps playing until the new one is ready to take over."
       />
       <SheetBody>
         <div className="mt-5 rounded-card-sm border border-line bg-[var(--control-bg)] p-4">
@@ -108,7 +108,7 @@ function MoreLikeThisForm({
               id="more-like-this-context"
               value={text}
               onChange={(event) => setText(event.target.value)}
-              placeholder="For cooking, for Anna’s birthday…"
+              placeholder="For cooking, about autumn in Berlin…"
               maxLength={MAX_USER_PROMPT_LENGTH}
               className={cn(inputClass, 'mt-2 min-h-[72px] w-full resize-y')}
             />
