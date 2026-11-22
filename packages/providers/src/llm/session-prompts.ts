@@ -330,8 +330,9 @@ function ownAboutBlock(about: string): string {
 }
 
 /** Render volunteered listener data plus request-scoped Person lyric context.
- * `withAbout` is the expansion: only it writes lyric direction from the request,
- * so only it sees About text (the named People's and the listener's own). */
+ * `withAbout` marks a call that writes lyric direction from the user's request
+ * (the expansion, and the naming of a vocal More Like This context): only those
+ * see About text (the named People's and the listener's own). */
 function listenerBlock(listener: ListenerContext | null | undefined, withAbout: boolean): string {
   if (!hasListener(listener)) return '';
   const parts = LISTENER_FIELDS.flatMap((key) => {

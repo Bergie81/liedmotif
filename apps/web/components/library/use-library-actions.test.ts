@@ -21,7 +21,7 @@ vi.mock('@/components/sessions/use-seed-more-like-this', () => ({
     () =>
     async (...args: unknown[]) => {
       seed.calls.push(args);
-      return seed.refusal;
+      return { started: seed.refusal === null, refusal: seed.refusal };
     },
 }));
 

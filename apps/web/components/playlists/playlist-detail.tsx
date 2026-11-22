@@ -180,11 +180,11 @@ export function PlaylistDetail({
     if (seeding) return false;
     setSeeding(true);
     toast.dismiss(MORE_LIKE_THIS_KEY);
-    const failure = await seed(trackIds, undefined, context);
+    const { started, refusal } = await seed(trackIds, undefined, context);
     setSeeding(false);
-    const line = failure && presentCreationFailure(failure, MORE_LIKE_THIS_FAILED);
+    const line = refusal && presentCreationFailure(refusal, MORE_LIKE_THIS_FAILED);
     if (line) toast.error(line, { key: MORE_LIKE_THIS_KEY });
-    return failure === null;
+    return started;
   }
 
   // Permanent Track delete (never feedback). Settled before the list changes —

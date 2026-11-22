@@ -142,7 +142,7 @@ describe('PlaylistDetail — visitor menu', () => {
   });
 
   it('opens the More Like This sheet, then starts from its tracks with the typed context', async () => {
-    moreLikeThis.mockResolvedValue(null);
+    moreLikeThis.mockResolvedValue({ started: true, refusal: null });
     renderVisitor();
     fireEvent.click(screen.getByTestId(`lounge-menu-more-like-this-${PLAYLIST.id}`));
     expect(screen.getByText('1 track from Late Drive')).toBeTruthy();
@@ -156,7 +156,10 @@ describe('PlaylistDetail — visitor menu', () => {
 
   it('opens the blocked dialog when More Like This has no headroom', async () => {
     const message = 'A new session needs 5 tracks; you have 4 left today.';
-    moreLikeThis.mockResolvedValue({ code: 'session_headroom_blocked', message });
+    moreLikeThis.mockResolvedValue({
+      started: false,
+      refusal: { code: 'session_headroom_blocked', message },
+    });
     renderVisitor();
     fireEvent.click(screen.getByTestId(`lounge-menu-more-like-this-${PLAYLIST.id}`));
     fireEvent.click(screen.getByRole('button', { name: 'Start New Session' }));

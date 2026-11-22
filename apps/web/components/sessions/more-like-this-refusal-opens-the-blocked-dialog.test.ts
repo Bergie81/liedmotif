@@ -31,12 +31,15 @@ it('hands a headroom refusal to the caller with its error code', async () => {
   }));
   const { result } = renderHook(() => useSeedMoreLikeThis());
 
-  let failure: Awaited<ReturnType<ReturnType<typeof useSeedMoreLikeThis>>> = null;
+  let outcome: Awaited<ReturnType<ReturnType<typeof useSeedMoreLikeThis>>> | undefined;
   await act(async () => {
-    failure = await result.current(['track-1']);
+    outcome = await result.current(['track-1']);
   });
 
-  expect(failure).toEqual({ code: 'session_headroom_blocked', message });
+  expect(outcome).toEqual({
+    started: false,
+    refusal: { code: 'session_headroom_blocked', message },
+  });
   expect(player.engage).not.toHaveBeenCalled();
   expect(player.push).not.toHaveBeenCalled();
 });

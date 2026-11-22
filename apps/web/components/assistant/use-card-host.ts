@@ -161,10 +161,10 @@ export function useCardHost(
         }
         return live.current
           .seedMoreLikeThis(seedTrackIds, targetDurationMinutes)
-          .then((failure) =>
-            failure === null
-              ? { carriedOut: true }
-              : { carriedOut: false, refusal: `${MORE_LIKE_THIS_FAILED}: ${failure.message}` },
+          .then(({ started, refusal }) =>
+            refusal
+              ? { carriedOut: false, refusal: `${MORE_LIKE_THIS_FAILED}: ${refusal.message}` }
+              : { carriedOut: started },
           );
       },
       newMusicOn: (sessionId, targetMinutes) =>
