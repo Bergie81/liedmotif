@@ -4,7 +4,14 @@ import { useState, type ReactNode } from 'react';
 import { MAX_USER_PROMPT_LENGTH } from '@liedmotif/shared';
 import { useAppChrome } from '@/components/app-chrome-context';
 import { inputClass, primaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
-import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTrigger } from '@/components/ui/sheet';
+import {
+  Sheet,
+  SheetBody,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { cn } from '@/lib/cn';
 import { formatTrackCount } from './session-list-model';
 
@@ -44,7 +51,7 @@ export function MoreLikeThisSheet({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       {trigger ? <SheetTrigger asChild>{trigger}</SheetTrigger> : null}
-      <SheetContent side="bottom">
+      <SheetContent side="bottom" className="flex flex-col">
         <MoreLikeThisForm seed={seed} onStarted={() => onOpenChange(false)} onStart={onStart} />
       </SheetContent>
     </Sheet>
@@ -78,43 +85,48 @@ function MoreLikeThisForm({
         title="More Like This"
         description="Start a new session in this style. The current session becomes stopped and remains resumable."
       />
-      <div className="mt-5 rounded-card-sm border border-line bg-[var(--control-bg)] p-4">
-        <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
-          {seed.kind === 'track' ? 'Seed Track' : 'Seed Tracks'}
+      <SheetBody>
+        <div className="mt-5 rounded-card-sm border border-line bg-[var(--control-bg)] p-4">
+          <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
+            {seed.kind === 'track' ? 'Seed Track' : 'Seed Tracks'}
+          </div>
+          <div className="mt-1 truncate font-display text-[17px] font-bold">
+            {seed.kind === 'track'
+              ? (seed.title ?? 'Untitled Track')
+              : `${formatTrackCount(seed.trackCount)} from ${seed.name}`}
+          </div>
         </div>
-        <div className="mt-1 truncate font-display text-[17px] font-bold">
-          {seed.kind === 'track'
-            ? (seed.title ?? 'Untitled Track')
-            : `${formatTrackCount(seed.trackCount)} from ${seed.name}`}
-        </div>
-      </div>
-      {llmConfigured ? (
-        <>
-          <label htmlFor="more-like-this-context" className="mt-4 block text-[13px] font-semibold">
-            What is it for? <span className="font-normal text-dim">(optional)</span>
-          </label>
-          <textarea
-            id="more-like-this-context"
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            placeholder="For cooking, for Anna’s birthday…"
-            maxLength={MAX_USER_PROMPT_LENGTH}
-            className={cn(inputClass, 'mt-2 min-h-[72px] w-full resize-y')}
-          />
-          <p className="mt-2 text-[12.5px] text-dim">
-            Changes the names, lyrics and cover, never the music.
-          </p>
-        </>
-      ) : null}
-      <button
-        type="button"
-        disabled={busy}
-        onClick={() => void start()}
-        className={cn(primaryButtonClass, 'mt-4 w-full')}
-      >
-        {busy ? 'Starting Session…' : 'Start New Session'}
-      </button>
-      <SheetClose className={cn(secondaryButtonClass, 'mt-2 w-full')}>Cancel</SheetClose>
+        {llmConfigured ? (
+          <>
+            <label
+              htmlFor="more-like-this-context"
+              className="mt-4 block text-[13px] font-semibold"
+            >
+              What is it for? <span className="font-normal text-dim">(optional)</span>
+            </label>
+            <textarea
+              id="more-like-this-context"
+              value={text}
+              onChange={(event) => setText(event.target.value)}
+              placeholder="For cooking, for Anna’s birthday…"
+              maxLength={MAX_USER_PROMPT_LENGTH}
+              className={cn(inputClass, 'mt-2 min-h-[72px] w-full resize-y')}
+            />
+            <p className="mt-2 text-[12.5px] text-dim">
+              Changes the names, lyrics and cover, never the music.
+            </p>
+          </>
+        ) : null}
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void start()}
+          className={cn(primaryButtonClass, 'mt-4 w-full')}
+        >
+          {busy ? 'Starting Session…' : 'Start New Session'}
+        </button>
+        <SheetClose className={cn(secondaryButtonClass, 'mt-2 w-full')}>Cancel</SheetClose>
+      </SheetBody>
     </>
   );
 }

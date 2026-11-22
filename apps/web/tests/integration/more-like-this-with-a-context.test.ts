@@ -97,7 +97,8 @@ let testDb: TestDb;
 const SEED_NOTES = 'theme: night drive; people: Mira, my sister';
 const VOCAL_SEED = {
   stylePrompt: 'warm synthwave, night drive',
-  negativeTerms: ['country'],
+  // As stored after the Guardrails stamped the avoid text into the negative terms.
+  negativeTerms: ['country', 'country twang'],
   genreTags: ['synthwave'],
   mood: 'wistful',
   activity: 'running',
@@ -109,7 +110,7 @@ const VOCAL_SEED = {
   key: 'F minor',
   styleStrength: 0.7,
   novelty: 0.3,
-  avoid: 'country twang',
+  userAvoid: 'country twang',
   useOwnVoice: false,
   title: 'Night Drive',
   trackTitles: ['Neon Exit', 'Tail Lights'],
@@ -127,7 +128,7 @@ const MUSIC_FIELDS = [
   'seedParameters',
   'styleStrength',
   'novelty',
-  'avoid',
+  'userAvoid',
   'vocalMode',
   'voiceGender',
   'language',
@@ -473,6 +474,7 @@ describe.skipIf(skip)('POST /api/sessions/more-like-this — a context refused',
     ],
     ['answers no Name', () => ({ ...COOKING, title: '' })],
     ['answers no title pool', () => ({ ...COOKING, trackTitles: [] })],
+    ['answers no lyric notes for a vocal seed', () => ({ ...COOKING, lyricContext: '' })],
   ])(
     'answers a retryable error when the naming call %s, starting nothing',
     async (_case, answer) => {
@@ -487,12 +489,12 @@ describe.skipIf(skip)('POST /api/sessions/more-like-this — a context refused',
     },
   );
 
-  it('answers a retryable error for a seed whose style cannot be read, starting nothing', async () => {
+  it('refuses a context on a seed whose style cannot be read, starting nothing', async () => {
     const { sessionId, trackId } = await seedOwnTrack({ ...VOCAL_SEED, stylePrompt: '' });
 
     const error = await refusal(await post({ seedTrackIds: [trackId], context: 'for cooking' }));
 
-    expect(error.code).toBe('provider_error');
+    expect(error.code).toBe('validation_error');
     expect(holder.namingCalls).toHaveLength(0);
     await expectNothingStarted(sessionId);
   });

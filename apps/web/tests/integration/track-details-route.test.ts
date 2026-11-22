@@ -110,6 +110,32 @@ describe.skipIf(skip)('GET /api/tracks/[trackId]/details', () => {
     expect(typeof body.data.createdAt).toBe('string');
   });
 
+  it('shows the activity, mood and energy the Track was generated for', async () => {
+    const ownerUserId = await createUser(testDb.db);
+    holder.ownerUserId = ownerUserId;
+    const sessionId = await createSession(testDb.db, { ownerUserId });
+    const requestId = await createGenerationRequest(testDb.db, {
+      ownerUserId,
+      activitySessionId: sessionId,
+      styleSnapshot: {
+        stylePrompt: 'synthwave',
+        activity: 'cooking',
+        mood: 'wistful',
+        energy: 'high',
+      },
+    });
+    const providerJobId = await createProviderJob(testDb.db, { generationRequestId: requestId });
+    // What the worker lands: a Track with none of the three on its own row.
+    const trackId = await createTrack(testDb.db, {
+      ownerUserId,
+      generationRequestId: requestId,
+      providerJobId,
+    });
+
+    const body = await (await getDetails(trackId)).json();
+    expect(body.data).toMatchObject({ activity: 'cooking', mood: 'wistful', energy: 'high' });
+  });
+
   it("hands the Admin's Instance timezone along so the Generated date is shown in it", async () => {
     const ownerUserId = await createUser(testDb.db);
     holder.ownerUserId = ownerUserId;

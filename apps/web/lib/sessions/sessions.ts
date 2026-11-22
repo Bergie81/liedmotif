@@ -464,10 +464,10 @@ async function plainSeededNaming(
  * The naming a More Like This context gets: the one seeded naming call, made
  * required. The context is its listening request, the seed's lyric notes the
  * direction it edits; its activity answer replaces the seed's, and its lyric
- * notes replace the seed's ('' when it gave none). The listener and People
- * reach it as they reach a Start Session expansion of the same words, with the
- * seed's vocal mode as the vocal pick. Throws `ProviderError` when there is no
- * usable Name and title pool, so no Session ignores the context.
+ * notes replace the seed's. The listener and People reach it as they reach a
+ * Start Session expansion of the same words, with the seed's vocal mode as the
+ * vocal pick. Throws `ProviderError` when there is no usable Name and title
+ * pool, or a vocal seed gets no lyric notes, so no Session ignores the context.
  */
 async function contextNaming(
   db: Database,
@@ -484,7 +484,14 @@ async function contextNaming(
   const llm = await getLlmProvider();
   if (!llm) throw new ProviderConfigError('More Like This with a context needs a text AI.');
   const naming = await llm.createSessionMetadata({ snapshot, listener, avoidTitles, context });
-  if (!naming.title.trim() || naming.trackTitles.length === 0) {
+  const vocal = snapshot.vocalMode === 'vocal';
+  // A vocal Session's lyrics follow its lyric notes alone, so notes missing
+  // from the answer would leave them ignoring the context.
+  if (
+    !naming.title.trim() ||
+    naming.trackTitles.length === 0 ||
+    (vocal && !naming.lyricContext.trim())
+  ) {
     throw new ProviderError(CONTEXT_NAMING_FAILED, { failure: 'unusable_response' });
   }
   return {
@@ -492,7 +499,7 @@ async function contextNaming(
       ...snapshot,
       title: naming.title,
       trackTitles: naming.trackTitles,
-      lyricContext: snapshot.vocalMode === 'vocal' ? naming.lyricContext : '',
+      lyricContext: vocal ? naming.lyricContext : '',
       activity: naming.activity ?? '',
     },
     coverConcept: naming.coverConcept,

@@ -202,9 +202,18 @@ export function NowPlaying({
       durationSession.generatedDurationSeconds,
     );
   const sessionTitle = session.title ?? 'Untitled Session';
+  // The More Like This sheet pins the Track it was opened for, like the Save
+  // picker: playback advancing while the user types never changes the seed.
+  const [moreLikeThisSeed, setMoreLikeThisSeed] = useState<{
+    trackId: string;
+    title: string | null;
+  } | null>(null);
+  function openMoreLikeThis(open: boolean) {
+    setMoreLikeThisSeed(open && track ? { trackId: track.trackId, title: track.title } : null);
+  }
   const sessionActions = usePlayerSessionActions({
     sessionId: session.id,
-    trackId: track?.trackId ?? null,
+    trackId: moreLikeThisSeed?.trackId ?? track?.trackId ?? null,
     onSessionChange,
     onStopped,
     onConverted: (playlistId) => {
@@ -239,8 +248,6 @@ export function NowPlaying({
   // The Change Vibe sheet's open state lives here so the options menu and the
   // direction bar open the same sheet.
   const [changeVibeOpen, setChangeVibeOpen] = useState(false);
-  // The same holds for the More Like This sheet.
-  const [moreLikeThisOpen, setMoreLikeThisOpen] = useState(false);
   // Change Vibe steers the Session, so no current Track is needed. The sheet
   // preselects the vibe from the first queue poll and builds its request against
   // it, so it waits for that, and for any other action in flight.
@@ -397,7 +404,7 @@ export function NowPlaying({
       onRenameTrack={applyRenameTrack}
       onConvertToPlaylist={() => void sessionActions.convertToPlaylist()}
       onReroll={player.dislike}
-      onOpenMoreLikeThis={() => setMoreLikeThisOpen(true)}
+      onOpenMoreLikeThis={() => openMoreLikeThis(true)}
       moreLikeThisAvailable={sessionActions.busyAction === null && !vibeChangePending}
       onOpenChangeVibe={() => setChangeVibeOpen(true)}
       changeVibeAvailable={changeVibeAvailable}
@@ -515,7 +522,7 @@ export function NowPlaying({
         />
 
         <PlayerDirectionActions
-          trackTitle={track?.title ?? null}
+          trackTitle={moreLikeThisSeed ? moreLikeThisSeed.title : (track?.title ?? null)}
           vibe={player.vibe}
           targetDurationMinutes={durationSession.targetDurationMinutes}
           generatedDurationSeconds={durationSession.generatedDurationSeconds ?? 0}
@@ -528,8 +535,8 @@ export function NowPlaying({
           onChangeVibeOpenChange={setChangeVibeOpen}
           onReroll={player.dislike}
           onChangeVibe={(input, options) => submitChangeVibe(session.id, input, options)}
-          moreLikeThisOpen={moreLikeThisOpen}
-          onMoreLikeThisOpenChange={setMoreLikeThisOpen}
+          moreLikeThisOpen={moreLikeThisSeed !== null}
+          onMoreLikeThisOpenChange={openMoreLikeThis}
           onMoreLikeThis={sessionActions.startMoreLikeThis}
         />
 

@@ -46,6 +46,7 @@ import {
 } from '@/components/playlists/playlist-view-model';
 import { usePlayPlaylist } from '@/components/playlists/use-play-playlist';
 import { OfflineMark } from '@/components/offline/offline-mark';
+import { primePlayerAutoplay } from '@/components/player/autoplay-arm';
 import { RelativeTime } from '@/components/relative-time';
 import {
   MORE_LIKE_THIS_FAILED,
@@ -197,6 +198,9 @@ export function LoungeView({
    *  the moment the share is revoked under the tap. True once it started. */
   async function seedFromShared(item: LoungePlaylistItem, context?: string): Promise<boolean> {
     if (seeding) return false;
+    // The Playlist read below outlasts the tap, so the autoplay gesture is
+    // taken now, before it.
+    primePlayerAutoplay();
     setSeeding(true);
     toast.dismiss(MORE_LIKE_THIS_KEY);
     const page = await getLoungePlaylist(item.id, null, LOUNGE_MLT_SEED_TRACKS);

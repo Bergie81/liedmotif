@@ -10,7 +10,7 @@
 
 import { NextResponse } from 'next/server';
 import { createSession, getCoverArtSettings, getSeedSnapshot } from '@liedmotif/db';
-import { ProviderError } from '@liedmotif/providers';
+import { ProviderError, sessionStyleSnapshotSchema } from '@liedmotif/providers';
 import { createLogger, moreLikeThisRequestSchema } from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
 import { getLlmProvider } from '@/lib/providers/providers';
@@ -50,6 +50,9 @@ function expectedNamingFailure(err: unknown): ProviderError {
 
 const CONTEXT_NEEDS_TEXT_AI =
   'Adding a context needs a text AI. Set one up in Settings, or leave the context empty.';
+
+const CONTEXT_NEEDS_READABLE_SEED =
+  "This track's style can't be read, so it can't take a context. Leave the context empty.";
 
 export async function POST(request: Request) {
   const ownerUserId = await requireOwnerId(request);
@@ -102,6 +105,11 @@ export async function POST(request: Request) {
   // never read deterministically or dropped (ADR 0004).
   if (context && !(await getLlmProvider())) {
     return apiError('validation_error', CONTEXT_NEEDS_TEXT_AI);
+  }
+  // A seed whose style does not parse keeps its stored naming, which would
+  // ignore the context; no retry changes that, so it is refused, not retried.
+  if (context && !sessionStyleSnapshotSchema.safeParse(snapshot).success) {
+    return apiError('validation_error', CONTEXT_NEEDS_READABLE_SEED);
   }
 
   // The same per-owner creation budget Start Session takes, for the same reason:

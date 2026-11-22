@@ -127,6 +127,12 @@ describeIfDb('Tracks of a More Like This Session', () => {
     await generate(sessionId);
     const firstTrack = await landTrack(ownerUserId, sessionId);
 
+    // Frozen on the first GenerationRequest, not read live from the Session.
+    const [request] = await ctx.db
+      .select({ userPrompt: generationRequests.userPrompt })
+      .from(generationRequests)
+      .where(eq(generationRequests.activitySessionId, sessionId));
+    expect(request?.userPrompt).toBe('zum Kochen');
     expect(await shownPrompt(ownerUserId, firstTrack)).toBe('zum Kochen');
   });
 });

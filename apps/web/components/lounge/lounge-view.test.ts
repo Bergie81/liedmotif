@@ -42,6 +42,7 @@ vi.mock('@/components/player/player-provider', () => ({
     beginOtherMusic: () => Promise.resolve(true),
   }),
 }));
+vi.mock('@/components/player/autoplay-arm', () => ({ primePlayerAutoplay: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh }) }));
 // The share sheet's own picker is covered by its tests; here it stands in as
 // the seam that reports a landed share write back to the Lounge.

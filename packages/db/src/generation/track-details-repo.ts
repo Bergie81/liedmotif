@@ -93,10 +93,18 @@ export async function getReadableTrackDetails(
     userName,
     stampedPrompt,
     sessionPrompt,
+    activity,
+    mood,
+    energy,
     ...details
   } = row;
   return {
     ...details,
+    // Provider results write none of these onto the Track, so the request's
+    // frozen snapshot is what says what it was made for.
+    activity: activity ?? (styleSnapshot?.activity || null),
+    mood: mood ?? (styleSnapshot?.mood || null),
+    energy: energy ?? (styleSnapshot?.energy || null),
     artistName: resolveArtistName(artistName, userName),
     userPrompt: resolveTrackDataPrompt(stampedPrompt, sessionPrompt),
     language: styleSnapshot?.language || null,
