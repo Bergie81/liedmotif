@@ -494,6 +494,20 @@ export const listTracksInputSchema = z.object({
 export type ListTracksInput = z.infer<typeof listTracksInputSchema>;
 
 /**
+ * What the model passes to `readTrack`. Lenient like the other read tools: the
+ * id is any string, and one left out means the Track that is playing.
+ */
+export const readTrackInputSchema = z.object({
+  trackId: z
+    .string()
+    .nullish()
+    .describe(
+      'The id of the Track, as another tool returned it. Leave out for the Track that is playing now ("this").',
+    ),
+});
+export type ReadTrackInput = z.infer<typeof readTrackInputSchema>;
+
+/**
  * What the model passes to `favoriteTrack`. Lenient like the read tools: the
  * id is any string, and one left out means the Track that is playing.
  */

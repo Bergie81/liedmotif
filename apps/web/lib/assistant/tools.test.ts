@@ -46,6 +46,7 @@ describe("one turn's tools", () => {
       'budget',
       'findMusic',
       'listTracks',
+      'readTrack',
       'favoriteTrack',
       'addToPlaylist',
       'createPlaylist',

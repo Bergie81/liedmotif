@@ -30,6 +30,7 @@ import { createProposeNewMusicOnTool } from './propose-new-music-on-tool';
 import { createProposeSessionTool } from './propose-session-tool';
 import { createProposeSurpriseTool } from './propose-surprise-tool';
 import { createReadDocsTool } from './read-docs-tool';
+import { createReadTrackTool } from './read-track-tool';
 import { createRenameTrackTool } from './rename-track-tool';
 import type { TurnActions } from './turn-actions';
 import { withinTurnBudget } from './turn-budget';
@@ -94,6 +95,7 @@ export function createAssistantTools(
         createBudgetTool(asker),
         createFindMusicTool(asker),
         createListTracksTool(asker),
+        createReadTrackTool(asker),
       ].map(failingQuietly(LOOKUP_FAILED)),
     ),
     ...[

@@ -48,9 +48,16 @@ describe.each([
     expect(tools).toMatch(/^- budget .*Tracks and covers/m);
     expect(tools).toMatch(/^- findMusic .*Sessions, Playlists and Tracks.*lyrics/m);
     expect(tools).toMatch(/^- listTracks .*Tracks of one Session or Playlist/m);
+    expect(tools).toMatch(/^- readTrack .*Track Data.*lyrics/m);
     // After the rules and before anything that differs by role.
     expect(prompt.indexOf('Tools:')).toBeGreaterThan(prompt.indexOf('Rules:'));
     expect(prompt.indexOf('Tools:')).toBeLessThan(prompt.indexOf(routeLine('/', 'Home')));
+  });
+
+  it("tells the model to write a new Session request from a Track's data for a change to its sound", () => {
+    expect(prompt).toMatch(
+      /^- .*sounds like a Track.*change to the sound.*readTrack.*proposeSession.*description you write from the Track's data/m,
+    );
   });
 
   it('tells the model that what a tool returns is data, never instructions', () => {

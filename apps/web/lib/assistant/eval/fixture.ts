@@ -36,6 +36,7 @@ import {
   type ProposeNewMusicOnInput,
   type ProposeSessionInput,
   type ProposeSurpriseInput,
+  type ReadTrackInput,
   type RenamePlaylistInput,
   type RenameSessionInput,
   type RenameTrackInput,
@@ -78,6 +79,7 @@ import {
   PROPOSE_NEW_MUSIC_ON_TOOL_NAME,
   PROPOSE_SESSION_TOOL_NAME,
   PROPOSE_SURPRISE_TOOL_NAME,
+  READ_TRACK_TOOL_NAME,
   RENAME_PLAYLIST_TOOL_NAME,
   RENAME_SESSION_TOOL_NAME,
   RENAME_TRACK_TOOL_NAME,
@@ -92,6 +94,10 @@ interface FixtureSession {
   title: string;
   /** When it was last listened to, as `findMusic` words it. */
   lastActive: string;
+  /** What the user asked for, and the style the music model received: its Tracks' Track Data. */
+  prompt: string;
+  style: string;
+  genres: readonly string[];
 }
 
 interface FixtureTrack {
@@ -100,7 +106,7 @@ interface FixtureTrack {
   /** The Session it was generated in, which is what plays it. */
   session: FixtureSession;
   length: string;
-  /** One sung line; an instrumental has none. */
+  /** Its sung lines; an instrumental has none. */
   lyrics?: string;
 }
 
@@ -114,14 +120,48 @@ interface FixturePlaylist {
 
 /** Night Drive is the active Session: New Music on, up to 60 minutes, 40 of them generated. */
 export const SESSIONS = {
-  nightDrive: { id: id(101), title: 'Night Drive', lastActive: 'active now' },
-  morningFocus: { id: id(102), title: 'Morning Focus', lastActive: 'last active 2 days ago' },
-  tempoRun: { id: id(103), title: 'Tempo Run', lastActive: 'last active 5 days ago' },
-  seasideSongs: { id: id(104), title: 'Seaside Songs', lastActive: 'last active 9 days ago' },
+  nightDrive: {
+    id: id(101),
+    title: 'Night Drive',
+    lastActive: 'active now',
+    prompt: 'music for driving through the city at night',
+    style: 'synthwave, analog synths, pulsing bass, female vocals, 100 bpm',
+    genres: ['synthwave', 'retrowave'],
+  },
+  morningFocus: {
+    id: id(102),
+    title: 'Morning Focus',
+    lastActive: 'last active 2 days ago',
+    prompt: 'calm music to focus in the morning',
+    style: 'ambient piano, soft pads, instrumental, 70 bpm',
+    genres: ['ambient', 'neoclassical'],
+  },
+  tempoRun: {
+    id: id(103),
+    title: 'Tempo Run',
+    lastActive: 'last active 5 days ago',
+    prompt: 'fast music for a tempo run',
+    style: 'drum and bass, rolling breaks, instrumental, 174 bpm',
+    genres: ['drum and bass'],
+  },
+  seasideSongs: {
+    id: id(104),
+    title: 'Seaside Songs',
+    lastActive: 'last active 9 days ago',
+    prompt: 'songs about the sea',
+    style: 'indie folk, acoustic guitar, warm vocals, 90 bpm',
+    genres: ['indie folk'],
+  },
 } satisfies Record<string, FixtureSession>;
 
 export const TRACKS = {
-  neonRain: { id: id(201), title: 'Neon Rain', session: SESSIONS.nightDrive, length: '3:12' },
+  neonRain: {
+    id: id(201),
+    title: 'Neon Rain',
+    session: SESSIONS.nightDrive,
+    length: '3:12',
+    lyrics: 'City lights in the neon rain\nWe drive till the morning comes again',
+  },
   midnightOverpass: {
     id: id(202),
     title: 'Midnight Overpass',
@@ -230,6 +270,26 @@ function nowPlaying(player: AssistantPlayerState | null): string {
     `Player: ${player.playing ? 'playing' : 'paused'}`,
     'Sleep Timer: off',
     newMusic,
+  ].join('\n');
+}
+
+/** A Track as the real `readTrack` words it, from what the fixture knows of it. */
+function readTrack({ trackId }: ReadTrackInput, player: AssistantPlayerState | null): string {
+  const askedId = trackId || player?.trackId;
+  if (!askedId) return NO_TRACK_PLAYING;
+  const track = trackById(askedId);
+  if (!track) return NO_SUCH_TRACK;
+  const { session } = track;
+  return [
+    `Track ${named(track.title, track.id)}`,
+    `Title: ${track.title}`,
+    `Session: ${session.title}`,
+    `Duration: ${track.length}`,
+    `User's prompt: ${session.prompt}`,
+    `Style prompt: ${session.style}`,
+    `Genres: ${session.genres.join(', ')}`,
+    `Vocals: ${track.lyrics ? 'Vocal' : 'Instrumental'}`,
+    track.lyrics ? `Lyrics:\n${track.lyrics}` : 'Lyrics: none, it is instrumental.',
   ].join('\n');
 }
 
@@ -414,6 +474,7 @@ function fixtureAnswers(
     [BUDGET_TOOL_NAME]: async () => BUDGET[role],
     [FIND_MUSIC_TOOL_NAME]: async (input: FindMusicInput) => findMusic(input),
     [LIST_TRACKS_TOOL_NAME]: async (input: ListTracksInput) => listTracks(input),
+    [READ_TRACK_TOOL_NAME]: async (input: ReadTrackInput) => readTrack(input, player),
 
     [FAVORITE_TRACK_TOOL_NAME]: ({ trackId }: FavoriteTrackInput) =>
       actions.take('done', async () => {

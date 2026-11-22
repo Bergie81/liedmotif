@@ -346,6 +346,15 @@ describe('scoring what a turn did', () => {
       expect(scoreAnswer(INVITE, turn({ actions: [command] }), ADMIN).noAction).toBe('fail');
       expect(scoreAnswer(whatIsThis, turn({ actions: [command] }), MEMBER).noAction).toBe('fail');
     });
+
+    it('counts reading a Track as reading', () => {
+      const whatIsItAbout = request([{ tool: 'readTrack' }], {
+        question: 'What is this song about?',
+      });
+
+      expect(scoreAnswer(whatIsItAbout, turn(), MEMBER).noAction).toBe('pass');
+      expect(scoreAnswer(whatIsItAbout, turn({ actions: [card] }), MEMBER).noAction).toBe('fail');
+    });
   });
 
   describe('where a card is expected', () => {

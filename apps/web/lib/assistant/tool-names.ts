@@ -6,6 +6,7 @@ export const NOW_PLAYING_TOOL_NAME = 'nowPlaying';
 export const BUDGET_TOOL_NAME = 'budget';
 export const FIND_MUSIC_TOOL_NAME = 'findMusic';
 export const LIST_TRACKS_TOOL_NAME = 'listTracks';
+export const READ_TRACK_TOOL_NAME = 'readTrack';
 export const FAVORITE_TRACK_TOOL_NAME = 'favoriteTrack';
 export const ADD_TO_PLAYLIST_TOOL_NAME = 'addToPlaylist';
 export const CREATE_PLAYLIST_TOOL_NAME = 'createPlaylist';

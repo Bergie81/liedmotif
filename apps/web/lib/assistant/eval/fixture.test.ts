@@ -31,6 +31,7 @@ const VALID_CALLS: Record<string, unknown> = {
   budget: {},
   findMusic: { kind: 'playlist' },
   listTracks: { in: 'playlist', id: PLAYLISTS.running.id },
+  readTrack: {},
   favoriteTrack: {},
   addToPlaylist: { playlistId: PLAYLISTS.running.id },
   createPlaylist: { name: 'Gym' },
@@ -141,6 +142,31 @@ describe('the read tools of a fixture turn', () => {
     expect(listed.indexOf('Neon Rain')).toBeLessThan(listed.indexOf('Midnight Overpass'));
     expect(await call('listTracks', { in: 'session', id: PLAYLISTS.running.id })).toBe(
       'No Session with that id.',
+    );
+  });
+});
+
+describe('the Track tool of a fixture turn', () => {
+  it('reads the Track Data and lyrics of the Track that is playing', async () => {
+    const read = await openTurn().call('readTrack');
+
+    expect(read).toContain(`Track "Neon Rain" (id ${TRACKS.neonRain.id})`);
+    expect(read).toContain('Session: Night Drive');
+    expect(read).toMatch(/^Style prompt: .*synthwave/m);
+    expect(read).toContain(`Lyrics:\n${TRACKS.neonRain.lyrics}`);
+  });
+
+  it('says an instrumental has no lyrics, and knows no other id', async () => {
+    const { call } = openTurn();
+
+    expect(await call('readTrack', { trackId: TRACKS.firstLight.id })).toContain(
+      'Lyrics: none, it is instrumental.',
+    );
+    expect(await call('readTrack', { trackId: PLAYLISTS.running.id })).toBe(
+      'No Track with that id.',
+    );
+    expect(await openTurn('member', { nothingPlaying: true }).call('readTrack')).toMatch(
+      /^No Track is playing/,
     );
   });
 });

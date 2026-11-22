@@ -78,6 +78,7 @@ const SERVER_CALLS = [
   'getPlayableTrackSession',
   'getPlaylistDetail',
   'getReadableTrackDetails',
+  'getReadableTrackLyricsContext',
   'getSessionById',
   'getTypicalTracksPerMusicRequest',
   'getUsageLimits',

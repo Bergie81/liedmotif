@@ -347,6 +347,36 @@ export const EVAL_SET: readonly EvalEntry[] = [
     goodAnswer: 'First Light and Quiet Desk, in that order. Shows no id.',
   },
   {
+    id: 'prompt-of-this-track',
+    role: 'member',
+    language: 'en',
+    question: 'What prompt made this track?',
+    docs: 'none',
+    calls: [
+      {
+        tool: 'readTrack',
+        input: [{ trackId: undefined }, { trackId: TRACKS.neonRain.id }],
+      },
+    ],
+    goodAnswer:
+      'Neon Rain came from the prompt "music for driving through the city at night"; may add the style prompt the music model received (synthwave, analog synths, pulsing bass, female vocals, 100 bpm). Shows no id.',
+  },
+  {
+    id: 'what-is-this-song-about',
+    role: 'admin',
+    language: 'en',
+    question: 'What is this song about?',
+    docs: 'none',
+    calls: [
+      {
+        tool: 'readTrack',
+        input: [{ trackId: undefined }, { trackId: TRACKS.neonRain.id }],
+      },
+    ],
+    goodAnswer:
+      'From the lyrics of Neon Rain: driving through the city at night in the neon rain until morning comes. May quote a line. Shows no id.',
+  },
+  {
     id: 'favorite-this',
     role: 'member',
     language: 'en',

@@ -18,6 +18,7 @@ import {
   PROPOSE_SESSION_TOOL_NAME,
   PROPOSE_SURPRISE_TOOL_NAME,
   READ_DOCS_TOOL_NAME,
+  READ_TRACK_TOOL_NAME,
 } from '../tool-names';
 import { APP_ROUTES } from '../route-map';
 import type { DocsRef, EvalEntry, EvalLanguage, ExpectedCall } from './eval-set';
@@ -169,6 +170,7 @@ const READ_TOOLS: ReadonlySet<string> = new Set([
   BUDGET_TOOL_NAME,
   FIND_MUSIC_TOOL_NAME,
   LIST_TRACKS_TOOL_NAME,
+  READ_TRACK_TOOL_NAME,
 ]);
 
 /** The card each tool that prepares new spending shows. */
