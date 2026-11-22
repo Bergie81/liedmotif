@@ -27,8 +27,8 @@ import { sessionCreateLimiter } from '@/lib/http/request-limits';
 import {
   deriveSnapshotForIntent,
   nameSeededSnapshot,
+  newSessionTargetMinutes,
   sessionCreationRefusal,
-  startingSessionMode,
   stripPersonalIngredients,
   toSessionSummary,
   toStoredSnapshot,
@@ -130,13 +130,13 @@ export async function POST(request: Request) {
   // the naming, the lyric notes and, with a context, the activity are replaced.
   // Without a context or pick the call is cosmetic and never fails; with one it
   // is required, and its failure is a retryable error before any row or spend.
-  const [named, coverArtSettings, coverImageId, sessionMode] = await Promise.all([
+  const [named, coverArtSettings, coverImageId, resolvedDurationMinutes] = await Promise.all([
     nameSeededSnapshot(db, ownerUserId, snapshot, { context, language }).catch(
       expectedNamingFailure,
     ),
     getCoverArtSettings(db, ownerUserId),
     initialSessionCoverId(db),
-    startingSessionMode(db, ownerUserId),
+    newSessionTargetMinutes(db, ownerUserId, targetDurationMinutes),
   ]);
   if (named instanceof ProviderError) {
     logger.warn('More Like This naming failed', {
@@ -150,13 +150,13 @@ export async function POST(request: Request) {
   const { session: created, supersededSessionId } = await createSession(db, {
     ownerUserId,
     snapshot: stored,
-    sessionMode,
+    sessionMode: 'keep_going',
     title,
     coverConcept,
     autoCoverStyle,
     includesListener,
     ...(context ? { userPrompt: context } : {}),
-    ...(targetDurationMinutes != null ? { targetDurationMinutes } : {}),
+    targetDurationMinutes: resolvedDurationMinutes,
     coverImageId,
     useStandardCover: coverArtSettings.useStandardCoverArt,
     ...resolveCoverArtChoiceFrom(

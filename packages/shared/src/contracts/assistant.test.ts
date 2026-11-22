@@ -287,15 +287,20 @@ describe('assistantStreamEventSchema', () => {
     expect(
       sessionCardStartRequest({ kind: 'session', prompt: 'calm piano', vocal: 'instrumental' }),
     ).toEqual({ input: { mode: 'prompt', prompt: 'calm piano', vocal: 'instrumental' } });
-    // No limit is the absence of a target: the start route takes no null.
-    expect(
-      sessionCardStartRequest({
-        kind: 'session',
-        prompt: 'calm piano',
-        vocal: 'instrumental',
-        targetDurationMinutes: null,
-      }),
-    ).toEqual({ input: { mode: 'prompt', prompt: 'calm piano', vocal: 'instrumental' } });
+    // No limit is sent as null: a request without a length takes the default.
+    const noLimit = sessionCardStartRequest({
+      kind: 'session',
+      prompt: 'calm piano',
+      vocal: 'instrumental',
+      targetDurationMinutes: null,
+    });
+    expect(noLimit).toEqual({
+      input: { mode: 'prompt', prompt: 'calm piano', vocal: 'instrumental' },
+      targetDurationMinutes: null,
+    });
+    expect(startSessionRequestSchema.safeParse({ ...noLimit, clientId: 'client-1' }).success).toBe(
+      true,
+    );
   });
 
   it('turns a More Like This card into a request the route takes once the browser adds its id', () => {
@@ -315,10 +320,16 @@ describe('assistantStreamEventSchema', () => {
     expect(moreLikeThisRequestSchema.safeParse({ ...request, clientId: 'client-1' }).success).toBe(
       true,
     );
-    // No limit and no length both send none: the route takes no null.
-    expect(
-      moreLikeThisCardRequest({ kind: 'moreLikeThis', tracks, targetDurationMinutes: null }),
-    ).toEqual({ seedTrackIds });
+    // No limit is sent as null; no length sends none, which the route reads as the default.
+    const noLimit = moreLikeThisCardRequest({
+      kind: 'moreLikeThis',
+      tracks,
+      targetDurationMinutes: null,
+    });
+    expect(noLimit).toEqual({ seedTrackIds, targetDurationMinutes: null });
+    expect(moreLikeThisRequestSchema.safeParse({ ...noLimit, clientId: 'client-1' }).success).toBe(
+      true,
+    );
     expect(moreLikeThisCardRequest({ kind: 'moreLikeThis', tracks })).toEqual({ seedTrackIds });
   });
 
@@ -460,10 +471,14 @@ describe('assistantStreamEventSchema', () => {
 
     expect(request).toEqual({ proposalId: suggestion.id, targetDurationMinutes: 45 });
     expect(startSurpriseRequestSchema.safeParse(request).success).toBe(true);
-    // No limit is the absence of a target: the start route takes no null.
-    expect(
-      surpriseCardStartRequest({ kind: 'surprise', suggestion, targetDurationMinutes: null }),
-    ).toEqual({ proposalId: suggestion.id });
+    // No limit is sent as null: a request without a length takes the default.
+    const noLimit = surpriseCardStartRequest({
+      kind: 'surprise',
+      suggestion,
+      targetDurationMinutes: null,
+    });
+    expect(noLimit).toEqual({ proposalId: suggestion.id, targetDurationMinutes: null });
+    expect(startSurpriseRequestSchema.safeParse(noLimit).success).toBe(true);
   });
 
   it('reads a cover card by what it is for and the art direction, nothing more', () => {

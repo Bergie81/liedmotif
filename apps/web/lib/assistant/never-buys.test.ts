@@ -96,7 +96,6 @@ const SERVER_CALLS = [
   'searchSessions',
   'searchTracks',
   'sessionCreationRefusal',
-  'startingSessionMode',
   'toPlaylistMemberItem',
   // Library writes: they add, rename and pin. A Session or Track rename also
   // retags the downloaded files, as the app's own rename does.
@@ -110,8 +109,10 @@ const SERVER_CALLS = [
   'setSessionPinned',
   'setTrackFavorited',
   // The asker's own settings: read, and written one choice at a time. Of the
-  // Generation settings only the language is written, never what a Session
-  // generates ahead.
+  // Generation settings only the language and the Default Session duration are
+  // written, never what a Session generates ahead.
+  'DEFAULT_SESSION_DURATION_OPTIONS',
+  'defaultSessionDurationLabel',
   'getCoverArtSettings',
   'getCoverReferenceFrequency',
   'getGenerationSettings',
@@ -123,6 +124,7 @@ const SERVER_CALLS = [
   'toPersonRoster',
   'updateCoverReferenceFrequency',
   'updateDefaultLanguage',
+  'updateDefaultSessionDuration',
   'updatePlaybackSettings',
   // The one write to a Session: its mode, and only to Repeat.
   'switchSessionMode',

@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function GenerationSettingsPage() {
   const { session, role } = await requireAppAccess();
-  // Buffer and language are owner-scoped and belong to both roles; the cost
+  // New music and language are owner-scoped and belong to both roles; the cost
   // controls are instance configuration and render (and load) for the Admin
   // alone — a Member's budget lives on Settings → My budget instead.
   const isAdmin = role === 'admin';
@@ -32,8 +32,8 @@ export default async function GenerationSettingsPage() {
         title={isAdmin ? 'Generation & Cost' : 'Generation'}
         description={
           isAdmin
-            ? 'Set the limits that keep spending in check, the language sessions use, and how far ahead they generate.'
-            : 'Set the language sessions use and how far ahead they generate.'
+            ? 'Set the limits that keep spending in check, the language sessions use, and how much new music they generate.'
+            : 'Set the language sessions use and how much new music they generate.'
         }
         docs={
           isAdmin ? { path: 'costs-and-limits', label: 'How costs and limits work' } : undefined
@@ -42,7 +42,7 @@ export default async function GenerationSettingsPage() {
       <SettingsColumns>
         {limits && unitCosts ? (
           // One unbreakable block, so the cost controls fill the first column
-          // and Language and Buffer the second.
+          // and Language and New Music the second.
           <div className="break-inside-avoid">
             <LimitsForm
               initial={limits}
@@ -56,7 +56,7 @@ export default async function GenerationSettingsPage() {
             <LanguageForm initial={settings} />
           </SettingsCard>
         </SettingsSection>
-        <SettingsSection title="Buffer">
+        <SettingsSection title="New Music">
           <SettingsCard>
             <GenerationForm initial={settings} />
           </SettingsCard>

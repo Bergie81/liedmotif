@@ -1,5 +1,6 @@
-// Owner-scoped Buffer settings are stored under the `generation` key. The
-// worker reads the same object on every sweep, so changes apply within a tick.
+// Owner-scoped Generation settings are stored under the `generation` key. The
+// worker reads the same object on every sweep, so a ready-ahead change applies
+// within a tick; the Default Session duration applies to the next new Session.
 
 import { NextResponse } from 'next/server';
 import { getGenerationSettings, updateGenerationSettings } from '@liedmotif/db';
@@ -19,8 +20,9 @@ export async function POST(request: Request) {
   const ownerUserId = await requireOwnerId(request);
   if (ownerUserId instanceof NextResponse) return ownerUserId;
 
-  // The shared schema is the single validation boundary for the enabled flag
-  // and its 1–10 whole-Track target; the repo stores only parsed values.
+  // The shared schema is the single validation boundary for the Default Session
+  // duration's choices and the 1–10 whole-Track target; the repo stores only
+  // parsed values.
   const patch = await parseJsonBody(
     request,
     updateGenerationSettingsRequestSchema,

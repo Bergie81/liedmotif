@@ -100,13 +100,17 @@ describe('Playback', () => {
 });
 
 describe('Generation', () => {
-  it('reports a failed Buffer save, and clears it once saving again succeeds', async () => {
+  it('reports a failed New Music save, and clears it once saving again succeeds', async () => {
     api.updateGenerationSettings
-      .mockResolvedValueOnce(failed('Could not save the Buffer.'))
+      .mockResolvedValueOnce(failed('Could not save New Music.'))
       .mockResolvedValueOnce({ ok: true, data: DEFAULT_GENERATION_SETTINGS });
     render(h(GenerationForm, { initial: DEFAULT_GENERATION_SETTINGS }));
 
-    await failThenSucceed('Save Buffer', 'Could not save the Buffer.', 'Buffer settings saved.');
+    await failThenSucceed(
+      'Save New Music',
+      'Could not save New Music.',
+      'New music settings saved.',
+    );
   });
 });
 

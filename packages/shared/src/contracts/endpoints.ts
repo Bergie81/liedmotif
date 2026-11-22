@@ -380,8 +380,9 @@ export type QueueItem = z.infer<typeof queueItemSchema>;
 export const startSessionRequestSchema = z.strictObject({
   input: sessionIntentInputSchema,
   clientId: clientIdSchema,
-  /** Optional Session duration target. */
-  targetDurationMinutes: targetDurationMinutesSchema.optional(),
+  /** The Session duration target; null is No limit. Omitted: a duration the
+   *  text LLM reads from the prompt, else the owner's Default Session duration. */
+  targetDurationMinutes: targetDurationMinutesSchema.nullable().optional(),
   /** Generated-cover art-direction choice; omitted → `auto` (Liedmotif picks).
    *  `custom` resolves server-side to the saved Custom style definition. */
   coverStyle: z.enum(COVER_STYLE_CHOICES).optional(),
@@ -524,9 +525,9 @@ export const playSessionTrackResponseSchema = resumeSessionResponseSchema;
 export type PlaySessionTrackResponse = z.infer<typeof playSessionTrackResponseSchema>;
 
 // --- setSessionMode (the Session's generation policy) ---
-// User intent, and the only post-creation writer of `sessionMode` (creation
-// seeds it from the owner's Buffer default; the worker merely consumes it):
-// `keep_going` generates new Tracks indefinitely, `repeat` stops automatic
+// User intent, and the only post-creation writer of `sessionMode` (every new
+// Session starts in `keep_going`; the worker merely consumes it):
+// `keep_going` generates new Tracks, `repeat` stops automatic
 // generation and loops the Session's own Tracks at zero cost.
 
 export const setSessionModeRequestSchema = z.strictObject({
@@ -585,7 +586,9 @@ export const MAX_SEED_TRACKS = 10;
 export const moreLikeThisRequestSchema = z.strictObject({
   seedTrackIds: z.array(uuidSchema).min(1).max(MAX_SEED_TRACKS),
   clientId: clientIdSchema,
-  targetDurationMinutes: targetDurationMinutesSchema.optional(),
+  /** The Session duration target; null is No limit, omitted the owner's
+   *  Default Session duration. Never inherited from the seed's Session. */
+  targetDurationMinutes: targetDurationMinutesSchema.nullable().optional(),
   /** What the new Session is about or for ("for cooking"), in any language. It
    *  rewrites the Name, track titles, cover and lyrics, never the music. Blank
    *  counts as absent. */

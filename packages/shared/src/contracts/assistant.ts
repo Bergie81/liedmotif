@@ -87,14 +87,16 @@ export type AssistantActionItem = z.infer<typeof assistantActionItemSchema>;
 
 /**
  * The settings the Assistant changes for the asking user. Each is that user's
- * own, and none can raise what is spent: a setting that can is the user's to
- * change on its page.
+ * own, and none spends on its own: the Default Session duration reaches only
+ * Sessions the user still starts themselves. A setting that raises what a
+ * running Session or the instance spends is the user's to change on its page.
  */
 export const ASSISTANT_SETTINGS = [
   'ownerInCovers',
   'blend',
   'crossfadeSeconds',
   'defaultLanguage',
+  'defaultSessionDuration',
 ] as const;
 export type AssistantSetting = (typeof ASSISTANT_SETTINGS)[number];
 
@@ -229,7 +231,7 @@ export const assistantCardSchema = z.discriminatedUnion('kind', [
     /** What the Session should sound like, as free text for the start-Session route. */
     prompt: z.string().min(1).max(MAX_USER_PROMPT_LENGTH),
     vocal: z.enum(VOCAL_MODES),
-    /** How long the Session generates; null is No limit. Left out when it starts on Repeat and the user named no length. */
+    /** How long the Session generates; null is No limit. */
     targetDurationMinutes: targetDurationMinutesSchema.nullable().optional(),
     ...cardCoverChoicesShape,
   }),
@@ -244,7 +246,7 @@ export const assistantCardSchema = z.discriminatedUnion('kind', [
     kind: z.literal('moreLikeThis'),
     /** The Tracks the new Session is seeded from, in the order they are sent. */
     tracks: z.array(assistantActionItemSchema).min(1).max(MAX_SEED_TRACKS),
-    /** How long the Session generates; null is No limit. Left out when it starts on Repeat and the user named no length. */
+    /** How long the Session generates; null is No limit. */
     targetDurationMinutes: targetDurationMinutesSchema.nullable().optional(),
     /** What the new Session is about or for, in the user's words; left out for none. It never changes the music. */
     context: z.string().min(1).max(MAX_USER_PROMPT_LENGTH).optional(),
@@ -302,7 +304,7 @@ export function sessionCardStartRequest(
 ): Omit<StartSessionRequest, 'clientId'> {
   return {
     input: { mode: 'prompt', prompt: card.prompt, vocal: card.vocal },
-    ...(card.targetDurationMinutes != null && {
+    ...(card.targetDurationMinutes !== undefined && {
       targetDurationMinutes: card.targetDurationMinutes,
     }),
     ...cardCoverChoices(card),
@@ -311,15 +313,15 @@ export function sessionCardStartRequest(
 
 /**
  * The More Like This request a More Like This card stands for, less the client
- * id only the browser has. No limit sends no length: that card is offered only
- * when new Sessions start on Keep Going, which the route then picks.
+ * id only the browser has. No limit is sent as null; a card without a length
+ * sends none, which the route reads as the Default Session duration.
  */
 export function moreLikeThisCardRequest(
   card: Extract<AssistantCard, { kind: 'moreLikeThis' }>,
 ): Omit<MoreLikeThisRequest, 'clientId'> {
   return {
     seedTrackIds: card.tracks.map(({ id }) => id),
-    ...(card.targetDurationMinutes != null && {
+    ...(card.targetDurationMinutes !== undefined && {
       targetDurationMinutes: card.targetDurationMinutes,
     }),
     ...(card.context !== undefined && { context: card.context }),
@@ -335,9 +337,7 @@ export function surpriseCardStartRequest(
 ): StartSurpriseRequest {
   return {
     proposalId: card.suggestion.id,
-    ...(card.targetDurationMinutes != null && {
-      targetDurationMinutes: card.targetDurationMinutes,
-    }),
+    targetDurationMinutes: card.targetDurationMinutes,
     ...cardCoverChoices(card),
   };
 }

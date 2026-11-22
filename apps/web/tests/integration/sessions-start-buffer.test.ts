@@ -112,21 +112,17 @@ describe.skipIf(skip)('POST /api/sessions — immediate buffer fill', () => {
     expect(jobs[0]!.key).toBe(`buffer:${parsed.data.session.id}`);
   });
 
-  it('starts new sessions in the mode the owner Buffer default selects', async () => {
-    // The default (`bufferEnabled: true`) seeds Keep Going.
-    const withDefault = await startControlsSession();
-    if (!withDefault.ok) throw new Error('expected an ok start-session response');
-    expect(withDefault.data.session.sessionMode).toBe('keep_going');
-
-    // A disabled Buffer default seeds Repeat — a default, not a blocker: the
-    // player's mode switch can still put the session back on Keep Going.
-    await updateGenerationSettings(testDb.db, {
-      ownerUserId: holder.ownerUserId!,
-      patch: { bufferEnabled: false },
-    });
-    const withDisabledDefault = await startControlsSession();
-    if (!withDisabledDefault.ok) throw new Error('expected an ok start-session response');
-    expect(withDisabledDefault.data.session.sessionMode).toBe('repeat');
+  it('starts every new Session on Keep Going, whatever its length', async () => {
+    const ownerUserId = holder.ownerUserId!;
+    for (const defaultSessionDurationMinutes of [30, 5, null] as const) {
+      await updateGenerationSettings(testDb.db, {
+        ownerUserId,
+        patch: { defaultSessionDurationMinutes },
+      });
+      const started = await startControlsSession();
+      if (!started.ok) throw new Error('expected an ok start-session response');
+      expect(started.data.session.sessionMode).toBe('keep_going');
+    }
   });
 
   it('a headroom-blocked request creates no session row and enqueues nothing', async () => {
@@ -148,7 +144,10 @@ describe.skipIf(skip)('POST /api/sessions — immediate buffer fill', () => {
   });
 });
 
-async function startPromptDuration(prompt: string, explicit?: number) {
+async function startPromptDuration(
+  prompt: string,
+  length: { targetDurationMinutes?: number | null } = {},
+) {
   const response = await POST(
     new Request('http://localhost/api/sessions', {
       method: 'POST',
@@ -156,7 +155,7 @@ async function startPromptDuration(prompt: string, explicit?: number) {
       body: JSON.stringify({
         input: { mode: 'prompt', prompt },
         clientId: 'duration-cases',
-        ...(explicit !== undefined ? { targetDurationMinutes: explicit } : {}),
+        ...length,
       }),
     }),
   );
@@ -200,7 +199,7 @@ describe.skipIf(skip)('POST /api/sessions — duration resolution', () => {
 
   it.each([20, 601, 0, 1.5])('explicit duration wins over extracted %s', async (extracted) => {
     await stubLlmDurationReply(extracted);
-    const result = await startPromptDuration('music for a while', 30);
+    const result = await startPromptDuration('music for a while', { targetDurationMinutes: 30 });
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.data.session.targetDurationMinutes).toBe(30);
   });
@@ -223,35 +222,68 @@ describe.skipIf(skip)('POST /api/sessions — duration resolution', () => {
   );
 
   it.each([null, undefined])(
-    'keeps Auto unlimited when the LLM returns no duration: %s',
+    'takes the Default Session duration when the LLM returns no duration: %s',
     async (value) => {
       await stubLlmDurationReply(value);
       const result = await startPromptDuration('meditation with 80 BPM and 1990s warmth');
       expect(result.ok).toBe(true);
-      if (result.ok) expect(result.data.session.targetDurationMinutes).toBeNull();
+      if (result.ok) expect(result.data.session.targetDurationMinutes).toBe(30);
     },
   );
 
-  it('starts a Session with a duration target on Keep Going even when the owner default is Repeat', async () => {
+  it('a prompt duration beats the Default Session duration', async () => {
     await updateGenerationSettings(testDb.db, {
       ownerUserId: holder.ownerUserId!,
-      patch: { bufferEnabled: false },
+      patch: { defaultSessionDurationMinutes: 5 },
     });
-    const result = await startPromptDuration('quiet piano', 30);
+    await stubLlmDurationReply(20);
+    const result = await startPromptDuration('Zwanzig Minuten Meditation');
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.data.session.sessionMode).toBe('keep_going');
+    if (result.ok) expect(result.data.session.targetDurationMinutes).toBe(20);
   });
 
-  it('keeps Auto unlimited without a text LLM even for an explicit prompt duration', async () => {
+  it('an explicit null is No limit, over a prompt duration and the default', async () => {
+    const expand = await stubLlmDurationReply(20);
+    const result = await startPromptDuration('Zwanzig Minuten Meditation', {
+      targetDurationMinutes: null,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.session.targetDurationMinutes).toBeNull();
+    expect(result.data.session.sessionMode).toBe('keep_going');
+    expect(expand).toHaveBeenCalledTimes(1);
+  });
+
+  it('takes the Default Session duration without a text LLM, even for a prompt duration', async () => {
     const result = await startPromptDuration('Twenty minutes of meditation');
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.data.session.targetDurationMinutes).toBeNull();
+    if (result.ok) expect(result.data.session.targetDurationMinutes).toBe(30);
+  });
+
+  it("takes the user's own Default Session duration, No limit included", async () => {
+    const ownerUserId = holder.ownerUserId!;
+    await updateGenerationSettings(testDb.db, {
+      ownerUserId,
+      patch: { defaultSessionDurationMinutes: 120 },
+    });
+    const long = await startPromptDuration('quiet piano');
+    expect(long.ok && long.data.session.targetDurationMinutes).toBe(120);
+
+    await updateGenerationSettings(testDb.db, {
+      ownerUserId,
+      patch: { defaultSessionDurationMinutes: null },
+    });
+    const endless = await startPromptDuration('quiet piano');
+    expect(endless.ok).toBe(true);
+    if (endless.ok) expect(endless.data.session.targetDurationMinutes).toBeNull();
   });
 
   it('honors manual duration without a text LLM', async () => {
-    const result = await startPromptDuration('Twenty minutes of meditation', 30);
+    const result = await startPromptDuration('Twenty minutes of meditation', {
+      targetDurationMinutes: 45,
+    });
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.data.session.targetDurationMinutes).toBe(30);
+    if (result.ok) expect(result.data.session.targetDurationMinutes).toBe(45);
   });
 
   it('keeps a configured expansion failure retryable rather than creating an unlimited Session', async () => {

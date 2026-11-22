@@ -1,6 +1,6 @@
 // `changeSetting`: changes one of the asking user's own settings, through the
-// function its settings page saves with. Every setting here is a choice that
-// cannot raise what is spent, so a change runs at once.
+// function its settings page saves with. No setting here spends on its own, so
+// a change runs at once.
 
 import {
   getCoverReferenceFrequency,
@@ -10,6 +10,7 @@ import {
   listPersonReferencePhotos,
   updateCoverReferenceFrequency,
   updateDefaultLanguage,
+  updateDefaultSessionDuration,
   updatePlaybackSettings,
   type CoverReferenceFrequency,
 } from '@liedmotif/db';
@@ -26,6 +27,11 @@ import {
   COVER_FREQUENCY_OPTIONS,
   ownerCoverFallbackReady,
 } from '@/components/settings/people-form-model';
+import {
+  DEFAULT_SESSION_DURATION_OPTIONS,
+  defaultSessionDurationLabel,
+  type DefaultSessionDuration,
+} from '@/lib/settings/default-session-duration';
 import { toPersonRoster } from '@/lib/settings/people';
 import { SESSION_LANGUAGE_CHOICES, sessionLanguageLabel } from '@/lib/sessions/session-languages';
 import { done, refused } from './library-action';
@@ -40,8 +46,8 @@ interface Setting<Value> {
   choices: string;
   /** Why the setting cannot be changed for the asker yet, or null when it can. */
   unavailable?(asker: AssistantAsker): Promise<string | null>;
-  /** The choice the model named, or null when the setting has no such choice. */
-  parse(said: string): Value | null;
+  /** The choice the model named, or undefined when the setting has no such choice. */
+  parse(said: string): Value | undefined;
   /** A choice as the settings page shows it. */
   show(value: Value): string;
   read(asker: AssistantAsker): Promise<Value>;
@@ -63,7 +69,7 @@ function changeable<Value>(setting: AssistantSetting, spec: Setting<Value>): Cha
       const unavailable = await spec.unavailable?.(asker);
       if (unavailable) return refused(unavailable);
       const value = spec.parse(said.trim());
-      if (value === null) return refused(`"${label}" takes ${spec.choices}.`);
+      if (value === undefined) return refused(`"${label}" takes ${spec.choices}.`);
       const previous = await spec.read(asker);
       if (previous === value) return refused(`"${label}" is already ${spec.show(value)}.`);
       await spec.write(asker, value);
@@ -82,16 +88,25 @@ const oneOf = <Choice extends string>(
   choices: readonly Choice[],
   said: string,
   names: (choice: Choice) => string[] = (choice) => [choice],
-): Choice | null =>
-  choices.find((choice) =>
-    names(choice).some((name) => name.toLowerCase() === said.toLowerCase()),
-  ) ?? null;
+): Choice | undefined =>
+  choices.find((choice) => names(choice).some((name) => name.toLowerCase() === said.toLowerCase()));
 
-/** A whole number of seconds the crossfade slider has, with or without its unit, or null. */
-function crossfadeSeconds(said: string): number | null {
+/** A whole number of seconds the crossfade slider has, with or without its unit, or undefined. */
+function crossfadeSeconds(said: string): number | undefined {
   const whole = /^(\d+)\s*(?:s|sec|secs|seconds?)?$/i.exec(said);
   const seconds = whole ? Number(whole[1]) : NaN;
-  return seconds >= CROSSFADE_SECONDS_MIN && seconds <= CROSSFADE_SECONDS_MAX ? seconds : null;
+  return seconds >= CROSSFADE_SECONDS_MIN && seconds <= CROSSFADE_SECONDS_MAX ? seconds : undefined;
+}
+
+/** A Default Session duration by its label, or by its whole minutes with or without the unit; undefined when it has neither. */
+function defaultSessionDuration(said: string): DefaultSessionDuration | undefined {
+  const byLabel = DEFAULT_SESSION_DURATION_OPTIONS.find(
+    (minutes) => defaultSessionDurationLabel(minutes).toLowerCase() === said.toLowerCase(),
+  );
+  if (byLabel !== undefined) return byLabel;
+  const whole = /^(\d+)\s*(?:m|min|mins|minutes?)?$/i.exec(said);
+  const minutes = whole ? Number(whole[1]) : NaN;
+  return DEFAULT_SESSION_DURATION_OPTIONS.find((choice) => choice === minutes);
 }
 
 const coverFrequencyLabel = (value: CoverReferenceFrequency) =>
@@ -124,7 +139,7 @@ const SETTINGS: Record<AssistantSetting, Changeable> = {
     choices: 'on or off',
     parse: (said) => {
       const choice = oneOf(['on', 'off'], said);
-      return choice === null ? null : choice === 'on';
+      return choice === undefined ? undefined : choice === 'on';
     },
     show: (on) => (on ? 'On' : 'Off'),
     read: async ({ db, userId }) => (await getPlaybackSettings(db, userId)).blendEnabled,
@@ -147,6 +162,14 @@ const SETTINGS: Record<AssistantSetting, Changeable> = {
     show: sessionLanguageLabel,
     read: async ({ db, userId }) => (await getGenerationSettings(db, userId)).defaultLanguage,
     write: ({ db, userId }, language) => updateDefaultLanguage(db, userId, language),
+  }),
+  defaultSessionDuration: changeable('defaultSessionDuration', {
+    choices: orList(DEFAULT_SESSION_DURATION_OPTIONS.map(defaultSessionDurationLabel)),
+    parse: defaultSessionDuration,
+    show: defaultSessionDurationLabel,
+    read: async ({ db, userId }) =>
+      (await getGenerationSettings(db, userId)).defaultSessionDurationMinutes,
+    write: ({ db, userId }, minutes) => updateDefaultSessionDuration(db, userId, minutes),
   }),
 };
 

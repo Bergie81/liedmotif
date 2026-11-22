@@ -19,6 +19,7 @@ import {
 import { COVER_STYLE_LABELS } from '@/lib/covers/cover-styles';
 import type { OnboardingUntouched } from '@/lib/onboarding/onboarding-data';
 import { sessionLanguageLabel } from '@/lib/sessions/session-languages';
+import { defaultSessionDurationLabel } from '@/lib/settings/default-session-duration';
 import { OnboardingConfetti } from './onboarding-confetti';
 import {
   EnvVar,
@@ -75,12 +76,14 @@ function untouchedRows({
     },
     {
       icon: Gauge,
-      title: generation.bufferEnabled
-        ? `New sessions generate ${generation.bufferAheadTracks} tracks ahead`
-        : 'New sessions play existing tracks',
-      description: generation.bufferEnabled
-        ? 'Keeps new music ready while you listen'
-        : 'One first batch, then they loop. Change it for any session in the player',
+      title:
+        generation.defaultSessionDurationMinutes === null
+          ? 'New sessions generate new music without limit'
+          : `New sessions generate up to ${defaultSessionDurationLabel(generation.defaultSessionDurationMinutes)} of new music`,
+      description:
+        generation.defaultSessionDurationMinutes === null
+          ? 'They keep buying while you listen. Change it for any session in the player'
+          : 'Then they repeat for free. Change it for any session in the player',
       where: 'Generation',
     },
     {

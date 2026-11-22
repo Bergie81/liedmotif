@@ -50,8 +50,8 @@ import { sessionCreateLimiter } from '../http/request-limits';
 import {
   deriveSnapshotForIntentSafe,
   nameSessionSnapshot,
+  newSessionTargetMinutes,
   sessionCreationRefusal,
-  startingSessionMode,
   type SessionCreationRefusal,
 } from './sessions';
 import { planSurprise, type SurprisePlan } from './surprise-me-plan';
@@ -285,7 +285,7 @@ const NOT_PENDING_MESSAGE = 'This suggestion is no longer available. Ask for a n
 
 /**
  * Start the approved proposal as a Session through the normal creation path:
- * the same admission gates, replacement, mode default, cover resolution and
+ * the same admission gates, replacement, Session duration rule, cover resolution and
  * kickoffs as Start Session, with the stored Style Snapshot in place of a
  * derivation — so no text LLM runs. A refusal leaves the proposal pending.
  */
@@ -308,16 +308,16 @@ export async function startSurprise(
     }
   }
 
-  const [coverArtSettings, coverImageId, sessionMode] = await Promise.all([
+  const [coverArtSettings, coverImageId, targetDurationMinutes] = await Promise.all([
     getCoverArtSettings(db, ownerUserId),
     initialSessionCoverId(db),
-    startingSessionMode(db, ownerUserId),
+    newSessionTargetMinutes(db, ownerUserId, input.targetDurationMinutes),
   ]);
   const started = await startProposalSession(db, {
     ownerUserId,
     proposalId,
     session: {
-      sessionMode,
+      sessionMode: 'keep_going',
       coverImageId,
       // Start Session's rule: the no-LLM path keeps the image model out too.
       useStandardCover:
@@ -325,9 +325,7 @@ export async function startSurprise(
         (!proposal.llmGenerated ||
           (await getLlmProvider()) === null ||
           coverArtSettings.useStandardCoverArt),
-      ...(input.targetDurationMinutes != null
-        ? { targetDurationMinutes: input.targetDurationMinutes }
-        : {}),
+      targetDurationMinutes,
       ...resolveCoverArtChoiceFrom(coverArtSettings.customStyleDefinition, input.coverStyle),
     },
   });

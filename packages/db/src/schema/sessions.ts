@@ -109,7 +109,7 @@ export const activitySessions = pgTable(
     includesListener: boolean('includes_listener').notNull().default(false),
     status: activitySessionStatus('status').notNull().default('active'),
     // Generation policy — the sole authority over
-    // automatic top-ups. Creation seeds it from the owner's Buffer default;
+    // automatic top-ups. Every new Session starts in `keep_going`;
     // written by API routes (user intent), never the worker.
     sessionMode: sessionMode('session_mode').notNull().default('keep_going'),
     // Generation-controller status: the session stays `active` while this

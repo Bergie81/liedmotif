@@ -15,7 +15,6 @@ import {
   headroomRefusalMessage,
   newMusicPausedRefusal,
   sessionCreationRefusal,
-  startingSessionMode,
 } from '@/lib/sessions/sessions';
 import { cardCost, cardNote } from './card-note';
 import type { AssistantAsker } from './tools';
@@ -46,15 +45,11 @@ export async function newSessionRefusal({ db, userId }: AssistantAsker): Promise
 
 const HOW_LONG =
   'A new Session keeps generating new Tracks while the user listens, so it needs a length, which is a whole number from 1 to 600 minutes, or no limit. Ask the user how long it should run.';
-const NO_LIMIT_ON_REPEAT =
-  "This user's new Sessions start with New Music off: a new Session generates its first Tracks and then repeats them, so it cannot start with no limit. Offer a length in minutes, or to start it without one and switch New Music on afterwards. A length switches New Music on for that Session until it reaches the length.";
-
 /**
  * The length a card for a new Session carries, from what the user said: a
- * number of minutes, null for No limit, or left out when the Session starts on
- * Repeat and they named none. Or why no card is offered: a length the start
- * routes refuse, the app's refusal of a new Session, or a length the user
- * still has to choose. Checked in that order.
+ * number of minutes, or null for No limit. Or why no card is offered: a length
+ * the start routes refuse, the app's refusal of a new Session, or a length the
+ * user still has to choose. Checked in that order.
  */
 export async function newSessionLength(
   asker: AssistantAsker,
@@ -62,7 +57,7 @@ export async function newSessionLength(
     targetDurationMinutes,
     noLimit,
   }: Pick<ProposeSessionInput, 'targetDurationMinutes' | 'noLimit'>,
-): Promise<{ refusal: string } | { length: { targetDurationMinutes?: number | null } }> {
+): Promise<{ refusal: string } | { length: { targetDurationMinutes: number | null } }> {
   if (
     targetDurationMinutes != null &&
     !targetDurationMinutesSchema.safeParse(targetDurationMinutes).success
@@ -72,17 +67,8 @@ export async function newSessionLength(
   const refusal = await newSessionRefusal(asker);
   if (refusal) return { refusal };
   if (targetDurationMinutes != null) return { length: { targetDurationMinutes } };
-  // A Session that starts on Keep Going without a target buys music for as
-  // long as it is listened to: that is the user's to say, never a default.
-  // One that starts on Repeat stops after its first batch, which is not what
-  // "no limit" asks for.
-  const keepsGoing = (await startingSessionMode(asker.db, asker.userId)) === 'keep_going';
-  if (noLimit) {
-    return keepsGoing
-      ? { length: { targetDurationMinutes: null } }
-      : { refusal: NO_LIMIT_ON_REPEAT };
-  }
-  return keepsGoing ? { refusal: HOW_LONG } : { length: {} };
+  if (noLimit) return { length: { targetDurationMinutes: null } };
+  return { refusal: HOW_LONG };
 }
 
 /**

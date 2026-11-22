@@ -48,7 +48,7 @@ function configuredInput(): SettingsHubInput {
     imageProvider: { selected: true, configured: true, sunoFallbackConfigured: false },
     generation: {
       ok: true,
-      value: { bufferEnabled: true, bufferAheadTracks: 3, defaultLanguage: 'auto' },
+      value: { defaultSessionDurationMinutes: 30, bufferAheadTracks: 3, defaultLanguage: 'auto' },
     },
     playback: { ok: true, value: { blendEnabled: true, crossfadeSeconds: 8 } },
     coverArt: { ok: true, value: { defaultStyle: 'photographic' } },
@@ -194,23 +194,29 @@ describe('Settings hub model', () => {
     const input = configuredInput();
     input.generation = {
       ok: true,
-      value: { bufferEnabled: true, bufferAheadTracks: 3, defaultLanguage: 'German' },
+      value: { defaultSessionDurationMinutes: 30, bufferAheadTracks: 3, defaultLanguage: 'German' },
     };
 
     expect(buildSettingsHubData(input).generation.text).toContain('German language');
   });
 
-  it('summarizes a disabled Buffer default without presenting the retained target as active', () => {
+  it('states the Default Session duration in the generation summary', () => {
     const input = configuredInput();
+    expect(buildSettingsHubData(input).generation.text).toContain('New music up to 30 min');
+
     input.generation = {
       ok: true,
-      value: { bufferEnabled: false, bufferAheadTracks: 7, defaultLanguage: 'auto' },
+      value: { defaultSessionDurationMinutes: 60, bufferAheadTracks: 3, defaultLanguage: 'auto' },
     };
+    expect(buildSettingsHubData(input).generation.text).toContain('New music up to 1 h');
 
-    const summary = buildSettingsHubData(input).generation.text;
-
-    expect(summary).toContain('repeat by default');
-    expect(summary).not.toContain('7 ahead');
+    input.generation = {
+      ok: true,
+      value: { defaultSessionDurationMinutes: null, bufferAheadTracks: 7, defaultLanguage: 'auto' },
+    };
+    const endless = buildSettingsHubData(input).generation.text;
+    expect(endless).toContain('New music without limit');
+    expect(endless).toContain('7 ahead');
   });
 
   it('distinguishes environment, absent, and failed validation credential states', () => {
@@ -296,7 +302,7 @@ describe('Member settings hub model', () => {
 
   it('summarizes generation without any instance limit values', () => {
     const result = buildMemberSettingsHubData(memberInput());
-    expect(result.generation.text).toBe('3 ahead · Auto language');
+    expect(result.generation.text).toBe('New music up to 30 min · 3 ahead · Auto language');
     // The admin hub's generation line carries Track-ceiling numbers; the
     // Member's must not — those are instance configuration.
     expect(result.generation.text).not.toMatch(/Tracks/);

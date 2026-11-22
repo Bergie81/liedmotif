@@ -258,10 +258,9 @@ export interface CreateSessionInput {
   /** The single frozen Style Snapshot (template or text-LLM derived) to persist. */
   snapshot: StyleSnapshot;
   /**
-   * The mode the session starts in — the owner's Buffer default
-   * (`defaultSessionMode`), decided at the route. Required so no creation path
-   * can silently fall back to the column default and bypass that default. A
-   * `targetDurationMinutes` overrides it with Keep Going.
+   * The mode the session starts in, named by every creation path: the start
+   * routes always start `keep_going`. A `targetDurationMinutes` selects Keep
+   * Going whatever this says.
    */
   sessionMode: 'keep_going' | 'repeat';
   title?: string | null;

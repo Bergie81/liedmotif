@@ -3473,11 +3473,9 @@ describeIfDb('ensure-session-buffer controller', () => {
       expect(await sessionJobs(sessionId)).toHaveLength(1);
     });
 
-    it('Keep Going tops up even while the owner Buffer default is off', async () => {
+    it('Keep Going tops up to the owner ready-ahead target, and Repeat stops it', async () => {
       // Three ready-ahead queue items satisfy the shipped default (top up when
       // below 2) but sit below a configured buffer of 6 (top up when below 5).
-      // `bufferEnabled` is only the default mode for NEW sessions — it must not
-      // block this session's explicit Keep Going mode.
       const ownerUserId = await createUser(ctx.db);
       const sessionId = await createSession(ctx.db, {
         ownerUserId,
@@ -3511,7 +3509,7 @@ describeIfDb('ensure-session-buffer controller', () => {
 
       await updateGenerationSettings(ctx.db, {
         ownerUserId,
-        patch: { bufferEnabled: false, bufferAheadTracks: 6 },
+        patch: { bufferAheadTracks: 6 },
       });
       const deps = { db: ctx.db, music, now: NOW, limits: ampleLimits() };
       expect((await runEnsureSessionBuffer(deps, { sessionId })).action).toBe('generate');

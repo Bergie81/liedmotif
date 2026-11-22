@@ -230,35 +230,24 @@ describe.skipIf(skip)('the Assistant asked to start a Session', () => {
     expect(turn.results[0]).toMatch(/^Prepared: .*with no limit/);
   });
 
-  it('prepares a Session without a length when the user’s new Sessions start on Repeat', async () => {
+  it('prepares a Session with no limit whatever the user’s Default Session duration', async () => {
     const asker = await createAdmin();
     await updateGenerationSettings(testDb.db, {
       ownerUserId: asker,
-      patch: { bufferEnabled: false },
-    });
-
-    const turn = await propose(asker, { prompt: 'calm piano for reading' });
-
-    expect(cards(turn)).toEqual([
-      { kind: 'session', prompt: 'calm piano for reading', vocal: 'instrumental', ...HOME_COVER },
-    ]);
-  });
-
-  it('shows no card for a Session with no limit when the user’s new Sessions start on Repeat', async () => {
-    const asker = await createAdmin();
-    await updateGenerationSettings(testDb.db, {
-      ownerUserId: asker,
-      patch: { bufferEnabled: false },
+      patch: { defaultSessionDurationMinutes: 5 },
     });
 
     const turn = await propose(asker, { prompt: 'calm piano for reading', noLimit: true });
 
-    expect(cards(turn)).toEqual([]);
-    expect(turn.results[0]).toMatch(/repeats them/i);
-    expect(turn.results[0]).toContain(
-      'A length switches New Music on for that Session until it reaches the length.',
-    );
-    expect(turn.results[0]).toMatch(/no card was shown/i);
+    expect(cards(turn)).toEqual([
+      {
+        kind: 'session',
+        prompt: 'calm piano for reading',
+        vocal: 'instrumental',
+        targetDurationMinutes: null,
+        ...HOME_COVER,
+      },
+    ]);
   });
 
   it('gives the model the app’s refusal and sends no card when the budget is used up', async () => {

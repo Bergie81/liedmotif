@@ -59,31 +59,39 @@ describe.skipIf(skip)('GET/POST /api/settings/generation', () => {
     const parsed = generationSettingsResponseSchema.parse(await res.json());
     expect(parsed).toEqual({
       ok: true,
-      data: { bufferEnabled: true, bufferAheadTracks: 3, defaultLanguage: 'auto' },
+      data: { defaultSessionDurationMinutes: 30, bufferAheadTracks: 3, defaultLanguage: 'auto' },
     });
   });
 
-  it('round-trips disabled state without discarding the retained target', async () => {
+  it('round-trips the Default Session duration and the ready-ahead target', async () => {
     holder.ownerUserId = await createUser(testDb.db);
-    const updated = await post({ bufferEnabled: false, bufferAheadTracks: 1 });
+    const updated = await post({ defaultSessionDurationMinutes: 120, bufferAheadTracks: 1 });
     expect(await updated.json()).toEqual({
       ok: true,
-      data: { bufferEnabled: false, bufferAheadTracks: 1, defaultLanguage: 'auto' },
+      data: { defaultSessionDurationMinutes: 120, bufferAheadTracks: 1, defaultLanguage: 'auto' },
     });
 
     const readBack = await GET(apiRequest());
     const parsed = generationSettingsResponseSchema.parse(await readBack.json());
     if (!parsed.ok) throw new Error('unreachable');
-    expect(parsed.data).toMatchObject({ bufferEnabled: false, bufferAheadTracks: 1 });
+    expect(parsed.data).toMatchObject({ defaultSessionDurationMinutes: 120, bufferAheadTracks: 1 });
   });
 
-  it('patches the default language alone and keeps the buffer untouched', async () => {
+  it('stores No limit as the Default Session duration', async () => {
     holder.ownerUserId = await createUser(testDb.db);
-    await post({ bufferAheadTracks: 5 });
+    await post({ defaultSessionDurationMinutes: null });
+    const parsed = generationSettingsResponseSchema.parse(await (await GET(apiRequest())).json());
+    if (!parsed.ok) throw new Error('unreachable');
+    expect(parsed.data.defaultSessionDurationMinutes).toBeNull();
+  });
+
+  it('patches the default language alone and keeps the rest untouched', async () => {
+    holder.ownerUserId = await createUser(testDb.db);
+    await post({ bufferAheadTracks: 5, defaultSessionDurationMinutes: 15 });
     const updated = await post({ defaultLanguage: 'German' });
     expect(await updated.json()).toEqual({
       ok: true,
-      data: { bufferEnabled: true, bufferAheadTracks: 5, defaultLanguage: 'German' },
+      data: { defaultSessionDurationMinutes: 15, bufferAheadTracks: 5, defaultLanguage: 'German' },
     });
   });
 
@@ -95,7 +103,8 @@ describe.skipIf(skip)('GET/POST /api/settings/generation', () => {
     ['a buffer above the 10-track ceiling', { bufferAheadTracks: 11 }],
     ['a fractional track count', { bufferAheadTracks: 2.5 }],
     ['a non-number', { bufferAheadTracks: 'many' }],
-    ['a non-boolean enabled state', { bufferEnabled: 'yes' }],
+    ['a Default Session duration outside its choices', { defaultSessionDurationMinutes: 45 }],
+    ['a Buffer on/off switch, which the settings do not hold', { bufferEnabled: false }],
     ['an unknown key (strict contract)', { tracksAhead: 3 }],
   ])('rejects %s with a validation error', async (_name, body) => {
     holder.ownerUserId = await createUser(testDb.db);

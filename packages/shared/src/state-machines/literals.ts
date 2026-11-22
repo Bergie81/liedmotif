@@ -138,9 +138,8 @@ export function isSessionRepeatGenerationStatus(status: SessionGenerationStatus)
 
 /**
  * A session's generation policy (`activity_sessions.sessionMode`) — the sole
- * authority over fresh music-model calls; the owner's
- * `bufferEnabled` setting only picks which mode a NEW session starts in
- * (`defaultSessionMode`). `keep_going` generates new tracks indefinitely;
+ * authority over fresh music-model calls; every NEW session starts in
+ * `keep_going`. `keep_going` generates new tracks within the duration target;
  * `repeat` stops generating and loops the session's own tracks at zero cost —
  * the *voluntary* form of Session Repeat (a cost limit triggers the involuntary
  * form via `generationStatus = 'repeat_cost_limit'`). Only a Style Snapshot

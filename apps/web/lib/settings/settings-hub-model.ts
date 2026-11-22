@@ -6,6 +6,10 @@ import { COVER_STYLE_LABELS } from '@/lib/covers/cover-styles';
 import type { DiagnosticHealth } from '@/lib/admin/storage-diagnostics-model';
 import { formatBinaryBytes } from '@/lib/format-bytes';
 import { sessionLanguageLabel, type SessionLanguageChoice } from '@/lib/sessions/session-languages';
+import {
+  defaultSessionDurationLabel,
+  type DefaultSessionDuration,
+} from '@/lib/settings/default-session-duration';
 import { providerTasksToTracks } from '@/lib/budget/track-units';
 
 export type SettingsStatusTone = 'ok' | 'warn' | 'muted';
@@ -87,7 +91,7 @@ export interface SettingsHubInput {
     sunoFallbackConfigured: boolean;
   };
   generation: SettingsHubRead<{
-    bufferEnabled: boolean;
+    defaultSessionDurationMinutes: DefaultSessionDuration;
     bufferAheadTracks: number;
     defaultLanguage: SessionLanguageChoice;
   }>;
@@ -221,9 +225,9 @@ function providerSummary(input: SettingsHubInput): SettingsHubSummary {
   };
 }
 
-/** The generation row's buffer + language wording, shared by both hubs. */
+/** The generation row's new-music + language wording, shared by both hubs. */
 function generationPhrases(generation: SettingsHubInput['generation']): {
-  bufferSummary: string;
+  newMusicSummary: string;
   languageSummary: string;
 } {
   // The hub line wants the short "Auto", not the select's "Auto Detect".
@@ -232,12 +236,11 @@ function generationPhrases(generation: SettingsHubInput['generation']): {
       ? 'Auto'
       : sessionLanguageLabel(generation.value.defaultLanguage)
     : '';
-  const bufferSummary = generation.ok
-    ? generation.value.bufferEnabled
-      ? `${generation.value.bufferAheadTracks} ahead`
-      : 'repeat by default'
+  const minutes = generation.ok ? generation.value.defaultSessionDurationMinutes : null;
+  const newMusicSummary = generation.ok
+    ? `${minutes === null ? 'New music without limit' : `New music up to ${defaultSessionDurationLabel(minutes)}`} · ${generation.value.bufferAheadTracks} ahead`
     : '';
-  return { bufferSummary, languageSummary };
+  return { newMusicSummary, languageSummary };
 }
 
 function playbackSummary(playback: SettingsHubInput['playback']): SettingsHubSummary {
@@ -283,14 +286,14 @@ function assistantSummary(tone: SettingsHubInput['assistantTone']): SettingsHubS
  * Settings → My budget, in the Member's own terms.
  */
 export function buildMemberSettingsHubData(input: MemberSettingsHubInput): MemberSettingsHubData {
-  const { bufferSummary, languageSummary } = generationPhrases(input.generation);
+  const { newMusicSummary, languageSummary } = generationPhrases(input.generation);
   return {
     profile: profileSummary(input.profile),
     people: peopleSummary(input.peopleCount),
     assistant: assistantSummary(input.assistantTone),
     generation: !input.generation.ok
       ? unhealthy('Generation settings could not be read')
-      : configured(`${bufferSummary} · ${languageSummary} language`),
+      : configured(`${newMusicSummary} · ${languageSummary} language`),
     playback: playbackSummary(input.playback),
     // Which cover source runs is instance configuration, so a Member's row names
     // only their own default style.
@@ -347,12 +350,12 @@ export function buildSettingsHubData(input: SettingsHubInput): SettingsHubData {
     );
   }
 
-  const { bufferSummary, languageSummary } = generationPhrases(input.generation);
+  const { newMusicSummary, languageSummary } = generationPhrases(input.generation);
   const generation =
     !input.generation.ok || !input.limits.ok
       ? unhealthy('Generation settings could not be read')
       : configured(
-          `${trackCeilingSummary(input.limits.value, input.tracksPerCall)} · ${bufferSummary} · ${languageSummary} language`,
+          `${trackCeilingSummary(input.limits.value, input.tracksPerCall)} · ${newMusicSummary} · ${languageSummary} language`,
         );
   const limits = !input.limits.ok
     ? unhealthy('Cost limits could not be read')

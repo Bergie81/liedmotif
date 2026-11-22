@@ -13,15 +13,12 @@ import {
   type AssistantCard,
   type ProposeSurpriseInput,
 } from '@liedmotif/shared';
-import { startingSessionMode } from '@/lib/sessions/sessions';
 import { loadPendingSurprise, proposeSurprise } from '@/lib/sessions/surprise-me';
 import { BAD_DURATION, homeCoverChoices, notOffered, proposed } from './proposal';
 import { PROPOSE_SURPRISE_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 import type { TurnActions } from './turn-actions';
 
-const NO_LIMIT_ON_REPEAT =
-  "This user's new Sessions start with New Music off: a new Session generates its first Tracks and then repeats them, so it cannot run with no limit. Offer a length in minutes instead. A length switches New Music on for that Session until it reaches the length.";
 const BUSY =
   'A Surprise Me suggestion is already being prepared for this user. Tell them to ask again in a moment.';
 const RATE_LIMITED = 'Too many requests. Please slow down.';
@@ -43,11 +40,6 @@ export function createProposeSurpriseTool(
           !targetDurationMinutesSchema.safeParse(targetDurationMinutes).success
         ) {
           return notOffered(BAD_DURATION);
-        }
-        // One that starts on Repeat stops after its first batch, which is not
-        // what "no limit" asks for.
-        if (noLimit && (await startingSessionMode(db, userId)) !== 'keep_going') {
-          return notOffered(NO_LIMIT_ON_REPEAT);
         }
 
         // Read before the suggestion is replaced: a card that then fails to

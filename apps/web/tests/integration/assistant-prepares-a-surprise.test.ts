@@ -221,19 +221,16 @@ describe.skipIf(skip)('the Assistant asked to surprise the user', () => {
     expect(turn.results[0]).toMatch(/with no limit/);
   });
 
-  it('shows no card for no limit when the user’s new Sessions start on Repeat, and writes nothing', async () => {
+  it('prepares one with no limit whatever the user’s Default Session duration', async () => {
     const asker = await createAdmin();
     await updateGenerationSettings(testDb.db, {
       ownerUserId: asker,
-      patch: { bufferEnabled: false },
+      patch: { defaultSessionDurationMinutes: 5 },
     });
 
     const turn = await askForSurprise(asker, { noLimit: true });
 
-    expect(cards(turn)).toEqual([]);
-    expect(turn.results[0]).toMatch(/repeats them/i);
-    expect(turn.results[0]).toMatch(/no card was shown/i);
-    expect(holder.written).toEqual([]);
+    expect(surpriseCard(turn).targetDurationMinutes).toBeNull();
   });
 
   it('replaces the pending suggestion when asked again, so one stays pending', async () => {

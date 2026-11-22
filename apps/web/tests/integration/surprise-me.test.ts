@@ -15,6 +15,7 @@ import {
   EMPTY_LISTENER_PROFILE,
   getListenerProfile,
   resetLearnedTaste,
+  updateGenerationSettings,
   updateListenerProfile,
   updatePerson,
   updateUsageLimits,
@@ -576,11 +577,24 @@ describe.skipIf(skip)('Surprise Me proposals', () => {
       expect((await getPendingProposal(db(), holder.ownerUserId!))!.autoCoverStyle).toBeNull();
     });
 
-    it('starts open-ended when the card clears the proposal’s duration', async () => {
+    it('starts with No limit when the request asks for none', async () => {
       const proposal = await proposeOk();
       expect(proposal.edit.durationMinutes).not.toBeNull();
-      const { session } = await startOk(proposal.id);
-      expect(session.targetDurationMinutes).toBeNull();
+      const { session } = await startOk(proposal.id, { targetDurationMinutes: null });
+      expect(session).toMatchObject({ targetDurationMinutes: null, sessionMode: 'keep_going' });
+    });
+
+    it('starts on Keep Going with the Default Session duration when the request names no length', async () => {
+      const first = await startOk((await proposeOk()).id);
+      expect(first.session).toMatchObject({ targetDurationMinutes: 30, sessionMode: 'keep_going' });
+
+      await updateGenerationSettings(db(), {
+        ownerUserId: holder.ownerUserId!,
+        patch: { defaultSessionDurationMinutes: 5 },
+      });
+      holder.llmConfigured = false;
+      const second = await startOk((await proposeOk()).id);
+      expect(second.session).toMatchObject({ targetDurationMinutes: 5, sessionMode: 'keep_going' });
     });
 
     it('replaces the active Session like any other start', async () => {

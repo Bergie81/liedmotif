@@ -1,8 +1,8 @@
 // `POST /api/sessions/mode` → switchSessionMode.
 //
 // The Session's generation policy, written from user
-// intent only: `keep_going` generates new Tracks indefinitely — regardless of
-// the owner's Buffer default, which only seeds new Sessions — and `repeat`
+// intent only: `keep_going` generates new Tracks within the Session's duration
+// target (every new Session starts there) and `repeat`
 // stops generating and loops the Session's own Tracks at zero cost. The worker
 // consumes the policy on its next buffer tick and never writes it; that tick is
 // also where a `repeat` Session's pending Dislike-reroll intents are cancelled

@@ -123,7 +123,7 @@ export async function updatePlaybackSettings(
   );
 }
 
-/** The owner's effective Buffer enablement and ready-ahead target. */
+/** The owner's effective Default Session duration, ready-ahead target and language. */
 export async function getGenerationSettings(
   db: DbOrTx,
   ownerUserId: string,
@@ -190,6 +190,19 @@ export async function updateDefaultLanguage(
   defaultLanguage: GenerationSettings['defaultLanguage'],
 ): Promise<GenerationSettings> {
   return updateGenerationSettings(db, { ownerUserId, patch: { defaultLanguage } });
+}
+
+/**
+ * Write the owner's Default Session duration and nothing else of their
+ * Generation settings: the Assistant's writer, which must not reach what a
+ * Session generates ahead.
+ */
+export async function updateDefaultSessionDuration(
+  db: DbOrTx,
+  ownerUserId: string,
+  defaultSessionDurationMinutes: GenerationSettings['defaultSessionDurationMinutes'],
+): Promise<GenerationSettings> {
+  return updateGenerationSettings(db, { ownerUserId, patch: { defaultSessionDurationMinutes } });
 }
 
 /** The tone the owner gave the Assistant; empty until they save one. */

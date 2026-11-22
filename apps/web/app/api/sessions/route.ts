@@ -11,7 +11,11 @@
 
 import { NextResponse } from 'next/server';
 import { createSession, getCoverArtSettings } from '@liedmotif/db';
-import { listSessionsRequestSchema, startSessionRequestSchema } from '@liedmotif/shared';
+import {
+  listSessionsRequestSchema,
+  startSessionRequestSchema,
+  targetDurationMinutesSchema,
+} from '@liedmotif/shared';
 import { getDb } from '@/lib/db';
 import {
   apiError,
@@ -26,8 +30,8 @@ import { sessionCreateLimiter } from '@/lib/http/request-limits';
 import {
   deriveNamedSnapshotForIntent,
   loadSessionList,
+  newSessionTargetMinutes,
   sessionCreationRefusal,
-  startingSessionMode,
   toSessionSummary,
 } from '@/lib/sessions/sessions';
 import { getLlmProvider } from '@/lib/providers/providers';
@@ -74,24 +78,27 @@ export async function POST(request: Request) {
 
   // The LLM-bearing derivation overlaps the Snapshot-independent reads. No paid
   // call moves ahead of the gates.
-  const [derived, coverArtSettings, coverImageId, sessionMode] = await Promise.all([
+  const [derived, coverArtSettings, coverImageId] = await Promise.all([
     // One step: snapshot derivation + creative naming, with the owner's listener
     // profile (Settings → Profile) applied inside — the route never handles it.
     // `skipProfile` starts the session without that profile (the home toggle).
     deriveNamedSnapshotForIntent(db, ownerUserId, input, { skipProfile }),
     getCoverArtSettings(db, ownerUserId),
     initialSessionCoverId(db),
-    startingSessionMode(db, ownerUserId),
   ]);
   if (!derived.ok) {
     return apiError('provider_error', derived.message, { retryable: true });
   }
   const { snapshot, title, userPrompt, coverConcept, autoCoverStyle } = derived;
-  const resolvedDurationMinutes = targetDurationMinutes ?? derived.requestedDurationMinutes;
+  const resolvedDurationMinutes = await newSessionTargetMinutes(
+    db,
+    ownerUserId,
+    targetDurationMinutes,
+    derived.requestedDurationMinutes,
+  );
   if (
     resolvedDurationMinutes != null &&
-    !startSessionRequestSchema.shape.targetDurationMinutes.safeParse(resolvedDurationMinutes)
-      .success
+    !targetDurationMinutesSchema.safeParse(resolvedDurationMinutes).success
   ) {
     return apiError(
       'validation_error',
@@ -118,7 +125,7 @@ export async function POST(request: Request) {
   const { session: created, supersededSessionId } = await createSession(db, {
     ownerUserId,
     snapshot,
-    sessionMode,
+    sessionMode: 'keep_going',
     title,
     coverConcept,
     autoCoverStyle,
@@ -127,7 +134,7 @@ export async function POST(request: Request) {
     ...(skipProfile ? { skipProfile } : {}),
     includesListener: derived.includesListener,
     useStandardCover,
-    ...(resolvedDurationMinutes != null ? { targetDurationMinutes: resolvedDurationMinutes } : {}),
+    targetDurationMinutes: resolvedDurationMinutes,
     coverImageId,
     // Cover-only preferences for the async generated cover (never the music
     // snapshot): the art-direction lane and — when the user picked `custom` —

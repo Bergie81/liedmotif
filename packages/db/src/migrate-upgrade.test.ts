@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { COVER_STYLES } from '@liedmotif/shared';
 import { createDb, createPool, type Database, type Pool } from './index';
 import { MIGRATIONS_DIR, runDrizzleMigrations } from './migrate';
+import { getGenerationSettings } from './settings/user-settings-repo';
 import { assertSafeTestDatabase } from './test-support';
 
 // Migration-UPGRADE test (CI job `migration-upgrade`): unlike the migrate-from-clean
@@ -385,31 +386,47 @@ describeIfDb('migration upgrade from the pre-blending schema', () => {
     expect(leases.rows[0].n).toBe(0);
   });
 
-  it('separates legacy Buffer enabled state from its retained target', async () => {
+  it('turns a legacy Buffer switch into the Default Session duration', async () => {
     const { rows } = await pool.query(
       `select owner_user_id, value
        from user_settings
        where key = 'generation' and owner_user_id like 'buffer-%'
        order by owner_user_id`,
     );
+    // A switched-off Buffer becomes the 5 min default; a switched-on one keeps
+    // no duration of its own and reads the shipped default.
     expect(rows).toEqual([
       {
         owner_user_id: 'buffer-five',
-        value: { bufferEnabled: true, bufferAheadTracks: 5, defaultLanguage: 'English' },
+        value: { bufferAheadTracks: 5, defaultLanguage: 'English' },
       },
       {
         owner_user_id: 'buffer-missing',
-        value: { bufferEnabled: true, bufferAheadTracks: 3, defaultLanguage: 'French' },
+        value: { bufferAheadTracks: 3, defaultLanguage: 'French' },
       },
       {
         owner_user_id: 'buffer-off',
-        value: { bufferEnabled: false, bufferAheadTracks: 3, defaultLanguage: 'German' },
+        value: {
+          bufferAheadTracks: 3,
+          defaultLanguage: 'German',
+          defaultSessionDurationMinutes: 5,
+        },
       },
       {
         owner_user_id: 'buffer-one',
-        value: { bufferEnabled: true, bufferAheadTracks: 1, defaultLanguage: 'auto' },
+        value: { bufferAheadTracks: 1, defaultLanguage: 'auto' },
       },
     ]);
+    expect(await getGenerationSettings(db, 'buffer-off')).toMatchObject({
+      defaultSessionDurationMinutes: 5,
+    });
+    expect(await getGenerationSettings(db, 'buffer-five')).toMatchObject({
+      defaultSessionDurationMinutes: 30,
+    });
+    // `owner-1` never stored Generation settings.
+    expect(await getGenerationSettings(db, 'owner-1')).toMatchObject({
+      defaultSessionDurationMinutes: 30,
+    });
   });
 
   it('moves the legacy About text unchanged into one owner Person', async () => {

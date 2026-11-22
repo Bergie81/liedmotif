@@ -8,9 +8,7 @@
 // `keep_going` keeps the buffer filled to the owner's ready-ahead target and
 // honours a pending Dislike reroll, `repeat` loops the session's own tracks and
 // buys nothing. Only a Style Snapshot revision's initial fill (cold start and
-// Change Vibe) is mode-independent. The owner's `bufferEnabled` setting only
-// picks the DEFAULT mode at session creation — it never reaches this decision,
-// so switching a session to `keep_going` generates regardless of it.
+// Change Vibe) is mode-independent. No owner setting reaches this decision.
 //
 // `generationStatus` legal values mapped here:
 //   - repeat_cost_limit     — cost limit hit → loop the session's own tracks.

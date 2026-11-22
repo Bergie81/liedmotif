@@ -7,7 +7,11 @@ import { OnboardingDoneStep } from './onboarding-done-step';
 function renderDone(overrides: Partial<OnboardingUntouched> = {}) {
   const untouched: OnboardingUntouched = {
     playback: { blendEnabled: true, crossfadeSeconds: 6 },
-    generation: { bufferEnabled: true, bufferAheadTracks: 3, defaultLanguage: 'auto' },
+    generation: {
+      defaultSessionDurationMinutes: 30,
+      bufferAheadTracks: 3,
+      defaultLanguage: 'auto',
+    },
     coverStyle: 'auto',
     ownVoiceOffer: 'setup',
     accountEmail: false,
@@ -42,6 +46,23 @@ describe('onboarding done step', () => {
     expect(renderDone({ ownVoiceOffer: 'setup' })).toContain('Your singing voice not set up');
     expect(renderDone({ ownVoiceOffer: 'ready' })).toContain('Your singing voice is ready');
     expect(renderDone({ ownVoiceOffer: 'hidden' })).not.toContain('singing voice');
+  });
+
+  it('states how much new music a new Session generates by default', () => {
+    const generation = { bufferAheadTracks: 3, defaultLanguage: 'auto' } as const;
+
+    const capped = renderDone({ generation: { ...generation, defaultSessionDurationMinutes: 30 } });
+    expect(capped).toContain('New sessions generate up to 30 min of new music');
+    expect(capped).toContain('Then they repeat for free');
+
+    const long = renderDone({ generation: { ...generation, defaultSessionDurationMinutes: 120 } });
+    expect(long).toContain('New sessions generate up to 2 h of new music');
+
+    const endless = renderDone({
+      generation: { ...generation, defaultSessionDurationMinutes: null },
+    });
+    expect(endless).toContain('New sessions generate new music without limit');
+    expect(endless).not.toContain('repeat for free');
   });
 
   it('names the storage backend the instance actually writes to', () => {

@@ -48,7 +48,6 @@ import {
   boundWindow,
   checkCostLimits,
   createLogger,
-  defaultSessionMode,
   evaluateCreationHeadroom,
   matchConfiguredPeople,
   MAX_SESSION_TITLE_LENGTH,
@@ -61,7 +60,6 @@ import {
   type CreationHeadroomDecision,
   type SessionLanguage,
   type SessionListItem,
-  type SessionMode,
   type SessionSummary,
 } from '@liedmotif/shared';
 import { cache } from 'react';
@@ -166,12 +164,20 @@ async function listenerContextForIntent(
 }
 
 /**
- * The mode a NEW Session starts in — the owner's Buffer default. A
- * default only: the player's mode switch overrides it per Session, and the
- * worker's top-up decision reads the session's own mode, never this setting.
+ * The Session duration target a new Session starts with, on every start path:
+ * a number in the request; an explicit null in the request is No limit; with
+ * nothing in the request, the duration the text LLM read from the prompt
+ * (Start Session only), and otherwise the user's Default Session duration.
  */
-export async function startingSessionMode(db: Database, ownerUserId: string): Promise<SessionMode> {
-  return defaultSessionMode(await getGenerationSettings(db, ownerUserId));
+export async function newSessionTargetMinutes(
+  db: Database,
+  ownerUserId: string,
+  requested: number | null | undefined,
+  fromPrompt?: number | null,
+): Promise<number | null> {
+  if (requested !== undefined) return requested;
+  if (fromPrompt != null) return fromPrompt;
+  return (await getGenerationSettings(db, ownerUserId)).defaultSessionDurationMinutes;
 }
 
 /**
