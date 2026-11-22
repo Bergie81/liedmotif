@@ -428,7 +428,7 @@ It works like the [playlist cover](#playlist-covers) sheet: whatever you pick sh
 
 Generating a new cover needs an image provider, with styled covers turned on and budget left. Or ask [Roadie](#ask-roadie) for a new cover for a session or a playlist: "make a new cover for this, darker, neon city".
 
-Everyone sets their own defaults in **Settings › Cover Art**: **Use Tailored Cover Art Generation**, **Default cover style** (**Auto** until you change it), **Custom style definition** of up to 240 characters and **Enhance prompts**.
+Everyone sets their own defaults in **Settings › Cover Art**: **Use Tailored Cover Art Generation**, **Default cover style** (**Auto** until you change it), **Custom style definition** of up to 240 characters and **Enhance prompts**. Each style in **Default cover style** shows an example cover, its name and a one-line explanation. You can edit the **Custom style definition** at any time, whatever your default style and whether tailored art is on or off. With **Custom** as your default and no definition, it works like **Auto**.
 
 A good **Custom style definition** describes the medium, line, texture and contrast, not fixed colors or objects. Whatever you name shows up on every cover, so write "colors that fit the mood" instead of naming colors, and each session's theme picks the colors and subject. For example: *A risograph print look: two or three bold overlapping inks chosen to fit the mood, visible grain, slight misregistration and halftone dots, flat graphic shapes on uncoated paper.*
 
