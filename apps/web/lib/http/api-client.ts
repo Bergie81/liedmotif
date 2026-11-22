@@ -1190,6 +1190,8 @@ export function moreLikeThis(
   seedTrackIds: string[],
   clientId: string,
   targetDurationMinutes?: number,
+  /** What the new Session is about or for; it never changes the music. */
+  context?: string,
 ): Promise<ApiResult<MoreLikeThisData>> {
   return callApi<MoreLikeThisData>('/api/sessions/more-like-this', moreLikeThisResponseSchema, {
     method: 'POST',
@@ -1197,6 +1199,7 @@ export function moreLikeThis(
       seedTrackIds,
       clientId,
       ...(targetDurationMinutes != null ? { targetDurationMinutes } : {}),
+      ...(context ? { context } : {}),
     },
   });
 }

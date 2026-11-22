@@ -53,6 +53,10 @@ import {
   MORE_LIKE_THIS_FAILED,
   presentCreationFailure,
 } from '@/components/create/creation-refusal';
+import {
+  MoreLikeThisSheet,
+  type MoreLikeThisSeed,
+} from '@/components/sessions/more-like-this-sheet';
 import { useSeedMoreLikeThis } from '@/components/sessions/use-seed-more-like-this';
 import { AddTracksSheet } from './add-tracks-sheet';
 import { PlaylistCoverSheet } from './playlist-cover-sheet';
@@ -98,7 +102,8 @@ type PlaylistOverlay =
   | { kind: 'cover' }
   | { kind: 'track-options'; item: PlaylistMemberItem }
   | { kind: 'track-memberships'; track: SavePickerTrack }
-  | { kind: 'track-data'; trackId: string };
+  | { kind: 'track-data'; trackId: string }
+  | { kind: 'more-like-this'; seed: MoreLikeThisSeed; trackIds: string[] };
 
 export function PlaylistDetail({
   playlistId,
@@ -170,14 +175,16 @@ export function PlaylistDetail({
 
   // More Like This: a NEW Session seeded from a member's Track, or from the
   // playlist's first members (the only "more music" path out of a Playlist).
-  async function seedMoreLikeThis(trackIds: string[]) {
-    if (seeding) return;
+  // True once the new Session started.
+  async function seedMoreLikeThis(trackIds: string[], context?: string): Promise<boolean> {
+    if (seeding) return false;
     setSeeding(true);
     toast.dismiss(MORE_LIKE_THIS_KEY);
-    const failure = await seed(trackIds);
+    const failure = await seed(trackIds, undefined, context);
     setSeeding(false);
     const line = failure && presentCreationFailure(failure, MORE_LIKE_THIS_FAILED);
     if (line) toast.error(line, { key: MORE_LIKE_THIS_KEY });
+    return failure === null;
   }
 
   // Permanent Track delete (never feedback). Settled before the list changes —
@@ -305,10 +312,14 @@ export function PlaylistDetail({
                 actions: {
                   play: () => void playAll(),
                   togglePin: () => void togglePin(),
-                  moreLikeThis: () =>
-                    void seedMoreLikeThis(
-                      items.slice(0, LOUNGE_MLT_SEED_TRACKS).map((item) => item.id),
-                    ),
+                  moreLikeThis: () => {
+                    const trackIds = items.slice(0, LOUNGE_MLT_SEED_TRACKS).map((item) => item.id);
+                    setOverlay({
+                      kind: 'more-like-this',
+                      seed: { kind: 'playlist', name: playlist.name, trackCount: trackIds.length },
+                      trackIds,
+                    });
+                  },
                   returnToPrivate: visitor.isAdmin
                     ? () => {
                         toast.dismiss(RETURN_TO_PRIVATE_KEY);
@@ -457,13 +468,27 @@ export function PlaylistDetail({
           setOverlay(null);
         }}
         onAddToPlaylist={(track) => setOverlay({ kind: 'track-memberships', track })}
-        onMoreLikeThis={(item) => {
-          setOverlay(null);
-          void seedMoreLikeThis([item.id]);
-        }}
+        onMoreLikeThis={(item) =>
+          setOverlay({
+            kind: 'more-like-this',
+            seed: { kind: 'track', title: item.title },
+            trackIds: [item.id],
+          })
+        }
         onOpenTrackData={(item) => setOverlay({ kind: 'track-data', trackId: item.id })}
         onDelete={deleteMemberEverywhere}
       />
+
+      {overlay?.kind === 'more-like-this' ? (
+        <MoreLikeThisSheet
+          seed={overlay.seed}
+          open
+          onOpenChange={(open) => {
+            if (!open) setOverlay(null);
+          }}
+          onStart={(context) => seedMoreLikeThis(overlay.trackIds, context)}
+        />
+      ) : null}
 
       {/* The picker rewrites the Track's WHOLE membership, so it can drop it from
           this playlist too — the list is read back rather than patched. */}

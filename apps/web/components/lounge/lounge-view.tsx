@@ -51,6 +51,7 @@ import {
   MORE_LIKE_THIS_FAILED,
   presentCreationFailure,
 } from '@/components/create/creation-refusal';
+import { MoreLikeThisSheet } from '@/components/sessions/more-like-this-sheet';
 import { useSeedMoreLikeThis } from '@/components/sessions/use-seed-more-like-this';
 import {
   buildSharerCards,
@@ -112,6 +113,8 @@ export function LoungeView({
   const visitorPlayback = usePlayPlaylist(reportPlayFailure, { foreign: true });
   const seedMoreLikeThis = useSeedMoreLikeThis();
   const [seeding, setSeeding] = useState(false);
+  /** The foreign share whose More Like This sheet is open. */
+  const [seedPlaylist, setSeedPlaylist] = useState<LoungePlaylistItem | null>(null);
   /** The foreign share awaiting the Admin's Return to Private confirmation. */
   const [moderating, setModerating] = useState<LoungePlaylistItem | null>(null);
   /** The viewer's own share whose audience sheet is open. */
@@ -191,18 +194,23 @@ export function LoungeView({
   /** More Like This from a foreign tile: a NEW Session on
    *  the VIEWER's budget, seeded from the shared playlist's tracks — the seed
    *  route strips the owner's personal ingredients and answers the uniform 404
-   *  the moment the share is revoked under the tap. */
-  async function seedFromShared(item: LoungePlaylistItem) {
-    if (seeding) return;
+   *  the moment the share is revoked under the tap. True once it started. */
+  async function seedFromShared(item: LoungePlaylistItem, context?: string): Promise<boolean> {
+    if (seeding) return false;
     setSeeding(true);
     toast.dismiss(MORE_LIKE_THIS_KEY);
     const page = await getLoungePlaylist(item.id, null, LOUNGE_MLT_SEED_TRACKS);
     const failure = !page.ok
       ? page.error
-      : await seedMoreLikeThis(page.data.items.slice(0, LOUNGE_MLT_SEED_TRACKS).map((m) => m.id));
+      : await seedMoreLikeThis(
+          page.data.items.slice(0, LOUNGE_MLT_SEED_TRACKS).map((m) => m.id),
+          undefined,
+          context,
+        );
     setSeeding(false);
     const line = failure && presentCreationFailure(failure, MORE_LIKE_THIS_FAILED);
     if (line) toast.error(line, { key: MORE_LIKE_THIS_KEY });
+    return failure === null;
   }
 
   function leaveRoom(playlistId: string) {
@@ -260,7 +268,7 @@ export function LoungeView({
               actions={{
                 play: () => void play(item),
                 togglePin: () => void togglePin(item),
-                moreLikeThis: () => void seedFromShared(item),
+                moreLikeThis: () => setSeedPlaylist(item),
                 editSharing: () => setSharing(item),
                 removeFromLounge: () => {
                   toast.dismiss(REMOVE_KEY);
@@ -300,6 +308,20 @@ export function LoungeView({
           onReturned={() => leaveRoom(moderating.id)}
           onError={(message) => toast.error(message, { key: RETURN_TO_PRIVATE_KEY })}
           onClose={() => setModerating(null)}
+        />
+      ) : null}
+      {seedPlaylist ? (
+        <MoreLikeThisSheet
+          seed={{
+            kind: 'playlist',
+            name: seedPlaylist.name,
+            trackCount: Math.min(seedPlaylist.trackCount, LOUNGE_MLT_SEED_TRACKS),
+          }}
+          open
+          onOpenChange={(open) => {
+            if (!open) setSeedPlaylist(null);
+          }}
+          onStart={(context) => seedFromShared(seedPlaylist, context)}
         />
       ) : null}
     </>

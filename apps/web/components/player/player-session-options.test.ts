@@ -57,7 +57,7 @@ function Options({
     onRenameSession: succeed,
     onRenameTrack: succeed,
     onReroll: noop,
-    onMoreLikeThis: complete,
+    onOpenMoreLikeThis: noop,
     moreLikeThisAvailable: true,
     onOpenChangeVibe: noop,
     changeVibeAvailable,

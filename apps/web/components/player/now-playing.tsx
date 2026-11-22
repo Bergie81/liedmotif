@@ -239,6 +239,8 @@ export function NowPlaying({
   // The Change Vibe sheet's open state lives here so the options menu and the
   // direction bar open the same sheet.
   const [changeVibeOpen, setChangeVibeOpen] = useState(false);
+  // The same holds for the More Like This sheet.
+  const [moreLikeThisOpen, setMoreLikeThisOpen] = useState(false);
   // Change Vibe steers the Session, so no current Track is needed. The sheet
   // preselects the vibe from the first queue poll and builds its request against
   // it, so it waits for that, and for any other action in flight.
@@ -395,9 +397,7 @@ export function NowPlaying({
       onRenameTrack={applyRenameTrack}
       onConvertToPlaylist={() => void sessionActions.convertToPlaylist()}
       onReroll={player.dislike}
-      onMoreLikeThis={async () => {
-        await sessionActions.startMoreLikeThis();
-      }}
+      onOpenMoreLikeThis={() => setMoreLikeThisOpen(true)}
       moreLikeThisAvailable={sessionActions.busyAction === null && !vibeChangePending}
       onOpenChangeVibe={() => setChangeVibeOpen(true)}
       changeVibeAvailable={changeVibeAvailable}
@@ -528,6 +528,8 @@ export function NowPlaying({
           onChangeVibeOpenChange={setChangeVibeOpen}
           onReroll={player.dislike}
           onChangeVibe={(input, options) => submitChangeVibe(session.id, input, options)}
+          moreLikeThisOpen={moreLikeThisOpen}
+          onMoreLikeThisOpenChange={setMoreLikeThisOpen}
           onMoreLikeThis={sessionActions.startMoreLikeThis}
         />
 

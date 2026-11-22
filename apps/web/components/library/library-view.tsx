@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import type { LibraryTrackItem, TrackFlags } from '@liedmotif/shared';
 import { Sheet } from '@/components/ui/sheet';
 import { PlaylistsGrid, type PlaylistsFirstPage } from '@/components/playlists/playlists-grid';
+import { MoreLikeThisSheet } from '@/components/sessions/more-like-this-sheet';
 import {
   SaveToPlaylistSheet,
   type SavePickerTrack,
@@ -79,6 +80,7 @@ function LibrarySmartListView({
   const query = useLibraryQuery(view, search);
   const [selected, setSelected] = useState<LibraryTrackItem | null>(null);
   const [pickerTrack, setPickerTrack] = useState<SavePickerTrack | null>(null);
+  const [seedTrack, setSeedTrack] = useState<LibraryTrackItem | null>(null);
   const optionsOpenerRef = useRef<HTMLButtonElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
 
@@ -168,10 +170,21 @@ function LibrarySmartListView({
             })
           }
           onToggleFavorite={() => void actions.toggleFavorite(selected)}
-          onMoreLikeThis={() => void actions.seedMoreLikeThis(selected)}
+          onMoreLikeThis={() => setSeedTrack(selected)}
           onDelete={async () => {
             if (await actions.deleteTrack(selected)) closeOptions();
           }}
+        />
+      ) : null}
+
+      {seedTrack ? (
+        <MoreLikeThisSheet
+          seed={{ kind: 'track', title: seedTrack.title }}
+          open
+          onOpenChange={(open) => {
+            if (!open) setSeedTrack(null);
+          }}
+          onStart={(context) => actions.seedMoreLikeThis(seedTrack, context)}
         />
       ) : null}
 

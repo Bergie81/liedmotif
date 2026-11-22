@@ -35,6 +35,8 @@ function renderActions({
         onChangeVibeOpenChange: vi.fn(),
         onReroll: vi.fn(),
         onChangeVibe: vi.fn(),
+        moreLikeThisOpen: false,
+        onMoreLikeThisOpenChange: vi.fn(),
         onMoreLikeThis: async () => true,
       }),
     ),

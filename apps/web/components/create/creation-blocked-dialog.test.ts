@@ -27,6 +27,7 @@ function chromeFor(viewerRole: AppChromeContextValue['viewerRole']): AppChromeCo
     listener: { name: 'Test', email: 'test@example.test', artistName: null, imageUrl: null },
     viewerRole,
     ownVoiceOffered: false,
+    llmConfigured: false,
     themeMode: 'night',
     onToggleThemeMode: () => {},
     fetchChrome: () => new Promise(() => {}),

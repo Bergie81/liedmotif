@@ -8,6 +8,7 @@ import { createElement as h } from 'react';
 import type { PlaylistMemberItem, PlaylistSummaryItem } from '@liedmotif/shared';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { AppChromeContext, type AppChromeContextValue } from '@/components/app-chrome-context';
 import { closeCreationRefusal, shownCreationRefusal } from '@/components/create/creation-refusal';
 import { shownToasts, toast } from '@/lib/toast';
 import { PlaylistDetail } from './playlist-detail';
@@ -96,15 +97,19 @@ const MEMBER: PlaylistMemberItem = {
 
 function renderVisitor({ isAdmin = false } = {}) {
   render(
-    h(PlaylistDetail, {
-      playlistId: PLAYLIST.id,
-      initial: { playlist: PLAYLIST, items: [MEMBER] },
-      visitor: {
-        owner: { name: 'Anna Schmidt', artistName: 'Nightowl', imageUrl: null },
-        pinned: false,
-        isAdmin,
-      },
-    }),
+    h(
+      AppChromeContext.Provider,
+      { value: { llmConfigured: true } as AppChromeContextValue },
+      h(PlaylistDetail, {
+        playlistId: PLAYLIST.id,
+        initial: { playlist: PLAYLIST, items: [MEMBER] },
+        visitor: {
+          owner: { name: 'Anna Schmidt', artistName: 'Nightowl', imageUrl: null },
+          pinned: false,
+          isAdmin,
+        },
+      }),
+    ),
   );
   fireEvent.click(screen.getByTestId('playlist-menu'));
 }
@@ -136,11 +141,17 @@ describe('PlaylistDetail — visitor menu', () => {
     expect(pinLounge).toHaveBeenCalledWith(PLAYLIST.id, true);
   });
 
-  it('starts More Like This from its tracks', async () => {
+  it('opens the More Like This sheet, then starts from its tracks with the typed context', async () => {
     moreLikeThis.mockResolvedValue(null);
     renderVisitor();
     fireEvent.click(screen.getByTestId(`lounge-menu-more-like-this-${PLAYLIST.id}`));
-    await waitFor(() => expect(moreLikeThis).toHaveBeenCalledWith([MEMBER.id]));
+    expect(screen.getByText('1 track from Late Drive')).toBeTruthy();
+    expect(moreLikeThis).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'for cooking' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Start New Session' }));
+    await waitFor(() =>
+      expect(moreLikeThis).toHaveBeenCalledWith([MEMBER.id], undefined, 'for cooking'),
+    );
   });
 
   it('opens the blocked dialog when More Like This has no headroom', async () => {
@@ -148,8 +159,10 @@ describe('PlaylistDetail — visitor menu', () => {
     moreLikeThis.mockResolvedValue({ code: 'session_headroom_blocked', message });
     renderVisitor();
     fireEvent.click(screen.getByTestId(`lounge-menu-more-like-this-${PLAYLIST.id}`));
+    fireEvent.click(screen.getByRole('button', { name: 'Start New Session' }));
     await waitFor(() => expect(shownCreationRefusal()).toEqual({ kind: 'headroom', message }));
     expect(shownToasts()).toEqual([]);
+    expect(screen.getByRole('button', { name: 'Start New Session' })).toBeTruthy();
   });
 
   it('lets the Admin return it to Private after confirming, then goes back to the Lounge', async () => {

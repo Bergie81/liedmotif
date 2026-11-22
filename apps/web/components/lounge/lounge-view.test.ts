@@ -11,6 +11,7 @@ import type { LoungePlaylistItem } from '@liedmotif/shared';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { shownToasts, toast } from '@/lib/toast';
+import { AppChromeContext, type AppChromeContextValue } from '@/components/app-chrome-context';
 import { closeCreationRefusal, shownCreationRefusal } from '@/components/create/creation-refusal';
 import { LoungeView } from './lounge-view';
 
@@ -431,12 +432,16 @@ describe('LoungeView — playing a foreign share', () => {
         fetchPage(null, 100),
     );
     render(
-      h(LoungeView, {
-        initial: { playlists: [FOREIGN], nextCursor: null },
-        sharers: [],
-        viewerUserId: 'u-me',
-        viewerIsAdmin: false,
-      }),
+      h(
+        AppChromeContext.Provider,
+        { value: { llmConfigured: true } as AppChromeContextValue },
+        h(LoungeView, {
+          initial: { playlists: [FOREIGN], nextCursor: null },
+          sharers: [],
+          viewerUserId: 'u-me',
+          viewerIsAdmin: false,
+        }),
+      ),
     );
   }
 
@@ -457,8 +462,18 @@ describe('LoungeView — playing a foreign share', () => {
     renderForeign();
     fireEvent.click(screen.getByTestId(`lounge-menu-${FOREIGN.id}`));
     fireEvent.click(screen.getByTestId(`lounge-menu-more-like-this-${FOREIGN.id}`));
+    expect(seedMoreLikeThis).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'for cooking' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Start New Session' }));
     await waitFor(() => expect(shownCreationRefusal()).toEqual({ kind: 'headroom', message }));
+    expect(seedMoreLikeThis).toHaveBeenCalledWith(
+      [MEMBER.id],
+      expect.anything(),
+      undefined,
+      'for cooking',
+    );
     expect(shownToasts()).toEqual([]);
+    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('for cooking');
   });
 
   it('offers Play in its options menu', async () => {

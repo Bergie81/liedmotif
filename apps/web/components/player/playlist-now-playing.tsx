@@ -11,7 +11,11 @@
 
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { PlaylistMemberItem, PlaylistSummaryItem } from '@liedmotif/shared';
+import {
+  MAX_SEED_TRACKS,
+  type PlaylistMemberItem,
+  type PlaylistSummaryItem,
+} from '@liedmotif/shared';
 import {
   deletePlaylist,
   deleteTrack,
@@ -26,6 +30,7 @@ import {
   presentCreationFailure,
 } from '@/components/create/creation-refusal';
 import { OfflineMark } from '@/components/offline/offline-mark';
+import { MoreLikeThisSheet } from '@/components/sessions/more-like-this-sheet';
 import {
   SaveToPlaylistSheet,
   type SavePickerTrack,
@@ -115,6 +120,7 @@ export function PlaylistNowPlaying({
   // the Track, so it outlives one — jumping into it is the way back to audio.
   const [trackDataSheetOpen, setTrackDataSheetOpen] = useState(false);
   const [queueSheetOpen, setQueueSheetOpen] = useState(false);
+  const [moreLikeThisOpen, setMoreLikeThisOpen] = useState(false);
   const seedingRef = useRef(false);
   const removingRef = useRef(false);
   // A Remove resolves after its tap-time render, so it acts on the live player.
@@ -235,25 +241,29 @@ export function PlaylistNowPlaying({
 
   /** More Like This seeds a NEW Session (a Playlist absorbs no generated
    * Tracks); engaging it hands playback over exactly as the Session surface
-   * does — audibly through the provider's crossfade while the playlist plays. */
-  async function seedMoreLikeThis() {
-    // Each request creates a Session that buys its initial fill, and the row
-    // shows no progress, so a repeat tap while one is in flight is dropped.
-    if (seedingRef.current) return;
+   * does — audibly through the provider's crossfade while the playlist plays.
+   * True once the new Session is engaged. */
+  async function seedMoreLikeThis(context: string | undefined): Promise<boolean> {
+    // Each request creates a Session that buys its initial fill, so a repeat
+    // start while one is in flight is dropped.
+    if (seedingRef.current) return false;
     seedingRef.current = true;
     try {
       clearPlayerError(sourceId, 'more-like-this');
-      if (!(await beginOtherMusic())) return;
+      if (!(await beginOtherMusic())) return false;
       const result = await moreLikeThis(
-        items.slice(0, 10).map((item) => item.id),
+        items.slice(0, MAX_SEED_TRACKS).map((item) => item.id),
         clientId,
+        undefined,
+        context,
       );
       if (!result.ok) {
         const line = presentCreationFailure(result.error, MORE_LIKE_THIS_FAILED);
         if (line) failed('more-like-this', line);
-        return;
+        return false;
       }
       engage(result.data.session, { autoplay: false });
+      return true;
     } finally {
       seedingRef.current = false;
     }
@@ -276,7 +286,7 @@ export function PlaylistNowPlaying({
       onRenamePlaylist={applyRenamePlaylist}
       onRemoveTrack={removeFromPlaylist}
       onDeleteTrack={deleteTrackEverywhere}
-      onMoreLikeThis={() => void seedMoreLikeThis()}
+      onMoreLikeThis={() => setMoreLikeThisOpen(true)}
       moreLikeThisAvailable={items.length > 0}
       onDeletePlaylist={deleteCurrentPlaylist}
       sleepTimerEndsAt={sleepTimer.endsAt}
@@ -390,6 +400,17 @@ export function PlaylistNowPlaying({
           open={trackDataSheetOpen}
           onOpenChange={setTrackDataSheetOpen}
           trackId={track?.trackId ?? null}
+        />
+
+        <MoreLikeThisSheet
+          seed={{
+            kind: 'playlist',
+            name: playlist.name,
+            trackCount: Math.min(items.length, MAX_SEED_TRACKS),
+          }}
+          open={moreLikeThisOpen}
+          onOpenChange={setMoreLikeThisOpen}
+          onStart={seedMoreLikeThis}
         />
       </div>
     </section>

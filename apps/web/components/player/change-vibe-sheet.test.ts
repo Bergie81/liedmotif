@@ -53,6 +53,7 @@ function chromeValue(
 ): AppChromeContextValue {
   return {
     ownVoiceOffered,
+    llmConfigured: false,
     listener: { name: 'Test', email: 'test@example.test', artistName: null, imageUrl: null },
     themeMode: 'night',
     onToggleThemeMode: noop,

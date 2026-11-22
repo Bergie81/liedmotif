@@ -15,6 +15,10 @@ export interface AppChromeContextValue {
    * instance's `OWN_VOICE_ENABLED` switch on) — presentation only, like
    * `viewerRole`; the session routes refuse own-voice requests on their own. */
   ownVoiceOffered: boolean;
+  /** Whether a text LLM is configured, so a screen offers only free text it can
+   *  read (the More Like This context) — presentation only; the routes refuse
+   *  such text on their own. */
+  llmConfigured: boolean;
   themeMode: 'night' | 'light';
   onToggleThemeMode: () => void;
   /** The shell-owned chrome read, shared so a route change and a page's

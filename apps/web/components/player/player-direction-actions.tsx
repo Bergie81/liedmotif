@@ -1,12 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { ThumbsDown } from 'lucide-react';
 import type { ChangeVibeIntentInput, SessionVibe } from '@liedmotif/shared';
 import { nowPlayingSpareRowClass } from '@/components/ui/design-system';
-import { primaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
 import { OnlineOnly } from '@/components/ui/online-only';
-import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTrigger } from '@/components/ui/sheet';
+import { MoreLikeThisSheet } from '@/components/sessions/more-like-this-sheet';
 import { WithTooltip } from '@/components/ui/tooltip';
 import type { ChangeVibeOptions } from '@/lib/http/api-client';
 import { cn } from '@/lib/cn';
@@ -35,6 +33,8 @@ export function PlayerDirectionActions({
   onChangeVibeOpenChange,
   onReroll,
   onChangeVibe,
+  moreLikeThisOpen,
+  onMoreLikeThisOpenChange,
   onMoreLikeThis,
 }: {
   trackTitle: string | null;
@@ -64,7 +64,11 @@ export function PlayerDirectionActions({
   onReroll: () => void;
   /** Fire-and-forget (provider-scoped) — the sheet closes on submit. */
   onChangeVibe: (input: ChangeVibeIntentInput | undefined, options: ChangeVibeOptions) => void;
-  onMoreLikeThis: () => Promise<boolean>;
+  /** The More Like This sheet's open state — parent-owned like Change Vibe's. */
+  moreLikeThisOpen: boolean;
+  onMoreLikeThisOpenChange: (open: boolean) => void;
+  /** Start the new Session; true once it started, false on a refusal. */
+  onMoreLikeThis: (context: string | undefined) => Promise<boolean>;
 }) {
   const anyBusy = busyAction != null || changeVibePending;
   return (
@@ -97,64 +101,18 @@ export function PlayerDirectionActions({
           onSubmit={onChangeVibe}
         />
         <MoreLikeThisSheet
-          trackTitle={trackTitle}
-          disabled={disabled || anyBusy}
-          busy={busyAction === 'more-like-this'}
-          onConfirm={onMoreLikeThis}
+          seed={{ kind: 'track', title: trackTitle }}
+          open={moreLikeThisOpen}
+          onOpenChange={onMoreLikeThisOpenChange}
+          onStart={onMoreLikeThis}
+          trigger={
+            <button type="button" disabled={disabled || anyBusy} className={directionButtonClass}>
+              <MoreLikeThisGlyph className="h-6 w-6 shrink-0" />
+              <span>More Like This</span>
+            </button>
+          }
         />
       </OnlineOnly>
     </div>
-  );
-}
-
-function MoreLikeThisSheet({
-  trackTitle,
-  disabled,
-  busy,
-  onConfirm,
-}: {
-  trackTitle: string | null;
-  disabled: boolean;
-  busy: boolean;
-  onConfirm: () => Promise<boolean>;
-}) {
-  const [open, setOpen] = useState(false);
-
-  async function confirm() {
-    if (await onConfirm()) setOpen(false);
-  }
-
-  return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <button type="button" disabled={disabled} className={directionButtonClass}>
-          <MoreLikeThisGlyph className="h-6 w-6 shrink-0" />
-          <span>More Like This</span>
-        </button>
-      </SheetTrigger>
-      <SheetContent side="bottom">
-        <SheetHeader
-          title="More Like This"
-          description="Start a new session seeded from the current track. The current session becomes stopped and remains resumable."
-        />
-        <div className="mt-5 rounded-card-sm border border-line bg-[var(--control-bg)] p-4">
-          <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
-            Seed Track
-          </div>
-          <div className="mt-1 truncate font-display text-[17px] font-bold">
-            {trackTitle ?? 'Current Track'}
-          </div>
-        </div>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void confirm()}
-          className={cn(primaryButtonClass, 'mt-4 w-full')}
-        >
-          {busy ? 'Starting Session…' : 'Start New Session'}
-        </button>
-        <SheetClose className={cn(secondaryButtonClass, 'mt-2 w-full')}>Cancel</SheetClose>
-      </SheetContent>
-    </Sheet>
   );
 }

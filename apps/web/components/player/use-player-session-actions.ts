@@ -41,20 +41,23 @@ export function usePlayerSessionActions({
     [sessionId],
   );
 
-  const startMoreLikeThis = useCallback(async (): Promise<boolean> => {
-    if (!trackId) return false;
-    if (!(await beginOtherMusic())) return false;
-    return runPlayerSessionAction({
-      gate: actionGate.current,
-      action: 'more-like-this',
-      failureLabel: MORE_LIKE_THIS_FAILED,
-      createsSession: true,
-      request: () => moreLikeThis([trackId], clientId),
-      onBusyChange: setBusyAction,
-      onFailure: (failure) => reportFailure(failure, 'more-like-this'),
-      onSuccess: (data) => onSessionChange(data.session),
-    });
-  }, [clientId, beginOtherMusic, onSessionChange, reportFailure, trackId]);
+  const startMoreLikeThis = useCallback(
+    async (context?: string): Promise<boolean> => {
+      if (!trackId) return false;
+      if (!(await beginOtherMusic())) return false;
+      return runPlayerSessionAction({
+        gate: actionGate.current,
+        action: 'more-like-this',
+        failureLabel: MORE_LIKE_THIS_FAILED,
+        createsSession: true,
+        request: () => moreLikeThis([trackId], clientId, undefined, context),
+        onBusyChange: setBusyAction,
+        onFailure: (failure) => reportFailure(failure, 'more-like-this'),
+        onSuccess: (data) => onSessionChange(data.session),
+      });
+    },
+    [clientId, beginOtherMusic, onSessionChange, reportFailure, trackId],
+  );
 
   const stop = useCallback(async () => {
     return runPlayerSessionAction({

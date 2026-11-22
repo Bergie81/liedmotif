@@ -106,6 +106,7 @@ const CHROME: AppChromeContextValue = {
   listener: { name: 'Thomas', email: 'thomas@example.com', artistName: null, imageUrl: null },
   viewerRole: 'admin',
   ownVoiceOffered: false,
+  llmConfigured: false,
   themeMode: 'night',
   onToggleThemeMode: () => {},
   fetchChrome: () => new Promise(() => undefined),

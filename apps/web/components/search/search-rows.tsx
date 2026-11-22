@@ -36,6 +36,7 @@ import {
   SaveToPlaylistSheet,
   type SavePickerTrack,
 } from '@/components/playlists/save-to-playlist-sheet';
+import { MoreLikeThisSheet } from '@/components/sessions/more-like-this-sheet';
 import { SessionCard } from '@/components/sessions/session-card';
 import { SessionTracksProvider } from '@/components/sessions/session-tracks-sheet';
 import { MatchContextLine } from './match-context';
@@ -57,6 +58,7 @@ export function SearchTrackResults({
 }) {
   const [selected, setSelected] = useState<SearchTrackItem | null>(null);
   const [pickerTrack, setPickerTrack] = useState<SavePickerTrack | null>(null);
+  const [seedTrack, setSeedTrack] = useState<SearchTrackItem | null>(null);
   // Saves/favorites settle after the response rendered, so flag changes live
   // in an overlay; a new result set drops it.
   const [flagOverrides, setFlagOverrides] = useState<
@@ -170,10 +172,21 @@ export function SearchTrackResults({
             })
           }
           onToggleFavorite={() => void actions.toggleFavorite(selected)}
-          onMoreLikeThis={() => void actions.seedMoreLikeThis(selected)}
+          onMoreLikeThis={() => setSeedTrack(selected)}
           onDelete={async () => {
             if (await actions.deleteTrack(selected)) closeOptions();
           }}
+        />
+      ) : null}
+
+      {seedTrack ? (
+        <MoreLikeThisSheet
+          seed={{ kind: 'track', title: seedTrack.title }}
+          open
+          onOpenChange={(open) => {
+            if (!open) setSeedTrack(null);
+          }}
+          onStart={(context) => actions.seedMoreLikeThis(seedTrack, context)}
         />
       ) : null}
 

@@ -29,14 +29,16 @@ export function useSeedMoreLikeThis(): (
   trackIds: string[],
   /** The length the user chose for the new Session; none for the app's own More Like This. */
   targetDurationMinutes?: number,
+  /** What the new Session is about or for, as typed; none keeps More Like This as it was. */
+  context?: string,
 ) => Promise<SeedRefusal | null> {
   const clientId = useClientId();
   const router = useRouter();
   const { engage, beginOtherMusic } = usePlayerActions();
 
-  return async function seedMoreLikeThis(trackIds, targetDurationMinutes) {
+  return async function seedMoreLikeThis(trackIds, targetDurationMinutes, context) {
     if (!(await beginOtherMusic())) return null;
-    const result = await moreLikeThis(trackIds, clientId, targetDurationMinutes);
+    const result = await moreLikeThis(trackIds, clientId, targetDurationMinutes, context);
     if (!result.ok) return { code: result.error.code, message: result.error.message };
     engage(result.data.session, { autoplay: false });
     router.push('/player');

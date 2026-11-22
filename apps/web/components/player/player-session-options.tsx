@@ -53,7 +53,7 @@ export function PlayerSessionOptions({
   onRenameTrack,
   onConvertToPlaylist,
   onReroll,
-  onMoreLikeThis,
+  onOpenMoreLikeThis,
   moreLikeThisAvailable,
   onOpenChangeVibe,
   changeVibeAvailable,
@@ -88,8 +88,8 @@ export function PlayerSessionOptions({
   onConvertToPlaylist: () => void;
   /** Dislike the current Track and reroll it in the same vibe. */
   onReroll: () => void;
-  /** Start a new Session seeded from the current Track (after the confirm). */
-  onMoreLikeThis: () => Promise<void>;
+  /** Opens the More Like This sheet (parent-owned, so two sheets never stack). */
+  onOpenMoreLikeThis: () => void;
   /** Whether More Like This can start now; the player's button reads the same. */
   moreLikeThisAvailable: boolean;
   /** Opens the Change Vibe sheet (parent-owned, so two sheets never stack). */
@@ -137,14 +137,7 @@ export function PlayerSessionOptions({
       : { kind: 'unavailable', testId: 'player-options-reroll' },
     'more-like-this-track':
       track && moreLikeThisAvailable
-        ? {
-            kind: 'confirm',
-            testId: 'player-options-more-like-this',
-            heading: 'More Like This',
-            body: `Start a new session seeded from “${track.title}”? This session becomes stopped and remains resumable.`,
-            confirmLabel: 'Start New Session',
-            onConfirm: onMoreLikeThis,
-          }
+        ? { kind: 'button', testId: 'player-options-more-like-this', onSelect: onOpenMoreLikeThis }
         : { kind: 'unavailable', testId: 'player-options-more-like-this' },
     'delete-track': track
       ? {

@@ -112,13 +112,15 @@ export function useLibraryActions({
     return true;
   }
 
-  async function seedMoreLikeThis(track: LibraryTrackItem) {
+  /** True once the new Session started; a refusal is shown here and keeps the sheet open. */
+  async function seedMoreLikeThis(track: LibraryTrackItem, context?: string): Promise<boolean> {
     begin(track.id, 'seed');
-    const failure = await seed([track.id]);
-    if (!mountedRef.current) return;
+    const failure = await seed([track.id], undefined, context);
+    if (!mountedRef.current) return failure === null;
     setBusyAction(null);
     const line = failure && presentCreationFailure(failure, MORE_LIKE_THIS_FAILED);
     if (line) reportFailure('seed', line);
+    return failure === null;
   }
 
   return {

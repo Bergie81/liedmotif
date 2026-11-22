@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 
-// More Like This from a Playlist creates a Session that buys its initial fill,
-// and the row closes the sheet with nothing on the page showing the request.
-// Reopening the sheet and tapping again before the first request settles must
-// not create a second paid Session; once it settles, a new tap goes through.
+// More Like This from a playing Playlist opens the More Like This sheet, and
+// its Start creates a Session that buys its initial fill. Tapping again before
+// the first request settles must not create a second paid Session; once a
+// refusal settles, the sheet is still open and a new tap goes through.
 
 import { createElement as h, type ReactNode } from 'react';
 import type { PlaylistMemberItem, PlaylistSummaryItem } from '@liedmotif/shared';
@@ -96,6 +96,7 @@ const CHROME: AppChromeContextValue = {
   listener: { name: 'Thomas', email: 'thomas@example.com', artistName: null, imageUrl: null },
   viewerRole: 'admin',
   ownVoiceOffered: false,
+  llmConfigured: false,
   themeMode: 'night',
   onToggleThemeMode: () => {},
   fetchChrome: () => new Promise(() => undefined),
@@ -134,25 +135,38 @@ function showPlaylist() {
   render(h(PlaylistNowPlaying, { playback, playlist: PLAYLIST }), { wrapper: AppShell });
 }
 
-async function tapMoreLikeThis() {
+function openMoreLikeThis() {
   fireEvent.click(screen.getAllByRole('button', { name: 'Playlist and Track Options' })[0]!);
   fireEvent.click(within(screen.getByRole('dialog')).getByTestId('playlist-more-like-this'));
+}
+
+async function tapStart() {
+  const start = screen.queryByRole('button', { name: 'Start New Session' });
+  fireEvent.click(start ?? screen.getByRole('button', { name: 'Starting Session…' }));
   await act(async () => {});
 }
+
+it('opens the More Like This sheet on the Playlist’s Tracks instead of starting', () => {
+  showPlaylist();
+  openMoreLikeThis();
+  expect(screen.getByText('2 tracks from Focus Nights')).toBeTruthy();
+  expect(api.moreLikeThis).not.toHaveBeenCalled();
+});
 
 it('sends one More Like This while the first is still in flight', async () => {
   let settle: (result: unknown) => void = () => {};
   api.moreLikeThis.mockReturnValueOnce(new Promise((resolve) => (settle = resolve)));
   api.moreLikeThis.mockResolvedValue({ ok: false, error: { message: 'Refused.' } });
   showPlaylist();
+  openMoreLikeThis();
 
-  await tapMoreLikeThis();
-  await tapMoreLikeThis();
+  await tapStart();
+  await tapStart();
 
   expect(api.moreLikeThis).toHaveBeenCalledTimes(1);
 
   await act(async () => settle({ ok: false, error: { message: 'Refused.' } }));
-  await tapMoreLikeThis();
+  await tapStart();
 
   expect(api.moreLikeThis).toHaveBeenCalledTimes(2);
 });
@@ -164,9 +178,11 @@ it('opens the blocked dialog, not an error, when the new Session has no headroom
     error: { code: 'session_headroom_blocked', message, retryable: false },
   });
   showPlaylist();
+  openMoreLikeThis();
 
-  await tapMoreLikeThis();
+  await tapStart();
 
   expect(shownCreationRefusal()).toEqual({ kind: 'headroom', message });
   expect(shownToasts()).toEqual([]);
+  expect(screen.getByRole('button', { name: 'Start New Session' })).toBeTruthy();
 });

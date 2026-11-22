@@ -6,7 +6,7 @@ import { PlayerProvider } from '@/components/player/player-provider';
 import { cachedAssistantAvailability } from '@/lib/assistant/availability';
 import { answerLinkTargets } from '@/lib/assistant/link-targets';
 import { getDb } from '@/lib/db';
-import { getTypicalTracksPerMusicRequest } from '@/lib/providers/providers';
+import { getLlmProvider, getTypicalTracksPerMusicRequest } from '@/lib/providers/providers';
 import { cachedListenerProfile } from '@/lib/request-cache';
 import { requireAppAccess } from '@/lib/auth/session';
 import { cachedOwnerUsageTracks, toSessionSummary } from '@/lib/sessions/sessions';
@@ -20,12 +20,17 @@ export const dynamic = 'force-dynamic';
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const { session, role } = await requireAppAccess();
   const db = getDb();
-  const [activeSession, profile, assistant] = await Promise.all([
+  const [activeSession, profile, assistant, llmConfigured] = await Promise.all([
     getActiveSession(db, { ownerUserId: session.user.id }),
     cachedListenerProfile(db, session.user.id),
     // Whether this viewer has the Assistant, and what is left of today's
     // allowance. A failed read hides it rather than failing the shell.
     cachedAssistantAvailability(db, session.user.id, role),
+    // Decides whether free text only a text LLM can read is offered at all. A
+    // failed read offers none, as if no text LLM were configured.
+    getLlmProvider()
+      .then((provider) => provider !== null)
+      .catch(() => false),
   ]);
   // Deliberately NOT awaited: the usage tile streams in after the shell paints,
   // so the 5–9 query budget computation never blocks first paint. Settings pages
@@ -44,6 +49,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <AppShell
         viewerRole={role}
         ownVoiceOffered={ownVoiceOfferedTo(role)}
+        llmConfigured={llmConfigured}
         listener={{
           name: session.user.name || session.user.email.split('@')[0] || 'Admin',
           email: session.user.email,

@@ -15,9 +15,14 @@ import type { SeedRefusal } from '@/components/sessions/use-seed-more-like-this'
 import { useLibraryActions } from './use-library-actions';
 
 // More Like This needs a router and the player provider; retention writes do not.
-const seed = vi.hoisted(() => ({ refusal: null as SeedRefusal | null }));
+const seed = vi.hoisted(() => ({ refusal: null as SeedRefusal | null, calls: [] as unknown[][] }));
 vi.mock('@/components/sessions/use-seed-more-like-this', () => ({
-  useSeedMoreLikeThis: () => async () => seed.refusal,
+  useSeedMoreLikeThis:
+    () =>
+    async (...args: unknown[]) => {
+      seed.calls.push(args);
+      return seed.refusal;
+    },
 }));
 
 afterEach(() => {
@@ -25,6 +30,7 @@ afterEach(() => {
   toast.dismiss();
   closeCreationRefusal();
   seed.refusal = null;
+  seed.calls = [];
   vi.unstubAllGlobals();
 });
 
@@ -166,6 +172,31 @@ describe('useLibraryActions failures', () => {
 });
 
 describe('useLibraryActions More Like This', () => {
+  it('starts from the Track with the sheet’s context and reports it started', async () => {
+    const { result } = renderActions();
+    const track = filedTrack();
+
+    let started = false;
+    await act(async () => {
+      started = await result.current.seedMoreLikeThis(track, 'for cooking');
+    });
+
+    expect(started).toBe(true);
+    expect(seed.calls).toEqual([[[track.id], undefined, 'for cooking']]);
+  });
+
+  it('reports a refusal as not started, so the sheet stays open', async () => {
+    seed.refusal = { code: 'not_found', message: 'Track not found.' };
+    const { result } = renderActions();
+
+    let started = true;
+    await act(async () => {
+      started = await result.current.seedMoreLikeThis(filedTrack());
+    });
+
+    expect(started).toBe(false);
+  });
+
   it('opens the blocked dialog, not an error, when there is no headroom', async () => {
     const message = 'A new session needs 5 tracks; you have 4 left today.';
     seed.refusal = { code: 'session_headroom_blocked', message };

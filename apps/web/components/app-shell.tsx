@@ -39,6 +39,7 @@ export function AppShell({
   listener,
   viewerRole,
   ownVoiceOffered,
+  llmConfigured,
   initialActiveSession,
   usagePromise,
   assistantAvailable,
@@ -49,6 +50,8 @@ export function AppShell({
   listener: Listener;
   viewerRole: AppChromeContextValue['viewerRole'];
   ownVoiceOffered: boolean;
+  /** Whether a text LLM is configured (see `AppChromeContext`). */
+  llmConfigured: boolean;
   initialActiveSession: ChromeData['activeSession'];
   usagePromise: Promise<ChromeData['usage'] | null>;
   /** Whether this viewer has the Assistant: decides if its launcher shows at all. */
@@ -171,11 +174,12 @@ export function AppShell({
       listener,
       viewerRole,
       ownVoiceOffered,
+      llmConfigured,
       themeMode,
       onToggleThemeMode: toggleThemeMode,
       fetchChrome,
     }),
-    [listener, viewerRole, ownVoiceOffered, themeMode, toggleThemeMode, fetchChrome],
+    [listener, viewerRole, ownVoiceOffered, llmConfigured, themeMode, toggleThemeMode, fetchChrome],
   );
 
   return (
