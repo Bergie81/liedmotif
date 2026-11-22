@@ -99,6 +99,7 @@ function MoreLikeThisForm({
       <SheetHeader
         title="More Like This"
         description="Start a new session in this style. The current session keeps playing until the new one is ready to take over."
+        closeDisabled={busy}
       />
       <SheetBody>
         <div className="mt-5 rounded-card-sm border border-line bg-[var(--control-bg)] p-4">
@@ -128,7 +129,7 @@ function MoreLikeThisForm({
               className={cn(inputClass, 'mt-2 min-h-[72px] w-full resize-y')}
             />
             <p className="mt-2 text-[12.5px] text-dim">
-              Changes the names, lyrics and cover, never the music.
+              Changes the names, lyrics and cover, never the style.
             </p>
             <div className="mt-4 text-[13px] font-semibold">Language</div>
             <SessionLanguageSelect
@@ -139,7 +140,7 @@ function MoreLikeThisForm({
               triggerClassName="mt-2 w-full"
             />
             <p className="mt-2 text-[12.5px] text-dim">
-              Auto Detect uses the language you write in.
+              Auto Detect uses the language you write in. Vocals are sung in it too.
             </p>
           </>
         ) : null}
@@ -151,7 +152,9 @@ function MoreLikeThisForm({
         >
           {busy ? 'Starting Session…' : 'Start New Session'}
         </button>
-        <SheetClose className={cn(secondaryButtonClass, 'mt-2 w-full')}>Cancel</SheetClose>
+        <SheetClose disabled={busy} className={cn(secondaryButtonClass, 'mt-2 w-full')}>
+          Cancel
+        </SheetClose>
       </SheetBody>
     </>
   );

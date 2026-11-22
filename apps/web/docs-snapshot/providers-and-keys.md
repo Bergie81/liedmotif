@@ -46,7 +46,7 @@ The text AI is a text service that works on your words. The app calls it the Tex
 | Your request | Becomes a stable, detailed musical direction | Reaches the music provider exactly as you wrote it, with your genre, energy, vocals and language picks applied |
 | Names | Creative session names and track titles, topped up before a long session runs out | A session name built from your request, and numbered track titles built from your first genre or your request's first words |
 | Lyrics | A fresh angle for each new vocal pair when the session has lyric notes, your own About text in every vocal session, and the About text of people you name | No About text and no fresh angles |
-| More Like This | Takes an optional **What is it for?**, such as "for cooking", which changes the names, cover and lyrics but never the music | No **What is it for?** field |
+| More Like This | Takes an optional **What is it for?**, such as "for cooking", which changes the names, cover and lyrics but never the style, and a **Language** for the names and vocals | No **What is it for?** field and no **Language** |
 | You in a request | Understood from what you mean, such as "With Jonas and Clara on the way back to Berlin": you're in the lyrics and on the cover with them. See [You in your own songs](/docs/features#you-in-your-own-songs) | Only saved names count |
 | Session length | Can come from your request's words, like "40 minutes" | Comes only from the slider |
 | Cost | A little text usage with your provider, or nothing with Ollama | Nothing extra |

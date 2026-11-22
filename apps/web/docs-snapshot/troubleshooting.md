@@ -284,7 +284,7 @@ The provider refused the request, often over a named artist. Nothing retries unt
 
 ### Free-Text Requests Fail, but Buttons Work
 
-A text AI is set up and it's failing. Liedmotif treats that as a retryable error and doesn't quietly go without it. Words in **What is it for?** on **More Like This** count as free text too; leave the field empty to start it without the text AI. Test it in **Settings › AI Providers**. To go without one, do both of these, because Liedmotif uses `.env` first and the saved one next: clear the `LLM_` lines in `.env` and run `docker compose up -d web worker`, then press **Disable Text AI** in **Settings › AI Providers**. If `.env` still sets one up on its own, that button says **Delete Stored Fallback**. Your words then reach the music provider as you wrote them.
+A text AI is set up and it's failing. Liedmotif treats that as a retryable error and doesn't quietly go without it. Words in **What is it for?** and a **Language** pick on **More Like This** count as free text too; leave the field empty and **Language** on **Auto Detect** to start it without the text AI. Test it in **Settings › AI Providers**. To go without one, do both of these, because Liedmotif uses `.env` first and the saved one next: clear the `LLM_` lines in `.env` and run `docker compose up -d web worker`, then press **Disable Text AI** in **Settings › AI Providers**. If `.env` still sets one up on its own, that button says **Delete Stored Fallback**. Your words then reach the music provider as you wrote them.
 
 ### Every Track Sounds Like a Test, or Nothing Comes from the Music Provider
 

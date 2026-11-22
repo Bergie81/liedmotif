@@ -83,10 +83,10 @@ it('offers no context field and no language picker without a text LLM', async ()
   expect(onStart).toHaveBeenCalledWith({});
 });
 
-it('offers a context field that says it never changes the music', () => {
+it('offers a context field that says it never changes the style', () => {
   renderSheet();
   expect(screen.getByRole('textbox')).toBeTruthy();
-  expect(screen.getByText(/never the music/)).toBeTruthy();
+  expect(screen.getByText(/never the style/)).toBeTruthy();
 });
 
 it('sends no context for a whitespace-only field', async () => {
@@ -139,10 +139,25 @@ it('ignores a repeat tap while the first start is in flight', async () => {
   expect(screen.getByRole('button', { name: 'Start New Session' })).toBeTruthy();
 });
 
-it('offers a language picker on Auto Detect that says it follows the words', () => {
+it('cannot be dismissed while a start is in flight, which no dismissal would stop', async () => {
+  let settle: (started: boolean) => void = () => {};
+  renderSheet({ onStart: () => new Promise<boolean>((resolve) => (settle = resolve)) });
+  await start();
+  expect(screen.getByRole('button', { name: 'Cancel' })).toHaveProperty('disabled', true);
+  expect(screen.getByRole('button', { name: 'Close More Like This' })).toHaveProperty(
+    'disabled',
+    true,
+  );
+  await act(async () => settle(false));
+  expect(screen.getByRole('button', { name: 'Cancel' })).toHaveProperty('disabled', false);
+});
+
+it('offers a language picker on Auto Detect that says the words and vocals follow it', () => {
   renderSheet();
   expect(languagePicker().textContent).toContain('Auto Detect');
-  expect(screen.getByText('Auto Detect uses the language you write in.')).toBeTruthy();
+  expect(
+    screen.getByText('Auto Detect uses the language you write in. Vocals are sung in it too.'),
+  ).toBeTruthy();
 });
 
 it('sends a picked language with the context', async () => {
