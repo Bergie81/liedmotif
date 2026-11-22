@@ -496,6 +496,11 @@ export async function nameSeededSnapshot(
   context?: string | null,
 ): Promise<NamedSnapshot> {
   const parsed = sessionStyleSnapshotSchema.safeParse(seed);
+  // A seed that does not parse keeps its stored naming, which would ignore a
+  // context; with one, that is a failed naming like any other.
+  if (!parsed.success && context) {
+    throw new ProviderError(CONTEXT_NAMING_FAILED, { failure: 'unreadable_seed' });
+  }
   if (!parsed.success)
     return {
       snapshot: seed,

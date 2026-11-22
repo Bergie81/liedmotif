@@ -380,6 +380,16 @@ describe.skipIf(skip)('POST /api/sessions/more-like-this — a context refused',
     },
   );
 
+  it('answers a retryable error for a seed whose style cannot be read, starting nothing', async () => {
+    const { sessionId, trackId } = await seedOwnTrack({ ...VOCAL_SEED, stylePrompt: '' });
+
+    const error = await refusal(await post({ seedTrackIds: [trackId], context: 'for cooking' }));
+
+    expect(error.code).toBe('provider_error');
+    expect(holder.namingCalls).toHaveLength(0);
+    await expectNothingStarted(sessionId);
+  });
+
   it('answers the headroom refusal before the naming call', async () => {
     const { trackId } = await seedOwnTrack();
     await updateUsageLimits(testDb.db, {
