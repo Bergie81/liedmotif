@@ -11,11 +11,14 @@ import { toast } from '@/lib/toast';
 
 const api = vi.hoisted(() => ({ updateGenerationSettings: vi.fn() }));
 vi.mock('@/lib/http/api-client', () => api);
+const router = vi.hoisted(() => ({ refresh: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => router }));
 
 const { GenerationForm } = await import('./generation-form');
 
 beforeEach(() => {
   api.updateGenerationSettings.mockReset();
+  router.refresh.mockReset();
   api.updateGenerationSettings.mockResolvedValue({ ok: true, data: DEFAULT_GENERATION_SETTINGS });
   // The Radix slider measures itself.
   vi.stubGlobal(
@@ -64,5 +67,16 @@ describe('New music per Session', () => {
         bufferAheadTracks: 3,
       }),
     );
+  });
+
+  it('refreshes the pages that show the default once it is saved', async () => {
+    render(h(GenerationForm, { initial: DEFAULT_GENERATION_SETTINGS }));
+
+    fireEvent.click(choice('No limit'));
+    fireEvent.click(screen.getByRole('button', { name: 'Save New Music' }));
+
+    // Home's Auto label is seeded from the saved default, and the router cache
+    // would replay the old one for a while.
+    await waitFor(() => expect(router.refresh).toHaveBeenCalledTimes(1));
   });
 });

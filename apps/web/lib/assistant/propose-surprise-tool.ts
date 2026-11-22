@@ -46,6 +46,9 @@ export function createProposeSurpriseTool(
         // Read before the suggestion is replaced: a card that then fails to
         // arrive would leave Home showing one the server no longer holds.
         const covers = await homeCoverChoices(asker);
+        const requested = requestedLength({ targetDurationMinutes, noLimit });
+        // The card's length when the suggestion brings none of its own.
+        const fallbackLength = await newSessionTargetMinutes(db, userId, requested);
         const pending = await loadPendingSurprise(db, userId);
         const result = await proposeSurprise(db, {
           ownerUserId: userId,
@@ -81,12 +84,8 @@ export function createProposeSurpriseTool(
             voiceGender: proposal.voiceGender,
             language: proposal.language,
           },
-          targetDurationMinutes: await newSessionTargetMinutes(
-            db,
-            userId,
-            requestedLength({ targetDurationMinutes, noLimit }),
-            proposal.edit.durationMinutes,
-          ),
+          targetDurationMinutes:
+            requested === undefined ? (proposal.edit.durationMinutes ?? fallbackLength) : requested,
           ...covers,
         };
         return proposed(card);

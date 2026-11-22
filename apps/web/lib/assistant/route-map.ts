@@ -99,7 +99,7 @@ export const APP_ROUTES: readonly AppRoute[] = [
     path: '/settings/generation',
     label: 'Settings › Generation',
     description:
-      'The language Sessions use, whether new Sessions keep generating, and how many Tracks are generated ahead.',
+      'The language Sessions use, how much new music a new Session generates (its Default Session duration), and how many Tracks are generated ahead.',
     adminOnly: false,
   },
   {

@@ -66,7 +66,7 @@ A duration caps how much new music a session buys. It counts the music made, not
 
 Every new session gets a duration. When you don't pick one, it takes your default, **New music per Session** in **Settings › Generation**: **5 min**, **15 min**, **30 min**, **1 h**, **2 h** or **No limit**. It's **30 min** until you change it, and **Save New Music** saves it. Because tracks come in pairs, **5 min** usually buys one pair, about 6 minutes, and **30 min** about five pairs. **No limit** keeps buying while you listen, until you stop or a limit is reached. Each member sets their own.
 
-- At the target, the session repeats its tracks for free, and the player's status shows "New Music Finished · 30 min", or "Done · 30 min" on a phone.
+- At the target, the session repeats its tracks for free, and the player's status shows "New Music Finished", or "Done" on a phone, with the minutes generated: "Done · 35 min" for a 30 min target, since tracks come in pairs.
 - To keep going, tap that status or **New Music** in the options menu. Choose **Up to a Duration** and move the slider higher, or choose **No Limit**, then press **Save**. That changes this session only, not your default.
 - The slider on the start card runs up to 180 minutes, in steps of 5. Its **Auto** stop names the default it stands for, such as "Auto · 30 min". Sessions accept any whole number from 1 to 600 minutes, so a text AI can pick up a longer one from your request.
 - **Auto** uses a duration from your words when a text AI is connected, otherwise your default. A length you pick on the slider wins over both. The start card has no **No limit** stop: for a session without a limit, choose **No Limit** in the player, or make it your default.

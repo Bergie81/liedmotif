@@ -174,7 +174,7 @@ Only the person who manages a Tailscale network can accept a share. If you signe
 - **A certificate warning,** such as "Your connection is not private". You opened an address like `100.x.y.z` instead of the name ending in `.ts.net`. Never continue past the warning. Open the invite link or your Liedmotif icon instead.
 - **`This account is disabled`.** Your admin turned your account off. Your music is kept, so ask them to turn it back on. Music you kept offline on this device stays and keeps playing in the Offline Library; to free that space, clear this site's data in your browser.
 - **You forgot your password.** Ask your admin: they can make you a password reset link. If **Forgot Password?** appears on the sign-in page, try that first. It mails you a link if your email is confirmed.
-- **Your music stops changing and starts to repeat.** If the player says "New Music Finished · 30 min", or "Done · 30 min" on a phone, the session reached its length: tap it to make it longer. Otherwise a budget has probably run out. See [your budget](#your-budget).
+- **Your music stops changing and starts to repeat.** If the player says "New Music Finished", or "Done" on a phone, followed by the minutes generated (such as "Done · 35 min"), the session reached its length: tap it to make it longer. Otherwise a budget has probably run out. See [your budget](#your-budget).
 
 ## Sources
 

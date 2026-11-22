@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   BUFFER_AHEAD_TRACKS_MAX,
   BUFFER_AHEAD_TRACKS_MIN,
@@ -21,6 +22,7 @@ const DURATION_DESCRIPTION_ID = 'default-session-duration-description';
 const SAVE_KEY = 'new-music-save';
 
 export function GenerationForm({ initial }: { initial: GenerationSettings }) {
+  const router = useRouter();
   const [defaultSessionDurationMinutes, setDefaultSessionDurationMinutes] = useState(
     initial.defaultSessionDurationMinutes,
   );
@@ -36,8 +38,14 @@ export function GenerationForm({ initial }: { initial: GenerationSettings }) {
       bufferAheadTracks,
     });
     setSaving(false);
-    if (result.ok) toast.success('New music settings saved.', { key: SAVE_KEY });
-    else toast.error(result.error.message, { key: SAVE_KEY });
+    if (!result.ok) {
+      toast.error(result.error.message, { key: SAVE_KEY });
+      return;
+    }
+    // Home's create card names the saved default on its Auto stop, and the
+    // router cache would replay its old props for a while.
+    router.refresh();
+    toast.success('New music settings saved.', { key: SAVE_KEY });
   }
 
   return (
