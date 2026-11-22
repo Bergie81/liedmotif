@@ -9,11 +9,21 @@
 // by Random, and the default style still seeds the create card while Tailored
 // Cover Art is off. Persists to /api/settings/cover-art.
 
+import Image from 'next/image';
 import { useId, useState } from 'react';
+import { PenLine, Shuffle, WandSparkles } from 'lucide-react';
 import type { CoverArtSettings } from '@liedmotif/db';
-import { COVER_STYLE_CHOICES, MAX_COVER_STYLE_HINT_LENGTH } from '@liedmotif/shared';
+import {
+  COVER_STYLE_CHOICES,
+  COVER_STYLE_PRESETS,
+  MAX_COVER_STYLE_HINT_LENGTH,
+} from '@liedmotif/shared';
 import type { CoverStyleChoice } from '@liedmotif/shared';
-import { COVER_STYLE_EXPLANATIONS, COVER_STYLE_LABELS } from '@/lib/covers/cover-styles';
+import {
+  COVER_STYLE_EXPLANATIONS,
+  COVER_STYLE_LABELS,
+  coverStyleExampleSrc,
+} from '@/lib/covers/cover-styles';
 import { Switch } from '@/components/ui/controls';
 import { inputClass, labelClass, primaryButtonClass } from '@/components/ui/form-styles';
 import { toast } from '@/lib/toast';
@@ -27,6 +37,52 @@ const PLACEHOLDER =
 // technique-only wording lets each Session's theme pick color and subject.
 const CUSTOM_STYLE_TIP =
   'Describe medium, line, texture and contrast, not fixed colors or objects. Phrases like "colors that fit the mood" keep each cover different.';
+
+const TILE_CLASS = 'relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-[10px]';
+
+/**
+ * A choice's example tile, pure decoration (empty alt) so a screen reader hears
+ * only the style's name and explanation. Auto and Random can land on any
+ * preset, so both show all six examples, told apart by the glyph on top;
+ * Custom has no example because its look is whatever the user writes.
+ */
+function CoverStyleTile({ choice }: { choice: CoverStyleChoice }) {
+  if (choice === 'custom') {
+    return (
+      <span className={`${TILE_CLASS} grid place-items-center border border-line-2 bg-panel`}>
+        <PenLine className="h-6 w-6 text-muted" aria-hidden />
+      </span>
+    );
+  }
+  if (choice === 'auto' || choice === 'random') {
+    const Glyph = choice === 'auto' ? WandSparkles : Shuffle;
+    return (
+      <span className={`${TILE_CLASS} bg-panel-2`}>
+        <span className="grid h-full w-full grid-cols-3 grid-rows-2">
+          {COVER_STYLE_PRESETS.map((preset) => (
+            <span key={preset} className="relative">
+              <Image
+                src={coverStyleExampleSrc(preset)}
+                alt=""
+                fill
+                sizes="24px"
+                className="object-cover"
+              />
+            </span>
+          ))}
+        </span>
+        <span className="absolute left-1/2 top-1/2 grid h-[30px] w-[30px] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-ink/70 text-paper backdrop-blur-[4px]">
+          <Glyph className="h-4 w-4" aria-hidden />
+        </span>
+      </span>
+    );
+  }
+  return (
+    <span className={`${TILE_CLASS} bg-panel-2`}>
+      <Image src={coverStyleExampleSrc(choice)} alt="" fill sizes="72px" className="object-cover" />
+    </span>
+  );
+}
 
 export function CoverArtForm({
   initial,
@@ -109,7 +165,7 @@ export function CoverArtForm({
             key={value}
             className="rounded-[13px] border border-line-2 bg-[var(--control-bg)] has-[input[type=radio]:checked]:border-lamp/55 has-[input[type=radio]:checked]:bg-lamp/[0.08] light:has-[input[type=radio]:checked]:border-lamp-fill/55 light:has-[input[type=radio]:checked]:bg-lamp-fill/[0.13]"
           >
-            <label className="group flex min-h-[56px] cursor-pointer items-center gap-3 rounded-[12px] px-4 py-2 [-webkit-tap-highlight-color:transparent] has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-lamp">
+            <label className="group flex cursor-pointer items-center gap-3 rounded-[12px] px-3 py-3 [-webkit-tap-highlight-color:transparent] has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-lamp">
               <input
                 type="radio"
                 name={`${idPrefix}-default-cover-style`}
@@ -120,6 +176,7 @@ export function CoverArtForm({
                 aria-describedby={`${idPrefix}-${value}-explanation`}
                 className="sr-only"
               />
+              <CoverStyleTile choice={value} />
               <span className="min-w-0">
                 <span
                   id={`${idPrefix}-${value}-name`}

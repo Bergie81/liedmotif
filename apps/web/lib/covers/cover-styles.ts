@@ -3,7 +3,7 @@
 // contract pins (e.g. `COVER_STYLE_CHOICES`, `Auto` first and `Custom` last) through
 // these labels, so the surfaces can never disagree on an option's wording.
 
-import type { CoverStyleChoice } from '@liedmotif/shared';
+import type { CoverStyleChoice, CoverStylePreset } from '@liedmotif/shared';
 
 export const COVER_STYLE_LABELS: Record<CoverStyleChoice, string> = {
   auto: 'Auto',
@@ -29,3 +29,13 @@ export const COVER_STYLE_EXPLANATIONS: Record<CoverStyleChoice, string> = {
   minimal: 'One motif, lots of empty space, two or three flat colors.',
   custom: 'Your own style, written below.',
 };
+
+/**
+ * The shipped example cover of a preset style, served as a static file from
+ * `apps/web/public`. Shipped rather than generated so viewing the picker never
+ * spends cover budget; the picker and the test that checks each file exists on
+ * disk both resolve paths here.
+ */
+export function coverStyleExampleSrc(preset: CoverStylePreset): string {
+  return `/cover-styles/${preset}.webp`;
+}

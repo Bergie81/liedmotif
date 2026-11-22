@@ -5,10 +5,14 @@
 // under the Custom row is always editable, because Custom is also picked per
 // Session, on cover regeneration and by Random, not only as the default.
 
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { createElement as h } from 'react';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { CoverArtSettings } from '@liedmotif/db';
+import { COVER_STYLE_PRESETS } from '@liedmotif/shared';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { coverStyleExampleSrc } from '@/lib/covers/cover-styles';
 import { shownToasts, toast } from '@/lib/toast';
 import { CoverArtForm } from './cover-art-form';
 
@@ -49,6 +53,25 @@ function renderForm(initial: Partial<CoverArtSettings> = {}, llmConfigured = tru
 const styleGroup = () => screen.getByRole('group', { name: 'Default cover style' });
 const styleRadio = (name: string) => within(styleGroup()).getByRole('radio', { name });
 const definitionField = () => screen.getByTestId('cover-style-definition') as HTMLTextAreaElement;
+
+/** The file each image in a style's row requests, unwrapped from the Next image URL. */
+function rowImageSources(name: string): string[] {
+  const row = styleRadio(name).closest('label')!;
+  return [...row.querySelectorAll('img')].map((img) => {
+    const src = img.getAttribute('src') ?? '';
+    if (!src.startsWith('/_next/image')) return src;
+    return new URLSearchParams(src.slice(src.indexOf('?') + 1)).get('url') ?? '';
+  });
+}
+
+const PRESET_EXAMPLES = [
+  '/cover-styles/record_sleeve.webp',
+  '/cover-styles/poster_art.webp',
+  '/cover-styles/photographic.webp',
+  '/cover-styles/manga.webp',
+  '/cover-styles/drawing.webp',
+  '/cover-styles/minimal.webp',
+];
 
 async function saveAndReadBody(bodies: Array<Record<string, unknown>>) {
   fireEvent.click(screen.getByRole('button', { name: 'Save Cover Art' }));
@@ -97,6 +120,42 @@ describe('Default cover style picker', () => {
 
     fireEvent.click(within(styleGroup()).getByText(explanation));
     expect(radio.checked).toBe(true);
+  });
+});
+
+describe('Example tiles', () => {
+  it.each([
+    ['Record Sleeve', '/cover-styles/record_sleeve.webp'],
+    ['Artistic', '/cover-styles/poster_art.webp'],
+    ['Photographic', '/cover-styles/photographic.webp'],
+    ['Manga', '/cover-styles/manga.webp'],
+    ['Drawing', '/cover-styles/drawing.webp'],
+    ['Minimal', '/cover-styles/minimal.webp'],
+  ])('shows the %s example cover as decoration', (name, src) => {
+    renderForm();
+
+    expect(rowImageSources(name)).toEqual([src]);
+    const image = styleRadio(name).closest('label')!.querySelector('img')!;
+    expect(image.getAttribute('alt')).toBe('');
+  });
+
+  it('shows all six examples for Auto and Random, and no image for Custom', () => {
+    renderForm();
+
+    expect(rowImageSources('Auto')).toEqual(PRESET_EXAMPLES);
+    expect(rowImageSources('Random')).toEqual(PRESET_EXAMPLES);
+    expect(rowImageSources('Custom')).toEqual([]);
+    for (const img of styleGroup().querySelectorAll('img')) {
+      expect(img.getAttribute('alt')).toBe('');
+    }
+  });
+
+  it('ships an example image file for every preset style', () => {
+    const publicDir = join(import.meta.dirname, '..', '..', 'public');
+    const missing = COVER_STYLE_PRESETS.filter(
+      (preset) => !existsSync(join(publicDir, coverStyleExampleSrc(preset))),
+    );
+    expect(missing).toEqual([]);
   });
 });
 
