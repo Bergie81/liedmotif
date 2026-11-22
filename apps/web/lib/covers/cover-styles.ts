@@ -16,3 +16,16 @@ export const COVER_STYLE_LABELS: Record<CoverStyleChoice, string> = {
   minimal: 'Minimal',
   custom: 'Custom',
 };
+
+/** One line per choice saying what the style does, shown under its label in the picker. */
+export const COVER_STYLE_EXPLANATIONS: Record<CoverStyleChoice, string> = {
+  auto: 'Picks the style that fits each session.',
+  random: 'A different style for every session.',
+  record_sleeve: 'An album cover from one decade, 1960s to 2000s.',
+  poster_art: 'Bold graphic artwork around one strong visual idea.',
+  photographic: 'A believable photo of one real moment.',
+  manga: 'Black-and-white manga ink with expressive characters.',
+  drawing: 'A hand-made pencil or ink drawing on paper.',
+  minimal: 'One motif, lots of empty space, two or three flat colors.',
+  custom: 'Your own style, written below.',
+};

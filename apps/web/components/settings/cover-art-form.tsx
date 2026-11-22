@@ -3,24 +3,19 @@
 // Edit the viewer's own cover-art preferences (Settings → Cover art): the default cover
 // style the create card preselects (each session can still override it), and
 // the Custom cover style definition. The definition is a bounded style HINT for
-// the cover pipeline, never the final image prompt, and is editable only while
-// `Custom` is the selected default; an empty definition makes `Custom` fall
-// back to Auto. Persists to /api/settings/cover-art.
+// the cover pipeline, never the final image prompt; an empty definition makes
+// `Custom` fall back to Auto. Nothing here locks another control: the
+// definition also serves Custom picked per Session, on cover regeneration and
+// by Random, and the default style still seeds the create card while Tailored
+// Cover Art is off. Persists to /api/settings/cover-art.
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { CoverArtSettings } from '@liedmotif/db';
 import { COVER_STYLE_CHOICES, MAX_COVER_STYLE_HINT_LENGTH } from '@liedmotif/shared';
 import type { CoverStyleChoice } from '@liedmotif/shared';
-import { COVER_STYLE_LABELS } from '@/lib/covers/cover-styles';
+import { COVER_STYLE_EXPLANATIONS, COVER_STYLE_LABELS } from '@/lib/covers/cover-styles';
 import { Switch } from '@/components/ui/controls';
 import { inputClass, labelClass, primaryButtonClass } from '@/components/ui/form-styles';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { toast } from '@/lib/toast';
 
 const SAVE_KEY = 'cover-art-save';
@@ -45,6 +40,7 @@ export function CoverArtForm({
   const [enhancementEnabled, setEnhancementEnabled] = useState(initial.promptEnhancementEnabled);
   const [useStandardCoverArt, setUseStandardCoverArt] = useState(initial.useStandardCoverArt);
   const [saving, setSaving] = useState(false);
+  const rowId = useId();
 
   async function save() {
     setSaving(true);
@@ -105,48 +101,69 @@ export function CoverArtForm({
           data-testid="use-tailored-cover-art"
         />
       </div>
-      <label className={`${labelClass} ${useStandardCoverArt ? 'opacity-40' : ''}`}>
-        Default cover style
-        <Select
-          value={defaultStyle}
-          onValueChange={(v) => setDefaultStyle(v as CoverStyleChoice)}
-          disabled={useStandardCoverArt}
-        >
-          <SelectTrigger aria-label="Default cover style" data-testid="default-cover-style">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {COVER_STYLE_CHOICES.map((value) => (
-              <SelectItem key={value} value={value}>
-                {COVER_STYLE_LABELS[value]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </label>
-      <label
-        className={`${labelClass} ${defaultStyle !== 'custom' || useStandardCoverArt ? 'opacity-40' : ''}`}
-      >
-        <span className="flex items-baseline justify-between gap-2">
-          Custom style definition
-          <span className="font-mono text-[11px] font-normal tracking-[0.04em] text-dim">
-            {definition.length}/{MAX_COVER_STYLE_HINT_LENGTH}
-          </span>
-        </span>
-        <textarea
-          data-testid="cover-style-definition"
-          rows={3}
-          maxLength={MAX_COVER_STYLE_HINT_LENGTH}
-          value={definition}
-          onChange={(e) => setDefinition(e.target.value)}
-          placeholder={PLACEHOLDER}
-          disabled={defaultStyle !== 'custom' || useStandardCoverArt}
-          className={`${inputClass} resize-none disabled:cursor-not-allowed`}
-        />
-        <span className="text-[11.5px] font-normal leading-[1.5] text-dim">
-          {defaultStyle === 'custom' ? CUSTOM_STYLE_TIP : 'Select Custom to edit your definition.'}
-        </span>
-      </label>
+      <fieldset data-testid="default-cover-style" className="space-y-2">
+        <legend className="mb-2 text-[13px] font-semibold text-paper">Default cover style</legend>
+        {COVER_STYLE_CHOICES.map((value) => (
+          <div
+            key={value}
+            className="rounded-[13px] border border-line-2 bg-[var(--control-bg)] has-[input[type=radio]:checked]:border-lamp/55 has-[input[type=radio]:checked]:bg-lamp/[0.08] light:has-[input[type=radio]:checked]:border-lamp-fill/55 light:has-[input[type=radio]:checked]:bg-lamp-fill/[0.13]"
+          >
+            <label className="group flex min-h-[56px] cursor-pointer items-center gap-3 rounded-[12px] px-4 py-2 [-webkit-tap-highlight-color:transparent] has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-lamp">
+              <input
+                type="radio"
+                name="default-cover-style"
+                value={value}
+                checked={defaultStyle === value}
+                onChange={() => setDefaultStyle(value)}
+                aria-labelledby={`${rowId}-${value}-name`}
+                aria-describedby={`${rowId}-${value}-explanation`}
+                className="sr-only"
+              />
+              <span className="min-w-0">
+                <span
+                  id={`${rowId}-${value}-name`}
+                  className="block text-[14px] font-semibold text-paper group-has-[:checked]:text-lamp light:group-has-[:checked]:text-lamp-fill"
+                >
+                  {COVER_STYLE_LABELS[value]}
+                </span>
+                <span
+                  id={`${rowId}-${value}-explanation`}
+                  className="block text-[12px] leading-[1.45] text-muted"
+                >
+                  {COVER_STYLE_EXPLANATIONS[value]}
+                </span>
+              </span>
+            </label>
+            {value === 'custom' ? (
+              <label className={`${labelClass} px-4 pb-4 pt-1`}>
+                <span className="flex items-baseline justify-between gap-2">
+                  Custom style definition
+                  <span className="font-mono text-[11px] font-normal tracking-[0.04em] text-dim">
+                    {definition.length}/{MAX_COVER_STYLE_HINT_LENGTH}
+                  </span>
+                </span>
+                <textarea
+                  data-testid="cover-style-definition"
+                  rows={3}
+                  maxLength={MAX_COVER_STYLE_HINT_LENGTH}
+                  value={definition}
+                  onChange={(e) => setDefinition(e.target.value)}
+                  placeholder={PLACEHOLDER}
+                  className={`${inputClass} resize-none`}
+                />
+                <span className="text-[11.5px] font-normal leading-[1.5] text-dim">
+                  {CUSTOM_STYLE_TIP}
+                </span>
+                {defaultStyle === 'custom' && definition.trim() === '' ? (
+                  <span className="text-[11.5px] font-normal leading-[1.5] text-muted">
+                    Without a definition, Custom works like Auto.
+                  </span>
+                ) : null}
+              </label>
+            ) : null}
+          </div>
+        ))}
+      </fieldset>
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="text-[13px] font-semibold text-paper">Enhance prompts</div>
