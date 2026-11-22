@@ -257,12 +257,6 @@ export interface CreateSessionInput {
   ownerUserId: string;
   /** The single frozen Style Snapshot (template or text-LLM derived) to persist. */
   snapshot: StyleSnapshot;
-  /**
-   * The mode the session starts in, named by every creation path: the start
-   * routes always start `keep_going`. A `targetDurationMinutes` selects Keep
-   * Going whatever this says.
-   */
-  sessionMode: 'keep_going' | 'repeat';
   title?: string | null;
   coverConcept?: string | null;
   /** The text LLM's Auto cover preset, written with `coverConcept`. */
@@ -331,8 +325,8 @@ export async function createSessionInTx(
     .values({
       ownerUserId: input.ownerUserId,
       sessionStyleSnapshot: input.snapshot,
-      sessionMode: input.sessionMode,
-      ...durationTargetMode(input.targetDurationMinutes),
+      // Every new Session starts on Keep Going; its duration target bounds what it buys.
+      sessionMode: 'keep_going',
       status: 'active',
       ...(input.title !== undefined ? { title: input.title } : {}),
       ...(input.coverConcept !== undefined

@@ -162,7 +162,7 @@ describeIfDb('pending Surprise Me proposal', () => {
       startProposalSession(ctx.db, {
         ownerUserId,
         proposalId,
-        session: { sessionMode: 'keep_going' },
+        session: {},
       });
     const sessionCount = async () =>
       Number((await ctx.pool.query('select count(*) from activity_sessions')).rows[0].count);

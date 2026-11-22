@@ -317,7 +317,6 @@ export async function startSurprise(
     ownerUserId,
     proposalId,
     session: {
-      sessionMode: 'keep_going',
       coverImageId,
       // Start Session's rule: the no-LLM path keeps the image model out too.
       useStandardCover:

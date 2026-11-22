@@ -158,7 +158,6 @@ export async function getProposalById(
 /** What the caller decides for a started proposal; the musical identity is the row's. */
 export type ProposalSessionOptions = Pick<
   CreateSessionInput,
-  | 'sessionMode'
   | 'targetDurationMinutes'
   | 'coverImageId'
   | 'coverStyle'

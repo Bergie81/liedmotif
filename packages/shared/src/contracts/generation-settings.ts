@@ -17,7 +17,6 @@ export const BUFFER_AHEAD_TRACKS_MAX = 10;
  * sixth choice, and only ever one the user picked.
  */
 export const DEFAULT_SESSION_DURATION_CHOICES = [5, 15, 30, 60, 120] as const;
-export type DefaultSessionDurationMinutes = (typeof DEFAULT_SESSION_DURATION_CHOICES)[number];
 
 /**
  * The `generation` settings object.

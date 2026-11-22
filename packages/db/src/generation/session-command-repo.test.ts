@@ -131,7 +131,6 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
       const ownerUserId = await createUser(ctx.db);
       const result = await createSessionCmd(ctx.db, {
         ownerUserId,
-        sessionMode: 'keep_going',
         snapshot: snapshot(),
         title: 'Focus lofi',
       });
@@ -152,7 +151,6 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
       const ownerUserId = await createUser(ctx.db);
       const result = await createSessionCmd(ctx.db, {
         ownerUserId,
-        sessionMode: 'keep_going',
         snapshot: snapshot(),
         coverStyle: 'poster_art',
         coverStyleHint: '  bold ink lines  ',
@@ -162,7 +160,6 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
 
       const custom = await createSessionCmd(ctx.db, {
         ownerUserId,
-        sessionMode: 'keep_going',
         snapshot: snapshot(),
         coverStyle: 'custom',
         coverStyleHint: '  bold ink lines  ',
@@ -174,7 +171,6 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
       // A blank hint stores null, not an empty string.
       const blank = await createSessionCmd(ctx.db, {
         ownerUserId,
-        sessionMode: 'keep_going',
         snapshot: snapshot(),
         coverStyle: 'custom',
         coverStyleHint: '   ',
@@ -184,28 +180,22 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
       expect(blank.session.coverStyleFallbackReason).toBe('invalid_custom_fell_back_to_auto');
     });
 
-    it('persists the caller-decided starting mode (the owner Buffer default)', async () => {
+    it('starts every new session on Keep Going', async () => {
       const ownerUserId = await createUser(ctx.db);
-      const result = await createSessionCmd(ctx.db, {
-        ownerUserId,
-        sessionMode: 'repeat',
-        snapshot: snapshot(),
-      });
-      expect(result.session.sessionMode).toBe('repeat');
+      const result = await createSessionCmd(ctx.db, { ownerUserId, snapshot: snapshot() });
+      expect(result.session.sessionMode).toBe('keep_going');
     });
 
     it('persists the skip-profile flag, defaulting to off', async () => {
       const ownerUserId = await createUser(ctx.db);
       const defaulted = await createSessionCmd(ctx.db, {
         ownerUserId,
-        sessionMode: 'keep_going',
         snapshot: snapshot(),
       });
       expect(defaulted.session.skipProfile).toBe(false);
 
       const skipped = await createSessionCmd(ctx.db, {
         ownerUserId,
-        sessionMode: 'keep_going',
         snapshot: snapshot(),
         skipProfile: true,
       });
@@ -216,14 +206,12 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
       const ownerUserId = await createUser(ctx.db);
       const defaulted = await createSessionCmd(ctx.db, {
         ownerUserId,
-        sessionMode: 'keep_going',
         snapshot: snapshot(),
       });
       expect(defaulted.session.includesListener).toBe(false);
 
       const included = await createSessionCmd(ctx.db, {
         ownerUserId,
-        sessionMode: 'keep_going',
         snapshot: snapshot(),
         includesListener: true,
       });
@@ -240,7 +228,6 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
 
       const result = await createSessionCmd(ctx.db, {
         ownerUserId,
-        sessionMode: 'keep_going',
         snapshot: snapshot(),
       });
 
@@ -269,8 +256,8 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
       // insert one — the partial unique index rejects the loser with a 23505 the
       // route has no handler for.
       const results = await Promise.all([
-        createSessionCmd(ctx.db, { ownerUserId, sessionMode: 'keep_going', snapshot: snapshot() }),
-        createSessionCmd(ctx.db, { ownerUserId, sessionMode: 'keep_going', snapshot: snapshot() }),
+        createSessionCmd(ctx.db, { ownerUserId, snapshot: snapshot() }),
+        createSessionCmd(ctx.db, { ownerUserId, snapshot: snapshot() }),
       ]);
 
       const rows = await ctx.db
@@ -1140,7 +1127,6 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
       const ownerUserId = await createUser(ctx.db);
       const { session } = await createSessionCmd(ctx.db, {
         ownerUserId,
-        sessionMode: 'keep_going',
         snapshot: snapshot('old vibe'),
       });
 
@@ -1697,7 +1683,6 @@ describeIfDb('session-command-repo — lifecycle writers', () => {
       const snap = seed.kind === 'snapshot' ? seed.snapshot : snapshot('default fallback');
       const created = await createSessionCmd(ctx.db, {
         ownerUserId,
-        sessionMode: 'keep_going',
         snapshot: snap,
       });
       return { ok: true as const, sessionId: created.session.id };

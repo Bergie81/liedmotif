@@ -125,7 +125,6 @@ export async function POST(request: Request) {
   const { session: created, supersededSessionId } = await createSession(db, {
     ownerUserId,
     snapshot,
-    sessionMode: 'keep_going',
     title,
     coverConcept,
     autoCoverStyle,
