@@ -525,12 +525,10 @@ export async function nameSeededSnapshot(
   context?: string | null,
 ): Promise<NamedSnapshot & { includesListener: boolean }> {
   const parsed = sessionStyleSnapshotSchema.safeParse(seed);
-  // A seed that does not parse keeps its stored naming, which would ignore a
-  // context; with one, that is a failed naming like any other.
-  if (!parsed.success && context) {
-    throw new ProviderError(CONTEXT_NAMING_FAILED, { failure: 'unreadable_seed' });
-  }
-  if (!parsed.success)
+  if (!parsed.success) {
+    // A seed that does not parse keeps its stored naming, which would ignore a
+    // context; with one, that is a failed naming like any other.
+    if (context) throw new ProviderError(CONTEXT_NAMING_FAILED, { failure: 'unreadable_seed' });
     return {
       snapshot: seed,
       title: deriveSessionTitle({ snapshot: seed }),
@@ -538,6 +536,7 @@ export async function nameSeededSnapshot(
       autoCoverStyle: null,
       includesListener: false,
     };
+  }
   const inherited = inheritedGuardrails(parsed.data);
   const unnamed = { ...parsed.data, ...inherited, title: '', trackTitles: [] };
   const avoidTitles = [parsed.data.title, ...parsed.data.trackTitles].filter(

@@ -14,7 +14,6 @@ import {
   assistantCardSchema,
   isSungTheme,
   MAX_COVER_GUIDANCE_LENGTH,
-  MAX_USER_PROMPT_LENGTH,
   renameSessionRequestSchema,
   renameTrackRequestSchema,
   targetDurationMinutesSchema,
@@ -60,6 +59,7 @@ import { named, quoted, trackCount } from '../music-names';
 import { handedOver, refused as leftAsItIs } from '../player-tools';
 import { BAD_DURATION, notOffered, proposed } from '../proposal';
 import { GUIDANCE_TOO_LONG } from '../propose-cover-tool';
+import { CONTEXT_TOO_LONG } from '../propose-more-like-this-tool';
 import { BAD_TRACK_NAME } from '../rename-track-tool';
 import {
   ADD_TO_PLAYLIST_TOOL_NAME,
@@ -636,11 +636,7 @@ function fixtureAnswers(
           targetDurationMinutes: minutes ?? null,
           ...(context?.trim() && { context: context.trim() }),
         });
-        return card.success
-          ? proposed(card.data)
-          : notOffered(
-              `A context is at most ${MAX_USER_PROMPT_LENGTH} characters. Ask the user to say it shorter.`,
-            );
+        return card.success ? proposed(card.data) : notOffered(CONTEXT_TOO_LONG);
       }),
     [PROPOSE_NEW_MUSIC_ON_TOOL_NAME]: ({
       targetDurationMinutes: minutes,

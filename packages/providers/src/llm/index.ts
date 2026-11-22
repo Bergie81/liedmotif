@@ -157,8 +157,9 @@ export interface LlmProvider extends BaseProvider {
   /**
    * Creative session naming (Name proposal + track-title pool) for a snapshot that
    * lacks them — the structured-controls / More Like This paths, where no expansion
-   * call runs. Without a context it never throws, and is bounded by a short timeout (it is awaited in the
-   * create path, so a slow model may only briefly delay — never fail — creation).
+   * call runs. Without a context it never throws, and is bounded by a short
+   * timeout (it is awaited in the create path, so a slow model may only briefly
+   * delay — never fail — creation).
    * Any failure returns EMPTY metadata; the consumer then composes the
    * deterministic Name (`deriveSessionTitle`), which has that job to itself. At
    * most one call per session creation, so the "text LLM runs ~once per session"

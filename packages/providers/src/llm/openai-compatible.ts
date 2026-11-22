@@ -659,13 +659,12 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
       const keepLyricContext = allowsNamingLyricContext(input.snapshot, input.listener);
       try {
         assertAllowedBaseUrl(config.providerKey, config.baseUrl);
-        const naming = normalizeSessionNaming(
-          await requestNaming(
-            namingPrompt(input),
-            sessionNamingSchema,
-            callSettings(NAMING_TIMEOUT_MS),
-          ),
+        const value = await requestNaming(
+          namingPrompt(input),
+          sessionNamingSchema,
+          callSettings(NAMING_TIMEOUT_MS),
         );
+        const naming = normalizeSessionNaming(value);
         if (naming) return keepLyricContext ? naming : { ...naming, lyricContext: '' };
       } catch {
         // Naming is cosmetic and must never fail a session creation.

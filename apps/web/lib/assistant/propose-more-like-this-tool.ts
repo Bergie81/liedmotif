@@ -17,7 +17,7 @@ import { PROPOSE_MORE_LIKE_THIS_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 import type { TurnActions } from './turn-actions';
 
-const CONTEXT_TOO_LONG = `A context is at most ${MAX_USER_PROMPT_LENGTH} characters. Ask the user to say it shorter.`;
+export const CONTEXT_TOO_LONG = `A context is at most ${MAX_USER_PROMPT_LENGTH} characters. Ask the user to say it shorter.`;
 
 export function createProposeMoreLikeThisTool(
   asker: AssistantAsker,

@@ -642,9 +642,9 @@ const CONTEXT_LYRIC_EDIT_RULE =
 export function namingPrompt(input: SessionNamingInput): string {
   const context = input.context?.trim();
   const wantsLyricContext = allowsNamingLyricContext(input.snapshot, input.listener, context);
-  // A context is the request the lyric notes are written for, so it sees About
-  // text the way the expansion does; nothing is sung on an instrumental seed.
-  const withAbout = Boolean(context) && input.snapshot.vocalMode === 'vocal';
+  // A context on a vocal seed is the request the lyric notes are edited for, so
+  // the call sees About text the way the expansion does.
+  const editsLyricsForContext = Boolean(context) && wantsLyricContext;
   const request = context || input.userPrompt?.trim();
   const avoid = takenTitles(input.avoidTitles);
   return (
@@ -663,16 +663,16 @@ export function namingPrompt(input: SessionNamingInput): string {
       : '') +
     `}. No prose, no markdown. ${NAMED_REFERENCE_NAME_RULE}` +
     (context ? ` ${CONTEXT_TASK}` : '') +
-    (context && wantsLyricContext ? ` ${CONTEXT_LYRIC_EDIT_RULE} ${THEME_FIDELITY_RULE}` : '') +
+    (editsLyricsForContext ? ` ${CONTEXT_LYRIC_EDIT_RULE} ${THEME_FIDELITY_RULE}` : '') +
     namingLanguageRule(input.snapshot.language, request) +
     (avoid.length
       ? ` These names are TAKEN by the session this one is seeded from — stay in the same ` +
         `spirit but make title and every track title clearly different from all of them: ` +
         `${avoid.join('; ')}.`
       : '') +
-    `${listenerBlock(input.listener, withAbout)}\n\n` +
+    `${listenerBlock(input.listener, editsLyricsForContext)}\n\n` +
     (request ? `Listening request: ${request}\n` : '') +
-    (context && wantsLyricContext
+    (editsLyricsForContext
       ? `Current lyricContext: ${input.snapshot.lyricContext.trim() || '(empty)'}\n`
       : '') +
     `Style: ${input.snapshot.stylePrompt}`
