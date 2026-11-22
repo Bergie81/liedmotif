@@ -1,7 +1,7 @@
 ---
 title: FAQ and License
 description: Straight answers on costs, providers, rights, downloads, offline use, moving your install and the license.
-checkedOn: 2026-11-20
+checkedOn: 2026-11-22
 faq: true
 ---
 
@@ -41,7 +41,7 @@ It stays, and it keeps playing. Liedmotif fetches every finished track to your o
 
 What stops is new music. A running session shows **Generation paused** and plays its ready tracks until the provider has credits again, and a new session has nothing to play until then. This hits everyone on your instance, because members use your keys.
 
-The optional services fail gently or clearly. A cover that can't be made leaves the session with the cover it has. A text AI that stops answering gives you an error you can retry when you start a session or use **Change Vibe**, until you top it up or press **Disable Text AI** in **Settings › AI Providers**. If `.env` configures it, remove those lines too. Lyrics timing is fetched from your music provider the first time someone opens a vocal track's lyrics, so a track nobody opened yet shows plain lyrics instead of synced ones.
+The optional services fail gently or clearly. A cover that can't be made leaves the session with the cover it has. A text AI that stops answering gives you an error you can retry when you start a session, use **Change Vibe** or fill in **What is it for?** on **More Like This**, until you top it up or press **Disable Text AI** in **Settings › AI Providers**. If `.env` configures it, remove those lines too. Lyrics timing is fetched from your music provider the first time someone opens a vocal track's lyrics, so a track nobody opened yet shows plain lyrics instead of synced ones.
 
 ### Can I Download My Music?
 

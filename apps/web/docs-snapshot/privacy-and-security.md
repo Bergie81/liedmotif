@@ -1,7 +1,7 @@
 ---
 title: Privacy and Security
 description: What stays on your own Liedmotif instance, what each provider sees, what an admin can see, and how the instance protects itself.
-checkedOn: 2026-11-20
+checkedOn: 2026-11-22
 ---
 
 Everything on this page is about your own instance: the copy of Liedmotif you run on your laptop, your server or your cloud provider. There's no Liedmotif-run service behind it. This website, liedmotif.com, has no accounts and no connection to your instance, so we can't see your music, your prompts or even that you exist.
@@ -47,11 +47,12 @@ This is optional, and it's the service `.env` calls the text LLM: OpenAI, Gemini
 - Your profile's name, city and country, if you filled them in
 - For a person you name exactly in your request, their name and About text, unless you picked **Instrumental**
 - Your own About text with every request, unless you picked **Instrumental**, since every session is about your life. The text AI decides from your words whether the session is sung, and uses About text only in the lyrics of a sung one
+- For **More Like This** with words in **What is it for?**, those words count as a request, so the points above apply to them. The text AI also gets the seed's style and its lyric notes, but never the lyric notes of a track someone shared with you.
 - For **Surprise Me**, your chosen theme, the music your learned taste picked, and your city and country. Vocal proposals may also use your own About text.
 
 About text is only for lyrics. It's never used for style, titles or covers.
 
-**When you ask Roadie,** the AI assistant inside the app, the text AI receives your question and the last few messages of that conversation. What Roadie looks up for you to answer, such as the names of your sessions, playlists and tracks, a matching line of lyrics, what is playing or how many tracks and covers you have left, goes to the text AI provider with the conversation. So does the tone you gave Roadie under **Settings › Roadie**, which your instance stores. Nothing from your profile or your people is sent, except that a Surprise Me you ask Roadie for sends what **Surprise Me** sends, listed above. The conversation lives in your browser tab only: your instance doesn't store it or write it to its logs, and it's gone when you reload the page.
+**When you ask Roadie,** the AI assistant inside the app, the text AI receives your question and the last few messages of that conversation. What Roadie looks up for you to answer, such as the names of your sessions, playlists and tracks, a matching line of lyrics, a track's **Track Data** and lyrics, what is playing or how many tracks and covers you have left, goes to the text AI provider with the conversation. So does the tone you gave Roadie under **Settings › Roadie**, which your instance stores. Nothing from your profile or your people is sent, except that a Surprise Me you ask Roadie for sends what **Surprise Me** sends, listed above. The conversation lives in your browser tab only: your instance doesn't store it or write it to its logs, and it's gone when you reload the page.
 
 With no text AI, none of this leaves your instance. With a local Ollama, it stays on your own machine.
 
