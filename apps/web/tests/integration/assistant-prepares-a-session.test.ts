@@ -183,14 +183,55 @@ describe.skipIf(skip)('the Assistant asked to start a Session', () => {
     expect(auto).not.toHaveProperty('coverStyle');
   });
 
-  it('asks how long when the user named no length and new Sessions keep generating', async () => {
+  it('carries the shipped Default Session duration when the user named no length, and never asks how long', async () => {
     const asker = await createAdmin();
 
     const turn = await propose(asker, { prompt: 'calm piano for reading' });
 
-    expect(cards(turn)).toEqual([]);
-    expect(turn.results[0]).toMatch(/ask the user how long/i);
-    expect(turn.results[0]).toMatch(/no card was shown/i);
+    expect(cards(turn)).toEqual([
+      {
+        kind: 'session',
+        prompt: 'calm piano for reading',
+        vocal: 'instrumental',
+        targetDurationMinutes: 30,
+        ...HOME_COVER,
+      },
+    ]);
+    expect(turn.results[0]).toMatch(/^Prepared: .*30 minutes/);
+    expect(turn.results[0]).not.toMatch(/how long/i);
+  });
+
+  it('carries the user’s own Default Session duration when the user named no length', async () => {
+    const asker = await createAdmin();
+    await updateGenerationSettings(testDb.db, {
+      ownerUserId: asker,
+      patch: { defaultSessionDurationMinutes: 120 },
+    });
+
+    expect(cards(await propose(asker, { prompt: 'calm piano' }))).toMatchObject([
+      { kind: 'session', targetDurationMinutes: 120 },
+    ]);
+
+    await updateGenerationSettings(testDb.db, {
+      ownerUserId: asker,
+      patch: { defaultSessionDurationMinutes: null },
+    });
+
+    expect(cards(await propose(asker, { prompt: 'calm piano' }))).toMatchObject([
+      { kind: 'session', targetDurationMinutes: null },
+    ]);
+  });
+
+  it('carries the length the user named over their Default Session duration', async () => {
+    const asker = await createAdmin();
+    await updateGenerationSettings(testDb.db, {
+      ownerUserId: asker,
+      patch: { defaultSessionDurationMinutes: 5 },
+    });
+
+    expect(
+      cards(await propose(asker, { prompt: 'calm piano', targetDurationMinutes: 45 })),
+    ).toMatchObject([{ kind: 'session', targetDurationMinutes: 45 }]);
   });
 
   it('prepares vocals only when the model says the user asked for them', async () => {

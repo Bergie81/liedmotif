@@ -228,17 +228,25 @@ describe('the tools of a fixture turn that act', () => {
     expect(blank.reported[0]).not.toHaveProperty('card.context');
   });
 
-  it('ask how long before More Like This, as before a new Session, when no length is given', async () => {
-    const { call, reported } = openTurn();
+  it('start a new Session card at the Default Session duration when no length is given, never asking how long', async () => {
+    const session = openTurn();
+    const seeded = openTurn();
+    const endless = openTurn();
 
-    expect(await call('proposeMoreLikeThis')).toMatch(/ask the user how long/i);
-    expect(await call('proposeSession', { prompt: 'calm piano' })).toMatch(
-      /ask the user how long/i,
+    expect(await session.call('proposeSession', { prompt: 'calm piano' })).toMatch(
+      /^Prepared: .*30 minutes/,
     );
-    expect(await call('proposeMoreLikeThis', { noLimit: true })).toMatch(
+    expect(await seeded.call('proposeMoreLikeThis')).not.toMatch(/how long/i);
+    expect(await endless.call('proposeMoreLikeThis', { noLimit: true })).toMatch(
       /^Prepared: .*with no limit/,
     );
-    expect(reported).toMatchObject([
+    expect(session.reported).toMatchObject([
+      { card: { kind: 'session', targetDurationMinutes: 30 } },
+    ]);
+    expect(seeded.reported).toMatchObject([
+      { card: { kind: 'moreLikeThis', targetDurationMinutes: 30 } },
+    ]);
+    expect(endless.reported).toMatchObject([
       { card: { kind: 'moreLikeThis', targetDurationMinutes: null } },
     ]);
   });

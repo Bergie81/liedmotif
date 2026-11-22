@@ -11,7 +11,7 @@ import {
   type ProposeMoreLikeThisInput,
 } from '@liedmotif/shared';
 import { askedTracks, NO_SUCH_TRACK, NO_TRACK_PLAYING } from './library-action';
-import { newSessionLength, notOffered, proposed } from './proposal';
+import { NEW_SESSION_LENGTH_RULE, newSessionLength, notOffered, proposed } from './proposal';
 import { readableTrackTitle } from './readable-music';
 import { PROPOSE_MORE_LIKE_THIS_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
@@ -25,7 +25,7 @@ export function createProposeMoreLikeThisTool(
 ): LlmTool<ProposeMoreLikeThisInput> {
   return {
     name: PROPOSE_MORE_LIKE_THIS_TOOL_NAME,
-    description: `Prepares More Like This: a new Session in the style of up to ${MAX_SEED_TRACKS} Tracks the user can play, and shows the user a card for it. Starts nothing and spends nothing: the Session starts only when the user confirms the card. Leave out trackIds for the Track that is playing now ("more like this"). Runs for a length in minutes, or with no limit: give the one the user named, and neither when they named none. A context says what the new Session is about or for: an occasion, a theme, people, what the track titles and lyrics are about ("more like this but for cooking"). It changes the Session's name, track titles, cover and lyrics, never how the music sounds. For a change to the sound ("more like this but faster") do not use this tool: prepare a new Session described from the Track's data, or a Change Vibe of the running Session.`,
+    description: `Prepares More Like This: a new Session in the style of up to ${MAX_SEED_TRACKS} Tracks the user can play, and shows the user a card for it. Starts nothing and spends nothing: the Session starts only when the user confirms the card. Leave out trackIds for the Track that is playing now ("more like this"). ${NEW_SESSION_LENGTH_RULE} A context says what the new Session is about or for: an occasion, a theme, people, what the track titles and lyrics are about ("more like this but for cooking"). It changes the Session's name, track titles, cover and lyrics, never how the music sounds. For a change to the sound ("more like this but faster") do not use this tool: prepare a new Session described from the Track's data, or a Change Vibe of the running Session.`,
     inputSchema: proposeMoreLikeThisInputSchema,
     execute: ({ trackIds: given, targetDurationMinutes, noLimit, context: givenContext }) =>
       actions.take('proposed', async () => {

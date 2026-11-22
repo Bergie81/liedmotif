@@ -3,13 +3,16 @@
 // A card in the chat: something that can spend, prepared by the Assistant and
 // waiting for the user. It shows what will happen, what is left of the budget
 // and one button. The card is worded from its structured values, and the
-// button is the only thing on it that acts. A confirmed cover card has one
-// more, free one: it makes the cover it generated the cover.
+// button is the only thing on it that acts. A card for a new Session also has
+// the duration slider: its length is the one value the user can change, and
+// the wording follows it until the button sends it. A confirmed cover card has
+// one more, free button: it makes the cover it generated the cover.
 
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { AlertCircle, Check } from 'lucide-react';
-import type { AssistantCard, AssistantCoverCard } from '@liedmotif/shared';
+import { isNewSessionCard, type AssistantCard, type AssistantCoverCard } from '@liedmotif/shared';
 import { headroomLine, type GenerationHeadroom } from '@/components/app-shell-model';
+import { SessionDurationControl } from '@/components/create/session-duration-control';
 import { CoverArt, CoverFallback } from '@/components/player/cover-art';
 import { coverUsageLine } from '@/components/player/cover-usage-line';
 import { VIBE_CHANGE_PENDING_CAPTION } from '@/components/player/vibe-switch-view';
@@ -32,8 +35,11 @@ export interface Cards {
   vibeChangeInFlight: boolean;
   /** Reads the cover status a cover card shows its budget line from, as the cover dialog reads it. */
   coverStatus: CardHost['coverStatus'];
-  /** The user said yes to this card. */
-  confirm: (action: ProposedChatAction) => void;
+  /**
+   * The user said yes to this card; for a new Session card, with the length
+   * set on it, null for No limit.
+   */
+  confirm: (action: ProposedChatAction, targetDurationMinutes?: number | null) => void;
   /** Reads how a confirmed cover card's attempt is going and records it with the card. */
   followCover: (action: ProposedChatAction, signal: AbortSignal) => ReturnType<typeof followCover>;
   /** The user tapped "Use this cover" on a cover card whose cover is ready. */
@@ -45,8 +51,12 @@ export const CardsContext = createContext<Cards | null>(null);
 
 export function ProposalCard({ action }: { action: ProposedChatAction }) {
   const cards = useContext(CardsContext);
-  const wording = cardWording(action.card);
   const { outcome } = action;
+  const lengthCard = !outcome && isNewSessionCard(action.card) ? action.card : null;
+  const [length, setLength] = useState(lengthCard?.targetDurationMinutes ?? null);
+  // From the confirmation on, the card the conversation holds has the length that was sent.
+  const card = lengthCard ? { ...lengthCard, targetDurationMinutes: length } : action.card;
+  const wording = cardWording(card);
   const open = !outcome || outcome === 'confirming';
   // Prepared against the vibe that is being changed: it is not queued behind
   // that change, it waits for the user to tap it again once the change ended.
@@ -66,6 +76,11 @@ export function ProposalCard({ action }: { action: ProposedChatAction }) {
       <p className="break-words text-muted">{wording.details}</p>
       {open ? (
         <>
+          {lengthCard ? (
+            <div className="mt-1">
+              <SessionDurationControl value={length} onChange={setLength} />
+            </div>
+          ) : null}
           <p className="text-muted">
             {wording.cost}
             <CardBudget card={action.card} />
@@ -74,7 +89,7 @@ export function ProposalCard({ action }: { action: ProposedChatAction }) {
             <button
               type="button"
               disabled={!cards || outcome === 'confirming' || waitsForVibeChange}
-              onClick={() => cards?.confirm(action)}
+              onClick={() => cards?.confirm(action, lengthCard ? length : undefined)}
               className={cn(compactPrimaryButtonClass, 'mt-1 self-start')}
             >
               {outcome === 'confirming' ? <LiedmotifLoader /> : null}

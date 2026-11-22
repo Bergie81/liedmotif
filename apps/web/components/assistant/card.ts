@@ -32,6 +32,12 @@ export interface CardOutcomeFacts {
 }
 
 /**
+ * What settling a card records with it: what the app told of its outcome, and
+ * the card as the user confirmed it when they set its length on the card.
+ */
+export type CardSettlement = CardOutcomeFacts & { card?: AssistantCard };
+
+/**
  * The cover attempt of a confirmed cover card. Its cover is known from the
  * first read, so the card still finds it once a later attempt is the latest.
  */
@@ -66,24 +72,28 @@ export interface CardWording {
   failed: string;
 }
 
-/** A new Session's length as its card shows it; null minutes is No limit, none is left out. */
-function lengthLabel(minutes: number | null | undefined): string | undefined {
-  if (minutes === null) return NEW_MUSIC_CHOICES['no-limit'].label;
-  if (minutes === undefined) return undefined;
-  return `${minutes} min`;
-}
+/** A new Session's length as its card shows it; null minutes is No limit. */
+const lengthLabel = (minutes: number | null) =>
+  minutes === null ? NEW_MUSIC_CHOICES['no-limit'].label : `${minutes} min`;
+
+/** What confirming a new Session card generates, in words, so No limit is never picked unnoticed. */
+const newSessionCost = (minutes: number | null) =>
+  minutes === null
+    ? 'Generates with no limit while you listen.'
+    : `Generates up to ${minutes} min of new music.`;
 
 export function cardWording(card: AssistantCard): CardWording {
   switch (card.kind) {
     case 'session': {
-      const details = [card.vocal === 'vocal' ? 'With vocals' : 'Instrumental'];
-      const length = lengthLabel(card.targetDurationMinutes);
-      if (length) details.push(length);
+      const details = [
+        card.vocal === 'vocal' ? 'With vocals' : 'Instrumental',
+        lengthLabel(card.targetDurationMinutes),
+      ];
       return {
         title: 'Start a New Session',
         words: card.prompt,
         details: details.join(' · '),
-        cost: 'Starting generates new tracks from your budget.',
+        cost: newSessionCost(card.targetDurationMinutes),
         confirm: 'Start Session',
         confirming: 'Starting…',
         confirmed: 'Session started',
@@ -107,14 +117,13 @@ export function cardWording(card: AssistantCard): CardWording {
         `A new session seeded from ${
           card.tracks.length === 1 ? titles : `${card.tracks.length} tracks: ${titles}`
         }`,
+        lengthLabel(card.targetDurationMinutes),
       ];
-      const length = lengthLabel(card.targetDurationMinutes);
-      if (length) details.push(length);
       return {
         title: 'More Like This',
         ...(card.context === undefined ? {} : { words: card.context }),
         details: details.join(' · '),
-        cost: 'Starting generates new tracks from your budget.',
+        cost: newSessionCost(card.targetDurationMinutes),
         // The button of the player's own More Like This.
         confirm: 'Start New Session',
         confirming: 'Starting Session…',
@@ -147,9 +156,9 @@ export function cardWording(card: AssistantCard): CardWording {
           surpriseExploreLabel(suggestion),
           surpriseVibeLine(suggestion),
           surpriseVocalLine(suggestion),
-          minutes === null ? NEW_MUSIC_CHOICES['no-limit'].label : `${minutes} min`,
+          lengthLabel(minutes),
         ].join(' · '),
-        cost: 'Starting generates new tracks from your budget.',
+        cost: newSessionCost(minutes),
         // The button of Home's Surprise Me.
         confirm: 'Start Session',
         confirming: 'Starting…',

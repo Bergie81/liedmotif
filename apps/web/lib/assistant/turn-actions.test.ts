@@ -103,7 +103,12 @@ describe("one turn's actions", () => {
     const { actions, reported } = openTurn();
     const card: AssistantAction = {
       status: 'proposed',
-      card: { kind: 'session', prompt: 'calm piano', vocal: 'instrumental' },
+      card: {
+        kind: 'session',
+        prompt: 'calm piano',
+        vocal: 'instrumental',
+        targetDurationMinutes: 30,
+      },
     };
     const offer = async (): Promise<ActionOutcome<'proposed'>> => ({
       told: 'Prepared.',

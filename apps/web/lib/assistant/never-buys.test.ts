@@ -90,6 +90,8 @@ const SERVER_CALLS = [
   'loadPlaylistSummaries',
   'loadSessionList',
   'newMusicPausedRefusal',
+  // The length a new Session card starts at: the user's Default Session duration, read.
+  'newSessionTargetMinutes',
   'requestNow',
   'resolveAssistantStanding',
   'searchPlaylists',

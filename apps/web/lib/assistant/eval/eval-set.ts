@@ -579,9 +579,14 @@ export const EVAL_SET: readonly EvalEntry[] = [
     language: 'en',
     question: 'Play me something calm for reading.',
     docs: 'none',
-    calls: [],
+    calls: [
+      {
+        tool: 'proposeSession',
+        input: [{ targetDurationMinutes: undefined, noLimit: undefined }],
+      },
+    ],
     goodAnswer:
-      'Asks how long the Session should run, or whether it should have no limit. Never picks a length itself, and never says a card is prepared or a Session has started.',
+      'Says a card is prepared and waits for the user, that its length is set on the card, and that confirming it generates new Tracks from their budget. Does not ask how long, never picks a length itself, and never says a Session has started.',
   },
   {
     id: 'change-the-vibe',
@@ -599,9 +604,14 @@ export const EVAL_SET: readonly EvalEntry[] = [
     language: 'en',
     question: 'I want more music like this.',
     docs: 'none',
-    calls: [],
+    calls: [
+      {
+        tool: 'proposeMoreLikeThis',
+        input: [{ targetDurationMinutes: undefined, noLimit: undefined }],
+      },
+    ],
     goodAnswer:
-      'Asks how long the new Session should run, or whether it should have no limit. Never picks a length itself, never takes the length of the Session that is playing, and never says a card is prepared or a Session has started.',
+      'Says a card for a new Session that sounds like Neon Rain is prepared, that its length is set on the card, and that confirming it generates new Tracks from the budget. Does not ask how long, never picks a length itself, never takes the length of the Session that is playing, and never says a Session has started.',
   },
   {
     id: 'more-like-this-for-an-hour',

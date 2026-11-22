@@ -11,7 +11,7 @@ import {
   type AssistantStanding,
 } from '@liedmotif/shared';
 import { askAssistant } from './ask-assistant';
-import type { CardOutcomeFacts } from './card';
+import type { CardSettlement } from './card';
 import { withActionNotes, type ChatAction, type SettleableAction } from './chat-actions';
 
 /** One message as the panel holds it. `content` is what was typed or what the model wrote. */
@@ -46,12 +46,13 @@ export interface AssistantConversation {
    * conversation holds it now, and returns it as held from here on. One it no
    * longer holds is left alone, and null comes back. `facts` are what the
    * app told of a card's outcome, kept with it: its reason for not carrying
-   * the card out, or the cover attempt a cover card asked for.
+   * the card out, or the cover attempt a cover card asked for. They may also
+   * hold the card as the user confirmed it, with the length set on the card.
    */
   settleAction<Action extends SettleableAction>(
     action: Action,
     outcome: NonNullable<Action['outcome']>,
-    facts?: CardOutcomeFacts,
+    facts?: CardSettlement,
   ): Action | null;
 }
 

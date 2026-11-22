@@ -165,15 +165,19 @@ export function AssistantDock({
     [links, router, besidePage, setOpen],
   );
   const confirm = useCallback(
-    (action: ProposedChatAction) => {
+    (action: ProposedChatAction, targetDurationMinutes?: number | null) => {
       if (!cardHost) return;
-      confirmCard(action, {
-        conversation,
-        host: cardHost,
-        onPlayerShown() {
-          if (!besidePage) setOpen(false);
+      confirmCard(
+        action,
+        {
+          conversation,
+          host: cardHost,
+          onPlayerShown() {
+            if (!besidePage) setOpen(false);
+          },
         },
-      });
+        targetDurationMinutes,
+      );
     },
     [conversation, cardHost, besidePage, setOpen],
   );

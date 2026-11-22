@@ -199,7 +199,11 @@ describe('a Change Vibe card', () => {
 });
 
 describe('a More Like This card', () => {
-  const LIKE_THESE: AssistantCard = { kind: 'moreLikeThis', tracks: [NIGHT_DRIVE, LOW_TIDE] };
+  const LIKE_THESE: AssistantCard = {
+    kind: 'moreLikeThis',
+    tracks: [NIGHT_DRIVE, LOW_TIDE],
+    targetDurationMinutes: 30,
+  };
   const NEW_SESSION = summary({ id: '00000000-0000-4000-8000-000000000004', title: 'Dusk Roads' });
   const ask = (options?: Parameters<typeof askForCard>[2]) =>
     askForCard('More Like This', [cardEvent(LIKE_THESE)], options);
@@ -209,11 +213,15 @@ describe('a More Like This card', () => {
 
     expect(card.textContent).toContain('A new session seeded from 2 tracks: Night Drive, Low Tide');
     expect(card.textContent).toContain(
-      'Starting generates new tracks from your budget. 38 tracks left today.',
+      'Generates up to 30 min of new music. 38 tracks left today.',
     );
     // A card without words of the user's shows no quote.
     expect(card.textContent).not.toMatch(/[“”]/);
     expect(within(card).getAllByRole('button')).toEqual([button('Start New Session')]);
+    expect(within(card).getByRole('slider', { name: /session duration/i })).toHaveProperty(
+      'value',
+      '30',
+    );
     expect(server.sent).toEqual([]);
     expect(player.beginOtherMusic).not.toHaveBeenCalled();
   });
@@ -230,6 +238,7 @@ describe('a More Like This card', () => {
     expect(server.sent[0]!.path).toBe('/api/sessions/more-like-this');
     expect(server.sent[0]!.body).toEqual({
       seedTrackIds: [NIGHT_DRIVE.id, LOW_TIDE.id],
+      targetDurationMinutes: 30,
       clientId: expect.stringMatching(/^[0-9a-f-]{36}$/),
     });
     expect(button('Starting Session…')).toHaveProperty('disabled', true);
@@ -254,7 +263,7 @@ describe('a More Like This card', () => {
 
   it.each<[string, number | null, Record<string, unknown>]>([
     ['sends the card’s length with the seeds', 45, { targetDurationMinutes: 45 }],
-    ['sends no length for No limit', null, {}],
+    ['sends No limit as an explicit null', null, { targetDurationMinutes: null }],
   ])('%s', async (_, targetDurationMinutes, length) => {
     player.beginOtherMusic.mockResolvedValue(true);
     const { card, server } = await askForCard(
@@ -289,9 +298,24 @@ describe('a More Like This card', () => {
     await waitFor(() => expect(server.sent).toHaveLength(1));
     expect(server.sent[0]!.body).toEqual({
       seedTrackIds: [NIGHT_DRIVE.id, LOW_TIDE.id],
+      targetDurationMinutes: 30,
       clientId: expect.stringMatching(/^[0-9a-f-]{36}$/),
       context: 'for cooking',
     });
+  });
+
+  it('sends the length set on its slider with the seeds', async () => {
+    player.beginOtherMusic.mockResolvedValue(true);
+    const { card, server } = await ask({ desk: false });
+
+    fireEvent.change(within(card).getByRole('slider', { name: /session duration/i }), {
+      target: { value: '120' },
+    });
+    expect(card.textContent).toContain('Generates up to 120 min of new music.');
+    fireEvent.click(button('Start New Session'));
+
+    await waitFor(() => expect(server.sent).toHaveLength(1));
+    expect(server.sent[0]!.body).toMatchObject({ targetDurationMinutes: 120 });
   });
 
   it('shows the app’s own refusal on the card, and stays where it is', async () => {

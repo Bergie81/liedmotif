@@ -207,7 +207,7 @@ const receipt: AssistantAction = {
 const command: AssistantAction = { status: 'player', command: { name: 'next' } };
 const card: AssistantAction = {
   status: 'proposed',
-  card: { kind: 'session', prompt: 'calm piano', vocal: 'instrumental' },
+  card: { kind: 'session', prompt: 'calm piano', vocal: 'instrumental', targetDurationMinutes: 30 },
 };
 
 /** A request about the user's own music, with the calls a good turn makes. */
@@ -391,7 +391,7 @@ describe('scoring what a turn did', () => {
     it('fails a turn that offered none, or a card for something else', () => {
       const other: AssistantAction = {
         status: 'proposed',
-        card: { kind: 'moreLikeThis', tracks: [NEON_RAIN] },
+        card: { kind: 'moreLikeThis', tracks: [NEON_RAIN], targetDurationMinutes: 30 },
       };
 
       expect(scoreAnswer(startSomething, turn(), MEMBER).card).toBe('fail');

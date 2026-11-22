@@ -146,18 +146,21 @@ describe.each([
     expect(tools).toMatch(/starts only when they confirm it/i);
   });
 
-  it('has the model leave the length of a new Session to the user and the tool', () => {
+  it('has the model leave the length of a new Session to the card, never asking for one in chat', () => {
     const line = prompt.match(/^- proposeSession .*$/m)![0];
     expect(line).toMatch(/a length in minutes when they named one, or no limit when they said so/i);
     expect(line).toMatch(/said neither, call it without one and never pick a length yourself/i);
-    expect(line).toMatch(/its answer says when the user has to be asked/i);
+    expect(line).not.toMatch(/has to be asked/i);
+    expect(line).toMatch(/never ask for a length in chat/i);
+    expect(line).toMatch(/user sets the length on the card/i);
+    expect(line).toMatch(/never say a length was chosen before the user confirms the card/i);
   });
 
   it('has the model leave the length of a More Like This to the user and the tool, as for a new Session', () => {
     const line = prompt.match(/^- proposeMoreLikeThis .*$/m)![0];
     expect(line).toMatch(/a length in minutes when they named one, or no limit when they said so/i);
     expect(line).toMatch(/said neither, call it without one and never pick a length yourself/i);
-    expect(line).toMatch(/its answer says when the user has to be asked/i);
+    expect(line).not.toMatch(/has to be asked/i);
     expect(line).toMatch(/already chose .* earlier in this conversation, pass it on/i);
     expect(line).toMatch(/never take the length of the Session that is playing or of the seed/i);
   });
@@ -199,6 +202,7 @@ describe.each([
     expect(line).toMatch(/prepares a Surprise Me suggestion/);
     expect(line).toMatch(/more adventurous/i);
     expect(line).toMatch(/replaces the suggestion before it/i);
+    expect(line).toMatch(/user sets the length on the card/i);
   });
 
   it('tells the model to say a card is prepared and can spend, never that a Session started', () => {

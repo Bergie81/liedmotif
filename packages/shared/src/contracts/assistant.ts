@@ -231,8 +231,8 @@ export const assistantCardSchema = z.discriminatedUnion('kind', [
     /** What the Session should sound like, as free text for the start-Session route. */
     prompt: z.string().min(1).max(MAX_USER_PROMPT_LENGTH),
     vocal: z.enum(VOCAL_MODES),
-    /** How long the Session generates; null is No limit. */
-    targetDurationMinutes: targetDurationMinutesSchema.nullable().optional(),
+    /** How long the Session generates; null is No limit. The one value the user can change on the card. */
+    targetDurationMinutes: targetDurationMinutesSchema.nullable(),
     ...cardCoverChoicesShape,
   }),
   z.strictObject({
@@ -246,8 +246,8 @@ export const assistantCardSchema = z.discriminatedUnion('kind', [
     kind: z.literal('moreLikeThis'),
     /** The Tracks the new Session is seeded from, in the order they are sent. */
     tracks: z.array(assistantActionItemSchema).min(1).max(MAX_SEED_TRACKS),
-    /** How long the Session generates; null is No limit. */
-    targetDurationMinutes: targetDurationMinutesSchema.nullable().optional(),
+    /** How long the Session generates; null is No limit. The one value the user can change on the card. */
+    targetDurationMinutes: targetDurationMinutesSchema.nullable(),
     /** What the new Session is about or for, in the user's words; left out for none. It never changes the music. */
     context: z.string().min(1).max(MAX_USER_PROMPT_LENGTH).optional(),
   }),
@@ -275,7 +275,7 @@ export const assistantCardSchema = z.discriminatedUnion('kind', [
       voiceGender: true,
       language: true,
     }),
-    /** How long the Session generates; null is No limit. */
+    /** How long the Session generates; null is No limit. The one value the user can change on the card. */
     targetDurationMinutes: targetDurationMinutesSchema.nullable(),
     ...cardCoverChoicesShape,
   }),
@@ -294,36 +294,41 @@ export const assistantCardSchema = z.discriminatedUnion('kind', [
 export type AssistantCard = z.infer<typeof assistantCardSchema>;
 export type AssistantCoverCard = Extract<AssistantCard, { kind: 'cover' }>;
 
+/** A card that starts a new Session: the one kind whose length the user sets on the card. */
+export type NewSessionCard = Extract<
+  AssistantCard,
+  { kind: 'session' | 'moreLikeThis' | 'surprise' }
+>;
+
+export const isNewSessionCard = (card: AssistantCard): card is NewSessionCard =>
+  card.kind === 'session' || card.kind === 'moreLikeThis' || card.kind === 'surprise';
+
 /**
  * The start-Session request a Session card stands for, less the client id only
  * the browser has. The tool checks this request before it offers the card, and
- * the confirmation sends it, so the two cannot differ.
+ * the confirmation sends it with the length the user set on the card. No limit
+ * is sent as null.
  */
 export function sessionCardStartRequest(
   card: Extract<AssistantCard, { kind: 'session' }>,
 ): Omit<StartSessionRequest, 'clientId'> {
   return {
     input: { mode: 'prompt', prompt: card.prompt, vocal: card.vocal },
-    ...(card.targetDurationMinutes !== undefined && {
-      targetDurationMinutes: card.targetDurationMinutes,
-    }),
+    targetDurationMinutes: card.targetDurationMinutes,
     ...cardCoverChoices(card),
   };
 }
 
 /**
  * The More Like This request a More Like This card stands for, less the client
- * id only the browser has. No limit is sent as null; a card without a length
- * sends none, which the route reads as the Default Session duration.
+ * id only the browser has. No limit is sent as null.
  */
 export function moreLikeThisCardRequest(
   card: Extract<AssistantCard, { kind: 'moreLikeThis' }>,
 ): Omit<MoreLikeThisRequest, 'clientId'> {
   return {
     seedTrackIds: card.tracks.map(({ id }) => id),
-    ...(card.targetDurationMinutes !== undefined && {
-      targetDurationMinutes: card.targetDurationMinutes,
-    }),
+    targetDurationMinutes: card.targetDurationMinutes,
     ...(card.context !== undefined && { context: card.context }),
   };
 }
@@ -647,7 +652,7 @@ export type PlayInput = z.infer<typeof playInputSchema>;
 /**
  * The length a new Session's propose tool takes, as the user said it: minutes
  * when they named a length, `noLimit` when they asked for none, neither when
- * they said nothing (the tool then answers instead of guessing).
+ * they said nothing (the card then starts at their Default Session duration).
  */
 const newSessionLengthInput = {
   targetDurationMinutes: z
@@ -663,8 +668,7 @@ const newSessionLengthInput = {
 /**
  * What the model passes to `proposeSession`. Lenient like the other tools; the
  * values are checked against the start-Session request before a card is offered.
- * A length and `noLimit` carry what the user said, never a guess: the tool
- * answers when it needs one of them.
+ * A length and `noLimit` carry what the user said, never a guess.
  */
 export const proposeSessionInputSchema = z.object({
   prompt: z

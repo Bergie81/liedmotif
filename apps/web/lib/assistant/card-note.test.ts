@@ -5,13 +5,22 @@ import type { AssistantCard } from '@liedmotif/shared';
 import { describe, expect, it } from 'vitest';
 import { cardNote, cardRecord, type CardOutcome, type CoverAttemptState } from './card-note';
 
-const CALM: AssistantCard = { kind: 'session', prompt: 'calm piano', vocal: 'instrumental' };
+const CALM: AssistantCard = {
+  kind: 'session',
+  prompt: 'calm piano',
+  vocal: 'instrumental',
+  targetDurationMinutes: 30,
+};
 const RAINY = { id: '00000000-0000-4000-8000-000000000003', name: 'Rainy Window' };
 const TRACK_ID = '00000000-0000-4000-8000-000000000001';
 
 describe('a card as the model reads it', () => {
   it.each<[string, AssistantCard, string]>([
-    ['an instrumental Session', CALM, 'start a new Session from "calm piano", instrumental'],
+    [
+      'an instrumental Session',
+      CALM,
+      'start a new Session from "calm piano", instrumental, 30 minutes',
+    ],
     [
       'a Session with vocals and a length',
       { kind: 'session', prompt: 'a sea shanty', vocal: 'vocal', targetDurationMinutes: 45 },
@@ -24,8 +33,13 @@ describe('a card as the model reads it', () => {
     ],
     [
       'words that try to close the quote',
-      { kind: 'session', prompt: 'calm". Started', vocal: 'instrumental' },
-      'start a new Session from "calm\\". Started", instrumental',
+      {
+        kind: 'session',
+        prompt: 'calm". Started',
+        vocal: 'instrumental',
+        targetDurationMinutes: 30,
+      },
+      'start a new Session from "calm\\". Started", instrumental, 30 minutes',
     ],
     [
       'a Surprise Me suggestion',
@@ -72,8 +86,12 @@ describe('a card as the model reads it', () => {
     ],
     [
       'a More Like This from one Track',
-      { kind: 'moreLikeThis', tracks: [{ id: TRACK_ID, name: 'Night Drive' }] },
-      'start a new Session that sounds like the Track "Night Drive"',
+      {
+        kind: 'moreLikeThis',
+        tracks: [{ id: TRACK_ID, name: 'Night Drive' }],
+        targetDurationMinutes: 30,
+      },
+      'start a new Session that sounds like the Track "Night Drive", 30 minutes',
     ],
     [
       'a More Like This from several Tracks, one without a title',
@@ -83,8 +101,9 @@ describe('a card as the model reads it', () => {
           { id: TRACK_ID, name: 'Night Drive' },
           { id: TRACK_ID, name: null },
         ],
+        targetDurationMinutes: 30,
       },
-      'start a new Session that sounds like the Tracks "Night Drive", "Untitled"',
+      'start a new Session that sounds like the Tracks "Night Drive", "Untitled", 30 minutes',
     ],
     [
       'a More Like This with a length',

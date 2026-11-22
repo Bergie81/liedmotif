@@ -35,6 +35,8 @@ const holder = vi.hoisted(() => ({
   llm: null as unknown,
   /** Every request the text LLM was asked to write for a suggestion. */
   written: [] as unknown[],
+  /** Set to write suggestions without a length of their own, as older stored ones are. */
+  writesNoLength: false,
 }));
 
 vi.mock('next/headers', () => ({ headers: async () => new Headers() }));
@@ -90,7 +92,10 @@ function askForSurprise(userId: string, ...inputs: unknown[]): Promise<ToolCalls
         ...llm,
         async createSurpriseRequest(input: SurpriseRequestInput) {
           holder.written.push(input);
-          return writer.createSurpriseRequest(input);
+          const written = await writer.createSurpriseRequest(input);
+          if (!holder.writesNoLength) return written;
+          const { durationMinutes: _length, ...rest } = written;
+          return rest as typeof written;
         },
         expandSessionIntentWithMetadata: writer.expandSessionIntentWithMetadata.bind(writer),
       };
@@ -141,6 +146,7 @@ beforeEach(async () => {
   ]);
   holder.sessionUserId = null;
   holder.written = [];
+  holder.writesNoLength = false;
 });
 
 describe.skipIf(skip)('the Assistant asked to surprise the user', () => {
@@ -210,6 +216,37 @@ describe.skipIf(skip)('the Assistant asked to surprise the user', () => {
     expect(card.targetDurationMinutes).toBe(60);
     expect(holder.written).toHaveLength(1);
     expect(JSON.stringify(holder.written[0])).toMatch(/morning/i);
+  });
+
+  it('carries the suggestion’s own length over the user’s Default Session duration, and never asks how long', async () => {
+    const asker = await createAdmin();
+    await updateGenerationSettings(testDb.db, {
+      ownerUserId: asker,
+      patch: { defaultSessionDurationMinutes: 5 },
+    });
+
+    const turn = await askForSurprise(asker, {});
+
+    const pending = await getPendingProposal(testDb.db, asker);
+    expect(pending!.preview.durationMinutes).toEqual(expect.any(Number));
+    expect(pending!.preview.durationMinutes).not.toBe(5);
+    expect(surpriseCard(turn).targetDurationMinutes).toBe(pending!.preview.durationMinutes);
+    expect(turn.results[0]).not.toMatch(/how long/i);
+  });
+
+  it('carries the user’s Default Session duration for a suggestion without a length of its own', async () => {
+    const asker = await createAdmin();
+    await updateGenerationSettings(testDb.db, {
+      ownerUserId: asker,
+      patch: { defaultSessionDurationMinutes: 120 },
+    });
+    holder.writesNoLength = true;
+
+    const turn = await askForSurprise(asker, {});
+
+    expect((await getPendingProposal(testDb.db, asker))!.preview.durationMinutes).toBeUndefined();
+    expect(surpriseCard(turn).targetDurationMinutes).toBe(120);
+    expect(turn.results[0]).toMatch(/120 minutes/);
   });
 
   it('prepares one with no limit only when the user asked for that', async () => {

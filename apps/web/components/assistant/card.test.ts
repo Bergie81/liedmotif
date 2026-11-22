@@ -6,14 +6,19 @@ import { describe, expect, it } from 'vitest';
 import { cardWording } from './card';
 
 describe('a Session card', () => {
-  const calm: AssistantCard = { kind: 'session', prompt: 'calm piano', vocal: 'instrumental' };
+  const calm: AssistantCard = {
+    kind: 'session',
+    prompt: 'calm piano',
+    vocal: 'instrumental',
+    targetDurationMinutes: 30,
+  };
 
   it('says what confirming starts, in the user’s words, and what the button does', () => {
     expect(cardWording(calm)).toMatchObject({
       title: 'Start a New Session',
       words: 'calm piano',
-      details: 'Instrumental',
-      cost: 'Starting generates new tracks from your budget.',
+      details: 'Instrumental · 30 min',
+      cost: 'Generates up to 30 min of new music.',
       confirm: 'Start Session',
       confirming: 'Starting…',
       confirmed: 'Session started',
@@ -30,6 +35,15 @@ describe('a Session card', () => {
   it('says No limit, in the player’s words, when the Session generates without a target', () => {
     expect(cardWording({ ...calm, targetDurationMinutes: null }).details).toBe(
       'Instrumental · No Limit',
+    );
+  });
+
+  it('states in words how much new music confirming generates, with a length and with No limit', () => {
+    expect(cardWording({ ...calm, targetDurationMinutes: 45 }).cost).toBe(
+      'Generates up to 45 min of new music.',
+    );
+    expect(cardWording({ ...calm, targetDurationMinutes: null }).cost).toBe(
+      'Generates with no limit while you listen.',
     );
   });
 });
@@ -63,10 +77,16 @@ describe('a Change Vibe card', () => {
 
 describe('a More Like This card', () => {
   it('names the seed Track and the button of the player’s own More Like This', () => {
-    expect(cardWording({ kind: 'moreLikeThis', tracks: [track('Night Drive')] })).toEqual({
+    expect(
+      cardWording({
+        kind: 'moreLikeThis',
+        tracks: [track('Night Drive')],
+        targetDurationMinutes: 30,
+      }),
+    ).toEqual({
       title: 'More Like This',
-      details: 'A new session seeded from Night Drive',
-      cost: 'Starting generates new tracks from your budget.',
+      details: 'A new session seeded from Night Drive · 30 min',
+      cost: 'Generates up to 30 min of new music.',
       confirm: 'Start New Session',
       confirming: 'Starting Session…',
       confirmed: 'Session started',
@@ -79,28 +99,31 @@ describe('a More Like This card', () => {
       cardWording({
         kind: 'moreLikeThis',
         tracks: [track('Night Drive'), track(null), track('Low Tide')],
+        targetDurationMinutes: 30,
       }).details,
-    ).toBe('A new session seeded from 3 tracks: Night Drive, Untitled Track, Low Tide');
+    ).toBe('A new session seeded from 3 tracks: Night Drive, Untitled Track, Low Tide · 30 min');
   });
 
-  it('adds the length the way the Session card does', () => {
+  it('adds the length, and states it in words, the way the Session card does', () => {
     const seeded = (targetDurationMinutes: number | null) =>
-      cardWording({ kind: 'moreLikeThis', tracks: [track('Night Drive')], targetDurationMinutes })
-        .details;
+      cardWording({ kind: 'moreLikeThis', tracks: [track('Night Drive')], targetDurationMinutes });
 
-    expect(seeded(60)).toBe('A new session seeded from Night Drive · 60 min');
-    expect(seeded(null)).toBe('A new session seeded from Night Drive · No Limit');
+    expect(seeded(60).details).toBe('A new session seeded from Night Drive · 60 min');
+    expect(seeded(60).cost).toBe('Generates up to 60 min of new music.');
+    expect(seeded(null).details).toBe('A new session seeded from Night Drive · No Limit');
+    expect(seeded(null).cost).toBe('Generates with no limit while you listen.');
   });
 
   it('shows the context as its words, the way a Change Vibe card shows its words', () => {
     const wording = cardWording({
       kind: 'moreLikeThis',
       tracks: [track('Night Drive')],
+      targetDurationMinutes: 30,
       context: 'for cooking',
     });
 
     expect(wording.words).toBe('for cooking');
-    expect(wording.details).toBe('A new session seeded from Night Drive');
+    expect(wording.details).toBe('A new session seeded from Night Drive · 30 min');
   });
 });
 
@@ -150,7 +173,7 @@ describe('a Surprise Me card', () => {
       title: 'Surprise Me',
       name: 'Harbor Morning',
       details: 'Familiar · Lo-fi, Jazz · hazy · Low energy · Instrumental · 45 min',
-      cost: 'Starting generates new tracks from your budget.',
+      cost: 'Generates up to 45 min of new music.',
       confirm: 'Start Session',
       confirming: 'Starting…',
       confirmed: 'Session started',
@@ -159,6 +182,9 @@ describe('a Surprise Me card', () => {
   });
 
   it('names an adventurous one, its singer, and No limit', () => {
+    expect(cardWording({ ...harbor, targetDurationMinutes: null }).cost).toBe(
+      'Generates with no limit while you listen.',
+    );
     expect(
       cardWording({
         ...harbor,

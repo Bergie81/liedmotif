@@ -253,7 +253,12 @@ describe('assistantStreamEventSchema', () => {
   });
 
   it('reads a card for a new Session, and refuses one that carries anything else', () => {
-    const card = { kind: 'session', prompt: 'calm piano', vocal: 'instrumental' };
+    const card = {
+      kind: 'session',
+      prompt: 'calm piano',
+      vocal: 'instrumental',
+      targetDurationMinutes: 30,
+    };
     const proposed = (value: unknown) => ({
       type: 'action',
       action: { status: 'proposed', card: value },
@@ -266,6 +271,9 @@ describe('assistantStreamEventSchema', () => {
     expect(parses(proposed({ ...card, label: 'Free, nothing is bought' }))).toBe(false);
     expect(parses(proposed({ ...card, prompt: '' }))).toBe(false);
     expect(parses(proposed({ ...card, targetDurationMinutes: 601 }))).toBe(false);
+    // A card for a new Session always carries its length.
+    const { targetDurationMinutes: _length, ...lengthless } = card;
+    expect(parses(proposed(lengthless))).toBe(false);
     expect(parses(proposed({ kind: 'purchase', prompt: 'calm piano' }))).toBe(false);
   });
 
@@ -284,10 +292,7 @@ describe('assistantStreamEventSchema', () => {
     expect(startSessionRequestSchema.safeParse({ ...request, clientId: 'client-1' }).success).toBe(
       true,
     );
-    expect(
-      sessionCardStartRequest({ kind: 'session', prompt: 'calm piano', vocal: 'instrumental' }),
-    ).toEqual({ input: { mode: 'prompt', prompt: 'calm piano', vocal: 'instrumental' } });
-    // No limit is sent as null: a request without a length takes the default.
+    // No limit is sent as null: a request without a length would take the default.
     const noLimit = sessionCardStartRequest({
       kind: 'session',
       prompt: 'calm piano',
@@ -320,7 +325,7 @@ describe('assistantStreamEventSchema', () => {
     expect(moreLikeThisRequestSchema.safeParse({ ...request, clientId: 'client-1' }).success).toBe(
       true,
     );
-    // No limit is sent as null; no length sends none, which the route reads as the default.
+    // No limit is sent as null: a request without a length would take the default.
     const noLimit = moreLikeThisCardRequest({
       kind: 'moreLikeThis',
       tracks,
@@ -330,7 +335,6 @@ describe('assistantStreamEventSchema', () => {
     expect(moreLikeThisRequestSchema.safeParse({ ...noLimit, clientId: 'client-1' }).success).toBe(
       true,
     );
-    expect(moreLikeThisCardRequest({ kind: 'moreLikeThis', tracks })).toEqual({ seedTrackIds });
   });
 
   it('sends the context a More Like This card carries, and none when it carries none', () => {
@@ -340,21 +344,29 @@ describe('assistantStreamEventSchema', () => {
     const request = moreLikeThisCardRequest({
       kind: 'moreLikeThis',
       tracks,
+      targetDurationMinutes: 30,
       context: 'for cooking',
     });
 
-    expect(request).toEqual({ seedTrackIds, context: 'for cooking' });
+    expect(request).toEqual({ seedTrackIds, targetDurationMinutes: 30, context: 'for cooking' });
     expect(moreLikeThisRequestSchema.safeParse({ ...request, clientId: 'client-1' }).success).toBe(
       true,
     );
-    expect(Object.keys(moreLikeThisCardRequest({ kind: 'moreLikeThis', tracks }))).toEqual([
-      'seedTrackIds',
-    ]);
+    expect(
+      Object.keys(
+        moreLikeThisCardRequest({ kind: 'moreLikeThis', tracks, targetDurationMinutes: 30 }),
+      ),
+    ).toEqual(['seedTrackIds', 'targetDurationMinutes']);
   });
 
   it('starts a Session or Surprise Me card with the cover choices the card carries, as Home sends them', () => {
     const cover = { coverStyle: 'manga', useStandardCover: true } as const;
-    const session = { kind: 'session', prompt: 'calm piano', vocal: 'instrumental' } as const;
+    const session = {
+      kind: 'session',
+      prompt: 'calm piano',
+      vocal: 'instrumental',
+      targetDurationMinutes: 30,
+    } as const;
     const suggestion = {
       id: '00000000-0000-4000-8000-000000000004',
       adventurous: false,
@@ -374,6 +386,7 @@ describe('assistantStreamEventSchema', () => {
     expect(parses({ ...surprise, ...cover })).toBe(true);
     expect(sessionCardStartRequest({ ...session, ...cover })).toEqual({
       input: { mode: 'prompt', prompt: 'calm piano', vocal: 'instrumental' },
+      targetDurationMinutes: 30,
       ...cover,
     });
     expect(surpriseCardStartRequest({ ...surprise, ...cover })).toEqual({
@@ -384,6 +397,7 @@ describe('assistantStreamEventSchema', () => {
     // Auto is the start routes' own default, so Home leaves it out.
     expect(sessionCardStartRequest({ ...session, useStandardCover: false })).toEqual({
       input: { mode: 'prompt', prompt: 'calm piano', vocal: 'instrumental' },
+      targetDurationMinutes: 30,
       useStandardCover: false,
     });
   });
@@ -400,13 +414,18 @@ describe('assistantStreamEventSchema', () => {
     expect(parses({ ...changeVibe, switchImmediately: true })).toBe(false);
 
     expect(MAX_SEED_TRACKS).toBe(10);
-    const seeded = (count: number) => ({ kind: 'moreLikeThis', tracks: Array(count).fill(TRACK) });
+    const seeded = (count: number) => ({
+      kind: 'moreLikeThis',
+      tracks: Array(count).fill(TRACK),
+      targetDurationMinutes: 30,
+    });
     expect(parses(seeded(1))).toBe(true);
     expect(parses(seeded(10))).toBe(true);
     expect(parses(seeded(11))).toBe(false);
     expect(parses(seeded(0))).toBe(false);
-    // A length means what it means on a Session card; a card stored without one still reads.
+    // A length means what it means on a Session card, and a card always carries one.
     expect(parses({ ...seeded(1), targetDurationMinutes: 45 })).toBe(true);
+    expect(parses({ ...seeded(1), targetDurationMinutes: undefined })).toBe(false);
     expect(parses({ ...seeded(1), targetDurationMinutes: null })).toBe(true);
     expect(parses({ ...seeded(1), targetDurationMinutes: 601 })).toBe(false);
     // A context is the user's words, sent as the route takes them.

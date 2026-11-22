@@ -13,6 +13,7 @@ import {
   type AssistantCard,
   type ProposeSurpriseInput,
 } from '@liedmotif/shared';
+import { newSessionTargetMinutes } from '@/lib/sessions/sessions';
 import { loadPendingSurprise, proposeSurprise } from '@/lib/sessions/surprise-me';
 import { BAD_DURATION, homeCoverChoices, notOffered, proposed } from './proposal';
 import { PROPOSE_SURPRISE_TOOL_NAME } from './tool-names';
@@ -31,7 +32,7 @@ export function createProposeSurpriseTool(
   return {
     name: PROPOSE_SURPRISE_TOOL_NAME,
     description:
-      "Prepares a Surprise Me suggestion from the user's own taste, as the app's Surprise Me does, and shows the user a card for it. Each call replaces the suggestion before it. Starts nothing and spends no music: the Session starts only when the user confirms the card. Pass only what the user asked for.",
+      "Prepares a Surprise Me suggestion from the user's own taste, as the app's Surprise Me does, and shows the user a card for it. Each call replaces the suggestion before it. Starts nothing and spends no music: the Session starts only when the user confirms the card. Pass only what the user asked for. Without a length from the user, the card starts at the suggestion's own length, or else at the user's Default Session duration; the user can still change it on the card.",
     inputSchema: proposeSurpriseInputSchema,
     execute: ({ adventurous, theme, vocal, targetDurationMinutes, noLimit }) =>
       actions.take('proposed', async () => {
@@ -80,8 +81,12 @@ export function createProposeSurpriseTool(
             voiceGender: proposal.voiceGender,
             language: proposal.language,
           },
-          targetDurationMinutes:
-            targetDurationMinutes ?? (noLimit ? null : proposal.edit.durationMinutes),
+          targetDurationMinutes: await newSessionTargetMinutes(
+            db,
+            userId,
+            targetDurationMinutes ?? (noLimit ? null : undefined),
+            proposal.edit.durationMinutes,
+          ),
           ...covers,
         };
         return proposed(card);

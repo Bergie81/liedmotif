@@ -78,6 +78,13 @@ const askForSessionCard = (
 
 const startButton = () => screen.getByRole('button', { name: 'Start Session' });
 
+const durationSlider = (card: HTMLElement) =>
+  within(card).getByRole('slider', { name: /session duration/i });
+
+/** Moves the card's duration slider to `minutes`; 0 is its No limit stop. */
+const slideTo = (card: HTMLElement, minutes: number) =>
+  fireEvent.change(durationSlider(card), { target: { value: String(minutes) } });
+
 const started = () =>
   Response.json({ ok: true, data: { session: STARTED, supersededSessionId: null } });
 
@@ -95,10 +102,13 @@ describe('a Session card in the chat', () => {
 
     expect(card.textContent).toContain('calm piano for reading');
     expect(card.textContent).toContain('Instrumental · 45 min');
-    expect(card.textContent).toContain('Starting generates new tracks from your budget.');
-    expect(card.textContent).toContain('38 tracks left today');
+    expect(card.textContent).toContain(
+      'Generates up to 45 min of new music. 38 tracks left today.',
+    );
     expect(card.textContent).not.toContain('metal');
     expect(within(card).getAllByRole('button')).toEqual([startButton()]);
+    // The length is the one thing the user sets on the card.
+    expect(within(card).getAllByRole('slider')).toEqual([durationSlider(card)]);
     // The figure is read again for the card, as the player's own sheet does.
     expect(refresh).toHaveBeenCalledTimes(1);
   });
@@ -108,6 +118,21 @@ describe('a Session card in the chat', () => {
 
     expect(card.textContent).not.toMatch(/left/);
     expect(startButton()).toBeTruthy();
+  });
+
+  it('starts its duration slider at the card’s length, and the cost line follows the slider', async () => {
+    const { card, server } = await askForSessionCard([cardEvent(CALM)]);
+
+    expect(durationSlider(card)).toHaveProperty('value', '45');
+    expect(durationSlider(card).getAttribute('aria-valuetext')).toBe('45 min');
+
+    slideTo(card, 90);
+    expect(card.textContent).toContain('Generates up to 90 min of new music.');
+
+    slideTo(card, 0);
+    expect(durationSlider(card).getAttribute('aria-valuetext')).toBe('No limit');
+    expect(card.textContent).toContain('Generates with no limit while you listen.');
+    expect(server.sent).toEqual([]);
   });
 
   it('starts nothing until it is clicked', async () => {
@@ -145,6 +170,42 @@ describe('confirming a Session card', () => {
     const card = screen.getByRole('group', { name: 'Start a New Session' });
     await waitFor(() => expect(card.textContent).toContain('Session started'));
     expect(within(card).queryByRole('button')).toBeNull();
+  });
+
+  it('sends the length set on the slider, and the settled card and the next request state it', async () => {
+    const { card, server } = await askForSessionCard([cardEvent(CALM)]);
+    slideTo(card, 90);
+
+    fireEvent.click(startButton());
+
+    expect(server.sent[0]!.body).toMatchObject({ targetDurationMinutes: 90 });
+    // Confirming fixes the length: the slider goes with the button.
+    expect(within(card).queryByRole('slider')).toBeNull();
+    server.sent[0]!.answer(started());
+    await waitFor(() => expect(card.textContent).toContain('Session started'));
+    expect(card.textContent).toContain('Instrumental · 90 min');
+    expect(within(card).queryByRole('slider')).toBeNull();
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Send' })).toBeTruthy());
+    askAgain('Thanks.');
+    await waitFor(() => expect(server.asked).toHaveLength(2));
+    expect(server.asked[1]![1]).toMatch(
+      /^\[Card shown by the app: start a new Session from "calm piano for reading", instrumental, 90 minutes\. The user confirmed it/,
+    );
+  });
+
+  it('sends No limit as an explicit null from the slider’s left stop', async () => {
+    const { card, server } = await askForSessionCard([cardEvent(CALM)]);
+    slideTo(card, 0);
+
+    fireEvent.click(startButton());
+
+    expect(server.sent[0]!.body).toEqual({
+      input: { mode: 'prompt', prompt: 'calm piano for reading', vocal: 'instrumental' },
+      targetDurationMinutes: null,
+      clientId: expect.stringMatching(/^[0-9a-f-]{36}$/),
+    });
+    expect(card.textContent).toContain('Instrumental · No Limit');
   });
 
   it('closes the panel that covers the page, so the Player shows', async () => {

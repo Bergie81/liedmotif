@@ -10,21 +10,16 @@ import { quoted } from './music-names';
 export const newMusicLimitNote = (targetMinutes: number | null) =>
   targetMinutes === null ? 'with no limit' : `up to ${targetMinutes} minutes of music`;
 
-/** A new Session's length as the model reads it; null minutes is No limit, none is left out. */
-function lengthNote(minutes: number | null | undefined): string | undefined {
-  if (minutes === null) return newMusicLimitNote(null);
-  if (minutes === undefined) return undefined;
-  return `${minutes} minutes`;
-}
+/** A new Session's length as the model reads it; null minutes is No limit. */
+const lengthNote = (minutes: number | null) =>
+  minutes === null ? newMusicLimitNote(null) : `${minutes} minutes`;
 
 /** What the card offers to do, with the values the confirmation sends. */
 export function cardNote(card: AssistantCard): string {
   switch (card.kind) {
     case 'session': {
-      const details = [card.vocal === 'vocal' ? 'with vocals' : 'instrumental'];
-      const length = lengthNote(card.targetDurationMinutes);
-      if (length) details.push(length);
-      return `start a new Session from ${quoted(card.prompt)}, ${details.join(', ')}`;
+      const voicing = card.vocal === 'vocal' ? 'with vocals' : 'instrumental';
+      return `start a new Session from ${quoted(card.prompt)}, ${voicing}, ${lengthNote(card.targetDurationMinutes)}`;
     }
     case 'changeVibe':
       return `change the vibe of the Session ${quoted(card.session.name)} with the words ${quoted(card.prompt)}`;
@@ -34,19 +29,17 @@ export function cardNote(card: AssistantCard): string {
         `start a new Session that sounds like the ${card.tracks.length === 1 ? 'Track' : 'Tracks'} ${titles}`,
       ];
       if (card.context !== undefined) details.push(`with the context ${quoted(card.context)}`);
-      const length = lengthNote(card.targetDurationMinutes);
-      if (length) details.push(length);
+      details.push(lengthNote(card.targetDurationMinutes));
       return details.join(', ');
     }
     case 'newMusicOn':
       return `switch New Music on for the Session ${quoted(card.session.name)}, ${newMusicLimitNote(card.targetDurationMinutes)}`;
     case 'surprise': {
       const { suggestion } = card;
-      const minutes = card.targetDurationMinutes;
       const details = [
         `mood ${quoted(suggestion.mood)}`,
         suggestion.vocalMode === 'vocal' ? 'with vocals' : 'instrumental',
-        minutes === null ? newMusicLimitNote(null) : `${minutes} minutes`,
+        lengthNote(card.targetDurationMinutes),
       ];
       return `start the Surprise Me suggestion ${quoted(suggestion.title)} as a new Session, ${details.join(', ')}`;
     }

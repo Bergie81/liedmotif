@@ -303,8 +303,12 @@ describe.skipIf(skip)('the Assistant asked for more like some Tracks', () => {
     return trackIds;
   }
 
-  it('asks how long when the user named no length and new Sessions keep generating', async () => {
+  it('carries the user’s Default Session duration when the user named no length, and never asks how long', async () => {
     const asker = await createUser();
+    await updateGenerationSettings(testDb.db, {
+      ownerUserId: asker,
+      patch: { defaultSessionDurationMinutes: 15 },
+    });
     // The Session playing the seed has a length of its own, which is never taken.
     const sessionId = await createSession(testDb.db, {
       ownerUserId: asker,
@@ -318,9 +322,24 @@ describe.skipIf(skip)('the Assistant asked for more like some Tracks', () => {
       playing: true,
     });
 
-    expect(cards(turn)).toEqual([]);
-    expect(turn.results[0]).toMatch(/ask the user how long/i);
-    expect(turn.results[0]).toMatch(/no card was shown/i);
+    expect(cards(turn)).toEqual([
+      {
+        kind: 'moreLikeThis',
+        tracks: [{ id: trackId, name: 'Night Drive' }],
+        targetDurationMinutes: 15,
+      },
+    ]);
+    expect(turn.results[0]).toMatch(/^Prepared: .*15 minutes/);
+    expect(turn.results[0]).not.toMatch(/how long/i);
+  });
+
+  it('carries the shipped Default Session duration for a user who never set one', async () => {
+    const asker = await createUser();
+    const [trackId] = await seedTracks(asker, 'Night Drive');
+
+    expect(cards(await ask(asker, [moreLikeThis({ trackIds: [trackId] })]))).toMatchObject([
+      { kind: 'moreLikeThis', targetDurationMinutes: 30 },
+    ]);
   });
 
   it('sends a card naming the asker’s own Tracks in the order given, and creates nothing', async () => {

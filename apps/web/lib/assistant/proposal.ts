@@ -14,6 +14,7 @@ import {
   evaluateGenerationBudget,
   headroomRefusalMessage,
   newMusicPausedRefusal,
+  newSessionTargetMinutes,
   sessionCreationRefusal,
 } from '@/lib/sessions/sessions';
 import { cardCost, cardNote } from './card-note';
@@ -43,13 +44,16 @@ export async function newSessionRefusal({ db, userId }: AssistantAsker): Promise
   return (await sessionCreationRefusal(db, userId))?.message ?? null;
 }
 
-const HOW_LONG =
-  'A new Session keeps generating new Tracks while the user listens, so it needs a length, which is a whole number from 1 to 600 minutes, or no limit. Ask the user how long it should run.';
+/** How a new Session's propose tool takes its length, as its description tells the model. */
+export const NEW_SESSION_LENGTH_RULE =
+  "Runs for a length in minutes, or with no limit: give the one the user named, and neither when they named none, which starts the card at the user's Default Session duration. The user can still change the length on the card.";
+
 /**
- * The length a card for a new Session carries, from what the user said: a
- * number of minutes, or null for No limit. Or why no card is offered: a length
- * the start routes refuse, the app's refusal of a new Session, or a length the
- * user still has to choose. Checked in that order.
+ * The length a card for a new Session carries: the minutes the user named,
+ * null when they asked for No limit, and otherwise their Default Session
+ * duration. The user can still move it on the card. Or why no card is
+ * offered: a length the start routes refuse, then the app's refusal of a new
+ * Session.
  */
 export async function newSessionLength(
   asker: AssistantAsker,
@@ -66,9 +70,12 @@ export async function newSessionLength(
   }
   const refusal = await newSessionRefusal(asker);
   if (refusal) return { refusal };
-  if (targetDurationMinutes != null) return { length: { targetDurationMinutes } };
-  if (noLimit) return { length: { targetDurationMinutes: null } };
-  return { refusal: HOW_LONG };
+  const requested = targetDurationMinutes ?? (noLimit ? null : undefined);
+  return {
+    length: {
+      targetDurationMinutes: await newSessionTargetMinutes(asker.db, asker.userId, requested),
+    },
+  };
 }
 
 /**

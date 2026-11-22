@@ -88,10 +88,27 @@ describe('a Surprise Me card in the chat', () => {
     expect(card.textContent).toContain(
       'Familiar · Lo-fi, Jazz · hazy · Low energy · Instrumental · 45 min',
     );
-    expect(card.textContent).toContain('Starting generates new tracks from your budget.');
-    expect(card.textContent).toContain('38 tracks left today');
+    expect(card.textContent).toContain(
+      'Generates up to 45 min of new music. 38 tracks left today.',
+    );
     expect(within(card).getAllByRole('button')).toEqual([startButton()]);
     expect(server.sent).toEqual([]);
+  });
+
+  it('carries the duration slider at the suggestion’s length, and starts with what it is set to', async () => {
+    const { card, server } = await askForSurpriseCard();
+    const slider = within(card).getByRole('slider', { name: /session duration/i });
+    expect(slider).toHaveProperty('value', '45');
+
+    fireEvent.change(slider, { target: { value: '0' } });
+    expect(card.textContent).toContain('Generates with no limit while you listen.');
+    fireEvent.click(startButton());
+
+    expect(server.sent[0]!.body).toEqual({
+      proposalId: '00000000-0000-4000-8000-000000000004',
+      targetDurationMinutes: null,
+    });
+    expect(within(card).queryByRole('slider')).toBeNull();
   });
 });
 

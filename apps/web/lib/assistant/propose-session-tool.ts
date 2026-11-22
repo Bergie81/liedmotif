@@ -12,7 +12,14 @@ import {
   type AssistantCard,
   type ProposeSessionInput,
 } from '@liedmotif/shared';
-import { BAD_DURATION, homeCoverChoices, newSessionLength, notOffered, proposed } from './proposal';
+import {
+  BAD_DURATION,
+  homeCoverChoices,
+  NEW_SESSION_LENGTH_RULE,
+  newSessionLength,
+  notOffered,
+  proposed,
+} from './proposal';
 import { PROPOSE_SESSION_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 import type { TurnActions } from './turn-actions';
@@ -28,19 +35,25 @@ export function createProposeSessionTool(
 ): LlmTool<ProposeSessionInput> {
   return {
     name: PROPOSE_SESSION_TOOL_NAME,
-    description:
-      'Prepares a new Session from a description and shows the user a card for it. Starts nothing and spends nothing: the Session starts only when the user confirms the card. Instrumental unless the user asked for vocals. Runs for a length in minutes, or with no limit: give the one the user named, and neither when they named none.',
+    description: `Prepares a new Session from a description and shows the user a card for it. Starts nothing and spends nothing: the Session starts only when the user confirms the card. Instrumental unless the user asked for vocals. ${NEW_SESSION_LENGTH_RULE}`,
     inputSchema: proposeSessionInputSchema,
     execute: ({ prompt, vocal, targetDurationMinutes, noLimit }) =>
       actions.take('proposed', async () => {
-        const card: Extract<AssistantCard, { kind: 'session' }> = {
+        const offered: Omit<
+          Extract<AssistantCard, { kind: 'session' }>,
+          'targetDurationMinutes'
+        > = {
           kind: 'session',
           prompt: prompt.trim(),
           vocal: vocal ? 'vocal' : 'instrumental',
-          ...(targetDurationMinutes != null && { targetDurationMinutes }),
           ...(await homeCoverChoices(asker)),
         };
-        const request = cardRequestSchema.safeParse(sessionCardStartRequest(card));
+        const request = cardRequestSchema.safeParse(
+          sessionCardStartRequest({
+            ...offered,
+            targetDurationMinutes: targetDurationMinutes ?? null,
+          }),
+        );
         if (!request.success) {
           const duration = request.error.issues.some(
             (issue) => issue.path[0] === 'targetDurationMinutes',
@@ -48,7 +61,9 @@ export function createProposeSessionTool(
           return notOffered(duration ? BAD_DURATION : NO_DESCRIPTION);
         }
         const gate = await newSessionLength(asker, { targetDurationMinutes, noLimit });
-        return 'refusal' in gate ? notOffered(gate.refusal) : proposed({ ...card, ...gate.length });
+        return 'refusal' in gate
+          ? notOffered(gate.refusal)
+          : proposed({ ...offered, ...gate.length });
       }),
   };
 }

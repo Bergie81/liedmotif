@@ -212,8 +212,13 @@ export const PLAYLISTS = {
 } satisfies Record<string, FixturePlaylist>;
 
 const ACTIVE = SESSIONS.nightDrive;
-const HOW_LONG =
-  'A new Session needs a length in minutes, or no limit. Ask the user how long it should run.';
+/** The fixture user's Default Session duration: the shipped one. */
+const DEFAULT_SESSION_MINUTES = 30;
+/** A new Session card's length, as the real propose tools fill it. */
+const newSessionMinutes = (
+  minutes: number | null | undefined,
+  noLimit: boolean | null | undefined,
+) => minutes ?? (noLimit ? null : DEFAULT_SESSION_MINUTES);
 const ACTIVE_TARGET_MINUTES = 60;
 const ACTIVE_GENERATED_MINUTES = 40;
 
@@ -594,12 +599,11 @@ function fixtureAnswers(
       noLimit,
     }: ProposeSessionInput) =>
       actions.take('proposed', async () => {
-        if (minutes == null && !noLimit) return notOffered(HOW_LONG);
         const card = assistantCardSchema.safeParse({
           kind: 'session',
           prompt: prompt.trim(),
           vocal: vocal ? 'vocal' : 'instrumental',
-          targetDurationMinutes: minutes ?? null,
+          targetDurationMinutes: newSessionMinutes(minutes, noLimit),
         });
         return card.success
           ? proposed(card.data)
@@ -616,7 +620,6 @@ function fixtureAnswers(
           ? proposed(card.data)
           : notOffered('A Change Vibe needs what should change.');
       }),
-    // The length rule of the fixture's proposeSession: its user's new Sessions keep going.
     [PROPOSE_MORE_LIKE_THIS_TOOL_NAME]: ({
       trackIds,
       targetDurationMinutes: minutes,
@@ -627,14 +630,13 @@ function fixtureAnswers(
         const asked = askedTracks(trackIds, player);
         const seeds = asked.flatMap((trackId) => trackById(trackId) ?? []);
         if (seeds.length === 0 || seeds.length < asked.length) return notOffered(NO_SUCH_TRACK);
-        if (minutes == null && !noLimit) return notOffered(HOW_LONG);
         if (minutes != null && !targetDurationMinutesSchema.safeParse(minutes).success) {
           return notOffered(BAD_DURATION);
         }
         const card = assistantCardSchema.safeParse({
           kind: 'moreLikeThis',
           tracks: seeds.map(item),
-          targetDurationMinutes: minutes ?? null,
+          targetDurationMinutes: newSessionMinutes(minutes, noLimit),
           ...(context?.trim() && { context: context.trim() }),
         });
         return card.success ? proposed(card.data) : notOffered(CONTEXT_TOO_LONG);
@@ -655,7 +657,6 @@ function fixtureAnswers(
               'New Music is switched on up to a length in minutes, or with no limit: one of the two. Ask the user which they want.',
             );
       }),
-    // The fixture user's new Sessions start with New Music on, so no limit is always offered.
     [PROPOSE_SURPRISE_TOOL_NAME]: (input: ProposeSurpriseInput) =>
       actions.take('proposed', async () => {
         const minutes = input.targetDurationMinutes;

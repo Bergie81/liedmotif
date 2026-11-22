@@ -3,9 +3,13 @@
 // yes to the card on screen; it hands the card's values to the flow the app's
 // own button runs. A card is confirmed at most once: the conversation holds
 // what became of it, and only a card it holds without an outcome goes through.
+// The one value the user can change on a card is a new Session's length: the
+// card the conversation holds takes it at the confirmation, so every later
+// wording of the card and every note Roadie reads of it states what was sent.
 
 import {
   coverCardRegenerateRequest,
+  isNewSessionCard,
   moreLikeThisCardRequest,
   sessionCardStartRequest,
   surpriseCardStartRequest,
@@ -71,7 +75,16 @@ function run(
   }
 }
 
-export function confirmCard(action: ProposedChatAction, confirmation: CardConfirmation): void {
+/**
+ * Confirms `action`'s card. `targetDurationMinutes` is the length the user set
+ * on a new Session card, null for No limit; left out, the card's own is sent.
+ * Any other card ignores it.
+ */
+export function confirmCard(
+  action: ProposedChatAction,
+  confirmation: CardConfirmation,
+  targetDurationMinutes?: number | null,
+): void {
   const { conversation } = confirmation;
   // Everything up to the settling runs inside the one click, so a second click
   // finds either an outcome or a card the conversation no longer holds.
@@ -79,9 +92,13 @@ export function confirmCard(action: ProposedChatAction, confirmation: CardConfir
     !action.outcome &&
     conversation.getState().messages.some((message) => message.actions?.includes(action));
   if (!offered) return;
-  const sent = run(action.card, confirmation);
+  const card =
+    targetDurationMinutes !== undefined && isNewSessionCard(action.card)
+      ? { ...action.card, targetDurationMinutes }
+      : action.card;
+  const sent = run(card, confirmation);
   if (!sent) return;
-  const confirming = conversation.settleAction(action, 'confirming');
+  const confirming = conversation.settleAction(action, 'confirming', { card });
   void sent.then(({ carriedOut, refusal, coverGenerationId }) => {
     if (!confirming) return;
     if (carriedOut) {

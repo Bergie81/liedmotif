@@ -625,7 +625,7 @@ it('says a message is going out, inside the call that sends it, and only when on
 
 const SESSION_CARD: AssistantAction = {
   status: 'proposed',
-  card: { kind: 'session', prompt: 'calm piano', vocal: 'instrumental' },
+  card: { kind: 'session', prompt: 'calm piano', vocal: 'instrumental', targetDurationMinutes: 30 },
 };
 
 /** A conversation whose one answer is a card and nothing else. */
@@ -649,7 +649,7 @@ it('holds a card without an outcome, and tells the next request that the user le
   conversation.send('What is playing?');
 
   expect(asked[1]!.request.messages[1]!.content).toBe(
-    '[Card shown by the app: start a new Session from "calm piano", instrumental. The user has not confirmed it, so it has not happened.]',
+    '[Card shown by the app: start a new Session from "calm piano", instrumental, 30 minutes. The user has not confirmed it, so it has not happened.]',
   );
 });
 
