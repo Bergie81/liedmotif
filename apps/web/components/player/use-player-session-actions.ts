@@ -5,13 +5,13 @@ import type { SessionSummary } from '@liedmotif/shared';
 import { convertSessionToPlaylist, moreLikeThis, stopSession } from '@/lib/http/api-client';
 import { useClientId } from '@/lib/use-client-id';
 import { MORE_LIKE_THIS_FAILED } from '@/components/create/creation-refusal';
+import type { MoreLikeThisAsk } from '@/components/sessions/more-like-this-sheet';
 import { clearPlayerError, showPlayerError } from './player-error-toast';
 import { usePlayerActions } from './player-provider';
 import {
   runPlayerSessionAction,
   type PlayerSessionActionGate,
 } from './player-session-action-runner';
-import type { MoreLikeThisAsk } from '@/components/sessions/more-like-this-sheet';
 
 /** The actions THIS hook runs — Change Vibe has its own provider-scoped runner. */
 export type PlayerHookAction = 'convert-to-playlist' | 'more-like-this' | 'stop';
