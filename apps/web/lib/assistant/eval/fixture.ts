@@ -460,7 +460,6 @@ const SETTINGS: Record<AssistantSetting, string> = {
   blend: 'On',
   crossfadeSeconds: '6 s',
   defaultLanguage: 'Auto Detect',
-  defaultSessionDuration: '30 min',
 };
 
 /** How a fixture turn answers one tool, in place of that tool's own code. */

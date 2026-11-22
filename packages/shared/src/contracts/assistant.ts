@@ -87,16 +87,14 @@ export type AssistantActionItem = z.infer<typeof assistantActionItemSchema>;
 
 /**
  * The settings the Assistant changes for the asking user. Each is that user's
- * own, and none spends on its own: the Default Session duration reaches only
- * Sessions the user still starts themselves. A setting that raises what a
- * running Session or the instance spends is the user's to change on its page.
+ * own, and none can raise what is spent: a setting that can, such as the
+ * Default Session duration, is the user's to change on its page.
  */
 export const ASSISTANT_SETTINGS = [
   'ownerInCovers',
   'blend',
   'crossfadeSeconds',
   'defaultLanguage',
-  'defaultSessionDuration',
 ] as const;
 export type AssistantSetting = (typeof ASSISTANT_SETTINGS)[number];
 

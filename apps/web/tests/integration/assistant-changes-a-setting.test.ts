@@ -289,63 +289,17 @@ describe.skipIf(skip)('the Assistant asked to change one of the asker’s own se
       defaultLanguage: 'auto',
     });
   });
-
-  it('sets the Default Session duration by the choice the settings page shows', async () => {
-    const asker = await createMember('member');
-
-    const turn = await change(asker, 'defaultSessionDuration', '1 h');
-
-    expect(await getGenerationSettings(testDb.db, asker)).toMatchObject({
-      defaultSessionDurationMinutes: 60,
-    });
-    expect(receipts(turn)).toEqual([
-      {
-        action: 'changeSetting',
-        setting: 'defaultSessionDuration',
-        value: '1 h',
-        previous: '30 min',
-      },
-    ]);
-
-    await change(asker, 'defaultSessionDuration', 'No limit');
-    expect(await getGenerationSettings(testDb.db, asker)).toMatchObject({
-      defaultSessionDurationMinutes: null,
-    });
-
-    await change(asker, 'defaultSessionDuration', '15');
-    expect(await getGenerationSettings(testDb.db, asker)).toMatchObject({
-      defaultSessionDurationMinutes: 15,
-    });
-  });
-
-  it.each(['45 min', '3 h', '0', 'forever', '1.5 h'])(
-    'keeps the Default Session duration for "%s", which its choice does not have',
-    async (said) => {
-      const asker = await createMember('member');
-
-      const turn = await change(asker, 'defaultSessionDuration', said);
-
-      expect(await getGenerationSettings(testDb.db, asker)).toMatchObject({
-        defaultSessionDurationMinutes: 30,
-      });
-      expect(receipts(turn)).toEqual([]);
-      expect(turn.results[0]).toBe(
-        '"New music per Session" takes 5 min, 15 min, 30 min, 1 h, 2 h or No limit. Nothing was changed.',
-      );
-    },
-  );
 });
 
 describe('the settings the Assistant changes', () => {
-  it('are the five that spend nothing on their own, and the tool takes no other', () => {
+  it('are the four that cannot spend, and the tool takes no other', () => {
     expect(ASSISTANT_SETTINGS).toEqual([
       'ownerInCovers',
       'blend',
       'crossfadeSeconds',
       'defaultLanguage',
-      'defaultSessionDuration',
     ]);
-    for (const setting of ['bufferAheadTracks', 'bufferEnabled', 'dailyTrackLimit']) {
+    for (const setting of ['bufferAheadTracks', 'defaultSessionDuration', 'dailyTrackLimit']) {
       expect(changeSettingInputSchema.safeParse({ setting, value: '10' }).success).toBe(false);
     }
   });

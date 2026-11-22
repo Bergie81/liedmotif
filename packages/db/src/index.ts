@@ -156,7 +156,6 @@ export {
   updateAssistantTone,
   updateCoverArtSettings,
   updateDefaultLanguage,
-  updateDefaultSessionDuration,
   updateGenerationSettings,
   updateMemberAssistantAccess,
   updateMemberLimits,

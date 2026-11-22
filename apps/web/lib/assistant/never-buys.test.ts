@@ -111,10 +111,8 @@ const SERVER_CALLS = [
   'setSessionPinned',
   'setTrackFavorited',
   // The asker's own settings: read, and written one choice at a time. Of the
-  // Generation settings only the language and the Default Session duration are
-  // written, never what a Session generates ahead.
-  'DEFAULT_SESSION_DURATION_OPTIONS',
-  'defaultSessionDurationLabel',
+  // Generation settings only the language is written, never what a Session
+  // generates ahead.
   'getCoverArtSettings',
   'getCoverReferenceFrequency',
   'getGenerationSettings',
@@ -126,7 +124,6 @@ const SERVER_CALLS = [
   'toPersonRoster',
   'updateCoverReferenceFrequency',
   'updateDefaultLanguage',
-  'updateDefaultSessionDuration',
   'updatePlaybackSettings',
   // The one write to a Session: its mode, and only to Repeat.
   'switchSessionMode',

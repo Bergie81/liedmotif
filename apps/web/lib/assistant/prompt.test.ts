@@ -100,7 +100,9 @@ describe.each([
       /^- changeSetting .*Include the owner in covers, Blend consecutive tracks, Crossfade length or Default language/m,
     );
     expect(tools).toMatch(/changeSetting changes those settings and no other/);
-    expect(tools).toMatch(/whatever can spend, such as a limit, a budget or how many Tracks/);
+    expect(tools).toMatch(
+      /whatever can spend, such as a limit, a budget, the Default Session duration or how many Tracks/,
+    );
     expect(tools).toMatch(
       /never say that a setting is changed, set or saved unless a tool's result starts with "Done:"/i,
     );

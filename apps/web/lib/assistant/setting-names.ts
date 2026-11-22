@@ -9,7 +9,6 @@ export const SETTING_NAMES: Record<AssistantSetting, { label: string; page: stri
   blend: { label: 'Blend consecutive tracks', page: '/settings/playback' },
   crossfadeSeconds: { label: 'Crossfade length', page: '/settings/playback' },
   defaultLanguage: { label: 'Default language', page: '/settings/generation' },
-  defaultSessionDuration: { label: 'New music per Session', page: '/settings/generation' },
 };
 
 /** `words` as one list: "a, b or c". */
