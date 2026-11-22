@@ -41,13 +41,14 @@ const choice = (name: string) => screen.getByRole('radio', { name }) as HTMLInpu
 
 describe('New music per Session', () => {
   it('offers the six choices, with the shipped 30 min picked', () => {
-    render(h(GenerationForm, { initial: DEFAULT_GENERATION_SETTINGS }));
+    render(h(GenerationForm, { initial: DEFAULT_GENERATION_SETTINGS, tracksPerRequest: 2 }));
 
     expect(
       screen.getAllByRole('radio').map((radio) => radio.closest('label')?.textContent),
     ).toEqual(['5 min', '15 min', '30 min', '1 h', '2 h', 'No limit']);
     expect(choice('30 min').checked).toBe(true);
     expect(screen.getByText(/repeats for free/i)).toBeTruthy();
+    expect(screen.getByText(/at least 2 tracks, which is what 5 min gives/i)).toBeTruthy();
     expect(screen.getByText(/change any session in the player/i)).toBeTruthy();
     expect(screen.queryByText('Generate new tracks by default')).toBeNull();
   });
@@ -56,7 +57,7 @@ describe('New music per Session', () => {
     ['1 h', 60],
     ['No limit', null],
   ])('saves %s with the ready-ahead target', async (name, minutes) => {
-    render(h(GenerationForm, { initial: DEFAULT_GENERATION_SETTINGS }));
+    render(h(GenerationForm, { initial: DEFAULT_GENERATION_SETTINGS, tracksPerRequest: 2 }));
 
     fireEvent.click(choice(name));
     fireEvent.click(screen.getByRole('button', { name: 'Save New Music' }));
@@ -70,7 +71,7 @@ describe('New music per Session', () => {
   });
 
   it('refreshes the pages that show the default once it is saved', async () => {
-    render(h(GenerationForm, { initial: DEFAULT_GENERATION_SETTINGS }));
+    render(h(GenerationForm, { initial: DEFAULT_GENERATION_SETTINGS, tracksPerRequest: 2 }));
 
     fireEvent.click(choice('No limit'));
     fireEvent.click(screen.getByRole('button', { name: 'Save New Music' }));

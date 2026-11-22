@@ -104,7 +104,7 @@ describe('Generation', () => {
     api.updateGenerationSettings
       .mockResolvedValueOnce(failed('Could not save New Music.'))
       .mockResolvedValueOnce({ ok: true, data: DEFAULT_GENERATION_SETTINGS });
-    render(h(GenerationForm, { initial: DEFAULT_GENERATION_SETTINGS }));
+    render(h(GenerationForm, { initial: DEFAULT_GENERATION_SETTINGS, tracksPerRequest: 2 }));
 
     await failThenSucceed(
       'Save New Music',

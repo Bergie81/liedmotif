@@ -21,7 +21,14 @@ import { GatedSlider, SettingsFootnote } from './settings-ui';
 const DURATION_DESCRIPTION_ID = 'default-session-duration-description';
 const SAVE_KEY = 'new-music-save';
 
-export function GenerationForm({ initial }: { initial: GenerationSettings }) {
+export function GenerationForm({
+  initial,
+  tracksPerRequest,
+}: {
+  initial: GenerationSettings;
+  /** Tracks one music-model call yields: the least a Session can generate. */
+  tracksPerRequest: number;
+}) {
   const router = useRouter();
   const [defaultSessionDurationMinutes, setDefaultSessionDurationMinutes] = useState(
     initial.defaultSessionDurationMinutes,
@@ -76,7 +83,8 @@ export function GenerationForm({ initial }: { initial: GenerationSettings }) {
           ))}
         </div>
         <p id={DURATION_DESCRIPTION_ID} className="mt-2 text-[12.5px] text-dim">
-          How much new music a new session generates when you give it no duration. Once reached, the
+          How much new music a new session generates when you give it no duration. A session always
+          generates at least {tracksPerRequest} tracks, which is what 5 min gives. Once reached, the
           session repeats for free. You can change any session in the player.
         </p>
       </fieldset>

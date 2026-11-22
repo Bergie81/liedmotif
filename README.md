@@ -18,8 +18,8 @@ Describe what the music is *for*, such as a workout, a coding session, a rainy w
 
 - **Sessions from a sentence.** Describe what you want, then fine-tune genre, energy, vocals, voice and language. Music is instrumental by default. Vocals are optional and can be sung in your own recorded voice, with synced lyrics.
 - **Tailored to you, privately.** Add your profile and the people in your life, and songs and covers can really be about them. Surprise Me picks from the taste it has learned. All of this is stored on your own machine, and there is no Liedmotif service that could see it.
-- **Continuous, blended playback.** A session keeps generating ahead of you, or loops the tracks it already has at no cost. Tracks crossfade like a DJ set, beat-matched when they allow it, at even loudness.
-- **Simple steering.** Change Vibe re-styles the running session, More Like This starts a new one from a track, and Dislike swaps a track for another in the same vibe. There is no Like button: if you keep listening, that's the signal.
+- **Continuous, blended playback.** A session keeps generating ahead of you, up to a duration you choose (30 minutes unless you change it), then loops the tracks it already has at no cost. Tracks crossfade like a DJ set, beat-matched when they allow it, at even loudness.
+- **Simple steering.** Change Vibe re-styles the running session, More Like This starts a new one from a track, with a few words on what it's for if you like, and Dislike swaps a track for another in the same vibe. There is no Like button: if you keep listening, that's the signal.
 - **A library you keep.** Playlists, Favorites, smart lists, listening history, resumable sessions and one search across all of it. Tracks can be stored on your phone for the Offline Library.
 - **Made for your phone.** Mobile-first interface with lock-screen controls.
 - **Family and friends.** Invite people with a one-time link. Each gets a private space and generates through your keys within a budget you set. You see their usage, never their music.

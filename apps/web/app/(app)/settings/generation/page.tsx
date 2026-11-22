@@ -58,7 +58,7 @@ export default async function GenerationSettingsPage() {
         </SettingsSection>
         <SettingsSection title="New Music">
           <SettingsCard>
-            <GenerationForm initial={settings} />
+            <GenerationForm initial={settings} tracksPerRequest={tracksPerRequest} />
           </SettingsCard>
         </SettingsSection>
       </SettingsColumns>

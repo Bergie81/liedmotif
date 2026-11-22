@@ -76,8 +76,6 @@ Every new session gets a duration. When you don't pick one, it takes your defaul
 - Setting a target turns **New Music** on for that session, since only new tracks can fill it.
 - At the target, a change of vibe is refused unless the same change raises or clears the target.
 
-**After an update** from a version without this setting, new sessions get **30 min**. If you had switched off the old **Generate new tracks by default**, your default is **5 min** instead, so new sessions still buy about one pair and then repeat. Sessions you already have keep the duration they had, or none.
-
 ### Change Vibe
 
 A change of vibe buys the first new tracks in the new direction, even with **New Music** off. It also uses your text AI once, whether you wrote a new direction or only changed a setting. The one exception is an older session that was started from settings alone, with no words: changing only a setting there applies it without asking the text AI for a new direction. It needs room for one more pair within your limits. Tracks you already have stay paid for and remain in your history.
