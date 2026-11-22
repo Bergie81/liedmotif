@@ -5,22 +5,30 @@ import { useId } from 'react';
 /** Longer targets stay valid; the slider pins them to its end while the label keeps the exact value. */
 const SLIDER_MAX_MINUTES = 180;
 
-function durationLabel(value: number | null, auto: boolean): string {
-  if (value != null) return `${value} min`;
-  return auto ? 'Auto' : 'No limit';
+function minutesLabel(minutes: number | null): string {
+  return minutes == null ? 'No limit' : `${minutes} min`;
+}
+
+function durationLabel(value: number | null, auto: boolean, autoMinutes?: number | null): string {
+  if (value != null || !auto) return minutesLabel(value);
+  return autoMinutes === undefined ? 'Auto' : `Auto · ${minutesLabel(autoMinutes)}`;
 }
 
 export function SessionDurationControl({
   value,
   onChange,
   auto = false,
+  autoMinutes,
 }: {
   value: number | null;
   onChange: (value: number | null) => void;
+  /** The left stop is Auto (the server decides the target) instead of No limit. */
   auto?: boolean;
+  /** The user's Default Session duration, which Auto falls back to; null is No limit. */
+  autoMinutes?: number | null;
 }) {
   const id = useId();
-  const label = durationLabel(value, auto);
+  const label = durationLabel(value, auto, autoMinutes);
   return (
     <div>
       <label htmlFor={id} className="mb-2 flex justify-between text-[15px] font-semibold">
@@ -42,8 +50,8 @@ export function SessionDurationControl({
         <div className="mt-2 text-[11.5px] leading-[1.5] text-dim">
           <p>A selected duration overrides any duration in your prompt.</p>
           <p className="mt-1">
-            Auto detects an explicit duration in your prompt when a text AI is connected. Without
-            one, generation stays continuous.
+            Auto uses a duration from your prompt when a text AI is connected, otherwise your
+            default. Change the default in Settings → Generation.
           </p>
         </div>
       ) : null}

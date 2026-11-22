@@ -9,6 +9,7 @@
 import { useEffect } from 'react';
 import type { CoverStyleChoice, SurpriseProposal } from '@liedmotif/shared';
 import type { SessionLanguageChoice } from '@/lib/sessions/session-languages';
+import type { DefaultSessionDuration } from '@/lib/settings/default-session-duration';
 import type { OwnVoiceOffer } from '@/lib/voice/voice';
 import { useAppChrome } from '@/components/app-chrome-context';
 import { CreateSessionCard } from '@/components/create/create-session-card';
@@ -30,6 +31,7 @@ export function HomeView({
   defaultCoverStyle,
   defaultUseStandardCover,
   defaultLanguage,
+  defaultSessionDurationMinutes,
   llmConfigured,
   forYouGenres,
   ownVoiceOffer = 'hidden',
@@ -43,6 +45,7 @@ export function HomeView({
   defaultCoverStyle?: CoverStyleChoice;
   defaultUseStandardCover?: boolean;
   defaultLanguage?: SessionLanguageChoice;
+  defaultSessionDurationMinutes?: DefaultSessionDuration;
   llmConfigured: boolean;
   forYouGenres: readonly string[];
   /** How "Use my voice" is offered on the create card (default: absent). */
@@ -96,6 +99,9 @@ export function HomeView({
               {...(defaultCoverStyle ? { defaultCoverStyle } : {})}
               {...(defaultUseStandardCover !== undefined ? { defaultUseStandardCover } : {})}
               {...(defaultLanguage ? { defaultLanguage } : {})}
+              {...(defaultSessionDurationMinutes !== undefined
+                ? { defaultSessionDurationMinutes }
+                : {})}
             />
           </div>
         </div>

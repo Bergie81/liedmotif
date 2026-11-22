@@ -2,16 +2,18 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type {
-  CoverStyleChoice,
-  SessionIntentInput,
-  StartSessionRequest,
-  StartSurpriseRequest,
-  SurpriseProposal,
+import {
+  DEFAULT_GENERATION_SETTINGS,
+  type CoverStyleChoice,
+  type SessionIntentInput,
+  type StartSessionRequest,
+  type StartSurpriseRequest,
+  type SurpriseProposal,
 } from '@liedmotif/shared';
 import type { ApiResult } from '@/lib/http/api-client';
 import { cn } from '@/lib/cn';
 import type { SessionLanguageChoice } from '@/lib/sessions/session-languages';
+import type { DefaultSessionDuration } from '@/lib/settings/default-session-duration';
 import type { OwnVoiceOffer } from '@/lib/voice/voice';
 import { useClientId } from '@/lib/use-client-id';
 import { primaryButtonClass } from '@/components/ui/form-styles';
@@ -50,6 +52,7 @@ export function CreateSessionCard({
   defaultCoverStyle = 'auto',
   defaultUseStandardCover = false,
   defaultLanguage = 'auto',
+  defaultSessionDurationMinutes = DEFAULT_GENERATION_SETTINGS.defaultSessionDurationMinutes,
   forYouGenres = [],
   ownVoiceOffer = 'hidden',
   surprise,
@@ -63,6 +66,9 @@ export function CreateSessionCard({
   defaultUseStandardCover?: boolean;
   /** The owner's Settings → Generation default; each Session can override it. */
   defaultLanguage?: SessionLanguageChoice;
+  /** The owner's Settings → Generation default the server applies when the
+   * slider stays on Auto; the card only names it and never sends it. */
+  defaultSessionDurationMinutes?: DefaultSessionDuration;
   /** The User's For you genres from learned taste (ranked); empty means curated defaults. */
   forYouGenres?: readonly string[];
   /** How "Use my voice" is offered; defaults to `hidden` so a surface that
@@ -259,6 +265,7 @@ export function CreateSessionCard({
             value={targetDurationMinutes}
             onChange={setTargetDurationMinutes}
             auto
+            autoMinutes={defaultSessionDurationMinutes}
           />
         </DescribeFineTuneSection>
       </SessionExtras>

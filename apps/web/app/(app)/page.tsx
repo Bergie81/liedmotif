@@ -33,14 +33,14 @@ export default async function HomePage({
   // Describe field for review, never auto-submitted.
   const initialPrompt = intentFromParam((await searchParams)[INTENT_PARAM]);
   // The create card preselects the viewer's saved defaults (cover style from
-  // Settings → Cover art, language from Settings → Generation) and offers the User's
-  // For you genres first. All are best-effort cosmetics: a read failure
-  // degrades to the `auto` preselects and the default genre shortlist, never a
-  // 500.
+  // Settings → Cover art, language and the duration Auto stands for from
+  // Settings → Generation) and offers the User's For you genres first. All are
+  // best-effort cosmetics: a read failure degrades to the `auto` preselects,
+  // the shipped duration and the default genre shortlist, never a 500.
   const viewer = requireAppAccess().catch(() => null);
   const [
     coverArtDefaults,
-    defaultLanguage,
+    generationDefaults,
     llmProvider,
     forYouGenres,
     ownVoiceOffer,
@@ -62,7 +62,14 @@ export default async function HomePage({
       .catch(() => undefined),
     viewer
       .then((value) => (value ? getGenerationSettings(getDb(), value.session.user.id) : null))
-      .then((settings) => settings?.defaultLanguage)
+      .then((settings) =>
+        settings
+          ? {
+              defaultLanguage: settings.defaultLanguage,
+              defaultSessionDurationMinutes: settings.defaultSessionDurationMinutes,
+            }
+          : undefined,
+      )
       .catch(() => undefined),
     getLlmProvider().catch(() => null),
     viewer
@@ -150,7 +157,7 @@ export default async function HomePage({
       pendingSurprise={pendingSurprise}
       {...(initialPrompt ? { initialPrompt } : {})}
       {...(coverArtDefaults ?? {})}
-      {...(defaultLanguage ? { defaultLanguage } : {})}
+      {...(generationDefaults ?? {})}
       {...(recentSessions ? { initialSessions: recentSessions } : {})}
     />
   );

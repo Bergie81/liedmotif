@@ -59,26 +59,52 @@ afterEach(() => {
 });
 
 describe('Start Session duration controls', () => {
-  it('starts on Auto and submits no explicit target', () => {
+  function durationText() {
+    return screen
+      .getByLabelText(/Session duration/, { selector: 'input' })
+      .getAttribute('aria-valuetext');
+  }
+
+  it('shows the default Session duration Auto stands for and submits no explicit target', () => {
     const onStart = vi.fn();
     render(
       createElement(CreateSessionCard, {
         onStart,
         llmConfigured: false,
         initialPrompt: 'Quiet music',
+        defaultSessionDurationMinutes: 60,
       }),
     );
 
-    expect(
-      screen
-        .getByLabelText(/Session duration/, { selector: 'input' })
-        .getAttribute('aria-valuetext'),
-    ).toBe('Auto');
-    expect(screen.getByText(/Without one, generation stays continuous/)).toBeTruthy();
+    expect(durationText()).toBe('Auto · 60 min');
+    expect(screen.getByText(/otherwise your default/)).toBeTruthy();
+    expect(screen.getByText(/Settings → Generation/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Start Session' }));
 
     expect(onStart).toHaveBeenCalledOnce();
     expect(onStart.mock.calls[0]![0]).not.toHaveProperty('targetDurationMinutes');
+  });
+
+  it('shows Auto as No limit when that is the default, and still submits no target', () => {
+    const onStart = vi.fn();
+    render(
+      createElement(CreateSessionCard, {
+        onStart,
+        llmConfigured: true,
+        initialPrompt: 'Quiet music',
+        defaultSessionDurationMinutes: null,
+      }),
+    );
+
+    expect(durationText()).toBe('Auto · No limit');
+    fireEvent.click(screen.getByRole('button', { name: 'Start Session' }));
+    expect(onStart.mock.calls[0]![0]).not.toHaveProperty('targetDurationMinutes');
+  });
+
+  it('shows the shipped 30 min default when the page passes none', () => {
+    render(createElement(CreateSessionCard, { onStart: vi.fn(), llmConfigured: false }));
+
+    expect(durationText()).toBe('Auto · 30 min');
   });
 
   function mountWithTarget() {
@@ -226,6 +252,29 @@ describe('Surprise Me in the creation card', () => {
     ).toBe('45 min');
     fireEvent.click(screen.getByTestId('start-vibe'));
     expect(onStartSurprise.mock.calls[0]![0]).toMatchObject({ targetDurationMinutes: 45 });
+  });
+
+  it('leaves a proposal without a length on Auto and starts it with no target', () => {
+    const onStartSurprise = vi.fn();
+    render(
+      createElement(CreateSessionCard, {
+        onStart: vi.fn(),
+        llmConfigured: true,
+        defaultSessionDurationMinutes: 15,
+        surprise: {
+          pending: { ...EMBER, edit: { ...EMBER.edit, durationMinutes: null } },
+          onStart: onStartSurprise,
+        },
+      }),
+    );
+
+    expect(
+      screen
+        .getByLabelText(/Session duration/, { selector: 'input' })
+        .getAttribute('aria-valuetext'),
+    ).toBe('Auto · 15 min');
+    fireEvent.click(screen.getByTestId('start-vibe'));
+    expect(onStartSurprise.mock.calls[0]![0]).not.toHaveProperty('targetDurationMinutes');
   });
 
   it('opens on the pending proposal’s words and leaves a search hand-off alone', () => {
