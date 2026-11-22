@@ -115,9 +115,9 @@ describe('the eval set', () => {
   });
 
   describe("the entries about the user's own music", () => {
-    it('are about 35, at least 3 in German and 1 in French', () => {
+    it('are about 40, at least 3 in German and 1 in French', () => {
       expect(ABOUT_MUSIC.length).toBeGreaterThanOrEqual(30);
-      expect(ABOUT_MUSIC.length).toBeLessThanOrEqual(40);
+      expect(ABOUT_MUSIC.length).toBeLessThanOrEqual(45);
       expect(ABOUT_MUSIC.filter(({ language }) => language === 'de').length).toBeGreaterThanOrEqual(
         3,
       );

@@ -246,6 +246,8 @@ export const assistantCardSchema = z.discriminatedUnion('kind', [
     tracks: z.array(assistantActionItemSchema).min(1).max(MAX_SEED_TRACKS),
     /** How long the Session generates; null is No limit. Left out when it starts on Repeat and the user named no length. */
     targetDurationMinutes: targetDurationMinutesSchema.nullable().optional(),
+    /** What the new Session is about or for, in the user's words; left out for none. It never changes the music. */
+    context: z.string().min(1).max(MAX_USER_PROMPT_LENGTH).optional(),
   }),
   z.strictObject({
     kind: z.literal('newMusicOn'),
@@ -320,6 +322,7 @@ export function moreLikeThisCardRequest(
     ...(card.targetDurationMinutes != null && {
       targetDurationMinutes: card.targetDurationMinutes,
     }),
+    ...(card.context !== undefined && { context: card.context }),
   };
 }
 
@@ -690,7 +693,7 @@ export type ProposeChangeVibeInput = z.infer<typeof proposeChangeVibeInputSchema
 /**
  * What the model passes to `proposeMoreLikeThis`. More Tracks than the cap is
  * answered, not cut. A length and `noLimit` carry what the user said, as on
- * `proposeSession`.
+ * `proposeSession`. A context is checked like the More Like This route's own.
  */
 export const proposeMoreLikeThisInputSchema = z.object({
   trackIds: z
@@ -698,6 +701,12 @@ export const proposeMoreLikeThisInputSchema = z.object({
     .nullish()
     .describe(
       `The ids of the Tracks the new Session should sound like, at most ${MAX_SEED_TRACKS}, as another tool returned them. Leave out for the Track that is playing now ("more like this").`,
+    ),
+  context: z
+    .string()
+    .nullish()
+    .describe(
+      'What the new Session is about or for, in the words the user used: "for cooking", "for Anna\'s birthday", "about autumn in Berlin". Only when the user named one. Never a change to the sound.',
     ),
   ...newSessionLengthInput,
 });

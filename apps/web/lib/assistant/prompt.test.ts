@@ -162,6 +162,15 @@ describe.each([
     expect(line).toMatch(/never take the length of the Session that is playing or of the seed/i);
   });
 
+  it('tells the model what a More Like This context is, and that it never changes the sound', () => {
+    const line = prompt.match(/^- proposeMoreLikeThis .*$/m)![0];
+    expect(line).toMatch(/context .*about or for.*own words/i);
+    expect(line).toMatch(/occasion, a theme, people, what the track titles and lyrics are about/i);
+    expect(line).toMatch(/never changes how the music sounds/i);
+    // A change to the sound goes where the sound can change.
+    expect(line).toMatch(/faster.*no context.*new Session.*Change Vibe/i);
+  });
+
   it('names the five other things that are only prepared, each on a card the user confirms', () => {
     const tools = prompt.slice(prompt.indexOf('Tools:'), prompt.indexOf('Links:'));
     expect(tools).toMatch(/^- proposeChangeVibe prepares a Change Vibe for the active Session/m);

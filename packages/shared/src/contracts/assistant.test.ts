@@ -6,6 +6,7 @@ import {
   ASSISTANT_PLAYER_CONTROLS,
   MAX_COVER_GUIDANCE_LENGTH,
   MAX_SEED_TRACKS,
+  MAX_USER_PROMPT_LENGTH,
   assistantRequestSchema,
   assistantStreamEventSchema,
   coverCardRegenerateRequest,
@@ -321,6 +322,25 @@ describe('assistantStreamEventSchema', () => {
     expect(moreLikeThisCardRequest({ kind: 'moreLikeThis', tracks })).toEqual({ seedTrackIds });
   });
 
+  it('sends the context a More Like This card carries, and none when it carries none', () => {
+    const tracks = [{ id: '00000000-0000-4000-8000-000000000001', name: 'Night Drive' }];
+    const seedTrackIds = tracks.map(({ id }) => id);
+
+    const request = moreLikeThisCardRequest({
+      kind: 'moreLikeThis',
+      tracks,
+      context: 'for cooking',
+    });
+
+    expect(request).toEqual({ seedTrackIds, context: 'for cooking' });
+    expect(moreLikeThisRequestSchema.safeParse({ ...request, clientId: 'client-1' }).success).toBe(
+      true,
+    );
+    expect(Object.keys(moreLikeThisCardRequest({ kind: 'moreLikeThis', tracks }))).toEqual([
+      'seedTrackIds',
+    ]);
+  });
+
   it('starts a Session or Surprise Me card with the cover choices the card carries, as Home sends them', () => {
     const cover = { coverStyle: 'manga', useStandardCover: true } as const;
     const session = { kind: 'session', prompt: 'calm piano', vocal: 'instrumental' } as const;
@@ -378,6 +398,10 @@ describe('assistantStreamEventSchema', () => {
     expect(parses({ ...seeded(1), targetDurationMinutes: 45 })).toBe(true);
     expect(parses({ ...seeded(1), targetDurationMinutes: null })).toBe(true);
     expect(parses({ ...seeded(1), targetDurationMinutes: 601 })).toBe(false);
+    // A context is the user's words, sent as the route takes them.
+    expect(parses({ ...seeded(1), context: 'for cooking' })).toBe(true);
+    expect(parses({ ...seeded(1), context: '' })).toBe(false);
+    expect(parses({ ...seeded(1), context: 'x'.repeat(MAX_USER_PROMPT_LENGTH + 1) })).toBe(false);
 
     const newMusicOn = { kind: 'newMusicOn', session, targetDurationMinutes: 45 };
     expect(parses(newMusicOn)).toBe(true);

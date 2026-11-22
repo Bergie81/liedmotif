@@ -189,6 +189,8 @@ const leftOut = (value: unknown) =>
 
 function sameValue(got: unknown, want: unknown): boolean {
   if (want === undefined) return leftOut(got);
+  // Free text the model words itself: a pattern names what it has to say.
+  if (want instanceof RegExp) return typeof got === 'string' && want.test(got);
   if (!Array.isArray(want)) return got === want;
   // A list of ids names a set of things: the order does not change which.
   return (

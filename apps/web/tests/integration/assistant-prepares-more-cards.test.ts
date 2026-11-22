@@ -26,7 +26,11 @@ import {
   truncateTables,
   type TestDb,
 } from '@liedmotif/db/testing';
-import type { AssistantCard, AssistantPlayerState } from '@liedmotif/shared';
+import {
+  MAX_USER_PROMPT_LENGTH,
+  type AssistantCard,
+  type AssistantPlayerState,
+} from '@liedmotif/shared';
 import { askWithToolCalls, type ToolCallsTurn } from '../helpers/assistant-tool-turn';
 
 const holder = vi.hoisted(() => ({
@@ -344,6 +348,69 @@ describe.skipIf(skip)('the Assistant asked for more like some Tracks', () => {
     );
     expect(await rowsIn('activity_sessions')).toBe(sessions);
     expect(await rowsIn('generation_requests')).toBe(requests);
+  });
+
+  it('sends a card carrying the context in the user’s words, and creates nothing', async () => {
+    const asker = await createUser();
+    const [nightDrive] = await seedTracks(asker, 'Night Drive');
+    const sessions = await rowsIn('activity_sessions');
+    const requests = await rowsIn('generation_requests');
+
+    const turn = await ask(asker, [
+      moreLikeThis({
+        trackIds: [nightDrive],
+        targetDurationMinutes: 60,
+        context: ' für Annas Geburtstag ',
+      }),
+    ]);
+
+    expect(cards(turn)).toEqual([
+      {
+        kind: 'moreLikeThis',
+        tracks: [{ id: nightDrive, name: 'Night Drive' }],
+        targetDurationMinutes: 60,
+        context: 'für Annas Geburtstag',
+      },
+    ]);
+    expect(turn.results[0]).toMatch(
+      /^Prepared: a card to start a new Session that sounds like the Track "Night Drive", with the context "für Annas Geburtstag", 60 minutes\./,
+    );
+    expect(await rowsIn('activity_sessions')).toBe(sessions);
+    expect(await rowsIn('generation_requests')).toBe(requests);
+  });
+
+  it('sends a card without a context for a blank one, as the route reads blank as none', async () => {
+    const asker = await createUser();
+    const [nightDrive] = await seedTracks(asker, 'Night Drive');
+
+    const turn = await ask(asker, [
+      moreLikeThis({ trackIds: [nightDrive], targetDurationMinutes: 60, context: '   ' }),
+    ]);
+
+    expect(cards(turn)).toEqual([
+      {
+        kind: 'moreLikeThis',
+        tracks: [{ id: nightDrive, name: 'Night Drive' }],
+        targetDurationMinutes: 60,
+      },
+    ]);
+  });
+
+  it('tells the model about a context it cannot send, and sends no card', async () => {
+    const asker = await createUser();
+    const [nightDrive] = await seedTracks(asker, 'Night Drive');
+
+    const turn = await ask(asker, [
+      moreLikeThis({
+        trackIds: [nightDrive],
+        targetDurationMinutes: 60,
+        context: 'x'.repeat(MAX_USER_PROMPT_LENGTH + 1),
+      }),
+    ]);
+
+    expect(cards(turn)).toEqual([]);
+    expect(turn.results[0]).toContain(`at most ${MAX_USER_PROMPT_LENGTH} characters`);
+    expect(turn.results[0]).toMatch(/no card was shown/i);
   });
 
   it('takes "this" from what the player has on the deck when the model names no Track', async () => {

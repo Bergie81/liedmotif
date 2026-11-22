@@ -275,6 +275,25 @@ describe('a More Like This card', () => {
     });
   });
 
+  it('shows the card’s context as its words and sends it with the seeds', async () => {
+    player.beginOtherMusic.mockResolvedValue(true);
+    const { card, server } = await askForCard(
+      'More Like This',
+      [cardEvent({ ...LIKE_THESE, context: 'for cooking' })],
+      { desk: false },
+    );
+    expect(card.textContent).toContain('“for cooking”');
+
+    fireEvent.click(button('Start New Session'));
+
+    await waitFor(() => expect(server.sent).toHaveLength(1));
+    expect(server.sent[0]!.body).toEqual({
+      seedTrackIds: [NIGHT_DRIVE.id, LOW_TIDE.id],
+      clientId: expect.stringMatching(/^[0-9a-f-]{36}$/),
+      context: 'for cooking',
+    });
+  });
+
   it('shows the app’s own refusal on the card, and stays where it is', async () => {
     player.beginOtherMusic.mockResolvedValue(true);
     const { card, server } = await ask({ desk: false });

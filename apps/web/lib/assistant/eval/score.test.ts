@@ -313,6 +313,18 @@ describe('scoring what a turn did', () => {
     expect(set({ minutes: 30, off: true })).toBe('fail');
   });
 
+  it('matches free text the model words itself against a pattern', () => {
+    const cooking = request([{ tool: 'proposeMoreLikeThis', input: [{ context: /cook/i }] }]);
+    const scored = (input: unknown) =>
+      scoreAnswer(cooking, turn({ toolCalls: [called('proposeMoreLikeThis', input)] }), MEMBER)
+        .toolValues;
+
+    expect(scored({ context: 'for cooking' })).toBe('pass');
+    expect(scored({ context: 'Cooking dinner' })).toBe('pass');
+    expect(scored({ context: 'for running' })).toBe('fail');
+    expect(scored({})).toBe('fail');
+  });
+
   describe('where nothing should be done', () => {
     const remove = request([], { question: 'Remove Neon Rain from my Favorites.' });
 

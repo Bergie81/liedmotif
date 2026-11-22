@@ -14,6 +14,7 @@ import {
   assistantCardSchema,
   isSungTheme,
   MAX_COVER_GUIDANCE_LENGTH,
+  MAX_USER_PROMPT_LENGTH,
   renameSessionRequestSchema,
   renameTrackRequestSchema,
   targetDurationMinutesSchema,
@@ -619,6 +620,7 @@ function fixtureAnswers(
       trackIds,
       targetDurationMinutes: minutes,
       noLimit,
+      context,
     }: ProposeMoreLikeThisInput) =>
       actions.take('proposed', async () => {
         const asked = askedTracks(trackIds, player);
@@ -632,8 +634,13 @@ function fixtureAnswers(
           kind: 'moreLikeThis',
           tracks: seeds.map(item),
           targetDurationMinutes: minutes ?? null,
+          ...(context?.trim() && { context: context.trim() }),
         });
-        return card.success ? proposed(card.data) : notOffered(NO_SUCH_TRACK);
+        return card.success
+          ? proposed(card.data)
+          : notOffered(
+              `A context is at most ${MAX_USER_PROMPT_LENGTH} characters. Ask the user to say it shorter.`,
+            );
       }),
     [PROPOSE_NEW_MUSIC_ON_TOOL_NAME]: ({
       targetDurationMinutes: minutes,

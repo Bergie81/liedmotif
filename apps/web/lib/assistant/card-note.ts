@@ -30,9 +30,13 @@ export function cardNote(card: AssistantCard): string {
       return `change the vibe of the Session ${quoted(card.session.name)} with the words ${quoted(card.prompt)}`;
     case 'moreLikeThis': {
       const titles = card.tracks.map(({ name }) => quoted(name)).join(', ');
-      const note = `start a new Session that sounds like the ${card.tracks.length === 1 ? 'Track' : 'Tracks'} ${titles}`;
+      const details = [
+        `start a new Session that sounds like the ${card.tracks.length === 1 ? 'Track' : 'Tracks'} ${titles}`,
+      ];
+      if (card.context !== undefined) details.push(`with the context ${quoted(card.context)}`);
       const length = lengthNote(card.targetDurationMinutes);
-      return length ? `${note}, ${length}` : note;
+      if (length) details.push(length);
+      return details.join(', ');
     }
     case 'newMusicOn':
       return `switch New Music on for the Session ${quoted(card.session.name)}, ${newMusicLimitNote(card.targetDurationMinutes)}`;

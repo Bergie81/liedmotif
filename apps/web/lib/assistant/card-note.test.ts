@@ -105,6 +105,16 @@ describe('a card as the model reads it', () => {
       'start a new Session that sounds like the Track "Night Drive", with no limit',
     ],
     [
+      'a More Like This with a context and a length',
+      {
+        kind: 'moreLikeThis',
+        tracks: [{ id: TRACK_ID, name: 'Night Drive' }],
+        targetDurationMinutes: 60,
+        context: 'for cooking',
+      },
+      'start a new Session that sounds like the Track "Night Drive", with the context "for cooking", 60 minutes',
+    ],
+    [
       'New Music on up to a duration',
       { kind: 'newMusicOn', session: RAINY, targetDurationMinutes: 90 },
       'switch New Music on for the Session "Rainy Window", up to 90 minutes of music',

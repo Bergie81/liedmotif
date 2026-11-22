@@ -91,6 +91,17 @@ describe('a More Like This card', () => {
     expect(seeded(60)).toBe('A new session seeded from Night Drive · 60 min');
     expect(seeded(null)).toBe('A new session seeded from Night Drive · No Limit');
   });
+
+  it('shows the context as its words, the way a Change Vibe card shows its words', () => {
+    const wording = cardWording({
+      kind: 'moreLikeThis',
+      tracks: [track('Night Drive')],
+      context: 'for cooking',
+    });
+
+    expect(wording.words).toBe('for cooking');
+    expect(wording.details).toBe('A new session seeded from Night Drive');
+  });
 });
 
 describe('a New Music card', () => {

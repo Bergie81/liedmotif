@@ -112,6 +112,7 @@ export function cardWording(card: AssistantCard): CardWording {
       if (length) details.push(length);
       return {
         title: 'More Like This',
+        ...(card.context === undefined ? {} : { words: card.context }),
         details: details.join(' · '),
         cost: 'Starting generates new tracks from your budget.',
         // The button of the player's own More Like This.

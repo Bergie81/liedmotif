@@ -25,7 +25,8 @@ export interface ExpectedCall {
   /**
    * The values the call has to carry: one object per form that counts, each
    * naming only the fields that matter. `undefined` for a field means the
-   * model leaves it out. Without `input`, any call of the tool counts.
+   * model leaves it out; a RegExp matches free text the model words itself.
+   * Without `input`, any call of the tool counts.
    */
   input?: readonly Record<string, unknown>[];
 }
@@ -619,6 +620,40 @@ export const EVAL_SET: readonly EvalEntry[] = [
     ],
     goodAnswer:
       'Says a card for a new 60-minute Session that sounds like Neon Rain is prepared, and that confirming it generates new Tracks from the budget. Does not ask how long. Never says a Session has started.',
+  },
+  {
+    id: 'more-like-this-for-cooking',
+    role: 'member',
+    language: 'en',
+    question: 'More like this, but for cooking. About an hour.',
+    docs: 'none',
+    calls: [
+      {
+        tool: 'proposeMoreLikeThis',
+        input: [
+          { trackIds: undefined, targetDurationMinutes: 60, context: /cook/i },
+          { trackIds: [TRACKS.neonRain.id], targetDurationMinutes: 60, context: /cook/i },
+        ],
+      },
+    ],
+    goodAnswer:
+      'Says a card for a new 60-minute Session that sounds like Neon Rain, for cooking, is prepared, and that confirming it generates new Tracks from the budget. May say the cooking theme changes the name, titles, cover and lyrics, not the music. Never says a Session has started.',
+  },
+  {
+    id: 'more-like-this-but-faster',
+    role: 'member',
+    language: 'en',
+    question: 'More like this but faster, for about an hour.',
+    docs: 'none',
+    calls: [
+      {
+        tool: 'readTrack',
+        input: [{ trackId: undefined }, { trackId: TRACKS.neonRain.id }],
+      },
+      { tool: 'proposeSession', input: [{ targetDurationMinutes: 60 }] },
+    ],
+    goodAnswer:
+      'Says a card for a new 60-minute Session is prepared, described from Neon Rain’s style with a faster tempo, and that confirming it generates new Tracks from the budget. Never passes "faster" as a More Like This context. May offer a Change Vibe of Night Drive instead. Never says a Session has started.',
   },
   {
     id: 'new-music-without-a-limit',

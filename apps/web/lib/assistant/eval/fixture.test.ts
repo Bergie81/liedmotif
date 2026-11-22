@@ -210,6 +210,24 @@ describe('the tools of a fixture turn that act', () => {
     ]);
   });
 
+  it('carry a More Like This context onto the card, as the real tool does', async () => {
+    // One card per turn, so each call gets a turn of its own.
+    const withContext = openTurn();
+    const blank = openTurn();
+
+    await withContext.call('proposeMoreLikeThis', {
+      targetDurationMinutes: 60,
+      context: ' for cooking ',
+    });
+    await blank.call('proposeMoreLikeThis', { targetDurationMinutes: 60, context: '' });
+
+    expect(withContext.reported).toMatchObject([
+      { card: { kind: 'moreLikeThis', context: 'for cooking' } },
+    ]);
+    expect(blank.reported).toMatchObject([{ card: { kind: 'moreLikeThis' } }]);
+    expect(blank.reported[0]).not.toHaveProperty('card.context');
+  });
+
   it('ask how long before More Like This, as before a new Session, when no length is given', async () => {
     const { call, reported } = openTurn();
 
