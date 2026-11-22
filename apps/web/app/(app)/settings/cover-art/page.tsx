@@ -2,7 +2,6 @@ import { getCoverArtSettings } from '@liedmotif/db';
 import { CoverArtForm } from '@/components/settings/cover-art-form';
 import {
   SettingsCard,
-  SettingsColumns,
   SettingsPageHeader,
   SettingsSection,
 } from '@/components/settings/settings-ui';
@@ -27,13 +26,13 @@ export default async function CoverArtPage() {
         description="Choose the look of generated session covers."
       />
 
-      <SettingsColumns>
+      <div className="mt-6">
         <SettingsSection title="Default Style">
           <SettingsCard>
             <CoverArtForm initial={settings} llmConfigured={llmProvider !== null} />
           </SettingsCard>
         </SettingsSection>
-      </SettingsColumns>
+      </div>
     </section>
   );
 }

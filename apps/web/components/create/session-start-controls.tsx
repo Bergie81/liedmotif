@@ -7,18 +7,11 @@ import type { CoverStyleChoice } from '@liedmotif/shared';
 import { COVER_STYLE_CHOICES, MAX_SESSION_AVOID_LENGTH } from '@liedmotif/shared';
 import { cn } from '@/lib/cn';
 import type { OwnVoiceOffer } from '@/lib/voice/voice';
-import { COVER_STYLE_LABELS } from '@/lib/covers/cover-styles';
 import type { SessionLanguageChoice } from '@/lib/sessions/session-languages';
+import { CoverStyleSelect } from '@/components/covers/cover-style-select';
 import { SessionLanguageSelect } from '@/components/session-language-select';
 import { Switch } from '@/components/ui/controls';
 import { Slider } from '@/components/ui/slider';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   cardClass,
   segmentedListClass,
@@ -269,22 +262,13 @@ export function SessionExtras({
           )}
         >
           Cover style
-          <Select
+          <CoverStyleSelect
+            choices={COVER_STYLE_CHOICES}
             value={coverStyle}
-            onValueChange={(value) => onCoverStyleChange(value as CoverStyleChoice)}
+            onChange={onCoverStyleChange}
             disabled={useStandardCover}
-          >
-            <SelectTrigger aria-label="Cover style" data-testid="cover-style" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="w-[var(--radix-select-trigger-width)]">
-              {COVER_STYLE_CHOICES.map((value) => (
-                <SelectItem key={value} value={value}>
-                  {COVER_STYLE_LABELS[value]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            testId="cover-style"
+          />
         </label>
         {!useStandardCover && coverStyle === 'custom' ? (
           <p className="mt-2 text-[11.5px] leading-[1.5] text-dim">
@@ -298,7 +282,7 @@ export function SessionExtras({
         <div className="mt-4 flex items-center justify-between gap-3">
           <div>
             <p className="text-[15px] font-semibold leading-tight text-paper">
-              Use Tailored Cover Art generation
+              Use custom cover art generation
             </p>
             <p className="text-[11.5px] leading-[1.4] text-dim">
               Off uses the basic art that comes with the music, at no extra cost.
@@ -307,7 +291,7 @@ export function SessionExtras({
           <Switch
             checked={!useStandardCover}
             onCheckedChange={(on) => onUseStandardCoverChange(!on)}
-            aria-label="Use Tailored Cover Art generation"
+            aria-label="Use custom cover art generation"
             data-testid="use-tailored-cover"
           />
         </div>

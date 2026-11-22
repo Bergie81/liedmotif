@@ -1,6 +1,7 @@
 'use client';
 
-import type { ComponentProps } from 'react';
+import { useId } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import * as SelectPrimitive from '@radix-ui/react-select';
 import { Check, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -68,15 +69,27 @@ export function SelectLabel({ className, ...props }: ComponentProps<typeof Selec
   );
 }
 
+/**
+ * One option. `media` sits before the text and `description` under it; both
+ * stay outside the item's text, so the closed trigger and type-ahead keep to
+ * the option's name.
+ */
 export function SelectItem({
   className,
   children,
+  media,
+  description,
   ...props
-}: ComponentProps<typeof SelectPrimitive.Item>) {
+}: ComponentProps<typeof SelectPrimitive.Item> & {
+  media?: ReactNode;
+  description?: ReactNode;
+}) {
+  const descriptionId = useId();
   return (
     <SelectPrimitive.Item
+      aria-describedby={description ? descriptionId : undefined}
       className={cn(
-        'relative flex cursor-default select-none items-center rounded-[9px] py-2 pl-8 pr-3 text-muted',
+        'relative flex cursor-default select-none items-center gap-3 rounded-[9px] py-2 pl-8 pr-3 text-muted',
         'data-[highlighted]:bg-paper/[0.07] data-[highlighted]:text-paper data-[highlighted]:outline-none data-[state=checked]:text-lamp',
         className,
       )}
@@ -87,7 +100,11 @@ export function SelectItem({
           <Check className="h-3.5 w-3.5" aria-hidden />
         </SelectPrimitive.ItemIndicator>
       </span>
-      <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+      {media}
+      <span className="min-w-0">
+        <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+        {description ? <span id={descriptionId}>{description}</span> : null}
+      </span>
     </SelectPrimitive.Item>
   );
 }

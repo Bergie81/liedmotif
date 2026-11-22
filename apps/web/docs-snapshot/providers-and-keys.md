@@ -149,7 +149,7 @@ Every session gets a cover, and you never need a key for that. Three sources can
 | Basic cover art | Your music provider's key | No extra cost | The provider's own art, drawn from the finished music alone, with no style choice and no people |
 | Liedmotif cover | Nothing | Free | The built-in placeholder, used when neither source above can paint |
 
-Each session can switch **Use Tailored Cover Art Generation** on or off on the start card, and **Settings › Cover Art** sets the default. If tailored art is off, or the image provider has no key, its own or a shared one, covers come from the music provider. Uploading your own image is free and works with every source.
+Each session can switch **Use custom cover art generation** on or off on the start card, and **Settings › Cover Art** sets the default. If tailored art is off, or the image provider has no key, its own or a shared one, covers come from the music provider. Uploading your own image is free and works with every source.
 
 Generated covers can be limited, in [the cover budget](/docs/costs-and-limits). That budget counts tailored and basic covers alike. Covers are only decoration, so a failed one never holds up your music: the session just keeps the cover it has.
 

@@ -122,7 +122,7 @@ describe('a New Music card', () => {
       cardWording({ kind: 'newMusicOn', session: RAINY, targetDurationMinutes: null }),
     ).toMatchObject({
       details: 'Rainy Window · No Limit',
-      cost: 'Keeps buying while you listen.',
+      cost: 'Keeps buying while you listen until you stop or your budget is gone.',
       confirm: 'Save · No Limit',
     });
   });

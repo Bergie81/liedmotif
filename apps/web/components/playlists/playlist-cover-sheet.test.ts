@@ -122,7 +122,11 @@ describe('PlaylistCoverSheet — cover style', () => {
     );
 
     fireEvent.keyDown(trigger, { key: 'Enter' });
-    const options = (await screen.findAllByRole('option')).map((option) => option.textContent);
+    // An option's name is its style label; the explanation beside it is its description.
+    const options = (await screen.findAllByRole('option')).map(
+      (option) =>
+        document.getElementById(option.getAttribute('aria-labelledby') ?? '')?.textContent,
+    );
     expect(options).toEqual(
       COVER_STYLE_CHOICES.filter((choice) => choice !== 'auto').map(
         (choice) => COVER_STYLE_LABELS[choice],

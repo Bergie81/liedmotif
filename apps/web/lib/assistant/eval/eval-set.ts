@@ -129,7 +129,7 @@ export const EVAL_SET: readonly EvalEntry[] = [
     ],
     link: '/settings/cover-art',
     goodAnswer:
-      'In Settings › Cover Art: Use Tailored Cover Art Generation, Default cover style, Custom style definition and Enhance prompts. Says that styled covers cost money with the image provider.',
+      'In Settings › Cover Art: Use custom cover art generation, Default cover style, Custom style definition and Enhance prompts. Says that styled covers cost money with the image provider.',
   },
   {
     id: 'disable-member',

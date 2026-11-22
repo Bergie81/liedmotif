@@ -377,7 +377,9 @@ describe('a New Music card', () => {
   it('saves No limit as a cleared target', async () => {
     const { card, server } = await ask({ ...UP_TO_90, targetDurationMinutes: null });
     expect(card.textContent).toContain('Rainy Window · No Limit');
-    expect(card.textContent).toContain('Keeps buying while you listen.');
+    expect(card.textContent).toContain(
+      'Keeps buying while you listen until you stop or your budget is gone.',
+    );
 
     fireEvent.click(button('Save · No Limit'));
 

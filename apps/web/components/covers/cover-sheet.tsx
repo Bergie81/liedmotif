@@ -21,23 +21,16 @@ import { Check, ImageUp, LayoutGrid, Sparkles, Trash2 } from 'lucide-react';
 import type { ApiResult } from '@/lib/http/api-client';
 import { cn } from '@/lib/cn';
 import { toast } from '@/lib/toast';
-import { COVER_STYLE_LABELS } from '@/lib/covers/cover-styles';
 import { COVER_UPLOAD } from '@/lib/media/image-upload-targets';
 import { coverSetupMessage } from '@/lib/covers/cover-setup-copy';
 import { pollWithBackoff } from '@/lib/poll-backoff';
+import { CoverStyleSelect } from '@/components/covers/cover-style-select';
 import { useImageCropPicker } from '@/components/media/use-image-crop-picker';
 import { useAppChrome } from '@/components/app-chrome-context';
 import { coverUsageLine } from '@/components/player/cover-usage-line';
 import { AlertBanner } from '@/components/ui/design-system';
 import { Switch } from '@/components/ui/controls';
 import { SheetBody, SheetContent, SheetHeader } from '@/components/ui/sheet';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   inputClass,
   labelClass,
@@ -572,18 +565,13 @@ export function CoverStyleField<T extends CoverStyleChoice>({
     <div className="flex flex-col gap-1">
       <label className={labelClass}>
         Cover style
-        <Select value={value} onValueChange={(next) => onChange(next as T)} disabled={disabled}>
-          <SelectTrigger aria-label="Cover style" data-testid={testId} className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {choices.map((choice) => (
-              <SelectItem key={choice} value={choice}>
-                {COVER_STYLE_LABELS[choice]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <CoverStyleSelect
+          choices={choices}
+          value={value}
+          onChange={onChange}
+          disabled={disabled}
+          testId={testId}
+        />
       </label>
       {note ? <span className="text-[11.5px] leading-relaxed text-dim">{note}</span> : null}
     </div>

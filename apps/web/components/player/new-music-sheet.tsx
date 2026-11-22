@@ -133,12 +133,20 @@ function NewMusicPanel({
                 aria-pressed={selected}
                 disabled={!available || saving}
                 onClick={() => choose(id)}
-                className="flex min-h-[56px] w-full items-center gap-3 px-4 py-2 text-left disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex min-h-[56px] w-full items-start gap-3 px-4 py-2 text-left disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <Icon
-                  aria-hidden
-                  className={cn('h-5 w-5 shrink-0', selected ? 'text-lamp' : 'text-muted')}
-                />
+                {/* One title line tall, so the icon sits on the title like a MenuRow's. */}
+                <span className="flex h-lh flex-none items-center text-[14px]">
+                  <Icon
+                    aria-hidden
+                    className={cn(
+                      'shrink-0',
+                      // CircleOff fills its whole box; Timer and Infinity do not.
+                      id === 'off' ? 'h-[18px] w-[18px]' : 'h-5 w-5',
+                      selected ? 'text-lamp' : 'text-muted',
+                    )}
+                  />
+                </span>
                 <span className="min-w-0">
                   <span className="block text-[14px] font-semibold">{label}</span>
                   <span className="block text-[12px] text-muted">{detail}</span>

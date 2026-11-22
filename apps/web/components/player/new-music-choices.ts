@@ -7,7 +7,10 @@ export type NewMusicChoice = 'off' | 'target' | 'no-limit';
 export const NEW_MUSIC_CHOICES: Record<NewMusicChoice, { label: string; detail: string }> = {
   off: { label: 'Off', detail: 'Play the tracks you have. Buys nothing on its own.' },
   target: { label: 'Up to a Duration', detail: 'Buys music until the target.' },
-  'no-limit': { label: 'No Limit', detail: 'Keeps buying while you listen.' },
+  'no-limit': {
+    label: 'No Limit',
+    detail: 'Keeps buying while you listen until you stop or your budget is gone.',
+  },
 };
 
 /** The button that saves a choice that can spend; `null` minutes is No limit. */
