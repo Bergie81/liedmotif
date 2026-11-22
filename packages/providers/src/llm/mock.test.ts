@@ -172,6 +172,20 @@ describe('mockLlmProvider.createSessionMetadata', () => {
     });
     expect(plain.lyricContext).toBe('');
   });
+
+  it('answers a language pick with a vocal seed’s notes rewritten in it', async () => {
+    const vocal = sessionStyleSnapshotSchema.parse({
+      stylePrompt: 'warm synthwave',
+      vocalMode: 'vocal',
+      lyricContext: 'people: Mira',
+    });
+
+    const naming = await provider.createSessionMetadata({ snapshot: vocal, language: 'Spanish' });
+
+    expect(naming.title).not.toBe('');
+    expect(naming.lyricContext).toContain('Spanish');
+    expect(naming.lyricContext).toContain('people: Mira');
+  });
 });
 
 describe('mockLlmProvider listener personalization', () => {

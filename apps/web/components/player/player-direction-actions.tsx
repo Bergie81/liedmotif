@@ -4,7 +4,10 @@ import { ThumbsDown } from 'lucide-react';
 import type { ChangeVibeIntentInput, SessionVibe } from '@liedmotif/shared';
 import { nowPlayingSpareRowClass } from '@/components/ui/design-system';
 import { OnlineOnly } from '@/components/ui/online-only';
-import { MoreLikeThisSheet } from '@/components/sessions/more-like-this-sheet';
+import {
+  MoreLikeThisSheet,
+  type MoreLikeThisAsk,
+} from '@/components/sessions/more-like-this-sheet';
 import { WithTooltip } from '@/components/ui/tooltip';
 import type { ChangeVibeOptions } from '@/lib/http/api-client';
 import { cn } from '@/lib/cn';
@@ -68,7 +71,7 @@ export function PlayerDirectionActions({
   moreLikeThisOpen: boolean;
   onMoreLikeThisOpenChange: (open: boolean) => void;
   /** Start the new Session; true once it started, false on a refusal. */
-  onMoreLikeThis: (context: string | undefined) => Promise<boolean>;
+  onMoreLikeThis: (ask: MoreLikeThisAsk) => Promise<boolean>;
 }) {
   const anyBusy = busyAction != null || changeVibePending;
   return (

@@ -55,6 +55,7 @@ import {
 } from '@/components/create/creation-refusal';
 import {
   MoreLikeThisSheet,
+  type MoreLikeThisAsk,
   type MoreLikeThisSeed,
 } from '@/components/sessions/more-like-this-sheet';
 import { useSeedMoreLikeThis } from '@/components/sessions/use-seed-more-like-this';
@@ -176,11 +177,11 @@ export function PlaylistDetail({
   // More Like This: a NEW Session seeded from a member's Track, or from the
   // playlist's first members (the only "more music" path out of a Playlist).
   // True once the new Session started.
-  async function seedMoreLikeThis(trackIds: string[], context?: string): Promise<boolean> {
+  async function seedMoreLikeThis(trackIds: string[], ask: MoreLikeThisAsk = {}): Promise<boolean> {
     if (seeding) return false;
     setSeeding(true);
     toast.dismiss(MORE_LIKE_THIS_KEY);
-    const { started, refusal } = await seed({ seedTrackIds: trackIds, context });
+    const { started, refusal } = await seed({ seedTrackIds: trackIds, ...ask });
     setSeeding(false);
     const line = refusal && presentCreationFailure(refusal, MORE_LIKE_THIS_FAILED);
     if (line) toast.error(line, { key: MORE_LIKE_THIS_KEY });
@@ -486,7 +487,7 @@ export function PlaylistDetail({
           onOpenChange={(open) => {
             if (!open) setOverlay(null);
           }}
-          onStart={(context) => seedMoreLikeThis(overlay.trackIds, context)}
+          onStart={(ask) => seedMoreLikeThis(overlay.trackIds, ask)}
         />
       ) : null}
 

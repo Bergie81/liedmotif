@@ -5,8 +5,10 @@
 // the active session (`endReason='superseded'`). Gated by the creation-time headroom
 // check like Start Session: below the threshold NO session row is created. An
 // optional context ("for cooking") rewrites the Name, titles, cover concept,
-// activity and lyric notes through the seeded naming call, never the music, and
-// becomes the Session's prompt history.
+// activity and lyric notes through the seeded naming call, and becomes the
+// Session's prompt history. An optional language pick, or on Auto Detect the
+// language the context is written in, sets the language of those words and of
+// the vocals: the one music field either may change.
 
 import { NextResponse } from 'next/server';
 import { createSession, getCoverArtSettings, getSeedSnapshot } from '@liedmotif/db';
@@ -49,10 +51,10 @@ function expectedNamingFailure(err: unknown): ProviderError {
 }
 
 const CONTEXT_NEEDS_TEXT_AI =
-  'Adding a context needs a text AI. Set one up in Settings, or leave the context empty.';
+  'A context or a language pick needs a text AI. Set one up in Settings, or start without them.';
 
 const CONTEXT_NEEDS_READABLE_SEED =
-  "This track's style can't be read, so it can't take a context. Leave the context empty.";
+  "This track's style can't be read, so it can't take a context or a language pick. Start without them.";
 
 export async function POST(request: Request) {
   const ownerUserId = await requireOwnerId(request);
@@ -66,6 +68,7 @@ export async function POST(request: Request) {
   if (parsed instanceof NextResponse) return parsed;
   const { seedTrackIds, targetDurationMinutes } = parsed;
   const context = parsed.context || null;
+  const language = parsed.language ?? null;
 
   const db = getDb();
 
@@ -101,14 +104,15 @@ export async function POST(request: Request) {
     if (blocked) return apiError('validation_error', blocked);
   }
 
-  // A context only means something to the text LLM; without one it is refused,
-  // never read deterministically or dropped (ADR 0004).
-  if (context && !(await getLlmProvider())) {
+  // A context or a pick is honored only by the text LLM's naming call; without
+  // one it is refused, never read deterministically or dropped (ADR 0004).
+  const rewrites = Boolean(context || language);
+  if (rewrites && !(await getLlmProvider())) {
     return apiError('validation_error', CONTEXT_NEEDS_TEXT_AI);
   }
   // A seed whose style does not parse keeps its stored naming, which would
-  // ignore the context; no retry changes that, so it is refused, not retried.
-  if (context && !sessionStyleSnapshotSchema.safeParse(snapshot).success) {
+  // ignore the context or pick; no retry changes that, so it is refused.
+  if (rewrites && !sessionStyleSnapshotSchema.safeParse(snapshot).success) {
     return apiError('validation_error', CONTEXT_NEEDS_READABLE_SEED);
   }
 
@@ -122,18 +126,20 @@ export async function POST(request: Request) {
   // which must not be cloned — `nameSeededSnapshot` names the new session fresh
   // (one LLM call when configured, the source's names passed as taken; the
   // owner's listener profile is applied inside), deterministic composition when
-  // not. The stored snapshot keeps every music field — only the naming, the lyric
-  // notes and, with a context, the activity are replaced. Without a context the
-  // call is cosmetic and never fails; with one it is required, and its failure
-  // is a retryable error before any row or spend.
+  // not. The stored snapshot keeps every music field but the language — only
+  // the naming, the lyric notes and, with a context, the activity are replaced.
+  // Without a context or pick the call is cosmetic and never fails; with one it
+  // is required, and its failure is a retryable error before any row or spend.
   const [named, coverArtSettings, coverImageId, sessionMode] = await Promise.all([
-    nameSeededSnapshot(db, ownerUserId, snapshot, context).catch(expectedNamingFailure),
+    nameSeededSnapshot(db, ownerUserId, snapshot, { context, language }).catch(
+      expectedNamingFailure,
+    ),
     getCoverArtSettings(db, ownerUserId),
     initialSessionCoverId(db),
     startingSessionMode(db, ownerUserId),
   ]);
   if (named instanceof ProviderError) {
-    logger.warn('More Like This context naming failed', {
+    logger.warn('More Like This naming failed', {
       providerErrorName: named.name,
       ...named.safeDetail,
     });

@@ -28,11 +28,14 @@ import {
 // the seed's exactly, and everything written around it — Name, track titles,
 // cover concept, activity, a vocal seed's lyric notes — is the seeded naming
 // call's answer to the context. The context is the Session's prompt history.
-// With a context the naming call is required: a refusal starts nothing.
+// With a context the naming call is required: a refusal starts nothing. A
+// language pick, or on Auto Detect the language the context is written in, is
+// the one music field the call may change: the sung language.
 
 /** The part of the naming call's input these tests read. */
 type NamingInput = {
   context?: string | null;
+  language?: string | null;
   snapshot: { lyricContext: string };
   listener?: {
     name?: string;
@@ -50,6 +53,7 @@ type NamingAnswer = {
   autoCoverStyle: 'photographic' | null;
   activity?: string;
   includesListener?: boolean;
+  language?: string;
 };
 
 const holder = vi.hoisted(() => ({
@@ -574,4 +578,156 @@ describe.skipIf(skip)('POST /api/sessions/more-like-this — without a context',
     expect(stored.title).not.toBe('Night Drive');
     expect(stored.snapshot.lyricContext).toBe(SEED_NOTES);
   });
+});
+
+/** Every music field but the sung language, which a language may change. */
+const MUSIC_FIELDS_BUT_LANGUAGE = MUSIC_FIELDS.filter((field) => field !== 'language');
+
+describe.skipIf(skip)('POST /api/sessions/more-like-this — a language', () => {
+  it('on Auto Detect stores the language the call read in the context', async () => {
+    const { trackId } = await seedOwnTrack();
+    holder.naming = () => ({ ...COOKING, language: 'German' });
+
+    const stored = await createdSession(
+      await post({ seedTrackIds: [trackId], context: 'fürs Kochen' }),
+    );
+
+    expect(stored.snapshot.language).toBe('German');
+    for (const field of MUSIC_FIELDS_BUT_LANGUAGE) {
+      expect(stored.snapshot[field]).toEqual(VOCAL_SEED[field]);
+    }
+    expect((holder.namingCalls[0] as NamingInput).language ?? null).toBeNull();
+  });
+
+  it('keeps the seed’s language when the answer has none', async () => {
+    const { trackId } = await seedOwnTrack({ ...VOCAL_SEED, language: 'German' });
+
+    const stored = await createdSession(
+      await post({ seedTrackIds: [trackId], context: 'for cooking' }),
+    );
+
+    expect(stored.snapshot.language).toBe('German');
+  });
+
+  it('lets a picked language win over the context’s', async () => {
+    const { trackId } = await seedOwnTrack();
+    holder.naming = () => ({ ...COOKING, language: 'English' });
+
+    const stored = await createdSession(
+      await post({ seedTrackIds: [trackId], context: 'for cooking', language: 'German' }),
+    );
+
+    expect(stored.snapshot.language).toBe('German');
+    expect(stored.user_prompt).toBe('for cooking');
+    expect((holder.namingCalls[0] as NamingInput).language).toBe('German');
+  });
+
+  it('with a pick and no context names the Session and rewrites the seed’s notes in it', async () => {
+    const { trackId } = await seedOwnTrack();
+    holder.naming = () => ({
+      title: 'Viaje Nocturno',
+      trackTitles: ['Salida Neón', 'Luces Traseras'],
+      lyricContext: 'tema: viaje nocturno; personas: Mira, mi hermana',
+      coverConcept: 'A neon highway at night.',
+      autoCoverStyle: 'photographic',
+      activity: 'ignored',
+      includesListener: true,
+    });
+
+    const stored = await createdSession(
+      await post({ seedTrackIds: [trackId], language: 'Spanish' }),
+    );
+
+    const input = holder.namingCalls[0] as NamingInput;
+    expect(input.language).toBe('Spanish');
+    expect(input.context ?? null).toBeNull();
+    expect(input.snapshot.lyricContext).toBe(SEED_NOTES);
+    expect(stored.title).toBe('Viaje Nocturno');
+    expect(stored.snapshot.trackTitles).toEqual(['Salida Neón', 'Luces Traseras']);
+    expect(stored.snapshot.lyricContext).toBe('tema: viaje nocturno; personas: Mira, mi hermana');
+    expect(stored.snapshot.language).toBe('Spanish');
+    expect(stored.snapshot.activity).toBe('running');
+    expect(stored.user_prompt).toBeNull();
+    expect(stored.includes_listener).toBe(false);
+    for (const field of MUSIC_FIELDS_BUT_LANGUAGE) {
+      expect(stored.snapshot[field]).toEqual(VOCAL_SEED[field]);
+    }
+  });
+
+  it('sets an instrumental seed’s language for its names', async () => {
+    const { trackId } = await seedOwnTrack({
+      ...VOCAL_SEED,
+      vocalMode: 'instrumental',
+      language: '',
+      lyricContext: '',
+    });
+
+    const stored = await createdSession(
+      await post({ seedTrackIds: [trackId], language: 'German' }),
+    );
+
+    expect(stored.snapshot.language).toBe('German');
+    expect(stored.snapshot.lyricContext).toBe('');
+  });
+
+  it('sends no language on an empty field and Auto Detect', async () => {
+    const { trackId } = await seedOwnTrack();
+
+    const stored = await createdSession(await post({ seedTrackIds: [trackId] }));
+
+    expect((holder.namingCalls[0] as NamingInput).language ?? null).toBeNull();
+    expect(stored.snapshot.language).toBe('English');
+  });
+
+  it('refuses a language that is not a session language', async () => {
+    const { trackId } = await seedOwnTrack();
+
+    const response = await post({ seedTrackIds: [trackId], language: 'Klingon' });
+
+    expect(response.status).toBe(400);
+    expect(holder.namingCalls).toHaveLength(0);
+  });
+
+  it('refuses a pick without a text AI, starting nothing', async () => {
+    const { sessionId, trackId } = await seedOwnTrack();
+    holder.llmConfigured = false;
+
+    const error = await refusal(await post({ seedTrackIds: [trackId], language: 'Spanish' }));
+
+    expect(error.code).toBe('validation_error');
+    await expectNothingStarted(sessionId);
+  });
+
+  it('refuses a pick on a seed whose style cannot be read, starting nothing', async () => {
+    const { sessionId, trackId } = await seedOwnTrack({ ...VOCAL_SEED, stylePrompt: '' });
+
+    const error = await refusal(await post({ seedTrackIds: [trackId], language: 'Spanish' }));
+
+    expect(error.code).toBe('validation_error');
+    expect(holder.namingCalls).toHaveLength(0);
+    await expectNothingStarted(sessionId);
+  });
+
+  it.each([
+    [
+      'fails',
+      () => {
+        throw new ProviderError('The text AI took too long to respond. Try again.');
+      },
+    ],
+    ['answers no Name', () => ({ ...COOKING, title: '' })],
+    ['answers no rewritten lyric notes for a vocal seed', () => ({ ...COOKING, lyricContext: '' })],
+  ])(
+    'answers a retryable error when a pick’s naming call %s, starting nothing',
+    async (_case, answer) => {
+      const { sessionId, trackId } = await seedOwnTrack();
+      holder.naming = answer;
+
+      const error = await refusal(await post({ seedTrackIds: [trackId], language: 'Spanish' }));
+
+      expect(error.code).toBe('provider_error');
+      expect(error.retryable).toBe(true);
+      await expectNothingStarted(sessionId);
+    },
+  );
 });

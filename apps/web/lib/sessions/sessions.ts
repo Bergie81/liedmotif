@@ -59,6 +59,7 @@ import {
   type CostLimitDecision,
   type CoverStylePreset,
   type CreationHeadroomDecision,
+  type SessionLanguage,
   type SessionListItem,
   type SessionMode,
   type SessionSummary,
@@ -460,37 +461,58 @@ async function plainSeededNaming(
   return { ...named, includesListener: false };
 }
 
+/** What a More Like This adds to its seed: a context, a language pick, or
+ *  both. Either one makes the seeded naming call required. */
+export interface SeededRewrite {
+  context: string | null;
+  language: SessionLanguage | null;
+}
+
 /**
- * The naming a More Like This context gets: the one seeded naming call, made
- * required. The context is its listening request, the seed's lyric notes the
- * direction it edits; its activity answer replaces the seed's, and its lyric
- * notes replace the seed's. The listener and People reach it as they reach a
- * Start Session expansion of the same words, with the seed's vocal mode as the
- * vocal pick. Throws `ProviderError` when there is no usable Name and title
- * pool, or a vocal seed gets no lyric notes, so no Session ignores the context.
+ * The naming a More Like This context or language pick gets: the one seeded
+ * naming call, made required. A context is its listening request and the seed's
+ * lyric notes the direction it edits; its activity answer replaces the seed's.
+ * A pick alone rewrites the seed's names and lyric notes in that language. The
+ * new lyric notes replace the seed's, and the language becomes the pick, else on
+ * Auto Detect the context's language as the call read it, else the seed's: the
+ * one music field this may change. With a context the listener and People reach
+ * the call as they reach a Start Session expansion of the same words, with the
+ * seed's vocal mode as the vocal pick. Throws `ProviderError` when there is no
+ * usable Name and title pool, or a vocal seed gets no lyric notes it needs, so
+ * no Session ignores what was asked.
  */
-async function contextNaming(
+async function rewrittenNaming(
   db: Database,
   ownerUserId: string,
-  context: string,
+  { context, language }: SeededRewrite,
   snapshot: SessionStyleSnapshot,
   avoidTitles: string[],
 ): Promise<SeededNaming> {
-  const listener = await listenerContextForIntent(db, ownerUserId, {
-    mode: 'prompt',
-    prompt: context,
-    vocal: snapshot.vocalMode,
-  });
+  const listener = context
+    ? await listenerContextForIntent(db, ownerUserId, {
+        mode: 'prompt',
+        prompt: context,
+        vocal: snapshot.vocalMode,
+      })
+    : await getListenerContext(db, ownerUserId);
   const llm = await getLlmProvider();
   if (!llm) throw new ProviderConfigError('More Like This with a context needs a text AI.');
-  const naming = await llm.createSessionMetadata({ snapshot, listener, avoidTitles, context });
+  const naming = await llm.createSessionMetadata({
+    snapshot,
+    listener,
+    avoidTitles,
+    context,
+    language,
+  });
   const vocal = snapshot.vocalMode === 'vocal';
   // A vocal Session's lyrics follow its lyric notes alone, so notes missing
-  // from the answer would leave them ignoring the context.
+  // from the answer would leave them ignoring the context, or in the seed's
+  // language under a pick.
+  const needsNotes = vocal && (Boolean(context) || Boolean(snapshot.lyricContext.trim()));
   if (
     !naming.title.trim() ||
     naming.trackTitles.length === 0 ||
-    (vocal && !naming.lyricContext.trim())
+    (needsNotes && !naming.lyricContext.trim())
   ) {
     throw new ProviderError(CONTEXT_NAMING_FAILED, { failure: 'unusable_response' });
   }
@@ -500,11 +522,12 @@ async function contextNaming(
       title: naming.title,
       trackTitles: naming.trackTitles,
       lyricContext: vocal ? naming.lyricContext : '',
-      activity: naming.activity ?? '',
+      activity: context ? (naming.activity ?? '') : snapshot.activity,
+      language: language || (context ? naming.language : '') || snapshot.language,
     },
     coverConcept: naming.coverConcept,
     autoCoverStyle: naming.autoCoverStyle,
-    includesListener: naming.includesListener === true,
+    includesListener: context ? naming.includesListener === true : false,
   };
 }
 
@@ -517,9 +540,10 @@ async function contextNaming(
  * Naming is merged onto the ORIGINAL seed so every stored field zod would strip
  * is preserved; a seed that fails to parse keeps its stored naming.
  *
- * With a `context` the naming call is required (`contextNaming`): it throws a
- * `ProviderError` the route answers as a retryable error, and a missing text
- * LLM throws `ProviderConfigError` (the route refuses that case before calling).
+ * With a context or a language pick the naming call is required
+ * (`rewrittenNaming`): it throws a `ProviderError` the route answers as a
+ * retryable error, and a missing text LLM throws `ProviderConfigError` (the
+ * route refuses that case before calling).
  *
  * The Guardrails are the one part of the vibe the seed does not simply carry
  * over: they are re-stamped, so a pre-guardrails source still starts a new
@@ -529,13 +553,14 @@ export async function nameSeededSnapshot(
   db: Database,
   ownerUserId: string,
   seed: StyleSnapshot,
-  context?: string | null,
+  rewrite: SeededRewrite = { context: null, language: null },
 ): Promise<NamedSnapshot & { includesListener: boolean }> {
+  const rewrites = Boolean(rewrite.context || rewrite.language);
   const parsed = sessionStyleSnapshotSchema.safeParse(seed);
   if (!parsed.success) {
     // A seed that does not parse keeps its stored naming, which would ignore a
-    // context; with one, that is a failed naming like any other.
-    if (context) throw new ProviderError(CONTEXT_NAMING_FAILED, { failure: 'unreadable_seed' });
+    // context or a pick; with one, that is a failed naming like any other.
+    if (rewrites) throw new ProviderError(CONTEXT_NAMING_FAILED, { failure: 'unreadable_seed' });
     return {
       snapshot: seed,
       title: deriveSessionTitle({ snapshot: seed }),
@@ -549,8 +574,8 @@ export async function nameSeededSnapshot(
   const avoidTitles = [parsed.data.title, ...parsed.data.trackTitles].filter(
     (title) => title.trim().length > 0,
   );
-  const named = context
-    ? await contextNaming(db, ownerUserId, context, unnamed, avoidTitles)
+  const named = rewrites
+    ? await rewrittenNaming(db, ownerUserId, rewrite, unnamed, avoidTitles)
     : await plainSeededNaming(db, ownerUserId, unnamed, avoidTitles);
   return {
     snapshot: {
@@ -559,7 +584,7 @@ export async function nameSeededSnapshot(
       title: named.snapshot.title,
       trackTitles: named.snapshot.trackTitles,
       lyricContext: named.snapshot.lyricContext,
-      ...(context ? { activity: named.snapshot.activity } : {}),
+      ...(rewrites ? { activity: named.snapshot.activity, language: named.snapshot.language } : {}),
     },
     title: distinguishFromSourceTitle(
       deriveSessionTitle({ snapshot: named.snapshot }),

@@ -165,11 +165,13 @@ export interface LlmProvider extends BaseProvider {
    * most one call per session creation, so the "text LLM runs ~once per session"
    * posture holds.
    *
-   * A More Like This context (`input.context`) makes the call required: it runs
-   * under the expansion's budget, also answers the `activity`, whether the
-   * listener is in the scene (`includesListener`) and, on a vocal
-   * snapshot, lyric notes, and throws a sanitized `ProviderError` when it cannot
-   * return a Name and a title pool, so no Session starts that ignored the context.
+   * A More Like This context (`input.context`) or language pick
+   * (`input.language`) makes the call required: it runs under the expansion's
+   * budget, and throws a sanitized `ProviderError` when it cannot return a Name
+   * and a title pool, so no Session starts that ignored them. A context's answer
+   * also carries the `activity`, whether the listener is in the scene
+   * (`includesListener`), on Auto Detect the context's `language` and, on a
+   * vocal snapshot, lyric notes.
    */
   createSessionMetadata(input: SessionNamingInput): Promise<SessionNamingMetadata>;
   /**

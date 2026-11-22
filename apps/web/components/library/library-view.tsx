@@ -184,7 +184,7 @@ function LibrarySmartListView({
           onOpenChange={(open) => {
             if (!open) setSeedTrack(null);
           }}
-          onStart={(context) => actions.seedMoreLikeThis(seedTrack, context)}
+          onStart={(ask) => actions.seedMoreLikeThis(seedTrack, ask)}
         />
       ) : null}
 

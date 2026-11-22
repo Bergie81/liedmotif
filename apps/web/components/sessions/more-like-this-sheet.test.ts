@@ -1,17 +1,27 @@
 // @vitest-environment jsdom
 
 // The one More Like This sheet every surface opens: it names its seed, offers a
-// context field only when a text LLM can read it, sends no context for a blank
-// field, and keeps the typed words when the start is refused.
+// context field and a language picker only when a text LLM can read them,
+// sends no context for a blank field and no language on Auto Detect, and keeps
+// the typed words when the start is refused.
 
 import { createElement as h } from 'react';
 import { MAX_USER_PROMPT_LENGTH } from '@liedmotif/shared';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, expect, it, vi } from 'vitest';
 import { AppChromeContext, type AppChromeContextValue } from '@/components/app-chrome-context';
-import { MoreLikeThisSheet, type MoreLikeThisSeed } from './more-like-this-sheet';
+import {
+  MoreLikeThisSheet,
+  type MoreLikeThisAsk,
+  type MoreLikeThisSeed,
+} from './more-like-this-sheet';
 
 afterEach(cleanup);
+beforeAll(() => {
+  // jsdom lacks the pointer and scroll APIs Radix Select calls.
+  HTMLElement.prototype.hasPointerCapture = () => false;
+  HTMLElement.prototype.scrollIntoView = () => {};
+});
 
 const TRACK_SEED: MoreLikeThisSeed = { kind: 'track', title: 'Nachtfahrt' };
 
@@ -22,17 +32,17 @@ function renderSheet({
 }: {
   llmConfigured?: boolean;
   seed?: MoreLikeThisSeed;
-  onStart?: (context: string | undefined) => Promise<boolean>;
+  onStart?: (ask: MoreLikeThisAsk) => Promise<boolean>;
 } = {}) {
   const onOpenChange = vi.fn();
-  render(
+  const sheet = (open: boolean) =>
     h(
       AppChromeContext.Provider,
       { value: { llmConfigured } as AppChromeContextValue },
-      h(MoreLikeThisSheet, { seed, open: true, onOpenChange, onStart }),
-    ),
-  );
-  return { onStart, onOpenChange };
+      h(MoreLikeThisSheet, { seed, open, onOpenChange, onStart }),
+    );
+  const { rerender } = render(sheet(true));
+  return { onStart, onOpenChange, setOpen: (open: boolean) => rerender(sheet(open)) };
 }
 
 async function start() {
@@ -45,6 +55,16 @@ function typeContext(text: string) {
   fireEvent.change(screen.getByRole('textbox'), { target: { value: text } });
 }
 
+function languagePicker() {
+  return screen.getByRole('combobox', { name: 'Language' });
+}
+
+async function pickLanguage(label: string) {
+  fireEvent.keyDown(languagePicker(), { key: 'Enter' });
+  const option = await screen.findByRole('option', { name: label });
+  fireEvent.keyDown(option, { key: 'Enter' });
+}
+
 it('names a Track seed by its title', () => {
   renderSheet();
   expect(screen.getByText('Nachtfahrt')).toBeTruthy();
@@ -55,11 +75,12 @@ it('names a Playlist seed by the Tracks it seeds from', () => {
   expect(screen.getByText('10 tracks from Running')).toBeTruthy();
 });
 
-it('offers no context field without a text LLM and starts with no context', async () => {
+it('offers no context field and no language picker without a text LLM', async () => {
   const { onStart } = renderSheet({ llmConfigured: false });
   expect(screen.queryByRole('textbox')).toBeNull();
+  expect(screen.queryByRole('combobox')).toBeNull();
   await start();
-  expect(onStart).toHaveBeenCalledWith(undefined);
+  expect(onStart).toHaveBeenCalledWith({});
 });
 
 it('offers a context field that says it never changes the music', () => {
@@ -72,21 +93,21 @@ it('sends no context for a whitespace-only field', async () => {
   const { onStart } = renderSheet();
   typeContext('   \n ');
   await start();
-  expect(onStart).toHaveBeenCalledWith(undefined);
+  expect(onStart).toHaveBeenCalledWith({});
 });
 
 it('sends the typed context trimmed', async () => {
   const { onStart } = renderSheet();
   typeContext('  for cooking  ');
   await start();
-  expect(onStart).toHaveBeenCalledWith('for cooking');
+  expect(onStart).toHaveBeenCalledWith({ context: 'for cooking' });
 });
 
 it('caps the context at the user-prompt limit', async () => {
   const { onStart } = renderSheet();
   typeContext('a'.repeat(MAX_USER_PROMPT_LENGTH + 50));
   await start();
-  expect(onStart).toHaveBeenCalledWith('a'.repeat(MAX_USER_PROMPT_LENGTH));
+  expect(onStart).toHaveBeenCalledWith({ context: 'a'.repeat(MAX_USER_PROMPT_LENGTH) });
 });
 
 it('closes once the new Session started', async () => {
@@ -116,4 +137,42 @@ it('ignores a repeat tap while the first start is in flight', async () => {
   expect(onStart).toHaveBeenCalledTimes(1);
   await act(async () => settle(false));
   expect(screen.getByRole('button', { name: 'Start New Session' })).toBeTruthy();
+});
+
+it('offers a language picker on Auto Detect that says it follows the words', () => {
+  renderSheet();
+  expect(languagePicker().textContent).toContain('Auto Detect');
+  expect(screen.getByText('Auto Detect uses the language you write in.')).toBeTruthy();
+});
+
+it('sends a picked language with the context', async () => {
+  const { onStart } = renderSheet();
+  typeContext('for cooking');
+  await pickLanguage('German');
+  await start();
+  expect(onStart).toHaveBeenCalledWith({ context: 'for cooking', language: 'German' });
+});
+
+it('sends a picked language with an empty field', async () => {
+  const { onStart } = renderSheet();
+  await pickLanguage('Spanish');
+  await start();
+  expect(onStart).toHaveBeenCalledWith({ language: 'Spanish' });
+});
+
+it('sends no language when Auto Detect is picked back', async () => {
+  const { onStart } = renderSheet();
+  await pickLanguage('German');
+  await pickLanguage('Auto Detect');
+  await start();
+  expect(onStart).toHaveBeenCalledWith({});
+});
+
+it('opens on Auto Detect again after a pick', async () => {
+  const { setOpen } = renderSheet();
+  await pickLanguage('German');
+  expect(languagePicker().textContent).toContain('German');
+  setOpen(false);
+  setOpen(true);
+  expect(languagePicker().textContent).toContain('Auto Detect');
 });

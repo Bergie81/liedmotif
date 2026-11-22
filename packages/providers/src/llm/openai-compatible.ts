@@ -509,9 +509,7 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
     }
     const naming = normalizeContextNaming(value);
     if (!naming) throw new ProviderError(CONTEXT_NAMING_FAILED, { failure: 'unusable_response' });
-    return allowsNamingLyricContext(input.snapshot, input.listener, input.context)
-      ? naming
-      : { ...naming, lyricContext: '' };
+    return allowsNamingLyricContext(input) ? naming : { ...naming, lyricContext: '' };
   }
 
   const provider: LlmProvider = {
@@ -651,12 +649,12 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
     },
 
     async createSessionMetadata(input: SessionNamingInput): Promise<SessionNamingMetadata> {
-      if (input.context?.trim()) return createContextNaming(input);
+      if (input.context?.trim() || input.language?.trim()) return createContextNaming(input);
       // Enforce the lyric-context rule on the output (mirrors `expandSessionIntent`;
       // the provider is the rule's single owner, so consumers merge without re-checking).
       // The gate is fixed for the whole call — a disallowed session drops whatever the
       // model volunteered (`normalizeSessionNaming` has already clamped an allowed one).
-      const keepLyricContext = allowsNamingLyricContext(input.snapshot, input.listener);
+      const keepLyricContext = allowsNamingLyricContext(input);
       try {
         assertAllowedBaseUrl(config.providerKey, config.baseUrl);
         const value = await requestNaming(

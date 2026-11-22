@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import { MAX_USER_PROMPT_LENGTH } from '@liedmotif/shared';
+import { MAX_USER_PROMPT_LENGTH, type MoreLikeThisRequest } from '@liedmotif/shared';
 import { useAppChrome } from '@/components/app-chrome-context';
+import { SessionLanguageSelect } from '@/components/session-language-select';
 import { inputClass, primaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
 import {
   Sheet,
@@ -13,6 +14,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { cn } from '@/lib/cn';
+import type { SessionLanguageChoice } from '@/lib/sessions/session-languages';
 import { formatTrackCount } from './session-list-model';
 
 /** What a More Like This is seeded from, as the sheet names it. */
@@ -21,11 +23,23 @@ export type MoreLikeThisSeed =
   /** `trackCount` is how many of the Playlist's Tracks seed it, not its size. */
   | { kind: 'playlist'; name: string; trackCount: number };
 
-/** The context the request carries: a blank field sends none, so More Like
- *  This runs exactly as it does without one. */
-function contextFrom(text: string): string | undefined {
-  const trimmed = text.trim().slice(0, MAX_USER_PROMPT_LENGTH).trim();
-  return trimmed || undefined;
+/** What the sheet adds to the More Like This request. */
+export type MoreLikeThisAsk = Pick<MoreLikeThisRequest, 'context' | 'language'>;
+
+/** The request's additions: a blank field sends no context and Auto Detect no
+ *  language, so with both More Like This runs exactly as it does without the
+ *  sheet. Without a text LLM nothing is sent, as nothing could read it. */
+function askFrom(
+  llmConfigured: boolean,
+  text: string,
+  language: SessionLanguageChoice,
+): MoreLikeThisAsk {
+  if (!llmConfigured) return {};
+  const context = text.trim().slice(0, MAX_USER_PROMPT_LENGTH).trim();
+  return {
+    ...(context ? { context } : {}),
+    ...(language !== 'auto' ? { language } : {}),
+  };
 }
 
 /**
@@ -44,7 +58,7 @@ export function MoreLikeThisSheet({
   seed: MoreLikeThisSeed;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onStart: (context: string | undefined) => Promise<boolean>;
+  onStart: (ask: MoreLikeThisAsk) => Promise<boolean>;
   /** A button that opens the sheet itself, for a surface that has one. */
   trigger?: ReactNode;
 }) {
@@ -64,17 +78,18 @@ function MoreLikeThisForm({
   onStarted,
 }: {
   seed: MoreLikeThisSeed;
-  onStart: (context: string | undefined) => Promise<boolean>;
+  onStart: (ask: MoreLikeThisAsk) => Promise<boolean>;
   onStarted: () => void;
 }) {
   const { llmConfigured } = useAppChrome();
   const [text, setText] = useState('');
+  const [language, setLanguage] = useState<SessionLanguageChoice>('auto');
   const [busy, setBusy] = useState(false);
 
   async function start() {
     if (busy) return;
     setBusy(true);
-    const started = await onStart(llmConfigured ? contextFrom(text) : undefined);
+    const started = await onStart(askFrom(llmConfigured, text, language));
     setBusy(false);
     if (started) onStarted();
   }
@@ -114,6 +129,17 @@ function MoreLikeThisForm({
             />
             <p className="mt-2 text-[12.5px] text-dim">
               Changes the names, lyrics and cover, never the music.
+            </p>
+            <div className="mt-4 text-[13px] font-semibold">Language</div>
+            <SessionLanguageSelect
+              value={language}
+              onChange={setLanguage}
+              ariaLabel="Language"
+              testId="more-like-this-language"
+              triggerClassName="mt-2 w-full"
+            />
+            <p className="mt-2 text-[12.5px] text-dim">
+              Auto Detect uses the language you write in.
             </p>
           </>
         ) : null}

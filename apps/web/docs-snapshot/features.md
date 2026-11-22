@@ -324,11 +324,13 @@ The new session sounds like the seed: same style, genres, mood, energy, tempo, v
 
 **What is it for?** is an optional field in the sheet. Write a few words on what the new session is about or for, in any language: "for cooking", "about autumn in Berlin". Leave it empty, and More Like This works as described above. With words in it:
 
-- **The music stays the seed's.** Your words never change how it sounds. For that, use [Change Vibe](#change-the-vibe) once the new session plays, or start a new session.
+- **The music stays the seed's.** Your words never change how it sounds, apart from the language a sung seed is sung in (see **Language** below). For that, use [Change Vibe](#change-the-vibe) once the new session plays, or start a new session.
 - **Everything written around the music follows your words:** the session name, the track titles, the cover and, in a sung session, the lyrics. The lyrics keep the people of the seed's lyrics unless your words name others.
 - **It counts as a request, like one on Home.** Your profile and **About you** shape the lyrics. People you name with their saved name bring their About text and their photos. When your words put you in the scene, such as "me cooking with Anna", you're on the cover too. See [You in your own songs](#you-in-your-own-songs).
 - **Track Data** shows your words as the prompt of every track in the new session.
-- **It needs a text AI.** Without one, the sheet has no field. If the text AI fails, nothing starts and nothing is bought, your session keeps playing, and your words stay in the field so you can try again.
+- **It needs a text AI.** Without one, the sheet has no field and no **Language**. If the text AI fails, nothing starts and nothing is bought, your session keeps playing, and your words stay in the field so you can try again.
+
+**Language** sits under the field and starts on **Auto Detect** each time the sheet opens. With Auto Detect, the new session uses the language you write in: "for cooking" gives English names, titles and lyrics, and "fürs Kochen" German ones. A sung seed is then sung in that language too, so "for cooking" on a German song gives an English song. Pick a language, and it wins over the language of your words. A language with an empty field works too: pick Spanish, and you get the same music with new names, titles and lyrics in Spanish. On a seed without vocals, the language sets the names and titles. With an empty field on Auto Detect, the seed's language stays.
 
 ### Skip
 

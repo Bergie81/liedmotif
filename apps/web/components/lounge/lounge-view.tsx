@@ -52,7 +52,10 @@ import {
   MORE_LIKE_THIS_FAILED,
   presentCreationFailure,
 } from '@/components/create/creation-refusal';
-import { MoreLikeThisSheet } from '@/components/sessions/more-like-this-sheet';
+import {
+  MoreLikeThisSheet,
+  type MoreLikeThisAsk,
+} from '@/components/sessions/more-like-this-sheet';
 import { useSeedMoreLikeThis } from '@/components/sessions/use-seed-more-like-this';
 import {
   buildSharerCards,
@@ -196,7 +199,10 @@ export function LoungeView({
    *  the VIEWER's budget, seeded from the shared playlist's tracks — the seed
    *  route strips the owner's personal ingredients and answers the uniform 404
    *  the moment the share is revoked under the tap. True once it started. */
-  async function seedFromShared(item: LoungePlaylistItem, context?: string): Promise<boolean> {
+  async function seedFromShared(
+    item: LoungePlaylistItem,
+    ask: MoreLikeThisAsk = {},
+  ): Promise<boolean> {
     if (seeding) return false;
     // The Playlist read below outlasts the tap, so the autoplay gesture is
     // taken now, before it.
@@ -208,7 +214,7 @@ export function LoungeView({
       ? { started: false, refusal: page.error }
       : await seedMoreLikeThis({
           seedTrackIds: page.data.items.slice(0, LOUNGE_MLT_SEED_TRACKS).map((m) => m.id),
-          context,
+          ...ask,
         });
     setSeeding(false);
     const line = refusal && presentCreationFailure(refusal, MORE_LIKE_THIS_FAILED);
@@ -324,7 +330,7 @@ export function LoungeView({
           onOpenChange={(open) => {
             if (!open) setSeedPlaylist(null);
           }}
-          onStart={(context) => seedFromShared(seedPlaylist, context)}
+          onStart={(ask) => seedFromShared(seedPlaylist, ask)}
         />
       ) : null}
     </>

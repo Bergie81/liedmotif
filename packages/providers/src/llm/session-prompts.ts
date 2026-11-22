@@ -295,8 +295,14 @@ export interface SessionNamingInput {
    * stays fixed, and the answer also carries the activity, whether the listener
    * is in the scene and, on a vocal snapshot, lyric notes edited from the seed's
    * (which may draw on the About text in `listener`). With a context the call is
-   * required: it throws instead of answering empty. */
+   * required: it throws instead of answering empty. On Auto Detect (no
+   * `language`) the answer also carries the language the context is written in. */
   context?: string | null;
+  /** A More Like This language pick (an English name, e.g. "German"): Name,
+   * titles, activity and lyric notes are written in it whatever language the
+   * context is in. Like a context it makes the call required; without a context
+   * a vocal seed's lyric notes are rewritten in it. */
+  language?: string | null;
 }
 
 /** The taken names as every adapter reads them: a blank entry claims nothing. */
@@ -361,14 +367,29 @@ export function allowsLyricContext(
 }
 
 /** A vocal seed with a context always gets lyric notes: the context is the
- *  request they are written for. Otherwise they need a listener profile. */
+ *  request they are written for. A vocal seed's own notes picked into another
+ *  language are rewritten in it. Otherwise they need a listener profile. */
 export function allowsNamingLyricContext(
-  snapshot: SessionStyleSnapshot,
-  listener: ListenerContext | null | undefined,
-  context?: string | null,
+  input: Pick<SessionNamingInput, 'snapshot' | 'listener' | 'context' | 'language'>,
+): boolean {
+  if (input.snapshot.vocalMode !== 'vocal') return false;
+  return (
+    Boolean(input.context?.trim()) ||
+    rewritesSeedNotesInPick(input) ||
+    hasGeneralListener(input.listener)
+  );
+}
+
+/** A language pick without a context on a vocal seed that has lyric notes:
+ *  the notes are rewritten in the pick, their content kept. */
+function rewritesSeedNotesInPick(
+  input: Pick<SessionNamingInput, 'snapshot' | 'context' | 'language'>,
 ): boolean {
   return (
-    snapshot.vocalMode === 'vocal' && (Boolean(context?.trim()) || hasGeneralListener(listener))
+    input.snapshot.vocalMode === 'vocal' &&
+    !input.context?.trim() &&
+    Boolean(input.language?.trim()) &&
+    Boolean(input.snapshot.lyricContext.trim())
   );
 }
 
@@ -639,12 +660,34 @@ const CONTEXT_LYRIC_EDIT_RULE =
   'and relationships unless the request replaces them. Build it from the request when it ' +
   'is empty. It steers the sung lyrics alone.';
 
+/** A language pick's lyric rewrite: the words change language, nothing else. */
+const pickLyricRewriteRule = (language: string): string =>
+  "The current lyricContext is the seed session's lyrical direction: REWRITE it in " +
+  `${language} and keep its theme, scene, imagery, people, and relationships.`;
+
+/** The seeded naming's language directive. A pick wins over everything; a
+ * context on Auto Detect is written in its own language, which the answer
+ * reports; otherwise the snapshot's pinned language rules as it always has. */
+function seededLanguageRule(
+  pick: string | undefined,
+  context: string | undefined,
+  snapshotLanguage: string,
+  request: string | undefined,
+): string {
+  if (pick) return ` Write title, trackTitles, and lyricContext in ${pick}.`;
+  if (context) return ` ${CREATIVE_LANGUAGE_RULE}`;
+  return namingLanguageRule(snapshotLanguage, request);
+}
+
 export function namingPrompt(input: SessionNamingInput): string {
   const context = input.context?.trim();
-  const wantsLyricContext = allowsNamingLyricContext(input.snapshot, input.listener, context);
+  const pick = input.language?.trim() || undefined;
+  const wantsLyricContext = allowsNamingLyricContext(input);
   // A context on a vocal seed is the request the lyric notes are edited for, so
   // the call sees About text the way the expansion does.
   const editsLyricsForContext = Boolean(context) && wantsLyricContext;
+  const rewritesNotesInPick = rewritesSeedNotesInPick(input);
+  const showsSeedNotes = editsLyricsForContext || rewritesNotesInPick;
   const request = context || input.userPrompt?.trim();
   const avoid = takenTitles(input.avoidTitles);
   return (
@@ -655,8 +698,12 @@ export function namingPrompt(input: SessionNamingInput): string {
     `"trackTitles": string[] (8-12 short distinct creative track titles fitting the vibe; ${TITLE_CASE_RULE})` +
     (context
       ? `, "activity": string (the activity or occasion the session is for, a few words in ` +
-        `the request's language; "" when the request names none), ` +
-        `"includesListener": boolean (${INCLUDES_LISTENER_ANSWER})`
+        `${pick ?? "the request's language"}; "" when the request names none), ` +
+        `"includesListener": boolean (${INCLUDES_LISTENER_ANSWER})` +
+        (pick
+          ? ''
+          : `, "language": string (the language the listening request's own words are ` +
+            `written in, as an English name, e.g. "French")`)
       : '') +
     (wantsLyricContext
       ? `, "lyricContext": string (max ${MAX_LYRIC_CONTEXT_LENGTH} chars: ${LYRIC_CONTEXT_FORMAT})`
@@ -664,7 +711,8 @@ export function namingPrompt(input: SessionNamingInput): string {
     `}. No prose, no markdown. ${NAMED_REFERENCE_NAME_RULE}` +
     (context ? ` ${CONTEXT_TASK}` : '') +
     (editsLyricsForContext ? ` ${CONTEXT_LYRIC_EDIT_RULE} ${THEME_FIDELITY_RULE}` : '') +
-    namingLanguageRule(input.snapshot.language, request) +
+    (rewritesNotesInPick && pick ? ` ${pickLyricRewriteRule(pick)}` : '') +
+    seededLanguageRule(pick, context, input.snapshot.language, request) +
     (avoid.length
       ? ` These names are TAKEN by the session this one is seeded from — stay in the same ` +
         `spirit but make title and every track title clearly different from all of them: ` +
@@ -672,7 +720,7 @@ export function namingPrompt(input: SessionNamingInput): string {
       : '') +
     `${listenerBlock(input.listener, editsLyricsForContext)}\n\n` +
     (request ? `Listening request: ${request}\n` : '') +
-    (editsLyricsForContext
+    (showsSeedNotes
       ? `Current lyricContext: ${input.snapshot.lyricContext.trim() || '(empty)'}\n`
       : '') +
     `Style: ${input.snapshot.stylePrompt}`

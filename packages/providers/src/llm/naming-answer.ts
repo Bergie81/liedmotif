@@ -4,7 +4,7 @@
 import { COVER_STYLE_PRESETS, narrowTo, type CoverStylePreset } from '@liedmotif/shared';
 import { z } from 'zod';
 import { clampCoverConcept, type SessionNamingMetadata } from './session-title';
-import { clampActivity, clampLyricContext, clampTrackTitles } from './snapshot';
+import { clampActivity, clampLyricContext, clampTrackTitles, sanitizeLanguage } from './snapshot';
 
 /** A pick spelled with other case or separators ("Record Sleeve", "poster-art")
  *  read as the preset it spells, or null. */
@@ -37,12 +37,14 @@ export const sessionNamingSchema = z.object({
   coverStyle: coverStylePickSchema,
 });
 
-/** The naming answer for a More Like This context: two more fields, the activity
- *  and whether the listener is in the scene, which an invalid answer leaves empty
- *  and false rather than failing the reply. */
+/** The naming answer for a More Like This context: three more fields, the
+ *  activity, whether the listener is in the scene and the language the context
+ *  is written in, which an invalid answer leaves empty and false rather than
+ *  failing the reply. The language must be one the vocal tag may carry. */
 export const contextNamingSchema = sessionNamingSchema.extend({
   activity: z.string().catch(''),
   includesListener: z.boolean().catch(false),
+  language: z.string().catch('').transform(sanitizeLanguage),
 });
 
 /** A usable naming proposal from a model value, or null. The title is required —
@@ -61,11 +63,12 @@ export function normalizeSessionNaming(value: unknown): SessionNamingMetadata | 
   };
 }
 
-/** A context's naming is the feature, so it is usable only with a Name AND a pool. */
+/** A context's or language pick's naming is the feature, so it is usable only
+ *  with a Name AND a pool. */
 export function normalizeContextNaming(value: unknown): SessionNamingMetadata | null {
   const naming = normalizeSessionNaming(value);
   if (!naming || naming.trackTitles.length === 0) return null;
-  // The shared fields validated above and the two context fields never fail.
-  const { activity, includesListener } = contextNamingSchema.parse(value);
-  return { ...naming, activity: clampActivity(activity), includesListener };
+  // The shared fields validated above and the context fields never fail.
+  const { activity, includesListener, language } = contextNamingSchema.parse(value);
+  return { ...naming, activity: clampActivity(activity), includesListener, language };
 }

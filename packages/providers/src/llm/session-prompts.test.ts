@@ -718,3 +718,52 @@ describe('namingPrompt for a More Like This context with personal ingredients', 
     expect(namingPrompt({ snapshot: vocalSeed, listener })).not.toContain('includesListener');
   });
 });
+
+describe('namingPrompt for a More Like This language', () => {
+  const germanVocalSeed = sessionStyleSnapshotSchema.parse({
+    stylePrompt: 'warm synthwave, night drive',
+    vocalMode: 'vocal',
+    language: 'German',
+    lyricContext: 'theme: night drive; people: Mira, my sister',
+  });
+  const instrumentalSeed = sessionStyleSnapshotSchema.parse({ stylePrompt: 'calm piano' });
+
+  it('on Auto Detect with a context asks for the context’s language and writes in it', () => {
+    const prompt = namingPrompt({ snapshot: germanVocalSeed, context: 'for cooking' });
+    expect(prompt).toContain('"language": string');
+    expect(prompt).toContain('SAME language as the request');
+    expect(prompt).not.toContain('in German');
+  });
+
+  it('carries a picked language over the context’s, and asks for none', () => {
+    const prompt = namingPrompt({
+      snapshot: instrumentalSeed,
+      context: 'for cooking',
+      language: 'German',
+    });
+    expect(prompt).toContain('Write title, trackTitles, and lyricContext in German.');
+    expect(prompt).not.toContain('"language"');
+    expect(prompt).not.toContain('SAME language as the request');
+  });
+
+  it('with a pick and no context rewrites a vocal seed’s lyric notes in the pick', () => {
+    const prompt = namingPrompt({ snapshot: germanVocalSeed, language: 'Spanish' });
+    expect(prompt).toContain('Write title, trackTitles, and lyricContext in Spanish.');
+    expect(prompt).toContain('"lyricContext"');
+    expect(prompt).toContain('Current lyricContext: theme: night drive; people: Mira, my sister');
+    expect(prompt).toMatch(/keep its theme, scene, imagery, people, and relationships/i);
+    expect(prompt).not.toContain('"language"');
+    expect(prompt).not.toContain('"activity"');
+    expect(prompt).not.toContain('Listening request');
+  });
+
+  it('with a pick and no context asks an instrumental seed for no lyric notes', () => {
+    const prompt = namingPrompt({ snapshot: instrumentalSeed, language: 'Spanish' });
+    expect(prompt).not.toContain('lyricContext"');
+    expect(prompt).not.toContain('Current lyricContext');
+  });
+
+  it('asks for no language without a context', () => {
+    expect(namingPrompt({ snapshot: germanVocalSeed })).not.toContain('"language"');
+  });
+});

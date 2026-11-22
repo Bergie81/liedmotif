@@ -30,7 +30,10 @@ import {
   presentCreationFailure,
 } from '@/components/create/creation-refusal';
 import { OfflineMark } from '@/components/offline/offline-mark';
-import { MoreLikeThisSheet } from '@/components/sessions/more-like-this-sheet';
+import {
+  MoreLikeThisSheet,
+  type MoreLikeThisAsk,
+} from '@/components/sessions/more-like-this-sheet';
 import {
   SaveToPlaylistSheet,
   type SavePickerTrack,
@@ -243,7 +246,7 @@ export function PlaylistNowPlaying({
    * Tracks); engaging it hands playback over exactly as the Session surface
    * does — audibly through the provider's crossfade while the playlist plays.
    * True once the new Session is engaged. */
-  async function seedMoreLikeThis(context: string | undefined): Promise<boolean> {
+  async function seedMoreLikeThis(ask: MoreLikeThisAsk): Promise<boolean> {
     // Each request creates a Session that buys its initial fill, so a repeat
     // start while one is in flight is dropped.
     if (seedingRef.current) return false;
@@ -254,7 +257,7 @@ export function PlaylistNowPlaying({
       const result = await moreLikeThis({
         seedTrackIds: items.slice(0, MAX_SEED_TRACKS).map((item) => item.id),
         clientId,
-        context,
+        ...ask,
       });
       if (!result.ok) {
         const line = presentCreationFailure(result.error, MORE_LIKE_THIS_FAILED);

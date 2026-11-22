@@ -178,7 +178,7 @@ describe('useLibraryActions More Like This', () => {
 
     let started = false;
     await act(async () => {
-      started = await result.current.seedMoreLikeThis(track, 'for cooking');
+      started = await result.current.seedMoreLikeThis(track, { context: 'for cooking' });
     });
 
     expect(started).toBe(true);

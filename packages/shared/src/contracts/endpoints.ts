@@ -590,6 +590,10 @@ export const moreLikeThisRequestSchema = z.strictObject({
    *  rewrites the Name, track titles, cover and lyrics, never the music. Blank
    *  counts as absent. */
   context: z.string().trim().max(MAX_USER_PROMPT_LENGTH).optional(),
+  /** A picked language for the new Session's Name, titles, lyric notes and, on
+   *  a vocal seed, its sung language. Absent is Auto Detect: a context's own
+   *  language, else the seed's. */
+  language: z.enum(SESSION_LANGUAGES).optional(),
 });
 export type MoreLikeThisRequest = z.infer<typeof moreLikeThisRequestSchema>;
 

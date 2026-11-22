@@ -10,6 +10,7 @@ import {
 } from '@/components/create/creation-refusal';
 import { useSeedMoreLikeThis } from '@/components/sessions/use-seed-more-like-this';
 import type { LibraryTrackTab } from './use-library-query';
+import type { MoreLikeThisAsk } from '@/components/sessions/more-like-this-sheet';
 
 export type LibraryActionName = 'save' | 'favorite' | 'seed' | 'delete';
 export type BusyAction = { trackId: string; action: LibraryActionName } | null;
@@ -113,9 +114,12 @@ export function useLibraryActions({
   }
 
   /** True once the new Session started; a refusal is shown here and keeps the sheet open. */
-  async function seedMoreLikeThis(track: LibraryTrackItem, context?: string): Promise<boolean> {
+  async function seedMoreLikeThis(
+    track: LibraryTrackItem,
+    ask: MoreLikeThisAsk = {},
+  ): Promise<boolean> {
     begin(track.id, 'seed');
-    const { started, refusal } = await seed({ seedTrackIds: [track.id], context });
+    const { started, refusal } = await seed({ seedTrackIds: [track.id], ...ask });
     if (!mountedRef.current) return started;
     setBusyAction(null);
     const line = refusal && presentCreationFailure(refusal, MORE_LIKE_THIS_FAILED);

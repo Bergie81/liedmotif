@@ -11,6 +11,7 @@ import {
   runPlayerSessionAction,
   type PlayerSessionActionGate,
 } from './player-session-action-runner';
+import type { MoreLikeThisAsk } from '@/components/sessions/more-like-this-sheet';
 
 /** The actions THIS hook runs — Change Vibe has its own provider-scoped runner. */
 export type PlayerHookAction = 'convert-to-playlist' | 'more-like-this' | 'stop';
@@ -42,7 +43,7 @@ export function usePlayerSessionActions({
   );
 
   const startMoreLikeThis = useCallback(
-    async (context?: string): Promise<boolean> => {
+    async (ask: MoreLikeThisAsk = {}): Promise<boolean> => {
       if (!trackId) return false;
       if (!(await beginOtherMusic())) return false;
       return runPlayerSessionAction({
@@ -50,7 +51,7 @@ export function usePlayerSessionActions({
         action: 'more-like-this',
         failureLabel: MORE_LIKE_THIS_FAILED,
         createsSession: true,
-        request: () => moreLikeThis({ seedTrackIds: [trackId], clientId, context }),
+        request: () => moreLikeThis({ seedTrackIds: [trackId], clientId, ...ask }),
         onBusyChange: setBusyAction,
         onFailure: (failure) => reportFailure(failure, 'more-like-this'),
         onSuccess: (data) => onSessionChange(data.session),

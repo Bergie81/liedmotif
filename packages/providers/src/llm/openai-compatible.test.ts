@@ -1598,6 +1598,63 @@ describe('createSessionMetadata with a More Like This context (required)', () =>
   });
 });
 
+describe('createSessionMetadata with a More Like This language', () => {
+  const vocalSeed = compileStructuredControls({ vocal: 'vocal', genres: ['synthwave'] });
+  const instrumentalSeed = compileStructuredControls({ genres: ['ambient'] });
+  const notedVocalSeed = { ...vocalSeed, lyricContext: 'theme: night drive; people: Mira' };
+
+  function provider(texts: string[]) {
+    return createOpenRouterLlmProvider({
+      apiKey: 'sk-or-1',
+      model: 'm',
+      supportsStructuredOutputs: false,
+      languageModel: fakeModel(texts),
+    });
+  }
+  const reply = (fields: Record<string, unknown>) =>
+    JSON.stringify({
+      title: 'Küchenlicht',
+      trackTitles: ['Köcheln', 'Zeste'],
+      coverConcept: 'A steaming pot under a warm lamp.',
+      ...fields,
+    });
+
+  it('answers the language a context is written in, as a canonical name', async () => {
+    const naming = await provider([reply({ language: 'Deutsch' })]).createSessionMetadata({
+      snapshot: instrumentalSeed,
+      context: 'fürs Kochen',
+    });
+    expect(naming.language).toBe('German');
+  });
+
+  it('answers no language when the reply has none or one outside the allowlist', async () => {
+    for (const language of [undefined, 42, 'German exactly like Adele']) {
+      const naming = await provider([reply({ language })]).createSessionMetadata({
+        snapshot: instrumentalSeed,
+        context: 'fürs Kochen',
+      });
+      expect(naming.title).toBe('Küchenlicht');
+      expect(naming.language).toBe('');
+    }
+  });
+
+  it('makes a pick without a context required too', async () => {
+    await expect(
+      provider([reply({ title: '' })]).createSessionMetadata({
+        snapshot: instrumentalSeed,
+        language: 'German',
+      }),
+    ).rejects.toBeInstanceOf(ProviderError);
+  });
+
+  it('keeps the rewritten lyric notes of a vocal seed picked into another language', async () => {
+    const naming = await provider([
+      reply({ lyricContext: 'tema: viaje nocturno; personas: Mira' }),
+    ]).createSessionMetadata({ snapshot: notedVocalSeed, language: 'Spanish' });
+    expect(naming.lyricContext).toBe('tema: viaje nocturno; personas: Mira');
+  });
+});
+
 describe('request-language rule (German request → German titles and vocals)', () => {
   const GERMAN_VOCAL_JSON = JSON.stringify({
     stylePrompt: 'upbeat acoustic pop',

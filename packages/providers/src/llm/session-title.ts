@@ -24,8 +24,9 @@ export function clampCoverConcept(value: string): string {
   return sanitizeCoverConcept(value);
 }
 
-/** Why a More Like This context could not be honored: its naming call failed
- *  or answered no Name and title pool. Retryable, like a failed expansion. */
+/** Why a More Like This context or language pick could not be honored: its
+ *  naming call failed or answered no Name and title pool. Retryable, like a
+ *  failed expansion. */
 export const CONTEXT_NAMING_FAILED =
   'The text AI could not write names for that context. Try again.';
 
@@ -50,6 +51,9 @@ export interface SessionNamingMetadata {
   /** Whether the request puts the listener in its scene, answered only for a
    *  More Like This context; false when the model gave no valid answer. */
   includesListener?: boolean;
+  /** The language a More Like This context is written in (an English name), as
+   *  the model answered it on Auto Detect; '' when it gave no valid one. */
+  language?: string;
 }
 
 /** The snapshot fields a title composes from — a structural subset of both the

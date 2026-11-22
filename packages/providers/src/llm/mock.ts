@@ -240,10 +240,16 @@ export function mockLlmProvider(
         autoCoverStyle: MOCK_AUTO_COVER_STYLE,
       };
       const context = input.context?.trim();
-      if (!context) return named;
+      const seedNotes = input.snapshot.lyricContext.trim();
+      const pick = input.language?.trim();
+      if (!context) {
+        // A pick's stand-in rewrite: the seed's notes, labeled with the pick.
+        return pick && input.snapshot.vocalMode === 'vocal' && seedNotes
+          ? { ...named, lyricContext: clampLyricContext(`language: ${pick}; ${seedNotes}`) }
+          : named;
+      }
       // A context's deterministic stand-in: the seed's notes gain the context as
       // their theme, and the context itself stands in for the activity.
-      const seedNotes = input.snapshot.lyricContext.trim();
       return {
         ...named,
         activity: clampActivity(context),
