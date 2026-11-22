@@ -115,6 +115,7 @@ export {
   deriveSessionSnapshot,
   deriveSessionMetadata,
   deriveSessionTitle,
+  CONTEXT_NAMING_FAILED,
   inheritedGuardrails,
   createOpenAiCompatibleLlmProvider,
   createOpenRouterLlmProvider,

@@ -309,7 +309,11 @@ export function SettingsRow({
       href={href}
       className="group -mx-2 flex items-center gap-3 rounded-[10px] border-b border-line px-2 py-3 [-webkit-tap-highlight-color:transparent] last:border-b-0 hover:bg-paper/[0.03]"
     >
-      <span className="shrink-0 text-muted [&>svg]:h-[19px] [&>svg]:w-[19px]">{icon}</span>
+      {/* One label line tall (it shares the label's size) and pinned to the
+          top, so the icon sits on the title rather than between the lines. */}
+      <span className="flex h-lh shrink-0 items-center self-start text-[14.5px] text-muted [&>svg]:h-[19px] [&>svg]:w-[19px]">
+        {icon}
+      </span>
       {/* The badge rides the label line so the summary keeps the row's full
           width — beside it, a phone truncates the summary to nothing. */}
       <span className="min-w-0 flex-1">

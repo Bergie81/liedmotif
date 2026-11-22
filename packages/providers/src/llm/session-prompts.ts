@@ -285,6 +285,12 @@ export interface SessionNamingInput {
   /** Names already taken (a seeded session's source title + track titles):
    * the proposal must be related in spirit but clearly different. */
   avoidTitles?: string[];
+  /** A More Like This context: what the seeded Session is about or for, in the
+   * user's words. It becomes the call's listening request; the snapshot's music
+   * stays fixed, and the answer also carries the activity and, on a vocal
+   * snapshot, lyric notes edited from the seed's. With a context the call is
+   * required: it throws instead of answering empty. */
+  context?: string | null;
 }
 
 /** The taken names as every adapter reads them: a blank entry claims nothing. */
@@ -347,11 +353,16 @@ export function allowsLyricContext(
   return snapshot.vocalMode === 'vocal' && (options?.skipProfile === true || hasListener(listener));
 }
 
+/** A vocal seed with a context always gets lyric notes: the context is the
+ *  request they are written for. Otherwise they need a listener profile. */
 export function allowsNamingLyricContext(
   snapshot: SessionStyleSnapshot,
   listener: ListenerContext | null | undefined,
+  context?: string | null,
 ): boolean {
-  return snapshot.vocalMode === 'vocal' && hasGeneralListener(listener);
+  return (
+    snapshot.vocalMode === 'vocal' && (Boolean(context?.trim()) || hasGeneralListener(listener))
+  );
 }
 
 /** The user's explicit fine-tune picks as hard creative constraints. Guidance
@@ -608,9 +619,23 @@ export function trackLyricBriefPrompt(input: TrackLyricBriefInput): string {
   );
 }
 
+/** A More Like This context names what the Session is for; the seed's music stays. */
+const CONTEXT_TASK =
+  'The listening request says what this session is about or for. It never changes the ' +
+  'music: the style below is fixed. title, trackTitles, coverConcept, coverStyle, and ' +
+  'activity follow the listening request.';
+
+/** The keep-unless-asked edit Change Vibe applies to lyric notes, for a context. */
+const CONTEXT_LYRIC_EDIT_RULE =
+  "The current lyricContext is the seed session's lyrical direction: EDIT it for the " +
+  'listening request — its theme, scene, and imagery follow the request; keep its people ' +
+  'and relationships unless the request replaces them. Build it from the request when it ' +
+  'is empty. It steers the sung lyrics alone.';
+
 export function namingPrompt(input: SessionNamingInput): string {
-  const wantsLyricContext = allowsNamingLyricContext(input.snapshot, input.listener);
-  const request = input.userPrompt?.trim();
+  const context = input.context?.trim();
+  const wantsLyricContext = allowsNamingLyricContext(input.snapshot, input.listener, context);
+  const request = context || input.userPrompt?.trim();
   const avoid = takenTitles(input.avoidTitles);
   return (
     `Name a generated-music listening session and its tracks. Respond with ONLY JSON: ` +
@@ -618,10 +643,16 @@ export function namingPrompt(input: SessionNamingInput): string {
     `"coverConcept": string (one concrete visual sentence; ${NAMED_VISUAL_REFERENCE_RULE}), ` +
     `"coverStyle": string (${COVER_STYLE_ANSWER}), ` +
     `"trackTitles": string[] (8-12 short distinct creative track titles fitting the vibe; ${TITLE_CASE_RULE})` +
+    (context
+      ? `, "activity": string (the activity or occasion the session is for, a few words in ` +
+        `the request's language; "" when the request names none)`
+      : '') +
     (wantsLyricContext
       ? `, "lyricContext": string (max ${MAX_LYRIC_CONTEXT_LENGTH} chars: ${LYRIC_CONTEXT_FORMAT})`
       : '') +
     `}. No prose, no markdown. ${NAMED_REFERENCE_NAME_RULE}` +
+    (context ? ` ${CONTEXT_TASK}` : '') +
+    (context && wantsLyricContext ? ` ${CONTEXT_LYRIC_EDIT_RULE} ${THEME_FIDELITY_RULE}` : '') +
     namingLanguageRule(input.snapshot.language, request) +
     (avoid.length
       ? ` These names are TAKEN by the session this one is seeded from — stay in the same ` +
@@ -630,6 +661,9 @@ export function namingPrompt(input: SessionNamingInput): string {
       : '') +
     `${listenerBlock(input.listener, false)}\n\n` +
     (request ? `Listening request: ${request}\n` : '') +
+    (context && wantsLyricContext
+      ? `Current lyricContext: ${input.snapshot.lyricContext.trim() || '(empty)'}\n`
+      : '') +
     `Style: ${input.snapshot.stylePrompt}`
   );
 }

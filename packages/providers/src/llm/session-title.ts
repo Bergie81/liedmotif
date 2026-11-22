@@ -24,6 +24,11 @@ export function clampCoverConcept(value: string): string {
   return sanitizeCoverConcept(value);
 }
 
+/** Why a More Like This context could not be honored: its naming call failed
+ *  or answered no Name and title pool. Retryable, like a failed expansion. */
+export const CONTEXT_NAMING_FAILED =
+  'The text AI could not write names for that context. Try again.';
+
 /** Creative naming a text LLM proposes for a session (all cosmetic; empty when
  *  the model omits them — consumers fall back to deterministic derivation). */
 export interface SessionNamingMetadata {
@@ -32,13 +37,16 @@ export interface SessionNamingMetadata {
   /** Proposed pool of creative track titles, one per track ordinal (refilled as a Session plays). */
   trackTitles: string[];
   /** Request-led compact lyric notes organized from related listener-profile details.
-   *  CONTRACT: non-empty ONLY for a vocal session WITH a listener profile — every
-   *  implementation enforces this on its output, so consumers merge it into the
-   *  snapshot without re-checking. */
+   *  CONTRACT: non-empty ONLY for a vocal session WITH a listener profile or a
+   *  More Like This context — every implementation enforces this on its output,
+   *  so consumers merge it into the snapshot without re-checking. */
   lyricContext: string;
   coverConcept: string;
   /** The cover preset the model picked for Auto; null when it gave no valid one. */
   autoCoverStyle: CoverStylePreset | null;
+  /** The activity the Session is for, answered only for a More Like This
+   *  context; '' when the model gave no valid one. */
+  activity?: string;
 }
 
 /** The snapshot fields a title composes from — a structural subset of both the

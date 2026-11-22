@@ -5,6 +5,7 @@
 // never leave this process.
 
 import {
+  CONTEXT_NAMING_FAILED,
   deriveSessionSnapshot,
   deriveSessionMetadata,
   deriveSessionTitle,
@@ -440,6 +441,38 @@ export function stripPersonalIngredients(seed: StyleSnapshot): StyleSnapshot {
 }
 
 /**
+ * The naming a More Like This context gets: the one seeded naming call, made
+ * required. The context is its listening request, the seed's lyric notes the
+ * direction it edits; its activity answer replaces the seed's, and its lyric
+ * notes replace the seed's ('' when it gave none). Throws `ProviderError` when
+ * there is no usable Name and title pool, so no Session ignores the context.
+ */
+async function contextNaming(
+  context: string,
+  snapshot: SessionStyleSnapshot,
+  listener: ListenerContext | null,
+  avoidTitles: string[],
+): Promise<{ snapshot: SessionStyleSnapshot } & CoverDirection> {
+  const llm = await getLlmProvider();
+  if (!llm) throw new ProviderConfigError('More Like This with a context needs a text AI.');
+  const naming = await llm.createSessionMetadata({ snapshot, listener, avoidTitles, context });
+  if (!naming.title.trim() || naming.trackTitles.length === 0) {
+    throw new ProviderError(CONTEXT_NAMING_FAILED, { failure: 'unusable_response' });
+  }
+  return {
+    snapshot: {
+      ...snapshot,
+      title: naming.title,
+      trackTitles: naming.trackTitles,
+      lyricContext: snapshot.vocalMode === 'vocal' ? naming.lyricContext : '',
+      activity: naming.activity ?? '',
+    },
+    coverConcept: naming.coverConcept,
+    autoCoverStyle: naming.autoCoverStyle,
+  };
+}
+
+/**
  * Name a More Like This session seeded from a stored jsonb snapshot. The seed
  * arrives WITH its source session's creative naming, which must not be cloned —
  * the source's title and pool are cleared and passed as taken instead, so one
@@ -447,6 +480,10 @@ export function stripPersonalIngredients(seed: StyleSnapshot): StyleSnapshot {
  * proposes related-but-different names; deterministic composition otherwise.
  * Naming is merged onto the ORIGINAL seed so every stored field zod would strip
  * is preserved; a seed that fails to parse keeps its stored naming.
+ *
+ * With a `context` the naming call is required (`contextNaming`): it throws a
+ * `ProviderError` the route answers as a retryable error, and a missing text
+ * LLM throws `ProviderConfigError` (the route refuses that case before calling).
  *
  * The Guardrails are the one part of the vibe the seed does not simply carry
  * over: they are re-stamped, so a pre-guardrails source still starts a new
@@ -456,6 +493,7 @@ export async function nameSeededSnapshot(
   db: Database,
   ownerUserId: string,
   seed: StyleSnapshot,
+  context?: string | null,
 ): Promise<NamedSnapshot> {
   const parsed = sessionStyleSnapshotSchema.safeParse(seed);
   if (!parsed.success)
@@ -467,17 +505,13 @@ export async function nameSeededSnapshot(
     };
   const inherited = inheritedGuardrails(parsed.data);
   const listener = await getListenerContext(db, ownerUserId);
-  const named = await withCreativeNaming(
-    null,
-    { ...parsed.data, ...inherited, title: '', trackTitles: [] },
-    NO_COVER_DIRECTION,
-    listener,
-    {
-      avoidTitles: [parsed.data.title, ...parsed.data.trackTitles].filter(
-        (title) => title.trim().length > 0,
-      ),
-    },
+  const unnamed = { ...parsed.data, ...inherited, title: '', trackTitles: [] };
+  const avoidTitles = [parsed.data.title, ...parsed.data.trackTitles].filter(
+    (title) => title.trim().length > 0,
   );
+  const named = context
+    ? await contextNaming(context, unnamed, listener, avoidTitles)
+    : await withCreativeNaming(null, unnamed, NO_COVER_DIRECTION, listener, { avoidTitles });
   return {
     snapshot: {
       ...seed,
@@ -485,6 +519,7 @@ export async function nameSeededSnapshot(
       title: named.snapshot.title,
       trackTitles: named.snapshot.trackTitles,
       lyricContext: named.snapshot.lyricContext,
+      ...(context ? { activity: named.snapshot.activity } : {}),
     },
     title: distinguishFromSourceTitle(
       deriveSessionTitle({ snapshot: named.snapshot }),

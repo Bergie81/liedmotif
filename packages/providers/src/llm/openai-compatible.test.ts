@@ -1487,6 +1487,95 @@ describe('createSessionMetadata enforces the lyric-context rule on its output', 
   });
 });
 
+describe('createSessionMetadata with a More Like This context (required)', () => {
+  const vocalSeed = compileStructuredControls({ vocal: 'vocal', genres: ['synthwave'] });
+  const instrumentalSeed = compileStructuredControls({ genres: ['ambient'] });
+
+  function provider(texts: string[], supportsStructuredOutputs = false) {
+    return createOpenRouterLlmProvider({
+      apiKey: 'sk-or-1',
+      model: 'm',
+      supportsStructuredOutputs,
+      languageModel: fakeModel(texts),
+    });
+  }
+  const reply = (fields: Record<string, unknown>) =>
+    JSON.stringify({
+      title: 'Kitchen Lights',
+      trackTitles: ['Simmer', 'Zest'],
+      coverConcept: 'A steaming pot under a warm lamp.',
+      ...fields,
+    });
+
+  it.each([
+    ['structured output', true],
+    ['JSON in text', false],
+  ])(
+    'answers the activity and keeps lyric notes on a vocal seed without a profile (%s)',
+    async (_path, structured) => {
+      const naming = await provider(
+        [reply({ activity: '  cooking  ', lyricContext: 'theme: cooking for Mira' })],
+        structured,
+      ).createSessionMetadata({ snapshot: vocalSeed, context: 'for cooking' });
+      expect(naming).toMatchObject({
+        title: 'Kitchen Lights',
+        trackTitles: ['Simmer', 'Zest'],
+        activity: 'cooking',
+        lyricContext: 'theme: cooking for Mira',
+      });
+    },
+  );
+
+  it('bounds a runaway activity answer', async () => {
+    const naming = await provider([reply({ activity: 'cook '.repeat(100) })]).createSessionMetadata(
+      { snapshot: instrumentalSeed, context: 'for cooking' },
+    );
+    expect(naming.activity!.length).toBeLessThanOrEqual(120);
+    expect(naming.activity).toMatch(/^cook/);
+  });
+
+  it('answers an empty activity when the reply has none or an invalid one', async () => {
+    for (const activity of [undefined, 42]) {
+      const naming = await provider([reply({ activity })]).createSessionMetadata({
+        snapshot: instrumentalSeed,
+        context: 'for cooking',
+      });
+      expect(naming.title).toBe('Kitchen Lights');
+      expect(naming.activity).toBe('');
+    }
+  });
+
+  it('drops lyric notes an instrumental seed was given', async () => {
+    const naming = await provider([reply({ lyricContext: 'made up' })]).createSessionMetadata({
+      snapshot: instrumentalSeed,
+      context: 'for cooking',
+    });
+    expect(naming.lyricContext).toBe('');
+  });
+
+  it.each([
+    ['an unparseable reply', ['not json at all']],
+    ['a reply without a Name', [reply({ title: '' })]],
+    ['a reply without a title pool', [reply({ trackTitles: [] })]],
+  ])('throws a ProviderError on %s', async (_case, texts) => {
+    await expect(
+      provider(texts).createSessionMetadata({ snapshot: instrumentalSeed, context: 'for cooking' }),
+    ).rejects.toBeInstanceOf(ProviderError);
+  });
+
+  it('throws the timed-out error when the model times out', async () => {
+    const timeout = Object.assign(new Error('timed out'), { name: 'TimeoutError' });
+    const slow = createOpenRouterLlmProvider({
+      apiKey: 'sk-or-1',
+      model: 'm',
+      languageModel: throwingModel(timeout),
+    });
+    await expect(
+      slow.createSessionMetadata({ snapshot: instrumentalSeed, context: 'for cooking' }),
+    ).rejects.toThrow(/took too long/);
+  });
+});
+
 describe('request-language rule (German request → German titles and vocals)', () => {
   const GERMAN_VOCAL_JSON = JSON.stringify({
     stylePrompt: 'upbeat acoustic pop',

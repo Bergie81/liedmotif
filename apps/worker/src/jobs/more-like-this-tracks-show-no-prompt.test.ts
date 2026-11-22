@@ -22,13 +22,14 @@ import { runEnsureSessionBuffer } from './ensure-session-buffer';
 
 // A More Like This Session starts with no prompt history: nobody typed anything.
 // Its Tracks must keep saying so after a later Change Vibe adds a message,
-// because they were made before that message existed.
+// because they were made before that message existed. One started with a
+// context starts with the context as its prompt history, and its Tracks show it.
 
 const describeIfDb = TEST_DATABASE_URL ? describe : describe.skip;
 const NOW = new Date('2026-06-29T12:00:00Z');
 const SNAPSHOT = { stylePrompt: 'instrumental lofi', bpm: 96, key: 'A minor' };
 
-describeIfDb('Tracks of a Session without a prompt history', () => {
+describeIfDb('Tracks of a More Like This Session', () => {
   let ctx: TestDb;
   beforeAll(async () => {
     ctx = await connectTestDb('liedmotif-more-like-this-prompt-test');
@@ -111,5 +112,21 @@ describeIfDb('Tracks of a Session without a prompt history', () => {
 
     expect(await shownPrompt(ownerUserId, firstBatchTrack)).toBeNull();
     expect(await shownPrompt(ownerUserId, afterChangeTrack)).toBe('mehr rockiger');
+  });
+
+  it('show the context a More Like This Session was started with', async () => {
+    const ownerUserId = await createUser(ctx.db);
+    // What More Like This creates with a context: a reused snapshot and the
+    // context as the prompt history.
+    const sessionId = await createSession(ctx.db, {
+      ownerUserId,
+      styleSnapshot: SNAPSHOT,
+      userPrompt: 'zum Kochen',
+    });
+
+    await generate(sessionId);
+    const firstTrack = await landTrack(ownerUserId, sessionId);
+
+    expect(await shownPrompt(ownerUserId, firstTrack)).toBe('zum Kochen');
   });
 });

@@ -586,6 +586,10 @@ export const moreLikeThisRequestSchema = z.strictObject({
   seedTrackIds: z.array(uuidSchema).min(1).max(MAX_SEED_TRACKS),
   clientId: clientIdSchema,
   targetDurationMinutes: targetDurationMinutesSchema.optional(),
+  /** What the new Session is about or for ("for cooking"), in any language. It
+   *  rewrites the Name, track titles, cover and lyrics, never the music. Blank
+   *  counts as absent. */
+  context: z.string().trim().max(MAX_USER_PROMPT_LENGTH).optional(),
 });
 export type MoreLikeThisRequest = z.infer<typeof moreLikeThisRequestSchema>;
 

@@ -95,6 +95,14 @@ export function clampLyricContext(value: string): string {
   return value.trim().slice(0, MAX_LYRIC_CONTEXT_LENGTH);
 }
 
+/** Cap on an activity label a naming answer sets: the structured controls' own cap. */
+export const MAX_SESSION_ACTIVITY_LENGTH = 120;
+
+/** Clamp a proposed activity label where it enters the system — mirrors `clampLyricContext`. */
+export function clampActivity(value: string): string {
+  return value.replace(/\s+/g, ' ').trim().slice(0, MAX_SESSION_ACTIVITY_LENGTH).trim();
+}
+
 /** Hard cap on a per-generation track lyric brief. Tighter than
  *  `MAX_DESCRIPTION_LYRIC_LENGTH`, so a brief reaches the provider whole. The
  *  own-voice path sends "Write the lyrics in <language>. " + brief into Suno's

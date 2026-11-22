@@ -44,6 +44,7 @@ import { validateCredential } from '../validation/index';
 import { pinnedProviderFetch } from '../validation/provider-fetch';
 import { assertAllowedBaseUrl } from '../validation/ssrf';
 import {
+  clampActivity,
   clampLyricContext,
   clampTrackLyricBrief,
   clampTrackTitles,
@@ -52,7 +53,11 @@ import {
   sessionStyleSnapshotSchema,
   type SessionStyleSnapshot,
 } from './snapshot';
-import { clampCoverConcept, type SessionNamingMetadata } from './session-title';
+import {
+  clampCoverConcept,
+  CONTEXT_NAMING_FAILED,
+  type SessionNamingMetadata,
+} from './session-title';
 import {
   allowsLyricContext,
   allowsNamingLyricContext,
@@ -328,6 +333,12 @@ const sessionNamingSchema = z.object({
   coverStyle: coverStylePickSchema,
 });
 
+/** The naming answer for a More Like This context: one more field, the activity,
+ *  which an invalid answer leaves empty rather than failing the reply. */
+const contextNamingSchema = sessionNamingSchema.extend({
+  activity: z.string().catch(''),
+});
+
 /** A usable naming proposal from a model value, or null. The title is required —
  *  without a name the reply is useless even if it carried a track-title pool. The
  *  pool and lyric context are clamped here (the write boundary: they merge straight
@@ -342,6 +353,16 @@ function normalizeSessionNaming(value: unknown): SessionNamingMetadata | null {
     coverConcept: clampCoverConcept(result.data.coverConcept),
     autoCoverStyle: result.data.coverStyle,
   };
+}
+
+/** A context's naming is the feature, so it is usable only with a Name AND a pool. */
+function normalizeContextNaming(value: unknown): SessionNamingMetadata | null {
+  const naming = normalizeSessionNaming(value);
+  if (!naming || naming.trackTitles.length === 0) return null;
+  const activity = contextNamingSchema.shape.activity.parse(
+    (value as { activity?: unknown } | null)?.activity,
+  );
+  return { ...naming, activity: clampActivity(activity) };
 }
 
 export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmConfig): LlmProvider {
@@ -516,6 +537,35 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
     }
   }
 
+  /** The naming call for a More Like This context: required, so it runs under the
+   *  expansion's budget and throws a sanitized `ProviderError` instead of
+   *  answering empty. The lyric-context rule is enforced on its output. */
+  async function createContextNaming(input: SessionNamingInput): Promise<SessionNamingMetadata> {
+    assertAllowedBaseUrl(config.providerKey, config.baseUrl);
+    const prompt = namingPrompt(input);
+    let value: unknown;
+    try {
+      if (config.supportsStructuredOutputs) {
+        ({ output: value } = await generateText({
+          model: getModel(),
+          output: Output.object({ schema: contextNamingSchema }),
+          prompt,
+          ...callSettings(),
+        }));
+      } else {
+        const { text } = await generateText({ model: getModel(), prompt, ...callSettings() });
+        value = parseJsonObject(text);
+      }
+    } catch (err) {
+      throw sanitizedError(err, CONTEXT_NAMING_FAILED);
+    }
+    const naming = normalizeContextNaming(value);
+    if (!naming) throw new ProviderError(CONTEXT_NAMING_FAILED, { failure: 'unusable_response' });
+    return allowsNamingLyricContext(input.snapshot, input.listener, input.context)
+      ? naming
+      : { ...naming, lyricContext: '' };
+  }
+
   const provider: LlmProvider = {
     providerType: 'llm',
     providerKey: config.providerKey,
@@ -653,6 +703,7 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
     },
 
     async createSessionMetadata(input: SessionNamingInput): Promise<SessionNamingMetadata> {
+      if (input.context?.trim()) return createContextNaming(input);
       // Enforce the lyric-context rule on the output (mirrors `expandSessionIntent`;
       // the provider is the rule's single owner, so consumers merge without re-checking).
       // The gate is fixed for the whole call — a disallowed session drops whatever the

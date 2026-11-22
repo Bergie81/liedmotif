@@ -157,12 +157,17 @@ export interface LlmProvider extends BaseProvider {
   /**
    * Creative session naming (Name proposal + track-title pool) for a snapshot that
    * lacks them — the structured-controls / More Like This paths, where no expansion
-   * call runs. Never throws, and bounded by a short timeout (it is awaited in the
+   * call runs. Without a context it never throws, and is bounded by a short timeout (it is awaited in the
    * create path, so a slow model may only briefly delay — never fail — creation).
    * Any failure returns EMPTY metadata; the consumer then composes the
    * deterministic Name (`deriveSessionTitle`), which has that job to itself. At
    * most one call per session creation, so the "text LLM runs ~once per session"
    * posture holds.
+   *
+   * A More Like This context (`input.context`) makes the call required: it runs
+   * under the expansion's budget, also answers the `activity` and, on a vocal
+   * snapshot, lyric notes, and throws a sanitized `ProviderError` when it cannot
+   * return a Name and a title pool, so no Session starts that ignored the context.
    */
   createSessionMetadata(input: SessionNamingInput): Promise<SessionNamingMetadata>;
   /**
@@ -236,7 +241,11 @@ export type { StructuredControls, StylePicks, TrackPromptParams, TrackMetadata }
 export { deriveSessionMetadata, deriveSessionSnapshot } from './derive';
 export type { SessionIntentInput } from './derive';
 
-export { deriveSessionTitle, MAX_SESSION_TITLE_LENGTH } from './session-title';
+export {
+  CONTEXT_NAMING_FAILED,
+  deriveSessionTitle,
+  MAX_SESSION_TITLE_LENGTH,
+} from './session-title';
 export type { SessionTitleSnapshot, SessionNamingMetadata } from './session-title';
 
 export {

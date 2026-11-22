@@ -152,6 +152,26 @@ describe('mockLlmProvider.createSessionMetadata', () => {
     expect(naming.title).not.toBe(base.title);
     expect(naming.title).toContain(base.title);
   });
+
+  it('answers a context with its activity, and lyric notes only for a vocal seed', async () => {
+    const vocal = sessionStyleSnapshotSchema.parse({
+      stylePrompt: 'warm synthwave',
+      vocalMode: 'vocal',
+      lyricContext: 'people: Mira',
+    });
+    const instrumental = sessionStyleSnapshotSchema.parse({ stylePrompt: 'calm piano' });
+
+    const sung = await provider.createSessionMetadata({ snapshot: vocal, context: 'for cooking' });
+    expect(sung.activity).toBe('for cooking');
+    expect(sung.lyricContext).toContain('for cooking');
+    expect(sung.lyricContext).toContain('people: Mira');
+
+    const plain = await provider.createSessionMetadata({
+      snapshot: instrumental,
+      context: 'for cooking',
+    });
+    expect(plain.lyricContext).toBe('');
+  });
 });
 
 describe('mockLlmProvider listener personalization', () => {

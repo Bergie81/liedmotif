@@ -5,6 +5,7 @@
 
 import { MAX_COVER_GUIDANCE_LENGTH, tokenize, type CoverStylePreset } from '@liedmotif/shared';
 import {
+  clampActivity,
   clampLyricContext,
   clampTrackLyricBrief,
   MAX_STYLE_PROMPT_LENGTH,
@@ -231,12 +232,25 @@ export function mockLlmProvider(
         input.snapshot.vocalMode === 'vocal' && input.listener
           ? mockLyricContext(input.listener, false)
           : '';
-      return {
+      const named = {
         title,
         trackTitles: ['Dawn', 'Drift', 'Glow', 'Ember'].map((word) => `${title} ${word}`),
         lyricContext,
         coverConcept: `A concrete visual interpretation of ${title}`,
         autoCoverStyle: MOCK_AUTO_COVER_STYLE,
+      };
+      const context = input.context?.trim();
+      if (!context) return named;
+      // A context's deterministic stand-in: the seed's notes gain the context as
+      // their theme, and the context itself stands in for the activity.
+      const seedNotes = input.snapshot.lyricContext.trim();
+      return {
+        ...named,
+        activity: clampActivity(context),
+        lyricContext:
+          input.snapshot.vocalMode === 'vocal'
+            ? clampLyricContext(seedNotes ? `theme: ${context}; ${seedNotes}` : `theme: ${context}`)
+            : '',
       };
     },
 

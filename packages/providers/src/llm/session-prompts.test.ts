@@ -622,3 +622,60 @@ describe('expansionPrompt for a request that may include the listener', () => {
     );
   });
 });
+
+describe('namingPrompt for a More Like This context', () => {
+  const vocalSeed = sessionStyleSnapshotSchema.parse({
+    stylePrompt: 'warm synthwave, night drive',
+    vocalMode: 'vocal',
+    activity: 'running',
+    lyricContext: 'theme: night drive; people: Mira, my sister',
+  });
+  const instrumentalSeed = sessionStyleSnapshotSchema.parse({
+    stylePrompt: 'calm piano',
+    activity: 'reading',
+  });
+  const taken = ['Night Drive', 'Neon Exit'];
+
+  it('without a context is the seeded naming prompt as it always was', () => {
+    expect(namingPrompt({ snapshot: vocalSeed, listener: { name: 'John' }, avoidTitles: taken }))
+      .toMatchInlineSnapshot(`
+      "Name a generated-music listening session and its tracks. Respond with ONLY JSON: {"title": string (a short evocative session name, max 60 chars), "coverConcept": string (one concrete visual sentence; If the request names an artist, studio, franchise, or brand as a reference, describe its visual qualities in your own words (medium, palette, era, composition, texture, mood), and never write the name. This holds in any language. Ordinary words keep their ordinary meaning: "by the sea" is a place and "one red apple" is a fruit.), "coverStyle": string (the cover style that best fits this session and the coverConcept, exactly one of: "record_sleeve": an album cover made the way covers were in one decade from the 1960s to the 2000s; "poster_art": bold graphic artwork built on one arresting visual metaphor; "photographic": a believable real photograph of one honest moment; "manga": a black-and-white manga ink illustration with expressive characters; "drawing": a hand-made pencil or ink drawing on paper; "minimal": one motif in generous empty space with two or three flat colors), "trackTitles": string[] (8-12 short distinct creative track titles fitting the vibe; capitalized the way titles are written in their language, never all lowercase), "lyricContext": string (max 500 chars: compact labeled creative notes that organize a coherent group of request-relevant personal details into lyrical direction)}. No prose, no markdown. Never write the name of an artist, band, song, or album the request mentions. These names are TAKEN by the session this one is seeded from — stay in the same spirit but make title and every track title clearly different from all of them: Night Drive; Neon Exit.
+
+      Listener profile (volunteered by the listener): name: John
+      The general profile may lightly inspire title and trackTitles.
+      For vocal lyricContext: The listening request is the primary creative direction. Keep the request's actual theme AND attitude — boastful, ruthless, dark, competitive, or playful stays the narrator's voice; never soften, moralize, or invert it into a lesson, redemption arc, or its opposite. Pick only the FEW profile details (roughly 2-4) that genuinely serve the request and DEVELOP them into one scene or story; every other profile fact stays out. The selected details are raw material to extend creatively, never lines to quote; do not try to maximize profile coverage. The listener's name or city may appear in a verse line in SOME tracks as a light personal touch — never the hook, chorus refrain, or opening, and not in every track. Neither belongs at the start of the notes. Lead the notes with the central theme or story moment, then imagery; people and setting come last and only when they serve the theme. Write lyricContext as compact, labeled creative notes instead of prose sentences. Use semicolons between categories and commas within categories. Include only useful categories from: central theme, story moments, imagery, emotional arc, people/relationships, setting. Omit categories that add no value. Do not produce a biography, resume, or unstructured inventory of profile facts. If nothing in the profile fits, build the notes from the listening request without forced personalization. Return only the labeled notes, with no selection rationale.
+      Example lyricContext: "theme: strain turning to pride; scene: rainy mountain climb, jokes on steep turns; imagery: spinning wheels, distant bells, thin air; people: John + Tina, parent/child".
+
+      Style: warm synthwave, night drive"
+    `);
+  });
+
+  it('hands the context to the call as its listening request, the style fixed', () => {
+    const prompt = namingPrompt({
+      snapshot: vocalSeed,
+      context: 'for cooking',
+      avoidTitles: taken,
+    });
+    expect(prompt).toContain('Listening request: for cooking');
+    expect(prompt).toMatch(/never changes? the music/i);
+    expect(prompt).toContain('Style: warm synthwave, night drive');
+  });
+
+  it('asks a vocal seed for lyric notes even without a listener profile, editing the seed notes', () => {
+    const prompt = namingPrompt({ snapshot: vocalSeed, context: 'for cooking' });
+    expect(prompt).toContain('"lyricContext"');
+    expect(prompt).toContain('theme: night drive; people: Mira, my sister');
+    expect(prompt).toMatch(/keep its people and relationships unless the request replaces them/i);
+  });
+
+  it('never asks an instrumental seed for lyric notes', () => {
+    const prompt = namingPrompt({ snapshot: instrumentalSeed, context: 'for cooking' });
+    expect(prompt).not.toContain('"lyricContext"');
+  });
+
+  it('asks for the activity the context is for', () => {
+    const prompt = namingPrompt({ snapshot: instrumentalSeed, context: 'for cooking' });
+    expect(prompt).toContain('"activity"');
+    expect(namingPrompt({ snapshot: instrumentalSeed })).not.toContain('"activity"');
+  });
+});
