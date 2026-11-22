@@ -1,6 +1,6 @@
 // The Default Session duration as Settings → Generation names its choices. The
-// settings form, the settings hub, onboarding and the Assistant word it from
-// here, so they cannot name one choice differently.
+// settings form, the settings hub and onboarding word it from here, so they
+// cannot name one choice differently.
 
 import { DEFAULT_SESSION_DURATION_CHOICES, type GenerationSettings } from '@liedmotif/shared';
 

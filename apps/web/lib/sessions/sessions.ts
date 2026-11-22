@@ -166,17 +166,18 @@ async function listenerContextForIntent(
 /**
  * The Session duration target a new Session starts with, on every start path:
  * a number in the request; an explicit null in the request is No limit; with
- * nothing in the request, the duration the text LLM read from the prompt
- * (Start Session only), and otherwise the user's Default Session duration.
+ * nothing in the request, the length the request's source implies (the
+ * duration the text LLM read from a Start Session prompt, or a Surprise Me
+ * suggestion's own length), and otherwise the user's Default Session duration.
  */
 export async function newSessionTargetMinutes(
   db: Database,
   ownerUserId: string,
   requested: number | null | undefined,
-  fromPrompt?: number | null,
+  implied?: number | null,
 ): Promise<number | null> {
   if (requested !== undefined) return requested;
-  if (fromPrompt != null) return fromPrompt;
+  if (implied != null) return implied;
   return (await getGenerationSettings(db, ownerUserId)).defaultSessionDurationMinutes;
 }
 

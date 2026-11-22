@@ -9,26 +9,23 @@ function minutesLabel(minutes: number | null): string {
   return minutes == null ? 'No limit' : `${minutes} min`;
 }
 
-function durationLabel(value: number | null, auto: boolean, autoMinutes?: number | null): string {
-  if (value != null || !auto) return minutesLabel(value);
-  return autoMinutes === undefined ? 'Auto' : `Auto · ${minutesLabel(autoMinutes)}`;
-}
-
 export function SessionDurationControl({
   value,
   onChange,
-  auto = false,
-  autoMinutes,
+  auto,
 }: {
   value: number | null;
   onChange: (value: number | null) => void;
-  /** The left stop is Auto (the server decides the target) instead of No limit. */
-  auto?: boolean;
-  /** The user's Default Session duration, which Auto falls back to; null is No limit. */
-  autoMinutes?: number | null;
+  /**
+   * Makes the left stop Auto (the server decides the target) instead of No
+   * limit. `defaultMinutes` is the user's Default Session duration Auto falls
+   * back to; null is No limit.
+   */
+  auto?: { defaultMinutes: number | null };
 }) {
   const id = useId();
-  const label = durationLabel(value, auto, autoMinutes);
+  const label =
+    value == null && auto ? `Auto · ${minutesLabel(auto.defaultMinutes)}` : minutesLabel(value);
   return (
     <div>
       <label htmlFor={id} className="mb-2 flex justify-between text-[15px] font-semibold">

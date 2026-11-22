@@ -264,8 +264,7 @@ export function CreateSessionCard({
           <SessionDurationControl
             value={targetDurationMinutes}
             onChange={setTargetDurationMinutes}
-            auto
-            autoMinutes={defaultSessionDurationMinutes}
+            auto={{ defaultMinutes: defaultSessionDurationMinutes }}
           />
         </DescribeFineTuneSection>
       </SessionExtras>

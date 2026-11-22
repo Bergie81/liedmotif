@@ -13,7 +13,6 @@ import {
   type ProposeSessionInput,
 } from '@liedmotif/shared';
 import {
-  BAD_DURATION,
   homeCoverChoices,
   NEW_SESSION_LENGTH_RULE,
   newSessionLength,
@@ -39,31 +38,19 @@ export function createProposeSessionTool(
     inputSchema: proposeSessionInputSchema,
     execute: ({ prompt, vocal, targetDurationMinutes, noLimit }) =>
       actions.take('proposed', async () => {
-        const offered: Omit<
-          Extract<AssistantCard, { kind: 'session' }>,
-          'targetDurationMinutes'
-        > = {
+        const gate = await newSessionLength(asker, { targetDurationMinutes, noLimit });
+        if ('refusal' in gate) return notOffered(gate.refusal);
+        const card: Extract<AssistantCard, { kind: 'session' }> = {
           kind: 'session',
           prompt: prompt.trim(),
           vocal: vocal ? 'vocal' : 'instrumental',
+          ...gate.length,
           ...(await homeCoverChoices(asker)),
         };
-        const request = cardRequestSchema.safeParse(
-          sessionCardStartRequest({
-            ...offered,
-            targetDurationMinutes: targetDurationMinutes ?? null,
-          }),
-        );
-        if (!request.success) {
-          const duration = request.error.issues.some(
-            (issue) => issue.path[0] === 'targetDurationMinutes',
-          );
-          return notOffered(duration ? BAD_DURATION : NO_DESCRIPTION);
-        }
-        const gate = await newSessionLength(asker, { targetDurationMinutes, noLimit });
-        return 'refusal' in gate
-          ? notOffered(gate.refusal)
-          : proposed({ ...offered, ...gate.length });
+        // The gate already took the length, so only the description can fail here.
+        return cardRequestSchema.safeParse(sessionCardStartRequest(card)).success
+          ? proposed(card)
+          : notOffered(NO_DESCRIPTION);
       }),
   };
 }
