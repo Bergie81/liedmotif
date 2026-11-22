@@ -45,7 +45,7 @@ export function PlayerCoverSleeve({
   lyricsAvailable: boolean;
   /** Opens the full Lyrics sheet (owned by the parent, shared with the options row). */
   onExpandLyrics: () => void;
-  /** The front face's content: the artwork and its chip stack. */
+  /** The front face's content: the artwork. */
   children: ReactNode;
 }) {
   const trackId = player.currentTrack?.trackId ?? null;
@@ -111,9 +111,9 @@ export function PlayerCoverSleeve({
             className="absolute inset-0 overflow-hidden rounded-[20px] bg-panel-2 [backface-visibility:hidden] after:pointer-events-none after:absolute after:inset-0 after:bg-[repeating-linear-gradient(0deg,rgba(255,255,255,0.035)_0_1px,transparent_1px_3px)] after:mix-blend-overlay"
           >
             {children}
-            {/* The tab reads as one more cover chip, so the reverse side is
-              offered without adding a fourth control to the action row. It
-              rides the front face and turns away with it. */}
+            {/* The tab sits on the cover, so the reverse side is offered
+              without adding a fourth control to the action row. It rides the
+              front face and turns away with it. */}
             {lyricsAvailable ? (
               <button
                 type="button"

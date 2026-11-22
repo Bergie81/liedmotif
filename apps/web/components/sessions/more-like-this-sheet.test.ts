@@ -124,15 +124,15 @@ it('stays open with the typed words when the start is refused', async () => {
   expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('about autumn in Berlin');
 });
 
-it('ignores a repeat tap while the first start is in flight', async () => {
+it('shows the busy loader and ignores a repeat tap while the first start is in flight', async () => {
   let settle: (started: boolean) => void = () => {};
   const onStart = vi.fn(() => new Promise<boolean>((resolve) => (settle = resolve)));
   renderSheet({ onStart });
   await start();
-  expect(screen.getByRole('button', { name: 'Starting Session…' })).toHaveProperty(
-    'disabled',
-    true,
-  );
+  const busyButton = screen.getByRole('button', { name: 'Starting Session…' });
+  expect(busyButton).toHaveProperty('disabled', true);
+  expect(busyButton.getAttribute('aria-busy')).toBe('true');
+  expect(busyButton.querySelector('svg')).not.toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Starting Session…' }));
   expect(onStart).toHaveBeenCalledTimes(1);
   await act(async () => settle(false));

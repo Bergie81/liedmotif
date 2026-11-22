@@ -77,38 +77,16 @@ export function vibeBoundarySignals(
   };
 }
 
-/** The track-scoped chip while a switch-now Change Vibe is armed server-side. */
-export function presentVibeSwitch(switchPending: boolean): { chip: string; detail: string } | null {
-  if (!switchPending) return null;
-  return {
-    chip: 'Switching to the new vibe…',
-    detail: 'This vibe keeps playing until the new one is ready.',
-  };
-}
-
-/** The one caption every in-flight narration (cover chip, slider status,
- * mini player) shares — short enough for the slider's status slot on a narrow
- * phone. */
+/** The one caption every in-flight narration (the player's status line, the
+ * mini player) shares. */
 export const VIBE_CHANGE_PENDING_CAPTION = 'Changing vibe…';
 
 const UPCOMING_QUEUE_STATES = new Set<QueueItem['state']>(['planned', 'generating', 'queued']);
 
-/** The track-scoped chip while the Change Vibe REQUEST itself is in flight —
- * before the server has re-styled the session, when no revision-based signal
- * exists yet. Provider-scoped state, so it survives route changes. */
-export function presentVibeChangePending(
-  pending: boolean,
-): { chip: string; detail: string } | null {
-  if (!pending) return null;
-  return {
-    chip: VIBE_CHANGE_PENDING_CAPTION,
-    detail: 'The new direction is being prepared — you can keep listening and browsing.',
-  };
-}
-
 /**
- * The Change Vibe narration the slider's Session status shows, derived from
- * the live Session revision and authoritative Queue so it survives remounts.
+ * The Change Vibe narration the player's status line shows, from the request
+ * until the new vibe plays. Past the request it is derived from the live
+ * Session revision and authoritative Queue, so it survives remounts.
  */
 export function presentVibeChangeCaption(args: {
   items: ReadonlyArray<VibeStatusEntry>;
@@ -121,10 +99,14 @@ export function presentVibeChangeCaption(args: {
   generatingNewVibeTracksAhead: number;
   /** The Change Vibe request is still in flight (no new revision exists yet). */
   requestPending?: boolean;
+  /** A switch-now Change Vibe is armed server-side: the cutover comes with the
+   * first playable new-vibe Track. */
+  switchPending?: boolean;
 }): string | null {
   // Checked first: while the request is in flight the session revision still
   // matches the audible track, which silences every revision-based branch.
   if (args.requestPending) return VIBE_CHANGE_PENDING_CAPTION;
+  if (args.switchPending) return 'Switching to the new vibe…';
   const targetRevision = args.sessionStyleRevision;
   const orderedItems = [...args.items].sort((a, b) => a.position - b.position);
   const newVibeIsAudible =

@@ -228,7 +228,12 @@ The words can appear before the track is ready, under "Writing the words". When 
 
 ### What the Session Is Doing
 
-The progress bar names what's happening next to the track number, for example "Track 3/7 · Generating 2". It can also say "Changing vibe…", "Queuing new vibe…", "New vibe queued", "Next Session", "Next Playlist" or "Repeat". It shows nothing when the session is idle.
+The line above the track title says "Now Playing" or "Paused". While you change direction, it says that instead, with a pulsing dot:
+
+- **After Change Vibe:** "Changing vibe…", then "Queuing new vibe…" and "New vibe queued" until the new vibe plays. With **Switch now** it says "Switching to the new vibe…".
+- **While new music gets ready behind what's playing**, for example after **More Like This**: "Preparing your next session…", then the name, like "Preparing “Autumn in Berlin”…".
+
+The progress bar names what the session is generating next to the track number, for example "Track 3/7 · Generating 2", or says "Repeat". It shows nothing when the session is idle.
 
 Real problems get a banner above the cover:
 

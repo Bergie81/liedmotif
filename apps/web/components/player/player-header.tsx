@@ -3,7 +3,7 @@
 // The now-playing header shared by both Playback sources: one row carrying the
 // source's own indicators, the blend toggle, the retention actions and the
 // options slot, then the status line, the title, the subtitle, and the live
-// announcement. Both surfaces render the SAME header — keeping it here means a
+// announcements. Both surfaces render the SAME header — keeping it here means a
 // spacing or control change is one edit, not one per source. What only one
 // source has arrives as a slot, so the header's own props stay narrow.
 
@@ -31,6 +31,7 @@ type HeaderPlayer = Pick<
 
 export function PlayerHeader({
   statusLabel,
+  statusChange,
   title,
   subtitle,
   announcement,
@@ -39,8 +40,12 @@ export function PlayerHeader({
   newMusic,
   options,
 }: {
-  /** The status line above the title (a source may suffix its own kind). */
+  /** The player status, as the source words it (it may suffix its own kind).
+   * The status line reads it while no change of direction is under way. */
   statusLabel: string;
+  /** A change of direction under way (`presentStatusChange`): the status line
+   * names it in place of the player status, behind a pulsing lamp. */
+  statusChange?: string | null;
   /** Set before the status line: the source is Available offline. */
   statusMark?: ReactNode;
   title: string;
@@ -96,9 +101,22 @@ export function PlayerHeader({
         ) : null}
         <span className="hidden flex-none desk:inline-flex">{options}</span>
       </div>
-      <div className="mt-3 flex items-center font-mono text-[10px] uppercase tracking-[0.16em] text-lamp desk:mt-6">
+      <div
+        data-testid="player-status-line"
+        className="mt-3 flex items-center font-mono text-[10px] uppercase tracking-[0.16em] text-lamp desk:mt-6"
+      >
         {statusMark}
-        <span className="truncate">{statusLabel}</span>
+        {statusChange ? (
+          <span
+            aria-hidden
+            data-testid="player-status-dot"
+            className="mr-2 h-[6px] w-[6px] shrink-0 rounded-full bg-lamp motion-safe:animate-dot-gen"
+          />
+        ) : null}
+        {/* A change is read out by its live region below, so it is heard once. */}
+        <span className="truncate" aria-hidden={statusChange ? true : undefined}>
+          {statusChange ?? statusLabel}
+        </span>
       </div>
       <h1
         data-testid="track-title"
@@ -111,6 +129,11 @@ export function PlayerHeader({
       </div>
       <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
         {announcement}
+      </p>
+      {/* A region of its own, so each step of a change is heard without the
+          Track being read out again. */}
+      <p data-testid="player-status-change" className="sr-only" role="status" aria-live="polite">
+        {statusChange}
       </p>
     </>
   );

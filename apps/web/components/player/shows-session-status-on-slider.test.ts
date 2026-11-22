@@ -95,7 +95,7 @@ describe('TrackProgress — Session status', () => {
     expect(announcer.getAttribute('aria-atomic')).toBe('true');
     expect(announcer.textContent).toBe('Generating 2');
 
-    view.rerender(slider({ activity: { label: 'Changing vibe…', tone: 'active' } }));
-    expect(announcer.textContent).toBe('Changing vibe…');
+    view.rerender(slider({ activity: { label: 'Repeat', tone: 'muted' } }));
+    expect(announcer.textContent).toBe('Repeat');
   });
 });

@@ -40,7 +40,6 @@ import {
 } from '@/components/playlists/save-to-playlist-sheet';
 import { nowPlayingDetailsClass, nowPlayingLayoutClass } from '@/components/ui/design-system';
 import { CoverArt, CoverFallback } from './cover-art';
-import { INCOMING_SOURCE_CHIP_TEST_ID, StatusCoverChip } from './cover-chip';
 import { PlayerCoverSleeve } from './player-cover-sleeve';
 import { PlayerHeader } from './player-header';
 import { TrackMetaLine } from './track-meta-line';
@@ -48,7 +47,7 @@ import { PlayerLyricsSheet } from './player-lyrics-sheet';
 import { PlayerMobileHeader } from './player-mobile-header';
 import {
   PLAYER_STATUS_LABEL,
-  presentIncomingSource,
+  presentStatusChange,
   presentTrackGenres,
   resolveCoverImageId,
   type IncomingSource,
@@ -83,7 +82,7 @@ export function PlaylistNowPlaying({
   playback: LivePlayback;
   playlist: PlaylistSummaryItem;
   /** A source on its way to replace this Playlist (the dual-host handoff): the
-   * cover chip narrates it while this playback continues. */
+   * status line names it while this playback continues. */
   incoming?: IncomingSource | null;
 }) {
   const { player } = playback;
@@ -323,22 +322,13 @@ export function PlaylistNowPlaying({
             className="h-full w-full object-cover"
             fallback={<CoverFallback />}
           />
-          {incoming ? (
-            <div className="absolute left-3 top-3 z-[1]">
-              <StatusCoverChip
-                chip={{
-                  ...presentIncomingSource(incoming, 'Playlist'),
-                  testId: INCOMING_SOURCE_CHIP_TEST_ID,
-                }}
-              />
-            </div>
-          ) : null}
         </PlayerCoverSleeve>
       </div>
 
       <div className={nowPlayingDetailsClass}>
         <PlayerHeader
           statusLabel={`${statusLabel} · Playlist`}
+          statusChange={presentStatusChange({ incoming })}
           statusMark={<OfflineMark kind="playlist" id={playlist.id} />}
           title={track?.title ?? playlist.name}
           subtitle={originSessionTitle}

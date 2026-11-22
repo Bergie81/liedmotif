@@ -13,6 +13,7 @@ import {
   SheetHeader,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import { LiedmotifLoader } from '@/components/ui/loading';
 import { cn } from '@/lib/cn';
 import type { SessionLanguageChoice } from '@/lib/sessions/session-languages';
 import { formatTrackCount } from './session-list-model';
@@ -147,9 +148,11 @@ function MoreLikeThisForm({
         <button
           type="button"
           disabled={busy}
+          aria-busy={busy}
           onClick={() => void start()}
           className={cn(primaryButtonClass, 'mt-4 w-full')}
         >
+          {busy ? <LiedmotifLoader /> : null}
           {busy ? 'Starting Session…' : 'Start New Session'}
         </button>
         <SheetClose disabled={busy} className={cn(secondaryButtonClass, 'mt-2 w-full')}>

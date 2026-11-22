@@ -3,7 +3,7 @@
 // The sleeve back (draft 02-player): a vocal Session prints its lyrics on the
 // reverse of the cover — same frame, same scanlines, the artwork dimmed behind
 // the words. The panel sits on the artwork, so it keeps the night palette in
-// both themes (the same rule the cover chips follow — hence the fixed hexes).
+// both themes — hence the fixed hexes.
 // The lit line carries a 2px lamp playhead.
 // Instrumental Sessions never render this face.
 

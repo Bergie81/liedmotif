@@ -2,8 +2,6 @@ import { describe, expect, it } from 'vitest';
 import type { QueueItem } from '@liedmotif/shared';
 import {
   presentVibeChangeCaption,
-  presentVibeChangePending,
-  presentVibeSwitch,
   resolveVibeCutoverIndex,
   resolveVibeCutoverOnEdge,
   vibeBoundarySignals,
@@ -248,6 +246,18 @@ describe('presentVibeChangeCaption', () => {
     ).toBeNull();
   });
 
+  it('says an armed switch-now is switching, whatever has arrived', () => {
+    expect(
+      presentVibeChangeCaption({
+        items: statusItems(entry('current', 1, 'playing'), entry('next', 2, 'queued')),
+        currentTrackStyleRevision: 1,
+        sessionStyleRevision: 2,
+        generatingNewVibeTracksAhead: 1,
+        switchPending: true,
+      }),
+    ).toBe('Switching to the new vibe…');
+  });
+
   it('narrates an in-flight Change Vibe request before the server has re-styled', () => {
     // The session revision still matches the audible track (the restyle has not
     // landed), which is exactly when every other branch stays silent.
@@ -260,25 +270,5 @@ describe('presentVibeChangeCaption', () => {
         requestPending: true,
       }),
     ).toBe('Changing vibe…');
-  });
-});
-
-describe('presentVibeChangePending', () => {
-  it('offers the cover chip only while the request is in flight', () => {
-    expect(presentVibeChangePending(false)).toBeNull();
-    expect(presentVibeChangePending(true)).toEqual({
-      chip: 'Changing vibe…',
-      detail: 'The new direction is being prepared — you can keep listening and browsing.',
-    });
-  });
-});
-
-describe('presentVibeSwitch', () => {
-  it('narrates only while switch-now is pending', () => {
-    expect(presentVibeSwitch(true)).toEqual({
-      chip: 'Switching to the new vibe…',
-      detail: 'This vibe keeps playing until the new one is ready.',
-    });
-    expect(presentVibeSwitch(false)).toBeNull();
   });
 });

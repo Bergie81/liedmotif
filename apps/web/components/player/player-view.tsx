@@ -31,7 +31,6 @@ import {
 import { primaryButtonClass, secondaryButtonClass } from '@/components/ui/form-styles';
 import { LoadingScreen } from '@/components/ui/loading';
 import { PlaceholderCoverMotion } from './placeholder-cover-motion';
-import { CoverChip } from './cover-chip';
 import { GenerationBanner } from './generation-banner';
 import { NowPlaying } from './now-playing';
 import { PlaylistNowPlaying } from './playlist-now-playing';
@@ -113,13 +112,11 @@ function incomingSource(input: {
   if (input.pendingSource) {
     if (input.troubled) return null;
     return {
-      stage: 'preparing',
       noun: input.pendingSource.kind === 'session' ? 'Session' : 'Playlist',
       title: engagedSourceName(input.pendingSource),
     };
   }
-  if (input.connecting) return { stage: 'connecting' };
-  return null;
+  return input.connecting ? { noun: 'Session', title: null } : null;
 }
 
 export function PlayerView() {
@@ -216,10 +213,10 @@ export function PlayerView() {
 
   // While a NEW source arms behind the audible one (or a Session's start
   // request is still in flight), the current music keeps playing and the
-  // player itself says so — the cover chip, and on a Session the slider's
-  // status — never a card swap that silences the page. Generation trouble on
-  // the incoming session swaps that reassurance for the banner above the
-  // player: a "preparing" pulse would over-promise while generation is blocked.
+  // player itself says so on its status line — never a card swap that silences
+  // the page. Generation trouble on the incoming session swaps that
+  // reassurance for the banner above the player: a "preparing" pulse would
+  // over-promise while generation is blocked.
   const troubledPlayer =
     pending?.player && pending.player.generationStatus !== 'ok' ? pending.player : null;
   const incoming = incomingSource({
@@ -332,7 +329,6 @@ function ConnectingCard({ startedAt }: { startedAt: string }) {
         <PlayerMobileHeader title="Now Playing Your Session" action={CONNECTING_OPTIONS} />
         <div className="relative mx-auto mt-4 aspect-square w-full overflow-hidden rounded-[20px] desk:max-w-[calc(var(--shell-col)-32px)] @split:max-w-none bg-panel-2 shadow-[0_34px_90px_-24px_var(--lamp-glow),0_18px_50px_rgba(0,0,0,0.55)] light:shadow-[0_30px_70px_-26px_rgba(232,143,47,0.35),0_16px_44px_rgba(34,29,48,0.28)]">
           <PlaceholderCoverMotion />
-          <CoverChip className="absolute left-3 top-3">{CONNECTING_COPY}</CoverChip>
         </div>
       </div>
       <div className={nowPlayingDetailsClass}>

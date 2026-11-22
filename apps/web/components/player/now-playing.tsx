@@ -18,16 +18,9 @@ import {
 } from '@/lib/http/api-client';
 import { nowPlayingDetailsClass, nowPlayingLayoutClass } from '@/components/ui/design-system';
 import { OnlineOnly } from '@/components/ui/online-only';
-import { cn } from '@/lib/cn';
 import { coldStartStagedCopy } from './cold-start-progress';
 import { CoverFallback } from './cover-art';
 import { HeroCoverArt } from './hero-cover-art';
-import {
-  CoverChip,
-  INCOMING_SOURCE_CHIP_TEST_ID,
-  StatusCoverChip,
-  type StatusChip,
-} from './cover-chip';
 import { DeleteSessionAction, GenerationBanner, TryAgainAction } from './generation-banner';
 import { PlayerCoverSleeve } from './player-cover-sleeve';
 import { PlayerDirectionActions } from './player-direction-actions';
@@ -38,9 +31,8 @@ import { PlayerSessionOptions } from './player-session-options';
 import {
   countGeneratingAhead,
   SESSION_PLAYER_STATUS_LABEL,
-  presentIncomingSource,
   presentSessionActivity,
-  presentSource,
+  presentStatusChange,
   presentTrackGenres,
   resolveCoverImageId,
   type IncomingSource,
@@ -63,15 +55,7 @@ import { TransportControls } from './transport-controls';
 import { useLyricsSurfaces } from './use-lyrics-surfaces';
 import { clearPlayerError, showPlayerError } from './player-error-toast';
 import { usePlayerSessionActions } from './use-player-session-actions';
-import {
-  presentVibeChangeCaption,
-  presentVibeChangePending,
-  presentVibeSwitch,
-} from './vibe-switch-view';
-
-/** How long the cover's source badge stays up after a source commits — a
- * transient announcement, never a permanent overlay on the art. */
-const SOURCE_BADGE_MS = 4000;
+import { presentVibeChangeCaption } from './vibe-switch-view';
 
 /** The status line's vocals readout — null on an instrumental Track. The
  * vibe's language belongs to the LIVE revision; a track generated under an
@@ -90,23 +74,6 @@ function presentVocals(input: {
   return 'Vocals';
 }
 
-/** The one persistent status announcement the cover art carries, and the
- * precedence between the three that can want it: an incoming source outranks
- * the armed vibe switch, which outranks the still-in-flight Change Vibe. */
-function presentStatusChip(input: {
-  incoming: IncomingSource | null;
-  switchPending: boolean;
-  vibeChangePending: boolean;
-}): StatusChip | null {
-  const incoming = input.incoming ? presentIncomingSource(input.incoming, 'Session') : null;
-  if (incoming) return { ...incoming, testId: INCOMING_SOURCE_CHIP_TEST_ID };
-  const vibeSwitch = presentVibeSwitch(input.switchPending);
-  if (vibeSwitch) return { ...vibeSwitch, testId: 'vibe-switch-chip' };
-  const vibeChange = presentVibeChangePending(input.vibeChangePending);
-  if (vibeChange) return { ...vibeChange, testId: 'vibe-pending-chip' };
-  return null;
-}
-
 export function NowPlaying({
   playback,
   session,
@@ -119,7 +86,7 @@ export function NowPlaying({
    * source — a Playlist plays through PlaylistNowPlaying, without the shell). */
   session: SessionSummary;
   /** A source on its way to replace this Session (the dual-host handoff): the
-   * cover chip and slider status narrate it while this playback continues. */
+   * status line names it while this playback continues. */
   incoming?: IncomingSource | null;
   onSessionChange: (session: SessionSummary) => void;
   onStopped: () => void;
@@ -171,29 +138,12 @@ export function NowPlaying({
   });
   const hasTrack = track != null;
   const statusLabel = SESSION_PLAYER_STATUS_LABEL[player.status];
-  const source = presentSource(player.sourceKind);
   const trackGenres = presentTrackGenres(track?.genreTags ?? []);
-  const [showSourceBadge, setShowSourceBadge] = useState(false);
-  const sourceKind = player.sourceKind;
   const currentQueueItemId = track?.queueItemId ?? null;
-  useEffect(() => {
-    if (!sourceKind) {
-      setShowSourceBadge(false);
-      return;
-    }
-    setShowSourceBadge(true);
-    const id = setTimeout(() => setShowSourceBadge(false), SOURCE_BADGE_MS);
-    return () => clearTimeout(id);
-  }, [sourceKind, currentQueueItemId]);
   // Change Vibe runs at provider scope (fire-and-forget), so its pending/error
   // narration survives navigating away and back mid-request.
   const { vibeChange, submitChangeVibe, pending: pendingSource, sleepTimer } = usePlayerContext();
   const vibeChangePending = vibeChange.pendingSessionId === session.id;
-  const statusChip = presentStatusChip({
-    incoming,
-    switchPending: player.switchPending,
-    vibeChangePending,
-  });
   const sessionRepeat =
     durationSession.sessionMode === 'repeat' ||
     isSessionRepeatGenerationStatus(player.generationStatus) ||
@@ -233,18 +183,16 @@ export function NowPlaying({
     generationStatus: player.generationStatus,
     loopHeld: player.loopHeld,
   });
-  const sessionActivity = presentSessionActivity({
-    incoming,
-    vibeChangeCaption: presentVibeChangeCaption({
-      items: player.queueItems,
-      currentTrackStyleRevision: track?.styleRevision ?? null,
-      sessionStyleRevision: player.styleRevision,
-      generatingNewVibeTracksAhead: player.generatingNewVibeTracksAhead,
-      requestPending: vibeChangePending,
-    }),
-    sessionRepeat,
-    generatingAhead,
+  const vibeChangeCaption = presentVibeChangeCaption({
+    items: player.queueItems,
+    currentTrackStyleRevision: track?.styleRevision ?? null,
+    sessionStyleRevision: player.styleRevision,
+    generatingNewVibeTracksAhead: player.generatingNewVibeTracksAhead,
+    requestPending: vibeChangePending && vibeChange.restyling,
+    switchPending: player.switchPending,
   });
+  const sessionActivity = presentSessionActivity({ sessionRepeat, generatingAhead });
+  const statusChange = presentStatusChange({ incoming, vibeChangeCaption });
   // The Change Vibe sheet's open state lives here so the options menu and the
   // direction bar open the same sheet.
   const [changeVibeOpen, setChangeVibeOpen] = useState(false);
@@ -450,31 +398,13 @@ export function NowPlaying({
           onExpandLyrics={() => setLyricsSheetOpen(true)}
         >
           <HeroCoverArt coverImageId={coverId} fallback={<CoverFallback />} />
-          {/* The chip stack: the persistent status chip holds the top slot so
-              the transient badges never displace it. */}
-          <div className="absolute left-3 top-3 z-[1] flex flex-col items-start gap-2">
-            {statusChip ? <StatusCoverChip chip={statusChip} /> : null}
-            {source ? (
-              <CoverChip
-                tone="signal"
-                dotClassName="shadow-[0_0_8px_var(--lamp)]"
-                className={cn(
-                  'transition-opacity duration-500',
-                  !showSourceBadge && 'pointer-events-none opacity-0',
-                )}
-              >
-                {source.label} · {source.detail}
-              </CoverChip>
-            ) : staged ? (
-              <CoverChip>{staged.copy}</CoverChip>
-            ) : null}
-          </div>
         </PlayerCoverSleeve>
       </div>
 
       <div className={nowPlayingDetailsClass}>
         <PlayerHeader
           statusLabel={statusLabel}
+          statusChange={statusChange}
           statusMark={<OfflineMark kind="session" id={session.id} />}
           title={track?.title ?? player.pendingGeneration?.trackTitle ?? sessionTitle}
           subtitle={track?.artist ?? sessionTitle}

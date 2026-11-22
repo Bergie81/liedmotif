@@ -5,7 +5,7 @@ import { DragAxis } from '@/components/ui/drag-axis';
 import type { CoverPeek, SwipeNeighbors } from './player-presentation';
 
 const SWIPE_DISTANCE_PX = 72;
-/** Movement below this is still a tap, so the cover's chips stay clickable. */
+/** Movement below this is still a tap, so the Lyrics tab stays clickable. */
 const TAP_SLOP_PX = 8;
 /** A side with no neighbor gives way only this much, so the drag reads as a dead end. */
 const DEAD_END_RESISTANCE = 0.3;
@@ -42,7 +42,7 @@ export function useCoverSwipe({
   } | null>(null);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const settling = useRef(false);
-  // A swipe that ends over a chip must not also click it.
+  // A swipe that ends over the Lyrics tab must not also click it.
   const swallowClick = useRef(false);
 
   useEffect(
@@ -131,7 +131,7 @@ export function useCoverSwipe({
           if (Math.abs(dx) < TAP_SLOP_PX) return;
           current.neighbors = getNeighbors();
           setNeighbors(current.neighbors);
-          // Captured only once it is a swipe, so a tap still lands on its chip.
+          // Captured only once it is a swipe, so a tap still lands on the Lyrics tab.
           event.currentTarget.setPointerCapture(event.pointerId);
         }
         const revealed = dx < 0 ? current.neighbors.next : current.neighbors.previous;

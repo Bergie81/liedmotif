@@ -29,6 +29,9 @@ import { clearPlayerError, showPlayerError } from './player-error-toast';
 export interface VibeChangeState {
   /** The session whose Change Vibe request is in flight, or null. */
   pendingSessionId: string | null;
+  /** The request in flight asks for a new vibe. A duration-only save holds the
+   * same gate and changes no direction, so nothing narrates it as a change. */
+  restyling: boolean;
   /** The last failed submit, scoped to its session; cleared on the next submit. */
   error: { sessionId: string; message: string } | null;
 }
@@ -48,7 +51,7 @@ export function useVibeChangeRequest(
   ) => Promise<boolean> | null;
 } {
   const gate = useRef<PlayerSessionActionGate>({ active: null });
-  const [pendingSessionId, setPendingSessionId] = useState<string | null>(null);
+  const [pending, setPending] = useState<{ sessionId: string; restyling: boolean } | null>(null);
   const [error, setError] = useState<VibeChangeState['error']>(null);
 
   const submitChangeVibe = useCallback(
@@ -64,7 +67,8 @@ export function useVibeChangeRequest(
           input
             ? changeVibe(sessionId, input, options)
             : setSessionDuration(sessionId, options.targetDurationMinutes ?? null),
-        onBusyChange: (action) => setPendingSessionId(action ? sessionId : null),
+        onBusyChange: (action) =>
+          setPending(action ? { sessionId, restyling: input !== undefined } : null),
         // The failure is also an error toast, raised here, where it happens,
         // so it shows once on whatever page the listener is on.
         onFailure: (err) => {
@@ -79,8 +83,12 @@ export function useVibeChangeRequest(
   );
 
   const vibeChange = useMemo<VibeChangeState>(
-    () => ({ pendingSessionId, error }),
-    [pendingSessionId, error],
+    () => ({
+      pendingSessionId: pending?.sessionId ?? null,
+      restyling: pending?.restyling ?? false,
+      error,
+    }),
+    [pending, error],
   );
   return { vibeChange, submitChangeVibe };
 }

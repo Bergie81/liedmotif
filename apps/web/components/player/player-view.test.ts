@@ -91,7 +91,6 @@ describe('PlayerView — a Session prepared behind a Playlist', () => {
     render(h(PlayerView));
 
     expect(JSON.parse(screen.getByTestId('live-player').dataset.incoming!)).toEqual({
-      stage: 'preparing',
       noun: 'Session',
       title: 'Night Drive',
     });

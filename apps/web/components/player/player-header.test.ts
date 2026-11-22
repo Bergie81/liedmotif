@@ -38,36 +38,37 @@ afterEach(() => {
 });
 
 /** The row's icon buttons carry tooltips, whose timing the root layout owns. */
-function renderHeader(newMusic?: ReactNode) {
-  return render(
-    h(
-      TooltipProvider,
-      null,
-      h(PlayerHeader, {
-        statusLabel: 'PLAYING',
-        title: 'Nachtfahrt',
-        subtitle: 'Liedmotif',
-        announcement: 'PLAYING: Nachtfahrt.',
-        controls: {
-          hasTrack: true,
-          player: {
-            blendEnabled: true,
-            toggleBlend: () => {},
-            currentFavorited: false,
-            currentInCuratedPlaylist: false,
-            toggleFavorite: () => {},
-            sectionLoopTool: { phase: 'closed' },
-            sectionLoopAvailable: true,
-            toggleSectionLoopTool: () => {},
-          },
-          onAddToPlaylist: () => {},
+function header(newMusic?: ReactNode, statusChange: string | null = null) {
+  return h(
+    TooltipProvider,
+    null,
+    h(PlayerHeader, {
+      statusChange,
+      statusLabel: 'PLAYING',
+      title: 'Nachtfahrt',
+      subtitle: 'Liedmotif',
+      announcement: 'PLAYING: Nachtfahrt.',
+      controls: {
+        hasTrack: true,
+        player: {
+          blendEnabled: true,
+          toggleBlend: () => {},
+          currentFavorited: false,
+          currentInCuratedPlaylist: false,
+          toggleFavorite: () => {},
+          sectionLoopTool: { phase: 'closed' },
+          sectionLoopAvailable: true,
+          toggleSectionLoopTool: () => {},
         },
-        options: null,
-        newMusic,
-      }),
-    ),
+        onAddToPlaylist: () => {},
+      },
+      options: null,
+      newMusic,
+    }),
   );
 }
+
+const renderHeader = (newMusic?: ReactNode) => render(header(newMusic));
 
 describe('PlayerHeader', () => {
   it('places the New Music status ahead of the blend toggle', () => {
@@ -96,6 +97,32 @@ describe('PlayerHeader', () => {
 
     expect(view.queryByTestId('player-new-music')).toBeNull();
     expect(view.getByTestId('player-blend-toggle')).toBeTruthy();
+  });
+
+  it('announces a change of direction in its own polite region, as it begins and as it moves on', () => {
+    const view = render(header());
+    const change = view.getByTestId('player-status-change');
+    const playing = view.getByText('PLAYING: Nachtfahrt.');
+    expect(change.getAttribute('role')).toBe('status');
+    expect(change.getAttribute('aria-live')).toBe('polite');
+    expect(change.textContent).toBe('');
+
+    view.rerender(header(undefined, 'Changing vibe…'));
+    expect(view.getByTestId('player-status-change')).toBe(change);
+    expect(change.textContent).toBe('Changing vibe…');
+
+    view.rerender(header(undefined, 'New vibe queued'));
+    expect(change.textContent).toBe('New vibe queued');
+    // The Track is not read out again with each step.
+    expect(playing.textContent).toBe('PLAYING: Nachtfahrt.');
+  });
+
+  it('reads the change once: the line on screen leaves it to the announcement', () => {
+    const view = render(header(undefined, 'Changing vibe…'));
+
+    expect(view.getAllByText('Changing vibe…').map((el) => el.getAttribute('aria-hidden'))).toEqual(
+      ['true', null],
+    );
   });
 
   // The blend toggle and both retention actions save on the server: offline

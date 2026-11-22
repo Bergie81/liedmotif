@@ -12,8 +12,9 @@ import type { PlayableTrack } from './playable-track';
 import type { VibeChangeState } from './use-vibe-change-request';
 import { VIBE_CHANGE_PENDING_CAPTION } from './vibe-switch-view';
 
-/** The status line of a Playlist or an Offline Library collection, each of which
- * adds its own kind after it. A Session names itself instead. */
+/** The player status on the status line of a Playlist or an Offline Library
+ * collection, each of which adds its own kind after it. A Session names itself
+ * instead. */
 export const PLAYER_STATUS_LABEL: Record<PlayerStatus, string> = {
   loading: 'Connecting',
   ready: 'Ready',
@@ -23,8 +24,9 @@ export const PLAYER_STATUS_LABEL: Record<PlayerStatus, string> = {
   ended: 'Ended',
 };
 
-/** The status line above a Session's title. Not the Session status, which is the
- * progress slider's note on what the Session is doing. */
+/** The player status on the status line above a Session's title. Not the
+ * Session status, which is the progress slider's note on what the Session is
+ * doing. */
 export const SESSION_PLAYER_STATUS_LABEL: Record<PlayerStatus, string> = {
   ...PLAYER_STATUS_LABEL,
   waiting: 'Preparing Your Session',
@@ -122,7 +124,7 @@ export function presentMiniVibeChange(
   sessionId: string | null,
 ): { text: string; tone: 'progress' | 'error' } | null {
   if (!sessionId) return null;
-  if (vibeChange.pendingSessionId === sessionId) {
+  if (vibeChange.pendingSessionId === sessionId && vibeChange.restyling) {
     return { text: VIBE_CHANGE_PENDING_CAPTION, tone: 'progress' };
   }
   if (vibeChange.error?.sessionId === sessionId) {
@@ -131,37 +133,28 @@ export function presentMiniVibeChange(
   return null;
 }
 
-/** A Playback source on its way to replace the audible one: a Session whose
- * start request is still in flight (`connecting` — no Session exists yet), or
- * a Session or Playlist arming behind the current playback (`preparing`, the
- * dual-host handoff). */
-export type IncomingSource =
-  { stage: 'connecting' } | { stage: 'preparing'; noun: SourceNoun; title: string | null };
-
-function incomingNoun(incoming: IncomingSource): SourceNoun {
-  return incoming.stage === 'connecting' ? 'Session' : incoming.noun;
+/** A Playback source on its way to replace the audible one: a Session or
+ * Playlist arming behind the current playback (the dual-host handoff), or a
+ * Session whose start request is in flight, which has no name before the
+ * Session exists. */
+export interface IncomingSource {
+  noun: SourceNoun;
+  title: string | null;
 }
 
-/** The cover chip's narration for an incoming source over the `playing` one.
- * `chip` is the visible mono micro-copy; `detail` carries the reassurance
- * (playback continues) for assistive tech and the hover title — too long for
- * the chip itself. */
-export function presentIncomingSource(
-  incoming: IncomingSource,
-  playing: SourceNoun,
-): {
-  chip: string;
-  detail: string;
-} {
-  return {
-    chip:
-      incoming.stage === 'connecting'
-        ? 'Setting the vibe…'
-        : incoming.title
-          ? `Preparing “${incoming.title}”…`
-          : `Preparing your next ${incoming.noun.toLowerCase()}…`,
-    detail: `This ${playing.toLowerCase()} keeps playing until the new one is ready.`,
-  };
+/** A change of direction under way, as the status line names it in place of
+ * the player status. A source on its way to replace the audible one (by name
+ * once it has one) outranks the Change Vibe the listener asked for. Null while
+ * the listening is heading nowhere new. */
+export function presentStatusChange(input: {
+  incoming: IncomingSource | null;
+  /** The Change Vibe narration (`presentVibeChangeCaption`); a Playlist has none. */
+  vibeChangeCaption?: string | null;
+}): string | null {
+  const { incoming } = input;
+  if (incoming?.title) return `Preparing “${incoming.title}”…`;
+  if (incoming) return `Preparing your next ${incoming.noun.toLowerCase()}…`;
+  return input.vibeChangeCaption ?? null;
 }
 
 /** The one Delete Session confirmation, shared by every surface that offers the
@@ -193,19 +186,6 @@ export interface QueueItemPresentation {
  * has none. */
 export function presentTrackGenres(genreTags: readonly string[]): string | null {
   return formatGenreLine(genreTags.slice(0, 3));
-}
-
-export function presentSource(sourceKind: CommittedSourceKind | null): {
-  label: string;
-  detail: string;
-} | null {
-  if (sourceKind === 'stream') {
-    return { label: 'Live Stream', detail: 'Local final on the way' };
-  }
-  if (sourceKind === 'final') {
-    return { label: 'Local Final', detail: 'Stored locally' };
-  }
-  return null;
 }
 
 /** Artwork precedence shared by the player surfaces: the live Session Cover
@@ -349,21 +329,14 @@ export interface SessionActivity {
   tone: 'active' | 'muted';
 }
 
-/** What the Session is doing, as the slider's status after the Track number.
- * An incoming source outranks everything (it IS what plays next), then the
- * Change Vibe the listener asked for, then the Tracks on the way. Repeat
- * explains why nothing generates, so it shows only while nothing does. Null
- * when the Session is idle: the status never claims work that is not
- * happening. */
+/** What the Session is doing, as the slider's status after the Track number:
+ * the Tracks on the way. Repeat explains why nothing generates, so it shows
+ * only while nothing does. Null when the Session is idle: the status never
+ * claims work that is not happening. */
 export function presentSessionActivity(input: {
-  incoming: IncomingSource | null;
-  /** The Change Vibe narration (`presentVibeChangeCaption`). */
-  vibeChangeCaption: string | null;
   sessionRepeat: boolean;
   generatingAhead: number;
 }): SessionActivity | null {
-  if (input.incoming) return { label: `Next ${incomingNoun(input.incoming)}`, tone: 'active' };
-  if (input.vibeChangeCaption) return { label: input.vibeChangeCaption, tone: 'active' };
   if (input.generatingAhead > 0) {
     return { label: `Generating ${input.generatingAhead}`, tone: 'active' };
   }

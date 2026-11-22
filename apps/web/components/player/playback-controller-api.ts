@@ -155,10 +155,11 @@ export interface PlaybackControllerState {
   /** Whether the seamless repeat-one pin and generation lease are live. */
   loopActive: boolean;
   /** Committed source kind of the audible deck — the pinned URL that actually
-   * loaded; null until a source commits. Drives the source badge. */
+   * loaded; null until a source commits. Now Playing's on-device source
+   * readout (`data-source-kind`). */
   sourceKind: CommittedSourceKind | null;
-  /** Tier of the most recent COMMITTED blend handoff — the Now Playing debug
-   * chip's on-device tier readout. Failed attempts never set
+  /** Tier of the most recent COMMITTED blend handoff — Now Playing's
+   * on-device tier readout (`data-edge-tier`). Failed attempts never set
    * it, and every hard-cut load clears it: the readout only ever describes
    * the edge that actually delivered current playback. */
   activeEdgeTier: EdgeTier | null;

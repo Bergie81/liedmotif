@@ -5,13 +5,12 @@ import {
   countGeneratingAhead,
   coverArtSrc,
   playbackProgressPercent,
-  presentIncomingSource,
   presentMiniPlayer,
   presentMiniVibeChange,
   presentPlaybackMode,
   presentSessionActivity,
   presentQueueItem,
-  presentSource,
+  presentStatusChange,
   presentTrackGenres,
   resolveCoverImageId,
 } from './player-presentation';
@@ -80,15 +79,6 @@ describe('player presentation', () => {
   it('names the playing order for the source it belongs to', () => {
     expect(QUEUE_LABEL.Session).toBe('Tracks in This Session');
     expect(QUEUE_LABEL.Playlist).toBe('Tracks in This Playlist');
-  });
-
-  it('names only the committed source without implying a provider URL', () => {
-    expect(presentSource('stream')).toEqual({
-      label: 'Live Stream',
-      detail: 'Local final on the way',
-    });
-    expect(presentSource('final')).toEqual({ label: 'Local Final', detail: 'Stored locally' });
-    expect(presentSource(null)).toBeNull();
   });
 
   it('formats the track genre line like the session cards, capped at three tags', () => {
@@ -293,13 +283,16 @@ describe('player presentation', () => {
   });
 
   it('surfaces an in-flight or failed Change Vibe on the mini player subtitle', () => {
-    const idle = { pendingSessionId: null, error: null };
+    const idle = { pendingSessionId: null, restyling: false, error: null };
+    const restyling = { ...idle, pendingSessionId: 's1', restyling: true };
     expect(presentMiniVibeChange(idle, 's1')).toBeNull();
-    expect(presentMiniVibeChange({ ...idle, pendingSessionId: 's1' }, 's1')).toEqual({
+    expect(presentMiniVibeChange(restyling, 's1')).toEqual({
       text: 'Changing vibe…',
       tone: 'progress',
     });
-    expect(presentMiniVibeChange({ ...idle, pendingSessionId: 's1' }, 's2')).toBeNull();
+    expect(presentMiniVibeChange(restyling, 's2')).toBeNull();
+    // A duration-only save holds the same gate and changes no vibe.
+    expect(presentMiniVibeChange({ ...restyling, restyling: false }, 's1')).toBeNull();
     expect(
       presentMiniVibeChange({ ...idle, error: { sessionId: 's1', message: 'boom' } }, 's1'),
     ).toEqual({ text: 'Change Vibe failed — open to retry', tone: 'error' });
@@ -372,112 +365,64 @@ describe('player presentation', () => {
     ).toBe(null);
   });
 
-  it('narrates the incoming Session on the cover chip while the audible one keeps playing', () => {
-    expect(
-      presentIncomingSource(
-        { stage: 'preparing', noun: 'Session', title: 'Night Drive' },
-        'Session',
-      ),
-    ).toEqual({
-      chip: 'Preparing “Night Drive”…',
-      detail: 'This session keeps playing until the new one is ready.',
-    });
-    expect(
-      presentIncomingSource({ stage: 'preparing', noun: 'Session', title: null }, 'Session'),
-    ).toEqual({
-      chip: 'Preparing your next session…',
-      detail: 'This session keeps playing until the new one is ready.',
-    });
-    expect(presentIncomingSource({ stage: 'connecting' }, 'Session')).toEqual({
-      chip: 'Setting the vibe…',
-      detail: 'This session keeps playing until the new one is ready.',
-    });
-  });
-
-  it('names an incoming Playlist "Next Playlist"', () => {
-    const playlist = { stage: 'preparing', noun: 'Playlist', title: null } as const;
-    expect(presentIncomingSource(playlist, 'Session').chip).toBe('Preparing your next playlist…');
-    expect(presentIncomingSource({ ...playlist, title: 'Focus Nights' }, 'Session').chip).toBe(
-      'Preparing “Focus Nights”…',
-    );
-    expect(
-      presentSessionActivity({
-        incoming: playlist,
-        vibeChangeCaption: null,
-        sessionRepeat: false,
-        generatingAhead: 0,
-      }),
-    ).toEqual({ label: 'Next Playlist', tone: 'active' });
-  });
-
-  it('says the Playlist keeps playing while a Session is prepared behind it', () => {
-    expect(
-      presentIncomingSource({ stage: 'preparing', noun: 'Session', title: null }, 'Playlist'),
-    ).toEqual({
-      chip: 'Preparing your next session…',
-      detail: 'This playlist keeps playing until the new one is ready.',
-    });
-    expect(presentIncomingSource({ stage: 'connecting' }, 'Playlist').detail).toBe(
-      'This playlist keeps playing until the new one is ready.',
-    );
-  });
-
   it('names the Tracks on the way as active Session work', () => {
-    expect(
-      presentSessionActivity({
-        incoming: null,
-        vibeChangeCaption: null,
-        sessionRepeat: false,
-        generatingAhead: 2,
-      }),
-    ).toEqual({ label: 'Generating 2', tone: 'active' });
+    expect(presentSessionActivity({ sessionRepeat: false, generatingAhead: 2 })).toEqual({
+      label: 'Generating 2',
+      tone: 'active',
+    });
   });
 
   it('shows no Session status when nothing is happening', () => {
-    expect(
-      presentSessionActivity({
-        incoming: null,
-        vibeChangeCaption: null,
-        sessionRepeat: false,
-        generatingAhead: 0,
-      }),
-    ).toBeNull();
+    expect(presentSessionActivity({ sessionRepeat: false, generatingAhead: 0 })).toBeNull();
   });
 
   it('explains a Repeat Session calmly, but only while nothing generates', () => {
-    const repeat = { incoming: null, vibeChangeCaption: null, sessionRepeat: true };
-    expect(presentSessionActivity({ ...repeat, generatingAhead: 0 })).toEqual({
+    expect(presentSessionActivity({ sessionRepeat: true, generatingAhead: 0 })).toEqual({
       label: 'Repeat',
       tone: 'muted',
     });
     // A Repeat Session still filling its first batch, or one that hit a limit
     // with jobs already submitted, is spending: it must not claim the zero-cost
     // state.
-    expect(presentSessionActivity({ ...repeat, generatingAhead: 1 })).toEqual({
+    expect(presentSessionActivity({ sessionRepeat: true, generatingAhead: 1 })).toEqual({
       label: 'Generating 1',
       tone: 'active',
     });
   });
 
-  it('ranks the Session status: next Session, then Change Vibe, then generating', () => {
-    const busy = {
-      sessionRepeat: true,
-      generatingAhead: 2,
-      vibeChangeCaption: 'New vibe queued',
-    };
+  it('names no change of direction while none is under way', () => {
+    expect(presentStatusChange({ incoming: null })).toBeNull();
+    expect(presentStatusChange({ incoming: null, vibeChangeCaption: null })).toBeNull();
+  });
+
+  it('names the next source by its name', () => {
+    expect(presentStatusChange({ incoming: { noun: 'Session', title: 'Night Drive' } })).toBe(
+      'Preparing “Night Drive”…',
+    );
+    expect(presentStatusChange({ incoming: { noun: 'Playlist', title: 'Focus Nights' } })).toBe(
+      'Preparing “Focus Nights”…',
+    );
+  });
+
+  it('says what kind of source is next while it has no name', () => {
+    expect(presentStatusChange({ incoming: { noun: 'Session', title: null } })).toBe(
+      'Preparing your next session…',
+    );
+    expect(presentStatusChange({ incoming: { noun: 'Playlist', title: null } })).toBe(
+      'Preparing your next playlist…',
+    );
+  });
+
+  it('follows a Change Vibe, which a next source outranks', () => {
+    expect(presentStatusChange({ incoming: null, vibeChangeCaption: 'Changing vibe…' })).toBe(
+      'Changing vibe…',
+    );
     expect(
-      presentSessionActivity({
-        ...busy,
-        incoming: { stage: 'preparing', noun: 'Session', title: null },
+      presentStatusChange({
+        incoming: { noun: 'Session', title: null },
+        vibeChangeCaption: 'Queuing new vibe…',
       }),
-    ).toEqual({
-      label: 'Next Session',
-      tone: 'active',
-    });
-    expect(presentSessionActivity({ ...busy, incoming: null })).toEqual({
-      label: 'New vibe queued',
-      tone: 'active',
-    });
+    ).toBe('Preparing your next session…');
   });
 
   it('falls back to the built-in placeholder art when no cover id is known', () => {

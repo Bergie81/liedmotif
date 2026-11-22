@@ -55,7 +55,7 @@ beforeAll(() => {
       disconnect() {}
     },
   );
-  // Reduced motion, so titles and chips settle instead of scrambling.
+  // Reduced motion, so titles settle instead of scrambling.
   vi.stubGlobal('matchMedia', () => ({
     matches: true,
     addEventListener: () => {},
@@ -236,10 +236,17 @@ function AppShell({ children }: { children?: ReactNode }) {
   );
 }
 
+const NO_VIBE_CHANGE: PlayerContextValue['vibeChange'] = {
+  pendingSessionId: null,
+  restyling: false,
+  error: null,
+};
+
 function mount(
   player: PlaybackControllerApi,
   source: EngagedSource,
   surface: (playback: LivePlayback) => ReactElement,
+  vibeChange: PlayerContextValue['vibeChange'] = NO_VIBE_CHANGE,
 ) {
   const playback: LivePlayback = {
     source,
@@ -258,7 +265,7 @@ function mount(
     engagedSource: source,
     playback,
     pending: null,
-    vibeChange: { pendingSessionId: null, error: null },
+    vibeChange,
     sleepTimer: { endsAt: null, start: vi.fn(), cancel: vi.fn() },
     startCount: 0,
   };
@@ -381,6 +388,26 @@ function button(name: string | RegExp): HTMLElement {
 }
 
 const press = (name: string | RegExp) => fireEvent.click(button(name));
+
+/** What a screen reader hears when the direction changes. */
+function announcedChange(): string | null {
+  return screen.getByTestId('player-status-change').textContent;
+}
+
+/** The line above the title, and whether the pulsing dot marks work in progress. */
+function statusLine(): { text: string | null; underWay: boolean } {
+  const line = screen.getByTestId('player-status-line');
+  return {
+    text: line.textContent,
+    underWay: within(line).queryByTestId('player-status-dot') !== null,
+  };
+}
+
+/** Everything written over the cover art; these Tracks have no words, so no
+ *  Lyrics tab either. */
+function coverText(): string | null {
+  return screen.getByTestId('player-cover').textContent;
+}
 
 const BACK = 'Back — restart or previous track';
 const SKIP = 'Skip — direction unchanged';
@@ -599,7 +626,6 @@ describe('the Session shell belongs to a Session alone', () => {
     playingPlayer({
       generationStatus: 'provider_error',
       generatingTracksAhead: 2,
-      sourceKind: 'stream',
       switchPending: true,
       queueLength: 2,
       trackCount: 2,
@@ -609,8 +635,7 @@ describe('the Session shell belongs to a Session alone', () => {
 
   const SHELL: Record<string, () => HTMLElement[]> = {
     'generation banner': () => screen.queryAllByText(/playing your ready tracks/),
-    'source badge': () => screen.queryAllByText(/Live Stream/),
-    'vibe switch chip': () => screen.queryAllByText(/Switching to the new vibe/),
+    'vibe switch status': () => screen.queryAllByText(/Switching to the new vibe/),
     'slider Session status': () => screen.queryAllByText('Generating 2'),
     Reroll: () => screen.queryAllByRole('button', { name: /^Reroll Track/ }),
     'Change Vibe': () => screen.queryAllByRole('button', { name: 'Change Vibe' }),
@@ -670,27 +695,145 @@ describe('the Session shell belongs to a Session alone', () => {
 
 describe('a Session prepared behind a Playlist', () => {
   function showPlaylistWith(incoming: IncomingSource) {
-    mount(playingPlayer(), PLAYLIST_SOURCE, (playback) =>
-      h(PlaylistNowPlaying, { playback, playlist: PLAYLIST, incoming }),
+    mount(
+      playingPlayer({ trackCount: 1, playableQueueItemIds: ['track-1'] }),
+      PLAYLIST_SOURCE,
+      (playback) => h(PlaylistNowPlaying, { playback, playlist: PLAYLIST, incoming }),
     );
   }
 
-  it('says on the cover that the Playlist keeps playing until it is ready', () => {
-    showPlaylistWith({ stage: 'preparing', noun: 'Session', title: 'Night Drive' });
+  const NIGHT_DRIVE: IncomingSource = { noun: 'Session', title: 'Night Drive' };
 
-    const chip = screen.getByTestId('incoming-source-chip');
-    expect(chip.getAttribute('role')).toBe('status');
-    expect(chip.textContent).toBe(
-      'Preparing “Night Drive”… This playlist keeps playing until the new one is ready.',
-    );
-    expect(chip.getAttribute('title')).toBe(chip.textContent);
+  it('names it on the status line, in place of the player status', () => {
+    showPlaylistWith(NIGHT_DRIVE);
+
+    expect(statusLine()).toEqual({ text: 'Preparing “Night Drive”…', underWay: true });
   });
 
-  it('carries no Session status on the progress bar', () => {
-    showPlaylistWith({ stage: 'preparing', noun: 'Session', title: null });
+  it('announces it to screen readers on its own, beside what plays', () => {
+    showPlaylistWith(NIGHT_DRIVE);
 
-    expect(screen.getByText('Preparing your next session…')).toBeTruthy();
-    expect(screen.queryByText('Next Session')).toBeNull();
+    expect(announcedChange()).toBe('Preparing “Night Drive”…');
+    expect(screen.getByText('Now Playing: Night Drive from Late Rain.')).toBeTruthy();
+  });
+
+  it('writes nothing over the cover and no Session status on the progress bar', () => {
+    showPlaylistWith(NIGHT_DRIVE);
+
+    expect(coverText()).toBe('');
+    expect(screen.getByTestId('progress-track-number').textContent).toBe('Track 1/1');
+  });
+});
+
+describe('the status line of a Session', () => {
+  function showSession(
+    player: PlaybackControllerApi,
+    incoming: IncomingSource | null = null,
+    vibeChange = NO_VIBE_CHANGE,
+  ) {
+    mount(
+      player,
+      { kind: 'session', session: SESSION },
+      (playback) =>
+        h(NowPlaying, {
+          playback,
+          session: SESSION,
+          incoming,
+          onSessionChange: noop,
+          onStopped: noop,
+        }),
+      vibeChange,
+    );
+  }
+
+  it('reads the player status while nothing changes direction', () => {
+    showSession(playingPlayer());
+
+    expect(statusLine()).toEqual({ text: 'Now Playing', underWay: false });
+    expect(announcedChange()).toBe('');
+  });
+
+  it('names the next Session while this one keeps playing', () => {
+    showSession(playingPlayer(), { noun: 'Session', title: null });
+
+    expect(statusLine()).toEqual({ text: 'Preparing your next session…', underWay: true });
+  });
+
+  describe('while a request from the Change Vibe sheet is in flight', () => {
+    const paused = () => stubPlayer({ status: 'paused', currentTrack: track() });
+    const inFlight = { ...NO_VIBE_CHANGE, pendingSessionId: SESSION.id };
+
+    it('says the vibe is changing when it asks for a new vibe', () => {
+      showSession(paused(), null, { ...inFlight, restyling: true });
+
+      expect(statusLine()).toEqual({ text: 'Changing vibe…', underWay: true });
+    });
+
+    it('keeps the player status when it only saves the duration', () => {
+      showSession(paused(), null, inFlight);
+
+      expect(statusLine()).toEqual({ text: 'Paused', underWay: false });
+    });
+  });
+
+  it('says an armed switch-now Change Vibe is switching', () => {
+    showSession(playingPlayer({ switchPending: true }));
+
+    expect(statusLine()).toEqual({ text: 'Switching to the new vibe…', underWay: true });
+  });
+
+  it('says the new vibe is queued while the old one plays out', () => {
+    const ready = { final: '/api/tracks/ready/audio', stream: null };
+    // The Session moved to revision 2 and a Track of it waits behind the
+    // audible revision-1 Track.
+    showSession(
+      playingPlayer({
+        styleRevision: 2,
+        queueItems: [
+          { id: 'track-1', position: 0, state: 'playing', styleRevision: 1, assets: ready },
+          { id: 'track-2', position: 1, state: 'queued', styleRevision: 2, assets: ready },
+        ] as PlaybackControllerApi['queueItems'],
+      }),
+    );
+
+    expect(statusLine()).toEqual({ text: 'New vibe queued', underWay: true });
+  });
+
+  it('leaves the slider to the Session’s own work', () => {
+    showSession(playingPlayer({ generatingTracksAhead: 2, trackCount: 1, currentTrackNumber: 1 }), {
+      noun: 'Session',
+      title: 'Night Drive',
+    });
+
+    expect(screen.getByTestId('progress-track-number').textContent).toBe(
+      'Track 1/1 · Generating 2',
+    );
+  });
+
+  it.each(['stream', 'final'] as const)(
+    'writes nothing over the cover while the direction changes and a %s source plays',
+    (sourceKind) => {
+      showSession(playingPlayer({ sourceKind, switchPending: true }), {
+        noun: 'Session',
+        title: 'Night Drive',
+      });
+
+      expect(coverText()).toBe('');
+    },
+  );
+
+  it('writes nothing over the cover during a cold start', () => {
+    // The first Track is still generating.
+    showSession(stubPlayer({ status: 'waiting', playIntentPending: true }));
+
+    expect(coverText()).toBe('');
+  });
+
+  it('announces the change to screen readers on its own, beside what plays', () => {
+    showSession(playingPlayer({ switchPending: true }));
+
+    expect(announcedChange()).toBe('Switching to the new vibe…');
+    expect(screen.getByText('Now Playing: Night Drive by Liedmotif.')).toBeTruthy();
   });
 });
 
