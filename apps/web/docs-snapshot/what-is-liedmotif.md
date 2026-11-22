@@ -1,7 +1,7 @@
 ---
 title: What Liedmotif Is
 description: How Liedmotif works from your first request to the music you keep, what an instance is made of, and what the words in the app mean.
-checkedOn: 2026-11-20
+checkedOn: 2026-11-22
 ---
 
 Liedmotif is an app you run yourself. You ask for music in your own words, your music provider makes it, and Liedmotif keeps making more while you listen. This page explains how that works, what you're installing, and what the app's words mean.
@@ -43,7 +43,7 @@ Add a track to a playlist, or star it to put it in your Favorites, a playlist ev
 
 ### Spending Stops When You Say
 
-- **Give a session a duration.** It makes about that much new music, then replays its tracks at no cost. The music keeps playing until you stop it.
+- **Every new session gets a duration.** It makes about that much new music, then replays its tracks at no cost: 30 minutes unless you choose otherwise, with the default set in **Settings › Generation**. The music keeps playing until you stop it.
 - **Turn off New Music.** The session replays what it has. No more new tracks, and work your provider has already started still finishes. The exception is **Change Vibe**, which still makes a first batch in the new direction.
 - **Set limits, counted in tracks.** At a limit, a running session loops its own tracks instead of stopping, and you can't start a new one. On a new install, the admin's own daily and monthly limits stay off until you set them, for example in guided setup.
 - **Stop listening.** New orders end within about two minutes, and work your provider has already started still finishes.

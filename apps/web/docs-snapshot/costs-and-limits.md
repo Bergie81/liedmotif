@@ -1,7 +1,7 @@
 ---
 title: Costs and Limits
 description: What you pay for and to whom, what is free, how each action spends, and every limit Liedmotif offers, counted in tracks.
-checkedOn: 2026-11-20
+checkedOn: 2026-11-22
 ---
 
 Liedmotif is source-available, free for non-commercial use. The money goes straight from you to the providers you connect, and almost all of it pays for new tracks. This page shows how each action spends, which limits you can set, and what happens when one is reached.
@@ -23,6 +23,7 @@ A track runs about 3.5 minutes, so an hour of new music takes about 17 tracks. A
 
 | New music | Tracks | Estimated cost |
 | --- | --- | --- |
+| A new session on the default 30 minutes | About 10 | About 40 cents |
 | A 40-minute session | About 12 | About 50 cents |
 | One hour | About 17 | About 70 cents |
 | An hour a day for a month | About 510 | About $20 |
@@ -57,19 +58,25 @@ A session with **New Music** on keeps a few tracks ready ahead of you: 3 by defa
 
 ### New Music Off
 
-A session with **New Music** off loops what it has and buys nothing more. A session started this way still makes its first pair, since it needs something to play. You can change this from the player at any time. **Off** takes effect at once. Anything that could spend waits for you to press **Save**, so a stray tap doesn't spend anything.
-
-**Generate new tracks by default**, in **Settings › Generation**, decides how new sessions start.
+A session with **New Music** off loops what it has and buys nothing more. Every new session starts with **New Music** on, and you switch it off from the player at any time. **Off** takes effect at once. Anything that could spend waits for you to press **Save**, so a stray tap doesn't spend anything.
 
 ### Session Duration
 
-A duration caps how much new music a session buys. It counts the music made, not your listening time, so skipped tracks count and disliked or deleted ones don't. Past the target, the session loops what it has until you stop it.
+A duration caps how much new music a session buys. It counts the music made, not your listening time, so skipped tracks count and disliked or deleted ones don't. Past the target, the session loops what it has until you stop it, and that costs nothing more.
 
-- The slider on the start card runs up to 180 minutes, in steps of 5. Sessions accept any whole number from 1 to 600 minutes, so a text AI can pick up a longer one from your request.
-- **Auto** finds a duration in your words when a text AI is connected. Without one, a session keeps going until you stop it.
+Every new session gets a duration. When you don't pick one, it takes your default, **New music per Session** in **Settings › Generation**: **5 min**, **15 min**, **30 min**, **1 h**, **2 h** or **No limit**. It's **30 min** until you change it, and **Save New Music** saves it. Because tracks come in pairs, **5 min** usually buys one pair, about 6 minutes, and **30 min** about five pairs. **No limit** keeps buying while you listen, until you stop or a limit is reached. Each member sets their own.
+
+- At the target, the session repeats its tracks for free, and the player's status shows "New Music Finished · 30 min", or "Done · 30 min" on a phone.
+- To keep going, tap that status or **New Music** in the options menu. Choose **Up to a Duration** and move the slider higher, or choose **No Limit**, then press **Save**. That changes this session only, not your default.
+- The slider on the start card runs up to 180 minutes, in steps of 5. Its **Auto** stop names the default it stands for, such as "Auto · 30 min". Sessions accept any whole number from 1 to 600 minutes, so a text AI can pick up a longer one from your request.
+- **Auto** uses a duration from your words when a text AI is connected, otherwise your default. A length you pick on the slider wins over both. The start card has no **No limit** stop: for a session without a limit, choose **No Limit** in the player, or make it your default.
+- **More Like This** starts with your default. **Surprise Me** uses its suggestion's own length when it has one, and your default when it doesn't.
+- A card from Roadie for a new session has the same slider. It starts at the length you named, or at your default, and the card says what you'll buy, such as "Generates up to 30 min of new music." Roadie can't change your default.
 - You can change the target while the session plays, and raising it starts new tracks again.
 - Setting a target turns **New Music** on for that session, since only new tracks can fill it.
 - At the target, a change of vibe is refused unless the same change raises or clears the target.
+
+**After an update** from a version without this setting, new sessions get **30 min**. If you had switched off the old **Generate new tracks by default**, your default is **5 min** instead, so new sessions still buy about one pair and then repeat. Sessions you already have keep the duration they had, or none.
 
 ### Change Vibe
 

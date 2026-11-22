@@ -1,7 +1,7 @@
 ---
 title: Help for Members
 description: You have an account on a Liedmotif that someone else runs. How to get in, what your budget means, what stays private, and what to do when something fails.
-checkedOn: 2026-11-20
+checkedOn: 2026-11-22
 howTo: true
 ---
 
@@ -127,6 +127,8 @@ Your admin pays the providers for every new track and cover you make, so your ac
 
 All members together also share a second budget, and a new track or cover has to fit both. So new music can pause even when your own budget has room.
 
+**A new session makes about 30 minutes of new music, then repeats for free,** unless you choose another length. That keeps a session you forgot playing from using up your budget. You pick your own default under **New music per Session** in **Settings › Generation**: **5 min**, **15 min**, **30 min**, **1 h**, **2 h** or **No limit**. On **Home**, the **Session duration** slider's **Auto** shows it, such as "Auto · 30 min", and a card from Roadie for a new session has the same slider, so you set the length there before you press **Start Session**. To make one session longer once it has reached its length, tap the player's **New Music** status, choose **Up to a Duration** with a longer length or **No Limit**, and press **Save**. [Session duration](/docs/features#session-duration) has the details.
+
 **When a budget runs out,** a session that's playing doesn't stop. It repeats the tracks it already has, and the player tells you which budget ran out. Everything you already made keeps playing: your library, your playlists and anything you kept offline. New tracks come back when the day or month rolls over, or, on a one-time budget, when your admin raises the total.
 
 Starting a new session needs a few tracks left in both budgets: 5, unless your admin set another number. Below that, you see **Not Enough Tracks Left to Start**, with what a new session needs, what is left and when more come back. If your budget is smaller than what a session needs, waiting won't help, and the message tells you to ask your admin. You can still resume a session or play your library. [Costs and limits](/docs/costs-and-limits#when-a-limit-is-reached) lists each message you might see.
@@ -172,7 +174,7 @@ Only the person who manages a Tailscale network can accept a share. If you signe
 - **A certificate warning,** such as "Your connection is not private". You opened an address like `100.x.y.z` instead of the name ending in `.ts.net`. Never continue past the warning. Open the invite link or your Liedmotif icon instead.
 - **`This account is disabled`.** Your admin turned your account off. Your music is kept, so ask them to turn it back on. Music you kept offline on this device stays and keeps playing in the Offline Library; to free that space, clear this site's data in your browser.
 - **You forgot your password.** Ask your admin: they can make you a password reset link. If **Forgot Password?** appears on the sign-in page, try that first. It mails you a link if your email is confirmed.
-- **Your music stops changing and starts to repeat.** A budget has probably run out. See [your budget](#your-budget).
+- **Your music stops changing and starts to repeat.** If the player says "New Music Finished · 30 min", or "Done · 30 min" on a phone, the session reached its length: tap it to make it longer. Otherwise a budget has probably run out. See [your budget](#your-budget).
 
 ## Sources
 
