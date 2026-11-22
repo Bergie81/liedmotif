@@ -15,7 +15,7 @@ import {
 } from '@liedmotif/shared';
 import { newSessionTargetMinutes } from '@/lib/sessions/sessions';
 import { loadPendingSurprise, proposeSurprise } from '@/lib/sessions/surprise-me';
-import { BAD_DURATION, homeCoverChoices, notOffered, proposed } from './proposal';
+import { BAD_DURATION, homeCoverChoices, notOffered, proposed, requestedLength } from './proposal';
 import { PROPOSE_SURPRISE_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 import type { TurnActions } from './turn-actions';
@@ -84,7 +84,7 @@ export function createProposeSurpriseTool(
           targetDurationMinutes: await newSessionTargetMinutes(
             db,
             userId,
-            targetDurationMinutes ?? (noLimit ? null : undefined),
+            requestedLength({ targetDurationMinutes, noLimit }),
             proposal.edit.durationMinutes,
           ),
           ...covers,

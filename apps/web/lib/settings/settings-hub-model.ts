@@ -225,6 +225,11 @@ function providerSummary(input: SettingsHubInput): SettingsHubSummary {
   };
 }
 
+function newMusicLimit(minutes: DefaultSessionDuration): string {
+  if (minutes === null) return 'New music without limit';
+  return `New music up to ${defaultSessionDurationLabel(minutes)}`;
+}
+
 /** The generation row's new-music + language wording, shared by both hubs. */
 function generationPhrases(generation: SettingsHubInput['generation']): {
   newMusicSummary: string;
@@ -236,9 +241,8 @@ function generationPhrases(generation: SettingsHubInput['generation']): {
       ? 'Auto'
       : sessionLanguageLabel(generation.value.defaultLanguage)
     : '';
-  const minutes = generation.ok ? generation.value.defaultSessionDurationMinutes : null;
   const newMusicSummary = generation.ok
-    ? `${minutes === null ? 'New music without limit' : `New music up to ${defaultSessionDurationLabel(minutes)}`} · ${generation.value.bufferAheadTracks} ahead`
+    ? `${newMusicLimit(generation.value.defaultSessionDurationMinutes)} · ${generation.value.bufferAheadTracks} ahead`
     : '';
   return { newMusicSummary, languageSummary };
 }

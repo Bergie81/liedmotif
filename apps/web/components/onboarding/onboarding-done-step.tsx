@@ -57,6 +57,7 @@ function untouchedRows({
   accountEmail,
   storageProvider,
 }: OnboardingUntouched): UntouchedRow[] {
+  const sessionMinutes = generation.defaultSessionDurationMinutes;
   return [
     {
       icon: Mic,
@@ -77,11 +78,11 @@ function untouchedRows({
     {
       icon: Gauge,
       title:
-        generation.defaultSessionDurationMinutes === null
+        sessionMinutes === null
           ? 'New sessions generate new music without limit'
-          : `New sessions generate up to ${defaultSessionDurationLabel(generation.defaultSessionDurationMinutes)} of new music`,
+          : `New sessions generate up to ${defaultSessionDurationLabel(sessionMinutes)} of new music`,
       description:
-        generation.defaultSessionDurationMinutes === null
+        sessionMinutes === null
           ? 'They keep buying while you listen. Change it for any session in the player'
           : 'Then they repeat for free. Change it for any session in the player',
       where: 'Generation',

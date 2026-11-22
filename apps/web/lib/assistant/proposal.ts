@@ -48,6 +48,15 @@ export async function newSessionRefusal({ db, userId }: AssistantAsker): Promise
 export const NEW_SESSION_LENGTH_RULE =
   "Runs for a length in minutes, or with no limit: give the one the user named, and neither when they named none, which starts the card at the user's Default Session duration. The user can still change the length on the card.";
 
+/** The length the user named for a new Session: minutes, null for No limit, undefined for none. */
+export function requestedLength({
+  targetDurationMinutes,
+  noLimit,
+}: Pick<ProposeSessionInput, 'targetDurationMinutes' | 'noLimit'>): number | null | undefined {
+  if (targetDurationMinutes != null) return targetDurationMinutes;
+  return noLimit ? null : undefined;
+}
+
 /**
  * The length a card for a new Session carries: the minutes the user named,
  * null when they asked for No limit, and otherwise their Default Session
@@ -57,20 +66,14 @@ export const NEW_SESSION_LENGTH_RULE =
  */
 export async function newSessionLength(
   asker: AssistantAsker,
-  {
-    targetDurationMinutes,
-    noLimit,
-  }: Pick<ProposeSessionInput, 'targetDurationMinutes' | 'noLimit'>,
+  said: Pick<ProposeSessionInput, 'targetDurationMinutes' | 'noLimit'>,
 ): Promise<{ refusal: string } | { length: { targetDurationMinutes: number | null } }> {
-  if (
-    targetDurationMinutes != null &&
-    !targetDurationMinutesSchema.safeParse(targetDurationMinutes).success
-  ) {
+  const requested = requestedLength(said);
+  if (requested != null && !targetDurationMinutesSchema.safeParse(requested).success) {
     return { refusal: BAD_DURATION };
   }
   const refusal = await newSessionRefusal(asker);
   if (refusal) return { refusal };
-  const requested = targetDurationMinutes ?? (noLimit ? null : undefined);
   return {
     length: {
       targetDurationMinutes: await newSessionTargetMinutes(asker.db, asker.userId, requested),

@@ -261,9 +261,10 @@ export const sessionGenerationStatus = pgEnum('session_generation_status', [
 /**
  * Session generation policy (`activity_sessions.session_mode`) — the sole
  * authority over automatic top-ups. `keep_going` generates new Tracks within
- * the Session duration target, or without end when it has none; `repeat` loops the session's own tracks at zero cost — the
- * voluntary form of Session Repeat. Every new session starts in `keep_going`.
- * Written only by API routes (user intent).
+ * the Session duration target, or without end when it has none; `repeat`
+ * loops the session's own tracks at zero cost — the voluntary form of Session
+ * Repeat. Every new session starts in `keep_going`. Written only by API routes
+ * (user intent).
  */
 export const sessionMode = pgEnum('session_mode', ['keep_going', 'repeat']);
 
