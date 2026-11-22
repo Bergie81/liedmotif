@@ -61,11 +61,12 @@ function CoverStyleTile({ choice }: { choice: CoverStyleChoice }) {
         <span className="grid h-full w-full grid-cols-3 grid-rows-2">
           {COVER_STYLE_PRESETS.map((preset) => (
             <span key={preset} className="relative">
+              {/* A 24×36 cell: the square example covers it at 36px wide. */}
               <Image
                 src={coverStyleExampleSrc(preset)}
                 alt=""
                 fill
-                sizes="24px"
+                sizes="36px"
                 className="object-cover"
               />
             </span>

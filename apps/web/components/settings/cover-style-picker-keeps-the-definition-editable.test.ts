@@ -64,13 +64,13 @@ function rowImageSources(name: string): string[] {
   });
 }
 
-const PRESET_EXAMPLES = [
-  '/cover-styles/record_sleeve.webp',
-  '/cover-styles/poster_art.webp',
-  '/cover-styles/photographic.webp',
-  '/cover-styles/manga.webp',
-  '/cover-styles/drawing.webp',
-  '/cover-styles/minimal.webp',
+const PRESET_EXAMPLES: Array<[name: string, src: string]> = [
+  ['Record Sleeve', '/cover-styles/record_sleeve.webp'],
+  ['Artistic', '/cover-styles/poster_art.webp'],
+  ['Photographic', '/cover-styles/photographic.webp'],
+  ['Manga', '/cover-styles/manga.webp'],
+  ['Drawing', '/cover-styles/drawing.webp'],
+  ['Minimal', '/cover-styles/minimal.webp'],
 ];
 
 async function saveAndReadBody(bodies: Array<Record<string, unknown>>) {
@@ -124,14 +124,7 @@ describe('Default cover style picker', () => {
 });
 
 describe('Example tiles', () => {
-  it.each([
-    ['Record Sleeve', '/cover-styles/record_sleeve.webp'],
-    ['Artistic', '/cover-styles/poster_art.webp'],
-    ['Photographic', '/cover-styles/photographic.webp'],
-    ['Manga', '/cover-styles/manga.webp'],
-    ['Drawing', '/cover-styles/drawing.webp'],
-    ['Minimal', '/cover-styles/minimal.webp'],
-  ])('shows the %s example cover as decoration', (name, src) => {
+  it.each(PRESET_EXAMPLES)('shows the %s example cover as decoration', (name, src) => {
     renderForm();
 
     expect(rowImageSources(name)).toEqual([src]);
@@ -142,8 +135,9 @@ describe('Example tiles', () => {
   it('shows all six examples for Auto and Random, and no image for Custom', () => {
     renderForm();
 
-    expect(rowImageSources('Auto')).toEqual(PRESET_EXAMPLES);
-    expect(rowImageSources('Random')).toEqual(PRESET_EXAMPLES);
+    const allExamples = PRESET_EXAMPLES.map(([, src]) => src);
+    expect(rowImageSources('Auto')).toEqual(allExamples);
+    expect(rowImageSources('Random')).toEqual(allExamples);
     expect(rowImageSources('Custom')).toEqual([]);
     for (const img of styleGroup().querySelectorAll('img')) {
       expect(img.getAttribute('alt')).toBe('');
