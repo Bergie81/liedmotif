@@ -29,7 +29,7 @@ it('reports a declined replace question as not started and not refused', async (
 
   let outcome: Awaited<ReturnType<ReturnType<typeof useSeedMoreLikeThis>>> | undefined;
   await act(async () => {
-    outcome = await result.current(['track-1'], undefined, 'for cooking');
+    outcome = await result.current({ seedTrackIds: ['track-1'], context: 'for cooking' });
   });
 
   expect(outcome).toEqual({ started: false, refusal: null });

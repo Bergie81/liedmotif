@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import type { ApiErrorCode } from '@liedmotif/shared';
+import type { ApiErrorCode, MoreLikeThisRequest } from '@liedmotif/shared';
 import { moreLikeThis } from '@/lib/http/api-client';
 import { useClientId } from '@/lib/use-client-id';
 import { usePlayerActions } from '@/components/player/player-provider';
@@ -32,19 +32,15 @@ export interface SeedOutcome {
  * it (the blocked dialog for a headroom refusal) and owns its own busy state.
  */
 export function useSeedMoreLikeThis(): (
-  trackIds: string[],
-  /** The length the user chose for the new Session; none for the app's own More Like This. */
-  targetDurationMinutes?: number,
-  /** What the new Session is about or for, as typed; none names it from the seed alone. */
-  context?: string,
+  request: Omit<MoreLikeThisRequest, 'clientId'>,
 ) => Promise<SeedOutcome> {
   const clientId = useClientId();
   const router = useRouter();
   const { engage, beginOtherMusic } = usePlayerActions();
 
-  return async function seedMoreLikeThis(trackIds, targetDurationMinutes, context) {
+  return async function seedMoreLikeThis(request) {
     if (!(await beginOtherMusic())) return { started: false, refusal: null };
-    const result = await moreLikeThis(trackIds, clientId, targetDurationMinutes, context);
+    const result = await moreLikeThis({ ...request, clientId });
     if (!result.ok) {
       return {
         started: false,

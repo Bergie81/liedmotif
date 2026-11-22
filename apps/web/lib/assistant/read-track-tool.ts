@@ -11,7 +11,7 @@ import {
 } from '@liedmotif/db';
 import type { LlmTool } from '@liedmotif/providers';
 import { readTrackInputSchema, type ReadTrackInput, type VocalMode } from '@liedmotif/shared';
-import { buildTrackDataSections } from '@/components/player/track-data-view';
+import { buildTrackDataSections, type TrackDataLabels } from '@/components/player/track-data-view';
 import { NO_SUCH_TRACK, NO_TRACK_PLAYING } from './library-action';
 import { named } from './music-names';
 import { isId } from './readable-music';
@@ -19,10 +19,7 @@ import { READ_TRACK_TOOL_NAME } from './tool-names';
 import type { AssistantAsker } from './tools';
 
 /** The sheet's labels speak to the listener; the model is told the app's own terms instead. */
-const LABEL_FOR_MODEL: Record<string, string> = {
-  Album: 'Session',
-  'Your prompt': "User's prompt",
-};
+const LABELS_FOR_MODEL: TrackDataLabels = { session: 'Session', userPrompt: "User's prompt" };
 
 function lyricsLine(vocalMode: VocalMode, lyrics: string | null | undefined): string {
   if (lyrics) return `Lyrics:\n${lyrics}`;
@@ -49,17 +46,18 @@ export function createReadTrackTool(asker: AssistantAsker): LlmTool<ReadTrackInp
         getUsageLimits(db),
       ]);
       if (!details) return NO_SUCH_TRACK;
-      const sections = buildTrackDataSections({
-        ...details,
-        createdAt: details.createdAt.toISOString(),
-        timezone: resetTimezone,
-        bpm: details.bpmEstimate != null ? Math.round(details.bpmEstimate) : null,
-      });
+      const sections = buildTrackDataSections(
+        {
+          ...details,
+          createdAt: details.createdAt.toISOString(),
+          timezone: resetTimezone,
+          bpm: details.bpmEstimate != null ? Math.round(details.bpmEstimate) : null,
+        },
+        LABELS_FOR_MODEL,
+      );
       return [
         `Track ${named(details.title, trackId)}`,
-        ...sections.flatMap(({ fields }) =>
-          fields.map(({ label, value }) => `${LABEL_FOR_MODEL[label] ?? label}: ${value}`),
-        ),
+        ...sections.flatMap(({ fields }) => fields.map(({ label, value }) => `${label}: ${value}`)),
         lyricsLine(details.vocalMode, lyrics?.lyrics),
       ].join('\n');
     },

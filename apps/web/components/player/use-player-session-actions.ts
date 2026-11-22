@@ -50,7 +50,7 @@ export function usePlayerSessionActions({
         action: 'more-like-this',
         failureLabel: MORE_LIKE_THIS_FAILED,
         createsSession: true,
-        request: () => moreLikeThis([trackId], clientId, undefined, context),
+        request: () => moreLikeThis({ seedTrackIds: [trackId], clientId, context }),
         onBusyChange: setBusyAction,
         onFailure: (failure) => reportFailure(failure, 'more-like-this'),
         onSuccess: (data) => onSessionChange(data.session),

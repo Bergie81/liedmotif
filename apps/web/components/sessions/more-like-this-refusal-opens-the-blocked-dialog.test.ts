@@ -33,7 +33,7 @@ it('hands a headroom refusal to the caller with its error code', async () => {
 
   let outcome: Awaited<ReturnType<ReturnType<typeof useSeedMoreLikeThis>>> | undefined;
   await act(async () => {
-    outcome = await result.current(['track-1']);
+    outcome = await result.current({ seedTrackIds: ['track-1'] });
   });
 
   expect(outcome).toEqual({

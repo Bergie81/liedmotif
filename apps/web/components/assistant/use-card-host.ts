@@ -153,7 +153,7 @@ export function useCardHost(
       changeVibe: (sessionId, input) =>
         submitChangeVibe(sessionId, input, {})?.then((carriedOut) => ({ carriedOut })) ?? null,
       vibeChangeInFlight,
-      moreLikeThis({ seedTrackIds, targetDurationMinutes, context }) {
+      moreLikeThis(request) {
         // The seed flow would ask whether to replace a Start that is still
         // setting up. A card leaves that Start alone, as a Session card does.
         if (currentPendingStart()) {
@@ -161,7 +161,7 @@ export function useCardHost(
           return null;
         }
         return live.current
-          .seedMoreLikeThis(seedTrackIds, targetDurationMinutes, context)
+          .seedMoreLikeThis(request)
           .then(({ started, refusal }) =>
             refusal
               ? { carriedOut: false, refusal: `${MORE_LIKE_THIS_FAILED}: ${refusal.message}` }

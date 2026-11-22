@@ -182,7 +182,7 @@ describe('useLibraryActions More Like This', () => {
     });
 
     expect(started).toBe(true);
-    expect(seed.calls).toEqual([[[track.id], undefined, 'for cooking']]);
+    expect(seed.calls).toEqual([[{ seedTrackIds: [track.id], context: 'for cooking' }]]);
   });
 
   it('reports a refusal as not started, so the sheet stays open', async () => {

@@ -27,14 +27,11 @@ import {
 } from 'ai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import {
-  COVER_STYLE_PRESETS,
   GEMINI_DEFAULT_LLM_MODEL,
   GEMINI_DEFAULT_REASONING_EFFORT,
   MAX_COVER_GUIDANCE_LENGTH,
-  narrowTo,
   OPENAI_DEFAULT_LLM_MODEL,
   OPENAI_DEFAULT_REASONING_EFFORT,
-  type CoverStylePreset,
   type LlmReasoningEffort,
 } from '@liedmotif/shared';
 import { z } from 'zod';
@@ -44,8 +41,6 @@ import { validateCredential } from '../validation/index';
 import { pinnedProviderFetch } from '../validation/provider-fetch';
 import { assertAllowedBaseUrl } from '../validation/ssrf';
 import {
-  clampActivity,
-  clampLyricContext,
   clampTrackLyricBrief,
   clampTrackTitles,
   ENERGY_LEVELS,
@@ -53,6 +48,13 @@ import {
   sessionStyleSnapshotSchema,
   type SessionStyleSnapshot,
 } from './snapshot';
+import {
+  contextNamingSchema,
+  coverStylePickSchema,
+  normalizeContextNaming,
+  normalizeSessionNaming,
+  sessionNamingSchema,
+} from './naming-answer';
 import {
   clampCoverConcept,
   CONTEXT_NAMING_FAILED,
@@ -91,27 +93,6 @@ import type {
   LlmProviderCapabilities,
   SessionNamingInput,
 } from './index';
-
-/** A pick spelled with other case or separators ("Record Sleeve", "poster-art")
- *  read as the preset it spells, or null. */
-function looseCoverStylePick(value: unknown): CoverStylePreset | null {
-  if (typeof value !== 'string') return null;
-  return narrowTo(
-    COVER_STYLE_PRESETS,
-    value
-      .trim()
-      .toLowerCase()
-      .replace(/[\s-]+/g, '_'),
-  );
-}
-
-/** The Auto cover pick (ADR 0007): one of the six presets, and anything else,
- *  missing included, is no pick rather than a failed reply. The schema sent to
- *  the model stays the plain enum; the fallback reads only the spelling. */
-const coverStylePickSchema = z
-  .enum(COVER_STYLE_PRESETS)
-  .nullable()
-  .catch((ctx) => looseCoverStylePick(ctx?.input));
 
 /**
  * What an expansion may contain: the snapshot minus the Session Guardrails and
@@ -323,52 +304,6 @@ const SURPRISE_REQUEST_FAILED = 'The text AI could not write a surprise. Try aga
 const ASSISTANT_REPLY_FAILED = 'The text AI could not answer. Try again.';
 const ASSISTANT_REPLY_CUT_OFF = 'The text AI stopped before the answer was finished. Try again.';
 
-/** The creative-naming response shape (`createSessionMetadata`); all default so
- *  a partial reply still validates and consumers keep their deterministic fallback. */
-const sessionNamingSchema = z.object({
-  title: z.string().default(''),
-  trackTitles: z.array(z.string()).default([]),
-  lyricContext: z.string().default(''),
-  coverConcept: z.string().default(''),
-  coverStyle: coverStylePickSchema,
-});
-
-/** The naming answer for a More Like This context: two more fields, the activity
- *  and whether the listener is in the scene, which an invalid answer leaves empty
- *  and false rather than failing the reply. */
-const contextNamingSchema = sessionNamingSchema.extend({
-  activity: z.string().catch(''),
-  includesListener: z.boolean().catch(false),
-});
-
-/** A usable naming proposal from a model value, or null. The title is required —
- *  without a name the reply is useless even if it carried a track-title pool. The
- *  pool and lyric context are clamped here (the write boundary: they merge straight
- *  into the stored snapshot, no schema parse in between). */
-function normalizeSessionNaming(value: unknown): SessionNamingMetadata | null {
-  const result = sessionNamingSchema.safeParse(value);
-  if (!result.success || !result.data.title.trim()) return null;
-  return {
-    title: result.data.title.trim(),
-    trackTitles: clampTrackTitles(result.data.trackTitles),
-    lyricContext: clampLyricContext(result.data.lyricContext),
-    coverConcept: clampCoverConcept(result.data.coverConcept),
-    autoCoverStyle: result.data.coverStyle,
-  };
-}
-
-/** A context's naming is the feature, so it is usable only with a Name AND a pool. */
-function normalizeContextNaming(value: unknown): SessionNamingMetadata | null {
-  const naming = normalizeSessionNaming(value);
-  if (!naming || naming.trackTitles.length === 0) return null;
-  const answer = value as { activity?: unknown; includesListener?: unknown } | null;
-  const activity = contextNamingSchema.shape.activity.parse(answer?.activity);
-  const includesListener = contextNamingSchema.shape.includesListener.parse(
-    answer?.includesListener,
-  );
-  return { ...naming, activity: clampActivity(activity), includesListener };
-}
-
 export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmConfig): LlmProvider {
   const validationBaseUrl = config.validationBaseUrl ?? config.baseUrl;
   const maxRetries = clampMaxRetries(config.maxRetries);
@@ -541,25 +476,34 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
     }
   }
 
+  /** A naming call's raw answer: structured output when the model supports it,
+   *  else the JSON object in its text. */
+  async function requestNaming(
+    prompt: string,
+    schema: typeof sessionNamingSchema | typeof contextNamingSchema,
+    settings: ReturnType<typeof callSettings>,
+  ): Promise<unknown> {
+    if (config.supportsStructuredOutputs) {
+      const { output } = await generateText({
+        model: getModel(),
+        output: Output.object({ schema }),
+        prompt,
+        ...settings,
+      });
+      return output;
+    }
+    const { text } = await generateText({ model: getModel(), prompt, ...settings });
+    return parseJsonObject(text);
+  }
+
   /** The naming call for a More Like This context: required, so it runs under the
    *  expansion's budget and throws a sanitized `ProviderError` instead of
    *  answering empty. The lyric-context rule is enforced on its output. */
   async function createContextNaming(input: SessionNamingInput): Promise<SessionNamingMetadata> {
     assertAllowedBaseUrl(config.providerKey, config.baseUrl);
-    const prompt = namingPrompt(input);
     let value: unknown;
     try {
-      if (config.supportsStructuredOutputs) {
-        ({ output: value } = await generateText({
-          model: getModel(),
-          output: Output.object({ schema: contextNamingSchema }),
-          prompt,
-          ...callSettings(),
-        }));
-      } else {
-        const { text } = await generateText({ model: getModel(), prompt, ...callSettings() });
-        value = parseJsonObject(text);
-      }
+      value = await requestNaming(namingPrompt(input), contextNamingSchema, callSettings());
     } catch (err) {
       throw sanitizedError(err, CONTEXT_NAMING_FAILED);
     }
@@ -715,22 +659,14 @@ export function createOpenAiCompatibleLlmProvider(config: OpenAiCompatibleLlmCon
       const keepLyricContext = allowsNamingLyricContext(input.snapshot, input.listener);
       try {
         assertAllowedBaseUrl(config.providerKey, config.baseUrl);
-        const prompt = namingPrompt(input);
-        const settings = callSettings(NAMING_TIMEOUT_MS);
-        if (config.supportsStructuredOutputs) {
-          const { output } = await generateText({
-            model: getModel(),
-            output: Output.object({ schema: sessionNamingSchema }),
-            prompt,
-            ...settings,
-          });
-          const naming = normalizeSessionNaming(output);
-          if (naming) return keepLyricContext ? naming : { ...naming, lyricContext: '' };
-        } else {
-          const { text } = await generateText({ model: getModel(), prompt, ...settings });
-          const naming = normalizeSessionNaming(parseJsonObject(text));
-          if (naming) return keepLyricContext ? naming : { ...naming, lyricContext: '' };
-        }
+        const naming = normalizeSessionNaming(
+          await requestNaming(
+            namingPrompt(input),
+            sessionNamingSchema,
+            callSettings(NAMING_TIMEOUT_MS),
+          ),
+        );
+        if (naming) return keepLyricContext ? naming : { ...naming, lyricContext: '' };
       } catch {
         // Naming is cosmetic and must never fail a session creation.
       }

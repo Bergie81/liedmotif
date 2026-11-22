@@ -440,6 +440,26 @@ export function stripPersonalIngredients(seed: StyleSnapshot): StyleSnapshot {
   return { ...seed, useOwnVoice: false, lyricContext: '' };
 }
 
+type SeededNaming = { snapshot: SessionStyleSnapshot; includesListener: boolean } & CoverDirection;
+
+/**
+ * The naming a seed without a context gets: cosmetic, with the owner's listener
+ * context, and deterministic when no text LLM answers. It reads nothing that
+ * could place the listener in a scene.
+ */
+async function plainSeededNaming(
+  db: Database,
+  ownerUserId: string,
+  snapshot: SessionStyleSnapshot,
+  avoidTitles: string[],
+): Promise<SeededNaming> {
+  const listener = await getListenerContext(db, ownerUserId);
+  const named = await withCreativeNaming(null, snapshot, NO_COVER_DIRECTION, listener, {
+    avoidTitles,
+  });
+  return { ...named, includesListener: false };
+}
+
 /**
  * The naming a More Like This context gets: the one seeded naming call, made
  * required. The context is its listening request, the seed's lyric notes the
@@ -450,11 +470,17 @@ export function stripPersonalIngredients(seed: StyleSnapshot): StyleSnapshot {
  * usable Name and title pool, so no Session ignores the context.
  */
 async function contextNaming(
+  db: Database,
+  ownerUserId: string,
   context: string,
   snapshot: SessionStyleSnapshot,
-  listener: ListenerContext | null,
   avoidTitles: string[],
-): Promise<{ snapshot: SessionStyleSnapshot; includesListener: boolean } & CoverDirection> {
+): Promise<SeededNaming> {
+  const listener = await listenerContextForIntent(db, ownerUserId, {
+    mode: 'prompt',
+    prompt: context,
+    vocal: snapshot.vocalMode,
+  });
   const llm = await getLlmProvider();
   if (!llm) throw new ProviderConfigError('More Like This with a context needs a text AI.');
   const naming = await llm.createSessionMetadata({ snapshot, listener, avoidTitles, context });
@@ -514,22 +540,12 @@ export async function nameSeededSnapshot(
     };
   const inherited = inheritedGuardrails(parsed.data);
   const unnamed = { ...parsed.data, ...inherited, title: '', trackTitles: [] };
-  const listener = context
-    ? await listenerContextForIntent(db, ownerUserId, {
-        mode: 'prompt',
-        prompt: context,
-        vocal: unnamed.vocalMode,
-      })
-    : await getListenerContext(db, ownerUserId);
   const avoidTitles = [parsed.data.title, ...parsed.data.trackTitles].filter(
     (title) => title.trim().length > 0,
   );
   const named = context
-    ? await contextNaming(context, unnamed, listener, avoidTitles)
-    : {
-        ...(await withCreativeNaming(null, unnamed, NO_COVER_DIRECTION, listener, { avoidTitles })),
-        includesListener: false,
-      };
+    ? await contextNaming(db, ownerUserId, context, unnamed, avoidTitles)
+    : await plainSeededNaming(db, ownerUserId, unnamed, avoidTitles);
   return {
     snapshot: {
       ...seed,

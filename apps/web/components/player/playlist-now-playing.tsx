@@ -251,12 +251,11 @@ export function PlaylistNowPlaying({
     try {
       clearPlayerError(sourceId, 'more-like-this');
       if (!(await beginOtherMusic())) return false;
-      const result = await moreLikeThis(
-        items.slice(0, MAX_SEED_TRACKS).map((item) => item.id),
+      const result = await moreLikeThis({
+        seedTrackIds: items.slice(0, MAX_SEED_TRACKS).map((item) => item.id),
         clientId,
-        undefined,
         context,
-      );
+      });
       if (!result.ok) {
         const line = presentCreationFailure(result.error, MORE_LIKE_THIS_FAILED);
         if (line) failed('more-like-this', line);

@@ -202,11 +202,10 @@ export function LoungeView({
     const page = await getLoungePlaylist(item.id, null, LOUNGE_MLT_SEED_TRACKS);
     const { started, refusal } = !page.ok
       ? { started: false, refusal: page.error }
-      : await seedMoreLikeThis(
-          page.data.items.slice(0, LOUNGE_MLT_SEED_TRACKS).map((m) => m.id),
-          undefined,
+      : await seedMoreLikeThis({
+          seedTrackIds: page.data.items.slice(0, LOUNGE_MLT_SEED_TRACKS).map((m) => m.id),
           context,
-        );
+        });
     setSeeding(false);
     const line = refusal && presentCreationFailure(refusal, MORE_LIKE_THIS_FAILED);
     if (line) toast.error(line, { key: MORE_LIKE_THIS_KEY });

@@ -180,7 +180,7 @@ export function PlaylistDetail({
     if (seeding) return false;
     setSeeding(true);
     toast.dismiss(MORE_LIKE_THIS_KEY);
-    const { started, refusal } = await seed(trackIds, undefined, context);
+    const { started, refusal } = await seed({ seedTrackIds: trackIds, context });
     setSeeding(false);
     const line = refusal && presentCreationFailure(refusal, MORE_LIKE_THIS_FAILED);
     if (line) toast.error(line, { key: MORE_LIKE_THIS_KEY });

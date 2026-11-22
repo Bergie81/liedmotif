@@ -150,7 +150,10 @@ describe('PlaylistDetail — visitor menu', () => {
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'for cooking' } });
     fireEvent.click(screen.getByRole('button', { name: 'Start New Session' }));
     await waitFor(() =>
-      expect(moreLikeThis).toHaveBeenCalledWith([MEMBER.id], undefined, 'for cooking'),
+      expect(moreLikeThis).toHaveBeenCalledWith({
+        seedTrackIds: [MEMBER.id],
+        context: 'for cooking',
+      }),
     );
   });
 

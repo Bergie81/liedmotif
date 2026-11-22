@@ -47,6 +47,7 @@ import {
   type LoopLeaseRequest,
   type LoopLeaseResponse,
   loopLeaseResponseSchema,
+  type MoreLikeThisRequest,
   type MoreLikeThisResponse,
   moreLikeThisResponseSchema,
   type RenameSessionResponse,
@@ -1186,21 +1187,10 @@ export function getTrackDetails(trackId: string): Promise<ApiResult<TrackDetails
 }
 
 /** Start a NEW session seeded from existing track(s) (More Like This). */
-export function moreLikeThis(
-  seedTrackIds: string[],
-  clientId: string,
-  targetDurationMinutes?: number,
-  /** What the new Session is about or for; it never changes the music. */
-  context?: string,
-): Promise<ApiResult<MoreLikeThisData>> {
+export function moreLikeThis(input: MoreLikeThisRequest): Promise<ApiResult<MoreLikeThisData>> {
   return callApi<MoreLikeThisData>('/api/sessions/more-like-this', moreLikeThisResponseSchema, {
     method: 'POST',
-    body: {
-      seedTrackIds,
-      clientId,
-      ...(targetDurationMinutes != null ? { targetDurationMinutes } : {}),
-      ...(context ? { context } : {}),
-    },
+    body: input,
   });
 }
 

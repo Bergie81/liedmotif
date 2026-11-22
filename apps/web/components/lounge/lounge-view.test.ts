@@ -466,12 +466,11 @@ describe('LoungeView — playing a foreign share', () => {
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'for cooking' } });
     fireEvent.click(screen.getByRole('button', { name: 'Start New Session' }));
     await waitFor(() => expect(shownCreationRefusal()).toEqual({ kind: 'headroom', message }));
-    expect(seedMoreLikeThis).toHaveBeenCalledWith(
-      [MEMBER.id],
-      expect.anything(),
-      undefined,
-      'for cooking',
-    );
+    expect(seedMoreLikeThis).toHaveBeenCalledWith({
+      seedTrackIds: [MEMBER.id],
+      clientId: expect.anything(),
+      context: 'for cooking',
+    });
     expect(shownToasts()).toEqual([]);
     expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('for cooking');
   });

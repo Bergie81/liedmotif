@@ -43,13 +43,24 @@ function field(label: string, value: string | null, block?: boolean): TrackDataF
   return [{ label, value, ...(block ? { block } : {}) }];
 }
 
-export function buildTrackDataSections(details: TrackDetails): TrackDataSection[] {
+/** The two labels that address the listener; another reader passes the app's own terms. */
+export interface TrackDataLabels {
+  session: string;
+  userPrompt: string;
+}
+
+const LISTENER_LABELS: TrackDataLabels = { session: 'Album', userPrompt: 'Your prompt' };
+
+export function buildTrackDataSections(
+  details: TrackDetails,
+  labels: TrackDataLabels = LISTENER_LABELS,
+): TrackDataSection[] {
   const sections: TrackDataSection[] = [
     {
       title: 'Identity',
       fields: [
         ...field('Title', details.title),
-        ...field('Album', details.sessionTitle),
+        ...field(labels.session, details.sessionTitle),
         ...field('Artist', details.artistName),
         ...field('Generated', formatGeneratedDate(details.createdAt, details.timezone)),
         ...field(
@@ -61,7 +72,7 @@ export function buildTrackDataSections(details: TrackDetails): TrackDataSection[
     {
       title: 'Prompts',
       fields: [
-        ...field('Your prompt', details.userPrompt, true),
+        ...field(labels.userPrompt, details.userPrompt, true),
         ...field('Style prompt', details.stylePrompt, true),
         ...field('Expanded prompt', details.expandedPrompt, true),
       ],
