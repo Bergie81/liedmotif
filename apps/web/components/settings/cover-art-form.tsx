@@ -40,7 +40,8 @@ export function CoverArtForm({
   const [enhancementEnabled, setEnhancementEnabled] = useState(initial.promptEnhancementEnabled);
   const [useStandardCoverArt, setUseStandardCoverArt] = useState(initial.useStandardCoverArt);
   const [saving, setSaving] = useState(false);
-  const rowId = useId();
+  const idPrefix = useId();
+  const showEmptyDefinitionHint = defaultStyle === 'custom' && definition.trim() === '';
 
   async function save() {
     setSaving(true);
@@ -111,23 +112,23 @@ export function CoverArtForm({
             <label className="group flex min-h-[56px] cursor-pointer items-center gap-3 rounded-[12px] px-4 py-2 [-webkit-tap-highlight-color:transparent] has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-lamp">
               <input
                 type="radio"
-                name="default-cover-style"
+                name={`${idPrefix}-default-cover-style`}
                 value={value}
                 checked={defaultStyle === value}
                 onChange={() => setDefaultStyle(value)}
-                aria-labelledby={`${rowId}-${value}-name`}
-                aria-describedby={`${rowId}-${value}-explanation`}
+                aria-labelledby={`${idPrefix}-${value}-name`}
+                aria-describedby={`${idPrefix}-${value}-explanation`}
                 className="sr-only"
               />
               <span className="min-w-0">
                 <span
-                  id={`${rowId}-${value}-name`}
+                  id={`${idPrefix}-${value}-name`}
                   className="block text-[14px] font-semibold text-paper group-has-[:checked]:text-lamp light:group-has-[:checked]:text-lamp-fill"
                 >
                   {COVER_STYLE_LABELS[value]}
                 </span>
                 <span
-                  id={`${rowId}-${value}-explanation`}
+                  id={`${idPrefix}-${value}-explanation`}
                   className="block text-[12px] leading-[1.45] text-muted"
                 >
                   {COVER_STYLE_EXPLANATIONS[value]}
@@ -135,31 +136,43 @@ export function CoverArtForm({
               </span>
             </label>
             {value === 'custom' ? (
-              <label className={`${labelClass} px-4 pb-4 pt-1`}>
+              <div className={`${labelClass} px-4 pb-4 pt-1`}>
                 <span className="flex items-baseline justify-between gap-2">
-                  Custom style definition
+                  <label htmlFor={`${idPrefix}-definition`}>Custom style definition</label>
                   <span className="font-mono text-[11px] font-normal tracking-[0.04em] text-dim">
                     {definition.length}/{MAX_COVER_STYLE_HINT_LENGTH}
                   </span>
                 </span>
                 <textarea
+                  id={`${idPrefix}-definition`}
                   data-testid="cover-style-definition"
                   rows={3}
                   maxLength={MAX_COVER_STYLE_HINT_LENGTH}
                   value={definition}
                   onChange={(e) => setDefinition(e.target.value)}
                   placeholder={PLACEHOLDER}
+                  aria-describedby={
+                    showEmptyDefinitionHint
+                      ? `${idPrefix}-definition-tip ${idPrefix}-definition-hint`
+                      : `${idPrefix}-definition-tip`
+                  }
                   className={`${inputClass} resize-none`}
                 />
-                <span className="text-[11.5px] font-normal leading-[1.5] text-dim">
+                <span
+                  id={`${idPrefix}-definition-tip`}
+                  className="text-[11.5px] font-normal leading-[1.5] text-dim"
+                >
                   {CUSTOM_STYLE_TIP}
                 </span>
-                {defaultStyle === 'custom' && definition.trim() === '' ? (
-                  <span className="text-[11.5px] font-normal leading-[1.5] text-muted">
+                {showEmptyDefinitionHint ? (
+                  <span
+                    id={`${idPrefix}-definition-hint`}
+                    className="text-[11.5px] font-normal leading-[1.5] text-muted"
+                  >
                     Without a definition, Custom works like Auto.
                   </span>
                 ) : null}
-              </label>
+              </div>
             ) : null}
           </div>
         ))}

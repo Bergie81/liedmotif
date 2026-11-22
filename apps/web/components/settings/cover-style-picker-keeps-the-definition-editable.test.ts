@@ -25,17 +25,18 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-/** Answers each save with `stored`, and records the bodies sent. */
-function stubSave(
-  stored: (body: Record<string, unknown>) => Partial<CoverArtSettings> = () => ({}),
-) {
+/**
+ * Answers each save with the posted settings overlaid by `stored`, plus any
+ * `extra` response fields, and records the bodies sent.
+ */
+function stubSave(stored: Partial<CoverArtSettings> = {}, extra: Record<string, unknown> = {}) {
   const bodies: Array<Record<string, unknown>> = [];
   vi.stubGlobal(
     'fetch',
     vi.fn(async (_url: string, init?: RequestInit) => {
       const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
       bodies.push(body);
-      return Response.json({ ok: true, settings: { ...body, ...stored(body) } });
+      return Response.json({ ok: true, settings: { ...body, ...stored }, ...extra });
     }),
   );
   return bodies;
@@ -138,6 +139,16 @@ describe('Custom style definition', () => {
     expect(screen.queryByText('Select Custom to edit your definition.')).toBeNull();
   });
 
+  it('is named by its heading alone, with the tip and the hint as its description', () => {
+    renderForm({ defaultStyle: 'custom', customStyleDefinition: '' });
+
+    const field = screen.getByRole('textbox', {
+      name: 'Custom style definition',
+      description: /not fixed colors or objects.*Without a definition, Custom works like Auto\.$/,
+    });
+    expect(field).toBe(definitionField());
+  });
+
   it('says Custom works like Auto only while Custom is selected and the definition is empty', () => {
     const hint = () => screen.queryByText('Without a definition, Custom works like Auto.');
     renderForm({ defaultStyle: 'auto', customStyleDefinition: '' });
@@ -173,18 +184,9 @@ describe('Save Cover Art', () => {
   });
 
   it('shows the stored definition after a save the text AI enhanced', async () => {
-    const bodies: unknown[] = [];
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (_url: string, init?: RequestInit) => {
-        const body = JSON.parse(String(init?.body)) as CoverArtSettings;
-        bodies.push(body);
-        return Response.json({
-          ok: true,
-          settings: { ...body, customStyleDefinition: 'Hand-cut woodblock print, rough grain.' },
-          enhancement: { attempted: true, applied: true },
-        });
-      }),
+    stubSave(
+      { customStyleDefinition: 'Hand-cut woodblock print, rough grain.' },
+      { enhancement: { attempted: true, applied: true } },
     );
     renderForm({ defaultStyle: 'minimal', promptEnhancementEnabled: true });
 
