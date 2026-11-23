@@ -408,9 +408,9 @@ The **Search** page looks across sessions, tracks and playlists, in titles, genr
 - **Matches:** each result names the field that matched and highlights your words.
 - **Recent:** searches you acted on stay in your browser for next time.
 
-Results are capped rather than paged: 5 per group under **All** and 50 on a single tab. A group cut short under **All** says how many it lists, for example "5 of 12", with a link such as **Show Tracks** that opens its tab with the same search and sort. If a single tab hits its cap, narrow your search. If nothing matches, **Start a Session from** puts your words in the form on **Home** for you to review, and nothing is spent until you start it.
+Results are capped rather than paged: 5 per group under **All** and 50 on a single tab. A group cut short under **All** says how many it lists, for example "5 of 12", with a link such as **Show Tracks** that opens its tab with the same search and sort. If a single tab hits its cap, narrow your search. If nothing matches, **Start a Session from** puts your words in the form on **Home** for you to review, and nothing is spent until you start it. It also shows below close names.
 
-The **Sessions** page has its own search box for session names, track titles, genres and prompts, showing the best 50.
+The **Sessions** page has its own search box for session names, track titles, genres and prompts, showing the best 50. When nothing matches, it shows the sessions whose names are spelled most like your words, under "No exact match … Closest names:".
 
 ### Downloads
 

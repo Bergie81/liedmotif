@@ -169,6 +169,37 @@ describe('useSearchQuery', () => {
     expect(result.current.counts).toEqual({ sessions: null, tracks: null, playlists: null });
   });
 
+  it('blanks the badges when a re-read of the same words turns into a close-match answer', async () => {
+    const requests = captureFetches();
+    const { result, rerender } = renderHook(
+      ({ revision }) => useSearchQuery(state({ query: 'Night Drive' }), revision),
+      {
+        initialProps: { revision: 0 },
+      },
+    );
+    await waitFor(() => expect(requests).toHaveLength(1));
+    await act(async () => requests[0]!.respond(searchResponse('Night Drive', 1)));
+    expect(result.current.counts).toEqual({ sessions: 0, tracks: 1, playlists: 0 });
+
+    rerender({ revision: 1 });
+    await waitFor(() => expect(requests).toHaveLength(2));
+    const closeGroup = { items: [], matchCount: 1, truncated: false };
+    await act(async () =>
+      requests[1]!.respond({
+        ok: true,
+        data: {
+          ...searchResponse('Night Drive', 0).data,
+          closeMatches: true,
+          sessions: closeGroup,
+          tracks: closeGroup,
+          playlists: closeGroup,
+        },
+      }),
+    );
+
+    expect(result.current.counts).toEqual({ sessions: null, tracks: null, playlists: null });
+  });
+
   it('lyrics mode requests ?lyrics=1 immediately and drops the stale group counts', async () => {
     const requests = captureFetches();
     const { result, rerender } = renderHook(({ s }) => useSearchQuery(s), {

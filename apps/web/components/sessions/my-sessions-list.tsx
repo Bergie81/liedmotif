@@ -344,6 +344,12 @@ function SessionSearchResults({
           Search looks at session names, track titles, genres and prompts.
         </EmptyState>
       ) : null}
+      {search.closeMatches && search.results?.length ? (
+        <p className="mb-3 text-[13px] text-muted">
+          No exact match for{' '}
+          <span className="font-semibold text-paper">“{search.resultsQuery}”</span>. Closest names:
+        </p>
+      ) : null}
       <div className={sessionGridClass}>
         {search.results?.map((result, index) =>
           renderCard(

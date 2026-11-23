@@ -41,6 +41,30 @@ function closeNamesResponse(query: string, playlists: SearchPlaylistItem[]) {
   } as SearchResponseData;
 }
 
+function focusAndFlow(): SearchPlaylistItem {
+  return {
+    id: '00000000-0000-4000-8000-000000000001',
+    name: 'Focus & Flow',
+    kind: 'user',
+    listedInPlaylists: true,
+    trackCount: 12,
+    totalDurationSeconds: 2400,
+    downloadableTrackCount: 12,
+    coverImageId: null,
+    mosaicCoverImageIds: [],
+    soleMemberTrackCount: 0,
+    soleMemberDeletedTrackCount: 0,
+    containsTrack: null,
+    sharedAt: null,
+    pinnedAt: null,
+    createdAt: '2026-11-01T10:00:00.000Z',
+    updatedAt: '2026-11-01T10:00:00.000Z',
+    matchContext: { field: 'name', snippet: 'Focus & Flow' },
+    memberMatchCount: 0,
+    owner: null,
+  };
+}
+
 function renderSummary(data: SearchResponseData) {
   return render(h(SearchSummaryRow, { data, sort: 'title', onSortChange: () => {} }));
 }
@@ -109,27 +133,7 @@ describe('the Search results region', () => {
   });
 
   it('shows close name groups under All without a See all action or a member-match line', () => {
-    const playlist: SearchPlaylistItem = {
-      id: '00000000-0000-4000-8000-000000000001',
-      name: 'Focus & Flow',
-      kind: 'user',
-      listedInPlaylists: true,
-      trackCount: 12,
-      totalDurationSeconds: 2400,
-      downloadableTrackCount: 12,
-      coverImageId: null,
-      mosaicCoverImageIds: [],
-      soleMemberTrackCount: 0,
-      soleMemberDeletedTrackCount: 0,
-      containsTrack: null,
-      sharedAt: null,
-      pinnedAt: null,
-      createdAt: '2026-11-01T10:00:00.000Z',
-      updatedAt: '2026-11-01T10:00:00.000Z',
-      matchContext: { field: 'name', snippet: 'Focus & Flow' },
-      memberMatchCount: 0,
-      owner: null,
-    };
+    const playlist = focusAndFlow();
     render(
       h(SearchResults, {
         state: { query: 'Fokus und Flow', scope: 'all', sort: 'title', lyrics: false },
@@ -147,5 +151,23 @@ describe('the Search results region', () => {
     expect(row.textContent).not.toMatch(/MATCH/);
     expect(screen.queryByRole('button', { name: /^Show / })).toBeNull();
     expect(screen.queryByRole('heading', { name: /Sessions|Tracks/ })).toBeNull();
+    expect(screen.getByRole('heading', { name: /Playlists/ }).textContent).not.toMatch(/match/i);
+  });
+
+  it('still offers to start a Session from the words when only close names answer', () => {
+    render(
+      h(SearchResults, {
+        state: { query: 'rainy night lo-fi', scope: 'all', sort: 'title', lyrics: false },
+        results: results(closeNamesResponse('rainy night lo-fi', [focusAndFlow()])),
+        onScopeChange: () => {},
+        onSortChange: () => {},
+        onEngage: () => {},
+        onTrackRemoved: () => {},
+      }),
+    );
+
+    expect(
+      screen.getByRole('link', { name: /Start a Session from “rainy night lo-fi”/ }),
+    ).toBeTruthy();
   });
 });

@@ -65,7 +65,11 @@ function renderList(items: SessionListItem[], nextCursor: string | null = null) 
   );
 }
 
-function stubApi(hits: SessionListItem[], responses: Record<string, unknown> = {}) {
+function stubApi(
+  hits: SessionListItem[],
+  responses: Record<string, unknown> = {},
+  closeMatches = false,
+) {
   const fetcher = vi.fn(async (url: string) => ({
     json: async () => {
       if (url.startsWith('/api/search')) {
@@ -76,7 +80,7 @@ function stubApi(hits: SessionListItem[], responses: Record<string, unknown> = {
             scope: 'sessions',
             sort: 'relevance',
             lyrics: false,
-            closeMatches: false,
+            closeMatches,
             sessions: {
               items: hits.map((hit) => ({
                 ...hit,
@@ -142,6 +146,16 @@ describe('My Sessions search', () => {
 
     await settleSearch(() => fireEvent.click(screen.getByRole('button', { name: 'Clear Search' })));
     expect(screen.getByText('Quiet Morning')).toBeTruthy();
+  });
+
+  it('labels close names when no Session matches the words exactly', async () => {
+    stubApi([session(2, { title: 'Rainy Drive' })], {}, true);
+    renderList([session(2, { title: 'Rainy Drive' })]);
+
+    await settleSearch(() => type('rain'));
+    expect(screen.getByRole('region', { name: 'Session search results' }).textContent).toContain(
+      'No exact match for “rain”. Closest names:',
+    );
   });
 
   async function deleteFirstResultThenServe(remaining: SessionListItem[]) {

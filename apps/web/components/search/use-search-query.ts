@@ -71,12 +71,14 @@ export function useSearchQuery(state: SearchState, revision = 0): SearchQuerySta
       }
       setError(null);
       setData(result.data);
-      // A close-match answer's group sizes are rows shown, not exact matches.
-      if (result.data.closeMatches) return;
+      // A close-match answer's group sizes are rows shown, not exact matches,
+      // so the groups it answered have no count to show.
+      const count = (group: { matchCount: number } | null, current: number | null) =>
+        group ? (result.data.closeMatches ? null : group.matchCount) : current;
       setCounts((current) => ({
-        sessions: result.data.sessions?.matchCount ?? current.sessions,
-        tracks: result.data.tracks?.matchCount ?? current.tracks,
-        playlists: result.data.playlists?.matchCount ?? current.playlists,
+        sessions: count(result.data.sessions, current.sessions),
+        tracks: count(result.data.tracks, current.tracks),
+        playlists: count(result.data.playlists, current.playlists),
       }));
     });
     return () => controller.abort();

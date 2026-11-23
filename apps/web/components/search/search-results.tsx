@@ -247,6 +247,14 @@ function GroupSections({
           <SearchPlaylistResults items={playlists.items} query={data.query} onEngage={onEngage} />
         </GroupSection>
       ) : null}
+      {data.closeMatches && !data.lyrics ? (
+        // Close names are guesses at a name, so words that describe music
+        // keep the empty state's way to a new Session.
+        <div className="mt-6 text-center text-[13px] text-muted">
+          <p>Not what you meant? Turn your words into a new session.</p>
+          <StartSessionLink query={data.query} />
+        </div>
+      ) : null}
     </>
   );
 }
@@ -276,9 +284,12 @@ function GroupSection({
       <h2 className={`${sectionHeadingClass} mb-3 flex items-center gap-2`}>
         <Icon className="h-4 w-4 text-dim" />
         {SEARCH_GROUP_LABELS[kind]}
-        <span className="ml-1 font-mono text-[10px] font-normal uppercase tracking-[0.06em] text-dim">
-          {group.matchCount} {group.matchCount === 1 ? 'match' : 'matches'}
-        </span>
+        {/* A close group's size counts guesses, not matches. */}
+        {data.closeMatches ? null : (
+          <span className="ml-1 font-mono text-[10px] font-normal uppercase tracking-[0.06em] text-dim">
+            {group.matchCount} {group.matchCount === 1 ? 'match' : 'matches'}
+          </span>
+        )}
       </h2>
       {children}
       {note ? <TruncationNote note={note} onScopeChange={onScopeChange} /> : null}
@@ -325,14 +336,20 @@ function SearchEmptyState({ data }: { data: SearchResponseData }) {
           <span className="block">
             Music that doesn’t exist yet can be made — turn your words into a new session.
           </span>
-          <Link
-            href={homeIntentHref(data.query)}
-            className={cn(primaryButtonClass, 'mx-auto mt-4 w-full max-w-[320px]')}
-          >
-            <Sparkles className="h-4 w-4" aria-hidden /> Start a Session from “{data.query}”
-          </Link>
+          <StartSessionLink query={data.query} />
         </span>
       )}
     </EmptyState>
+  );
+}
+
+function StartSessionLink({ query }: { query: string }) {
+  return (
+    <Link
+      href={homeIntentHref(query)}
+      className={cn(primaryButtonClass, 'mx-auto mt-4 w-full max-w-[320px]')}
+    >
+      <Sparkles className="h-4 w-4" aria-hidden /> Start a Session from “{query}”
+    </Link>
   );
 }

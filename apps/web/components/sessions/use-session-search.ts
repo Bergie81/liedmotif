@@ -23,6 +23,8 @@ export function useSessionSearch(query: string) {
     results: error ? null : results,
     /** The words `results` answer, which trail `query` while a newer one is in flight. */
     resultsQuery: data?.query ?? query,
+    /** The results are the closest names, because no Session matched the words exactly. */
+    closeMatches: data?.closeMatches ?? false,
     truncated: data?.sessions?.truncated ?? false,
     matchCount: data?.sessions?.matchCount ?? 0,
     error,
