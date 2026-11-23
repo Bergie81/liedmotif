@@ -31,9 +31,9 @@ export async function closeNameMatches(
   args: { ownerUserId: string; query: string },
   kinds: readonly CloseNameKind[],
 ): Promise<CloseNameGroups> {
-  const { ownerUserId } = args;
+  const { ownerUserId, query } = args;
   const closest = (kind: 'session' | 'track' | 'playlist') =>
-    closestNames(db, { ownerUserId, kind, query: args.query, limit: CLOSE_MATCH_LIMIT });
+    closestNames(db, { ownerUserId, kind, query, limit: CLOSE_MATCH_LIMIT });
   const [sessions, tracks, playlists] = await Promise.all([
     kinds.includes('sessions')
       ? closest('session').then((found) => closeSessionHits(db, ownerUserId, found, nameMatch))
