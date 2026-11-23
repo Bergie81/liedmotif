@@ -28,14 +28,16 @@ export async function closestLyricLines(
   db: Database,
   args: { ownerUserId: string; query: string; limit: number },
 ): Promise<ClosestLyricLine[]> {
-  const closeness = sql`word_similarity(${args.query}, ${tracks.lyrics})`;
+  // Scoring every lyric text is the whole cost, so each is scored once: the
+  // nearest are ranked first and the ones sharing no spelling dropped after,
+  // which keeps the same rows as filtering first.
   const result = await db.execute<ClosestLyricLine>(sql`
     with nearest as (
       select ${tracks.id} as id, ${tracks.lyrics} as lyrics,
-        ${tracks.createdAt} as created_at, ${closeness} as closeness
+        ${tracks.createdAt} as created_at,
+        word_similarity(${args.query}, ${tracks.lyrics}) as closeness
       from ${tracks}
-      where ${searchableTracks(args.ownerUserId)}
-        and ${tracks.lyrics} is not null and ${closeness} > 0
+      where ${searchableTracks(args.ownerUserId)} and ${tracks.lyrics} is not null
       order by closeness desc, created_at desc, id asc
       limit ${args.limit}
     )
@@ -45,6 +47,7 @@ export async function closestLyricLines(
         order by word_similarity(${args.query}, line.text) desc, line.n
         limit 1) as line
     from nearest
+    where nearest.closeness > 0
     order by nearest.closeness desc, nearest.created_at desc, nearest.id asc
   `);
   return result.rows.map((row) => ({ ...row, line: cutSnippet(row.line, args.query) }));

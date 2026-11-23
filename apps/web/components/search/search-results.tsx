@@ -43,21 +43,34 @@ const GROUP_ICONS: Record<SearchGroupKind, ComponentType<{ className?: string }>
   playlists: ListMusic,
 };
 
-export function SearchResults({
-  state,
-  results,
-  onScopeChange,
-  onSortChange,
-  onEngage,
-  onTrackRemoved,
-}: {
+type SearchResultsProps = {
   state: SearchState;
   results: SearchQueryState;
   onScopeChange: (scope: SearchScope) => void;
   onSortChange: (sort: SearchSort) => void;
   onEngage: SearchEngagement;
   onTrackRemoved: () => void;
-}) {
+};
+
+export function SearchResults(props: SearchResultsProps) {
+  // A screen reader announces only changes inside a live region that already
+  // exists, so one region holds the loader, the results and the switch between
+  // tabs and Lyrics search.
+  return (
+    <div aria-live="polite">
+      <ResultsContent {...props} />
+    </div>
+  );
+}
+
+function ResultsContent({
+  state,
+  results,
+  onScopeChange,
+  onSortChange,
+  onEngage,
+  onTrackRemoved,
+}: SearchResultsProps) {
   const { data, loading, error, counts } = results;
 
   // The branded loader appears for a FIRST query only; while a newer query is
@@ -85,7 +98,7 @@ export function SearchResults({
     // Lyrics mode collapses the scope tabs: only Tracks can match, and the
     // mode line above the results says so in words.
     return (
-      <div className="max-w-[760px]" aria-live="polite">
+      <div className="max-w-[760px]">
         <p className="mt-3 inline-flex items-center gap-2 font-mono text-[10.5px] uppercase tracking-[0.06em] text-lamp">
           <MicVocal className="h-3.5 w-3.5" aria-hidden /> Searching lyrics · tracks only
         </p>
@@ -114,7 +127,7 @@ export function SearchResults({
           />
         ))}
       </TabsList>
-      <TabsContent value={state.scope} forceMount className="mt-0" aria-live="polite">
+      <TabsContent value={state.scope} forceMount className="mt-0">
         {body}
       </TabsContent>
     </Tabs>
