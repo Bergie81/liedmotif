@@ -15,9 +15,6 @@ import {
   searchTracks,
   type SearchGroup,
   type SearchMatch,
-  type SearchPlaylistHit,
-  type SearchSessionHit,
-  type SearchTrackHit,
 } from '@liedmotif/db';
 import {
   EMPTY_SESSION_TRACK_ACTIVITY,
@@ -64,30 +61,28 @@ export async function GET(request: Request) {
   };
   const inScope = (group: Exclude<SearchScope, 'all'>) => scope === 'all' || scope === group;
 
-  const [exactSessions, exactTracks, exactPlaylists] = await Promise.all([
+  const exact = await Promise.all([
     inScope('sessions') ? searchSessions(db, base) : null,
     inScope('tracks') ? searchTracks(db, { ...base, lyricsOnly: parsed.lyrics }) : null,
     inScope('playlists') ? searchPlaylists(db, base) : null,
   ]);
-  let sessionHits: SearchGroup<SearchSessionHit> | null = exactSessions;
-  let trackHits: SearchGroup<SearchTrackHit> | null = exactTracks;
-  let playlistHits: SearchGroup<SearchPlaylistHit> | null = exactPlaylists;
-  let closeMatches = exactTracks?.closeMatches ?? false;
-
-  const wholeMiss = [exactSessions, exactTracks, exactPlaylists].every(
-    (group) => group === null || group.matchCount === 0,
-  );
-  if (!parsed.lyrics && wholeMiss) {
-    const close = await closeNameMatches(
-      db,
-      { ownerUserId, query: parsed.q },
-      (['sessions', 'tracks', 'playlists'] as const).filter(inScope),
-    );
-    sessionHits = exactSessions && closeGroup(close.sessions);
-    trackHits = exactTracks && closeGroup(close.tracks);
-    playlistHits = exactPlaylists && closeGroup(close.playlists);
-    closeMatches = [close.sessions, close.tracks, close.playlists].some((items) => items.length);
-  }
+  const [exactSessions, exactTracks, exactPlaylists] = exact;
+  // Lyrics mode answers its own miss with close lyric lines inside searchTracks.
+  const close =
+    !parsed.lyrics && exact.every((group) => !group?.matchCount)
+      ? await closeNameMatches(
+          db,
+          { ownerUserId, query: parsed.q },
+          (['sessions', 'tracks', 'playlists'] as const).filter(inScope),
+        )
+      : null;
+  // A group out of scope stays null (not queried) whichever answer fills the rest.
+  const sessionHits = close ? exactSessions && closeGroup(close.sessions) : exactSessions;
+  const trackHits = close ? exactTracks && closeGroup(close.tracks) : exactTracks;
+  const playlistHits = close ? exactPlaylists && closeGroup(close.playlists) : exactPlaylists;
+  const closeMatches = close
+    ? [close.sessions, close.tracks, close.playlists].some((items) => items.length > 0)
+    : (exactTracks?.closeMatches ?? false);
 
   const sessionActivity = sessionHits
     ? await getSessionTrackActivities(db, {

@@ -59,8 +59,8 @@ export interface SearchMatch {
   field: SearchMatchField;
   /**
    * 0 = whole field … 3 = anywhere, 4 = genre tag with punctuation ignored; the
-   * tier the rank ordered by. A lyrics close match, which no tier ranked, is
-   * `CLOSE_MATCH_EXACTNESS`.
+   * tier the rank ordered by. A close match (name or lyric line), which no tier
+   * ranked, is `CLOSE_MATCH_EXACTNESS`.
    */
   exactness: number;
   /** Bounded display window around the first hit in the winning field. */
@@ -243,7 +243,7 @@ async function runRankedSearch<Row, Hit>(
   // caller passed in is what its own mapper reads back.
   const result = await db.execute<RankedRow>(rankedQuery(spec));
   return {
-    items: result.rows.map((row) => toHit(row as unknown as Row, toMatch(row, spec.args.query))),
+    items: result.rows.map((row) => toHit(row as RankedRow & Row, toMatch(row, spec.args.query))),
     matchCount: result.rows[0]?.matchCount ?? 0,
   };
 }
@@ -431,18 +431,18 @@ export async function closeTrackHits<Found extends { id: string }>(
 }
 
 /** One kind's search projection for the found rows that pass `where`, by id. */
-async function projectedById<Row>(
+async function projectedById<Row extends { id: string }>(
   db: Database,
   spec: { columns: Record<string, SQLWrapper>; from: SQL; where: SQL; id: AnyColumn },
   ids: string[],
 ): Promise<Map<string, Row>> {
   if (ids.length === 0) return new Map();
-  const result = await db.execute<Record<string, unknown>>(sql`
+  const result = await db.execute(sql`
     select ${aliasedColumns(spec.columns)}
     ${spec.from}
     where ${spec.where} and ${inArray(spec.id, ids)}
   `);
-  return new Map(result.rows.map((row) => [String(row.id), row as unknown as Row]));
+  return new Map((result.rows as Row[]).map((row) => [row.id, row]));
 }
 
 function exactTrackSearch(
