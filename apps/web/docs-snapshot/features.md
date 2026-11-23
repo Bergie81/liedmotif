@@ -404,7 +404,7 @@ The **Search** page looks across sessions, tracks and playlists, in titles, genr
 - **Tabs:** **All**, **Sessions**, **Tracks** and **Playlists** each show an exact count.
 - **Sort:** **Relevance**, **Newest First** or **Title A–Z**.
 - **Search Lyrics** searches only sung words, so only tracks can match, and instrumentals never do.
-- **Typos in lyrics:** when a lyrics search finds no exact match, for example because of a typo, it shows the tracks with the closest lyric lines instead, closest first.
+- **Typos:** when a search finds nothing at all, for example because of a typo or "und" for "&", it shows the sessions, tracks and playlists whose names are spelled most like your words instead, up to 5 of each, closest first, under "No exact match … Closest names:". A lyrics search shows the tracks with the closest lyric lines instead. Close matches aren't sorted and the tabs don't count them.
 - **Matches:** each result names the field that matched and highlights your words.
 - **Recent:** searches you acted on stay in your browser for next time.
 

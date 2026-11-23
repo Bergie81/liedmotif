@@ -144,6 +144,31 @@ describe('useSearchQuery', () => {
     );
   });
 
+  it('records no group counts from a close-match answer: the badges count exact matches only', async () => {
+    const requests = captureFetches();
+    const { result } = renderHook(() => useSearchQuery(state({ query: 'Rainy Sunday Joz' })));
+    await waitFor(() => expect(requests).toHaveLength(1));
+    const closeGroup = { items: [], matchCount: 2, truncated: false };
+    await act(async () =>
+      requests[0]!.respond({
+        ok: true,
+        data: {
+          query: 'Rainy Sunday Joz',
+          scope: 'all',
+          sort: 'relevance',
+          lyrics: false,
+          closeMatches: true,
+          sessions: closeGroup,
+          tracks: closeGroup,
+          playlists: closeGroup,
+        },
+      }),
+    );
+
+    expect(result.current.data?.closeMatches).toBe(true);
+    expect(result.current.counts).toEqual({ sessions: null, tracks: null, playlists: null });
+  });
+
   it('lyrics mode requests ?lyrics=1 immediately and drops the stale group counts', async () => {
     const requests = captureFetches();
     const { result, rerender } = renderHook(({ s }) => useSearchQuery(s), {

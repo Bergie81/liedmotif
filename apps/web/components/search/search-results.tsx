@@ -181,13 +181,14 @@ export function SearchSummaryRow({
   sort: SearchSort;
   onSortChange: (sort: SearchSort) => void;
 }) {
-  // Close matches stay closest first, so they get a label and no sort
-  // selector; the URL's sort applies again once the words match exactly.
+  // Close matches (names, or lyric lines in Lyrics search) stay closest first,
+  // so they get a label and no sort selector; the URL's sort applies again once
+  // the words match exactly.
   if (data.closeMatches) {
     return (
       <p className="mb-2 mt-3 text-[13px] text-muted">
-        No exact match for <span className="font-semibold text-paper">“{data.query}”</span>. Closest
-        lyrics:
+        No exact match for <span className="font-semibold text-paper">“{data.query}”</span>. Closest{' '}
+        {data.lyrics ? 'lyrics' : 'names'}:
       </p>
     );
   }

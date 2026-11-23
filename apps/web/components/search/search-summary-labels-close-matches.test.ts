@@ -1,14 +1,14 @@
 // @vitest-environment jsdom
 
-// A Lyrics search that found no exact words answers with the closest lyric
-// lines. The summary line says so instead of counting "results", and the sort
-// selector stays away so the closest Track remains first, and a screen reader
-// hears the label with the results.
+// A search that found no exact words answers with the closest names (or, in
+// Lyrics search, the closest lyric lines). The summary line says so instead of
+// counting "results", the sort selector stays away so the closest row remains
+// first, and a screen reader hears the label with the results.
 
 import { createElement as h } from 'react';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { SearchResponseData } from '@liedmotif/shared';
+import type { SearchPlaylistItem, SearchResponseData } from '@liedmotif/shared';
 import { SearchResults, SearchSummaryRow } from './search-results';
 import type { SearchQueryState } from './use-search-query';
 
@@ -27,6 +27,20 @@ function lyricsResponse(query: string, closeMatches: boolean, matchCount: number
   } as SearchResponseData;
 }
 
+function closeNamesResponse(query: string, playlists: SearchPlaylistItem[]) {
+  const group = <T>(items: T[]) => ({ items, matchCount: items.length, truncated: false });
+  return {
+    query,
+    scope: 'all',
+    sort: 'title',
+    lyrics: false,
+    closeMatches: true,
+    sessions: group([]),
+    tracks: group([]),
+    playlists: group(playlists),
+  } as SearchResponseData;
+}
+
 function renderSummary(data: SearchResponseData) {
   return render(h(SearchSummaryRow, { data, sort: 'title', onSortChange: () => {} }));
 }
@@ -38,6 +52,13 @@ describe('the Search summary line', () => {
     expect(container.textContent).toBe(
       'No exact match for “zu viert auf dem mnod”. Closest lyrics:',
     );
+    expect(screen.queryByRole('button', { name: /sort search results/i })).toBeNull();
+  });
+
+  it('labels close name matches the same way, without a sort selector', () => {
+    const { container } = renderSummary(closeNamesResponse('Rainy Sunday Joz', []));
+
+    expect(container.textContent).toBe('No exact match for “Rainy Sunday Joz”. Closest names:');
     expect(screen.queryByRole('button', { name: /sort search results/i })).toBeNull();
   });
 
@@ -85,5 +106,46 @@ describe('the Search results region', () => {
     rerender(view(lyricsResponse('zu viert auf dem mnod', true, 0)));
     expect(container.querySelector('[aria-live="polite"]')).toBe(region);
     expect(region!.textContent).toContain('No exact match for “zu viert auf dem mnod”.');
+  });
+
+  it('shows close name groups under All without a See all action or a member-match line', () => {
+    const playlist: SearchPlaylistItem = {
+      id: '00000000-0000-4000-8000-000000000001',
+      name: 'Focus & Flow',
+      kind: 'user',
+      listedInPlaylists: true,
+      trackCount: 12,
+      totalDurationSeconds: 2400,
+      downloadableTrackCount: 12,
+      coverImageId: null,
+      mosaicCoverImageIds: [],
+      soleMemberTrackCount: 0,
+      soleMemberDeletedTrackCount: 0,
+      containsTrack: null,
+      sharedAt: null,
+      pinnedAt: null,
+      createdAt: '2026-11-01T10:00:00.000Z',
+      updatedAt: '2026-11-01T10:00:00.000Z',
+      matchContext: { field: 'name', snippet: 'Focus & Flow' },
+      memberMatchCount: 0,
+      owner: null,
+    };
+    render(
+      h(SearchResults, {
+        state: { query: 'Fokus und Flow', scope: 'all', sort: 'title', lyrics: false },
+        results: results(closeNamesResponse('Fokus und Flow', [playlist])),
+        onScopeChange: () => {},
+        onSortChange: () => {},
+        onEngage: () => {},
+        onTrackRemoved: () => {},
+      }),
+    );
+
+    expect(screen.getByText(/Closest names:/)).toBeTruthy();
+    const row = screen.getByRole('link', { name: /Focus & Flow/ });
+    expect(row.textContent).toContain('12 TRACKS');
+    expect(row.textContent).not.toMatch(/MATCH/);
+    expect(screen.queryByRole('button', { name: /^Show / })).toBeNull();
+    expect(screen.queryByRole('heading', { name: /Sessions|Tracks/ })).toBeNull();
   });
 });

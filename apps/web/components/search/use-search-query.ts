@@ -71,6 +71,8 @@ export function useSearchQuery(state: SearchState, revision = 0): SearchQuerySta
       }
       setError(null);
       setData(result.data);
+      // A close-match answer's group sizes are rows shown, not exact matches.
+      if (result.data.closeMatches) return;
       setCounts((current) => ({
         sessions: result.data.sessions?.matchCount ?? current.sessions,
         tracks: result.data.tracks?.matchCount ?? current.tracks,
