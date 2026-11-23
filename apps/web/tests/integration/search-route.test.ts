@@ -195,6 +195,40 @@ describe.skipIf(skip)('GET /api/search', () => {
     expect(body.data.playlists).toBeNull();
     expect(body.data.tracks.items.map((t: { id: string }) => t.id)).toEqual([sung]);
     expect(body.data.tracks.items[0].matchContext.field).toBe('lyrics');
+    expect(body.data.tracks.closeMatches).toBe(false);
+  });
+
+  it('lyrics mode answers a misspelled line with flagged close matches, the same on reload', async () => {
+    const owner = await createUser(testDb.db);
+    holder.ownerUserId = owner;
+    const moon = await seedTrack(owner, {
+      title: 'Vier im Mondorbit',
+      lyrics: 'wir starten heute Nacht\nzu viert auf dem Mond',
+    });
+    await seedTrack(owner, { title: 'Harbor Lights', lyrics: 'the tide rolls in at dawn' });
+
+    const params = { q: 'zu viert auf dem mnod', lyrics: '1', sort: 'title' };
+    const body = await (await getWith(params)).json();
+    expect(searchResponseSchema.safeParse(body).success).toBe(true);
+    expect(body.data.tracks.closeMatches).toBe(true);
+    expect(body.data.tracks.truncated).toBe(false);
+    expect(body.data.tracks.matchCount).toBe(body.data.tracks.items.length);
+    expect(body.data.tracks.items[0].id).toBe(moon);
+    expect(body.data.tracks.items[0].matchContext).toEqual({
+      field: 'lyrics',
+      snippet: 'zu viert auf dem Mond',
+    });
+
+    const reload = await (await getWith(params)).json();
+    expect(reload.data.tracks).toEqual(body.data.tracks);
+
+    const normal = await (await getWith({ q: 'zu viert auf dem mnod' })).json();
+    expect(normal.data.tracks).toEqual({
+      items: [],
+      matchCount: 0,
+      truncated: false,
+      closeMatches: false,
+    });
   });
 
   it('lyrics mode uses the scoped cap — Tracks is its only group', async () => {

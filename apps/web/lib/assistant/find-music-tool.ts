@@ -250,8 +250,10 @@ async function search(
   const text = quoted(query);
   if (lyrics) {
     const none = `No Track has ${text} in its lyrics.`;
-    const found = hits(await searchTracks(db, { ...args, lyricsOnly: true }), trackRow);
-    return found.rows.length > 0
+    const exact = await searchTracks(db, { ...args, lyricsOnly: true });
+    const found = hits(exact, trackRow);
+    // Search's own close matches are a miss here: Roadie words them as such.
+    return found.rows.length > 0 && !exact.closeMatches
       ? listed(`Tracks with ${text} in their lyrics:`, found, none)
       : listed(
           `${none} The lyric lines spelled nearest, none may be the one meant:`,

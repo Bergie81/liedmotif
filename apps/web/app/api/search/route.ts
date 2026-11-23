@@ -1,5 +1,7 @@
 // GET /api/search — ranked, capped retrieval across Sessions, Tracks and
-// Playlists. Read-only: no provider call, no LLM call, no write.
+// Playlists. Read-only: no provider call, no LLM call, no write. A lyrics
+// search whose exact words find nothing answers with the closest lyric lines,
+// flagged `closeMatches`.
 // The caps are server-fixed (5 per group under All, 50 on a scope tab); a
 // client cannot ask for more, and there is no cursor to page with.
 
@@ -87,12 +89,13 @@ export async function GET(request: Request) {
         ...(sessionActivity?.get(hit.id) ?? EMPTY_SESSION_TRACK_ACTIVITY),
         matchContext: toMatchContext(hit.match),
       })),
-    tracks:
-      trackHits &&
-      toGroup(trackHits, (hit) => ({
+    tracks: trackHits && {
+      ...toGroup(trackHits, (hit) => ({
         ...toLibraryTrackItem(hit),
         matchContext: toMatchContext(hit.match),
       })),
+      closeMatches: trackHits.closeMatches,
+    },
     playlists:
       playlistHits &&
       toGroup(playlistHits, (hit) => ({

@@ -4,7 +4,7 @@
 // carries the (field, exactness) pair that won it its place plus an exact
 // `count(*) over ()` of all matches, independent of the cap.
 
-import { eq, inArray, sql, type SQL, type SQLWrapper } from 'drizzle-orm';
+import { and, eq, inArray, sql, type SQL, type SQLWrapper } from 'drizzle-orm';
 import type { SearchMatchField, SearchSort } from '@liedmotif/shared';
 import type { Database } from '../client';
 import { libraryColumns, type LibraryTrack } from '../generation/feedback-repo';
@@ -28,6 +28,7 @@ import {
   tracks,
   user,
 } from '../schema';
+import { closestLyricLines } from './closest-lyric-lines';
 import {
   buildMatchPatterns,
   exactnessFromScore,
@@ -58,7 +59,8 @@ export interface SearchMatch {
   field: SearchMatchField;
   /**
    * 0 = whole field … 3 = anywhere, 4 = genre tag with punctuation ignored; the
-   * tier the rank ordered by.
+   * tier the rank ordered by. A lyrics close match, which no tier ranked, is
+   * `CLOSE_MATCH_EXACTNESS`.
    */
   exactness: number;
   /** Bounded display window around the first hit in the winning field. */
@@ -74,6 +76,21 @@ export interface SearchGroup<T> {
 export interface SearchTrackHit extends LibraryTrack {
   match: SearchMatch;
 }
+
+export interface SearchTrackGroup extends SearchGroup<SearchTrackHit> {
+  /**
+   * True when a lyrics search found nothing by its exact words and the items
+   * are the Tracks whose lyrics hold the line spelled most like the query,
+   * closest first. Never mixed with exact hits.
+   */
+  closeMatches: boolean;
+}
+
+/** Below every exact tier: a close match shares spelling, not the words. */
+const CLOSE_MATCH_EXACTNESS = 5;
+
+/** As many close matches as Roadie is offered for the same miss. */
+const CLOSE_MATCH_LIMIT = 5;
 
 export interface SearchSessionHit {
   id: string;
@@ -324,12 +341,72 @@ export function searchableSessions(ownerUserId: string): SQL {
   return sql`${activitySessions.ownerUserId} = ${ownerUserId} and ${sessionNotPendingDelete()}`;
 }
 
+/**
+ * Lyrics mode falls back to close matches only on a miss, so an exact hit keeps
+ * its tiers, sort and snippet untouched.
+ */
 export async function searchTracks(
   db: Database,
   args: SearchArgs & {
     /** Lyrics mode: match sung lyric text alone (tracks without lyrics are absent). */
     lyricsOnly?: boolean;
   },
+): Promise<SearchTrackGroup> {
+  const exact = await exactTrackSearch(db, args);
+  if (!args.lyricsOnly || exact.matchCount > 0) return { ...exact, closeMatches: false };
+  const items = await closeLyricMatches(db, args);
+  return { items, matchCount: items.length, closeMatches: items.length > 0 };
+}
+
+/**
+ * The shared closest-lyric-lines lookup (Roadie's too) loaded as full Library
+ * rows, in the lookup's closest-first order whatever the sort.
+ */
+async function closeLyricMatches(db: Database, args: SearchArgs): Promise<SearchTrackHit[]> {
+  const lines = await closestLyricLines(db, {
+    ownerUserId: args.ownerUserId,
+    query: args.query,
+    limit: CLOSE_MATCH_LIMIT,
+  });
+  if (lines.length === 0) return [];
+  const rows = await db
+    .select(libraryColumns(db))
+    .from(tracks)
+    .leftJoin(generationRequests, eq(generationRequests.id, tracks.generationRequestId))
+    .leftJoin(
+      activitySessions,
+      and(
+        eq(activitySessions.id, generationRequests.activitySessionId),
+        eq(activitySessions.ownerUserId, args.ownerUserId),
+      ),
+    )
+    .where(
+      and(
+        searchableTracks(args.ownerUserId),
+        inArray(
+          tracks.id,
+          lines.map((line) => line.id),
+        ),
+      ),
+    );
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  return lines.flatMap((line) => {
+    const row = byId.get(line.id);
+    if (!row) return [];
+    return [
+      {
+        ...row,
+        hasPlayableAudio: row.hasPlayableAudio ?? false,
+        hasFinalAsset: row.hasFinalAsset ?? false,
+        match: { field: 'lyrics', exactness: CLOSE_MATCH_EXACTNESS, snippet: line.line },
+      },
+    ];
+  });
+}
+
+function exactTrackSearch(
+  db: Database,
+  args: SearchArgs & { lyricsOnly?: boolean },
 ): Promise<SearchGroup<SearchTrackHit>> {
   return runRankedSearch(
     db,

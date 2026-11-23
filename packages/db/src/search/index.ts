@@ -14,5 +14,6 @@ export {
   type SearchPlaylistHit,
   type SearchSessionHit,
   type SearchSort,
+  type SearchTrackGroup,
   type SearchTrackHit,
 } from './search-repo';

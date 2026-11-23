@@ -364,7 +364,9 @@ describe.skipIf(skip)('searchTracks', () => {
       });
 
       expect(tracks.matchCount).toBe(0);
-      expect(lyrics.matchCount).toBe(0);
+      // No exact lyrics hit: the Track comes back only as a close match.
+      expect(lyrics.closeMatches).toBe(true);
+      expect(lyrics.items[0]!.match.snippet).toBe('deep-house');
     });
   });
 
@@ -467,6 +469,111 @@ describe.skipIf(skip)('searchTracks', () => {
     expect(items.map((t) => t.id)).toEqual([sung]);
     expect(items[0]!.match.field).toBe('lyrics');
     expect(items[0]!.match.snippet).toContain('rain');
+  });
+
+  describe('lyrics mode close matches, when the exact words find nothing', () => {
+    const lyricsSearch = (ownerUserId: string, query: string, sort = 'relevance' as const) =>
+      searchTracks(testDb.db, { ...baseArgs(ownerUserId, query), sort, lyricsOnly: true });
+
+    it('finds a line with one typo first, its closest line as the match', async () => {
+      const owner = await createUser(testDb.db);
+      await seedTrack(owner, { title: 'Harbor Lights', lyrics: 'the tide rolls in at dawn' });
+      const moon = await seedTrack(owner, {
+        title: 'Vier im Mondorbit',
+        lyrics: 'wir starten heute Nacht\nzu viert auf dem Mond\nund niemand schaut zu',
+      });
+
+      const result = await lyricsSearch(owner, 'zu viert auf dem mnod');
+      expect(result.closeMatches).toBe(true);
+      expect(result.items[0]!.id).toBe(moon);
+      expect(result.items[0]!.title).toBe('Vier im Mondorbit');
+      expect(result.items[0]!.match.field).toBe('lyrics');
+      expect(result.items[0]!.match.snippet).toBe('zu viert auf dem Mond');
+      expect(result.matchCount).toBe(result.items.length);
+    });
+
+    it('still finds a short line with two typos among the close matches', async () => {
+      const owner = await createUser(testDb.db);
+      await seedTrack(owner, { title: 'Harbor Lights', lyrics: 'the tide rolls in at dawn' });
+      const moon = await seedTrack(owner, {
+        title: 'Vier im Mondorbit',
+        lyrics: 'zu viert auf dem Mond',
+      });
+
+      const result = await lyricsSearch(owner, 'zu veirt auf dem mnod');
+      expect(result.closeMatches).toBe(true);
+      expect(result.items.map((t) => t.id)).toContain(moon);
+    });
+
+    it('keeps an exact hit exact, with no close match mixed in', async () => {
+      const owner = await createUser(testDb.db);
+      const moon = await seedTrack(owner, {
+        title: 'Vier im Mondorbit',
+        lyrics: 'zu viert auf dem Mond',
+      });
+      await seedTrack(owner, { title: 'Near Miss', lyrics: 'zu viert auf dem Mund' });
+
+      const result = await lyricsSearch(owner, 'auf dem Mond');
+      expect(result.closeMatches).toBe(false);
+      expect(result.items.map((t) => t.id)).toEqual([moon]);
+      expect(result.matchCount).toBe(1);
+      expect(result.items[0]!.match.snippet).toBe('zu viert auf dem Mond');
+    });
+
+    it('returns nothing for a query sharing no spelling with any lyrics', async () => {
+      const owner = await createUser(testDb.db);
+      await seedTrack(owner, { title: 'Vier im Mondorbit', lyrics: 'zu viert auf dem Mond' });
+
+      const result = await lyricsSearch(owner, 'xqj');
+      expect(result).toEqual({ items: [], matchCount: 0, closeMatches: false });
+    });
+
+    it('offers only own Tracks with lyrics, never another owner private ones', async () => {
+      const owner = await createUser(testDb.db);
+      const other = await createUser(testDb.db);
+      await seedTrack(owner, { title: 'zu viert auf dem Mond' });
+      await seedTrack(owner, {
+        title: 'Gone',
+        lyrics: 'zu viert auf dem Mond',
+        status: 'deleted',
+      });
+      await seedTrack(other, { title: 'Theirs', lyrics: 'zu viert auf dem Mond' });
+      const mine = await seedTrack(owner, { title: 'Mine', lyrics: 'zu viert am Strand' });
+
+      const result = await lyricsSearch(owner, 'zu viert auf dem mnod');
+      expect(result.items.map((t) => t.id)).toEqual([mine]);
+    });
+
+    it('orders close matches closest first whatever the sort', async () => {
+      const owner = await createUser(testDb.db);
+      const moon = await seedTrack(owner, {
+        title: 'Zebra',
+        lyrics: 'zu viert auf dem Mond',
+        createdAt: new Date('2026-01-01T00:00:00Z'),
+      });
+      const beach = await seedTrack(owner, {
+        title: 'Aardvark',
+        lyrics: 'zu viert am Strand',
+        createdAt: new Date('2026-02-01T00:00:00Z'),
+      });
+
+      for (const sort of ['relevance', 'newest', 'title'] as const) {
+        const result = await searchTracks(testDb.db, {
+          ...baseArgs(owner, 'zu viert auf dem mnod'),
+          sort,
+          lyricsOnly: true,
+        });
+        expect(result.items.map((t) => t.id)).toEqual([moon, beach]);
+      }
+    });
+
+    it('never falls back outside lyrics mode', async () => {
+      const owner = await createUser(testDb.db);
+      await seedTrack(owner, { title: 'Vier im Mondorbit', lyrics: 'zu viert auf dem Mond' });
+
+      const result = await searchTracks(testDb.db, baseArgs(owner, 'zu viert auf dem mnod'));
+      expect(result).toEqual({ items: [], matchCount: 0, closeMatches: false });
+    });
   });
 });
 
@@ -1019,6 +1126,12 @@ describe.skipIf(skip)('visitor search integration', () => {
     });
     expect(byLyrics.matchCount).toBe(0);
     expect(byLyrics.items).toEqual([]);
+
+    const byMisspelledLyrics = await searchTracks(testDb.db, {
+      ...baseArgs(visitor, 'midnite lantrens'),
+      lyricsOnly: true,
+    });
+    expect(byMisspelledLyrics).toEqual({ items: [], matchCount: 0, closeMatches: false });
   });
 
   it('a pinned re-share never surfaces a reference hidden from the visitor', async () => {

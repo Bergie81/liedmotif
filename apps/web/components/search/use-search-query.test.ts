@@ -20,7 +20,7 @@ function searchResponse(query: string, trackCount: number) {
       sort: 'relevance',
       lyrics: false,
       sessions: emptyGroup(),
-      tracks: { items: [], matchCount: trackCount, truncated: false },
+      tracks: { items: [], matchCount: trackCount, truncated: false, closeMatches: false },
       playlists: emptyGroup(),
     },
   };
@@ -128,7 +128,7 @@ describe('useSearchQuery', () => {
           sort: 'relevance',
           lyrics: false,
           sessions: null,
-          tracks: { items: [], matchCount: 3, truncated: false },
+          tracks: { items: [], matchCount: 3, truncated: false, closeMatches: false },
           playlists: null,
         },
       }),

@@ -1554,7 +1554,16 @@ export const searchResponseSchema = apiResponse(
     sort: z.enum(SEARCH_SORTS),
     lyrics: z.boolean(),
     sessions: searchGroupSchema(searchSessionItemSchema).nullable(),
-    tracks: searchGroupSchema(searchTrackItemSchema).nullable(),
+    tracks: searchGroupSchema(searchTrackItemSchema)
+      .extend({
+        /**
+         * True when a lyrics search found nothing by its exact words and the
+         * items are the closest lyric lines instead, closest first (each row's
+         * Match context is its closest line). Never mixed with exact hits.
+         */
+        closeMatches: z.boolean(),
+      })
+      .nullable(),
     playlists: searchGroupSchema(searchPlaylistItemSchema).nullable(),
   }),
 );
