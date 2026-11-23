@@ -325,7 +325,7 @@ test('without a connection the app opens the Offline Library and plays an offlin
     .getByRole('list', { name: 'Offline Playlists' })
     .getByTestId('offline-collection');
   await expect(row).toContainText('Harness Playlist');
-  await expect(row).toContainText('2 Tracks');
+  await expect(row).toContainText('2 tracks');
 
   // Everything playback asks for must be answered on the device: object URLs,
   // or the service worker's cached copy — never a request that leaves it.
@@ -488,7 +488,7 @@ test('offline, a Lounge Track whose week runs out during playback does not start
   const row = page
     .getByRole('list', { name: 'Offline Playlists' })
     .getByTestId('offline-collection');
-  await expect(row).toContainText('2 Tracks');
+  await expect(row).toContainText('2 tracks');
   const titles: string[] = [];
   await page.exposeFunction('reportTitle', (title: string) => titles.push(title));
 
