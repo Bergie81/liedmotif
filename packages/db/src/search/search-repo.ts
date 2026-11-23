@@ -4,7 +4,7 @@
 // carries the (field, exactness) pair that won it its place plus an exact
 // `count(*) over ()` of all matches, independent of the cap.
 
-import { and, eq, inArray, sql, type SQL, type SQLWrapper } from 'drizzle-orm';
+import { and, eq, inArray, sql, type AnyColumn, type SQL, type SQLWrapper } from 'drizzle-orm';
 import type { SearchMatchField, SearchSort } from '@liedmotif/shared';
 import type { Database } from '../client';
 import { libraryColumns, type LibraryTrack } from '../generation/feedback-repo';
@@ -87,13 +87,13 @@ export interface SearchTrackGroup extends SearchGroup<SearchTrackHit> {
 }
 
 /** Below every exact tier: a close match shares spelling, not the words. */
-const CLOSE_MATCH_EXACTNESS = 5;
+export const CLOSE_MATCH_EXACTNESS = 5;
 
 /**
- * A quoted line is long enough that a typo or two leaves the meant one near
- * the top, and each row carries its line, so the list stays short.
+ * A close match is a guess, so the list stays short: a quoted line or a name
+ * with a typo or two still leaves the meant one near the top.
  */
-const CLOSE_MATCH_LIMIT = 5;
+export const CLOSE_MATCH_LIMIT = 5;
 
 export interface SearchSessionHit {
   id: string;
@@ -234,7 +234,7 @@ function rankedQuery(spec: RankedSearch): SQL {
  * Runs one kind's ranked query into a capped group: every row is handed the
  * match that won it its place, and the count is the pre-cap total.
  */
-async function runRankedSearch<Row extends RankedRow, Hit>(
+async function runRankedSearch<Row, Hit>(
   db: Database,
   spec: RankedSearch,
   toHit: (row: Row, match: SearchMatch) => Hit,
@@ -243,7 +243,7 @@ async function runRankedSearch<Row extends RankedRow, Hit>(
   // caller passed in is what its own mapper reads back.
   const result = await db.execute<RankedRow>(rankedQuery(spec));
   return {
-    items: result.rows.map((row) => toHit(row as Row, toMatch(row, spec.args.query))),
+    items: result.rows.map((row) => toHit(row as unknown as Row, toMatch(row, spec.args.query))),
     matchCount: result.rows[0]?.matchCount ?? 0,
   };
 }
@@ -371,7 +371,37 @@ async function closeLyricMatches(db: Database, args: SearchArgs): Promise<Search
     query: args.query,
     limit: CLOSE_MATCH_LIMIT,
   });
-  if (lines.length === 0) return [];
+  return closeTrackHits(db, args.ownerUserId, lines, (line) => ({
+    field: 'lyrics',
+    exactness: CLOSE_MATCH_EXACTNESS,
+    snippet: line.line,
+  }));
+}
+
+/**
+ * Close matches as full rows in the lookup's closest-first order. A row the
+ * loader did not return is left out, so a close match is never one exact
+ * search could not show.
+ */
+function inFoundOrder<Found extends { id: string }, Row, Hit>(
+  found: Found[],
+  rows: Map<string, Row>,
+  toHit: (row: Row, found: Found) => Hit,
+): Hit[] {
+  return found.flatMap((hit) => {
+    const row = rows.get(hit.id);
+    return row ? [toHit(row, hit)] : [];
+  });
+}
+
+/** The found Tracks as Library rows, closest first, each with the match it was found by. */
+export async function closeTrackHits<Found extends { id: string }>(
+  db: Database,
+  ownerUserId: string,
+  found: Found[],
+  toMatch: (found: Found) => SearchMatch,
+): Promise<SearchTrackHit[]> {
+  if (found.length === 0) return [];
   const rows = await db
     .select(libraryColumns(db))
     .from(tracks)
@@ -380,31 +410,39 @@ async function closeLyricMatches(db: Database, args: SearchArgs): Promise<Search
       activitySessions,
       and(
         eq(activitySessions.id, generationRequests.activitySessionId),
-        eq(activitySessions.ownerUserId, args.ownerUserId),
+        eq(activitySessions.ownerUserId, ownerUserId),
       ),
     )
     .where(
       and(
-        searchableTracks(args.ownerUserId),
+        searchableTracks(ownerUserId),
         inArray(
           tracks.id,
-          lines.map((line) => line.id),
+          found.map((hit) => hit.id),
         ),
       ),
     );
-  const byId = new Map(rows.map((row) => [row.id, row]));
-  return lines.flatMap((line) => {
-    const row = byId.get(line.id);
-    if (!row) return [];
-    return [
-      {
-        ...row,
-        hasPlayableAudio: row.hasPlayableAudio ?? false,
-        hasFinalAsset: row.hasFinalAsset ?? false,
-        match: { field: 'lyrics', exactness: CLOSE_MATCH_EXACTNESS, snippet: line.line },
-      },
-    ];
-  });
+  return inFoundOrder(found, new Map(rows.map((row) => [row.id, row])), (row, hit) => ({
+    ...row,
+    hasPlayableAudio: row.hasPlayableAudio ?? false,
+    hasFinalAsset: row.hasFinalAsset ?? false,
+    match: toMatch(hit),
+  }));
+}
+
+/** One kind's search projection for the found rows that pass `where`, by id. */
+async function projectedById<Row>(
+  db: Database,
+  spec: { columns: Record<string, SQLWrapper>; from: SQL; where: SQL; id: AnyColumn },
+  ids: string[],
+): Promise<Map<string, Row>> {
+  if (ids.length === 0) return new Map();
+  const result = await db.execute<Record<string, unknown>>(sql`
+    select ${aliasedColumns(spec.columns)}
+    ${spec.from}
+    where ${spec.where} and ${inArray(spec.id, ids)}
+  `);
+  return new Map(result.rows.map((row) => [String(row.id), row as unknown as Row]));
 }
 
 function exactTrackSearch(
@@ -433,7 +471,7 @@ function exactTrackSearch(
   );
 }
 
-interface SessionHitRow extends RankedRow {
+interface SessionRow {
   id: string;
   title: string | null;
   coverImageId: string | null;
@@ -443,7 +481,7 @@ interface SessionHitRow extends RankedRow {
   createdAt: Date | string;
 }
 
-function toSessionHit(row: SessionHitRow, match: SearchMatch): SearchSessionHit {
+function toSessionHit(row: SessionRow, match: SearchMatch): SearchSessionHit {
   return {
     id: row.id,
     title: row.title,
@@ -456,6 +494,39 @@ function toSessionHit(row: SessionHitRow, match: SearchMatch): SearchSessionHit 
   };
 }
 
+/** The Session search row's projection, keyed by the alias `toSessionHit` reads. */
+function sessionColumns(): Record<string, SQLWrapper> {
+  return {
+    id: activitySessions.id,
+    title: activitySessions.title,
+    coverImageId: activitySessions.coverImageId,
+    status: activitySessions.status,
+    pinned: sql`${activitySessions.pinnedAt} is not null`,
+    lastActiveAt: sql`coalesce(${sessionLastActiveExpr}, ${activitySessions.createdAt})`,
+    createdAt: activitySessions.createdAt,
+  };
+}
+
+/** The found Sessions as Session search rows, closest first, each with the match it was found by. */
+export async function closeSessionHits<Found extends { id: string }>(
+  db: Database,
+  ownerUserId: string,
+  found: Found[],
+  toMatch: (found: Found) => SearchMatch,
+): Promise<SearchSessionHit[]> {
+  const rows = await projectedById<SessionRow>(
+    db,
+    {
+      columns: sessionColumns(),
+      from: sql`from ${activitySessions}`,
+      where: searchableSessions(ownerUserId),
+      id: activitySessions.id,
+    },
+    found.map((hit) => hit.id),
+  );
+  return inFoundOrder(found, rows, (row, hit) => toSessionHit(row, toMatch(hit)));
+}
+
 export async function searchSessions(
   db: Database,
   args: SearchArgs,
@@ -464,15 +535,7 @@ export async function searchSessions(
     db,
     {
       args,
-      columns: {
-        id: activitySessions.id,
-        title: activitySessions.title,
-        coverImageId: activitySessions.coverImageId,
-        status: activitySessions.status,
-        pinned: sql`${activitySessions.pinnedAt} is not null`,
-        lastActiveAt: sql`coalesce(${sessionLastActiveExpr}, ${activitySessions.createdAt})`,
-        createdAt: activitySessions.createdAt,
-      },
+      columns: sessionColumns(),
       from: sql`from ${activitySessions}`,
       where: searchableSessions(args.ownerUserId),
       defs: sessionMatchFields(),
@@ -482,7 +545,7 @@ export async function searchSessions(
   );
 }
 
-interface PlaylistHitRow extends RankedRow {
+interface PlaylistRow {
   id: string;
   ownerUserId: string;
   name: string;
@@ -502,7 +565,7 @@ interface PlaylistHitRow extends RankedRow {
   memberMatchCount: number;
 }
 
-function toPlaylistHit(row: PlaylistHitRow, match: SearchMatch): SearchPlaylistHit {
+function toPlaylistHit(row: PlaylistRow, match: SearchMatch): SearchPlaylistHit {
   return {
     id: row.id,
     ownerUserId: row.ownerUserId,
@@ -574,22 +637,7 @@ export async function searchPlaylists(
     {
       args,
       columns: {
-        id: playlists.id,
-        ownerUserId: playlists.ownerUserId,
-        name: playlists.name,
-        kind: playlists.kind,
-        listedInPlaylists: playlists.listedInPlaylists,
-        coverImageId: playlists.coverImageId,
-        lastPlayedAt: playlists.lastPlayedAt,
-        sharedAt: playlists.sharedAt,
-        createdAt: playlists.createdAt,
-        updatedAt: playlists.updatedAt,
-        trackCount: playlistTrackCountColumn(viewer),
-        totalDurationSeconds: playlistTotalDurationColumn(viewer),
-        downloadableTrackCount: playlistDownloadableCountColumn(),
-        mosaicCoverImageIds: playlistMosaicCoverColumn(viewer),
-        soleMemberTrackCount: playlistSoleMemberCountColumn(viewer),
-        soleMemberDeletedTrackCount: playlistSoleMemberDeletedCountColumn(viewer),
+        ...playlistColumns(viewer),
         memberMatchCount: memberTitleMatchCount(buildMatchPatterns(args.query).anywhere, viewer),
       },
       from: sql`from ${playlists}`,
@@ -601,12 +649,72 @@ export async function searchPlaylists(
     },
     toPlaylistHit,
   );
-  // The delete counts read the sharing owner's other playlists and Sessions,
-  // which a visitor never sees (as the Lounge read zeroes them).
-  const items = group.items.map((item) =>
-    item.ownerUserId === viewer
-      ? item
-      : { ...item, soleMemberTrackCount: 0, soleMemberDeletedTrackCount: 0 },
-  );
+  const items = group.items.map((item) => withoutForeignDeleteCounts(item, viewer));
   return { ...group, items: await attributeForeignPlaylists(db, args.ownerUserId, items) };
+}
+
+/**
+ * The found Playlists as Playlist summaries, closest first, each with the
+ * match it was found by and the attribution the lookup carried. A close match
+ * matched no member title, so it counts none.
+ */
+export async function closePlaylistHits<
+  Found extends { id: string; owner: OwnerAttribution | null },
+>(
+  db: Database,
+  ownerUserId: string,
+  found: Found[],
+  toMatch: (found: Found) => SearchMatch,
+): Promise<SearchPlaylistHit[]> {
+  const rows = await projectedById<PlaylistRow>(
+    db,
+    {
+      columns: { ...playlistColumns(ownerUserId), memberMatchCount: sql`0` },
+      from: sql`from ${playlists}`,
+      where: viewerCanSearchPlaylist(ownerUserId),
+      id: playlists.id,
+    },
+    found.map((hit) => hit.id),
+  );
+  return inFoundOrder(found, rows, (row, hit) =>
+    withoutForeignDeleteCounts(
+      { ...toPlaylistHit(row, toMatch(hit)), owner: hit.owner },
+      ownerUserId,
+    ),
+  );
+}
+
+/**
+ * The Playlist summary's projection without the query-dependent member count,
+ * keyed by the alias `toPlaylistHit` reads.
+ */
+function playlistColumns(viewer: string): Record<string, SQLWrapper> {
+  return {
+    id: playlists.id,
+    ownerUserId: playlists.ownerUserId,
+    name: playlists.name,
+    kind: playlists.kind,
+    listedInPlaylists: playlists.listedInPlaylists,
+    coverImageId: playlists.coverImageId,
+    lastPlayedAt: playlists.lastPlayedAt,
+    sharedAt: playlists.sharedAt,
+    createdAt: playlists.createdAt,
+    updatedAt: playlists.updatedAt,
+    trackCount: playlistTrackCountColumn(viewer),
+    totalDurationSeconds: playlistTotalDurationColumn(viewer),
+    downloadableTrackCount: playlistDownloadableCountColumn(),
+    mosaicCoverImageIds: playlistMosaicCoverColumn(viewer),
+    soleMemberTrackCount: playlistSoleMemberCountColumn(viewer),
+    soleMemberDeletedTrackCount: playlistSoleMemberDeletedCountColumn(viewer),
+  };
+}
+
+/**
+ * The delete counts read the sharing owner's other playlists and Sessions,
+ * which a visitor never sees (as the Lounge read zeroes them).
+ */
+function withoutForeignDeleteCounts(hit: SearchPlaylistHit, viewer: string): SearchPlaylistHit {
+  return hit.ownerUserId === viewer
+    ? hit
+    : { ...hit, soleMemberTrackCount: 0, soleMemberDeletedTrackCount: 0 };
 }

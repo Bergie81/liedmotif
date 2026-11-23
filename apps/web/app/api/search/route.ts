@@ -1,18 +1,23 @@
 // GET /api/search — ranked, capped retrieval across Sessions, Tracks and
-// Playlists. Read-only: no provider call, no LLM call, no write. A lyrics
-// search whose exact words find nothing answers with the closest lyric lines,
-// flagged `closeMatches`.
+// Playlists. Read-only: no provider call, no LLM call, no write. A search whose
+// exact words find nothing in any queried group answers with close matches
+// instead, flagged `closeMatches`: the closest lyric lines in lyrics mode, else
+// the closest names of each queried kind.
 // The caps are server-fixed (5 per group under All, 50 on a scope tab); a
 // client cannot ask for more, and there is no cursor to page with.
 
 import { NextResponse } from 'next/server';
 import {
+  closeNameMatches,
   getSessionTrackActivities,
   searchPlaylists,
   searchSessions,
   searchTracks,
   type SearchGroup,
   type SearchMatch,
+  type SearchPlaylistHit,
+  type SearchSessionHit,
+  type SearchTrackHit,
 } from '@liedmotif/db';
 import {
   EMPTY_SESSION_TRACK_ACTIVITY,
@@ -59,11 +64,30 @@ export async function GET(request: Request) {
   };
   const inScope = (group: Exclude<SearchScope, 'all'>) => scope === 'all' || scope === group;
 
-  const [sessionHits, trackHits, playlistHits] = await Promise.all([
+  const [exactSessions, exactTracks, exactPlaylists] = await Promise.all([
     inScope('sessions') ? searchSessions(db, base) : null,
     inScope('tracks') ? searchTracks(db, { ...base, lyricsOnly: parsed.lyrics }) : null,
     inScope('playlists') ? searchPlaylists(db, base) : null,
   ]);
+  let sessionHits: SearchGroup<SearchSessionHit> | null = exactSessions;
+  let trackHits: SearchGroup<SearchTrackHit> | null = exactTracks;
+  let playlistHits: SearchGroup<SearchPlaylistHit> | null = exactPlaylists;
+  let closeMatches = exactTracks?.closeMatches ?? false;
+
+  const wholeMiss = [exactSessions, exactTracks, exactPlaylists].every(
+    (group) => group === null || group.matchCount === 0,
+  );
+  if (!parsed.lyrics && wholeMiss) {
+    const close = await closeNameMatches(
+      db,
+      { ownerUserId, query: parsed.q },
+      (['sessions', 'tracks', 'playlists'] as const).filter(inScope),
+    );
+    sessionHits = exactSessions && closeGroup(close.sessions);
+    trackHits = exactTracks && closeGroup(close.tracks);
+    playlistHits = exactPlaylists && closeGroup(close.playlists);
+    closeMatches = [close.sessions, close.tracks, close.playlists].some((items) => items.length);
+  }
 
   const sessionActivity = sessionHits
     ? await getSessionTrackActivities(db, {
@@ -77,6 +101,7 @@ export async function GET(request: Request) {
     scope: parsed.scope,
     sort: parsed.sort,
     lyrics: parsed.lyrics,
+    closeMatches,
     sessions:
       sessionHits &&
       toGroup(sessionHits, (hit) => ({
@@ -89,13 +114,12 @@ export async function GET(request: Request) {
         ...(sessionActivity?.get(hit.id) ?? EMPTY_SESSION_TRACK_ACTIVITY),
         matchContext: toMatchContext(hit.match),
       })),
-    tracks: trackHits && {
-      ...toGroup(trackHits, (hit) => ({
+    tracks:
+      trackHits &&
+      toGroup(trackHits, (hit) => ({
         ...toLibraryTrackItem(hit),
         matchContext: toMatchContext(hit.match),
       })),
-      closeMatches: trackHits.closeMatches,
-    },
     playlists:
       playlistHits &&
       toGroup(playlistHits, (hit) => ({
@@ -105,6 +129,11 @@ export async function GET(request: Request) {
         matchContext: toMatchContext(hit.match),
       })),
   });
+}
+
+/** Close matches are the whole answer, so every row found is shown. */
+function closeGroup<T>(items: T[]): SearchGroup<T> {
+  return { items, matchCount: items.length };
 }
 
 function toGroup<T, Item>(

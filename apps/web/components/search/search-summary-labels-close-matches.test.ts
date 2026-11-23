@@ -20,8 +20,9 @@ function lyricsResponse(query: string, closeMatches: boolean, matchCount: number
     scope: 'all',
     sort: 'title',
     lyrics: true,
+    closeMatches,
     sessions: null,
-    tracks: { items: [], matchCount, truncated: false, closeMatches },
+    tracks: { items: [], matchCount, truncated: false },
     playlists: null,
   } as SearchResponseData;
 }

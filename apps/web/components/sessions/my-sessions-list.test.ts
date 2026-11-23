@@ -76,6 +76,7 @@ function stubApi(hits: SessionListItem[], responses: Record<string, unknown> = {
             scope: 'sessions',
             sort: 'relevance',
             lyrics: false,
+            closeMatches: false,
             sessions: {
               items: hits.map((hit) => ({
                 ...hit,

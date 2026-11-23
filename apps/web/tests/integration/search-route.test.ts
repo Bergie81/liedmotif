@@ -195,7 +195,7 @@ describe.skipIf(skip)('GET /api/search', () => {
     expect(body.data.playlists).toBeNull();
     expect(body.data.tracks.items.map((t: { id: string }) => t.id)).toEqual([sung]);
     expect(body.data.tracks.items[0].matchContext.field).toBe('lyrics');
-    expect(body.data.tracks.closeMatches).toBe(false);
+    expect(body.data.closeMatches).toBe(false);
   });
 
   it('lyrics mode answers a misspelled line with flagged close matches, the same on reload', async () => {
@@ -210,7 +210,9 @@ describe.skipIf(skip)('GET /api/search', () => {
     const params = { q: 'zu viert auf dem mnod', lyrics: '1', sort: 'title' };
     const body = await (await getWith(params)).json();
     expect(searchResponseSchema.safeParse(body).success).toBe(true);
-    expect(body.data.tracks.closeMatches).toBe(true);
+    expect(body.data.closeMatches).toBe(true);
+    expect(body.data.sessions).toBeNull();
+    expect(body.data.playlists).toBeNull();
     expect(body.data.tracks.truncated).toBe(false);
     expect(body.data.tracks.matchCount).toBe(body.data.tracks.items.length);
     expect(body.data.tracks.items[0].id).toBe(moon);
@@ -222,13 +224,11 @@ describe.skipIf(skip)('GET /api/search', () => {
     const reload = await (await getWith(params)).json();
     expect(reload.data.tracks).toEqual(body.data.tracks);
 
+    // A normal search never answers with lyric lines; its close matches are names.
     const normal = await (await getWith({ q: 'zu viert auf dem mnod' })).json();
-    expect(normal.data.tracks).toEqual({
-      items: [],
-      matchCount: 0,
-      truncated: false,
-      closeMatches: false,
-    });
+    for (const item of normal.data.tracks.items as { matchContext: { field: string } }[]) {
+      expect(item.matchContext.field).toBe('name');
+    }
   });
 
   it('lyrics mode uses the scoped cap — Tracks is its only group', async () => {
@@ -277,4 +277,110 @@ describe.skipIf(skip)('GET /api/search', () => {
       if (item.audioUrl !== null) expect(item.audioUrl.startsWith('/api/audio/')).toBe(true);
     }
   });
+
+  it('answers a whole miss under All with the closest names in each group, flagged', async () => {
+    const owner = await createUser(testDb.db);
+    holder.ownerUserId = owner;
+    const session = await createSession(testDb.db, {
+      ownerUserId: owner,
+      status: 'stopped',
+      title: 'Rainy Sunday Jazz',
+    });
+    const track = await seedTrack(owner, { title: 'Sunday Morning Haze' });
+    const playlist = await createPlaylist(testDb.db, { ownerUserId: owner, name: 'Jazz for Rain' });
+
+    const body = await (await getWith({ q: 'Rainy Sunday Joz' })).json();
+
+    expect(searchResponseSchema.safeParse(body).success).toBe(true);
+    expect(body.data.closeMatches).toBe(true);
+    expect(body.data.sessions.items[0]).toMatchObject({
+      id: session,
+      title: 'Rainy Sunday Jazz',
+      matchContext: { field: 'name', snippet: 'Rainy Sunday Jazz' },
+    });
+    expect(body.data.sessions.items[0].trackCount).toBe(0);
+    expect(ids(body.data.tracks.items)).toContain(track);
+    expect(ids(body.data.playlists.items)).toContain(playlist.id);
+    expect(body.data.playlists.items[0].memberMatchCount).toBe(0);
+    for (const group of [body.data.sessions, body.data.tracks, body.data.playlists]) {
+      expect(group.matchCount).toBe(group.items.length);
+      expect(group.truncated).toBe(false);
+    }
+  });
+
+  it('keeps exact hits alone when only some groups miss', async () => {
+    const owner = await createUser(testDb.db);
+    holder.ownerUserId = owner;
+    const close = await createSession(testDb.db, {
+      ownerUserId: owner,
+      status: 'stopped',
+      title: 'Rainy Sunday Jazz',
+    });
+    await createPlaylist(testDb.db, { ownerUserId: owner, name: 'Rainy Sunday Jazz' });
+    const exact = await seedTrack(owner, { title: 'Rainy Sunday Joz' });
+
+    const body = await (await getWith({ q: 'Rainy Sunday Joz' })).json();
+
+    expect(body.data.closeMatches).toBe(false);
+    expect(ids(body.data.tracks.items)).toEqual([exact]);
+    // The exact Track's own Session answers through its Track title; the close one stays out.
+    expect(ids(body.data.sessions.items)).not.toContain(close);
+    expect(body.data.playlists).toEqual({ items: [], matchCount: 0, truncated: false });
+  });
+
+  it('answers a scope tab miss with close names of that kind only', async () => {
+    const owner = await createUser(testDb.db);
+    holder.ownerUserId = owner;
+    await createSession(testDb.db, {
+      ownerUserId: owner,
+      status: 'stopped',
+      title: 'Rainy Sunday Jazz',
+    });
+    const track = await seedTrack(owner, { title: 'Rainy Sunday Jazz' });
+
+    const body = await (await getWith({ q: 'Rainy Sunday Joz', scope: 'tracks' })).json();
+
+    expect(searchResponseSchema.safeParse(body).success).toBe(true);
+    expect(body.data.closeMatches).toBe(true);
+    expect(body.data.sessions).toBeNull();
+    expect(body.data.playlists).toBeNull();
+    expect(ids(body.data.tracks.items)).toEqual([track]);
+  });
+
+  it('answers a miss with no shared spelling as an empty, unflagged result', async () => {
+    const owner = await createUser(testDb.db);
+    holder.ownerUserId = owner;
+    await createSession(testDb.db, { ownerUserId: owner, status: 'stopped', title: 'Deep Focus' });
+
+    const body = await (await getWith({ q: 'lighthouse' })).json();
+
+    expect(body.data.closeMatches).toBe(false);
+    expect(body.data.sessions.items).toEqual([]);
+  });
+
+  it('keeps close names closest first whatever the sort, the same on reload', async () => {
+    const owner = await createUser(testDb.db);
+    holder.ownerUserId = owner;
+    const meant = await createSession(testDb.db, {
+      ownerUserId: owner,
+      status: 'stopped',
+      title: 'Night Owls',
+    });
+    const other = await createSession(testDb.db, {
+      ownerUserId: owner,
+      status: 'stopped',
+      title: 'Aardvark Night Shift',
+    });
+
+    const params = { q: 'Nihgt Owls', scope: 'sessions', sort: 'title' };
+    const body = await (await getWith(params)).json();
+    expect(ids(body.data.sessions.items)).toEqual([meant, other]);
+
+    const reload = await (await getWith(params)).json();
+    expect(reload.data.sessions).toEqual(body.data.sessions);
+  });
 });
+
+function ids(items: { id: string }[]): string[] {
+  return items.map((item) => item.id);
+}

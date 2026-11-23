@@ -2,6 +2,7 @@
 // vocabulary (one definition of what a query "matches", shared with the
 // Library's boolean filters) stays package-internal — it builds SQL, so its
 // callers are repos, never app code.
+export { closeNameMatches, type CloseNameGroups, type CloseNameKind } from './close-name-matches';
 export { closestNames } from './closest-names';
 export {
   searchPlaylists,

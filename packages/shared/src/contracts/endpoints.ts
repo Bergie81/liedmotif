@@ -1553,17 +1553,15 @@ export const searchResponseSchema = apiResponse(
     scope: z.enum(SEARCH_SCOPES),
     sort: z.enum(SEARCH_SORTS),
     lyrics: z.boolean(),
+    /**
+     * True when the exact words found nothing in any queried group and every
+     * row is a close match instead, closest first: the names spelled most like
+     * the query, or in lyrics mode the closest lyric lines (each row's Match
+     * context is that name or line). Never mixed with exact hits.
+     */
+    closeMatches: z.boolean(),
     sessions: searchGroupSchema(searchSessionItemSchema).nullable(),
-    tracks: searchGroupSchema(searchTrackItemSchema)
-      .extend({
-        /**
-         * True when a lyrics search found nothing by its exact words and the
-         * items are the closest lyric lines instead, closest first (each row's
-         * Match context is its closest line). Never mixed with exact hits.
-         */
-        closeMatches: z.boolean(),
-      })
-      .nullable(),
+    tracks: searchGroupSchema(searchTrackItemSchema).nullable(),
     playlists: searchGroupSchema(searchPlaylistItemSchema).nullable(),
   }),
 );
