@@ -89,7 +89,10 @@ export interface SearchTrackGroup extends SearchGroup<SearchTrackHit> {
 /** Below every exact tier: a close match shares spelling, not the words. */
 const CLOSE_MATCH_EXACTNESS = 5;
 
-/** As many close matches as Roadie is offered for the same miss. */
+/**
+ * A quoted line is long enough that a typo or two leaves the meant one near
+ * the top, and each row carries its line, so the list stays short.
+ */
 const CLOSE_MATCH_LIMIT = 5;
 
 export interface SearchSessionHit {
@@ -359,8 +362,8 @@ export async function searchTracks(
 }
 
 /**
- * The shared closest-lyric-lines lookup (Roadie's too) loaded as full Library
- * rows, in the lookup's closest-first order whatever the sort.
+ * The closest lyric lines loaded as full Library rows, in the lookup's
+ * closest-first order whatever the sort.
  */
 async function closeLyricMatches(db: Database, args: SearchArgs): Promise<SearchTrackHit[]> {
   const lines = await closestLyricLines(db, {

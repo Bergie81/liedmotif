@@ -7,7 +7,6 @@
 // model can tell which one a near miss meant.
 
 import {
-  closestLyricLines,
   closestNames,
   getLibraryTracks,
   getUsageLimits,
@@ -44,13 +43,6 @@ const FIND_MUSIC_LIMIT = 10;
  * swapped, is still on it for the model to recognise.
  */
 const CLOSEST_NAMES_LIMIT = 50;
-
-/**
- * How many lyric lines a lyrics search that matched nothing offers. A quoted
- * line is long enough that a typo or two leaves the meant one near the top,
- * and each row carries its line, so the list stays short.
- */
-const CLOSEST_LYRIC_LINES_LIMIT = 5;
 
 const KIND_NAMES: Record<FindMusicInput['kind'], string> = {
   session: 'Session',
@@ -211,24 +203,6 @@ async function closestRows(
   return { rows: closest.map(({ id, name, owner }) => row(name, id, sharedBy(owner))), more: null };
 }
 
-/** The Tracks whose lyric lines are spelled most like the query, as rows with that line. */
-async function closestLyricRows(
-  db: AssistantAsker['db'],
-  { ownerUserId, query }: SearchArgs,
-): Promise<Listing> {
-  const closest = await closestLyricLines(db, {
-    ownerUserId,
-    query,
-    limit: CLOSEST_LYRIC_LINES_LIMIT,
-  });
-  return {
-    rows: closest.map(({ line, ...track }) =>
-      trackRow({ ...track, match: { field: 'lyrics', snippet: line } }),
-    ),
-    more: null,
-  };
-}
-
 /**
  * The app's search, as this user. Lyrics are sung by Tracks only, so a lyrics
  * search is one for Tracks whatever kind came with it. Search that matches
@@ -250,16 +224,15 @@ async function search(
   const text = quoted(query);
   if (lyrics) {
     const none = `No Track has ${text} in its lyrics.`;
-    const exact = await searchTracks(db, { ...args, lyricsOnly: true });
-    const found = hits(exact, trackRow);
-    // Search's own close matches are a miss here: Roadie words them as such.
-    return found.rows.length > 0 && !exact.closeMatches
-      ? listed(`Tracks with ${text} in their lyrics:`, found, none)
-      : listed(
-          `${none} The lyric lines spelled nearest, none may be the one meant:`,
-          await closestLyricRows(db, args),
-          none,
-        );
+    // On a miss Search itself answers with the closest lyric lines.
+    const found = await searchTracks(db, { ...args, lyricsOnly: true });
+    return listed(
+      found.closeMatches
+        ? `${none} The lyric lines spelled nearest, none may be the one meant:`
+        : `Tracks with ${text} in their lyrics:`,
+      hits(found, trackRow),
+      none,
+    );
   }
   const what = KIND_NAMES[kind];
   const none = `No ${what} matches ${text}.`;

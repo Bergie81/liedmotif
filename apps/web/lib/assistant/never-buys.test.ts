@@ -65,7 +65,6 @@ const REACHES_DATA = /^@liedmotif\/(db|providers)\b|^@\/lib\/(?!assistant\/)/;
 const SERVER_CALLS = [
   // Reads, as the asking user: their music, their budget, what a route would refuse.
   'cachedUserProfile',
-  'closestLyricLines',
   'closestNames',
   'DOCS_BASE_URL',
   'evaluateGenerationBudget',

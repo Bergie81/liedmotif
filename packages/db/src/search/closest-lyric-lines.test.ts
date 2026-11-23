@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
-import { activitySessions, tracks } from '../schema';
+import { tracks } from '../schema';
 import {
   connectTestDb,
   createSession,
@@ -67,13 +67,8 @@ describe.skipIf(skip)('closestLyricLines', () => {
     const far = await seedSung(owner, sessionId, 'Far Off', 'a light upstairs\nnobody home');
 
     expect(await closest(owner, 'the lihgthouse keeps')).toEqual([
-      {
-        id: near,
-        title: 'Lighthouse',
-        originSessionTitle: 'Harbor Nights',
-        line: 'the lighthouse keeps its light',
-      },
-      { id: far, title: 'Far Off', originSessionTitle: 'Harbor Nights', line: 'a light upstairs' },
+      { id: near, line: 'the lighthouse keeps its light' },
+      { id: far, line: 'a light upstairs' },
     ]);
   });
 
@@ -102,24 +97,5 @@ describe.skipIf(skip)('closestLyricLines', () => {
     await seedSung(owner, sessionId, 'The Lighthouse Keeps', null);
 
     expect(await closest(owner, 'the lihgthouse keeps')).toEqual([]);
-  });
-
-  it('names no Session when its delete is pending', async () => {
-    const owner = await createUser(testDb.db);
-    const sessionId = await stoppedSession(owner, 'Harbor Nights');
-    const id = await seedSung(owner, sessionId, 'Lighthouse', 'the lighthouse keeps its light');
-    await testDb.db
-      .update(activitySessions)
-      .set({ deleteRequestedAt: new Date() })
-      .where(eq(activitySessions.id, sessionId));
-
-    expect(await closest(owner, 'the lihgthouse keeps')).toEqual([
-      {
-        id,
-        title: 'Lighthouse',
-        originSessionTitle: null,
-        line: 'the lighthouse keeps its light',
-      },
-    ]);
   });
 });
