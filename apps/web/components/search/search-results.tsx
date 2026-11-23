@@ -70,7 +70,7 @@ export function SearchResults({
 
   const body = (
     <>
-      <SummaryRow data={data} sort={state.sort} onSortChange={onSortChange} />
+      <SearchSummaryRow data={data} sort={state.sort} onSortChange={onSortChange} />
       {error ? <AlertBanner className="mb-3">{error}</AlertBanner> : null}
       <GroupSections
         data={data}
@@ -159,7 +159,7 @@ function ScopeTab({
   );
 }
 
-function SummaryRow({
+export function SearchSummaryRow({
   data,
   sort,
   onSortChange,
@@ -168,6 +168,16 @@ function SummaryRow({
   sort: SearchSort;
   onSortChange: (sort: SearchSort) => void;
 }) {
+  // Close matches stay closest first, so they get a label and no sort
+  // selector; the URL's sort applies again once the words match exactly.
+  if (data.tracks?.closeMatches) {
+    return (
+      <p className="mb-2 mt-3 text-[13px] text-muted">
+        No exact match for <span className="font-semibold text-paper">“{data.query}”</span>. Closest
+        lyrics:
+      </p>
+    );
+  }
   const total = totalMatchCount(data);
   return (
     <div className="mb-2 mt-3 flex items-start justify-between gap-3">

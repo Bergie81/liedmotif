@@ -1,7 +1,7 @@
 ---
 title: Every Feature, and How to Use It
 description: The reference for using Liedmotif day to day, with what each feature does, where it is in the app and what to watch out for.
-checkedOn: 2026-11-22
+checkedOn: 2026-11-23
 ---
 
 Look up any feature here to see what it does, where to find it and what its limits are. Buttons and menus appear in bold, exactly as the app shows them.
@@ -404,6 +404,7 @@ The **Search** page looks across sessions, tracks and playlists, in titles, genr
 - **Tabs:** **All**, **Sessions**, **Tracks** and **Playlists** each show an exact count.
 - **Sort:** **Relevance**, **Newest First** or **Title A–Z**.
 - **Search Lyrics** searches only sung words, so only tracks can match, and instrumentals never do.
+- **Typos in lyrics:** when a lyrics search finds no exact match, for example because of a typo, it shows the tracks with the closest lyric lines instead, closest first.
 - **Matches:** each result names the field that matched and highlights your words.
 - **Recent:** searches you acted on stay in your browser for next time.
 
