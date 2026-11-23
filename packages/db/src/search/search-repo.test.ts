@@ -23,7 +23,7 @@ import {
   setPlaylistLoungePinned,
   setPlaylistShared,
 } from '../playlists';
-import { MAX_SEARCH_QUERY_LENGTH } from '@liedmotif/shared';
+import { MAX_SEARCH_QUERY_LENGTH, type SearchSort } from '@liedmotif/shared';
 import { searchPlaylists, searchSessions, searchTracks } from './search-repo';
 
 // The ranked, capped retrieval core (spec: search-retrieval-core). Rank is
@@ -472,7 +472,7 @@ describe.skipIf(skip)('searchTracks', () => {
   });
 
   describe('lyrics mode close matches, when the exact words find nothing', () => {
-    const lyricsSearch = (ownerUserId: string, query: string, sort = 'relevance' as const) =>
+    const lyricsSearch = (ownerUserId: string, query: string, sort: SearchSort = 'relevance') =>
       searchTracks(testDb.db, { ...baseArgs(ownerUserId, query), sort, lyricsOnly: true });
 
     it('finds a line with one typo first, its closest line as the match', async () => {
@@ -558,11 +558,7 @@ describe.skipIf(skip)('searchTracks', () => {
       });
 
       for (const sort of ['relevance', 'newest', 'title'] as const) {
-        const result = await searchTracks(testDb.db, {
-          ...baseArgs(owner, 'zu viert auf dem mnod'),
-          sort,
-          lyricsOnly: true,
-        });
+        const result = await lyricsSearch(owner, 'zu viert auf dem mnod', sort);
         expect(result.items.map((t) => t.id)).toEqual([moon, beach]);
       }
     });
